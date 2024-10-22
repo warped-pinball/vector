@@ -28,7 +28,7 @@ jobs:
       - name: Minify HTML, CSS, and JS
         run: |
           mkdir -p compiled
-          find . -name "*.html" -exec npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true {} -o compiled/{} \;
+          find ./src -name "*.html" -exec npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true {} -o compiled/{} \;
 
       # Step 5: Install dependencies for compiling MicroPython files
       - name: Install build dependencies (gcc, make, etc.)
@@ -44,12 +44,12 @@ jobs:
       # Step 7: Precompile Python files to .mpy
       - name: Precompile Python files to .mpy
         run: |
-          find . -name "*.py" -exec micropython/mpy-cross/mpy-cross {} -o compiled/{} \;
+          find ./src -name "*.py" -exec micropython/mpy-cross/mpy-cross {} -o compiled/{} \;
 
       # Step 8: Copy over all non .html and .py files to the compiled directory
       - name: Copy non-minified files
         run: |
-          rsync -av --progress . ./compiled/ --exclude '*.html' --exclude '*.py'
+          rsync -av --progress ./src/ ./compiled/ --exclude '*.html' --exclude '*.py'
 
       # Step 9: Zip the compiled files into an artifact
       - name: Create zip of compiled files
@@ -68,3 +68,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: compiled_artifact.zip
+
