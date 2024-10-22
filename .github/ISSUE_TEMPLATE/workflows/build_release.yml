@@ -1,0 +1,70 @@
+name: Build Realease
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js environment for minifying HTML, CSS, and JS
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3: Install HTML minifier and other dependencies
+      - name: Install HTML minifier and dependencies
+        run: |
+          npm install html-minifier-terser --save-dev
+
+      # Step 4: Minify HTML, CSS, and JS
+      - name: Minify HTML, CSS, and JS
+        run: |
+          mkdir -p compiled
+          find . -name "*.html" -exec npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true {} -o compiled/{} \;
+
+      # Step 5: Install dependencies for compiling MicroPython files
+      - name: Install build dependencies (gcc, make, etc.)
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      # Step 6: Clone MicroPython and build mpy-cross
+      - name: Clone MicroPython and build mpy-cross
+        run: |
+          git clone https://github.com/micropython/micropython.git
+          cd micropython/mpy-cross
+          make  # Build the mpy-cross compiler
+
+      # Step 7: Precompile Python files to .mpy
+      - name: Precompile Python files to .mpy
+        run: |
+          find . -name "*.py" -exec micropython/mpy-cross/mpy-cross {} -o compiled/{} \;
+
+      # Step 8: Copy over all non .html and .py files to the compiled directory
+      - name: Copy non-minified files
+        run: |
+          rsync -av --progress . ./compiled/ --exclude '*.html' --exclude '*.py'
+
+      # Step 9: Zip the compiled files into an artifact
+      - name: Create zip of compiled files
+        run: |
+          zip -r compiled_artifact.zip compiled/
+
+      # Step 10: Upload the artifact to GitHub as part of the release
+      - name: Upload compiled artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiled-artifact
+          path: compiled_artifact.zip
+
+      # Step 11: Attach compiled files to the release
+      - name: Attach compiled artifact to the release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: compiled_artifact.zip
