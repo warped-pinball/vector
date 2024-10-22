@@ -28,7 +28,10 @@ jobs:
       - name: Minify HTML, CSS, and JS
         run: |
           mkdir -p compiled
-          find ./src -name "*.html" -exec npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true {} -o compiled/{} \;
+          find ./src -name "*.html" -not -path "*/app_templates/*" -exec sh -c '
+          mkdir -p compiled/$(dirname "{}")
+          npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "{}" -o compiled/"{}"
+          ' \;
 
       # Step 5: Install dependencies for compiling MicroPython files
       - name: Install build dependencies (gcc, make, etc.)
