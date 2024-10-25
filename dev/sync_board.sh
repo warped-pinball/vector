@@ -55,16 +55,21 @@ sync_files() {
     while IFS= read -r line; do
         FILE_STATUS=$(echo "$line" | awk '{print $1}')
         FILE_PATH=$(echo "$line" | awk '{print $2}')
-        PICO_FILE=$(echo "$FILE_PATH" | sed "s|^$SOURCE_PATH/||")
 
         if [ "$FILE_STATUS" != "D" ]; then
+            PICO_FILE=$(echo "$FILE_PATH" | sed "s|^$SOURCE_PATH/||")
+
             if [[ "$dry_run" -eq 1 ]]; then
                 echo "Dry run: Would upload $FILE_PATH as /$PICO_FILE"
             else
-                echo "Uploading $FILE_PATH as /$PICO_FILE"
-                mpremote connect "$PICO_PORT" fs cp "$FILE_PATH" :/"$PICO_FILE" > /dev/null 2>&1 || echo "Warning: Failed to upload $PICO_FILE"
+                if [ -f "$FILE_PATH" ]; then  # Ensure the file exists before uploading
+                    echo "Uploading $FILE_PATH as /$PICO_FILE"
+                    mpremote connect "$PICO_PORT" fs cp "$FILE_PATH" :/"$PICO_FILE" > /dev/null 2>&1 || echo "Warning: Failed to upload $PICO_FILE"
+                    ((files_processed++))
+                else
+                    echo "Warning: File $FILE_PATH does not exist."
+                fi
             fi
-            ((files_processed++))
         fi
     done <<< "$CHANGED_FILES"
 
