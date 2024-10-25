@@ -3,6 +3,7 @@
 # Constants
 PICO_PORT="/dev/ttyACM0"  # Adjust this if your Pico is connected to a different port
 GIT_FILE="git_hash.txt"   # The name of the file to store the commit hash on the board
+SOURCE_DIR="src"          # Define the folder in the repo to be mapped to Pico's root
 
 # Function to upload the current Git commit hash to the Pico
 upload_git_hash() {
@@ -62,7 +63,7 @@ get_git_hash_from_pico() {
     echo "Retrieved commit hash from Pico: $STORED_HASH"
 }
 
-# Function to list files changed between the current Git commit and the one on the Pico
+# Function to list files changed between the current Git commit and the one on the Pico, scoped to the source directory
 list_changed_files() {
     # Retrieve the stored hash from the Pico
     get_git_hash_from_pico
@@ -74,9 +75,9 @@ list_changed_files() {
         exit 1
     fi
 
-    # List files changed between the stored hash and the current commit
-    echo "Listing changed files between commits $STORED_HASH and $CURRENT_HASH:"
-    git diff --name-only "$STORED_HASH" "$CURRENT_HASH"
+    # List files changed between the stored hash and the current commit, only within the source directory
+    echo "Listing changed files in '$SOURCE_DIR' between commits $STORED_HASH and $CURRENT_HASH:"
+    git diff --name-only "$STORED_HASH" "$CURRENT_HASH" -- "$SOURCE_DIR"
     if [ $? -ne 0 ]; then
         echo "Error: Failed to list changed files."
         exit 1
