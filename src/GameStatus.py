@@ -10,6 +10,8 @@ number_of_players=0
 time_game_start = None
 time_game_end = None
 
+
+
 #BCD two digits per byte
 def BCD_to_Int(number_BCD):
     number_int = 0
