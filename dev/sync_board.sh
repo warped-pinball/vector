@@ -89,7 +89,7 @@ full_sync() {
     else
         mpremote connect "$PICO_PORT" fs rm -r :/ > /dev/null 2>&1
         echo "Wiped Pico filesystem."
-        mpremote connect "$PICO_PORT" fs cp -r "$SOURCE_PATH/" :/ > /dev/null 2>&1
+        mpremote connect "$PICO_PORT" fs cp -r "$SOURCE_PATH/" :/ > /dev/null 2>&1 || echo "Warning: Failed to copy files to Pico."
         echo "Copied $SOURCE_PATH to Pico."
         upload_git_hash
     fi
