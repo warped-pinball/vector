@@ -3,6 +3,7 @@ from uctypes import BF_POS, BF_LEN, UINT32, BFUINT32, struct
 PIO0_BASE		= 0x50200000
 PIO1_BASE		= 0x50300000
 
+
 PIO_0_R = {
         "TXF":			0x10|UINT32,       
         "RXF":			0x20|UINT32,       
