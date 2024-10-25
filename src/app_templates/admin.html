@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warped Pinball Control Panel</title>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+        }
+        h1, .title {
+            font-family: Verdana, sans-serif;
+            font-size: 36px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .subtitle {
+            font-family: Verdana, sans-serif;
+            font-size: 48px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        h2 {
+            font-family: Verdana, sans-serif;
+            font-size: 28px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .section {
+            text-align: left;
+            margin-top: 20px;
+            padding-left: 20px;
+        }
+        .section button, .section input, .section select {
+            margin: 10px;
+        }
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: row;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .header-container img {
+            margin-right: 20px; /* Adjust this value to set the space between the image and the text */
+        }
+        .header-container .titles {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .titles h1 {
+            margin: 0;
+        }
+        .titles .subtitle {
+            margin: 0;
+        }
+        .spinner {
+            display: none;
+            margin-left: 10px;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }        
+        .loading-message {
+            display: none;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+
+    </style>
+</head>
+
+<body>
+    <hr>
+    <a href="/leader_board.html">Leader Board</a> |
+    <a href="/individual_scores.html">Individual Scores</a> |
+    <a href="/player_names.html">Player Names</a> |
+    <a href="/admin.html">Admin</a>
+    <hr>
+
+    <div class="header-container">
+        <img src="/logo.png" alt="Graphic" width="100" height="100">
+        <div class="titles">
+            <h1 class="title">Warped Pinball : SYS11.Wifi</h1>
+            <h2 class="subtitle" id="game-name">Loading...</h2>
+            <h1>Administration Panel</h1>
+        </div>
+    </div>
+
+    <hr>
+   
+    <div class="section">
+        <input type="checkbox" id="enableScoreCapture" {{ 'checked' if enableScoreCapture else '' }}>
+        <label for="enableScoreCapture">Enable Score Capture (Kinda major feature, should be on!)</label><br>        
+        
+        <input type="date" id="dateInput" value="{{datenowstr}}">
+        <button id="updateDateBtn">Set Date</button>   
+    </div>
+
+    <hr>
+    <p>File Download Actions:</p>
+    <div class="section">
+        <button id="downloadLeaderboardBtn">Download Leaderboard</button>
+        <button id="downloadPlayerNamesBtn">Download Player Names</button>        
+        <button id="downloadTournamentScoresBtn">Download Tournament Scores</button>
+        <button id="downloadLogsBtn">Download Logs</button>
+    </div>
+    <hr>
+    <p>File Upload Action:</p>
+    <div class="section">
+        <input type="file" id="fileInput">
+        <button id="uploadSystemUpdatesBtn">Upload File</button>
+    </div>
+
+    <hr>
+    <p>Leader Boards:</p>
+    <div class="section">
+        <button id="resetLeaderboardBtn">Reset Leaderboard</button>
+        <button id="resetTournamentScoresBtn">Reset Tournament Board</button>        
+    </div>
+   
+    <hr>
+    <!--
+    <p>Modify Ram:</p>
+    <p>Write Address: <input type="text" id="value1" pattern="[0-9A-Fa-f]+" placeholder="e.g., A3F"></p>
+    <p>Write Data: <input type="text" id="value2" pattern="[0-9A-Fa-f]+" placeholder="e.g., F1"></p>
+
+    <button id="WriteBtn" aria-label="Write">WRITE!</button>
+    <hr>
+    -->
+    <p>Memory Display:</p>
+    <p>Refresh counter: <span id="RCounter">Updating...</span></p>
+    <button id="addressPlusBtn" aria-label="Increase Address">Address+</button>
+    <button id="addressMinusBtn" aria-label="Decrease Address">Address-</button>
+
+    <p><span id="MemVal0">Updating...</span></p>
+    <p><span id="MemVal1">Updating...</span></p>
+    <p><span id="MemVal2">Updating...</span></p>
+    <p><span id="MemVal3">Updating...</span></p>
+    <p><span id="MemVal4">Updating...</span></p>
+    <p><span id="MemVal5">Updating...</span></p>
+    <p><span id="MemVal6">Updating...</span></p>
+    <p><span id="MemVal7">Updating...</span></p>
+    <p><span id="MemVal8">Updating...</span></p>
+    <p><span id="MemVal9">Updating...</span></p>
+    <p><span id="MemVal10">Updating...</span></p>
+    <p><span id="MemVal11">Updating...</span></p>
+    <p><span id="MemVal12">Updating...</span></p>
+    <p><span id="MemVal13">Updating...</span></p>
+    <p><span id="MemVal14">Updating...</span></p>
+    <p><span id="MemVal15">Updating...</span></p>
+
+    <button id="downloadMemoryBtn" aria-label="Download Memory Image">Download File of Memory Values</button>        
+
+    <hr>
+    <p>Game Reset Options:</p>
+    <div class="section">
+        <button id="rebootGameBtn">Reboot Game</button>
+        <button id="resetMemoryBtn">Reset Game Memory</button>
+    </div>
+    <hr>
+   
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            async function fetchGameName() {
+                try {
+                    const response = await fetch('/GameName');
+                    const data = await response.json();
+                    const gameName = data.gamename;
+                    document.getElementById('game-name').textContent = gameName;
+                    document.title = gameName;
+                } catch (error) {
+                    console.error('Failed to load game name:', error);
+                }
+            }
+
+            async function getData() {
+                const ids = Array.from({ length: 16 }, (_, i) => `MemVal${i}`);
+                ids.forEach(id => document.getElementById(id).innerHTML = 'Updating...');
+
+                const response = await fetch('/data');
+                const data = await response.json();
+
+                document.getElementById('RCounter').innerHTML = data.RCounter;
+                ids.forEach(id => {
+                    const elem = document.getElementById(id);
+                    if (elem) elem.innerHTML = data[id] ? data[id] : 'N/A';
+                });
+
+                setTimeout(getData, 5000);
+            }
+
+            document.getElementById('addressPlusBtn').onclick = async function() { await fetch('/AdrPlus'); };
+            document.getElementById('addressMinusBtn').onclick = async function() { await fetch('/AdrMinus'); };
+            
+            
+            /*
+            document.getElementById('WriteBtn').onclick = async function() {
+                const Address = document.getElementById('value1').value;
+                const Data = document.getElementById('value2').value;
+                await fetch('/write', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Address, Data })
+                });
+            };
+            */
+
+            document.getElementById('rebootGameBtn').onclick = async function() {
+                if (confirm("Reboot Pinball Machine now?")) {
+                    await fetch('/ResetGame');
+                    location.reload();
+                }
+            };
+
+            document.getElementById('resetMemoryBtn').onclick = async function() {
+                if (confirm("Reset memory and reboot pinball?")) {
+                    await fetch('/ResetGameMemory');
+                    location.reload();
+                }
+            };
+
+            document.getElementById('resetLeaderboardBtn').onclick = async function() {
+                if (confirm("Are you sure you want to clear the leaderboard scores?")) {
+                    await fetch('/leaderboardClear');
+                    location.reload();
+                }
+            };
+
+            document.getElementById('resetTournamentScoresBtn').onclick = async function() {
+                if (confirm("Are you sure you want to clear the tournament score board?")) {
+                    await fetch('/tournamentClear');
+                    location.reload();
+                }
+            };
+
+            document.getElementById('updateDateBtn').addEventListener('click', async () => {
+                const newDate = document.getElementById('dateInput').value;
+
+                try {
+                    const response = await fetch('/updateDate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ newDate: newDate })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const result = await response.json();
+                    console.log('Server response:', result);
+                } catch (error) {
+                    console.error('Failed to send new date:', error);
+                }
+            });
+
+            //File upload function  
+            document.getElementById('uploadSystemUpdatesBtn').onclick = async function(event) {
+                event.preventDefault();
+                
+                document.getElementById('uploadSystemUpdatesBtn').disabled = true; // Disable the button
+                document.getElementById('uploadSystemUpdatesBtn').textContent = "Sending...";       
+
+                const fileInput = document.getElementById('fileInput');
+                const file = fileInput.files[0];
+                
+                if (file) {
+                    try {
+                        const fileContent = await file.text(); // Read file as text
+                        const data = JSON.parse(fileContent);  // Parse the text into JSON
+                        
+                        if (Array.isArray(data)) {
+                            for (const item of data) {
+                                await sendDictionary(item);  // Send each dictionary individually
+                            }
+                            alert('All dictionaries uploaded successfully');
+                        } else {
+                            alert('File does not contain a valid JSON array.');
+                        }
+
+                        try {
+                            const resultResponse = await fetch('/upload_results');
+                            //if (resultResponse.ok) {
+                            const resultText = await resultResponse.text();
+                            alert(resultText);
+                                //document.getElementById('uploadResultDisplay').textContent = resultText;
+                            //} else {
+                             //   console.error('Failed to fetch upload results:', resultResponse.statusText);
+                             //   alert('Failed to fetch upload results');
+                            //}
+                        } catch (fetchError) {
+                                console.error('Error fetching upload results:', fetchError);
+                                alert('Error fetching upload results');
+                        }
+
+
+                    } catch (error) {
+                        console.error('Failed to process file:', error);
+                        alert('File processing failed');
+                    }
+                } else {
+                    alert('Please select a file.');
+                }
+
+                document.getElementById('uploadSystemUpdatesBtn').disabled = false; 
+                document.getElementById('uploadSystemUpdatesBtn').textContent = "Upload File";       
+
+            };
+
+            // Function to send each dictionary to the server
+            async function sendDictionary(dict) {
+                const formData = new FormData();
+                formData.append('dictionary', JSON.stringify(dict));  // Convert the dictionary to a JSON string
+
+                try {
+                    const response = await fetch('/upload_file', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    console.log('Dictionary uploaded successfully');
+                } catch (error) {
+                    console.error('Failed to upload dictionary:', error);
+                    alert('Dictionary upload failed');
+                }
+            }
+           
+
+            document.getElementById('downloadMemoryBtn').onclick = async function() {
+                console.log("Downloading memory image"); 
+                const response = await fetch('/download_memory');
+
+                if (!response.ok) {
+                    console.error('Failed to download file');
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let content = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    content += decoder.decode(value, { stream: true });
+                }
+
+                const fileName = prompt("Enter the file name for the download:", "MemoryImage.txt");
+                if (fileName) {
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+                    element.setAttribute('download', fileName);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+            };
+
+
+
+
+
+            document.getElementById('downloadLeaderboardBtn').onclick = async function() {
+                console.log("Downloading leaderboard scores..."); 
+                const response = await fetch('/download_leaders');
+                const data = await response.json();
+                const fileName = prompt("Enter the file name for the download:", "Leaders.json");
+                if (fileName) {
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(data.body));
+                    element.setAttribute('download', fileName);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+            };
+
+            document.getElementById('downloadTournamentScoresBtn').onclick = async function() {
+                console.log("Downloading tournament scores..."); 
+                const response = await fetch('/download_tournament');
+                const data = await response.json();
+                const fileName = prompt("Enter the file name for the download:", "Tournament.json");
+                if (fileName) {
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(data.body));
+                    element.setAttribute('download', fileName);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+            };
+
+            document.getElementById('downloadLogsBtn').onclick = async function() {
+                document.getElementById('downloadLogsBtn').disabled = true; // Disable the button
+                document.getElementById('downloadLogsBtn').textContent = "Preparing Download...";               
+
+                console.log("Downloading log file...");
+                const response = await fetch('/download_log');
+
+                if (!response.ok) {
+                    console.error("Failed to download the log file.");
+                    return;
+                }
+
+                const blob = await response.blob();  // Handle the response as a blob (binary data)
+                const fileName = prompt("Enter the file name for the download:", "Log.txt");
+                
+                if (fileName) {
+                    const url = window.URL.createObjectURL(blob);
+                    const element = document.createElement('a');
+                    element.setAttribute('href', url);
+                    element.setAttribute('download', fileName);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+
+                    window.URL.revokeObjectURL(url);  // Clean up the object URL
+                }
+
+                document.getElementById('downloadLogsBtn').textContent = "Download Logs";        
+                document.getElementById('downloadLogsBtn').disabled = false; 
+            };
+ 
+
+            document.getElementById('downloadPlayerNamesBtn').onclick = async function() {
+                const response = await fetch('/download_names');
+                const data = await response.json();
+                const fileName = prompt("Enter the file name for the download:", "Names.json");
+                if (fileName) {
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(data.body));
+                    element.setAttribute('download', fileName);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+            };
+
+        async function sendCheckboxValue() {
+                const enableScoreCapture = document.getElementById('enableScoreCapture').checked;
+
+                try {
+                    const response = await fetch('/setEnableScoreCapture', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ enableScoreCapture: enableScoreCapture })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const result = await response.json();
+                    console.log('Server response:', result);
+                } catch (error) {
+                    console.error('Failed to send checkbox value:', error);
+                }
+            }
+
+        // Attach the sendCheckboxValue function to the change event of the checkbox
+        document.getElementById('enableScoreCapture').addEventListener('change', sendCheckboxValue);
+
+            fetchGameName();
+            getData();
+        });
+    </script>
+</body>
+</html>
