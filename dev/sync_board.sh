@@ -1,135 +1,114 @@
+# steps we need to take:
+# "build" project to temp dir
+    # minify html, css, & js
+    # compile micropython to byte code
+
+# calculate hashes for each file and put into an index
+# mount the computer dir to the pico
+# copy micro python program onto board
+    # walk all files (except those in /remote), and calculate their hash
+    # if the hash is different for the path, copy the corresponding file from mount
+    # if path isn't in list of hashes, delete it
+    # if a hash is in the index with no corresponding file, copy it over
+
+
+
+
+
+
+
+
 #!/bin/bash
 
 # Constants
-PICO_PORT="/dev/ttyACM0"  # Adjust this if your Pico is connected to a different port
-GIT_FILE="git_hash.txt"   # The name of the file to store the commit hash on the board
-SOURCE_DIR="src"          # Define the folder in the repo to be mapped to Pico's root directory
+PICO_PORT="/dev/ttyACM0"
+SOURCE_PATH="$(pwd)/../src"  # Adjust as needed
+MOUNT_POINT="/mnt/pico"
 
-# Get the directory of the currently executing script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_PATH="$SCRIPT_DIR/../$SOURCE_DIR"  # Full path to the source directory
+# Create the mount point if it doesn't exist
+mkdir -p "$MOUNT_POINT"
 
-# Helper to retrieve the current Git hash stored on the Pico
-get_git_hash_from_pico() {
-    TEMP_FILE="pico_$GIT_FILE"
-    mpremote connect "$PICO_PORT" fs cp :/"$GIT_FILE" "$TEMP_FILE" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo "No previous commit hash found on the Pico."
-        return 1
-    fi
-    STORED_HASH=$(cat "$TEMP_FILE")
-    rm -f "$TEMP_FILE"
-    echo "$STORED_HASH"
-}
-
-# Helper to update the Git hash on the Pico
-upload_git_hash() {
-    COMMIT_HASH=$(git rev-parse HEAD)
-    echo "$COMMIT_HASH" > "$GIT_FILE"
-    mpremote connect "$PICO_PORT" fs cp "$GIT_FILE" :/"$GIT_FILE" > /dev/null 2>&1
-    rm -f "$GIT_FILE"
-    echo "Updated Pico commit hash to: $COMMIT_HASH"
-}
-
-# Sync files based on hash comparison
-sync_files() {
+# Function to sync changed files based on git diff
+sync_changed_files() {
     local dry_run=$1
+    echo "Syncing changed files in '$SOURCE_PATH' to Pico..."
 
-    # Get the commit hash currently stored on the Pico
-    STORED_HASH=$(get_git_hash_from_pico)
-    CURRENT_HASH=$(git rev-parse HEAD)
-
-    # If the hashes match, skip syncing
-    if [[ "$STORED_HASH" == "$CURRENT_HASH" ]]; then
-        echo "No changes to sync; Pico is already up-to-date with commit $CURRENT_HASH."
+    # Get the list of changed files
+    local changed_files=$(git diff --name-only HEAD~1 HEAD -- "$SOURCE_PATH" | sed "s|^$SOURCE_PATH/||")
+    if [[ -z "$changed_files" ]]; then
+        echo "No files changed in the last commit."
         return
     fi
 
-    # Get list of changed files based on Git diff, scoped to SOURCE_DIR
-    CHANGED_FILES=$(git diff --name-status "$STORED_HASH" "$CURRENT_HASH" -- "$SOURCE_PATH")
-
-    # Track if there are changes to process
-    files_processed=0
-
-    # Process each file for upload
-    while IFS= read -r line; do
-        FILE_STATUS=$(echo "$line" | awk '{print $1}')
-        FILE_PATH=$(echo "$line" | awk '{print $2}')
-
-        if [ "$FILE_STATUS" != "D" ]; then
-            PICO_FILE=$(echo "$FILE_PATH" | sed "s|^$SOURCE_PATH/||")
-
+    # Process each changed file
+    for file in $changed_files; do
+        if [[ -f "$SOURCE_PATH/$file" ]]; then
             if [[ "$dry_run" -eq 1 ]]; then
-                echo "Dry run: Would upload $FILE_PATH as /$PICO_FILE"
+                echo "Dry run: Would upload '$SOURCE_PATH/$file' to '/$file' on Pico."
             else
-                if [ -f "$FILE_PATH" ]; then  # Ensure the file exists before uploading
-                    echo "Uploading $FILE_PATH as /$PICO_FILE"
-                    mpremote connect "$PICO_PORT" fs cp "$FILE_PATH" :/"$PICO_FILE" > /dev/null 2>&1 || echo "Warning: Failed to upload $PICO_FILE"
-                    ((files_processed++))
-                else
-                    echo "Warning: File $FILE_PATH does not exist."
+                echo "Uploading '$SOURCE_PATH/$file' to '/$file' on Pico..."
+                mpremote connect "$PICO_PORT" fs put "$SOURCE_PATH/$file" "/$file"
+                if [[ $? -ne 0 ]]; then
+                    echo "Warning: Failed to upload '$SOURCE_PATH/$file'."
                 fi
             fi
+        else
+            echo "File '$SOURCE_PATH/$file' does not exist."
         fi
-    done <<< "$CHANGED_FILES"
-
-    # If no files were processed, notify the user
-    if [ "$files_processed" -eq 0 ]; then
-        echo "No files to sync."
-    else
-        # Update commit hash on the Pico if not a dry run
-        if [ "$dry_run" -ne 1 ]; then
-            upload_git_hash
-        fi
-    fi
-}
-
-# Full sync function to wipe and copy entire src directory
-full_sync() {
-    local dry_run=$1
-    echo "Performing full sync of $SOURCE_PATH to Pico's root directory..."
-
-    if [[ "$dry_run" -eq 1 ]]; then
-        echo "Dry run: Would wipe the Pico and copy $SOURCE_PATH recursively."
-    else
-        mpremote connect "$PICO_PORT" fs rm -r :/ > /dev/null 2>&1
-        echo "Wiped Pico filesystem."
-        mpremote connect "$PICO_PORT" fs cp -r "$SOURCE_PATH/" :/ > /dev/null 2>&1 || echo "Warning: Failed to copy files to Pico."
-        echo "Copied $SOURCE_PATH to Pico."
-        upload_git_hash
-    fi
-}
-
-# Main script logic
-main() {
-    local dry_run=0
-    local full_sync=0
-
-    # Parse command line options
-    while [[ "$#" -gt 0 ]]; do
-        case "$1" in
-            -f|--full-sync)
-                full_sync=1
-                ;;
-            --dry-run)
-                dry_run=1
-                ;;
-            *)
-                echo "Usage: $0 [-f|--full-sync] [--dry-run]"
-                exit 1
-                ;;
-        esac
-        shift
     done
 
-    if [[ "$full_sync" -eq 1 ]]; then
-        echo "Starting full sync..."
-        full_sync "$dry_run"
+    # Update the commit hash on the Pico
+    upload_git_hash
+}
+
+# Function to perform a full sync of the src directory
+full_sync() {
+    local dry_run=$1
+    echo "Performing full sync of '$SOURCE_PATH' to Pico's root directory..."
+
+    if [[ "$dry_run" -eq 1 ]]; then
+        echo "Dry run: Would wipe the Pico and copy '$SOURCE_PATH' recursively."
     else
-        echo "Starting sync..."
-        sync_files "$dry_run"
+        # Wipe the Pico filesystem by mounting
+        echo "Mounting Pico filesystem..."
+        mpremote mount "$PICO_PORT" "$MOUNT_POINT" || {
+            echo "Error: Failed to mount Pico filesystem."
+            return 1
+        }
+
+        # Copy the source directory to Pico
+        echo "Copying '$SOURCE_PATH' to Pico..."
+        cp -r "$SOURCE_PATH/." "$MOUNT_POINT/"  # Use recursive copy to the mount point
+        if [[ $? -ne 0 ]]; then
+            echo "Warning: Failed to copy files to Pico."
+        else
+            echo "Successfully copied '$SOURCE_PATH' to Pico."
+        fi
+
+        # Unmount the Pico filesystem after the operation
+        mpremote umount "$MOUNT_POINT"
+        echo "Unmounted Pico filesystem."
     fi
 }
 
-# Run the main function with provided arguments
-main "$@"
+# Function to upload the current git hash to the Pico
+upload_git_hash() {
+    local hash=$(git rev-parse HEAD)
+    echo "Updating Pico commit hash to: $hash"
+    echo "$hash" | mpremote connect "$PICO_PORT" fs put - "/git_hash.txt"
+}
+
+# Main script
+case $1 in
+    --full-sync)
+        full_sync 0  # 0 means no dry run
+        ;;
+    --dry-run)
+        echo "Dry run: Sync operations will not be performed."
+        sync_changed_files 1  # 1 means dry run
+        ;;
+    *)
+        echo "Usage: $0 [--full-sync|--dry-run]"
+        exit 1
+        ;;
+esac
