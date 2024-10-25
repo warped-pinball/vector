@@ -3,7 +3,11 @@
 # Constants
 PICO_PORT="/dev/ttyACM0"  # Adjust this if your Pico is connected to a different port
 GIT_FILE="git_hash.txt"   # The name of the file to store the commit hash on the board
-SOURCE_DIR="src"          # Define the folder in the repo to be mapped to Pico's root
+SOURCE_DIR="src"          # Define the folder in the repo to be mapped to Pico's root directory
+
+# Get the directory of the currently executing script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_PATH="$SCRIPT_DIR/../$SOURCE_DIR"  # Full path to the source directory
 
 # Helper to retrieve the current Git hash stored on the Pico
 get_git_hash_from_pico() {
@@ -42,7 +46,7 @@ sync_files() {
     fi
 
     # Get list of changed files based on Git diff, scoped to SOURCE_DIR
-    CHANGED_FILES=$(git diff --name-status "$STORED_HASH" "$CURRENT_HASH" -- "$SOURCE_DIR")
+    CHANGED_FILES=$(git diff --name-status "$STORED_HASH" "$CURRENT_HASH" -- "$SOURCE_PATH")
 
     # Track if there are changes to process
     files_processed=0
@@ -51,7 +55,7 @@ sync_files() {
     while IFS= read -r line; do
         FILE_STATUS=$(echo "$line" | awk '{print $1}')
         FILE_PATH=$(echo "$line" | awk '{print $2}')
-        PICO_FILE=$(echo "$FILE_PATH" | sed "s|^$SOURCE_DIR/||")
+        PICO_FILE=$(echo "$FILE_PATH" | sed "s|^$SOURCE_PATH/||")
 
         if [ "$FILE_STATUS" != "D" ]; then
             if [[ "$dry_run" -eq 1 ]]; then
@@ -78,15 +82,15 @@ sync_files() {
 # Full sync function to wipe and copy entire src directory
 full_sync() {
     local dry_run=$1
-    echo "Performing full sync of $SOURCE_DIR to Pico's root directory..."
+    echo "Performing full sync of $SOURCE_PATH to Pico's root directory..."
 
     if [[ "$dry_run" -eq 1 ]]; then
-        echo "Dry run: Would wipe the Pico and copy $SOURCE_DIR recursively."
+        echo "Dry run: Would wipe the Pico and copy $SOURCE_PATH recursively."
     else
         mpremote connect "$PICO_PORT" fs rm -r :/ > /dev/null 2>&1
         echo "Wiped Pico filesystem."
-        mpremote connect "$PICO_PORT" fs cp -r "$SOURCE_DIR/" :/ > /dev/null 2>&1
-        echo "Copied $SOURCE_DIR to Pico."
+        mpremote connect "$PICO_PORT" fs cp -r "$SOURCE_PATH/" :/ > /dev/null 2>&1
+        echo "Copied $SOURCE_PATH to Pico."
         upload_git_hash
     fi
 }
