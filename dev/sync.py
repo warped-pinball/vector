@@ -152,7 +152,7 @@ def copy_files_to_pico():
 def restart_pico():
     """Restart the Pico."""
     print("Restarting the Pico...")
-    cmd = f"mpremote connect {PICO_PORT} exec 'import machine; machine.reset()'"
+    cmd = f"mpremote connect {PICO_PORT} exec --no-follow 'import machine; machine.reset()'"
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error restarting the Pico.")
