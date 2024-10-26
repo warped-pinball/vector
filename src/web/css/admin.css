@@ -1,0 +1,71 @@
+body {
+    font-family: Verdana, sans-serif;
+}
+h1, .title {
+    font-family: Verdana, sans-serif;
+    font-size: 36px;
+    text-align: center;
+    margin-top: 20px;
+}
+.subtitle {
+    font-family: Verdana, sans-serif;
+    font-size: 48px;
+    text-align: center;
+    margin-top: 10px;
+}
+h2 {
+    font-family: Verdana, sans-serif;
+    font-size: 28px;
+    text-align: center;
+    margin-top: 10px;
+}
+.section {
+    text-align: left;
+    margin-top: 20px;
+    padding-left: 20px;
+}
+.section button, .section input, .section select {
+    margin: 10px;
+}
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    text-align: center;
+    margin-top: 20px;
+}
+.header-container img {
+    margin-right: 20px; /* Adjust this value to set the space between the image and the text */
+}
+.header-container .titles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.titles h1 {
+    margin: 0;
+}
+.titles .subtitle {
+    margin: 0;
+}
+.spinner {
+    display: none;
+    margin-left: 10px;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}        
+.loading-message {
+    display: none;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+}

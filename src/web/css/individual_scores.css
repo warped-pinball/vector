@@ -1,0 +1,102 @@
+body {
+    font-family: Verdana, sans-serif;
+    margin: 0; /* Remove default margin */
+    padding: 20px; /* Add padding around the body to create space */
+}
+h1, .title {
+    font-family: Verdana, sans-serif;
+    font-size: 36px;
+    text-align: center;
+    margin-top: 20px;
+}
+.subtitle {
+    font-family: Verdana, sans-serif;
+    font-size: 48px;
+    text-align: center;
+    margin-top: 10px;
+}
+h2 {
+    font-family: Verdana, sans-serif;
+    font-size: 28px;
+    text-align: center;
+    margin-top: 10px;
+}
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space between elements to align the selection box and logo */
+    flex-direction: row;
+    text-align: center;
+    margin-top: 20px;
+    padding: 0 60px; /* Add padding to create space on the left and right sides */
+}
+.header-container img {
+    margin-right: 20px; /* Adjust this value to set the space between the image and the text */
+}
+.header-container .titles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1; /* Allow titles section to take up remaining space */
+}
+.titles h1 {
+    margin: 0;
+}
+.titles .subtitle {
+    margin: 0;
+}
+.select-container {
+    margin-left: 20px; /* Align to the left within the flex container */
+    font-size: 20px; /* Adjust the font size as needed */
+    padding: 10px;   /* Add some padding for better readability */
+}
+.flex-container {
+    display: flex;
+    justify-content: center; /* Center items horizontally */
+    align-items: center;
+    margin-top: 20px;
+    width: 100%; /* Ensure the container takes the full width */
+}
+.subtitle {
+    margin: 0; /* Remove default margins */
+    text-align: center; /* Ensure the text is centered */
+    flex: 1; /* Make sure the player name expands to take available space */
+}
+.table-container {
+    display: flex;
+    justify-content: center; /* Center items horizontally */
+    width: 100%; /* Ensure the container takes the full width */
+    margin-top: 20px;
+}
+table {
+    border-collapse: collapse;
+    table-layout: auto; /* Let the browser decide the column widths */
+    margin: 0 auto; /* Center the table */
+}
+table, th, td {
+    border: 1px solid black;
+}
+th, td {
+    padding: 5px;
+    text-align: left;
+    width: 50%;
+}
+th {
+    /*max-width: 100px; /* Maximum width for header cells */
+    width: 150px;
+}
+td {
+    /*max-width: 150px; /* Maximum width for data cells */
+    width: 150px;
+    /*word-wrap: break-word; /* Allow breaking long words */
+}
+
+.delete-button-container {
+    text-align: center;
+    margin-top: 20px;
+}
+.delete-button {
+    font-size: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
