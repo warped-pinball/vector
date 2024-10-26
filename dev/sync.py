@@ -43,11 +43,19 @@ for entry in os.listdir('/'):
         sys.exit(1)
 
 def compile_py_files():
-    """Compile .py files to .mpy bytecode."""
+    """Compile .py files to .mpy bytecode, handling boot.py and main.py separately."""
     print("Compiling .py files to .mpy...")
     if os.path.exists(BUILD_DIR):
         shutil.rmtree(BUILD_DIR)
     shutil.copytree(SOURCE_DIR, BUILD_DIR)
+
+    # Rename boot.py and main.py to mboot.py and mmain.py
+    boot_py = os.path.join(BUILD_DIR, 'boot.py')
+    main_py = os.path.join(BUILD_DIR, 'main.py')
+    if os.path.exists(boot_py):
+        os.rename(boot_py, os.path.join(BUILD_DIR, 'mboot.py'))
+    if os.path.exists(main_py):
+        os.rename(main_py, os.path.join(BUILD_DIR, 'mmain.py'))
 
     # Find and compile all .py files in BUILD_DIR
     for root, dirs, files in os.walk(BUILD_DIR):
@@ -62,6 +70,27 @@ def compile_py_files():
                     sys.exit(1)
                 # Remove the .py file after compilation
                 os.remove(py_file)
+
+    # Create minimal boot.py and main.py
+    create_minimal_boot_main()
+
+def create_minimal_boot_main():
+    """Create minimal boot.py and main.py that import mboot.mpy and mmain.mpy."""
+    print("Creating minimal boot.py and main.py...")
+
+    # Create boot.py if mboot.mpy exists
+    mboot_mpy = os.path.join(BUILD_DIR, 'mboot.mpy')
+    if os.path.exists(mboot_mpy):
+        boot_py_content = "import mboot\n"
+        with open(os.path.join(BUILD_DIR, 'boot.py'), 'w') as f:
+            f.write(boot_py_content)
+
+    # Create main.py if mmain.mpy exists
+    mmain_mpy = os.path.join(BUILD_DIR, 'mmain.mpy')
+    if os.path.exists(mmain_mpy):
+        main_py_content = "import mmain\n"
+        with open(os.path.join(BUILD_DIR, 'main.py'), 'w') as f:
+            f.write(main_py_content)
 
 def minify_js_files():
     """Minify JavaScript files."""
@@ -120,6 +149,16 @@ def copy_files_to_pico():
         os.chdir(original_dir)
     print("Sync complete.")
 
+def restart_pico():
+    """Restart the Pico."""
+    print("Restarting the Pico...")
+    cmd = f"mpremote connect {PICO_PORT} exec 'import machine; machine.reset()'"
+    result = subprocess.run(cmd, shell=True)
+    if result.returncode != 0:
+        print("Error restarting the Pico.")
+        sys.exit(1)
+    print("Pico restarted.")
+
 def main():
     try:
         check_mpy_cross()
@@ -128,6 +167,7 @@ def main():
         minify_js_files()
         minify_css_files()
         copy_files_to_pico()
+        restart_pico()
     except KeyboardInterrupt:
         print("\nProcess interrupted by user.")
         sys.exit(1)
