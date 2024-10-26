@@ -56,6 +56,48 @@ Pico_Led.off()
 #print("thres----  ",gc.threshold())
 gc.threshold(2048 * 6) 
 
+def serve_static_file(request):
+    path = request.path
+
+    if path.startswith('/css/') or path.startswith('/js/') or path.startswith('/html/'):
+        # Map URL path to file system path
+        file_path = 'web' + path
+
+        # Prevent path traversal attacks
+        if '..' in file_path or file_path.startswith('/'):
+            return "Invalid file path.", 400
+
+        # Determine the content type based on file extension
+        content_type = get_content_type(file_path)
+
+        try:
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            # Return the content with appropriate headers
+            return content, 200, {'Content-Type': content_type}
+        except OSError:
+            # File not found
+            return "File not found.", 404
+    else:
+        # If path doesn't match, return 404
+        return "Not found.", 404
+
+def get_content_type(file_path):
+    if file_path.endswith('.css'):
+        return 'text/css'
+    elif file_path.endswith('.js'):
+        return 'application/javascript'
+    elif file_path.endswith('.html'):
+        return 'text/html'
+    elif file_path.endswith('.png'):
+        return 'image/png'
+    elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
+        return 'image/jpeg'
+    elif file_path.endswith('.gif'):
+        return 'image/gif'
+    else:
+        return 'application/octet-stream'
+
 
 def setup_mode(fault_msg):
     Pico_Led.start_fast_blink()    
@@ -84,9 +126,12 @@ def setup_mode(fault_msg):
         return render_template(f"{AP_TEMPLATE_PATH}/configured.html", ssid = request.form["ssid"])
         
     def ap_catch_all(request):
+        path = request.path
+        if path.startswith('/css/') or path.startswith('/js/') or path.startswith('/html/'):
+            return serve_static_file(request)
+        
         if request.headers.get("host") != AP_DOMAIN:
             return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
-        return "Not found.", 404
 
     def splitext(filename):
         dot_index = filename.rfind('.')
@@ -148,8 +193,9 @@ def application_mode(fault_msg):
     print("WIFI: Entering application mode.")       
     
     def app_catch_all(request):
-        return "Not found.", 404
-        
+        return serve_static_file(request)
+
+
     def app_adr_plus(request):
         global adr_display
         if (adr_display<(2048-256)):
