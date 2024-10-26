@@ -106,11 +106,18 @@ def minify_css_files():
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""
     print("Copying files to Pico...")
-    cmd = f"mpremote connect {PICO_PORT} fs cp -r {BUILD_DIR}/* :"
-    result = subprocess.run(cmd, shell=True)
-    if result.returncode != 0:
-        print("Error copying files to Pico.")
-        sys.exit(1)
+    # Change to the BUILD_DIR to ensure relative paths are correct
+    original_dir = os.getcwd()
+    os.chdir(BUILD_DIR)
+    try:
+        cmd = f"mpremote connect {PICO_PORT} fs cp -r . :"
+        result = subprocess.run(cmd, shell=True)
+        if result.returncode != 0:
+            print("Error copying files to Pico.")
+            sys.exit(1)
+    finally:
+        # Change back to the original directory
+        os.chdir(original_dir)
     print("Sync complete.")
 
 def main():
