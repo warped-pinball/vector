@@ -1,18 +1,34 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 import os
 import sys
 import subprocess
 import shutil
 from pathlib import Path
+import argparse
+import serial.tools.list_ports
 
 # Configuration
-PICO_PORT = '/dev/ttyACM0'  # Update this to your Pico's port
-SOURCE_DIR = 'src'          # Source directory containing your code
-BUILD_DIR = 'build'         # Build directory for compiled and minified files
-MPY_CROSS = 'mpy-cross'     # Path to the mpy-cross compiler
-JS_MINIFY_DIRS = ['src/js']     # Directories containing JavaScript files to minify
-CSS_MINIFY_DIRS = ['src/css']   # Directories containing CSS files to minify
+PICO_PORT = None  # Placeholder for auto-detected port
+SOURCE_DIR = 'src'  # Source directory containing your code
+BUILD_DIR = 'build'  # Build directory for compiled and minified files
+MPY_CROSS = 'mpy-cross'  # Path to the mpy-cross compiler
+JS_MINIFY_DIRS = ['src/js']  # Directories containing JavaScript files to minify
+CSS_MINIFY_DIRS = ['src/css']  # Directories containing CSS files to minify
+GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
+
+def autodetect_pico_port():
+    """Auto-detect the Pico port using mpremote."""
+    try:
+        result = subprocess.run("mpremote connect list", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            output = result.stdout.decode().strip()
+            if output:
+                return output.split('\n')[0].split()[0]
+        print("Unable to detect Pico port using mpremote. Please specify the correct port manually.")
+    except Exception as e:
+        print(f"Error detecting Pico port: {e}")
+    sys.exit(1)
 
 def check_mpy_cross():
     """Check if mpy-cross is available."""
@@ -24,19 +40,7 @@ def check_mpy_cross():
 def wipe_pico():
     """Wipe all files from the Pico."""
     print("Wiping Pico's filesystem...")
-    cmd = f"""mpremote connect {PICO_PORT} exec "
-import os
-def remove(path):
-    try:
-        os.remove(path)
-    except OSError:
-        # It's a directory
-        for entry in os.listdir(path):
-            remove('/'.join((path, entry)))
-        os.rmdir(path)
-for entry in os.listdir('/'):
-    remove('/' + entry)
-" """
+    cmd = f"mpremote connect {PICO_PORT} exec \"import os\ndef remove(path):\n    try:\n        os.remove(path)\n    except OSError:\n        for entry in os.listdir(path):\n            remove('/'.join((path, entry)))\n        os.rmdir(path)\nfor entry in os.listdir('/'):\n    remove('/' + entry)\" "
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error wiping Pico's filesystem.")
@@ -49,7 +53,6 @@ def compile_py_files():
         shutil.rmtree(BUILD_DIR)
     shutil.copytree(SOURCE_DIR, BUILD_DIR)
 
-    # Rename boot.py and main.py to mboot.py and mmain.py
     boot_py = os.path.join(BUILD_DIR, 'boot.py')
     main_py = os.path.join(BUILD_DIR, 'main.py')
     if os.path.exists(boot_py):
@@ -57,35 +60,27 @@ def compile_py_files():
     if os.path.exists(main_py):
         os.rename(main_py, os.path.join(BUILD_DIR, 'mmain.py'))
 
-    # Find and compile all .py files in BUILD_DIR
     for root, dirs, files in os.walk(BUILD_DIR):
         for file in files:
             if file.endswith('.py'):
                 py_file = os.path.join(root, file)
-                # Compile to .mpy
                 cmd = f"{MPY_CROSS} {py_file}"
                 result = subprocess.run(cmd, shell=True)
                 if result.returncode != 0:
                     print(f"Error compiling {py_file}")
                     sys.exit(1)
-                # Remove the .py file after compilation
                 os.remove(py_file)
 
-    # Create minimal boot.py and main.py
     create_minimal_boot_main()
 
 def create_minimal_boot_main():
     """Create minimal boot.py and main.py that import mboot.mpy and mmain.mpy."""
     print("Creating minimal boot.py and main.py...")
-
-    # Create boot.py if mboot.mpy exists
     mboot_mpy = os.path.join(BUILD_DIR, 'mboot.mpy')
     if os.path.exists(mboot_mpy):
         boot_py_content = "import mboot\n"
         with open(os.path.join(BUILD_DIR, 'boot.py'), 'w') as f:
             f.write(boot_py_content)
-
-    # Create main.py if mmain.mpy exists
     mmain_mpy = os.path.join(BUILD_DIR, 'mmain.mpy')
     if os.path.exists(mmain_mpy):
         main_py_content = "import mmain\n"
@@ -135,7 +130,6 @@ def minify_css_files():
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""
     print("Copying files to Pico...")
-    # Change to the BUILD_DIR to ensure relative paths are correct
     original_dir = os.getcwd()
     os.chdir(BUILD_DIR)
     try:
@@ -145,7 +139,6 @@ def copy_files_to_pico():
             print("Error copying files to Pico.")
             sys.exit(1)
     finally:
-        # Change back to the original directory
         os.chdir(original_dir)
     print("Sync complete.")
 
@@ -159,15 +152,94 @@ def restart_pico():
         sys.exit(1)
     print("Pico restarted.")
 
+def write_git_commit():
+    """Write the current git commit hash to a file."""
+    print("Writing git commit hash...")
+    result = subprocess.run("git rev-parse HEAD", shell=True, stdout=subprocess.PIPE)
+    if result.returncode == 0:
+        commit_hash = result.stdout.decode().strip()
+        with open(os.path.join(BUILD_DIR, GIT_COMMIT_FILE), 'w') as f:
+            f.write(commit_hash + "\n")
+    else:
+        print("Error obtaining git commit hash.")
+        sys.exit(1)
+
+def read_git_commit_on_pico():
+    """Read the git commit hash from the file on the Pico."""
+    print("Reading git commit hash from Pico...")
+    cmd = f"mpremote connect {PICO_PORT} fs cat {GIT_COMMIT_FILE}"
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        if "ENOENT" in result.stderr.decode():
+            print(f"Git commit file '{GIT_COMMIT_FILE}' not found on Pico.")
+        else:
+            print("Error reading git commit hash from Pico.")
+    else:
+        print("Current git commit on Pico:")
+        print(result.stdout.decode().strip())
+
 def main():
+    parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawTextHelpFormatter,
+    description="Pico Deployment Script",
+    epilog='\n'.join([
+        "Examples:",
+        "  python script.py --steps all",
+        "    Run all steps in order.",
+        " ",
+        "  python script.py --steps compile minify_js copy restart",
+        "    Compile Python files, minify JavaScript, copy files to Pico, and restart.",
+        " ",
+        "  python script.py --skip wipe",
+        "    Run all steps except wiping the Pico filesystem.",
+        " ",
+        "Steps are executed in the following order:",
+        "  1. read_commit - Read the current git commit hash on the Pico.",
+        "  2. wipe - Wipe the Pico filesystem.",
+        "  3. compile - Compile Python files to .mpy.",
+        "  4. minify_js - Minify JavaScript files.",
+        "  5. minify_css - Minify CSS files.",
+        "  6. write_commit - Write the current git commit hash to a file.",
+        "  7. copy - Copy files to the Pico.",
+        "  8. restart - Restart the Pico.",
+    ])
+)
+    parser.add_argument(
+        "--steps", nargs='+', 
+        help="Specify steps to run in order (all, wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit).\n If 'all' is specified, all steps will be run in the defined order."
+    )
+    parser.add_argument(
+        "--skip", nargs='+', 
+        help="Specify steps to skip (wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit).\n This can be used to avoid specific operations during the deployment."
+    )
+    args = parser.parse_args()
+
+    global PICO_PORT
+    PICO_PORT = autodetect_pico_port()
+
+    steps_to_run = [
+        ("read_commit", read_git_commit_on_pico),
+        ("wipe", wipe_pico),
+        ("compile", compile_py_files),
+        ("minify_js", minify_js_files),
+        ("minify_css", minify_css_files),
+        ("write_commit", write_git_commit),
+        ("copy", copy_files_to_pico),
+        ("restart", restart_pico),
+    ]
+
+    if args.steps and "all" not in args.steps:
+        selected_steps = [step for step, func in steps_to_run if step in args.steps]
+    else:
+        selected_steps = [step for step, func in steps_to_run]
+
+    if args.skip:
+        selected_steps = [step for step in selected_steps if step not in args.skip]
+
     try:
-        check_mpy_cross()
-        wipe_pico()
-        compile_py_files()
-        minify_js_files()
-        minify_css_files()
-        copy_files_to_pico()
-        restart_pico()
+        for step, func in steps_to_run:
+            if step in selected_steps:
+                func()
     except KeyboardInterrupt:
         print("\nProcess interrupted by user.")
         sys.exit(1)
