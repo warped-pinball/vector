@@ -10,6 +10,8 @@ import serial.tools.list_ports
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
+REPL_RETRY_DELAY = 2  # Delay between retries in seconds
+REPL_MAX_RETRIES = 5  # Maximum number of retries to connect to REPL
 SOURCE_DIR = 'src'  # Source directory containing your code
 BUILD_DIR = 'build'  # Build directory for compiled and minified files
 MPY_CROSS = 'mpy-cross'  # Path to the mpy-cross compiler
@@ -178,6 +180,24 @@ def read_git_commit_on_pico():
         print("Current git commit on Pico:")
         print(result.stdout.decode().strip())
 
+def connect_to_repl():
+    """Connect to the Pico REPL with retries."""
+    import time
+    retries = 0
+    while retries < REPL_MAX_RETRIES:
+        print(f"Attempting to connect to Pico REPL (try {retries + 1}/{REPL_MAX_RETRIES})...")
+        cmd = f"mpremote connect {PICO_PORT} repl"
+        result = subprocess.run(cmd, shell=True)
+        if result.returncode == 0:
+            print("Connected to Pico REPL.")
+            return
+        else:
+            print("Error connecting to Pico REPL. Retrying...")
+            retries += 1
+            time.sleep(REPL_RETRY_DELAY)
+    print(f"Failed to connect to Pico REPL after {REPL_MAX_RETRIES} attempts.")
+    sys.exit(1)
+
 def main():
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawTextHelpFormatter,
@@ -202,15 +222,16 @@ def main():
         "  6. write_commit - Write the current git commit hash to a file.",
         "  7. copy - Copy files to the Pico.",
         "  8. restart - Restart the Pico.",
+        "  9. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
         "--steps", nargs='+', 
-        help="Specify steps to run in order (all, wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit).\n If 'all' is specified, all steps will be run in the defined order."
+        help="Specify steps to run in order. Default: all"
     )
     parser.add_argument(
         "--skip", nargs='+', 
-        help="Specify steps to skip (wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit).\n This can be used to avoid specific operations during the deployment."
+        help="Specify steps to skip, Default: none"
     )
     args = parser.parse_args()
 
@@ -226,6 +247,7 @@ def main():
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
         ("restart", restart_pico),
+        ("connect_repl", connect_to_repl),
     ]
 
     if args.steps and "all" not in args.steps:
