@@ -1,98 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Warped Pinball</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Include Pico.css -->
-    <link rel="stylesheet" href="/css/pico.min.css">
-</head>
-<body>
+    <style>
+        /* Style for the select element */
+        select {
+            font-size: 20px; /* Adjust the font size as needed */
+            padding: 20px;   /* Add some padding for better readability */
+        }
 
-    <!-- Warning Banner -->
-    {% if warning_message %}
-    <article style="background-color: red; color: white; padding: 1rem; text-align: center;">
-        <p>{{ warning_message }}</p>
-    </article>
-    {% endif %}
+        /* Style for labels, paragraphs, and input fields */
+        label, p, input {
+            font-size: 20px; /* Match the font size to the select elements */
+            padding: 5px;
+            margin: 5px;
+        }
 
-    <main class="container">
-        <h1>Warped Pinball Device Setup</h1>
-        <p>Please input your Wi-Fi information. (Capitalization is important)</p>
+        /* Style for input fields */
+        input[type="text"] {
+            width: 60%; /* Adjust the width as needed */
+            max-width: 400px; /* Limit the width on larger screens */
+            box-sizing: border-box;
+        }
 
+        /* Style for the Save button */
+        button {
+            font-size: 20px; /* Match the button font size as well */
+            padding: 15px 30px;
+            cursor: pointer;
+        }
+        .warning-banner {
+                background-color: red; /* Background color for warning */
+                color: white;          /* Text color */
+                padding: 10px;         /* Padding around the text */
+                text-align: center;    /* Center the text */
+                margin-bottom: 20px;   /* Space between banner and content */
+        }
+    </style>
+    </head>
+    <body>
+        
+        <div class="banner {{ 'warning-banner' if warning_message else '' }}">
+            {{ warning_message if warning_message else " " }}
+        </div>
+        
+        <p>Warped Pinball device setup page</p>
+        <p>Please input your wifi information</p>
+        <p>  (Capitalization is important)</p>
         <form action="/configure" method="POST" autocomplete="off" autocapitalize="none">
-            <!-- Wi-Fi SSID -->
-            <label for="networks">Wi-Fi SSID:</label>
+            <label for="ssid">WIFI SSID:</label><br>
             <select id="networks" name="ssid">
                 <option value="">Loading...</option>
-            </select>
+            </select><br><br>
 
-            <!-- Wi-Fi Password -->
-            <label for="password">Wi-Fi Password:</label>
-            <input type="text" id="password" name="password" value="{{ password }}">
-
-            <!-- Game Selection -->
-            <label for="games">Select Game:</label>
+            <!--  <input type="text" id="ssid" name="ssid" value="{{ssid}}"><br>  -->
+            <label for="password" >WIFI Password:</label><br>
+            <input type="text" id="password" name="password" value="{{password}}"><br><br>
+            
+            <!-- Dropdown Selection Box for games-->
+            <label for="games">Select Game:</label><br>
             <select id="games" name="gamename">
                 <option value="">Loading...</option>
-            </select>
+            </select><br><br>
+            
+            <label for="password" >Pinball Admin Password:</label><br>
+            <input type="text" id="Gpassword" name="Gpassword" value="{{Gpassword}}"><br><br>
 
-            <!-- Pinball Admin Password -->
-            <label for="Gpassword">Pinball Admin Password:</label>
-            <input type="text" id="Gpassword" name="Gpassword" value="{{ Gpassword }}">
+            <button>Save</button>
+        <p> _ </p>    
+        <p> _ </p>
+        <p>The last valid IP address assigned to this device:</p>                   
+        <input type="text" id="lastip" name="lastip" value="{{lastip}}" readonly><br>
 
-            <!-- Save Button -->
-            <button type="submit">Save</button>
-
-            <!-- Last IP Address -->
-            <p>The last valid IP address assigned to this device:</p>
-            <input type="text" id="lastip" name="lastip" value="{{ lastip }}" readonly>
         </form>
-    </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Fetch initialization data
-                const initData = await (await fetch('/initdata')).json();
-
-                // Populate form fields with initialization data
-                const setValue = (id, value) => {
-                    const element = document.getElementById(id);
-                    if (element) element.value = value || '';
-                };
-                setValue('password', initData.password);
-                setValue('Gpassword', initData.Gpassword);
-                setValue('lastip', initData.lastip);
-
-                // Function to populate select elements
-                const populateSelect = async (url, selectId, selectedValueKey) => {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    const selectElement = document.getElementById(selectId);
-                    selectElement.innerHTML = '';
-
-                    data[selectId].forEach(item => {
+        <script>
+            document.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    // Fetch the initialization data
+                    const initDataResponse = await fetch('/initdata');
+                    const initData = await initDataResponse.json();
+        
+                    // Populate the form fields with the initialization data
+                    document.getElementById('password').value = initData.password || '';
+                    document.getElementById('Gpassword').value = initData.Gpassword || '';
+        
+                    // Fetch the game list
+                    const gamesResponse = await fetch('/listgames');
+                    const gamesData = await gamesResponse.json();
+                    
+                    const gamesSelect = document.getElementById('games');
+                    gamesSelect.innerHTML = ''; // Clear the loading option
+        
+                    gamesData.games.forEach(game => {
                         const option = document.createElement('option');
-                        option.value = item;
-                        option.textContent = item;
-                        if (item === initData[selectedValueKey] || item === data.current_selection) {
+                        option.value = game;
+                        option.text = game;
+                        if (game === initData.gamename || game === gamesData.current_selection) {
                             option.selected = true;
                         }
-                        selectElement.appendChild(option);
+                        gamesSelect.appendChild(option);
                     });
-                };
-
-                // Populate games and networks selects
-                await populateSelect('/listgames', 'games', 'gamename');
-                await populateSelect('/listnetworks', 'networks', 'ssid');
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                document.getElementById('games').innerHTML = '<option value="">Error loading games</option>';
-                document.getElementById('networks').innerHTML = '<option value="">Error loading networks</option>';
-            }
-        });
-    </script>
-</body>
+        
+                    // Fetch the network list
+                    const networksResponse = await fetch('/listnetworks');
+                    const networksData = await networksResponse.json();
+        
+                    const networksSelect = document.getElementById('networks');
+                    networksSelect.innerHTML = ''; // Clear the loading option
+        
+                    networksData.networks.forEach(network => {
+                        const option = document.createElement('option');
+                        option.value = network;
+                        option.text = network;
+                        if (network === initData.ssid) {
+                            option.selected = true;
+                        }
+                        networksSelect.appendChild(option);
+                    });
+        
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+        
+                    const gamesSelect = document.getElementById('games');
+                    gamesSelect.innerHTML = '<option value="">Error loading games</option>';
+        
+                    const networksSelect = document.getElementById('networks');
+                    networksSelect.innerHTML = '<option value="">Error loading networks</option>';
+                }
+            });
+        </script>
+        
+    </body>
 </html>
