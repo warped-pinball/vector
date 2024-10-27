@@ -56,47 +56,80 @@ Pico_Led.off()
 #print("thres----  ",gc.threshold())
 gc.threshold(2048 * 6) 
 
-def serve_static_file(request):
-    path = request.path
-
-    if path.startswith('/css/') or path.startswith('/js/') or path.startswith('/html/'):
-        # Map URL path to file system path
-        file_path = 'web' + path
-
-        # Prevent path traversal attacks
-        if '..' in file_path or file_path.startswith('/'):
-            return "Invalid file path.", 400
-
-        # Determine the content type based on file extension
-        content_type = get_content_type(file_path)
-
-        try:
-            with open(file_path, 'rb') as f:
-                content = f.read()
-            # Return the content with appropriate headers
-            return content, 200, {'Content-Type': content_type}
-        except OSError:
-            # File not found
-            return "File not found.", 404
-    else:
-        # If path doesn't match, return 404
-        return "Not found.", 404
-
 def get_content_type(file_path):
-    if file_path.endswith('.css'):
-        return 'text/css'
-    elif file_path.endswith('.js'):
-        return 'application/javascript'
-    elif file_path.endswith('.html'):
-        return 'text/html'
-    elif file_path.endswith('.png'):
-        return 'image/png'
-    elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-        return 'image/jpeg'
-    elif file_path.endswith('.gif'):
-        return 'image/gif'
-    else:
-        return 'application/octet-stream'
+    content_type_mapping = {
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.html': 'text/html',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.gz': 'application/gzip'
+    }
+    for extension, content_type in content_type_mapping.items():
+        if file_path.endswith(extension):
+            return content_type
+    return 'application/octet-stream'
+
+
+# define streaming file service route
+def serve_file(file_path):
+    def route(request):
+        print(f"Attempting to serve file @ {file_path}")
+        try:
+            headers = {
+                'Content-Type': get_content_type(file_path),
+                'Connection': 'close'
+            }
+
+            def file_stream_generator():
+                gc.collect()
+                with open(file_path, 'rb') as f:
+                    while True:
+                        chunk = f.read(1024)  # Read in chunks of 1KB
+                        if not chunk:
+                            break
+                        yield chunk
+                gc.collect() 
+
+            print("File opened successfully")
+            return file_stream_generator(), 200, headers
+
+        except OSError as e:
+            error_message = "File Not Found" if e.errno == 2 else "Internal Server Error"
+            print(f"Error: {error_message} - {e}")
+            gc.collect()
+            return f"<html><body><h1>{error_message}</h1></body></html>", 404 if e.errno == 2 else 500, {'Content-Type': 'text/html', 'Connection': 'close'}
+
+        except Exception as e:
+            print(f"Unexpected Error: {e}")
+            gc.collect()
+            return "<html><body><h1>Internal Server Error</h1></body></html>", 500, {'Content-Type': 'text/html', 'Connection': 'close'}
+
+
+# find all files in the web directory
+def list_files(top):
+    try:
+        entries = os.listdir(top)
+    except OSError:
+        return
+    for entry in entries:
+        path = top + "/" + entry if top != "/" else "/" + entry
+        try:
+            mode = os.stat(path)[0]
+        except OSError:
+            continue
+        # 0x4000 is the S_IFDIR flag indicating a directory
+        if mode & 0x4000:
+            yield from list_files(path)
+        else:
+            yield path
+
+def serve_static_files():
+    for file_path in list_files('web'):        
+        route = serve_file(file_path)
+        server.add_route(file_path[3:], route)
 
 
 def setup_mode(fault_msg):
@@ -125,11 +158,7 @@ def setup_mode(fault_msg):
         Pico_Led.off()
         return render_template(f"{AP_TEMPLATE_PATH}/configured.html", ssid = request.form["ssid"])
         
-    def ap_catch_all(request):
-        path = request.path
-        if path.startswith('/css/') or path.startswith('/js/') or path.startswith('/html/'):
-            return serve_static_file(request)
-        
+    def ap_catch_all(request):    
         if request.headers.get("host") != AP_DOMAIN:
             return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
 
@@ -191,10 +220,6 @@ def setup_mode(fault_msg):
 #main application wifi mode
 def application_mode(fault_msg):
     print("WIFI: Entering application mode.")       
-    
-    def app_catch_all(request):
-        return serve_static_file(request)
-
 
     def app_adr_plus(request):
         global adr_display
@@ -456,42 +481,6 @@ def application_mode(fault_msg):
         except Exception as e:
             return f"An error occurred: {e}"
 
-    #serve the logo.png file
-    def app_logo(request):
-        gc.collect()
-        file_path = 'app_templates/logo.png'
-        print(f"Attempting to open file at {file_path}")
-
-        try:
-            headers = {
-                'Content-Type': 'image/png',
-                'Connection': 'close'
-            }
-
-            def file_stream_generator():
-                with open(file_path, 'rb') as f:
-                    while True:
-                        chunk = f.read(1024)  # Read in chunks of 1KB
-                        if not chunk:
-                            break
-                        yield chunk
-                gc.collect() 
-
-            print("File opened successfully")
-            return file_stream_generator(), 200, headers
-
-        except OSError as e:
-            error_message = "File Not Found" if e.errno == 2 else "Internal Server Error"
-            print(f"Error: {error_message} - {e}")
-            gc.collect()
-            return f"<html><body><h1>{error_message}</h1></body></html>", 404 if e.errno == 2 else 500, {'Content-Type': 'text/html', 'Connection': 'close'}
-
-        except Exception as e:
-            print(f"Unexpected Error: {e}")
-            gc.collect()
-            return "<html><body><h1>Internal Server Error</h1></body></html>", 500, {'Content-Type': 'text/html', 'Connection': 'close'}
-
-
     def download_memory(request):
         print("WIFI: Download memory values file")
         gc.collect()    
@@ -631,7 +620,6 @@ def application_mode(fault_msg):
 
     #Leaderboard page
     server.add_route("/leaderboard", handler=app_leaderBoardRead, methods = ["GET"])
-    server.add_route("/logo.png", handler=app_logo, methods=["GET"])    
     server.add_route("/", handler = app_leaderBoardLoad, methods = ["GET"])
     server.add_route("/index.html", handler = app_leaderBoardLoad, methods = ["GET"])      
     @server.route("/tournamentMode")
