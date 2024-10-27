@@ -189,7 +189,8 @@ def connect_to_repl():
         cmd = f"mpremote connect {PICO_PORT} repl"
         result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
-            print("Connected to Pico REPL.")
+            # REPL connected successfully 
+            # but we can't print a success message until after the user closes the REPL
             return
         else:
             print("Error connecting to Pico REPL. Retrying...")
