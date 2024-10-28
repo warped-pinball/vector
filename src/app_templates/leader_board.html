@@ -4,79 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard</title>
-    <style>
-        body {
-            font-family: Verdana, sans-serif;
-        }
-        h1, .title {        
-            font-family: Verdana, sans-serif;
-            font-size: 36px;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .subtitle {
-            font-family: Verdana, sans-serif;
-            font-size: 48px;
-            text-align: center;
-            margin-top: 10px;
-        }
-        h2 {
-            font-family: Verdana, sans-serif;
-            font-size: 28px;
-            text-align: center;
-            margin-top: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            text-align: left;
-            padding: 8px;
-            max-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        th {
-            background-color: #C9C9C9; /* Darker shade for table header */
-        }
-        tr:nth-child(even) {
-            background-color: #93C5D6; /* Darker shading for even rows */
-        }
-        tr:nth-child(odd) {
-            background-color: #f9f9f9; /* Keep light shading for odd rows */
-        }
-        .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: row;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .header-container img {
-            margin-right: 20px; /* Adjust this value to set the space between the image and the text */
-        }
-        .header-container .titles {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .titles h1 {
-            margin: 0;
-        }
-        .titles .subtitle {
-            margin: 0;
-        }
-        .warning-banner {
-                background-color: red; /* Background color for warning */
-                color: white;          /* Text color */
-                padding: 10px;         /* Padding around the text */
-                text-align: center;    /* Center the text */
-                margin-bottom: 20px;   /* Space between banner and content */
-        }
-    </style>
 </head>
 <body>
     <div class="banner {{ 'warning-banner' if warning_message else '' }}">
@@ -92,7 +19,7 @@
     <hr>
 
     <div class="header-container">
-        <img src="/logo.png" alt="Graphic" width="100" height="100">
+        <svg id="logo"></svg>
         <div class="titles">
             <h1 class="title">Warped Pinball : SYS11.Wifi</h1>
             <h2 class="subtitle" id="game-name">Loading...</h2>
@@ -120,13 +47,11 @@
             const TOTAL_ROWS = 20;  // Desired number of rows in the leaderboard
             const tableBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
 
-            // Clear existing rows before fetching new data
-            tableBody.innerHTML = '';
-
             // Fetch the leaderboard data
             fetch('/leaderboard')
                 .then(response => response.json())
                 .then(data => {
+                    tableBody.innerHTML = '';
                     let count = data.length;
                     data.forEach((player, index) => {
                         let row = tableBody.insertRow();
@@ -214,5 +139,83 @@
     <a href="/player_names.html">Player Names</a> |
     <a href="/admin.html">Admin</a>
     <hr>
+<script>
+async function loadAndCacheResource(url, type) {
+    const cacheKey = url;
+    const cacheTimeKey = `${cacheKey}_time`;
+    const cacheTTL = 86400 * 1000; // 24 hours in milliseconds
+    const currentTime = Date.now();
+    let cachedData = localStorage.getItem(cacheKey);
+    let cachedTime = localStorage.getItem(cacheTimeKey);
+
+    // Step 1: Check cache validity
+    if (!cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL)) {
+        console.log(`Fetching and caching ${type} resource`);
+
+        try {
+            // Step 2: Fetch the gzipped resource
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+            }
+
+            // Step 3: Decompress the gzip stream
+            const decompressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
+            cachedData = await new Response(decompressedStream).text();
+
+            // Step 4: Cache decompressed data with timestamp
+            localStorage.setItem(cacheKey, cachedData);
+            localStorage.setItem(cacheTimeKey, currentTime.toString());
+
+        } catch (error) {
+            console.error(`Error fetching or caching ${type} resource:`, error);
+            return null;
+        }
+    } else {
+        console.log(`Using cached ${type} resource`);
+    }
+
+    // Step 5: Generate and return the DOM element based on the resource type
+    return createDOMElement(type, cachedData);
+}
+
+// Helper function to create a DOM element based on type and content
+function createDOMElement(type, data) {
+    let element;
+    switch (type) {
+        case "css":
+            element = document.createElement("style");
+            element.textContent = data;
+            break;
+        case "script":
+            element = document.createElement("script");
+            element.textContent = data;
+            break;
+        case "image":
+            element = document.createElement("img");
+            element.src = URL.createObjectURL(new Blob([data], { type: "image/png" }));
+            break;
+        case "svg":
+            element = new DOMParser().parseFromString(data, "image/svg+xml").documentElement;
+            break;
+        default:
+            console.error(`Unsupported resource type: ${type}`);
+            return null;
+    }
+    return element;
+}
+
+// Usage example:
+// Insert the returned DOM element wherever you need it on the page
+(async () => {
+    const cssElement = await loadAndCacheResource("/zip/pico.min.css.gz", "css");
+    if (cssElement) document.head.appendChild(cssElement);
+
+    const svgElement = await loadAndCacheResource("/zip/logo.svg.gz", "svg");
+    if (svgElement) document.getElementById("logo").replaceWith(svgElement);
+})();
+
+</script>
 </body>
 </html>

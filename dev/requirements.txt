@@ -2,4 +2,5 @@ mpremote==1.23.0
 mpy-cross
 csscompressor
 jsmin
+scour
 # pre-commit

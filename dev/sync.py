@@ -157,6 +157,8 @@ def zip_files():
                         shutil.copyfileobj(f_in, f_out)
                 os.remove(file_path)
 
+#TODO "scour" svg files to reduce size
+
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""
     print("Copying files to Pico...")
