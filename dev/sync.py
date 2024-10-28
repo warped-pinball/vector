@@ -7,6 +7,8 @@ import shutil
 from pathlib import Path
 import argparse
 import serial.tools.list_ports
+import json
+import time
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -42,10 +44,23 @@ def check_mpy_cross():
 def wipe_pico():
     """Wipe all files from the Pico."""
     print("Wiping Pico's filesystem...")
-    cmd = f"mpremote connect {PICO_PORT} exec \"import os\ndef remove(path):\n    try:\n        os.remove(path)\n    except OSError:\n        for entry in os.listdir(path):\n            remove('/'.join((path, entry)))\n        os.rmdir(path)\nfor entry in os.listdir('/'):\n    remove('/' + entry)\" "
+    mpython = '\n'.join([
+        "import os",
+        "def remove(path):",
+        "    try:",
+        "        os.remove(path)",
+        "    except OSError:",
+        "        for entry in os.listdir(path):",
+        "            remove('/'.join((path, entry)))",
+        "        os.rmdir(path)",
+        "for entry in os.listdir('/'):",
+        "    remove('/' + entry)"
+    ])
+    cmd = f"mpremote connect {PICO_PORT} exec \"{mpython}\""
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error wiping Pico's filesystem.")
+        print(result.stderr.decode())
         sys.exit(1)
 
 def compile_py_files():
@@ -182,22 +197,68 @@ def read_git_commit_on_pico():
 
 def connect_to_repl():
     """Connect to the Pico REPL with retries."""
-    import time
     retries = 0
     while retries < REPL_MAX_RETRIES:
         print(f"Attempting to connect to Pico REPL (try {retries + 1}/{REPL_MAX_RETRIES})...")
         cmd = f"mpremote connect {PICO_PORT} repl"
         result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
-            # REPL connected successfully 
-            # but we can't print a success message until after the user closes the REPL
+            print("Connected to Pico REPL.")
             return
         else:
-            print("Error connecting to Pico REPL. Retrying...")
             retries += 1
+            print(f"Attempt {retries} failed. Retrying in {REPL_RETRY_DELAY} seconds...")
             time.sleep(REPL_RETRY_DELAY)
     print(f"Failed to connect to Pico REPL after {REPL_MAX_RETRIES} attempts.")
     sys.exit(1)
+
+def apply_local_config_to_pico():
+    """Apply local configuration from a JSON file to the Pico's configuration."""
+    # check for file in the same dir as this script
+    config_file_path = Path(__file__).parent / 'config.json'
+    if not config_file_path.exists():
+        print("No local configuration file found to apply at: ", config_file_path)
+        return
+    
+    print("Applying local configuration to Pico...")
+    try:
+        with open(config_file_path, 'r') as config_file:
+            try:
+                local_config = json.load(config_file)
+            except json.JSONDecodeError:
+                print("Error reading local configuration file. Skipping...")
+                return
+          
+        # Construct a command to edit configuration in Pico using mpremote
+        config_update_cmd = '\n'.join(
+          [
+            "import SPI_DataStore as datastore",
+            "config = datastore.read_record('configuration')",
+          ] +
+          [
+            f"config['{key}'] = '{value}'"
+            for key, value in local_config.items()
+          ] +
+          [
+            "datastore.write_record('configuration', config)"
+          ]
+        )
+
+        cmd = f"mpremote connect {PICO_PORT} exec \"{config_update_cmd}\""
+        
+        for attempt in range(3):
+            time.sleep(REPL_RETRY_DELAY)
+            result = subprocess.run(cmd, shell=True)
+            if result.returncode == 0:
+                break
+            print(f"Error applying configuration to Pico. Retrying... ({attempt + 1})")
+        if result.returncode != 0:
+            print("Error applying configuration to Pico.")
+            sys.exit(1)
+        print("Configuration updated successfully on Pico.")
+    except Exception as e:
+        print(f"Error reading or applying configuration: {e}")
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -223,16 +284,17 @@ def main():
         "  6. write_commit - Write the current git commit hash to a file.",
         "  7. copy - Copy files to the Pico.",
         "  8. restart - Restart the Pico.",
-        "  9. connect_repl - Connect to the Pico REPL."
+        "  9. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 10. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
         "--steps", nargs='+', 
-        help="Specify steps to run in order. Default: all"
+        help="Specify steps to run in order (all, wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit, apply_local_config).\n If 'all' is specified, all steps will be run in the defined order."
     )
     parser.add_argument(
         "--skip", nargs='+', 
-        help="Specify steps to skip, Default: none"
+        help="Specify steps to skip (wipe, compile, minify_js, minify_css, copy, restart, write_commit, read_commit, apply_local_config).\n This can be used to avoid specific operations during the deployment."
     )
     args = parser.parse_args()
 
@@ -247,6 +309,7 @@ def main():
         ("minify_css", minify_css_files),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
+        ("apply_local_config", apply_local_config_to_pico),
         ("restart", restart_pico),
         ("connect_repl", connect_to_repl),
     ]
