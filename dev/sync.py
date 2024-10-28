@@ -12,7 +12,7 @@ import time
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
-REPL_RETRY_DELAY = 2  # Delay between retries in seconds
+REPL_RETRY_DELAY = 1  # Delay between retries in seconds
 REPL_MAX_RETRIES = 5  # Maximum number of retries to connect to REPL
 SOURCE_DIR = 'src'  # Source directory containing your code
 BUILD_DIR = 'build'  # Build directory for compiled and minified files
