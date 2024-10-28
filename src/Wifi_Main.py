@@ -128,8 +128,7 @@ def list_files(top):
 
 def serve_static_files():
     for file_path in list_files('web'):        
-        route = serve_file(file_path)
-        server.add_route(file_path[3:], route)
+        server.add_route(file_path[3:], serve_file(file_path), methods=['GET'])
 
 
 def setup_mode(fault_msg):
@@ -161,6 +160,7 @@ def setup_mode(fault_msg):
     def ap_catch_all(request):    
         if request.headers.get("host") != AP_DOMAIN:
             return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
+        return "Not found.", 404
 
     def splitext(filename):
         dot_index = filename.rfind('.')
@@ -220,6 +220,9 @@ def setup_mode(fault_msg):
 #main application wifi mode
 def application_mode(fault_msg):
     print("WIFI: Entering application mode.")       
+
+    def app_catch_all(request):
+        return "Not found.", 404
 
     def app_adr_plus(request):
         global adr_display
