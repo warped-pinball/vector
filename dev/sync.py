@@ -213,7 +213,20 @@ def connect_to_repl():
     sys.exit(1)
 
 def apply_local_config_to_pico():
-    """Apply local configuration from a JSON file to the Pico's configuration."""
+    """
+    Apply configuration from a JSON file to the Pico's configuration.
+
+    filename: config.json
+    example content:
+    {
+       "ssid": "Your WiFi SSID",
+       "password": "Your WiFi Password",
+       "gamename": "GenericSystem11",
+       "Gpassword": ""
+    }
+
+    """
+
     # check for file in the same dir as this script
     config_file_path = Path(__file__).parent / 'config.json'
     if not config_file_path.exists():
