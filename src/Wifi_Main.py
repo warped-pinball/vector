@@ -106,7 +106,7 @@ def serve_file(file_path):
             print(f"Unexpected Error: {e}")
             gc.collect()
             return "<html><body><h1>Internal Server Error</h1></body></html>", 500, {'Content-Type': 'text/html', 'Connection': 'close'}
-
+    return route
 
 # find all files in the web directory
 def list_files(top):
@@ -128,6 +128,7 @@ def list_files(top):
 
 def serve_static_files():
     for file_path in list_files('web'):        
+        print(f"Adding route for {file_path[3:]}")
         server.add_route(file_path[3:], serve_file(file_path), methods=['GET'])
 
 
@@ -210,6 +211,10 @@ def setup_mode(fault_msg):
     server.add_route("/initdata", handler = app_initData, methods = ["GET"])    
     server.add_route("/", handler = ap_index, methods = ["GET"])
     server.add_route("/configure", handler = ap_configure, methods = ["POST"])
+
+    # add static files
+    serve_static_files()
+
     server.set_callback(ap_catch_all)
 
     ap = access_point(AP_NAME)
@@ -680,6 +685,8 @@ def application_mode(fault_msg):
     server.add_route("/GameName", handler = app_getGameName, methods = ["GET"])
     server.add_route("/GameStatus", handler = GameStatus.report, methods = ["GET"])
   
+    # add static files
+    serve_static_files()
 
     print("WIFI: end application mode callback")
     server.set_callback(app_catch_all)
