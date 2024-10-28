@@ -18,6 +18,7 @@ async def _handler(socket, ip_address):
       response += bytes(map(int, ip_address.split("."))) # ip address parts
       socket.sendto(response, client)
     except Exception as e:
+      logging.error("Error in catch all dns server")
       logging.error(e)
 
 def run_catchall(ip_address, port=53):

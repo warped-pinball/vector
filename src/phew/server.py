@@ -257,7 +257,9 @@ async def _handle_request(reader, writer):
   try:
     method, uri, protocol = request_line.decode().split()
   except Exception as e:
+    logging.error("Error parsing request line")  
     logging.error(e)
+    logging.error(request_line)
     return
 
   request = Request(method, uri, protocol)
