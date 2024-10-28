@@ -9,6 +9,7 @@ import argparse
 import serial.tools.list_ports
 import json
 import time
+import gzip
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -143,6 +144,18 @@ def minify_css_files():
                             minified = compress(f.read())
                         with open(css_file, 'w') as f:
                             f.write(minified)
+
+def zip_files():
+    """gzip all files in the build/web/zip directory."""
+    print("Zipping files...")
+    for root, dirs, files in os.walk('build/web/zip'):
+        for file in files:
+            if not file.endswith('.gz'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'rb') as f_in:
+                    with gzip.open(file_path + '.gz', 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                os.remove(file_path)
 
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""
@@ -320,6 +333,7 @@ def main():
         ("compile", compile_py_files),
         ("minify_js", minify_js_files),
         ("minify_css", minify_css_files),
+        ("zip", zip_files),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
         ("apply_local_config", apply_local_config_to_pico),
