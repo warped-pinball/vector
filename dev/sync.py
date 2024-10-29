@@ -18,8 +18,8 @@ REPL_MAX_RETRIES = 5  # Maximum number of retries to connect to REPL
 SOURCE_DIR = 'src'  # Source directory containing your code
 BUILD_DIR = 'build'  # Build directory for compiled and minified files
 MPY_CROSS = 'mpy-cross'  # Path to the mpy-cross compiler
-JS_MINIFY_DIRS = ['src/js']  # Directories containing JavaScript files to minify
-CSS_MINIFY_DIRS = ['src/css']  # Directories containing CSS files to minify
+JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to minify
+CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
 
 def autodetect_pico_port():
@@ -145,19 +145,33 @@ def minify_css_files():
                         with open(css_file, 'w') as f:
                             f.write(minified)
 
-def zip_files():
-    """gzip all files in the build/web/zip directory."""
-    print("Zipping files...")
-    for root, dirs, files in os.walk('build/web/zip'):
+def scour_svg_files():
+    """run scour on all svg files in the build/web/svg directory."""
+    print("Scouring SVG files...")
+    for root, dirs, files in os.walk('build/web/svg'):
         for file in files:
-            if not file.endswith('.gz'):
+            if file.endswith('.svg'):
                 file_path = os.path.join(root, file)
-                with open(file_path, 'rb') as f_in:
-                    with gzip.open(file_path + '.gz', 'wb') as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-                os.remove(file_path)
-
-#TODO "scour" svg files to reduce size
+                cmd = f"scour -i {file_path} --enable-viewboxing --enable-id-stripping --enable-comment-stripping --shorten-ids --indent=none > {file_path}.svg"
+                result = subprocess.run(cmd, shell=True)
+                if result.returncode != 0:
+                    print(f"Error scouring {file_path}")
+                    sys.exit(1)
+                
+def zip_files():
+    """gzip all files in the build/web/* directory. (but not files in /web like web/index.html)"""
+    print("Zipping files...")
+    # for dir in  web
+    for root, dirs, files in os.walk('build/web'):
+        if root.endswith('web'):
+            continue
+        for file in files:
+            file_path = os.path.join(root, file)
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            with gzip.open(file_path + '.gz', 'wb') as f:
+                f.write(content)
+            os.remove(file_path)
 
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""
@@ -309,11 +323,13 @@ def main():
         "  3. compile - Compile Python files to .mpy.",
         "  4. minify_js - Minify JavaScript files.",
         "  5. minify_css - Minify CSS files.",
-        "  6. write_commit - Write the current git commit hash to a file.",
-        "  7. copy - Copy files to the Pico.",
-        "  8. restart - Restart the Pico.",
-        "  9. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 10. connect_repl - Connect to the Pico REPL."
+        "  6. scour_svg - Run scour on all svg files in the build/web/svg directory.",
+        "  7. zip - gzip all files in the build/web/* directory.",
+        "  8. write_commit - Write the current git commit hash to a file.",
+        "  9. copy - Copy files to the Pico.",
+        " 10. restart - Restart the Pico.",
+        " 11. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 12. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
