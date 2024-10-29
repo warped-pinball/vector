@@ -140,6 +140,11 @@
     <a href="/admin.html">Admin</a>
     <hr>
 <script>
+async function clearCache() {
+    localStorage.clear();
+    location.reload();
+}
+
 async function loadAndCacheResource(url, type) {
     const cacheKey = url;
     const cacheTimeKey = `${cacheKey}_time`;
@@ -209,10 +214,10 @@ function createDOMElement(type, data) {
 // Usage example:
 // Insert the returned DOM element wherever you need it on the page
 (async () => {
-    const cssElement = await loadAndCacheResource("/zip/pico.min.css.gz", "css");
+    const cssElement = await loadAndCacheResource("/css/pico.min.css.gz", "css");
     if (cssElement) document.head.appendChild(cssElement);
 
-    const svgElement = await loadAndCacheResource("/zip/logo.svg.gz", "svg");
+    const svgElement = await loadAndCacheResource("/svg/logo.svg.gz", "svg");
     if (svgElement) document.getElementById("logo").replaceWith(svgElement);
 })();
 
