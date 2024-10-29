@@ -158,13 +158,9 @@ def scour_svg_files():
                     print(f"Error scouring {file_path}")
                     sys.exit(1)
                 
-def zip_files():
-    """gzip all files in the build/web/* directory. (but not files in /web like web/index.html)"""
-    print("Zipping files...")
-    # for dir in  web
-    for root, dirs, files in os.walk('build/web'):
-        if root.endswith('web'):
-            continue
+def zip_files_in_dir(dir):
+    """gzip all files in the given directory."""
+    for root, dirs, files in os.walk(dir):
         for file in files:
             file_path = os.path.join(root, file)
             with open(file_path, 'rb') as f:
@@ -172,6 +168,17 @@ def zip_files():
             with gzip.open(file_path + '.gz', 'wb') as f:
                 f.write(content)
             os.remove(file_path)
+
+def zip_files():
+    """gzip all files in the build/web/* directory. (but not files in /web like web/index.html)"""
+    print("Zipping files...")
+    # get list of directories in build/web
+    web_dirs = [d for d in os.listdir('build/web') if os.path.isdir(os.path.join('build/web', d))]
+    for dir in web_dirs:
+        zip_files_in_dir(os.path.join(dir))
+    
+    zip_files_in_dir('build/GameDefs')
+    
 
 def copy_files_to_pico():
     """Copy all files from BUILD_DIR to the Pico's root directory."""

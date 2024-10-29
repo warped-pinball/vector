@@ -7,7 +7,9 @@
    load the game setting from a json file in 
    /GameDefs based on game name in the config
 '''
+import deflate
 import json
+import uio
 import SPI_DataStore as DataStore
 import SharedState
 from logger import logger_instance
@@ -16,12 +18,18 @@ Log = logger_instance
 #loads a game def.json file into memory
 def load_json(file_path):
     try:
-        #print("open file ",file_path)
-        with open(file_path, 'r') as file:
-            data = json.load(file)
+        # Open the compressed file with DeflateIO for streaming decompression
+        with open(file_path + '.gz', 'rb') as compressed_file:
+            decompressor = deflate.DeflateIO(compressed_file, deflate.GZIP, 15)
+
+            # Use uio to create a text wrapper for the decompressed binary stream
+            decompressed_stream = uio.TextIOWrapper(decompressor)
+
+            # Load JSON data directly from the decompressed text stream
+            data = json.load(decompressed_stream)
         return data
     except Exception as e:
-        Log.log("DEFLOAD: Error loading JSON file:", str(e))
+        Log.log("DEFLOAD: Error loading compressed JSON file:", str(e))
         raise
 
 #convert any data entered as "0x" (hex) into integers
