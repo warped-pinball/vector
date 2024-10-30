@@ -34,18 +34,20 @@
         previousResourceIds = newResourceIds;
     }
 
-    async function handleNavigation(pageKey, replace = false) {
+    async function handleNavigation(pageKey, replace = false, updateHistory = true) {
         if (isNavigating) return;
         isNavigating = true;
         try {
             const config = pageConfig[pageKey];
             if (!config) return;
             document.title = config.title;
-            const url = `/?page=${pageKey}`;
-            if (replace) {
-                window.history.replaceState({}, config.title, url);
-            } else {
-                window.history.pushState({}, config.title, url);
+            if (updateHistory) {
+                const url = `/?page=${pageKey}`;
+                if (replace) {
+                    window.history.replaceState({}, config.title, url);
+                } else {
+                    window.history.pushState({}, config.title, url);
+                }
             }
             await loadPageResources(pageKey);
         } finally {
@@ -85,13 +87,13 @@
     async function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
         const pageKey = urlParams.get('page') || 'leader_board';
-        await handleNavigation(pageKey, true);
+        await handleNavigation(pageKey, true, true);
     }
 
     window.onpopstate = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const pageKey = urlParams.get('page') || 'leader_board';
-        await handleNavigation(pageKey);
+        await handleNavigation(pageKey, false, false);
     };
 
     async function init() {
