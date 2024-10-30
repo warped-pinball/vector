@@ -10,10 +10,24 @@
 </head>
 <body>
     <header class="container">
-        <nav class="grid">
+        <nav>
             <ul>
-                <li><a href="#" id="navigate-leader-board">Leader Board</a></li>
-                <li><a href="#" id="navigate-about">About Us</a></li>
+                <li>
+                    <div id="logo" aria-busy="true"></div>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <strong>WARPED PINBALL</strong>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <a href="#" id="navigate-leader-board">Leader Board</a>
+                </li>
+                <li>
+                    <a href="#" id="navigate-about">About</a>
+                </li>
             </ul>
         </nav>
     </header>
@@ -21,7 +35,7 @@
     <main id="page_html" class="container" aria-busy="true"></main>
 
     <footer class="container">
-        <div id="logo" aria-busy="true"></div>
+        <a href="https://warpedpinball.com">www.warpedpinball.com</a>
     </footer>
 
     <script>
@@ -47,7 +61,8 @@
         async function loadResource(url, targetId) {
             const cacheKey = url;
             const cacheTimeKey = `${cacheKey}_time`;
-            const cacheTTL = 60 * 1000;
+            // const cacheTTL = 1000 * 60 * 60 * 24; // 24 hours
+            const cacheTTL = 1000 * 60; // 1 minute
             const currentTime = Date.now();
             let cachedData = localStorage.getItem(cacheKey);
             let cachedTime = localStorage.getItem(cacheTimeKey);
