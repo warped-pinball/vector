@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Navigation Example</title>
-    <!-- Placeholder for custom styles -->
     <style id="custom_styles"></style>
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
     <link rel="manifest" href="/manifest.json">
@@ -13,182 +11,127 @@
     <header class="container">
         <nav class="grid">
             <ul>
-                <li><a href="#" id="navigate-home">Home</a></li>
+                <li><a href="#" id="navigate-leader-board">Leader Board</a></li>
                 <li><a href="#" id="navigate-about">About Us</a></li>
             </ul>
         </nav>
     </header>
 
-    <main id="content" class="container">
-        <!-- Default content -->
-        <h1>Welcome to the Dynamic Navigation Page!</h1>
-        <p>This content will be dynamically replaced based on navigation.</p>
+    <main id="content" class="container" aria-busy="true">
     </main>
 
     <footer class="container">
-        <div id="logo">
-            <!-- Logo SVG will be dynamically loaded here -->
-        </div>
+        <div id="logo" aria-busy="true"></div>
     </footer>
 
     <script>
-    async function clearCache() {
-        localStorage.clear();
-        location.reload();
-    }
+        async function loadResource(url, type, targetId) {
+            const cacheKey = url;
+            const cacheTimeKey = `${cacheKey}_time`;
+            // const cacheTTL = 86400 * 1000; // 24 hours in milliseconds
+            const cacheTTL = 60 * 1000; // 1 minute in milliseconds
+            const currentTime = Date.now();
+            let cachedData = localStorage.getItem(cacheKey);
+            let cachedTime = localStorage.getItem(cacheTimeKey);
 
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function(error) {
-                console.log('ServiceWorker registration failed: ', error);
-            });
-        });
-    }
+            // Step 1: Check cache validity
+            if (!cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL)) {
+                console.log(`Fetching and caching ${type} resource`);
 
-    async function loadAndCacheResource(url, type, targetId) {
-        const cacheKey = url;
-        const cacheTimeKey = `${cacheKey}_time`;
-        const cacheTTL = 86400 * 1000; // 24 hours in milliseconds
-        const currentTime = Date.now();
-        let cachedData = localStorage.getItem(cacheKey);
-        let cachedTime = localStorage.getItem(cacheTimeKey);
+                try {
+                    // Step 2: Fetch the resource
+                    const response = await fetch(url);
 
-        // Step 1: Check cache validity
-        if (!cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL)) {
-            console.log(`Fetching and caching ${type} resource`);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+                    } else {
+                        console.log(`Fetched ${type} resource at ${url}`);
+                    }
 
-            try {
-                // Step 2: Fetch the resource
-                const response = await fetch(url);
+                    if (url.endsWith('.gz')) {
+                        // Step 3: Decompress the gzip stream if the URL ends with .gz
+                        const decompressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
+                        cachedData = await new Response(decompressedStream).text();
+                    } else {
+                        cachedData = await response.text();
+                    }
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+                    // Step 4: Cache decompressed data with timestamp
+                    localStorage.setItem(cacheKey, cachedData);
+                    localStorage.setItem(cacheTimeKey, currentTime.toString());
+
+                } catch (error) {
+                    console.error(`Error fetching or caching ${type} resource:`, error);
+                    return;
                 }
-
-                if (url.endsWith('.gz')) {
-                    // Step 3: Decompress the gzip stream if the URL ends with .gz
-                    const decompressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
-                    cachedData = await new Response(decompressedStream).text();
-                } else {
-                    cachedData = await response.text();
-                }
-
-                // Step 4: Cache decompressed data with timestamp
-                localStorage.setItem(cacheKey, cachedData);
-                localStorage.setItem(cacheTimeKey, currentTime.toString());
-
-            } catch (error) {
-                console.error(`Error fetching or caching ${type} resource:`, error);
-                return;
-            }
-        } else {
-            console.log(`Using cached ${type} resource`);
-        }
-
-        // Step 5: Generate and replace the target element with the new DOM element
-        replaceDOMElement(targetId, type, cachedData);
-    }
-
-    // Helper function to create and replace a DOM element based on type and content
-    function replaceDOMElement(targetId, type, data) {
-        let newElement;
-        switch (type) {
-            case "css":
-                newElement = document.createElement("style");
-                newElement.textContent = data;
-                newElement.id = targetId;
-                break;
-            case "script":
-                newElement = document.createElement("script");
-                newElement.textContent = data;
-                newElement.id = targetId;
-                break;
-            case "image":
-                newElement = document.createElement("img");
-                newElement.src = URL.createObjectURL(new Blob([data], { type: "image/png" }));
-                newElement.id = targetId;
-                break;
-            case "svg":
-                newElement = new DOMParser().parseFromString(data, "image/svg+xml").documentElement;
-                newElement.id = targetId;
-                break;
-            case "html":
-                newElement = document.createElement("div");
-                newElement.innerHTML = data;
-                newElement.id = targetId;
-                break;
-            default:
-                console.error(`Unsupported resource type: ${type}`);
-                return;
-        }
-
-        // Replace the target element with the new element
-        const targetElement = document.getElementById(targetId);
-        if (targetElement && newElement) {
-            // Special handling for SVG - ensure appending as a child element
-            if (type === "svg") {
-                targetElement.innerHTML = "";
-                targetElement.appendChild(newElement);
             } else {
-                targetElement.replaceWith(newElement);
+                console.log(`Using cached ${type} resource`);
             }
-        } else {
-            console.error(`Target element with ID '${targetId}' not found or invalid new element.`);
+
+            // Step 5: Generate and replace the target element with the new DOM element
+            replaceDOMElement(targetId, type, cachedData);
         }
-    }
 
-    // Navigation management function to switch pages
-    document.addEventListener('DOMContentLoaded', () => {
-        const pageConfig = {
-            'home': {
-                title: 'Home Page',
-                url: '/home',
-                resources: [
-                    { url: '/zip/home_content.html.gz', type: 'html', targetId: 'content' },
-                    { url: '/zip/home_styles.css.gz', type: 'css', targetId: 'custom_styles' }
-                ]
-            },
-            'about': {
-                title: 'About Us',
-                url: '/about',
-                resources: [
-                    { url: '/zip/about_content.html.gz', type: 'html', targetId: 'content' },
-                    { url: '/zip/about_styles.css.gz', type: 'css', targetId: 'custom_styles' }
-                ]
+        // Helper function to create and replace a DOM element based on type and content
+        function replaceDOMElement(targetId, type, data) {
+            let newElement;
+            switch (type) {
+                case "css":
+                    newElement = document.createElement("style");
+                    newElement.textContent = data;
+                    newElement.id = targetId;
+                    break;
+                case "js":
+                    newElement = document.createElement("script");
+                    newElement.textContent = data;
+                    newElement.id = targetId;
+                    break;
+                case "image":
+                    newElement = document.createElement("img");
+                    newElement.src = URL.createObjectURL(new Blob([data], { type: "image/png" }));
+                    newElement.id = targetId;
+                    break;
+                case "svg":
+                    newElement = new DOMParser().parseFromString(data, "image/svg+xml").documentElement;
+                    newElement.id = targetId;
+                    break;
+                case "html":
+                    newElement = document.createElement("div");
+                    newElement.innerHTML = data;
+                    newElement.id = targetId;
+                    break;
+                default:
+                    console.error(`Unsupported resource type: ${type}`);
+                    return;
             }
-        };
 
-        window.navigateToPage = async function(pageKey) {
-            if (!(pageKey in pageConfig)) {
-                console.error(`Page key '${pageKey}' not found in page configuration.`);
-                return;
+            // Replace the target element with the new element
+            const targetElement = document.getElementById(targetId);
+            if (targetElement && newElement) {
+                // Special handling for SVG - ensure appending as a child element
+                if (type === "svg") {
+                    targetElement.innerHTML = "";
+                    targetElement.appendChild(newElement);
+                } else {
+                    targetElement.replaceWith(newElement);
+                }
+            } else {
+                console.error(`Target element with ID '${targetId}' not found or invalid new element.`);
             }
+        }
 
-            const { title, url, resources } = pageConfig[pageKey];
-
-            // Update title and browser history
-            document.title = title;
-            window.history.pushState({}, title, url);
-
-            // Replace page content as per resources defined
-            for (const resource of resources) {
-                await loadAndCacheResource(resource.url, resource.type, resource.targetId);
-            }
-        };
-
-        // Example navigation
-        document.getElementById('navigate-home').addEventListener('click', () => navigateToPage('home'));
-        document.getElementById('navigate-about').addEventListener('click', () => navigateToPage('about'));
-    });
-
-    // Usage example:
-    // Replace the target element with the new DOM element once loaded
-    (async () => {
-        await loadAndCacheResource("/css/pico.min.css.gz", "css", "custom_styles");
-        await loadAndCacheResource("/svg/logo.svg.gz", "svg", "logo");
-    })();
+        async function clearCache() {
+            localStorage.clear();
+            location.reload();
+        }
+        
+        (async () => {
+            await loadResource("/css/pico.min.css.gz", "css", "custom_styles");
+            await loadResource("/svg/logo.svg.gz", "svg", "logo");
+            await loadResource("/js/main.js.gz", "js", "main_script");
+        })();
     </script>
+    <div id="main_script"></div>
+    <div id="custom_script"></div>
 </body>
 </html>
