@@ -128,8 +128,11 @@ def list_files(top):
 
 def serve_static_files():
     for file_path in list_files('web'):        
-        print(f"Adding route for {file_path[3:]}")
-        server.add_route(file_path[3:], serve_file(file_path), methods=['GET'])
+        route = file_path[3:]
+        print(f"Adding route for {route}")
+        server.add_route(route, serve_file(file_path), methods=['GET'])
+        if route == "/index.html":
+            server.add_route("/", serve_file(file_path), methods=['GET'])
 
 
 def setup_mode(fault_msg):
@@ -628,8 +631,8 @@ def application_mode(fault_msg):
 
     #Leaderboard page
     server.add_route("/leaderboard", handler=app_leaderBoardRead, methods = ["GET"])
-    server.add_route("/", handler = app_leaderBoardLoad, methods = ["GET"])
-    server.add_route("/index.html", handler = app_leaderBoardLoad, methods = ["GET"])      
+    # server.add_route("/", handler = app_leaderBoardLoad, methods = ["GET"])
+    # server.add_route("/index.html", handler = app_leaderBoardLoad, methods = ["GET"])      
     @server.route("/tournamentMode")
     def app_tournamentmode(request):
         SharedState.tournamentModeOn=1
