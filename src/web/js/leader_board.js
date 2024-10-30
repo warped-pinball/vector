@@ -30,11 +30,6 @@ function updateLeaderboard() {
         })
         .catch(error => {
             console.error('Failed to load leaderboard data:', error);
-            // Fill table with minimum blank rows if fetch fails
-            tableBody.innerHTML = '';
-            for (let i = 0; i < MIN_ROWS; i++) {
-                createRow(i + 1);
-            }
         });
 }
 

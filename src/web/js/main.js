@@ -1,108 +1,93 @@
-// Navigation management function to switch pages
-const pageConfig = {
-    'leader_board': {
-        title: 'Leader Board',
-        url: '/leaderboard',
-        resources: [
-            { url: '/html/leader_board.html.gz', type: 'html', targetId: 'content' },
-            { url: '/js/leader_board.js.gz', type: 'js', targetId: 'custom_script' },
-            { url: '/css/score_board.css.gz', type: 'css', targetId: 'custom_styles' }
-        ]
-    },
-    'about': {
-        title: 'About Us',
-        url: '/about',
-        resources: [
-            { url: '/zip/about_content.html.gz', type: 'html', targetId: 'content' },
-            { url: '/zip/about_styles.css.gz', type: 'css', targetId: 'custom_styles' }
-        ]
-    }
-};
+// main.js
 
-// Stores the IDs of elements created during the page load to clean up before switching pages
-let previousResources = [];
-
-window.navigateToPage = async function(pageKey) {
-    const { title, resources } = pageConfig[pageKey];
-
-    // Update title and browser history with the query parameter
-    document.title = title;
-    window.history.pushState({}, title, `/?page=${pageKey}`);
-
-    // Clear previously loaded resources
-    clearPreviousResources();
-
-    // Replace page content as per resources defined
-    for (const resource of resources) {
-        await loadResource(resource.url, resource.type, resource.targetId);
-        previousResources.push(resource.targetId); // Track the ID for cleanup
-    }
-};
-
-// Function to clear previously loaded resources
-function clearPreviousResources() {
-    previousResources.forEach(targetId => {
-        const element = document.getElementById(targetId);
-        if (element) {
-            element.innerHTML = ''; // Clear content of the element
-            if (element.tagName !== 'STYLE') {
-                element.remove(); // Remove element if not a <style> tag
-            }
+(async () => {
+    const pageConfig = {
+        'leader_board': {
+            title: 'Leader Board',
+            resources: [
+                { url: '/html/leader_board.html.gz', targetId: 'page_html' },
+                { url: '/js/leader_board.js.gz', targetId: 'page_js' },
+                { url: '/css/score_board.css.gz', targetId: 'page_css' }
+            ]
+        },
+        'about': {
+            title: 'About Us',
+            resources: [
+                { url: '/html/about.html.gz', targetId: 'page_html' },
+                // { url: '/css/about.css.gz', targetId: 'page_css' }
+            ]
         }
-    });
-    previousResources = []; // Reset the previousResources array
-}
+    };
 
-// Helper function to load a resource into the DOM
-async function loadResource(url, type, targetId) {
-    const response = await fetch(url);
-    const data = await response.text();
+    let previousResourceIds = [];
 
-    let newElement;
-    switch (type) {
-        case "css":
-            newElement = document.createElement("style");
-            newElement.textContent = data;
-            newElement.id = targetId;
-            break;
-        case "script":
-            newElement = document.createElement("script");
-            newElement.textContent = data;
-            newElement.id = targetId;
-            break;
-        case "html":
-            newElement = document.createElement("div");
-            newElement.innerHTML = data;
-            newElement.id = targetId;
-            break;
-        default:
-            console.error(`Unsupported resource type: ${type}`);
+    async function navigateToPage(pageKey) {
+        console.log('Navigating to page:', pageKey);
+        const config = pageConfig[pageKey];
+        if (!config) {
+            console.error('Invalid page key:', pageKey);
             return;
+        }
+        const { title, resources } = config;
+        document.title = title;
+        window.history.pushState({}, title, `/?page=${pageKey}`);
+        clearPreviousResources(previousResourceIds);
+        const newResourceIds = [];
+
+        for (const resource of resources) {
+            await window.loadResource(resource.url, resource.targetId);
+            newResourceIds.push(resource.targetId);
+        }
+
+        previousResourceIds = newResourceIds;
+    }
+    // make navigateToPage available to the window object
+    window.navigateToPage = navigateToPage;
+
+    function clearResource(targetId) {
+        const element = document.getElementById(targetId);
+        if (!element) return;
+        const placeholder = document.createElement('div');
+        placeholder.id = targetId;
+        placeholder.style.display = 'none';
+        element.replaceWith(placeholder);
     }
 
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-        targetElement.replaceWith(newElement);
-    } else {
-        document.body.appendChild(newElement); // Append if target element not found
+    function clearPreviousResources(resourceIds) {
+        resourceIds.forEach(clearResource);
     }
-}
 
-// Load page on initial load based on URL parameter
-document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pageKey = urlParams.get('page') || 'leader_board';
-    await navigateToPage(pageKey);
-});
+    function initializeNavigation() {
+        const navLinks = [
+            { id: 'navigate-leader-board', page: 'leader_board' },
+            { id: 'navigate-about', page: 'about' }
+        ];
 
-// Utility to set up navigation links
-function link_nav(id, page) {
-    document.getElementById(id).addEventListener('click', (event) => {
-        event.preventDefault(); // Prevent default anchor behavior
-        navigateToPage(page);
+        navLinks.forEach(link => {
+            const elem = document.getElementById(link.id);
+            if (elem) {
+                elem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateToPage(link.page);
+                });
+            }
+        });
+    }
+
+    async function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageKey = urlParams.get('page') || 'leader_board';
+        await navigateToPage(pageKey);
+    }
+
+    window.onpopstate = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageKey = urlParams.get('page') || 'leader_board';
+        await navigateToPage(pageKey);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeNavigation();
+        initializePage();
     });
-}
-
-// Setup navigation links
-link_nav('navigate-leader-board', 'leader_board');
-link_nav('navigate-about', 'about');
+})();
