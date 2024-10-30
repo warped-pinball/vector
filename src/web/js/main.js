@@ -21,6 +21,7 @@
 
     let previousResourceIds = [];
     let isNavigating = false;
+    let currentPageKey = null;
 
     async function loadPageResources(pageKey) {
         const config = pageConfig[pageKey];
@@ -35,9 +36,16 @@
     }
 
     async function handleNavigation(pageKey, replace = false, updateHistory = true) {
-        if (isNavigating) return;
+        if (isNavigating || pageKey === currentPageKey) return;
         isNavigating = true;
         try {
+            if (currentPageKey) {
+                const cleanupFunction = window[`cleanup_${currentPageKey}`];
+                if (typeof cleanupFunction === 'function') {
+                    cleanupFunction();
+                }
+            }
+
             const config = pageConfig[pageKey];
             if (!config) return;
             document.title = config.title;
@@ -50,6 +58,7 @@
                 }
             }
             await loadPageResources(pageKey);
+            currentPageKey = pageKey;
         } finally {
             isNavigating = false;
         }
@@ -84,15 +93,18 @@
         });
     }
 
-    async function initializePage() {
+    function getCurrentPage() {
         const urlParams = new URLSearchParams(window.location.search);
-        const pageKey = urlParams.get('page') || 'leader_board';
+        return urlParams.get('page') || 'leader_board';
+    }
+
+    async function initializePage() {
+        const pageKey = getCurrentPage();
         await handleNavigation(pageKey, true, true);
     }
 
     window.onpopstate = async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageKey = urlParams.get('page') || 'leader_board';
+        const pageKey = getCurrentPage();
         await handleNavigation(pageKey, false, false);
     };
 

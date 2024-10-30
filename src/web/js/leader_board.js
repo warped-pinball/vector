@@ -34,4 +34,10 @@ function updateLeaderboard() {
 }
 
 updateLeaderboard();
-setInterval(updateLeaderboard, 60000);
+leaderboardIntervalId = setInterval(updateLeaderboard, 60000);
+
+
+window.cleanup_leader_board = function() {
+    clearInterval(leaderboardIntervalId);
+    leaderboardIntervalId = null;
+};
