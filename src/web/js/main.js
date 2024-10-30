@@ -20,29 +20,38 @@
     };
 
     let previousResourceIds = [];
+    let isNavigating = false;
 
-    async function navigateToPage(pageKey) {
-        console.log('Navigating to page:', pageKey);
+    async function loadPageResources(pageKey) {
         const config = pageConfig[pageKey];
-        if (!config) {
-            console.error('Invalid page key:', pageKey);
-            return;
-        }
-        const { title, resources } = config;
-        document.title = title;
-        window.history.pushState({}, title, `/?page=${pageKey}`);
+        if (!config) return;
         clearPreviousResources(previousResourceIds);
         const newResourceIds = [];
-
-        for (const resource of resources) {
+        for (const resource of config.resources) {
             await window.loadResource(resource.url, resource.targetId);
             newResourceIds.push(resource.targetId);
         }
-
         previousResourceIds = newResourceIds;
     }
-    // make navigateToPage available to the window object
-    window.navigateToPage = navigateToPage;
+
+    async function handleNavigation(pageKey, replace = false) {
+        if (isNavigating) return;
+        isNavigating = true;
+        try {
+            const config = pageConfig[pageKey];
+            if (!config) return;
+            document.title = config.title;
+            const url = `/?page=${pageKey}`;
+            if (replace) {
+                window.history.replaceState({}, config.title, url);
+            } else {
+                window.history.pushState({}, config.title, url);
+            }
+            await loadPageResources(pageKey);
+        } finally {
+            isNavigating = false;
+        }
+    }
 
     function clearResource(targetId) {
         const element = document.getElementById(targetId);
@@ -62,13 +71,12 @@
             { id: 'navigate-leader-board', page: 'leader_board' },
             { id: 'navigate-about', page: 'about' }
         ];
-
         navLinks.forEach(link => {
             const elem = document.getElementById(link.id);
             if (elem) {
                 elem.addEventListener('click', (e) => {
                     e.preventDefault();
-                    navigateToPage(link.page);
+                    handleNavigation(link.page);
                 });
             }
         });
@@ -77,17 +85,32 @@
     async function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
         const pageKey = urlParams.get('page') || 'leader_board';
-        await navigateToPage(pageKey);
+        await handleNavigation(pageKey, true);
     }
 
     window.onpopstate = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const pageKey = urlParams.get('page') || 'leader_board';
-        await navigateToPage(pageKey);
+        await handleNavigation(pageKey);
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
+    async function init() {
         initializeNavigation();
-        initializePage();
-    });
+        await initializePage();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Expose functions to window for debugging
+    window.loadPageResources = loadPageResources;
+    window.handleNavigation = handleNavigation;
+    window.clearResource = clearResource;
+    window.clearPreviousResources = clearPreviousResources;
+    window.initializeNavigation = initializeNavigation;
+    window.initializePage = initializePage;
+    window.init = init;
 })();
