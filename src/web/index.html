@@ -61,6 +61,10 @@
         
     </footer>
 
+    <div id="main_js" style="display: none;"></div>
+    <div id="page_js" style="display: none;"></div>
+    <div id="extra_js" style="display: none;"></div>
+
     <script>
         // Determine resource type based on URL
         function determineResourceType(url) {
@@ -123,7 +127,8 @@
                     break;
                 case 'js':
                     newElement = document.createElement('script');
-                    newElement.textContent = cachedData;
+                    newElement.src = URL.createObjectURL(new Blob([cachedData], { type: 'application/javascript' }));
+                    newElement.async = false;
                     break;
                 case 'html':
                     newElement = document.createElement('div');
@@ -164,10 +169,5 @@
         
         
     </script>
-
-    <!-- Placeholder Divs for Scripts and Styles -->
-    <div id="main_js" style="display: none;"></div>
-    <div id="page_js" style="display: none;"></div>
-    <div id="extra_js" style="display: none;"></div>
 </body>
 </html>
