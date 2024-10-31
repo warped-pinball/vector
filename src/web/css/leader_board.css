@@ -23,3 +23,7 @@ table tr td:nth-child(3),
 table tr td:nth-child(4) {
     text-align: left;
 }
+
+table th {
+    text-align: center;
+}
