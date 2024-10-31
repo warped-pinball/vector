@@ -121,7 +121,7 @@ async function set_title() {
         } else {
             console.warn('Element with ID "game_name" not found.');
         }
-        document.title = `${gameName} - ${config.title}`;
+        document.title = `${gameName} | ${config.title}`;
     } catch (error) {
         console.error('Failed to load game name:', error);
     }
