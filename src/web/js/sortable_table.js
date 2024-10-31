@@ -1,18 +1,26 @@
 const tables = document.querySelectorAll('.sortable');
-  
+
 tables.forEach(table => {
     const headers = table.querySelectorAll('th');
     headers.forEach((header, index) => {
-    header.addEventListener('click', () => {
-        const direction = header.classList.contains('asc') ? 'desc' : 'asc';
-        headers.forEach(th => th.classList.remove('asc', 'desc'));
-        header.classList.add(direction);
-        sortTable(table, index, direction === 'asc');
-    });
+        header.addEventListener('click', () => {
+            const direction = header.classList.contains('asc') ? 'desc' : 'asc';
+
+            // Clear all chevrons and sort classes from headers
+            headers.forEach(th => {
+                th.classList.remove('asc', 'desc');
+                th.innerHTML = th.innerHTML.replace(/ ▲| ▼/, ''); // Remove any existing chevron
+            });
+
+            // Add chevron and sorting class to the clicked header
+            header.classList.add(direction);
+            header.innerHTML += direction === 'asc' ? ' ▲' : ' ▼';
+
+            sortTable(table, index, direction === 'asc');
+        });
     });
 });
 
-  
 function sortTable(table, columnIndex, ascending = true) {
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.rows);
