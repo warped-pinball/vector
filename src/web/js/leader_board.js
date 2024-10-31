@@ -1,15 +1,21 @@
 function updateLeaderboard() {
     const MIN_ROWS = 4;  // Minimum number of rows in the leaderboard
     const tableBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
-
+    
+    // TODO make 1st place oposite light/dark compared to rest of page
+    
     // Function to create and populate a row
     function createRow(rank, initials = "", fullName = "", score = "", date = "") {
         let row = tableBody.insertRow();
-        row.insertCell(0).innerHTML = rank;
-        row.insertCell(1).innerHTML = initials;
-        row.insertCell(2).innerHTML = fullName;
-        row.insertCell(3).innerHTML = score.toLocaleString ? score.toLocaleString() : score;
-        row.insertCell(4).innerHTML = date;
+        row.insertCell(0).innerText = rank;
+        row.insertCell(1).innerText = score.toLocaleString ? score.toLocaleString() : score;
+        row.insertCell(2).innerText = initials;
+        row.insertCell(3).innerText = fullName;
+        row.insertCell(4).innerText = date;
+
+        if (rank === 1) {
+            row.setAttribute("data-theme", "light");
+        }
     }
 
     // Fetch leaderboard data

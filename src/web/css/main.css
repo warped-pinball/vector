@@ -1,0 +1,5 @@
+/* make all svgs 100% witdth and auto height */
+svg {
+  width: 100%;
+  height: auto;
+}

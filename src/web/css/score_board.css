@@ -1,8 +1,0 @@
-.score-board {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 2fr;
-    grid-column-gap: 1px;
-    justify-items: stretch;
-    align-items: stretch;
- }

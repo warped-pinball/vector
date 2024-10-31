@@ -2,19 +2,19 @@
 
 (async () => {
     const pageConfig = {
-        'leader_board': {
+        'leader-board': {
             title: 'Leader Board',
             resources: [
                 { url: '/html/leader_board.html.gz', targetId: 'page_html' },
                 { url: '/js/leader_board.js.gz', targetId: 'page_js' },
-                { url: '/css/score_board.css.gz', targetId: 'page_css' }
+                { url: '/css/leader_board.css.gz', targetId: 'page_css' }
             ]
         },
         'about': {
-            title: 'About Us',
+            title: 'About Warped Pinball',
             resources: [
                 { url: '/html/about.html.gz', targetId: 'page_html' },
-                // { url: '/css/about.css.gz', targetId: 'page_css' }
+                { url: '/css/about.css.gz', targetId: 'page_css' }
             ]
         }
     };
@@ -49,6 +49,13 @@
             const config = pageConfig[pageKey];
             if (!config) return;
             document.title = config.title;
+            
+            // Update page title
+            const pageTitleElement = document.getElementById('page_title');
+            if (pageTitleElement) {
+                pageTitleElement.innerText = config.title;
+            }
+
             if (updateHistory) {
                 const url = `/?page=${pageKey}`;
                 if (replace) {
@@ -79,7 +86,7 @@
 
     function initializeNavigation() {
         const navLinks = [
-            { id: 'navigate-leader-board', page: 'leader_board' },
+            { id: 'navigate-leader-board', page: 'leader-board' },
             { id: 'navigate-about', page: 'about' }
         ];
         navLinks.forEach(link => {
@@ -95,7 +102,7 @@
 
     function getCurrentPage() {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('page') || 'leader_board';
+        return urlParams.get('page') || 'leader-board';
     }
 
     async function initializePage() {

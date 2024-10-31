@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style id="custom_styles"></style>
+    <div id="pico_css" style="display: none;"></div>
     <div id="main_css" style="display: none;"></div>
     <div id="page_css" style="display: none;"></div>
     <link rel="manifest" href="/manifest.json">
@@ -18,24 +19,41 @@
             </ul>
             <ul>
                 <li>
-                    <strong>WARPED PINBALL</strong>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                    <a href="#" id="navigate-leader-board">Leader Board</a>
+                    <details class="dropdown">
+                        <summary>
+                            Score Boards
+                        </summary>
+                        <ul dir="rtl">
+                            <li><a href="#" id="navigate-leader-board">Leader Board</a></li>
+                            <li><a href="#" id="navigate-tournament">Tournament Board</a></li>
+                            <li><a href="#" id="navigate-personal-board">Personal Board</a></li>
+                        </ul>
+                    </details>
                 </li>
                 <li>
                     <a href="#" id="navigate-about">About</a>
+                </li>
+                <li>
+                    <a href="#" id="navigate-settings">Settings</a>
                 </li>
             </ul>
         </nav>
     </header>
 
-    <main id="page_html" class="container" aria-busy="true"></main>
+    <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
+        <h1 id="page_title">WARPED PINBALL</h1>
+        <div id="page_html" style="display: none;"></div>
+    </main>
 
-    <footer class="container">
-        <a href="https://warpedpinball.com">www.warpedpinball.com</a>
+    <footer class="container" style="text-align: center; text-wrap: auto;">
+        <div class="grid">
+            <div></div>
+            <section>
+                <p><code>Vector v00.20</code></p>
+            </section>
+            <div></div>
+        </div>
+        
     </footer>
 
     <script>
@@ -134,9 +152,11 @@
         window.clearCache = clearCache;
 
         // Load main.js.gz
-        loadResource('/js/main.js.gz', 'main_js');
-        loadResource('/css/pico.min.css.gz', 'main_css');
+        loadResource('/css/pico.min.css.gz', 'pico_css');
         loadResource('/svg/logo.svg.gz', 'logo');
+        loadResource('/js/main.js.gz', 'main_js');
+        loadResource('/css/main.css.gz', 'main_css');
+        
         
     </script>
 
