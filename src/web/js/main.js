@@ -7,6 +7,7 @@
             resources: [
                 { url: '/html/leader_board.html.gz', targetId: 'page_html' },
                 { url: '/js/leader_board.js.gz', targetId: 'page_js' },
+                { url: '/js/sortable_table.js.gz', targetId: 'extra_js' },
                 { url: '/css/leader_board.css.gz', targetId: 'page_css' }
             ]
         },

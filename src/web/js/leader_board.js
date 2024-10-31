@@ -26,7 +26,7 @@ function updateLeaderboard() {
 
             // Populate table with fetched data
             data.forEach((player, index) => {
-                createRow(index + 1, player.initials, player.full_name, player.score, player.date);
+                createRow(index + 1, player.initials, player.full_name, Math.random() * 1000000, player.date);
             });
 
             // Add blank rows if less than MIN_ROWS are present
