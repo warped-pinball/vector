@@ -1,4 +1,4 @@
-const tables = document.querySelectorAll('.sortable');
+var tables = document.querySelectorAll('.sortable');
 
 tables.forEach(table => {
     const headers = table.querySelectorAll('th');
