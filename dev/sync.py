@@ -101,13 +101,17 @@ def wipe_pico():
         sys.exit(1)
 
 @step_report(time_report=True, size_report=True)
-def compile_py_files():
-    """Compile .py files to .mpy bytecode, handling boot.py and main.py separately."""
-    print("Compiling .py files to .mpy...")
+def copy_files_to_build():
+    """Copy all files from SOURCE_DIR to BUILD_DIR."""
+    print("Copying files to build directory...")
     if os.path.exists(BUILD_DIR):
         shutil.rmtree(BUILD_DIR)
     shutil.copytree(SOURCE_DIR, BUILD_DIR)
 
+@step_report(time_report=True, size_report=True)
+def compile_py_files():
+    """Compile .py files to .mpy bytecode, handling boot.py and main.py separately."""
+    print("Compiling .py files to .mpy...")
     boot_py = os.path.join(BUILD_DIR, 'boot.py')
     main_py = os.path.join(BUILD_DIR, 'main.py')
     if os.path.exists(boot_py):
@@ -222,6 +226,24 @@ def scour_svg_files():
                     os.rename(temp_file_path, file_path)
                 else:
                     print(f"Error scouring {file_path}")
+
+@step_report(time_report=True, size_report=True)
+def minify_json_files():
+    """Minify JSON files."""
+    print("Minifying JSON files...")
+    paths = [
+        os.path.join(BUILD_DIR, 'web'),
+        os.path.join(BUILD_DIR, 'GameDefs')
+    ]
+    for path in paths:
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.json'):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                    with open(file_path, 'w') as f:
+                        json.dump(data, f, separators=(',', ':'))
 
 @step_report(time_report=True, size_report=True)
 def zip_files():
@@ -400,17 +422,19 @@ def main():
         "Steps are executed in the following order:",
         "  1. read_commit - Read the current git commit hash on the Pico.",
         "  2. wipe - Wipe the Pico filesystem.",
-        "  3. compile - Compile Python files to .mpy.",
-        "  4. minify_js - Minify JavaScript files.",
-        "  5. minify_css - Minify CSS files.",
-        "  6. minify_html - Minify HTML files.",
-        "  7. scour_svg - Run scour on all svg files in the build/web/svg directory.",
-        "  8. zip - gzip all files in the build/web/* directory.",
-        "  9. write_commit - Write the current git commit hash to a file.",
-        " 10. copy - Copy files to the Pico.",
-        " 11. restart - Restart the Pico.",
-        " 12. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 11. connect_repl - Connect to the Pico REPL."
+        "  3. build_init - Copy files to the build directory.",
+        "  4. compile - Compile Python files to .mpy.",
+        "  5. minify_js - Minify JavaScript files.",
+        "  6. minify_css - Minify CSS files.",
+        "  7. minify_html - Minify HTML files.",
+        "  8. scour_svg - Run scour on all svg files in the build/web/svg directory.",
+        "  9. minify_json - Minify JSON files.",
+        " 10. zip - gzip all files in the build/web/* directory.",
+        " 11. write_commit - Write the current git commit hash to a file.",
+        " 12. copy - Copy files to the Pico.",
+        " 13. restart - Restart the Pico.",
+        " 14. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 15. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -429,11 +453,13 @@ def main():
     steps_to_run = [
         ("read_commit", read_git_commit_on_pico),
         ("wipe", wipe_pico),
+        ("build_init", copy_files_to_build),
         ("compile", compile_py_files),
         ("minify_js", minify_js_files),
         ("minify_css", minify_css_files),
         ("minify_html", minify_html_files),
         ("scour_svg", scour_svg_files),
+        ("minify_json", minify_json_files),
         ("zip", zip_files),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
