@@ -22,6 +22,8 @@ JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to mi
 CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
 HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
+CERTIFICATE_FILE = 'certs/cert.pem'
+KEY_FILE = 'certs/key.pem'
 
 def get_directory_size(path: str) -> int:
     total_size = 0
@@ -268,6 +270,21 @@ def zip_files():
         zip_files_in_dir(os.path.join(dir))
     
     zip_files_in_dir('build/GameDefs')
+
+# Function to generate SSL certificates
+def generate_ssl_certificates():
+    """Generate SSL certificates for HTTPS."""
+    print("Generating SSL certificates...")
+    cert_path = os.path.join(BUILD_DIR, CERTIFICATE_FILE)
+    key_path = os.path.join(BUILD_DIR, KEY_FILE)
+    
+    # Use OpenSSL to generate self-signed certificate
+    cmd = f"openssl req -new -x509 -keyout {key_path} -out {cert_path} -days 365 -nodes -subj '/CN=localhost' > /dev/null 2>&1"
+    result = subprocess.run(cmd, shell=True)
+    if result.returncode != 0:
+        print("Error generating SSL certificates.")
+        sys.exit(1)
+    print("SSL certificates generated successfully.")
     
 @step_report(time_report=True, size_report=True)
 def copy_files_to_pico():
@@ -430,11 +447,12 @@ def main():
         "  8. scour_svg - Run scour on all svg files in the build/web/svg directory.",
         "  9. minify_json - Minify JSON files.",
         " 10. zip - gzip all files in the build/web/* directory.",
-        " 11. write_commit - Write the current git commit hash to a file.",
-        " 12. copy - Copy files to the Pico.",
-        " 13. restart - Restart the Pico.",
-        " 14. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 15. connect_repl - Connect to the Pico REPL."
+        " 11. gen_certs - Generate SSL certificates for HTTPS.",
+        " 12. write_commit - Write the current git commit hash to a file.",
+        " 13. copy - Copy files to the Pico.",
+        " 14. restart - Restart the Pico.",
+        " 15. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 16. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -461,6 +479,7 @@ def main():
         ("scour_svg", scour_svg_files),
         ("minify_json", minify_json_files),
         ("zip", zip_files),
+        ("gen_certs", generate_ssl_certificates),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
         ("apply_local_config", apply_local_config_to_pico),
