@@ -1,8 +1,8 @@
 // Set up navigation buttons and initialize with default table
 document.addEventListener('tablesLoaded', function () {
-    document.getElementById('navigate-score-boards').addEventListener('click', () => toggleTable('leaderboardTable'));
-    document.getElementById('navigate-tournament').addEventListener('click', () => toggleTable('tournamentTable'));
-    document.getElementById('navigate-personal-board').addEventListener('click', () => toggleTable('personalTable'));
+    document.getElementById('navigate-leader-board').addEventListener('click', () => console.log('Navigate to score boards'));
+    document.getElementById('navigate-tournament-board').addEventListener('click', () => console.log('Navigate to tournament'));
+    document.getElementById('navigate-personal-board').addEventListener('click', () => console.log('Navigate to personal board'));
 
     // Show the leaderboard table by default
     toggleTable('leaderboardTable');
@@ -65,7 +65,7 @@ function updateTournament() {
 }
 
 function updatePersonal() {
-    updateTable('personalTable', '/personal');
+    // updateTable('personalTable', '/personal');
 }
 
 // Function to update individual scores
@@ -185,4 +185,24 @@ function toggleTable(tableId) {
     } else {
         console.error("Button not found for tableId:", tableId);
     }
+}
+
+window.toggleTable = toggleTable;
+
+
+
+function showTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show the selected tab
+    document.getElementById(tabId).classList.add('active');
+
+    // Update active button
+    document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(tabId + '-btn').classList.add('active');
 }
