@@ -10,6 +10,7 @@ import serial.tools.list_ports
 import json
 import time
 import gzip
+import hashlib
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -22,8 +23,10 @@ JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to mi
 CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
 HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
-CERTIFICATE_FILE = 'certs/cert.pem'
-KEY_FILE = 'certs/key.pem'
+CERTS_DIR = os.path.join(BUILD_DIR, 'certs')
+CERT_FILE = 'ec_cert.der'
+KEY_FILE = 'ec_key.der'
+CERT_VALIDITY_DAYS = 36500
 
 def get_directory_size(path: str) -> int:
     total_size = 0
@@ -271,20 +274,48 @@ def zip_files():
     
     zip_files_in_dir('build/GameDefs')
 
-# Function to generate SSL certificates
-def generate_ssl_certificates():
-    """Generate SSL certificates for HTTPS."""
-    print("Generating SSL certificates...")
-    cert_path = os.path.join(BUILD_DIR, CERTIFICATE_FILE)
-    key_path = os.path.join(BUILD_DIR, KEY_FILE)
-    
-    # Use OpenSSL to generate self-signed certificate
-    cmd = f"openssl req -new -x509 -keyout {key_path} -out {cert_path} -days 365 -nodes -subj '/CN=localhost' > /dev/null 2>&1"
-    result = subprocess.run(cmd, shell=True)
+def run_command(command, error_message):
+    """Run a shell command and handle errors."""
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode != 0:
-        print("Error generating SSL certificates.")
+        print(error_message)
+        print(result.stderr)
         sys.exit(1)
-    print("SSL certificates generated successfully.")
+    return result.stdout.strip()
+
+@step_report(time_report=True, size_report=True)
+def generate_ssl_certificates():
+    """Generate SSL certificates for HTTPS in DER format using RSA keys."""
+    print("Generating SSL certificates...")
+
+    # Ensure the certs directory exists
+    os.makedirs(CERTS_DIR, exist_ok=True)
+
+    key_pem_path = os.path.join(CERTS_DIR, 'key.pem')
+    key_der_path = os.path.join(CERTS_DIR, 'key.der')
+    cert_pem_path = os.path.join(CERTS_DIR, 'cert.pem')
+    cert_der_path = os.path.join(CERTS_DIR, 'cert.der')
+
+    # Generate the RSA private key and self-signed certificate (in PEM format)
+    run_command(
+        f'openssl req -x509 -newkey rsa:2048 -keyout {key_pem_path} -out {cert_pem_path} '
+        f'-days {CERT_VALIDITY_DAYS} -nodes -subj "/CN=warpedpinball.local"',
+        "Error generating RSA key and self-signed certificate."
+    )
+    print(f"RSA private key and self-signed certificate generated at {key_pem_path} and {cert_pem_path}")
+
+    # Convert the certificate to DER format
+    run_command(f'openssl x509 -in {cert_pem_path} -outform DER -out {cert_der_path}', "Error converting certificate to DER format.")
+    print(f"Self-signed certificate in DER format at {cert_der_path}")
+
+    # Convert the private key to DER format (PKCS#1 format)
+    run_command(f'openssl rsa -in {key_pem_path} -outform DER -out {key_der_path}', "Error converting RSA private key to DER format.")
+    print(f"RSA private key in DER format at {key_der_path}")
+
+    print("SSL certificates generated and converted to DER format.")
+
+
+
     
 @step_report(time_report=True, size_report=True)
 def copy_files_to_pico():
