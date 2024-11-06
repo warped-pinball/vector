@@ -1,8 +1,8 @@
 <div class="score-board">
     <nav>
-        <button>Leaderboard</button>
-        <button>Tournament</button>
-        <button>Personal</button>
+        <button id="navigate-leader-board">Leaderboard</button>
+        <button id="navigate-tournament-board">Tournament</button>
+        <button id="navigate-personal-board">Personal</button>     
     </nav>
 
     <div id="leaderboardContainer">
@@ -40,6 +40,12 @@
     </div>
 
     <div id="personalContainer" style="display: none;">
+        <div class="select-container">
+            <label for="players">Player:</label>
+            <select id="players" name="players">
+                <option value="">Loading...</option>
+            </select>
+        </div>   
         <table id="personalTable" class="overflow-auto sortable">
             <thead>
                 <tr>

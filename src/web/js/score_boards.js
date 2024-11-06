@@ -1,8 +1,17 @@
+// Set up navigation buttons and initialize with default table
+document.addEventListener('tablesLoaded', function () {
+    document.getElementById('navigate-score-boards').addEventListener('click', () => toggleTable('leaderboardTable'));
+    document.getElementById('navigate-tournament').addEventListener('click', () => toggleTable('tournamentTable'));
+    document.getElementById('navigate-personal-board').addEventListener('click', () => toggleTable('personalTable'));
+
+    // Show the leaderboard table by default
+    toggleTable('leaderboardTable');
+});
+
 // Generic function to update a table with cached data and fetch new data from the server
-function updateTable(tableId, endpoint, minRows = 4) {
+async function updateTable(tableId, endpoint, minRows = 4) {
     const tableBody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
 
-    // Function to create and populate a row
     function createRow(rank, initials = "", fullName = "", score = "", date = "") {
         let row = tableBody.insertRow();
         row.insertCell(0).innerText = rank;
@@ -10,62 +19,135 @@ function updateTable(tableId, endpoint, minRows = 4) {
         row.insertCell(2).innerText = initials;
         row.insertCell(3).innerText = fullName;
         row.insertCell(4).innerText = date;
-
-        // Optional styling for first place
         if (rank === 1) {
             row.setAttribute("data-theme", "light");
         }
     }
 
-    // Load data from cache
     const cachedData = JSON.parse(localStorage.getItem(endpoint));
     if (cachedData) {
-        // Clear existing rows and populate table with cached data
         tableBody.innerHTML = '';
         cachedData.forEach((item, index) => {
             createRow(index + 1, item.initials, item.full_name, item.score, item.date);
         });
-        // Fill blank rows if fewer than minRows are present
         for (let i = cachedData.length; i < minRows; i++) {
             createRow(i + 1);
         }
     }
 
-    // Fetch new data from the server
-    fetch(endpoint)
-        .then(response => response.json())
-        .then(data => {
-            // Update cache with new data
-            localStorage.setItem(endpoint, JSON.stringify(data));
-            tableBody.innerHTML = ''; // Clear existing rows
+    try {
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+            console.warn(`Failed to fetch data from ${endpoint}: ${response.statusText}`);
+            return; // Exit if there's an error like 404
+        }
 
-            // Populate table with the new data
-            data.forEach((item, index) => {
-                createRow(index + 1, item.initials, item.full_name, item.score, item.date);
-            });
-
-            // Add blank rows if fewer than minRows are present
-            for (let i = data.length; i < minRows; i++) {
-                createRow(i + 1);
-            }
-        })
-        .catch(error => {
-            console.error(`Failed to load data for ${tableId} from ${endpoint}:`, error);
+        const data = await response.json();
+        localStorage.setItem(endpoint, JSON.stringify(data));
+        tableBody.innerHTML = '';
+        data.forEach((item, index) => {
+            createRow(index + 1, item.initials, item.full_name, item.score, item.date);
         });
+        for (let i = data.length; i < minRows; i++) {
+            createRow(i + 1);
+        }
+    } catch (error) {
+        console.error(`Failed to load data for ${tableId} from ${endpoint}:`, error);
+    }
 }
 
-// Wrapper functions for each table to keep it simple
 function updateLeaderboard() {
     updateTable('leaderboardTable', '/leaderboard');
 }
 
 function updateTournament() {
-    updateTable('tournamentTable', '/tournament');
+    updateTable('tournamentTable', '/tournamentboard');
 }
 
 function updatePersonal() {
     updateTable('personalTable', '/personal');
 }
+
+// Function to update individual scores
+async function updateIndividualScores(player) {
+    const tableBody = document.getElementById('personalTable').getElementsByTagName('tbody')[0];
+    const cachedScores = JSON.parse(localStorage.getItem(`indScores_${player}`));
+    const playerNameElement = document.getElementById('player-name');
+
+    if (playerNameElement && cachedScores) {
+        tableBody.innerHTML = '';
+        cachedScores.forEach(score => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `<td>${score.score}</td><td>${score.date}</td>`;
+        });
+        playerNameElement.textContent = cachedScores[0]?.full_name || player;
+    }
+
+    await fetch('/IndPlayerSet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player })
+    });
+
+    try {
+        const response = await fetch('/IndScores');
+        if (!response.ok) {
+            console.warn(`Failed to fetch scores for ${player}: ${response.statusText}`);
+            return;
+        }
+
+        const scores = await response.json();
+        localStorage.setItem(`indScores_${player}`, JSON.stringify(scores));
+        tableBody.innerHTML = '';
+        scores.forEach(score => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `<td>${score.score}</td><td>${score.date}</td>`;
+        });
+        if (playerNameElement) {
+            playerNameElement.textContent = scores[0]?.full_name || player;
+        }
+    } catch (error) {
+        console.error(`Failed to load individual scores for ${player}:`, error);
+    }
+}
+
+// Function to load player list for the dropdown
+async function loadPlayers() {
+    const playersSelect = document.getElementById('players');
+    try {
+        const response = await fetch('/IndPlayers');
+        if (!response.ok) {
+            console.warn(`Failed to load players: ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json();
+        const players = data.players;
+
+        playersSelect.innerHTML = '';
+        players.forEach(player => {
+            const option = document.createElement('option');
+            option.value = player;
+            option.text = player;
+            playersSelect.appendChild(option);
+        });
+
+        if (players.length > 0) {
+            playersSelect.value = players[0];
+            await updateIndividualScores(players[0]);
+        }
+
+        playersSelect.addEventListener('change', async function () {
+            const selectedPlayer = playersSelect.value;
+            await updateIndividualScores(selectedPlayer);
+        });
+    } catch (error) {
+        console.error('Failed to load players:', error);
+    }
+}
+
+// Call loadPlayers to populate the dropdown when the page is ready
+loadPlayers();
 
 // Auto-refresh intervals
 const leaderboardIntervalId = setInterval(updateLeaderboard, 60000);
@@ -81,33 +163,22 @@ window.cleanupTables = function() {
 
 // Toggle table visibility and trigger update function for the selected table
 function toggleTable(tableId) {
-    // Hide all table containers
     document.getElementById('leaderboardContainer').style.display = 'none';
     document.getElementById('tournamentContainer').style.display = 'none';
     document.getElementById('personalContainer').style.display = 'none';
 
-    // Show the selected table's container
     const selectedContainer = document.getElementById(tableId + 'Container');
     if (selectedContainer) {
         selectedContainer.style.display = 'block';
-
-        // Trigger the update function for the visible table
-        if (tableId === 'leaderboardTable') {
-            updateLeaderboard();
-        } else if (tableId === 'tournamentTable') {
-            updateTournament();
-        } else if (tableId === 'personalTable') {
-            updatePersonal();
-        }
+        if (tableId === 'leaderboardTable') updateLeaderboard();
+        else if (tableId === 'tournamentTable') updateTournament();
+        else if (tableId === 'personalTable') updatePersonal();
     } else {
         console.error("Container not found for tableId:", tableId);
     }
 
-    // Update active button styles
     const buttons = document.querySelectorAll('.score-board nav button');
     buttons.forEach(button => button.classList.remove('active'));
-
-    // Add the 'active' class to the correct button
     const activeButton = document.querySelector(`button[onclick="toggleTable('${tableId}')"]`);
     if (activeButton) {
         activeButton.classList.add('active');
@@ -115,13 +186,3 @@ function toggleTable(tableId) {
         console.error("Button not found for tableId:", tableId);
     }
 }
-
-// Set up navigation buttons and initialize with default table
-document.addEventListener('tablesLoaded', function () {
-    document.getElementById('navigate-score-boards').addEventListener('click', () => toggleTable('leaderboardTable'));
-    document.getElementById('navigate-tournament').addEventListener('click', () => toggleTable('tournamentTable'));
-    document.getElementById('navigate-personal-board').addEventListener('click', () => toggleTable('personalTable'));
-
-    // Show the leaderboard table by default
-    toggleTable('leaderboardTable');
-});
