@@ -1,11 +1,11 @@
 const pageConfig = {
-    'leader-board': {
-        title: 'Leader Board',
+    'score-boards': {
+        title: 'Score Boards',
         resources: [
-            { url: '/html/leader_board.html.gz', targetId: 'page_html' },
-            { url: '/js/leader_board.js.gz', targetId: 'page_js' },
+            { url: '/html/score_boards.html.gz', targetId: 'page_html' },
+            { url: '/js/score_boards.js.gz', targetId: 'page_js' },
             { url: '/js/sortable_table.js.gz', targetId: 'extra_js' },
-            { url: '/css/leader_board.css.gz', targetId: 'page_css' }
+            { url: '/css/score_boards.css.gz', targetId: 'page_css' }
         ]
     },
     'about': {
@@ -147,7 +147,7 @@ function clearPreviousResources(resourceIds) {
 
 function initializeNavigation() {
     const navLinks = [
-        { id: 'navigate-leader-board', page: 'leader-board' },
+        { id: 'navigate-score-boards', page: 'score-boards' },
         { id: 'navigate-about', page: 'about' }
     ];
     navLinks.forEach(link => {
@@ -167,7 +167,7 @@ function initializeNavigation() {
 
 function getCurrentPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const page = urlParams.get('page') || 'leader-board';
+    const page = urlParams.get('page') || 'score-boards';
     console.log(`Current page determined as: ${page}`);
     return page;
 }
