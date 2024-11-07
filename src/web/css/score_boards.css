@@ -1,4 +1,4 @@
-.score-board {
+/* .score-board {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
@@ -24,7 +24,7 @@
 .score-board button.active {
     background-color: #333;
     color: #fff;
-}
+} */
 
 .tab-content {
     display: none;

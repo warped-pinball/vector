@@ -1,12 +1,3 @@
-// Set up navigation buttons and initialize with default table
-document.addEventListener('tablesLoaded', function () {
-    document.getElementById('navigate-leader-board').addEventListener('click', () => console.log('Navigate to score boards'));
-    document.getElementById('navigate-tournament-board').addEventListener('click', () => console.log('Navigate to tournament'));
-    document.getElementById('navigate-personal-board').addEventListener('click', () => console.log('Navigate to personal board'));
-
-    // Show the leaderboard table by default
-    toggleTable('leaderboardTable');
-});
 
 // Generic function to update a table with cached data and fetch new data from the server
 async function updateTable(tableId, endpoint, minRows = 4) {
@@ -177,11 +168,12 @@ function toggleTable(tableId) {
         console.error("Container not found for tableId:", tableId);
     }
 
-    const buttons = document.querySelectorAll('.score-board nav button');
-    buttons.forEach(button => button.classList.remove('active'));
+    //  get all buttons in the div with id score-board-nav
+    const buttons = document.querySelectorAll('#score-board-nav button');
+    buttons.forEach(button => button.classList.remove('contrast'));
     const activeButton = document.querySelector(`button[onclick="toggleTable('${tableId}')"]`);
     if (activeButton) {
-        activeButton.classList.add('active');
+        activeButton.classList.add('contrast');
     } else {
         console.error("Button not found for tableId:", tableId);
     }
@@ -201,8 +193,9 @@ function showTab(tabId) {
     document.getElementById(tabId).classList.add('active');
 
     // Update active button
-    document.querySelectorAll('nav button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.getElementById(tabId + '-btn').classList.add('active');
+    document.querySelectorAll('#score-board-nav button').forEach(
+        button => button.classList.remove('contrast')
+    );
+    activeButton = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
+    activeButton.classList.add('contrast');
 }

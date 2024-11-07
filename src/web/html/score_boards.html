@@ -1,13 +1,11 @@
 <div class="score-board">
-    <nav>
-        <ul>
-            <li><button onclick="showTab('tab1')" class="active" id="tab1-btn">Tab 1</button></li>
-            <li><button onclick="showTab('tab2')" id="tab2-btn">Tab 2</button></li>
-            <li><button onclick="showTab('tab3')" id="tab3-btn">Tab 3</button></li>
-        </ul>
-    </nav>
+    <div id="score-board-nav" role="group">
+        <button onclick="showTab('leader-board')" class="secondary contrast" id="leader-board-btn">Leader Board</button>
+        <button onclick="showTab('tournament-board')" class="secondary" id="tournament-board-btn">Tournament Board</button>
+        <button onclick="showTab('personal-board')" class="secondary" id="personal-board-btn">Personal Board</button>
+    </div>
 
-    <section id="tab1" class="tab-content active">
+    <section id="leader-board" class="tab-content active">
         leader board
         <table id="leaderboardTable" class="overflow-auto sortable">
             <thead>
@@ -25,7 +23,7 @@
         </table>
     </section>
 
-    <section id="tab2" class="tab-content">
+    <section id="tournament-board" class="tab-content">
         tournament board
         <table id="tournamentTable" class="overflow-auto sortable">
             <thead>
@@ -43,21 +41,23 @@
         </table>
     </section>
 
-    <section id="tab3" class="tab-content">
-        <div class="select-container">
-            <label for="players">Player:</label>
-            <select id="players" name="players">
-                <option value="">Loading...</option>
-            </select>
-        </div>   
-        personal board
+    <section id="personal-board" class="tab-content">
+        <div class="grid" style="align-items: center">
+            <h2>Personal Scoreboard for:</h2>
+            <select name="select" aria-label="Select" required>
+                <option selected disabled value="">Select a Player</option>
+                <option>Solid</option>
+                <option>Liquid</option>
+                <option>Gas</option>
+                <option>Plasma</option>false
+              </select>
+            <a href="#" class="secondary">Add a Player</a>
+        </div>
         <table id="personalTable" class="overflow-auto sortable">
             <thead>
                 <tr>
                     <th>Rank</th>
                     <th>Score</th>
-                    <th>Initials</th>
-                    <th>Full Name</th>
                     <th>Date</th>
                 </tr>
             </thead>
