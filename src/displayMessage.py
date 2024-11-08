@@ -126,7 +126,7 @@ def set(ipAddress):
     elif S.gdata["DisplayMessage"]["Type"] == 2:  #2 display modules
         #16 char 3 lines,  IP address shown complete on each 16 digit display
         msg=['','',''] 
-        msg[0] = [ord(char) for char in "WARPED  PINBALL"]   
+        msg[0] = [ord(char) for char in "WARPED  PINBALL "]   
         msg[1]=typ1_DecimalandPad(ipAddress,16,0x20)         
         msg[2] = msg[1]        
         #print(msg)

@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Roller Games",
         "System": "11c",
-        "FileVer": 1     
+        "FileVer": 2     
     },
 
     "Memory" : {
@@ -23,7 +23,7 @@
     },
 
     "DisplayMessage": {
-        "Type": 3,
+        "Type": 2,
         "Address": "0x7B4",
         "Length": 16,
         "Number": 3,
@@ -38,7 +38,7 @@
     },
 
     "HighScores": {
-        "Type": 3,
+        "Type": 1,
         "ScoreAdr": "0x6ED",
         "InitialAdr": "0x6FD",
         "BytesInScore": 4
