@@ -3,7 +3,6 @@
 # This work is licensed under CC BY-NC 4.0 
 '''
     Warped Pinball - SYS11.Wifi
-    fault check updated for early sys11 game compatability
 '''
 
 import Wifi_Main as Wifi
@@ -39,30 +38,25 @@ def set_error_led():
     led_board = machine.Pin(26, machine.Pin.OUT)
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
 
-
 def bus_activity_fault_check():
-    # Looking for bus activity via transitions - reset hold is not working?
-    pins = [machine.Pin(i, machine.Pin.IN) for i in range(14, 22)]  # Data lines
-    transitions = 0
+    # looking for bus acitivty that indicates reset hold is not working
+    pins = [machine.Pin(i, machine.Pin.IN) for i in range(14, 22)]  #data lines
     total_reads = 0
+    zero_reads = 0
     start_time = time.ticks_us()
-    previous_states = [pin.value() for pin in pins]
-    
-    while time.ticks_diff(time.ticks_us(), start_time) < 800000:
-        for i, pin in enumerate(pins):
-            current_state = pin.value()
-            if current_state != previous_states[i]:  
-                transitions += 1
-                previous_states[i] = current_state 
+    # Keep reading for a bit
+    while time.ticks_diff(time.ticks_us(), start_time) < 800000:        
+        for pin in pins:
+            if pin.value() == 0:
+                 zero_reads += 1
         total_reads += 1    
-    
-    Log.log(f"Total reads: {total_reads}")
-    Log.log(f"Total transitions: {transitions}")
-    
-    if transitions > 250:
-        return True   # Fault
+    print(f"Total reads: {total_reads}")
+    print(f"Reads with any bit 0: {zero_reads}")
+    #return fault is true/false
+    if (zero_reads>1):
+        return(True)   #fault
     else:
-        return False  # All ok
+        return (False) #all ok
 
 
 def adr_activity_check():
@@ -110,7 +104,7 @@ Log.log(f"          Version {S.WarpedVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print("""
-SYS11.Wifi from Warped Pinball 
+SYS9.Wifi from Warped Pinball 
 This work is licensed under CC BY-NC 4.0     
 """)
 
@@ -124,6 +118,10 @@ if bus_activity_fault == True:
 else:
     fault_msg = None
 
+
+bus_activity_fault=False
+
+
 #load up Game Definitions
 if bus_activity_fault==False and ap_mode==False:
     GameDefsLoad.go() 
@@ -135,13 +133,15 @@ if bus_activity_fault == False:
 
 time.sleep(0.5) 
 reset_control.release(True)
-time.sleep(4) 
+time.sleep(1) 
 
+'''
 if bus_activity_fault == False:
     if "Fail"==adr_activity_check():
         reset_control.reset()
         time.sleep(2)
         reset_control.release(True)
+'''
 
 #launch wifi, and server. Should not return
 Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
