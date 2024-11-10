@@ -99,7 +99,7 @@ def check_ap_button():
 reset_control.init()
 
 print("\n\n")
-print("  Warped Pinball :: System11.Wifi")
+print("  Warped Pinball :: System9.Wifi")
 Log.log(f"          Version {S.WarpedVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
@@ -118,10 +118,6 @@ if bus_activity_fault == True:
 else:
     fault_msg = None
 
-
-bus_activity_fault=False
-
-
 #load up Game Definitions
 if bus_activity_fault==False and ap_mode==False:
     GameDefsLoad.go() 
@@ -134,14 +130,6 @@ if bus_activity_fault == False:
 time.sleep(0.5) 
 reset_control.release(True)
 time.sleep(1) 
-
-'''
-if bus_activity_fault == False:
-    if "Fail"==adr_activity_check():
-        reset_control.reset()
-        time.sleep(2)
-        reset_control.release(True)
-'''
 
 #launch wifi, and server. Should not return
 Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
