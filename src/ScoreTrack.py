@@ -4,7 +4,7 @@
 """
 Score Track
     V0.2 9/7/2024  period after initials handling
-    New for System 9 machines
+    New for System 9 machines  (Nov. 2024)
 """
 
 import json

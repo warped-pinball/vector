@@ -4,7 +4,7 @@
 '''
 display message handling (custom message shown on the pinball machine display)
 
-SYSYEM 9 Version
+SYSYEM 9 Version  (Nov. 2024)
 '''
 
 import json
