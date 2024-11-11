@@ -4,6 +4,7 @@
 """
 Score Track
     V0.2 9/7/2024  period after initials handling
+    New for System 9 machines
 """
 
 import json
@@ -25,32 +26,23 @@ def readMachineScore(index):
     if index not in (0, 1, 2, 3):
         return "SCORE: Invalid index", 0
 
-    # Calculate address offsets
-    score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4        
-    initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3    
+    # onlyu using in play scores for system9
+    score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4        
+    #initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3    
 
     # Read initials
-    initials_bytes = shadowRam[initial_start:initial_start + 3]
-    if S.gdata["HighScores"]["Type"] in [1,2]:  #0x40=space, A-Z normal ASCII        
-        initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
-        initials = bytes(initials_bytes).decode('ascii')
-    elif S.gdata["HighScores"]["Type"]==3:   #0=space,1='0',10='9', 11='A'
-        processed_initials = bytearray(
-            [0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes]
-        )
-        try:
-            initials = processed_initials.decode('ascii') 
-        except:
-            initials=""
-    else:
-        initials=""
+    initials=""
 
-    # Read score (BCD to integer conversion)
-    score_bytes = shadowRam[score_start:score_start + S.gdata["HighScores"]["BytesInScore"]]  
+    # Read score (BCD to integer conversion) - 0xf is zero...
+    score_bytes = shadowRam[score_start:score_start + S.gdata["InPlayScores"]["BytesInScore"]]  
     score = 0
     for byte in score_bytes:
-        high_digit = byte >> 4
+        high_digit = byte >> 4        
         low_digit = byte & 0x0F
+        if low_digit > 9:
+            low_digit=0
+        if high_digit > 9:
+            high_digit=0
         score = score * 100 + high_digit * 10 + low_digit
 
     return initials, score    
@@ -78,80 +70,24 @@ def ascii_to_type3(c):
   
 #write four highest scores from storage to machine memory    
 def placeMachineScores():
-    global top_scores
-    print("SCORE: Place Machine Scores")
-
-    if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
-
-        for index in range(4):    
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4      
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3  
-            try:
-                scoreBCD = int_to_bcd(top_scores[index]['score'])
-            except:
-                print("score convert problem")
-                scoreBCD = int_to_bcd(100)   
-
-            for i in range(S.gdata["HighScores"]["BytesInScore"]):
-                shadowRam[score_start + i] = scoreBCD[i]                      
-            try:
-                print("  top scores: ",top_scores[index])     
-                if S.gdata["HighScores"]["Type"]==1:
-                    shadowRam[initial_start]=ord(top_scores[index]["initials"][0])  
-                    shadowRam[initial_start+1]=ord(top_scores[index]["initials"][1])
-                    shadowRam[initial_start+2]=ord(top_scores[index]["initials"][2])
-                elif S.gdata["HighScores"]["Type"]==3:  
-                    shadowRam[initial_start]=ascii_to_type3(ord(top_scores[index]["initials"][0]))
-                    shadowRam[initial_start+1]=ascii_to_type3(ord(top_scores[index]["initials"][1]))
-                    shadowRam[initial_start+2]=ascii_to_type3(ord(top_scores[index]["initials"][2]))
-
-            except:
-                print("place machine scores eception")
-                shadowRam[initial_start]=64
-                shadowRam[initial_start+1]=64
-                shadowRam[initial_start+2]=64
+   return 0
     
    
-#remove machine scores so all players will enter initials at the end of active game
+#remove machine scores - replace with high #s
 def removeMachineScores():
-    if S.gdata["HighScores"]["Type"] == 1: 
-        log.log("SCORE: Remove machine scores 1")
+    if S.gdata["HighScores"]["Type"] == 9: 
+        log.log("SCORE: Remove machine high scores")
         for index in range(4):    
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-
-            shadowRam[score_start+0]=0
-            shadowRam[score_start+1]=0
-            shadowRam[score_start+2]=(5-index)
-            shadowRam[score_start+3]=0
-            shadowRam[initial_start+0]=0x3F
-            shadowRam[initial_start+1]=0x3F
-            shadowRam[initial_start+2]=0x3F       
-    elif S.gdata["HighScores"]["Type"] == 3: 
-        log.log("SCORE: Remove machine scores 3")
-        for index in range(4):    
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-
-            shadowRam[score_start+0]=0
-            shadowRam[score_start+1]=0
-            shadowRam[score_start+2]=(5-index)
-            shadowRam[score_start+3]=0
-            shadowRam[initial_start+0]=0x00
-            shadowRam[initial_start+1]=0x00
-            shadowRam[initial_start+2]=0x00       
+            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]           
+            shadowRam[score_start+0]=0xF9
+            shadowRam[score_start+1]=0x99
+            shadowRam[score_start+2]=0x99
+            shadowRam[score_start+3]=0x99    
+  
      
 
 #find players name from list of intials with names from storage
-def find_player_by_initials(new_entry):    
-    findInitials = new_entry['initials']
-    count=DataStore.memory_map["names"]["count"]
-    for index in range(count):
-        rec=DataStore.read_record("names",index)
-        if rec is not None:           
-            if rec['initials'] == findInitials:        
-                player_name = rec['full_name'].strip('\x00')
-                return (player_name,index)
+def find_player_by_initials(new_entry):       
     return (' ',-1)
 
 
@@ -292,19 +228,7 @@ def initialize_leaderboard():
         }
         top_scores.append(fake_entry)      
 
-    #any scores in ram (might not ne in leaders struct after reset)            
-    for i in range(4):
-        initials, score = readMachineScore(i)                    
-        if any(0x40 < ord(initial) <= 0x5A for initial in initials[:3]):        
-            year, month, day, _, _, _, _, _ = rtc.datetime()
-            new_score = {
-                'initials': initials,
-                'full_name': '    ',
-                'score': score,
-                'date': f"{month:02d}/{day:02d}/{year}",
-                "game_count": SharedState.gameCounter
-            }                    
-            update_leaderboard(new_score)               
+  
 
 
 

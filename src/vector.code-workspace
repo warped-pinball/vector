@@ -1,0 +1,41 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "Mpy Remote Workspace",
+			"uri": "pico:"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance",
+		"micropico.syncFileTypes": [
+			"py",
+			"txt",
+			"log",
+			"json",
+			"xml",
+			"html",
+			"js",
+			"css",
+			"mpy",
+			"png"
+		],
+		"micropico.pyIgnore": [
+			"**/.picowgo",
+			"**/.micropico",
+			"**/.vscode",
+			"**/.gitignore",
+			"**/.git",
+			"**/.DS_Store",
+			"**/project.pico-go",
+			"**/env",
+			"**/venv",
+			"**/.venv",
+			"**/.idea",
+			"Utilities/"
+		],
+		"micropico.syncFolder": "src"
+	}
+}

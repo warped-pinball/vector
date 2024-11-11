@@ -33,21 +33,21 @@
 
     "Adjustments" :{
         "Type": 0,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7DD",
-        "ChecksumResultAdr": "0x7E5"
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
     },
 
     "HighScores": {
         "Type": 10,
         "ScoreAdr": "0x734",
-        "BytesInScore": 4,
-        "InitialAdr": "0x7F0"
+        "BytesInScore": 4
     },
 
     "InPlayScores": {
         "Type": 1,
         "ScoreAdr": "0x38",
+        "ZeroNibble": 15,
         "BytesInScore": 4
     },
 
