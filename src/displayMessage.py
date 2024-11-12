@@ -5,6 +5,7 @@
 display message handling (custom message shown on the pinball machine display)
 
 SYSYEM 9 Version  (Nov. 2024)
+For system 9 show IP address on the high score display
 '''
 
 import json
@@ -44,7 +45,7 @@ def set_mem(msg):
             n=int_to_bcd(msg[i])
             for offset in range(4):
                 shadowRam[address_offset+offset]=n[offset]
-                print(" set ",address_offset+offset, " to",n[offset])
+                #print(" set ",address_offset+offset, " to",n[offset])
 
 
 def typ1_DecimalandPad(input,length,spacechar):   

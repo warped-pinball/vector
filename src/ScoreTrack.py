@@ -16,6 +16,7 @@ import SPI_DataStore as DataStore
 import SharedState as S
 from logger import logger_instance
 log = logger_instance
+import displayMessage
 
 rtc = RTC()
 
@@ -231,13 +232,14 @@ def initialize_leaderboard():
   
 
 
-
+# this is the function called by server
 def CheckForNewScores(nState=[0]):
+
     enscorecap = DataStore.read_record("extras", 0)["other"]
     if bool(enscorecap) != True or S.gdata["HighScores"]["Type"]==0 :
         return
 
-    if S.gdata["BallInPlay"]["Type"] in [0, 1]:
+    if S.gdata["BallInPlay"]["Type"] == 1:
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"] 
         Ball1Value = S.gdata["BallInPlay"]["Ball1"]
         Ball2Value = S.gdata["BallInPlay"]["Ball2"]
@@ -249,32 +251,29 @@ def CheckForNewScores(nState=[0]):
         if nState[0]==0:  #wait for a game to start
             print("SERV: game start check")
             if shadowRam[BallInPlayAdr] in (Ball1Value,Ball2Value,Ball3Value,Ball4Value,Ball5Value):
-                #game started, clear out scores  -
+                #game started, clear out IP address put in big high scores
                 removeMachineScores()
                 SharedState.gameCounter = (SharedState.gameCounter +1) % 100
                 nState[0]=1
             
         elif nState[0]==1:
             print("SERV: game end check")
-            #if (shadowRam[BallInPlayAdr] >> 4) != 0xF:
+
+            #collect scores in progress...
+            for i in range(4):
+                print(readMachineScore(i))
+                    
             if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
                 #game over, get new scores
-                nState[0]=0
-                #print("   leader update")
+                nState[0]=0                
                 for i in range(4):
                     initials, score = readMachineScore(i)
-                    print("SCORE: new score: ",initials,score)
+                    print("SCORE: new score: ",initials,score)       
+
+                #place scores in temp list for player to claim...
                 
-                    #check for valid intials
-                    if any(0x40 < ord(initial) <= 0x5A for initial in initials[:3]):
-                        #print("name passed test")
-                        year, month, day, _, _, _, _, _ = rtc.datetime()
-                        new_score = {
-                            'initials': initials,
-                            'full_name': '    ',
-                            'score': score,
-                            'date': f"{month:02d}/{day:02d}/{year}",
-                            "game_count": SharedState.gameCounter
-                        }                    
-                        update_leaderboard(new_score)               
-                placeMachineScores()
+
+
+                #placeMachineScores()
+                displayMessage.refresh()
+

@@ -39,7 +39,7 @@
     },
 
     "HighScores": {
-        "Type": 10,
+        "Type": 9,
         "ScoreAdr": "0x734",
         "BytesInScore": 4
     },
