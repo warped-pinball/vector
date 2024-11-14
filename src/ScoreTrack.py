@@ -266,14 +266,15 @@ def CheckForNewScores(nState=[0]):
             if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
                 #game over, get new scores
                 nState[0]=0                
-                for i in range(4):
+                for i in range(4): 
                     initials, score = readMachineScore(i)
                     print("SCORE: new score: ",initials,score)       
 
                 #place scores in temp list for player to claim...
-                
+
 
 
                 #placeMachineScores()
                 displayMessage.refresh()
+
 
