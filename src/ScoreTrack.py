@@ -19,8 +19,52 @@ log = logger_instance
 import displayMessage
 
 rtc = RTC()
-
 top_scores = None
+
+#hold the last four (plus two older records) games worth of scores.  game counter and 4 scores plus intiials--
+recent_scores = [
+    [0, ("a", 50), ("b", 550), ("c", 5560), ("d", 7560)], 
+    [0, ("e", 10), ("", 0), ("", 0), ("", 0)], 
+    [0, ("", 54360), ("", 6540), ("", 6450), ("", 60)], 
+    [0, ("", 0), ("CRM", 7560), ("", 0), ("", 0)],  
+    [0, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [0, ("", 0), ("", 0), ("", 0), ("", 0)]
+]
+
+def get_claim_score_list():
+    return recent_scores[:4]
+
+
+def claim_scores(scores):
+    print("Incoming new score claims ->", scores)
+
+    for claim in scores:  # Iterate over each game in the incoming claims
+        claim_game_counter = claim[0]
+        claim_scores_and_initials = claim[1:]
+
+        for recent_game in recent_scores:  # Iterate over each game in recent_scores
+            recent_game_counter = recent_game[0]
+            recent_scores_and_initials = recent_game[1:]
+
+            # Match game counters
+            if claim_game_counter == recent_game_counter:
+                # Check each score
+                for i, (claim_initials, claim_score) in enumerate(claim_scores_and_initials):
+                    recent_initials, recent_score = recent_scores_and_initials[i]
+
+                    # Match scores
+                    if claim_score == recent_score:
+                        if claim_initials:  # If initials are provided in the claim
+                            recent_scores[recent_scores.index(recent_game)][i + 1] = (
+                                claim_initials,
+                                recent_score,
+                            )
+                            print(f"Updated initials for score {claim_score} -> {claim_initials}")
+
+                            # Call record_new_score with the updated game record
+                            #record_new_score(recent_scores[recent_scores.index(recent_game)])
+    return "ok"
+
 
 #read machine score (0=higest,3=lowest)
 def readMachineScore(index):
@@ -229,8 +273,6 @@ def initialize_leaderboard():
         }
         top_scores.append(fake_entry)      
 
-  
-
 
 # this is the function called by server
 def CheckForNewScores(nState=[0]):
@@ -271,10 +313,15 @@ def CheckForNewScores(nState=[0]):
                     print("SCORE: new score: ",initials,score)       
 
                 #place scores in temp list for player to claim...
+                recent_scores[5] = recent_scores[4]  
+                recent_scores[4] = recent_scores[3]  
+                recent_scores[3] = recent_scores[2]  
+                recent_scores[2] = recent_scores[1]  
+                recent_scores[1] = recent_scores[0]  
+                recent_scores[0]=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]
+                print(recent_scores)
 
-
-
-                #placeMachineScores()
-                displayMessage.refresh()
+                #put ip address back up on displays
+                displayMessage.refresh_9()
 
 

@@ -34,6 +34,9 @@
         tr:nth-child(odd) {
             background-color: #ffffff;
         }
+        .claim-column {
+            width: 80px; /* Fixed width for the Claim column */
+        }
         .claim-button {
             margin-top: 20px;
             display: block;
@@ -61,9 +64,9 @@
         <table>
             <thead>
                 <tr>
-                    <th>Game</th>
                     <th>Score</th>
                     <th>Initials</th>
+                    <th class="claim-column">Claim</th>
                 </tr>
             </thead>
             <tbody id="scoreTableBody">
@@ -75,13 +78,13 @@
 
     <script>
         document.getElementById('claimForm').addEventListener('keydown', function (event) {
-                if (event.key === 'Enter') {
-                    const activeElement = document.activeElement;
-                    if (activeElement.tagName === 'INPUT' && activeElement.type !== 'submit') {
-                        event.preventDefault(); // Prevent default Enter key behavior
-                    }
+            if (event.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName === 'INPUT' && activeElement.type !== 'submit') {
+                    event.preventDefault(); // Prevent default Enter key behavior
                 }
-            });
+            }
+        });
 
         // Function to load scores and initials from the host
         async function loadClaimScores() {
@@ -96,22 +99,35 @@
                 tableBody.innerHTML = ''; // Clear any existing rows
 
                 scores.forEach((game, gameIndex) => {
-                    // Extract the game counter but don't use it
-                    const gameCounter = game[0];
-                    
-                    // Process only the score tuples
+                    // Insert a thick horizontal line before each game (except the first one)
+                    if (gameIndex > 0) {
+                        const separatorRow = document.createElement('tr');
+                        separatorRow.innerHTML = `
+                            <td colspan="3" style="border-top: 4px solid #000;"></td>
+                        `;
+                        tableBody.appendChild(separatorRow);
+                    }
+
+                    // Process each score in the game
                     game.slice(1).forEach(([initials, score], scoreIndex) => {
+                        if (score === 0) {
+                            return; // Skip rows with a score of zero
+                        }
+
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>Game ${gameIndex + 1}</td>
                             <td>${score}</td>
-                            <td>
-                                <input type="text" 
-                                    name="initials_game${gameIndex}_score${scoreIndex}" 
-                                    value="${initials}" 
-                                    maxlength="3" 
-                                    placeholder="ABC" 
-                                    style="text-transform:uppercase; text-align:center;" />
+                            <td>${initials ? initials : ''}</td>
+                            <td class="claim-column">
+                                ${
+                                    initials
+                                        ? '' // If initials exist, no input box
+                                        : `<input type="text" 
+                                               name="claim_game${gameIndex}_score${scoreIndex}" 
+                                               maxlength="3" 
+                                               placeholder="ABC" 
+                                               style="text-transform:uppercase; text-align:center;" />`
+                                }
                             </td>
                         `;
                         tableBody.appendChild(row);
@@ -123,35 +139,50 @@
             }
         }
 
-
         // Function to save scores and initials back to the host
         async function saveClaimScores(event) {
-            event.preventDefault(); // Prevent form from submitting normally
+            event.preventDefault(); // Prevent form submission
 
-            const form = document.getElementById('claimForm');
-            const formData = new FormData(form);
+            const rows = document.querySelectorAll('#scoreTableBody tr'); // Select all rows
+            const scores = []; // Initialize scores array
+            let gameCounter = 0; // Game counter
 
-            // Rebuild the scores array
-            const scores = [];
-            for (let gameIndex = 0; gameIndex < 4; gameIndex++) {
-                const gameCounter = 0; // Default or fetched value
-                const game = [gameCounter];
-                for (let scoreIndex = 0; scoreIndex < 4; scoreIndex++) {
-                    const initials = formData.get(`initials_game${gameIndex}_score${scoreIndex}`) || '';
-                    const scoreCell = document.querySelector(
-                        `input[name="initials_game${gameIndex}_score${scoreIndex}"]`
-                    ).parentElement.previousElementSibling;
-                    const score = parseInt(scoreCell.textContent, 10) || 0;
-                    game.push([initials, score]);
+            rows.forEach((row) => {
+                const cells = row.querySelectorAll('td');
+
+                // Skip separator rows (they only have one cell spanning all columns)
+                if (cells.length === 1) {
+                    return;
                 }
-                scores.push(game);
-            }
+
+                const score = parseInt(cells[0].textContent.trim(), 10); // Get the score
+                const existingInitials = cells[1].textContent.trim(); // Get existing initials
+                const claimInput = cells[2].querySelector('input'); // Get the claim input field
+
+                // Determine initials (from claim input or existing initials)
+                const initials = claimInput ? claimInput.value.trim() : existingInitials;
+
+                // If a new game is detected, initialize it
+                if (!scores[gameCounter]) {
+                    scores[gameCounter] = [gameCounter + 1]; // Create a new game entry
+                }
+
+                // Add the initials and score to the current game
+                scores[gameCounter].push([initials, score]);
+
+                // Check if the current row signals a new game
+                if (cells[0].parentElement.classList.contains('new-game')) {
+                    gameCounter++;
+                }
+            });
+
+            console.log('Final scores array:', scores);
 
             try {
                 const response = await fetch('/save_claim_scores', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(scores)
+                    body: JSON.stringify(scores),
                 });
 
                 if (!response.ok) {
@@ -165,6 +196,8 @@
                 alert('Unable to save claim scores. Please try again later.');
             }
         }
+
+
 
         // Load the scores when the page loads
         window.onload = loadClaimScores;

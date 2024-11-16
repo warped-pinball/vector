@@ -85,7 +85,11 @@ def init(ipAddress):
     set(localCopyIp)    
     return
 
+#do not allow refresh from server - must be coordinated with score for system 9
 def refresh():
+    return
+
+def refresh_9():
     global localCopyIp      
     init(localCopyIp)
     print("display message refreshed ",localCopyIp)

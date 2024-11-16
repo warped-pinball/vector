@@ -28,6 +28,7 @@ import FileIO
 from SPI_DataStore import writeIP
 import GameStatus
 import reset_control
+import ScoreTrack
 
 
 rtc = RTC()
@@ -302,7 +303,7 @@ def application_mode(fault_msg):
             print(f"Error accessing DataStore: {e}")
             return ("error")      
         return json.dumps({"players":players})
-    
+
     def app_set_IndPlayer(request):
         global IndividualActivePlayer
         global IndividualActivePlayerNum        
@@ -516,6 +517,11 @@ def application_mode(fault_msg):
         gc.collect()
         return render_template(f"{APP_TEMPLATE_PATH}/player_names.html")  
     
+    @server.route("/claim.html")
+    def app_names(request):
+        gc.collect()
+        return render_template(f"{APP_TEMPLATE_PATH}/claim.html")  
+
     @server.route("/admin.html") 
     def app_index(request):        
         gc.collect()
@@ -583,7 +589,25 @@ def application_mode(fault_msg):
 
     print("WIFI: Setup Routes")
 
+
+    def app_submit_claim(request):      
+        gc.collect()
+        print("REQ-> ",request)
+        body = request.data
+        print("Claim scores back from client-> ",body)
+        ScoreTrack.claim_scores(body)
+        return "ok"
+    
+    def app_get_claim_scores(request):
+        r=ScoreTrack.get_claim_score_list()
+        response = json.dumps(r)
+        print("claim score to client-> ",response)
+        return (response)
+
     #Leaderboard page
+    server.add_route("/save_claim_scores", handler = app_submit_claim, methods = ["POST"])
+    server.add_route("/load_claim_scores", handler = app_get_claim_scores, methods = ["GET"])
+
     server.add_route("/leaderboard", handler=app_leaderBoardRead, methods = ["GET"])
     server.add_route("/logo.png", handler=app_logo, methods=["GET"])    
     server.add_route("/", handler = app_leaderBoardLoad, methods = ["GET"])
