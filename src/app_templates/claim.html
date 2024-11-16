@@ -99,40 +99,31 @@
                 tableBody.innerHTML = ''; // Clear any existing rows
 
                 scores.forEach((game, gameIndex) => {
-                    // Insert a thick horizontal line before each game (except the first one)
-                    if (gameIndex > 0) {
-                        const separatorRow = document.createElement('tr');
-                        separatorRow.innerHTML = `
-                            <td colspan="3" style="border-top: 4px solid #000;"></td>
-                        `;
-                        tableBody.appendChild(separatorRow);
-                    }
-
-                    // Process each score in the game
+                    const gameId = game[0]; // Assuming the first element is the game ID
                     game.slice(1).forEach(([initials, score], scoreIndex) => {
-                        if (score === 0) {
-                            return; // Skip rows with a score of zero
-                        }
+                        if (score === 0) return; // Skip rows with a score of zero
 
                         const row = document.createElement('tr');
+                        row.setAttribute('data-game-id', gameId); // Add game ID to row
                         row.innerHTML = `
                             <td>${score}</td>
                             <td>${initials ? initials : ''}</td>
                             <td class="claim-column">
                                 ${
                                     initials
-                                        ? '' // If initials exist, no input box
+                                        ? '' // No input box if initials exist
                                         : `<input type="text" 
-                                               name="claim_game${gameIndex}_score${scoreIndex}" 
-                                               maxlength="3" 
-                                               placeholder="ABC" 
-                                               style="text-transform:uppercase; text-align:center;" />`
+                                            name="claim_game${gameIndex}_score${scoreIndex}" 
+                                            maxlength="3" 
+                                            placeholder="ABC" 
+                                            style="text-transform:uppercase; text-align:center;" />`
                                 }
                             </td>
                         `;
                         tableBody.appendChild(row);
                     });
                 });
+
             } catch (error) {
                 console.error('Error loading claim scores:', error);
                 alert('Unable to load claim scores. Please try again later.');
@@ -148,33 +139,28 @@
             let gameCounter = 0; // Game counter
 
             rows.forEach((row) => {
-                const cells = row.querySelectorAll('td');
+            const cells = row.querySelectorAll('td');
+            if (cells.length === 1) return; // Skip separator rows
 
-                // Skip separator rows (they only have one cell spanning all columns)
-                if (cells.length === 1) {
-                    return;
-                }
+            const gameId = row.getAttribute('data-game-id'); // Get the game ID
+            const score = parseInt(cells[0].textContent.trim(), 10); // Get the score
+            const existingInitials = cells[1].textContent.trim(); // Get existing initials
+            const claimInput = cells[2].querySelector('input'); // Get claim input
 
-                const score = parseInt(cells[0].textContent.trim(), 10); // Get the score
-                const existingInitials = cells[1].textContent.trim(); // Get existing initials
-                const claimInput = cells[2].querySelector('input'); // Get the claim input field
+            const initials = claimInput ? claimInput.value.trim() : existingInitials;
 
-                // Determine initials (from claim input or existing initials)
-                const initials = claimInput ? claimInput.value.trim() : existingInitials;
+            if (!initials || isNaN(score)) return; // Skip rows with invalid data
 
-                // If a new game is detected, initialize it
-                if (!scores[gameCounter]) {
-                    scores[gameCounter] = [gameCounter + 1]; // Create a new game entry
-                }
+            // Ensure scores array includes the game ID
+            const gameEntry = scores.find((entry) => entry.gameId === gameId);
+            if (!gameEntry) {
+                scores.push({ gameId, scores: [] });
+            }
 
-                // Add the initials and score to the current game
-                scores[gameCounter].push([initials, score]);
+            const currentGame = scores.find((entry) => entry.gameId === gameId);
+            currentGame.scores.push({ initials, score });
+        });
 
-                // Check if the current row signals a new game
-                if (cells[0].parentElement.classList.contains('new-game')) {
-                    gameCounter++;
-                }
-            });
 
             console.log('Final scores array:', scores);
 
