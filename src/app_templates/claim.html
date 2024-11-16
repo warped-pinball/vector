@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Scores</title>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            font-size: 32px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        .claim-button {
+            margin-top: 20px;
+            display: block;
+            width: 200px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .claim-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Claim Scores</h1>
+    <form id="claimForm" action="/submit_claim" method="POST" onsubmit="redirectToLeaderboard(event)">
+        <table>
+            <thead>
+                <tr>
+                    <th>Game</th>
+                    <th>Score</th>
+                    <th>Initials</th>
+                </tr>
+            </thead>
+            <tbody>
+                <script>
+                    const scores = [
+                        [10000, 15000, 12000, 9000],
+                        [20000, 25000, 22000, 19000],
+                        [30000, 35000, 32000, 29000],
+                        [40000, 45000, 42000, 39000]
+                    ];
+
+                    const tableBody = document.querySelector('tbody');
+
+                    for (let game = 0; game < scores.length; game++) {
+                        for (let scoreIndex = 0; scoreIndex < scores[game].length; scoreIndex++) {
+                            const row = document.createElement('tr');
+
+                            row.innerHTML = `
+                                <td>Game ${game + 1}</td>
+                                <td>${scores[game][scoreIndex]}</td>
+                                <td>
+                                    <input type="text" 
+                                           name="initials_game${game}_score${scoreIndex}" 
+                                           maxlength="3" 
+                                           placeholder="ABC" 
+                                           style="text-transform:uppercase; text-align:center;" />
+                                </td>
+                            `;
+
+                            tableBody.appendChild(row);
+                        }
+                    }
+                </script>
+            </tbody>
+        </table>
+
+        <button type="submit" class="claim-button">Submit Claim</button>
+    </form>
+
+    <script>
+        function redirectToLeaderboard(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const form = document.getElementById('claimForm');
+
+            // Send form data to the server
+            const formData = new FormData(form);
+            fetch('/submit_claim', { method: 'POST', body: formData })
+                .then(response => {
+                    if (response.ok) {
+                        // Redirect to the Leader Board page
+                        window.location.href = "leader_board.html";
+                    } else {
+                        alert("Failed to submit claim. Please try again.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error submitting claim:", error);
+                    alert("An error occurred. Please try again.");
+                });
+        }
+    </script>
+</body>
+</html>
