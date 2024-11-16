@@ -57,7 +57,7 @@
 </head>
 <body>
     <h1>Claim Scores</h1>
-    <form id="claimForm" action="/submit_claim" method="POST" onsubmit="redirectToLeaderboard(event)">
+    <form id="claimForm" onsubmit="saveClaimScores(event)">
         <table>
             <thead>
                 <tr>
@@ -66,65 +66,108 @@
                     <th>Initials</th>
                 </tr>
             </thead>
-            <tbody>
-                <script>
-                    const scores = [
-                        [10000, 15000, 12000, 9000],
-                        [20000, 25000, 22000, 19000],
-                        [30000, 35000, 32000, 29000],
-                        [40000, 45000, 42000, 39000]
-                    ];
-
-                    const tableBody = document.querySelector('tbody');
-
-                    for (let game = 0; game < scores.length; game++) {
-                        for (let scoreIndex = 0; scoreIndex < scores[game].length; scoreIndex++) {
-                            const row = document.createElement('tr');
-
-                            row.innerHTML = `
-                                <td>Game ${game + 1}</td>
-                                <td>${scores[game][scoreIndex]}</td>
-                                <td>
-                                    <input type="text" 
-                                           name="initials_game${game}_score${scoreIndex}" 
-                                           maxlength="3" 
-                                           placeholder="ABC" 
-                                           style="text-transform:uppercase; text-align:center;" />
-                                </td>
-                            `;
-
-                            tableBody.appendChild(row);
-                        }
-                    }
-                </script>
+            <tbody id="scoreTableBody">
+                <!-- Rows will be dynamically loaded -->
             </tbody>
         </table>
-
         <button type="submit" class="claim-button">Submit Claim</button>
     </form>
 
     <script>
-        function redirectToLeaderboard(event) {
-            event.preventDefault(); // Prevent default form submission
+        document.getElementById('claimForm').addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    const activeElement = document.activeElement;
+                    if (activeElement.tagName === 'INPUT' && activeElement.type !== 'submit') {
+                        event.preventDefault(); // Prevent default Enter key behavior
+                    }
+                }
+            });
+
+        // Function to load scores and initials from the host
+        async function loadClaimScores() {
+            try {
+                const response = await fetch('/load_claim_scores');
+                if (!response.ok) {
+                    throw new Error('Failed to load claim scores');
+                }
+
+                const scores = await response.json();
+                const tableBody = document.getElementById('scoreTableBody');
+                tableBody.innerHTML = ''; // Clear any existing rows
+
+                scores.forEach((game, gameIndex) => {
+                    // Extract the game counter but don't use it
+                    const gameCounter = game[0];
+                    
+                    // Process only the score tuples
+                    game.slice(1).forEach(([initials, score], scoreIndex) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>Game ${gameIndex + 1}</td>
+                            <td>${score}</td>
+                            <td>
+                                <input type="text" 
+                                    name="initials_game${gameIndex}_score${scoreIndex}" 
+                                    value="${initials}" 
+                                    maxlength="3" 
+                                    placeholder="ABC" 
+                                    style="text-transform:uppercase; text-align:center;" />
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading claim scores:', error);
+                alert('Unable to load claim scores. Please try again later.');
+            }
+        }
+
+
+        // Function to save scores and initials back to the host
+        async function saveClaimScores(event) {
+            event.preventDefault(); // Prevent form from submitting normally
 
             const form = document.getElementById('claimForm');
-
-            // Send form data to the server
             const formData = new FormData(form);
-            fetch('/submit_claim', { method: 'POST', body: formData })
-                .then(response => {
-                    if (response.ok) {
-                        // Redirect to the Leader Board page
-                        window.location.href = "leader_board.html";
-                    } else {
-                        alert("Failed to submit claim. Please try again.");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error submitting claim:", error);
-                    alert("An error occurred. Please try again.");
+
+            // Rebuild the scores array
+            const scores = [];
+            for (let gameIndex = 0; gameIndex < 4; gameIndex++) {
+                const gameCounter = 0; // Default or fetched value
+                const game = [gameCounter];
+                for (let scoreIndex = 0; scoreIndex < 4; scoreIndex++) {
+                    const initials = formData.get(`initials_game${gameIndex}_score${scoreIndex}`) || '';
+                    const scoreCell = document.querySelector(
+                        `input[name="initials_game${gameIndex}_score${scoreIndex}"]`
+                    ).parentElement.previousElementSibling;
+                    const score = parseInt(scoreCell.textContent, 10) || 0;
+                    game.push([initials, score]);
+                }
+                scores.push(game);
+            }
+
+            try {
+                const response = await fetch('/save_claim_scores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(scores)
                 });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save claim scores');
+                }
+
+                // Redirect to Leader Board page after successful save
+                window.location.href = 'leader_board.html';
+            } catch (error) {
+                console.error('Error saving claim scores:', error);
+                alert('Unable to save claim scores. Please try again later.');
+            }
         }
+
+        // Load the scores when the page loads
+        window.onload = loadClaimScores;
     </script>
 </body>
 </html>
