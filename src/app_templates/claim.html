@@ -89,48 +89,65 @@
 
         // Function to load scores and initials from the host
         async function loadClaimScores() {
-            try {
-                const response = await fetch('/load_claim_scores');
-                if (!response.ok) {
-                    throw new Error('Failed to load claim scores');
-                }
-
-                const scores = await response.json();
-                const tableBody = document.getElementById('scoreTableBody');
-                tableBody.innerHTML = ''; // Clear any existing rows
-
-                scores.forEach((game) => {
-                    const gameId = game[0]; // Assuming the first element is the game ID
-                    game.slice(1).forEach(([initials, score]) => {
-                        if (score === 0) return; // Skip rows with a score of zero
-
-                        const row = document.createElement('tr');
-                        row.setAttribute('data-game-id', gameId); // Add game ID to row
-                        row.innerHTML = `
-                            <td>${gameId}</td> <!-- Game ID column -->
-                            <td>${score}</td>
-                            <td>${initials ? initials : ''}</td>
-                            <td class="claim-column">
-                                ${
-                                    initials
-                                        ? '' // No input box if initials exist
-                                        : `<input type="text" 
-                                            name="claim_game${gameId}_score${score}" 
-                                            maxlength="3" 
-                                            placeholder="ABC" 
-                                            style="text-transform:uppercase; text-align:center;" />`
-                                }
-                            </td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                });
-
-            } catch (error) {
-                console.error('Error loading claim scores:', error);
-                alert('Unable to load claim scores. Please try again later.');
-            }
+    try {
+        const response = await fetch('/load_claim_scores');
+        if (!response.ok) {
+            throw new Error('Failed to load claim scores');
         }
+
+        const scores = await response.json();
+        const tableBody = document.getElementById('scoreTableBody');
+        const claimButton = document.querySelector('.claim-button');
+        const table = tableBody.closest('table'); // Select the table element
+
+        tableBody.innerHTML = ''; // Clear any existing rows
+
+        scores.forEach((game) => {
+            const gameId = game[0]; // Assuming the first element is the game ID
+            game.slice(1).forEach(([initials, score]) => {
+                if (score === 0) return; // Skip rows with a score of zero
+
+                const row = document.createElement('tr');
+                row.setAttribute('data-game-id', gameId); // Add game ID to row
+                row.innerHTML = `
+                    <td>${gameId}</td> <!-- Game ID column -->
+                    <td>${score}</td>
+                    <td>${initials ? initials : ''}</td>
+                    <td class="claim-column">
+                        ${
+                            initials
+                                ? '' // No input box if initials exist
+                                : `<input type="text" 
+                                    name="claim_game${gameId}_score${score}" 
+                                    maxlength="3" 
+                                    placeholder="ABC" 
+                                    style="text-transform:uppercase; text-align:center;" />`
+                        }
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        });
+
+        // Check if the table body has any rows after processing
+        if (tableBody.children.length === 0) {
+            table.style.display = 'none'; // Hide the table
+            table.insertAdjacentHTML(
+                'afterend',
+                '<p id="noScoresMessage" style="text-align:center; font-size:18px;">No Scores Available to Claim</p>'
+            );
+            claimButton.textContent = 'Go Back'; // Change button text
+            claimButton.onclick = () => (window.location.href = 'leader_board.html'); // Redirect on click
+        } else {
+            table.style.display = ''; // Ensure table is visible if there are scores
+            document.getElementById('noScoresMessage')?.remove(); // Remove the no scores message if it exists
+        }
+    } catch (error) {
+        console.error('Error loading claim scores:', error);
+        alert('Unable to load claim scores. Please try again later.');
+    }
+}
+
 
         // Function to save scores and initials back to the host
     // Function to save scores and initials back to the host

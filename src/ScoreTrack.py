@@ -4,7 +4,7 @@
 """
 Score Track
     V0.2 9/7/2024  period after initials handling
-    New for System 9 machines  (Nov. 2024)
+    New for System 9 machines  (Nov. 2024) - changed to score claim method
 """
 
 import json
@@ -23,10 +23,10 @@ top_scores = None
 
 #hold the last four (plus two older records) games worth of scores.  game counter and 4 scores plus intiials--
 recent_scores = [
-    [0, ("a", 50), ("b", 550), ("c", 5560), ("d", 7560)], 
-    [1, ("e", 10), ("", 0), ("", 0), ("", 0)], 
-    [2, ("", 54360), ("", 6540), ("", 6450), ("", 60)], 
-    [3, ("", 0), ("CRM", 7560), ("", 0), ("", 0)],  
+    [0, ("", 3330), ("", 4440), ("", 5550), ("", 0)], 
+    [1, ("", 0), ("", 0), ("", 0), ("", 0)], 
+    [2, ("", 0), ("", 0), ("", 0), ("", 0)], 
+    [3, ("xxx", 4350), ("", 40), ("", 99), ("", 0)],  
     [4, ("", 0), ("", 0), ("", 0), ("", 0)],
     [5, ("", 0), ("", 0), ("", 0), ("", 0)]
 ]
@@ -37,7 +37,6 @@ def get_claim_score_list():
 
 def claim_scores(input_data):
     global recent_scores
-    #print("Incoming new score claims ->", input_data)
 
     for claim in input_data:  # Iterate over each game in the incoming claims    
 
@@ -64,7 +63,16 @@ def claim_scores(input_data):
                                     score_and_init[0].upper(),  # New initials
                                     i[1],  # Existing score
                                 )
-                      
+
+                                year, month, day, _, _, _, _, _ = rtc.datetime()
+                                new_score = {
+                                    'initials': score_and_init[0].upper(),
+                                    'full_name': '    ',
+                                    'score':  int(i[1]),
+                                    'date': f"{month:02d}/{day:02d}/{year}",
+                                    "game_count": SharedState.gameCounter
+                                }                    
+                                update_leaderboard(new_score)                          
     return "ok"
 
 
@@ -76,10 +84,7 @@ def readMachineScore(index):
     # onlyu using in play scores for system9
     score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4        
     #initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3    
-
-    # Read initials
     initials=""
-
     # Read score (BCD to integer conversion) - 0xf is zero...
     score_bytes = shadowRam[score_start:score_start + S.gdata["InPlayScores"]["BytesInScore"]]  
     score = 0
@@ -135,6 +140,14 @@ def removeMachineScores():
 
 #find players name from list of intials with names from storage
 def find_player_by_initials(new_entry):       
+    findInitials = new_entry['initials']
+    count=DataStore.memory_map["names"]["count"]
+    for index in range(count):
+        rec=DataStore.read_record("names",index)
+        if rec is not None:           
+            if rec['initials'] == findInitials:        
+                player_name = rec['full_name'].strip('\x00')
+                return (player_name,index)
     return (' ',-1)
 
 
@@ -163,8 +176,6 @@ def Update_individualScore(new_entry):
     scores.append(new_entry)            
     scores.sort(key=lambda x: x['score'], reverse=True)            
     scores = scores[:20]        
-    #for score in scores:
-    #    print(score)
 
     # Save the updated scores
     for i in range(num_scores): 
@@ -212,6 +223,7 @@ def update_leaderboard(new_entry):
         update_tournamentboard(new_entry)
         return 
    
+    #print("update indiv",new_entry)
     Update_individualScore(new_entry)
    
     #add player name to new_entry if there is an initals match    
@@ -276,9 +288,23 @@ def initialize_leaderboard():
         top_scores.append(fake_entry)      
 
 
-# this is the function called by server
-def CheckForNewScores(nState=[0]):
+def place_game_in_claim_list(game):
+    recent_scores[5] = recent_scores[4]  
+    recent_scores[4] = recent_scores[3]  
+    recent_scores[3] = recent_scores[2]  
+    recent_scores[2] = recent_scores[1]  
+    recent_scores[1] = recent_scores[0]  
+    recent_scores[0]=game  #[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]
+    print(recent_scores)
 
+
+nGameIdleCounter = 0
+
+# this is the function called by server
+#call rate is every 5 seconds
+def CheckForNewScores(nState=[0]):
+    global nGameIdleCounter
+    
     enscorecap = DataStore.read_record("extras", 0)["other"]
     if bool(enscorecap) != True or S.gdata["HighScores"]["Type"]==0 :
         return
@@ -293,8 +319,16 @@ def CheckForNewScores(nState=[0]):
         
         #discover new scores
         if nState[0]==0:  #wait for a game to start
-            print("SERV: game start check")
+            print("SERV: game start check",nGameIdleCounter)
+            nGameIdleCounter += 1
+            if nGameIdleCounter > (5*60/5):  #5 min, push empty onto list so old games expire
+                game=[SharedState.gameCounter,["",0],["",0],["",0],["",0]]              
+                place_game_in_claim_list(game)
+                nGameIdleCounter=0
+                print("SCORE: game list 10 minute expire")
+
             if shadowRam[BallInPlayAdr] in (Ball1Value,Ball2Value,Ball3Value,Ball4Value,Ball5Value):
+                nGameIdleCounter=0
                 #game started, clear out IP address put in big high scores
                 removeMachineScores()
                 SharedState.gameCounter = (SharedState.gameCounter +1) % 100
@@ -314,6 +348,7 @@ def CheckForNewScores(nState=[0]):
                     initials, score = readMachineScore(i)
                     print("SCORE: new score: ",initials,score)       
 
+                '''
                 #place scores in temp list for player to claim...
                 recent_scores[5] = recent_scores[4]  
                 recent_scores[4] = recent_scores[3]  
@@ -322,6 +357,10 @@ def CheckForNewScores(nState=[0]):
                 recent_scores[1] = recent_scores[0]  
                 recent_scores[0]=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]
                 print(recent_scores)
+                '''
+
+                game=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]              
+                place_game_in_claim_list(game)
 
                 #put ip address back up on displays
                 displayMessage.refresh_9()
