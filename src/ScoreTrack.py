@@ -304,7 +304,7 @@ nGameIdleCounter = 0
 #call rate is every 5 seconds
 def CheckForNewScores(nState=[0]):
     global nGameIdleCounter
-    
+
     enscorecap = DataStore.read_record("extras", 0)["other"]
     if bool(enscorecap) != True or S.gdata["HighScores"]["Type"]==0 :
         return
@@ -321,7 +321,7 @@ def CheckForNewScores(nState=[0]):
         if nState[0]==0:  #wait for a game to start
             print("SERV: game start check",nGameIdleCounter)
             nGameIdleCounter += 1
-            if nGameIdleCounter > (5*60/5):  #5 min, push empty onto list so old games expire
+            if nGameIdleCounter > (3*60/5):  # 3 min, push empty onto list so old games expire
                 game=[SharedState.gameCounter,["",0],["",0],["",0],["",0]]              
                 place_game_in_claim_list(game)
                 nGameIdleCounter=0

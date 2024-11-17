@@ -6,6 +6,8 @@
 
    load the game setting from a json file in 
    /GameDefs based on game name in the config
+
+   New version for SYSYEM 9
 '''
 import json
 import SPI_DataStore as DataStore
@@ -52,8 +54,8 @@ def load_safe_defaults():
     print ("DEFLOAD: load safe defaults")
     data= {
         "GameInfo": {
-            "GameName": "Generic Sys11",
-            "System": "11x"        
+            "GameName": "Generic Sys9",
+            "System": "9"        
         },
         "Definition": {
             "version": 1
