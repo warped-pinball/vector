@@ -24,45 +24,47 @@ top_scores = None
 #hold the last four (plus two older records) games worth of scores.  game counter and 4 scores plus intiials--
 recent_scores = [
     [0, ("a", 50), ("b", 550), ("c", 5560), ("d", 7560)], 
-    [0, ("e", 10), ("", 0), ("", 0), ("", 0)], 
-    [0, ("", 54360), ("", 6540), ("", 6450), ("", 60)], 
-    [0, ("", 0), ("CRM", 7560), ("", 0), ("", 0)],  
-    [0, ("", 0), ("", 0), ("", 0), ("", 0)],
-    [0, ("", 0), ("", 0), ("", 0), ("", 0)]
+    [1, ("e", 10), ("", 0), ("", 0), ("", 0)], 
+    [2, ("", 54360), ("", 6540), ("", 6450), ("", 60)], 
+    [3, ("", 0), ("CRM", 7560), ("", 0), ("", 0)],  
+    [4, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [5, ("", 0), ("", 0), ("", 0), ("", 0)]
 ]
 
 def get_claim_score_list():
     return recent_scores[:4]
 
 
-def claim_scores(scores):
-    print("Incoming new score claims ->", scores)
+def claim_scores(input_data):
+    global recent_scores
+    #print("Incoming new score claims ->", input_data)
 
-    for claim in scores:  # Iterate over each game in the incoming claims
-        claim_game_counter = claim[0]
-        claim_scores_and_initials = claim[1:]
+    for claim in input_data:  # Iterate over each game in the incoming claims    
 
-        for recent_game in recent_scores:  # Iterate over each game in recent_scores
-            recent_game_counter = recent_game[0]
-            recent_scores_and_initials = recent_game[1:]
+        claim_game_counter = int(claim[0])
+        t=claim[1:]
+        for score_and_init in t:
+            #print("record= ",claim_game_counter,score_and_init)        
 
-            # Match game counters
-            if claim_game_counter == recent_game_counter:
-                # Check each score
-                for i, (claim_initials, claim_score) in enumerate(claim_scores_and_initials):
-                    recent_initials, recent_score = recent_scores_and_initials[i]
+            for recent_game_index, recent_game in enumerate(recent_scores):
+                #print("recent game ",recent_game)
+                recent_game_counter = int(recent_game[0])
+                recent_scores_and_initials = recent_game[1:]
+                #print("c=",recent_game_counter,"i=",recent_scores_and_initials)
 
-                    # Match scores
-                    if claim_score == recent_score:
-                        if claim_initials:  # If initials are provided in the claim
-                            recent_scores[recent_scores.index(recent_game)][i + 1] = (
-                                claim_initials,
-                                recent_score,
-                            )
-                            print(f"Updated initials for score {claim_score} -> {claim_initials}")
-
-                            # Call record_new_score with the updated game record
-                            #record_new_score(recent_scores[recent_scores.index(recent_game)])
+                if (claim_game_counter == recent_game_counter):
+                    #print("match")
+                    # Check each score
+                    for score_index, i in enumerate(recent_scores_and_initials):                        
+                        #print("i=",i,i[1],score_and_init[1])
+                        if int(i[1]) == int(score_and_init[1]):   #score match
+                            if not i[0]:
+                                print ("ok new score",score_and_init,recent_game_index,score_index)
+                                recent_scores[recent_game_index][1 + score_index] = (
+                                    score_and_init[0].upper(),  # New initials
+                                    i[1],  # Existing score
+                                )
+                      
     return "ok"
 
 

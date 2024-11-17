@@ -64,6 +64,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>Game ID</th> <!-- Added Game ID column -->
                     <th>Score</th>
                     <th>Initials</th>
                     <th class="claim-column">Claim</th>
@@ -98,14 +99,15 @@
                 const tableBody = document.getElementById('scoreTableBody');
                 tableBody.innerHTML = ''; // Clear any existing rows
 
-                scores.forEach((game, gameIndex) => {
+                scores.forEach((game) => {
                     const gameId = game[0]; // Assuming the first element is the game ID
-                    game.slice(1).forEach(([initials, score], scoreIndex) => {
+                    game.slice(1).forEach(([initials, score]) => {
                         if (score === 0) return; // Skip rows with a score of zero
 
                         const row = document.createElement('tr');
                         row.setAttribute('data-game-id', gameId); // Add game ID to row
                         row.innerHTML = `
+                            <td>${gameId}</td> <!-- Game ID column -->
                             <td>${score}</td>
                             <td>${initials ? initials : ''}</td>
                             <td class="claim-column">
@@ -113,7 +115,7 @@
                                     initials
                                         ? '' // No input box if initials exist
                                         : `<input type="text" 
-                                            name="claim_game${gameIndex}_score${scoreIndex}" 
+                                            name="claim_game${gameId}_score${score}" 
                                             maxlength="3" 
                                             placeholder="ABC" 
                                             style="text-transform:uppercase; text-align:center;" />`
@@ -131,36 +133,45 @@
         }
 
         // Function to save scores and initials back to the host
-        async function saveClaimScores(event) {
+    // Function to save scores and initials back to the host
+    async function saveClaimScores(event) {
             event.preventDefault(); // Prevent form submission
 
             const rows = document.querySelectorAll('#scoreTableBody tr'); // Select all rows
             const scores = []; // Initialize scores array
-            let gameCounter = 0; // Game counter
+
+            let currentGameId = null;
+            let currentGameScores = [];
 
             rows.forEach((row) => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length === 1) return; // Skip separator rows
+                const gameId = row.getAttribute('data-game-id'); // Get the game ID
+                const cells = row.querySelectorAll('td');
+                const score = parseInt(cells[1].textContent.trim(), 10); // Score is in the second column
+                const existingInitials = cells[2].textContent.trim(); // Get existing initials
+                const claimInput = cells[3].querySelector('input'); // Claim input is in the fourth column
 
-            const gameId = row.getAttribute('data-game-id'); // Get the game ID
-            const score = parseInt(cells[0].textContent.trim(), 10); // Get the score
-            const existingInitials = cells[1].textContent.trim(); // Get existing initials
-            const claimInput = cells[2].querySelector('input'); // Get claim input
+                const initials = claimInput ? claimInput.value.trim() : existingInitials;
 
-            const initials = claimInput ? claimInput.value.trim() : existingInitials;
+                if (!initials || isNaN(score)) return; // Skip rows with invalid data
 
-            if (!initials || isNaN(score)) return; // Skip rows with invalid data
+                if (currentGameId !== gameId) {
+                    // If this is a new game, push the previous game's data to the array
+                    if (currentGameScores.length > 0) {
+                        scores.push([currentGameId, ...currentGameScores]);
+                    }
+                    // Start a new game
+                    currentGameId = gameId;
+                    currentGameScores = [];
+                }
 
-            // Ensure scores array includes the game ID
-            const gameEntry = scores.find((entry) => entry.gameId === gameId);
-            if (!gameEntry) {
-                scores.push({ gameId, scores: [] });
+                // Add the initials and score to the current game
+                currentGameScores.push([initials, score]);
+            });
+
+            // Push the last game's data
+            if (currentGameScores.length > 0) {
+                scores.push([currentGameId, ...currentGameScores]);
             }
-
-            const currentGame = scores.find((entry) => entry.gameId === gameId);
-            currentGame.scores.push({ initials, score });
-        });
-
 
             console.log('Final scores array:', scores);
 
@@ -182,7 +193,6 @@
                 alert('Unable to save claim scores. Please try again later.');
             }
         }
-
 
 
         // Load the scores when the page loads
