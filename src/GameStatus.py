@@ -1,5 +1,4 @@
 #game status
-
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE,SRAM_COUNT_BASE
 import json
@@ -18,6 +17,29 @@ def BCD_to_Int(number_BCD):
         low_digit = byte & 0x0F
         number_int = number_int * 100 + high_digit * 10 + low_digit
     return number_int
+
+
+#read machine score (0=player1, 3=player4)
+def readMachineScore_9(index):
+    if index not in (0, 1, 2, 3):
+        return "SCORE: Invalid index", 0
+    # only use in play scores for system9
+    score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4            
+    initials=""
+    # Read score (BCD to integer conversion) - 0xf is zero...
+    score_bytes = shadowRam[score_start:score_start + S.gdata["InPlayScores"]["BytesInScore"]]  
+    score = 0
+    for byte in score_bytes:
+        high_digit = byte >> 4        
+        low_digit = byte & 0x0F
+        if low_digit > 9:
+            low_digit=0
+        if high_digit > 9:
+            high_digit=0
+        score = score * 100 + high_digit * 10 + low_digit
+    return initials, score    
+
+
 
 
 

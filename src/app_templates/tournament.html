@@ -11,31 +11,69 @@
             padding: 0;
         }
         .header {
+            padding: 20px;
+            background-color: white; /* White background for the header */
+        }
+        .top-row, .bottom-row {
             display: flex;
+            justify-content: space-between; /* Evenly space out items */
             align-items: center;
-            padding: 10px;
-            background-color: #f4f4f4;
+            margin-bottom: 10px;
+        }
+        .spacer {
+            flex: 1; /* Empty space to balance items in the row */
         }
         .logo {
-            margin-right: 20px;
+            width: 100px;
+            height: 100px;
         }
         .game-info {
-            display: flex;
-            flex-direction: column;
+            text-align: center;
+            flex: 1;
         }
-        .game-status {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 10px;
+        .game-info h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .ball-in-play {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            margin: 5px;
+            width: 120px;
+        }
+        .ball-in-play h4 {
+            margin: 0;
+            font-size: 14px;
+        }
+        .ball-in-play p {
+            margin: 5px 0 0;
+            font-size: 18px;
+            font-weight: bold;
         }
         .player-score {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: center;
-            width: 100px;
+            margin: 5px;
+            width: 120px;
+        }
+        .player-score h4 {
+            margin: 0;
+            font-size: 14px;
+        }
+        .player-score p {
+            margin: 5px 0 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .separator {
+            height: 10px;
+            background-color: #ddd; /* Gray bar */
+            margin: 0;
         }
         .past-games {
-            margin: 20px;
+            padding: 20px;
         }
         .game-result {
             margin-bottom: 20px;
@@ -55,20 +93,40 @@
 </head>
 <body>
     <div class="header">
-        <img src="/logo.png" alt="Logo" class="logo" width="100" height="100">
-        <div class="game-info">
-            <h1 id="game-name">Game Name</h1>
-            <div id="ball-in-play" class="game-status">
-                <div class="player-score">Ball in Play: 0</div>
+        <!-- Top row -->
+        <div class="top-row">
+            <div class="spacer"></div>
+            <img src="/logo.png" alt="Logo" class="logo">
+            <div class="game-info">
+                <h1 id="game-name">Loading...</h1>
+            </div>
+            <div class="ball-in-play">
+                <h4>Ball in Play</h4>
+                <p id="ball-in-play-score">0</p>
+            </div>
+            <div class="spacer"></div>
+        </div>
+        <!-- Bottom row -->
+        <div class="bottom-row">
+            <div class="player-score" id="player1">
+                <h4>Player 1</h4>
+                <p id="player1-score">0</p>
+            </div>
+            <div class="player-score" id="player2">
+                <h4>Player 2</h4>
+                <p id="player2-score">0</p>
+            </div>
+            <div class="player-score" id="player3">
+                <h4>Player 3</h4>
+                <p id="player3-score">0</p>
+            </div>
+            <div class="player-score" id="player4">
+                <h4>Player 4</h4>
+                <p id="player4-score">0</p>
             </div>
         </div>
-        <div class="game-status">
-            <div class="player-score" id="player1">Player 1: 0</div>
-            <div class="player-score" id="player2">Player 2: 0</div>
-            <div class="player-score" id="player3">Player 3: 0</div>
-            <div class="player-score" id="player4">Player 4: 0</div>
-        </div>
     </div>
+    <div class="separator"></div>
     <div class="past-games" id="past-games">
         <h2>Past Games</h2>
         <!-- Past games will be populated dynamically -->
@@ -80,33 +138,39 @@
         <a href="/admin.html">Admin</a>
     </footer>
     <script>
-        async function fetchCurrentScores() {
+        async function fetchGameName() {
             try {
-                const response = await fetch('/current_scores');
+                const response = await fetch('/GameName');
                 const data = await response.json();
-
-                // Update the current game section
-                document.getElementById('game-name').textContent = data.gameName || 'Game Name';
-                document.getElementById('ball-in-play').textContent = `Ball in Play: ${data.ballInPlay}`;
-                document.getElementById('player1').textContent = `Player 1: ${data.player1}`;
-                document.getElementById('player2').textContent = `Player 2: ${data.player2}`;
-                document.getElementById('player3').textContent = `Player 3: ${data.player3}`;
-                document.getElementById('player4').textContent = `Player 4: ${data.player4}`;
+                const gameName = data.gamename || 'Game Name';
+                document.getElementById('game-name').textContent = gameName;
+                document.title = gameName;
             } catch (error) {
-                console.error('Failed to fetch current scores:', error);
+                console.error('Failed to load game name:', error);
             }
         }
 
-        async function fetchPastGames() {
+        async function updateLeaderboard() {
             try {
-                const response = await fetch('/past_games');
+                // Fetch current game scores
+                const response = await fetch('/current_scores');
                 const data = await response.json();
+
+                document.getElementById('ball-in-play-score').textContent = data.ballInPlay || '0';
+                document.getElementById('player1-score').textContent = data.player1 || '0';
+                document.getElementById('player2-score').textContent = data.player2 || '0';
+                document.getElementById('player3-score').textContent = data.player3 || '0';
+                document.getElementById('player4-score').textContent = data.player4 || '0';
+
+                // Fetch past games
+                const pastGamesResponse = await fetch('/past_games');
+                const pastGamesData = await pastGamesResponse.json();
                 const pastGamesContainer = document.getElementById('past-games');
-                
+
                 // Clear previous results
                 pastGamesContainer.innerHTML = '<h2>Past Games</h2>';
 
-                data.forEach((game, index) => {
+                pastGamesData.forEach((game, index) => {
                     const gameResult = document.createElement('div');
                     gameResult.classList.add('game-result');
                     gameResult.innerHTML = `
@@ -119,20 +183,15 @@
                     pastGamesContainer.appendChild(gameResult);
                 });
             } catch (error) {
-                console.error('Failed to fetch past games:', error);
+                console.error('Failed to update leaderboard:', error);
             }
         }
 
-        function refreshScores() {
-            fetchCurrentScores();
-            fetchPastGames();
-        }
-
-        // Initial load
-        document.addEventListener('DOMContentLoaded', () => {
-            refreshScores();
-            setInterval(refreshScores, 60000); // Refresh every 60 seconds
-        });
+        window.onload = function() {
+            fetchGameName(); // Fetch the game name on page load
+            updateLeaderboard(); // Fetch scores and past games
+            setInterval(updateLeaderboard, 60000); // Refresh leaderboard every 60 seconds
+        };
     </script>
 </body>
 </html>

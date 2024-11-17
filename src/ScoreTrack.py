@@ -76,14 +76,12 @@ def claim_scores(input_data):
     return "ok"
 
 
-#read machine score (0=higest,3=lowest)
+#read machine score (0=player1, 3=player4)
 def readMachineScore(index):
     if index not in (0, 1, 2, 3):
         return "SCORE: Invalid index", 0
-
-    # onlyu using in play scores for system9
-    score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4        
-    #initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3    
+    # only use in play scores for system9
+    score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4            
     initials=""
     # Read score (BCD to integer conversion) - 0xf is zero...
     score_bytes = shadowRam[score_start:score_start + S.gdata["InPlayScores"]["BytesInScore"]]  
@@ -96,7 +94,6 @@ def readMachineScore(index):
         if high_digit > 9:
             high_digit=0
         score = score * 100 + high_digit * 10 + low_digit
-
     return initials, score    
   
 #convert integer to 8 digit BCD number like stored in game for high scores
@@ -346,18 +343,7 @@ def CheckForNewScores(nState=[0]):
                 nState[0]=0                
                 for i in range(4): 
                     initials, score = readMachineScore(i)
-                    print("SCORE: new score: ",initials,score)       
-
-                '''
-                #place scores in temp list for player to claim...
-                recent_scores[5] = recent_scores[4]  
-                recent_scores[4] = recent_scores[3]  
-                recent_scores[3] = recent_scores[2]  
-                recent_scores[2] = recent_scores[1]  
-                recent_scores[1] = recent_scores[0]  
-                recent_scores[0]=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]
-                print(recent_scores)
-                '''
+                    print("SCORE: new score: ",initials,score)                     
 
                 game=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]              
                 place_game_in_claim_list(game)

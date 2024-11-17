@@ -401,7 +401,7 @@ async def FRAMTimer():
         #print("MEM in SEVER: ",MemIndex)
 
         poll_counter+=1
-        if poll_counter>1:
+        if poll_counter>5:
           GameStatus.poll_fast()
           poll_counter=0
 
