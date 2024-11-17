@@ -157,7 +157,7 @@
                 const data = await response.json();
 
                 // Update Ball In Play
-                document.getElementById('ball-in-play-score').textContent = data.BallInPlay || '0';
+                document.getElementById('ball-in-play-score').textContent = data.BallInPlay || 'Game Over';
 
                 // Update Player Scores
                 document.getElementById('player1-score').textContent = data.Player1Score || '0';
@@ -194,7 +194,7 @@
         window.onload = function() {
             fetchGameName(); // Fetch the game name on page load
             updateLeaderboard(); // Fetch scores and past games
-            setInterval(updateLeaderboard, 60000); // Refresh leaderboard every 60 seconds
+            setInterval(updateLeaderboard, 10000); // Refresh leaderboard every 10 seconds
         };
     </script>
 </body>

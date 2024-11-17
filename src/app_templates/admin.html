@@ -126,7 +126,10 @@
     <p>Leader Boards:</p>
     <div class="section">
         <button id="resetLeaderboardBtn">Reset Leaderboard</button>
-        <button id="resetTournamentScoresBtn">Reset Tournament Board</button>        
+        <button id="resetTournamentScoresBtn">Reset Tournament Board</button>   
+
+        <button id="startTournamentModeBtn">Start Tournament Mode</button>
+        <button id="endTournamentModeBtn">End Tournament Mode</button>     
     </div>
    
     <hr>
@@ -171,6 +174,36 @@
     <hr>
    
     <script>
+
+        document.getElementById('startTournamentModeBtn').onclick = async function() {
+            try {
+                const response = await fetch('/tournamentMode');
+                if (response.ok) {
+                    alert('Tournament mode started successfully.');
+                } else {
+                    alert('Failed to start tournament mode. Please try again.');
+                }
+            } catch (error) {
+                console.error('Failed to start tournament mode:', error);
+            }
+        };
+
+
+        document.getElementById('endTournamentModeBtn').onclick = async function() {
+            try {
+                const response = await fetch('/leaderMode');
+                if (response.ok) {
+                    alert('Tournament mode ended');
+                    location.reload();  // Reload the page after the acknowledgment
+                } else {
+                    alert('Failed to end tournament mode. Please try again.');
+                }
+            } catch (error) {
+                console.error('Failed to end tournament mode:', error);
+            }
+        };
+
+
         document.addEventListener('DOMContentLoaded', () => {
             async function fetchGameName() {
                 try {

@@ -199,17 +199,6 @@
     </script>
 
     <hr>
-    <button id="StartTournamentMode" aria-label="tournament Mode">Start Tournament Mode</button>
-    <hr>
-    
-    <script>
-        document.getElementById('StartTournamentMode').onclick = async function() {
-            await fetch('/tournamentMode');
-            location.reload();  // Reload the page after the fetch is complete
-        };
-    </script>
-
-    <hr>
     <a href="/leader_board.html">Leader Board</a> |
     <a href="/individual_scores.html">Individual Scores</a> |
     <a href="/player_names.html">Player Names</a> |
