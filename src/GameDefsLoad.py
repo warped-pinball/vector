@@ -98,6 +98,12 @@ def load_safe_defaults():
             "InitialAdr": "0x737",
             "BytesInScore": 4
         },
+        "InPlayScores": {
+            "Type": 0,
+            "ScoreAdr": "0x38",
+            "ZeroNibble": 15,
+            "BytesInScore": 4
+        },
 
         "HSRewards": {
             "Type": 0,

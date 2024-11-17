@@ -152,17 +152,20 @@
 
         async function updateLeaderboard() {
             try {
-                // Fetch current game scores
-                const response = await fetch('/current_scores');
+                // Fetch current game status
+                const response = await fetch('/GameStatus');
                 const data = await response.json();
 
-                document.getElementById('ball-in-play-score').textContent = data.ballInPlay || '0';
-                document.getElementById('player1-score').textContent = data.player1 || '0';
-                document.getElementById('player2-score').textContent = data.player2 || '0';
-                document.getElementById('player3-score').textContent = data.player3 || '0';
-                document.getElementById('player4-score').textContent = data.player4 || '0';
+                // Update Ball In Play
+                document.getElementById('ball-in-play-score').textContent = data.BallInPlay || '0';
 
-                // Fetch past games
+                // Update Player Scores
+                document.getElementById('player1-score').textContent = data.Player1Score || '0';
+                document.getElementById('player2-score').textContent = data.Player2Score || '0';
+                document.getElementById('player3-score').textContent = data.Player3Score || '0';
+                document.getElementById('player4-score').textContent = data.Player4Score || '0';
+
+                // Fetch past games (if needed)
                 const pastGamesResponse = await fetch('/past_games');
                 const pastGamesData = await pastGamesResponse.json();
                 const pastGamesContainer = document.getElementById('past-games');
@@ -186,6 +189,7 @@
                 console.error('Failed to update leaderboard:', error);
             }
         }
+
 
         window.onload = function() {
             fetchGameName(); // Fetch the game name on page load

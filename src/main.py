@@ -119,6 +119,8 @@ if bus_activity_fault == True:
 else:
     fault_msg = None
 
+
+
 #load up Game Definitions
 if bus_activity_fault==False and ap_mode==False:
     GameDefsLoad.go() 
