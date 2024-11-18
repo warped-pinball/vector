@@ -165,23 +165,41 @@
                 document.getElementById('player3-score').textContent = data.Player3Score || '0';
                 document.getElementById('player4-score').textContent = data.Player4Score || '0';
 
-                // Fetch past games (if needed)
+                // Fetch past games
                 const pastGamesResponse = await fetch('/tournamentboard');
                 const pastGamesData = await pastGamesResponse.json();
+                console.log('Fetched past games data:', pastGamesData);
+
                 const pastGamesContainer = document.getElementById('past-games');
+                pastGamesContainer.innerHTML = '<h2>Past Games</h2>'; // Clear previous results
 
-                // Clear previous results
-                pastGamesContainer.innerHTML = '<h2>Past Games</h2>';
+                // Extract and sort games by the "game" property
+                const gamesMap = {};
+                pastGamesData.forEach(entry => {
+                    const gameId = entry.game;
+                    if (gameId !== 0) { 
+                        if (!gamesMap[gameId]) {
+                            gamesMap[gameId] = [];
+                        }
+                        gamesMap[gameId].push(entry.score);
+                    }
+                });
 
-                pastGamesData.forEach((game, index) => {
+                console.log('Games Map:', gamesMap);
+                
+                // Get the first four unique games
+                //const gameIds = Object.keys(gamesMap).slice(0, 4);
+                const gameIds = Object.keys(gamesMap).sort((a, b) => b - a).slice(0, 5);
+
+
+                // Display the scores for each game
+                gameIds.forEach((gameId, index) => {
+                    const scores = gamesMap[gameId];
                     const gameResult = document.createElement('div');
                     gameResult.classList.add('game-result');
                     gameResult.innerHTML = `
                         <h3>Game ${index + 1}</h3>
-                        <div>Player 1: ${game.player1}</div>
-                        <div>Player 2: ${game.player2}</div>
-                        <div>Player 3: ${game.player3}</div>
-                        <div>Player 4: ${game.player4}</div>
+                        ${scores.map((score, i) => `<div>Player ${i + 1}: ${score}</div>`).join('')}
                     `;
                     pastGamesContainer.appendChild(gameResult);
                 });
@@ -191,10 +209,11 @@
         }
 
 
+
         window.onload = function() {
             fetchGameName(); // Fetch the game name on page load
             updateLeaderboard(); // Fetch scores and past games
-            setInterval(updateLeaderboard, 10000); // Refresh leaderboard every 10 seconds
+            setInterval(updateLeaderboard, 12000); // Refresh leaderboard every 12 seconds
         };
     </script>
 </body>

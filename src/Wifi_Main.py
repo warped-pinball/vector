@@ -279,6 +279,7 @@ def application_mode(fault_msg):
                 leaders.append(DataStore.read_record("tournament",i))
         except:  
             leaders = []            
+        print("LEADERS= ",json.dumps(leaders) )    
         return json.dumps(leaders) 
  
     def app_getGameName(request):       

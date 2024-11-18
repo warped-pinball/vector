@@ -23,10 +23,10 @@ top_scores = None
 
 #hold the last four (plus two older records) games worth of scores.  game counter and 4 scores plus intiials--
 recent_scores = [
-    [0, ("", 3330), ("", 4440), ("", 5550), ("", 0)], 
+    [0, ("", 0), ("", 0), ("", 0), ("", 0)], 
     [1, ("", 0), ("", 0), ("", 0), ("", 0)], 
     [2, ("", 0), ("", 0), ("", 0), ("", 0)], 
-    [3, ("xxx", 4350), ("", 40), ("", 99), ("", 0)],  
+    [3, ("", 0), ("", 0), ("", 0), ("", 0)],  
     [4, ("", 0), ("", 0), ("", 0), ("", 0)],
     [5, ("", 0), ("", 0), ("", 0), ("", 0)]
 ]
@@ -188,7 +188,7 @@ def update_tournamentboard(new_entry):
     rec=DataStore.read_record("tournament",0)
     nextIndex=rec["index"]
    
-    new_entry["game"]=SharedState.gameCounter 
+    #new_entry["game"]=SharedState.gameCounter 
     new_entry["index"]=nextIndex
     DataStore.write_record("tournament",new_entry,nextIndex)
     print("SCORE: tournament new score ",new_entry)
@@ -213,13 +213,6 @@ def update_leaderboard(new_entry):
         return False
 
     print("SCORE: Update Leader Board: ",new_entry)
-    
-    #if tournamnet mode do only tournamnet save - - - 
-    if SharedState.tournamentModeOn == 1:
-        print("SCORE: Tournament Mode")
-        update_tournamentboard(new_entry)
-        return 
-   
     #print("update indiv",new_entry)
     Update_individualScore(new_entry)
    
@@ -285,6 +278,23 @@ def initialize_leaderboard():
         top_scores.append(fake_entry)      
 
 
+def place_game_in_tournament(game):
+    year, month, day, _, _, _, _, _ = rtc.datetime()
+    new_score = {
+        'initials': ' ',
+        'full_name': ' ',
+        'score':  0,
+        'date': f"{month:02d}/{day:02d}/{year}",
+        "game": game[0]
+    }              
+
+    for i in range(4):
+        if int(game[i+1][1])>0:
+            new_score["score"]=int(game[i+1][1])
+            update_tournamentboard(new_score)
+
+
+
 def place_game_in_claim_list(game):
     recent_scores[5] = recent_scores[4]  
     recent_scores[4] = recent_scores[3]  
@@ -346,9 +356,11 @@ def CheckForNewScores(nState=[0]):
                     print("SCORE: new score: ",initials,score)                     
 
                 game=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]              
-                place_game_in_claim_list(game)
+                if SharedState.tournamentModeOn == 1:
+                    place_game_in_tournament(game)
+                else:
+                    place_game_in_claim_list(game)
 
                 #put ip address back up on displays
                 displayMessage.refresh_9()
-
 

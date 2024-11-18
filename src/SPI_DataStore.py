@@ -38,7 +38,7 @@ def show_mem_map():
 
 def write_record(structure_name, record, index=0, set=0):
     try:        
-        #print("write ",structure_name,record,index,set)
+        print("write ",structure_name,record,index,set)
         structure = memory_map[structure_name]
         start_address = structure["start"] + index * structure["size"] + structure["size"]*structure["count"]*set    
         data = serialize(record, structure_name)
