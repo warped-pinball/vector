@@ -191,7 +191,7 @@ def update_tournamentboard(new_entry):
     new_entry["game"]=SharedState.gameCounter 
     new_entry["index"]=nextIndex
     DataStore.write_record("tournament",new_entry,nextIndex)
-    #print("tourn ",new_entry)
+    print("SCORE: tournament new score ",new_entry)
 
     nextIndex+=1
     if nextIndex >= count: nextIndex=0

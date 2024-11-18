@@ -166,7 +166,7 @@
                 document.getElementById('player4-score').textContent = data.Player4Score || '0';
 
                 // Fetch past games (if needed)
-                const pastGamesResponse = await fetch('/past_games');
+                const pastGamesResponse = await fetch('/tournamentboard');
                 const pastGamesData = await pastGamesResponse.json();
                 const pastGamesContainer = document.getElementById('past-games');
 

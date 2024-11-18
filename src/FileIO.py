@@ -44,25 +44,35 @@ def download_leaders(request):
         return json.dumps(error_response)
 
 
-#download the tournament board
+import gc
+
+# Download the tournament board
 def download_tournament(request):
     gc.collect()
     print("download tournament - - - ")
     try:
+        # Collect tournament data
         tournament_data = [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])]
         response_body = [{
             "FileType": "tournament",
             "contents": tournament_data
         }]
+        
+        # Format the response body for readability
+        formatted_body = json.dumps(response_body).replace('},{', '},\n{').replace('[{', '[\n{').replace('}]', '}\n]')
+        
         response = {
             'headers': {
                 'Content-Type': 'application/json',
                 'Content-Disposition': 'attachment; filename=tournament.json',
                 'Connection': 'close'
             },
-            'body': json.dumps(response_body)
+            'body': formatted_body.replace('}, {', '},\n{')  # Add carriage returns between top-level sections
         }
-        return json.dumps(response)    
+        
+        # Format the entire response
+        formatted_response = json.dumps(response).replace('},{', '},\n{').replace('[{', '[\n{').replace('}]', '}\n]')
+        return formatted_response
     except Exception as e:
         print(f"Error generating download: {e}")
         error_response = {
@@ -70,9 +80,10 @@ def download_tournament(request):
                 'Content-Type': 'application/json',
                 'Connection': 'close'
             },
-            'body': json.dumps({"error": "An error occurred while generating the download."})
+            'body': json.dumps({"error": "An error occurred while generating the download."}).replace('},{', '},\n{').replace('[{', '[\n{').replace('}]', '}\n]')
         }
         return json.dumps(error_response)
+
 
 
 #download the list of players
