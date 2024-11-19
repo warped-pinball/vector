@@ -8,6 +8,8 @@
     <div id="main_css" style="display: none;"></div>
     <div id="page_css" style="display: none;"></div>
     <link rel="manifest" href="/manifest.json">
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script> -->
+<!-- <script>eruda.init();</script> -->
 </head>
 <body>
     <header class="container">
@@ -27,6 +29,7 @@
     </header>
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
+        <div id="install_warning_html" style="display: none;"></div>
         <h2 id="page_title">WARPED PINBALL</h2>
         <div id="page_html" style="display: none;"></div>
     </main>
@@ -47,6 +50,8 @@
     <div id="main_js" style="display: none;"></div>
     <div id="page_js" style="display: none;"></div>
     <div id="extra_js" style="display: none;"></div>
+    <div id="install_warning_js" style="display: none;"></div>
+    <div id="eruda" style="display: none;"></div>
 
     <script>
         // Determine resource type based on URL
@@ -149,8 +154,20 @@
         loadResource('/svg/logo.svg.gz', 'logo');
         loadResource('/js/main.js.gz', 'main_js');
         loadResource('/css/main.css.gz', 'main_css');
-        
-        
+        loadResource('/html/install_warning.html.gz', 'install_warning_html')
+        loadResource('/js/install_warning.js.gz', 'install_warning_js')
+        loadResource('/js/eruda.js.gz', 'eruda');
+    </script>
+    <script>
+        function sleep(ms){
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        async function init_eruda(){
+            await sleep(4000);
+            eruda.init();
+        }
+
+        init_eruda();
     </script>
 </body>
 </html>

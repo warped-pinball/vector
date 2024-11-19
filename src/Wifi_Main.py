@@ -650,6 +650,11 @@ def application_mode(fault_msg):
         SharedState.tournamentModeOn=0
         return("ok")
 
+    @server.route("/install_fault")
+    def app_install_fault(request):
+        return SharedState.installation_fault
+
+
     #individual scores page
     server.add_route("/IndPlayers", handler = app_get_IndPlayers, methods = ["GET"])
     server.add_route("/IndPlayerSet", handler = app_set_IndPlayer, methods = ["POST"])

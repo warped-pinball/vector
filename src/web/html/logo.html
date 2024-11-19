@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated Spiral</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #121212;
+      overflow: hidden;
+    }
+
+    .spiral {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      animation: spin 5s linear infinite;
+    }
+
+    .arm {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 100px;
+      background-color: var(--color1);
+      border-radius: 50%;
+      transform-origin: 50% 0;
+      animation: twist 4s ease-in-out infinite alternate;
+    }
+
+    /* Creates two arms, adjust for more */
+    .arm:nth-child(1) {
+      transform: rotate(0deg);
+      background-color: var(--color1, #ff6347); /* First color */
+    }
+
+    .arm:nth-child(2) {
+      transform: rotate(180deg);
+      background-color: var(--color2, #4169e1); /* Second color */
+    }
+
+    /* Animation for spinning the entire spiral */
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Animation for twisting and varying tightness */
+    @keyframes twist {
+      0% {
+        height: 50px;
+        transform: rotate(calc(var(--twist-angle, 10deg) * 1));
+      }
+      50% {
+        height: 100px;
+        transform: rotate(calc(var(--twist-angle, 10deg) * 2));
+      }
+      100% {
+        height: 50px;
+        transform: rotate(calc(var(--twist-angle, 10deg) * 3));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="spiral">
+    <div class="arm"></div>
+    <div class="arm"></div>
+  </div>
+</body>
+</html>
