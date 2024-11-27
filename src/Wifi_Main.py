@@ -652,8 +652,10 @@ def application_mode(fault_msg):
 
     @server.route("/install_fault")
     def app_install_fault(request):
-        return SharedState.installation_fault
-
+        if SharedState.installation_fault:
+            return "fault"
+        else:
+            return "ok"
 
     #individual scores page
     server.add_route("/IndPlayers", handler = app_get_IndPlayers, methods = ["GET"])

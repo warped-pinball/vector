@@ -1,4 +1,4 @@
-<dialog open>
+<dialog id="install_warning_modal">
     <article>
         <h2>Warning: Hardware Installation Issue</h2>
         <p>
@@ -7,7 +7,7 @@
             Please read our <a href="https://warpedpinball.com">troubleshooting guide</a>
         </p>
         <footer>
-            <button>
+            <button onclick="Document.getElementById('install_warning_modal').classList.remove('modal-is-open')">
                 I Understand
             </button>
         </footer>
