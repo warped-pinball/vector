@@ -1,0 +1,5 @@
+mpremote==1.23.0
+mpy-cross
+csscompressor
+jsmin
+# pre-commit
