@@ -470,7 +470,8 @@ def application_mode(fault_msg):
                 record = DataStore.read_record("names", i)
                 initials = record['initials'].replace('\x00', ' ').strip('\0')  #if record['initials'] else ' '
                 full_name = record['full_name'].replace('\x00', ' ').strip('\0')   #if record['full_name'] else ' '               
-                players[str(i + 1)] = {"initials": initials, "name": full_name}         
+                if initials or full_name: # ensure that the record is not empty
+                    players[str(i + 1)] = {"initials": initials, "name": full_name}         
 
         except Exception as e:
             print(f"Error accessing DataStore: {e}")

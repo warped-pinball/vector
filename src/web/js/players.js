@@ -2,8 +2,14 @@ function populateForm(data) {
     const form = document.getElementById('players_form');
     form.innerHTML = ''; // Clear existing form groups
 
-    const players = Object.entries(data); // Use entries to get index and player data
+    // Get all existing indices and filter out blank players
+    const players = Object.entries(data)
+        .filter(([index, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
+        .sort(([, a], [, b]) => a.name.localeCompare(b.name)); // Sort by name alphabetically
 
+    const allIndices = Object.keys(data).map(index => parseInt(index, 10));
+
+    // Populate form with existing players
     players.forEach(([index, player]) => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('role', 'group');
@@ -28,9 +34,11 @@ function populateForm(data) {
         form.appendChild(fieldset);
     });
 
-    // Add an extra empty form group for new players
+    // Always add one extra blank form group for new players
+    const extraRowIndex = getAvailableIndex(allIndices, 20); // Get the lowest available index under 20
     const emptyFieldset = document.createElement('fieldset');
     emptyFieldset.setAttribute('role', 'group');
+    emptyFieldset.dataset.index = extraRowIndex; // Use the calculated index for new players
 
     const emptyInitialsInput = document.createElement('input');
     emptyInitialsInput.type = 'text';
@@ -49,6 +57,17 @@ function populateForm(data) {
     form.appendChild(emptyFieldset);
 }
 
+function getAvailableIndex(allIndices, maxIndex) {
+    // Find the first available index under maxIndex
+    for (let i = 1; i <= maxIndex; i++) {
+        if (!allIndices.includes(i)) {
+            return i;
+        }
+    }
+    // If all indices are used, return maxIndex + 1 to ensure a unique new index
+    return maxIndex + 1;
+}
+
 function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
     const initialsInput = fieldset.querySelector('input[name="initials"]');
     const nameInput = fieldset.querySelector('input[name="name"]');
@@ -60,7 +79,7 @@ function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
             saveButton.type = 'button';
             saveButton.value = 'Save';
             saveButton.addEventListener('click', () => {
-                const index = fieldset.dataset.index || ''; // Default to empty for new players
+                const index = fieldset.dataset.index; // Use the index from the dataset
                 savePlayer(index, initialsInput.value, nameInput.value);
             });
             fieldset.appendChild(saveButton);
@@ -84,11 +103,11 @@ async function savePlayer(index, initials, name) {
             body: JSON.stringify({ index: index, initials: initials, full_name: name }),
         });
 
-        if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
+        const message = await response.text();
+        if (message !== 'Update successful') {
+            throw new Error(`Error from server: ${message}`);
         }
 
-        const message = await response.text();
         console.log('Success:', message);
 
         // Re-fetch and update the form
