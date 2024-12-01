@@ -141,9 +141,9 @@ async function loadPlayers() {
 loadPlayers();
 
 // Auto-refresh intervals
-const leaderboardIntervalId = setInterval(updateLeaderboard, 60000);
-const tournamentIntervalId = setInterval(updateTournament, 60000);
-const personalIntervalId = setInterval(updatePersonal, 60000);
+const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
+const tournamentIntervalId = setInterval(updateTournament, 60000); // Update every minute
+const personalIntervalId = setInterval(updatePersonal, 60000); // Update every minute
 
 // Cleanup function to clear intervals when needed
 window.cleanupTables = function() {

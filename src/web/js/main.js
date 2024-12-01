@@ -14,7 +14,14 @@ const pageConfig = {
             { url: '/html/about.html.gz', targetId: 'page_html' },
             { url: '/css/about.css.gz', targetId: 'page_css' }
         ]
-    }
+    },
+    'players': {
+        title: 'Players',
+        resources: [
+            { url: '/html/players.html.gz', targetId: 'page_html' },
+            { url: '/js/players.js.gz', targetId: 'page_js' }
+        ]
+    },
 };
 
 let previousResourceIds = [];
@@ -148,7 +155,8 @@ function clearPreviousResources(resourceIds) {
 function initializeNavigation() {
     const navLinks = [
         { id: 'navigate-score-boards', page: 'score-boards' },
-        { id: 'navigate-about', page: 'about' }
+        { id: 'navigate-about', page: 'about' },
+        { id: 'navigate-players', page: 'players' }
     ];
     navLinks.forEach(link => {
         const elem = document.getElementById(link.id);
