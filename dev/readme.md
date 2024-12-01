@@ -67,3 +67,18 @@
 
 2. **Get Sync Script Help**  
    `./dev/sync.py --help`
+
+## Automatic Configuration
+
+To automatically configure your system, create a JSON file with the following structure:
+
+```json
+{
+   "ssid": "Your WiFi SSID",
+   "password": "Your WiFi Password",
+   "gamename": "GenericSystem11",
+   "Gpassword": ""
+}
+```
+
+Replace the placeholder values with your actual WiFi SSID, password, and game name. Save this file and use it as needed for your configuration.
