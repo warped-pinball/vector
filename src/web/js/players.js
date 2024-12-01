@@ -2,11 +2,12 @@ function populateForm(data) {
     const form = document.getElementById('players_form');
     form.innerHTML = ''; // Clear existing form groups
 
-    const players = Object.values(data);
+    const players = Object.entries(data); // Use entries to get index and player data
 
-    players.forEach((player) => {
+    players.forEach(([index, player]) => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('role', 'group');
+        fieldset.dataset.index = index; // Assign the index as a data attribute
 
         const initialsInput = document.createElement('input');
         initialsInput.type = 'text';
@@ -27,7 +28,7 @@ function populateForm(data) {
         form.appendChild(fieldset);
     });
 
-    // Add an extra empty form group
+    // Add an extra empty form group for new players
     const emptyFieldset = document.createElement('fieldset');
     emptyFieldset.setAttribute('role', 'group');
 
@@ -58,7 +59,10 @@ function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
             saveButton = document.createElement('input');
             saveButton.type = 'button';
             saveButton.value = 'Save';
-            saveButton.addEventListener('click', () => savePlayer(fieldset.dataset.index, initialsInput.value, nameInput.value));
+            saveButton.addEventListener('click', () => {
+                const index = fieldset.dataset.index || ''; // Default to empty for new players
+                savePlayer(index, initialsInput.value, nameInput.value);
+            });
             fieldset.appendChild(saveButton);
         }
     } else {
@@ -71,18 +75,32 @@ function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
 async function savePlayer(index, initials, name) {
     console.log('Saving player:', index, initials, name);
     console.log(JSON.stringify({ index: index, initials: initials, full_name: name }));
-    fetch('/updatePlayer', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ index: index, initials: initials, full_name: name })
-    }).then(response => response.json())
-        .then(data => console.log('Success:', data))
-        .catch(error => console.error('Error:', error));
+    try {
+        const response = await fetch('/updatePlayer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ index: index, initials: initials, full_name: name }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+
+        const message = await response.text();
+        console.log('Success:', message);
+
+        // Re-fetch and update the form
+        const playersResponse = await fetch('/players');
+        const playersData = await playersResponse.json();
+        populateForm(playersData);
+    } catch (error) {
+        console.error('Error saving player:', error);
+    }
 }
 
-
+// Initial fetch to populate the form
 fetch('/players')
     .then(response => response.json())
     .then(data => populateForm(data))
