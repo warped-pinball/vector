@@ -10,6 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+sync_venv/
 dist/
 downloads/
 eggs/
@@ -20,6 +21,7 @@ parts/
 sdist/
 var/
 wheels/
+sync_venv/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
