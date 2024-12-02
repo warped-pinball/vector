@@ -254,6 +254,15 @@ setTimeout(() => {
     }
 }, 1000);
 
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    const button = document.querySelector('button[onclick="window.toggleTheme()"]');
+    button.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+}
+
 // Expose functions to window for debugging
 window.loadPageResources = loadPageResources;
 window.handleNavigation = handleNavigation;
@@ -263,6 +272,7 @@ window.clearPreviousResources = clearPreviousResources;
 window.initializeNavigation = initializeNavigation;
 window.initializePage = initializePage;
 window.init = init;
+window.toggleTheme = toggleTheme;
 
 
 function verifyDOMElements(pageKey) {
