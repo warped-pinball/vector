@@ -74,8 +74,8 @@
             const cacheKey = url;
             const cacheTimeKey = `${cacheKey}_time`;
             // const cacheTTL = 1000 * 60 * 60 * 24; // 24 hours
-            const cacheTTL = 1000 * 60 * 60; // 1 hour
-            // const cacheTTL = 1000 * 60; // 1 minute
+            // const cacheTTL = 1000 * 60 * 60; // 1 hour
+            const cacheTTL = 1000 * 60; // 1 minute
             const currentTime = Date.now();
             let cachedData = localStorage.getItem(cacheKey);
             let cachedTime = localStorage.getItem(cacheTimeKey);

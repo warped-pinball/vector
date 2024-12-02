@@ -246,11 +246,13 @@ function setFaviconFromSVGElement(elementId) {
     img.src = url;
 }
 
-try {
-    setFaviconFromSVGElement('logo');
-} catch (error) {
-    console.error('Error setting favicon:', error);
-}
+setTimeout(() => {
+    try {
+        setFaviconFromSVGElement('logo');
+    } catch (error) {
+        console.error('Error setting favicon:', error);
+    }
+}, 1000);
 
 // Expose functions to window for debugging
 window.loadPageResources = loadPageResources;
