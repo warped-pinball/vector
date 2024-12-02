@@ -22,6 +22,14 @@ const pageConfig = {
             { url: '/js/players.js.gz', targetId: 'page_js' }
         ]
     },
+    'settings': {
+        title: 'Settings',
+        resources: [
+            { url: '/html/settings.html.gz', targetId: 'page_html' },
+            { url: '/js/settings.js.gz', targetId: 'page_js' },
+            // { url: '/css/settings.css.gz', targetId: 'page_css' }
+        ]
+    },
 };
 
 let previousResourceIds = [];
@@ -156,7 +164,8 @@ function initializeNavigation() {
     const navLinks = [
         { id: 'navigate-score-boards', page: 'score-boards' },
         { id: 'navigate-about', page: 'about' },
-        { id: 'navigate-players', page: 'players' }
+        { id: 'navigate-players', page: 'players' },
+        { id: 'navigate-settings', page: 'settings' }
     ];
     navLinks.forEach(link => {
         const elem = document.getElementById(link.id);

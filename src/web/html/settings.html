@@ -1,0 +1,44 @@
+<section>
+    <h2>Vector Settings</h2>
+    <fieldset>
+        <label>
+          <input name="terms" type="checkbox" role="switch" checked/>
+          Enable Score Capture
+        </label>
+    </fieldset>
+    <label for="date-picker">Set Date</label>
+    <input type="date" id="date-picker" name="date-picker">
+</section>
+
+<!-- Exports Section -->
+<section>
+    <h2>Exports</h2>
+    <button onclick="downloadFile('leaderboard')">Leaderboard</button>
+    <button onclick="downloadFile('player-names')">Player Names</button>
+    <button onclick="downloadFile('tournament-scores')">Tournament Scores</button>
+</section>
+
+<!-- Updates Section -->
+<section>
+    <h2>Updates</h2>
+    <label for="update-upload">Upload Update</label>
+    <input type="file" id="update-upload" name="update-upload">
+</section>
+
+<!-- Reset Section -->
+<section>
+    <h2>Reset</h2>
+    <button class="button-outline danger" onclick="window.confirmAction('reset leaderboard')">Reset Leaderboard</button>
+    <button class="button-outline danger" onclick="window.confirmAction('reset tournament board')">Reset Tournament Board</button>
+</section>
+
+<!-- Debug Section -->
+<section>
+    <h2>Debug</h2>
+    <button onclick="downloadFile('memory-values')">Download Memory Snapshot</button>
+    <button onclick="downloadFile('logs')">Download Logs</button>
+    <button class="button-outline danger" onclick="window.confirmAction('reboot game')">Reboot Game</button>
+    <button class="button-outline danger" onclick="window.confirmAction('reset game memory')">Reset Game Memory</button>
+</section>
+
+
