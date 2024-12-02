@@ -1,60 +1,48 @@
+function getCurrentPlayers(data) {
+    return Object.entries(data)
+        .filter(([index, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
+        .sort(([, a], [, b]) => a.name.localeCompare(b.name)); // Sort by name alphabetically
+}
+
 function populateForm(data) {
     const form = document.getElementById('players_form');
     form.innerHTML = ''; // Clear existing form groups
 
-    // Get all existing indices and filter out blank players
-    const players = Object.entries(data)
-        .filter(([index, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
-        .sort(([, a], [, b]) => a.name.localeCompare(b.name)); // Sort by name alphabetically
-
+    const players = getCurrentPlayers(data);
     const allIndices = Object.keys(data).map(index => parseInt(index, 10));
 
     // Populate form with existing players
     players.forEach(([index, player]) => {
-        const fieldset = document.createElement('fieldset');
-        fieldset.setAttribute('role', 'group');
-        fieldset.dataset.index = index; // Assign the index as a data attribute
-
-        const initialsInput = document.createElement('input');
-        initialsInput.type = 'text';
-        initialsInput.name = 'initials';
-        initialsInput.value = player.initials;
-        initialsInput.placeholder = 'Initials';
-        initialsInput.addEventListener('input', () => toggleSaveButton(fieldset, player.initials, player.name));
-        fieldset.appendChild(initialsInput);
-
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.name = 'name';
-        nameInput.value = player.name;
-        nameInput.placeholder = 'Full Name';
-        nameInput.addEventListener('input', () => toggleSaveButton(fieldset, player.initials, player.name));
-        fieldset.appendChild(nameInput);
-
-        form.appendChild(fieldset);
+        addPlayerRow(form, index, player.initials, player.name);
     });
 
     // Always add one extra blank form group for new players
     const extraRowIndex = getAvailableIndex(allIndices, 20); // Get the lowest available index under 20
-    const emptyFieldset = document.createElement('fieldset');
-    emptyFieldset.setAttribute('role', 'group');
-    emptyFieldset.dataset.index = extraRowIndex; // Use the calculated index for new players
+    addPlayerRow(form, extraRowIndex, '', '');
+}
 
-    const emptyInitialsInput = document.createElement('input');
-    emptyInitialsInput.type = 'text';
-    emptyInitialsInput.name = 'initials';
-    emptyInitialsInput.placeholder = 'Initials';
-    emptyInitialsInput.addEventListener('input', () => toggleSaveButton(emptyFieldset));
-    emptyFieldset.appendChild(emptyInitialsInput);
+function addPlayerRow(form, index, initials, name) {
+    const fieldset = document.createElement('fieldset');
+    fieldset.setAttribute('role', 'group');
+    fieldset.dataset.index = index; // Assign the index as a data attribute
 
-    const emptyNameInput = document.createElement('input');
-    emptyNameInput.type = 'text';
-    emptyNameInput.name = 'name';
-    emptyNameInput.placeholder = 'Full Name';
-    emptyNameInput.addEventListener('input', () => toggleSaveButton(emptyFieldset));
-    emptyFieldset.appendChild(emptyNameInput);
+    const initialsInput = document.createElement('input');
+    initialsInput.type = 'text';
+    initialsInput.name = 'initials';
+    initialsInput.value = initials;
+    initialsInput.placeholder = 'Initials';
+    initialsInput.addEventListener('input', () => toggleSaveButton(fieldset, initials, name));
+    fieldset.appendChild(initialsInput);
 
-    form.appendChild(emptyFieldset);
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.name = 'name';
+    nameInput.value = name;
+    nameInput.placeholder = 'Full Name';
+    nameInput.addEventListener('input', () => toggleSaveButton(fieldset, initials, name));
+    fieldset.appendChild(nameInput);
+
+    form.appendChild(fieldset);
 }
 
 function getAvailableIndex(allIndices, maxIndex) {

@@ -19,7 +19,7 @@
             </ul>
             <ul>
                 <li><a href="#" id="navigate-score-boards">Score Boards</a></li>
-                <li><a href="#" id="navigate-players">Player Names</a></li>
+                <li><a href="#" id="navigate-players">Players</a></li>
                 <li><a href="#" id="navigate-about">About</a></li>
                 <li><a href="#" id="navigate-settings">Settings</a></li>
             </ul>
@@ -74,7 +74,8 @@
             const cacheKey = url;
             const cacheTimeKey = `${cacheKey}_time`;
             // const cacheTTL = 1000 * 60 * 60 * 24; // 24 hours
-            const cacheTTL = 1000 * 60; // 1 minute
+            const cacheTTL = 1000 * 60 * 60; // 1 hour
+            // const cacheTTL = 1000 * 60; // 1 minute
             const currentTime = Date.now();
             let cachedData = localStorage.getItem(cacheKey);
             let cachedTime = localStorage.getItem(cacheTimeKey);

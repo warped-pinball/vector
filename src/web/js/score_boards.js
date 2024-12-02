@@ -103,42 +103,41 @@ async function updateIndividualScores(player) {
 }
 
 // Function to load player list for the dropdown
-async function loadPlayers() {
+async function loadPlayers(data) {
+    players = Object.entries(data)
+        .filter(([index, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
+        .sort(([, a], [, b]) => a.name.localeCompare(b.name)); // Sort by name alphabetically
+    
     const playersSelect = document.getElementById('players');
-    try {
-        const response = await fetch('/IndPlayers');
-        if (!response.ok) {
-            console.warn(`Failed to load players: ${response.statusText}`);
-            return;
-        }
+    playersSelect.innerHTML = '';
+    players.forEach(player => {
+        const option = document.createElement('option');
+        option.value = player[0];
+        option.text = player[1].name + " " + (player[1].initials ? `(${player[1].initials})` : '');
+        playersSelect.appendChild(option);
+    });
 
-        const data = await response.json();
-        const players = data.players;
-
-        playersSelect.innerHTML = '';
-        players.forEach(player => {
-            const option = document.createElement('option');
-            option.value = player;
-            option.text = player;
-            playersSelect.appendChild(option);
-        });
-
-        if (players.length > 0) {
-            playersSelect.value = players[0];
-            await updateIndividualScores(players[0]);
-        }
-
-        playersSelect.addEventListener('change', async function () {
-            const selectedPlayer = playersSelect.value;
-            await updateIndividualScores(selectedPlayer);
-        });
-    } catch (error) {
-        console.error('Failed to load players:', error);
+    if (players.length > 0) {
+        playersSelect.value = players[0];
+        await updateIndividualScores(players[0]);
     }
+
+    playersSelect.addEventListener('change', async function () {
+        const selectedPlayer = playersSelect.value;
+        await updateIndividualScores(selectedPlayer);
+    });
+
 }
 
-// Call loadPlayers to populate the dropdown when the page is ready
-loadPlayers();
+
+
+// Initial fetch to populate the form
+fetch('/players')
+    .then(response => response.json())
+    .then(data => loadPlayers(data))
+    .catch(error => console.error('Error fetching player data:', error));
+
+
 
 // Auto-refresh intervals
 const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
