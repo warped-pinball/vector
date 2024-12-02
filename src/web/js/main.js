@@ -246,6 +246,12 @@ function setFaviconFromSVGElement(elementId) {
     img.src = url;
 }
 
+try {
+    setFaviconFromSVGElement('logo');
+} catch (error) {
+    console.error('Error setting favicon:', error);
+}
+
 // Expose functions to window for debugging
 window.loadPageResources = loadPageResources;
 window.handleNavigation = handleNavigation;
@@ -255,7 +261,7 @@ window.clearPreviousResources = clearPreviousResources;
 window.initializeNavigation = initializeNavigation;
 window.initializePage = initializePage;
 window.init = init;
-window.setFaviconFromSVGElement = setFaviconFromSVGElement;
+
 
 function verifyDOMElements(pageKey) {
     const config = pageConfig[pageKey];
