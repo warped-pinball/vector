@@ -1,9 +1,11 @@
 <div style="text-align: left;">
     <section>
         <h2>Settings</h2>
+        <hr>
         <button id="save-button" style="display: none;" onclick="saveSettings()">Save Settings</button>
+        <h3>Score Claim Methods</h3>
         <fieldset>
-            <legend><b>Score Claim Methods</b></legend>
+            <!-- <legend><b>Score Claim Methods</b></legend> -->
             <label>
             <input type="checkbox" role="switch" name="claim-on-machine" checked />
             <b>On-Machine:</b> triggers high score every game to collect players initials
@@ -14,14 +16,15 @@
             </label>
             <label>
             <input type="checkbox" role="switch" name="claim-scanner" disabled/>
-            <b>Ray QR Scanner Add-on:</b> games started by scanning a QR code automatically claims scores
+            <b>Ray QR Scanner Add-on:</b> games started by scanning a QR code automatically claims scores <a href="https://www.warpedpinball.com">Learn More</a>
             </label>
         </fieldset>
+        <h3>Adjustments Profiles (Coming Soon!)</h3>
         <fieldset>
-            <legend><b>Adjustments Profiles (Coming Soon!)</b></legend>
+            <!-- <legend><b>Adjustments Profiles (Coming Soon!)</b></legend> -->
             <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
-            <p>Setup new profiles by configuring adjustments on the machine normally. optinally name the profile, then press one of the "Update Profile" buttons below to save them as a profile.</p>
-            <p>To change which profile is currently active; select the corresponding radio button and click "save settings"</p>
+            <p>Setup new profiles by configuring adjustments on the machine normally. Then optionally name the profile and press the "Update Profile" button.</p>
+            <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
             <div class="profile-row">
                 <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()" checked>
                 <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
@@ -46,11 +49,11 @@
         <label for="date-picker">Set Date</label>
         <input type="date" id="date-picker" name="date-picker" onchange="settingsChanged()"> 
     </section>
-    <hr>
-    <h2>Actions</h2>
     <section>
+        <h2>Actions</h2>
+        <hr>
         <h3>Downloads</h3>
-        <p>Download a data from your Vector</p>
+        <p>Download data files from your Vector</p>
         <button onclick="downloadFile('leaderboard')">Leaderboard</button>
         <button onclick="downloadFile('player-names')">Player Names</button>
         <button onclick="downloadFile('tournament-scores')">Tournament Scores</button>

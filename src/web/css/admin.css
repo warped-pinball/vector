@@ -1,16 +1,13 @@
 input[type="date"] {
     width: auto;
-    max-width: 10rem;
-    text-align: center;
+    /* max-width: 10rem;
+    text-align: center; */
 }
 
 button.danger {
     background-color: #e73434;
     color: white;
     border: none;
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
 }
 
 button.danger:hover {
