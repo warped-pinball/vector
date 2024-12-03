@@ -22,12 +22,12 @@ const pageConfig = {
             { url: '/js/players.js.gz', targetId: 'page_js' }
         ]
     },
-    'settings': {
-        title: 'Settings',
+    'admin': {
+        title: 'Admin',
         resources: [
-            { url: '/html/settings.html.gz', targetId: 'page_html' },
-            { url: '/js/settings.js.gz', targetId: 'page_js' },
-            // { url: '/css/settings.css.gz', targetId: 'page_css' }
+            { url: '/html/admin.html.gz', targetId: 'page_html' },
+            { url: '/js/admin.js.gz', targetId: 'page_js' },
+            { url: '/css/admin.css.gz', targetId: 'page_css' }
         ]
     },
 };
@@ -114,13 +114,6 @@ async function set_title() {
         return;
     }
     document.title = config.title;
-    const pageTitleElem = document.getElementById('page_title');
-    if (pageTitleElem) {
-        pageTitleElem.innerText = config.title;
-        console.log(`Page title set to: ${config.title}`);
-    } else {
-        console.warn('Element with ID "page_title" not found.');
-    }
 
     try {
         const response = await fetch('/GameName');
@@ -165,7 +158,7 @@ function initializeNavigation() {
         { id: 'navigate-score-boards', page: 'score-boards' },
         { id: 'navigate-about', page: 'about' },
         { id: 'navigate-players', page: 'players' },
-        { id: 'navigate-settings', page: 'settings' }
+        { id: 'navigate-admin', page: 'admin' }
     ];
     navLinks.forEach(link => {
         const elem = document.getElementById(link.id);

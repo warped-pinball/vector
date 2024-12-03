@@ -1,0 +1,84 @@
+<div style="text-align: left;">
+    <section>
+        <h2>Settings</h2>
+        <button id="save-button" style="display: none;" onclick="saveSettings()">Save Settings</button>
+        <fieldset>
+            <legend><b>Score Claim Methods</b></legend>
+            <label>
+            <input type="checkbox" role="switch" name="claim-on-machine" checked />
+            <b>On-Machine:</b> triggers high score every game to collect players initials
+            </label>
+            <label>
+            <input type="checkbox" role="switch" name="claim-web" checked />
+            <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
+            </label>
+            <label>
+            <input type="checkbox" role="switch" name="claim-scanner" disabled/>
+            <b>Ray QR Scanner Add-on:</b> games started by scanning a QR code automatically claims scores
+            </label>
+        </fieldset>
+        <fieldset>
+            <legend><b>Adjustments Profiles (Coming Soon!)</b></legend>
+            <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
+            <p>Setup new profiles by configuring adjustments on the machine normally. optinally name the profile, then press one of the "Update Profile" buttons below to save them as a profile.</p>
+            <p>To change which profile is currently active; select the corresponding radio button and click "save settings"</p>
+            <div class="profile-row">
+                <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()" checked>
+                <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
+                <button onclick="saveProfile(1)">Update Profile</button>
+            </div>
+            <div class="profile-row">
+                <input name="profile" id="profile-2" type="radio" onchange="settingsChanged()" disabled>
+                <input name="profile-2-name" type="text" placeholder="Profile 2" onchange="settingsChanged()">
+                <button onclick="saveProfile(2)">Update Profile</button>
+            </div>
+            <div class="profile-row">
+                <input name="profile" id="profile-3" type="radio" onchange="settingsChanged()" disabled>
+                <input name="profile-3-name" type="text" placeholder="Profile 3" onchange="settingsChanged()">
+                <button onclick="saveProfile(3)">Update Profile</button>
+            </div>
+            <div class="profile-row">
+                <input name="profile" id="profile-4" type="radio" onchange="settingsChanged()" disabled>
+                <input name="profile-4-name" type="text" placeholder="Profile 4" onchange="settingsChanged()">
+                <button onclick="saveProfile(4)">Update Profile</button>
+            </div>
+        </fieldset>
+        <label for="date-picker">Set Date</label>
+        <input type="date" id="date-picker" name="date-picker" onchange="settingsChanged()"> 
+    </section>
+    <hr>
+    <h2>Actions</h2>
+    <section>
+        <h3>Downloads</h3>
+        <p>Download a data from your Vector</p>
+        <button onclick="downloadFile('leaderboard')">Leaderboard</button>
+        <button onclick="downloadFile('player-names')">Player Names</button>
+        <button onclick="downloadFile('tournament-scores')">Tournament Scores</button>
+        <h3>Updates</h3>
+        <p>Upload a new update to your Vector.</p>
+        <p><b>To prevent risk of damaging your machine; only apply updates from <a href="https://www.warpedpinball.com">warpedpinball.com</a></b></p>
+        <button onclick="document.getElementById('update-upload').click()">Upload Update File</button>
+        <input type="file" id="update-upload" name="update-upload" onchange="settingsChanged()" hidden>
+        <h3>Reset</h3>
+        <button class="danger" onclick="confirmAction('Reset Leaderboard', resetLeaderboard)">Reset Leaderboard</button>
+        <button class="danger" onclick="confirmAction('Reset Tournament Board', resetTournamentBoard)">Reset Tournament Board</button>
+        <button class="danger" onclick="confirmAction('Reboot Game', rebootGame)">Reboot Game</button>
+        <button class="danger" onclick="confirmAction('Reset Game Memory', resetGameMemory)">Reset Game Memory</button>
+        <h3>Debug</h3>
+        <button class="secondary" onclick="downloadFile('memory-values')">Download Memory Snapshot</button>
+        <button class="secondary" onclick="downloadFile('logs')">Download Logs</button>
+    </section>
+
+
+    
+
+    <dialog id="modal">
+        <article>
+            <h2 id="modal-message">Confirm Action</h2>
+            <footer>
+                <button class="secondary" onclick="closeModal()">Cancel</button>
+                <button id="modal-confirm-button">Confirm</button>
+            </footer>
+        </article>
+    </dialog>
+</div>
