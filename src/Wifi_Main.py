@@ -338,6 +338,15 @@ def application_mode(fault_msg):
         year, month, day = map(int, data.split('-'))
         rtc.datetime((year, month, day, 0, 0, 0, 0, 0))
         return "OK"
+       
+    def load_leaders():
+        try:
+            leaders = []
+            for i in range(DataStore.memory_map["leaders"]["count"]):
+                leaders.append(DataStore.read_record("leaders",i))
+        except OSError:
+            leaders = []
+        return leaders   
     
     def app_leaderBoardRead(request):
         leaders = load_leaders()
@@ -461,8 +470,7 @@ def application_mode(fault_msg):
                 record = DataStore.read_record("names", i)
                 initials = record['initials'].replace('\x00', ' ').strip('\0')  #if record['initials'] else ' '
                 full_name = record['full_name'].replace('\x00', ' ').strip('\0')   #if record['full_name'] else ' '               
-                if initials or full_name: # ensure that the record is not empty
-                    players[str(i + 1)] = {"initials": initials, "name": full_name}         
+                players[str(i + 1)] = {"initials": initials, "name": full_name}         
 
         except Exception as e:
             print(f"Error accessing DataStore: {e}")
