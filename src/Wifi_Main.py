@@ -22,14 +22,12 @@ from Memory_Main import save_ram,blank_ram
 import time
 import Pico_Led
 import SharedState
-from machine import RTC
 import SPI_DataStore as DataStore
 import FileIO
 from SPI_DataStore import writeIP
 import GameStatus
 import reset_control
 
-rtc = RTC()
 ip_address=0
 cycle_count = 1
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
@@ -165,33 +163,6 @@ def setup_mode(fault_msg):
             return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
         return "Not found.", 404
 
-    def splitext(filename):
-        dot_index = filename.rfind('.')
-        if dot_index == -1:
-            return filename, ''
-        return filename[:dot_index], filename[dot_index:]
-
-    def app_listgames(request):
-        print("list games+++++++++++++")
-        try:
-            files = os.listdir("GameDefs")
-            games = [splitext(f)[0] for f in files]
-            print("Wifi: host games = ", games)            
-        
-            cfg=DataStore.read_record("configuration",0)
-            gn=cfg["gamename"].strip('\0')
-
-            if len(gn) < 4:
-                print(f"game name '{gn}' detected, forcing to 'GenericSystem11'")
-                gn = "GenericSystem11"
-
-            response = json.dumps({"games": games, "current_selection": gn})
-            #print(response)
-            return response
-        except Exception as e:
-            print("Server: list games fault:", str(e))            
-            return json.dumps({"error": "Server: list games fault"})
-
     def app_listNetworks(request):
         ssid_list = [ssid for ssid, rssi in available_networks]
         networks_dict = {"networks": ssid_list}
@@ -208,7 +179,7 @@ def setup_mode(fault_msg):
     available_networks=scanwifi.scan_wifi2()
     print(available_networks)
 
-    server.add_route("/listgames", handler = app_listgames, methods = ["GET"])       
+          
     server.add_route("/listnetworks", handler = app_listNetworks, methods = ["GET"])        
     server.add_route("/initdata", handler = app_initData, methods = ["GET"])    
     server.add_route("/", handler = ap_index, methods = ["GET"])
@@ -230,224 +201,8 @@ def application_mode(fault_msg):
 
     def app_catch_all(request):
         return "Not found.", 404
-
-    def app_adr_plus(request):
-        global adr_display
-        if (adr_display<(2048-256)):
-            adr_display =adr_display+128
-        return "OK"
-    
-    def app_adr_minus(request):
-        global adr_display
-        if (adr_display>127):
-            adr_display =adr_display-128
-        return "OK"
-    
-    def bytes_to_hex_string(adr,ba):
-        hex_string_dat = ' '.join(['0x{:02X}'.format(byte) for byte in ba])
-        hex_string_loc = "0x{:04x}:  ".format(adr)                
-        return hex_string_loc+hex_string_dat
-
-    def build_json(count, mem_values):
-        data = {
-            "RCounter": count,
-            "MemVal0": mem_values[0],
-            "MemVal1": mem_values[1],
-            "MemVal2": mem_values[2],
-            "MemVal3": mem_values[3],
-            "MemVal4": mem_values[4],
-            "MemVal5": mem_values[5],
-            "MemVal6": mem_values[6],
-            "MemVal7": mem_values[7],
-            "MemVal8": mem_values[8],            
-            "MemVal9": mem_values[9],
-            "MemVal10": mem_values[10],
-            "MemVal11": mem_values[11],
-            "MemVal12": mem_values[12],
-            "MemVal13": mem_values[13],
-            "MemVal14": mem_values[14],
-            "MemVal15": mem_values[15]
-        }        
-        return json.dumps(data)
-
-    #read memory data for admin page
-    
-   
-    def app_get_mem_data(request):
-        gc.collect()
-        global cycle_count, ram_access, count_access
-        cycle_count += 1
-        ram_access_ba = bytearray(ram_access)
-
-        def memory_data_generator():
-            yield '{'
-            yield f'"RCounter": {cycle_count}, '
-
-            for i in range(16):
-                start = i * 16 + adr_display
-                end = (i + 1) * 16 + adr_display
-                hex_values = " ".join(f"0x{byte:02X}" for byte in ram_access_ba[start:end])
-                hex_string = f'0x{start:04X}:  {hex_values}'
-                
-                if i > 0:
-                    yield ', '
-                yield f'"MemVal{i}": "{hex_string}"'
-
-            yield '}'
-
-            gc.collect()  # Collect garbage after streaming is done
-
-        # Set the appropriate headers for a JSON response
-        headers = {
-            'Content-Type': 'application/json',
-            'Connection': 'close'
-        }
-
-        return memory_data_generator(), 200, headers
-
-    
-
-
-    #write value to memory location
-    def app_write(request):            
-        if request.method == "POST":
-            try:            
-                content_length = int(request.headers.get("content-length"))
-                body = request.data            
-                address = body['Address']
-                data = body['Data']        
-                # Convert hexadecimal strings to integers
-                address_int = int(address, 16)
-                data_int = int(data, 16)
-                
-                if address_int < SRAM_DATA_LENGTH:
-                    ram_access[address_int]=data_int            
-                    print("Writing data:", data_int, "to address:", address_int)                    
-                return("ok")
-            except:
-                print("WIF: write memory execption")
-                return("fail")
-        else:
-            return("fail")
       
-    def app_updateDate(request):
-        body = request.data
-        data = body['newDate']
-        #date_str = data['newDate']     
-        year, month, day = map(int, data.split('-'))
-        rtc.datetime((year, month, day, 0, 0, 0, 0, 0))
-        return "OK"
-       
-
     
-    def app_set_IndPlayer(request):
-        global IndividualActivePlayer
-        global IndividualActivePlayerNum        
-        try:
-            body = request.data                        
-            playa = body['player']
-            #print("Set player - ", playa)            
-            count = DataStore.memory_map["names"]["count"]
-            found = False
-
-            for i in range(count):
-                record = DataStore.read_record("names", i)
-                initials = record['initials']                                
-                if initials == playa:
-                    IndividualActivePlayer = initials
-                    IndividualActivePlayerNum = i
-                    found = True
-                    break
-            if not found:
-                return json.dumps({"error": "Player not found"})            
-            #print("index => ",IndividualActivePlayerNum)
-            return ("ok")
-        
-        except Exception as e:
-            print(f"Error setting player: {e}")
-            return ("error")
-
-    def app_get_IndScores(request):
-        global IndividualActivePlayer
-        global IndividualActivePlayerNum 
-        gc.collect()
-        scores = []
-        name = DataStore.read_record("names",IndividualActivePlayerNum)['full_name'].strip('\0')
-        try:                      
-            numberOfScores = DataStore.memory_map["individual"]["count"]
-            #print("num ",numberOfScores)
-            for i in range(numberOfScores):
-                record = DataStore.read_record("individual", i,IndividualActivePlayerNum)  
-                score = record['score']
-                date = record['date'].strip().replace('\x00', ' ')          
-                #print(score,date)                  
-                scores.append({
-                    "score": score,
-                    "full_name": name,
-                    "date": date
-                })                       
-        except Exception as e:
-            print("Error accessing DataStore:", str(e))
-            return json.dumps({"error": str(e)}) 
-        return json.dumps(scores)
-
-    def app_deleteIndScores(request):
-        global IndividualActivePlayerNum    
-        global PassWordFail
-        credentials = DataStore.read_record("configuration",0)             
-        body = request.data     
-        pw = body["password"]
-        if pw ==  credentials["Gpassword"]:
-                DataStore.blankIndPlayerScores(IndividualActivePlayerNum)   
-                PassWordFail=False          
-                print("del done")   
-                return("ok")      
-        PassWordFail=True  
-        print("pass word fail set")
-        time.sleep(1.5)
-        return ("fail")
-
-    
-
-    
-
-    #individual scores page
-    server.add_route("/IndPlayers", handler = app_get_IndPlayers, methods = ["GET"])
-    server.add_route("/IndPlayerSet", handler = app_set_IndPlayer, methods = ["POST"])
-    server.add_route("/IndScores", handler = app_get_IndScores, methods = ["GET"])
-    server.add_route("/deleteIndScores", handler = app_deleteIndScores, methods = ["POST"])
- 
-    #players NAMES page
-    server.add_route("/players", handler = app_loadPlayers, methods = ["GET"])
-    server.add_route("/updatePlayer", handler = app_updatePlayer, methods = ["POST"])              
-
-    #admin page
-    server.add_route("/password", handler = app_password, methods = ["POST"])   
-    server.add_route("/updateDate", handler = app_updateDate, methods = ["POST"])   
-    server.add_route("/data", handler = app_get_mem_data, methods = ["GET"])
-    server.add_route("/AdrPlus", handler = app_adr_plus, methods = ["GET"])
-    server.add_route("/AdrMinus", handler = app_adr_minus, methods = ["GET"])   
-    server.add_route("/write", handler = app_write, methods=["POST"])    
-    server.add_route("/ResetGame", handler = app_resetGame, methods=['GET'])
-    server.add_route("/ResetGameMemory", handler = app_resetMemory, methods=['GET'])
-    server.add_route('/download_memory', handler=download_memory ,methods=['GET'])    
-    #admin page file IO operations
-    server.add_route('/download_leaders',handler = FileIO.download_leaders, methods=['GET'])
-    server.add_route('/download_tournament',handler = FileIO.download_tournament, methods=['GET'])
-    server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
-    server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
-    server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
-    server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
- 
-
-    @server.route("/leaderboardClear")
-    def app_resetScores(request): 
-        DataStore.blankStruct("leaders") 
-        return("ok")
-
-    #general
-    server.add_route("/GameName", handler = app_getGameName, methods = ["GET"])
-    server.add_route("/GameStatus", handler = GameStatus.report, methods = ["GET"])
   
     # add static files
     serve_static_files()

@@ -1,9 +1,11 @@
+#TODO change all of these to more specific imports to save memory
 import SPI_DataStore as DataStore
 import ujson as json
 import uhashlib as hashlib
 import binascii
 import time
 import gc
+import os
 from Utilities.random_bytes import random_hex
 from phew import server 
 import reset_control
@@ -11,10 +13,13 @@ import SharedState
 from Memory_Main import save_ram,blank_ram
 import uctypes
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, SRAM_COUNT_BASE
-
+from GameStatus import report as game_status_report
+import FileIO
+from machine import RTC
 #
 # Constants
 #
+rtc = RTC()
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 
 # Authentication variables
@@ -122,14 +127,20 @@ def app_resetGame(request):
     server.reset_bootup_counters()
 
 
+@add_route("/api/game/list_names", methods=["GET"])
+def app_listgames(request):
+    files = os.listdir("GameDefs")
+    games = [f[:-5] for f in files]
+    response = json.dumps(games)
+    return response
+
 @add_route("/api/game/name", methods=["GET"])
 def app_gameName(request):
-    try:            
-        n=SharedState.gdata["GameInfo"]["GameName"]
-        return json.dumps({"gamename": n}), 200    
-    except Exception as e:            
-        return json.dumps({"gamename":"BLANK"}), 500
+    return json.dumps(SharedState.gdata["GameInfo"]["GameName"]), 200
 
+@add_route("/api/game/status", methods=["GET"])
+def app_gameStatus(request):
+    return game_status_report(request)
 
 #
 # Memory
@@ -159,7 +170,7 @@ def download_memory(request):
     
     return memory_values_generator(), 200, headers
 
-
+   
 #
 # Leaderboard
 #
@@ -172,6 +183,11 @@ def app_leaderBoardRead(request):
     except Exception as e:
         return json.dumps([]), 500
     return json.dumps(leaders), 200
+
+
+@add_route("/api/leaderboard/reset", methods=["GET"], auth=True)
+def app_resetScores(request):
+    DataStore.blankStruct("leaders")
 
 
 #
@@ -223,6 +239,24 @@ def app_updatePlayer(request):
     DataStore.write_record("names",{"initials":initials,"full_name":name},index)
 
 
+@add_route("/api/player/scores", methods=["GET"], auth=True)
+def app_getScores(request):
+    player_id = int(request.args.get("id"))
+    scores = []                      
+    name = DataStore.read_record("names", player_id)['full_name'].strip('\0')
+    numberOfScores = DataStore.memory_map["individual"]["count"]
+    for i in range(numberOfScores):
+        record = DataStore.read_record("individual", i, player_id)  
+        score = record['score']
+        date = record['date'].strip().replace('\x00', ' ')          
+        scores.append({
+            "score": score,
+            "full_name": name,
+            "date": date
+        })                       
+    return json.dumps(scores), 200
+
+
 @add_route("/api/player/scores/reset", methods=["GET"], auth=True)
 def app_resetIndScores(request):
     index = int(request.args.get("id"))
@@ -240,11 +274,10 @@ def app_getScoreCap(request):
 
 @add_route("/api/settings/score_capture_methods", methods=["POST"], auth=True)
 def app_setScoreCap(request):
-    new_state = request.json['on-machine']
+    new_state = int(request.json['on-machine'])
     info = DataStore.read_record("extras", 0)
     info["other"] = new_state
     DataStore.write_record("extras", info, 0)
-    return "ok", 200
 
 # @add_route("/api/settings/tournament_mode", methods=["GET"])
 
@@ -252,9 +285,9 @@ def app_setScoreCap(request):
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
         
-
-
-
+@add_route("/api/settings/config_file", methods=["GET"])
+def app_getConfig(request):
+    return json.dumps(DataStore.read_record("configuration", 0)["gamename"]), 200    
 
 
 #
@@ -265,6 +298,26 @@ def app_install_fault(request):
     if SharedState.installation_fault:
         return "fault", 500
 
+@add_route("/api/date_time", methods=["POST"], auth=True)
+def app_setDateTime(request):
+    '''Set the date and time on the device'''
+    date = [int(e) for e in request.json['date']]
+    y = date[0]
+    m = date[1]
+    d = date[2]
+    if len(date) == 6:
+        h = date[3]
+        mi = date[4]
+        s = date[5]
+    
+    # rtc will calculate the day of the week for us
+    rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
+    
+
+@add_route("/api/date_time", methods=["GET"])
+def app_getDateTime(request):
+    return rtc.datetime(), 200
+
 
 #TODO not sure we need this anymore
 # @add_route("/api/date", methods=["GET"])
@@ -272,3 +325,13 @@ def app_install_fault(request):
 #     y, m, d, _,_,_,_,_= time.localtime()
 #     return f"{y:04d}-{m:02d}-{d:02d}", 200
 
+#
+# File IO
+#
+#TODO probably not required if we can enable downloading files form score boards in javascript
+# server.add_route('/download_leaders',handler = FileIO.download_leaders, methods=['GET'])
+# server.add_route('/download_tournament',handler = FileIO.download_tournament, methods=['GET'])
+# server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
+server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
+server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
+server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
