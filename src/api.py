@@ -1,7 +1,6 @@
 import SPI_DataStore as DataStore
 import ujson as json
 import uhashlib as hashlib
-import urandom
 import binascii
 import time
 import gc
@@ -201,19 +200,14 @@ def app_tournamentRead(request):
 @add_route("/api/players", methods=["GET"])
 def app_getPlayers(request):
     players = {}
-    try:        
-        count = DataStore.memory_map["names"]["count"]
-        # Iterate through the player records
-        for i in range(count):
-            record = DataStore.read_record("names", i)
-            initials = record['initials'].replace('\x00', ' ').strip('\0')
-            full_name = record['full_name'].replace('\x00', ' ').strip('\0')
-            if initials or full_name: # ensure that at least one field is not empty
-                players[str(i + 1)] = {"initials": initials, "name": full_name}         
-
-    except Exception as e:
-        return json.dumps({"error": str(e)}), 500
-    
+    count = DataStore.memory_map["names"]["count"]
+    # Iterate through the player records
+    for i in range(count):
+        record = DataStore.read_record("names", i)
+        initials = record['initials'].replace('\x00', ' ').strip('\0')
+        full_name = record['full_name'].replace('\x00', ' ').strip('\0')
+        if initials or full_name: # ensure that at least one field is not empty
+            players[str(i)] = {"initials": initials, "name": full_name}             
     return json.dumps(players), 200
 
     
@@ -222,9 +216,59 @@ def app_updatePlayer(request):
     body = request.json                   
     initials = body['initials'].upper()[:3]
     name = body['full_name'][:16]
-    index = int(body['index'])  
+    index = int(body['id'])  
     if index < 0 or index > DataStore.memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
             
-    DataStore.write_record("names",{"initials":initials,"full_name":name},index-1)
+    DataStore.write_record("names",{"initials":initials,"full_name":name},index)
+
+
+@add_route("/api/player/scores/reset", methods=["GET"], auth=True)
+def app_resetIndScores(request):
+    index = int(request.args.get("id"))
+    DataStore.blankIndPlayerScores(index)
+
+
+#
+# Settings
+#
+@add_route("/api/settings/score_capture_methods", methods=["GET"])
+def app_getScoreCap(request):
+    score_cap = bool(DataStore.read_record("extras", 0)["other"])
+    return json.dumps({"on-machine": score_cap}), 200
+
+
+@add_route("/api/settings/score_capture_methods", methods=["POST"], auth=True)
+def app_setScoreCap(request):
+    new_state = request.json['on-machine']
+    info = DataStore.read_record("extras", 0)
+    info["other"] = new_state
+    DataStore.write_record("extras", info, 0)
+    return "ok", 200
+
+# @add_route("/api/settings/tournament_mode", methods=["GET"])
+
+@add_route("/api/settings/tournament_mode", methods=["POST"], auth=True)
+def app_setTournamentMode(request):    
+    SharedState.tournamentModeOn = int(request.json['tournament_mode'])
+        
+
+
+
+
+
+#
+# Miscellaneous
+#
+@add_route("/api/fault", methods=["GET"])
+def app_install_fault(request):
+    if SharedState.installation_fault:
+        return "fault", 500
+
+
+#TODO not sure we need this anymore
+# @add_route("/api/date", methods=["GET"])
+# def app_getDate(request):
+#     y, m, d, _,_,_,_,_= time.localtime()
+#     return f"{y:04d}-{m:02d}-{d:02d}", 200
 
