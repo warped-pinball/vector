@@ -6,6 +6,7 @@ import binascii
 import time
 import gc
 from Utilities.random_bytes import random_hex
+from phew import server 
 
 # Authentication variables
 current_challenge = None
@@ -64,5 +65,3 @@ def get_challenge(request):
     # Return the nonce to the client
     return json.dumps({"challenge": current_challenge}), 200, {'Content-Type': 'application/json'}
 
-
- 

@@ -29,6 +29,7 @@ from SPI_DataStore import writeIP
 import GameStatus
 import reset_control
 
+import api.auth
 
 rtc = RTC()
 ip_address=0
