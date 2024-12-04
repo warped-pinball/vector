@@ -29,8 +29,6 @@ from SPI_DataStore import writeIP
 import GameStatus
 import reset_control
 
-import api.auth
-
 rtc = RTC()
 ip_address=0
 cycle_count = 1
@@ -340,51 +338,7 @@ def application_mode(fault_msg):
         rtc.datetime((year, month, day, 0, 0, 0, 0, 0))
         return "OK"
        
-    def load_leaders():
-        try:
-            leaders = []
-            for i in range(DataStore.memory_map["leaders"]["count"]):
-                leaders.append(DataStore.read_record("leaders",i))
-        except OSError:
-            leaders = []
-        return leaders   
-    
-    def app_leaderBoardRead(request):
-        leaders = load_leaders()
-        response = json.dumps(leaders)
-        return (response)
-    
-    def app_tournamentBoardRead(request):       
-        try:
-            leaders = []
-            for i in range(DataStore.memory_map["tournament"]["count"]):
-                leaders.append(DataStore.read_record("tournament",i))
-        except:  
-            leaders = []            
-        return json.dumps(leaders) 
- 
-    def app_getGameName(request):       
-        try:            
-            #n=DataStore.read_record("configuration",0)["gamename"].strip('\0')            
-            n=SharedState.gdata["GameInfo"]["GameName"]
-            return json.dumps({"gamename": n})    
-        except Exception as e:            
-            return json.dumps({"gamename":"BLANK"})
-  
-    #get list of indvidual players from names list...    
-    def app_get_IndPlayers(request):      
-        gc.collect()
-        players = []      
-        try:        
-            count = DataStore.memory_map["names"]["count"]            
-            for i in range(count):
-                record = DataStore.read_record("names", i)
-                initials = record['initials'].replace('\x00', ' ').strip() if record['initials'] else ' '            
-                players.append( initials )
-        except:
-            print(f"Error accessing DataStore: {e}")
-            return ("error")      
-        return json.dumps({"players":players})
+
     
     def app_set_IndPlayer(request):
         global IndividualActivePlayer
@@ -479,53 +433,10 @@ def application_mode(fault_msg):
         
         return json.dumps(players)
    
-    def app_updatePlayer(request):                     
-        try:    
-            body = request.data                   
-            initials = body['initials'].upper()[:3]
-            name = body['full_name'][:16]
-            index = int(body['index'])  
-            if index < 0 or index > DataStore.memory_map["names"]["count"]:
-                return "Invalid index"    
-                    
-            DataStore.write_record("names",{"initials":initials,"full_name":name},index-1)                    
-            return "Update successful"
-        except Exception as e:
-            return f"An error occurred: {e}"
-
-    def download_memory(request):
-        print("WIFI: Download memory values file")
-        gc.collect()    
-        try:
-            # Stream memory values directly to the response to save RAM
-            def memory_values_generator():
-                for value in ram_access:
-                    yield f"{value}\n".encode('utf-8')               
-
-            headers = {
-                'Content-Type': 'text/plain',
-                'Content-Disposition': 'attachment; filename=memory.txt',
-                'Connection': 'close'
-            }
-            
-            return memory_values_generator(), 200, headers
-        
-        except Exception as e:
-            print(f"Error preparing memory values: {str(e)}")
-            gc.collect()
-            return 500, {"error": str(e)}
 
 
-    def load_leaders():
-        gc.collect()
-        leaders = []
-        try:
-            for i in range(DataStore.memory_map["leaders"]["count"]):
-                leaders.append(DataStore.read_record("leaders", i))
-        except Exception as e:
-            print(f"Error loading leaders: {e}")
-            leaders = []
-        return leaders
+
+
 
     def get_current_date():  #for formatting date select box in template
         year, month, day, _, _, _, _, _ = utime.localtime()
