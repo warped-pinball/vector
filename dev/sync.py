@@ -10,6 +10,7 @@ import serial.tools.list_ports
 import json
 import time
 import gzip
+import math
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -23,15 +24,25 @@ CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
 HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
 
-def get_directory_size(path: str) -> int:
+#TODO calculate number of 4Kb blocks we need to fit all files in the Pico (since that's the block size)
+
+def get_directory_size(path: str) -> tuple[int, int]:
     total_size = 0
+    file_system_block_size = 4096
+    space_lost_to_blocks = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
             # Only add the file size if it exists (avoid broken symlinks, etc.)
             if os.path.exists(filepath):
-                total_size += os.path.getsize(filepath)
-    return total_size
+                file_size = os.path.getsize(filepath)
+                
+                number_of_blocks = math.ceil(file_size / file_system_block_size)
+                true_size = number_of_blocks * file_system_block_size
+                space_lost_to_blocks += true_size - file_size
+                total_size += true_size
+                
+    return total_size, space_lost_to_blocks
 
 def step_report(size_report=False, time_report=True):
     def build_step_report(func):
@@ -40,7 +51,7 @@ def step_report(size_report=False, time_report=True):
             print()
             print(f"Running step: {func.__name__}")
             if size_report:
-                original_size = get_directory_size(BUILD_DIR)
+                original_size, _ = get_directory_size(BUILD_DIR)
             start_time = time.time()
             func(*args, **kwargs)
             end_time = time.time()
@@ -48,8 +59,9 @@ def step_report(size_report=False, time_report=True):
             if time_report:
                 print(f"Step completed in {elapsed_time:.2f} seconds.")
             if size_report:
-                total_size = get_directory_size(BUILD_DIR)
+                total_size, file_system_loss = get_directory_size(BUILD_DIR)
                 print(f"Total size of files in build directory: {total_size / 1024:.2f} KB")
+                print(f"Space lost to file system blocks: {file_system_loss / 1024:.2f} KB")
                 if original_size:
                     size_diff = total_size - original_size
                     print(f"Size difference: {size_diff / 1024:.2f} KB ({size_diff / original_size * 100:.2f}%)")

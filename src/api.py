@@ -1,5 +1,6 @@
 #TODO change all of these to more specific imports to save memory
 import SPI_DataStore as DataStore
+from SPI_DataStore import writeIP
 import ujson as json
 import uhashlib as hashlib
 import binascii
@@ -7,7 +8,7 @@ import time
 import gc
 import os
 from Utilities.random_bytes import random_hex
-from phew import server 
+from phew import server, connect_to_wifi, is_connected_to_wifi
 import reset_control
 import SharedState
 from Memory_Main import save_ram,blank_ram
@@ -16,11 +17,15 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, SRAM_COUNT_
 from GameStatus import report as game_status_report
 import FileIO
 from machine import RTC
+from Utilities.ls import ls
+import Pico_Led
+import displayMessage
 #
 # Constants
 #
 rtc = RTC()
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
+WIFI_MAX_ATTEMPTS = 12
 
 # Authentication variables
 current_challenge = None
@@ -36,28 +41,31 @@ def add_route(path, methods=["GET"], auth=False):
     if isinstance(methods, str):
             methods = [methods]
 
-    def decorator(func):
+    def route_adder(func):
         if auth:
             func = require_auth(func)
 
-        @server.route(path, methods=methods)
-        def wrapper(request):
+        # @server.route(path, methods=methods)
+        def handle_errors(request):
             gc.collect()
             try:
                 response = func(request)
+            
+                if response is None:
+                    return "ok", 200
+                else:
+                    return response
+            
             except Exception as e:
                 msg = f"Error in {func.__name__}: {e}"
                 print(msg)
-                gc.collect()
                 return msg, 500
             
-            if response is None:
-                return "ok", 200
-                    
-            gc.collect()
-            return response
-        return wrapper
-    return decorator
+            finally:
+                gc.collect()
+
+        server.add_route(path, handle_errors, methods=methods)
+    return route_adder
 
 #
 # Authentication
@@ -115,6 +123,57 @@ def get_challenge(request):
     # Return the nonce to the client
     return json.dumps({"challenge": current_challenge}), 200, {'Content-Type': 'application/json'}
 
+#
+# Static File Server
+#
+
+def get_content_type(file_path):
+    content_type_mapping = {
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.html': 'text/html',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.gz': 'application/gzip'
+    }
+    for extension, content_type in content_type_mapping.items():
+        if file_path.endswith(extension):
+            return content_type
+    return 'application/octet-stream'
+
+def serve_file(file_path, url=None):
+    '''Serve a static file from the filesystem'''
+    if url is None:
+        url = file_path
+    @add_route(url, methods=["GET"])
+    def route(request):
+        headers = {
+            'Content-Type': get_content_type(file_path),
+            'Connection': 'close'
+        }
+
+        def file_stream_generator():
+            gc.collect()
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(1024)  # Read in chunks of 1KB
+                    if not chunk:
+                        break
+                    yield chunk
+            gc.collect() 
+
+        return file_stream_generator(), 200, headers
+    return route
+
+
+for file_path in ls('web'):        
+    route = file_path[3:]
+    print(f"Adding route for {route}")
+    serve_file(file_path)
+    if route == "/index.html":
+        serve_file(file_path, url="/")
 
 #
 # Game
@@ -279,6 +338,7 @@ def app_setScoreCap(request):
     info["other"] = new_state
     DataStore.write_record("extras", info, 0)
 
+
 # @add_route("/api/settings/tournament_mode", methods=["GET"])
 
 @add_route("/api/settings/tournament_mode", methods=["POST"], auth=True)
@@ -289,6 +349,21 @@ def app_setTournamentMode(request):
 def app_getConfig(request):
     return json.dumps(DataStore.read_record("configuration", 0)["gamename"]), 200    
 
+
+#
+# Networking
+#
+@add_route("/api/last_ip", methods=["GET"])
+def app_getLastIP(request):
+    return DataStore.read_record("extras", 0)["lastIP"], 200
+
+@add_route("/api/available_ssids", methods=["GET"])
+def app_getAvailableSSIDs(request):
+    import scanwifi
+    available_networks=scanwifi.scan_wifi2()
+    return json.dumps(available_networks), 200
+
+#TODO setup domain name
 
 #
 # Miscellaneous
@@ -319,6 +394,7 @@ def app_getDateTime(request):
     return rtc.datetime(), 200
 
 
+
 #TODO not sure we need this anymore
 # @add_route("/api/date", methods=["GET"])
 # def app_getDate(request):
@@ -335,3 +411,61 @@ def app_getDateTime(request):
 server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
 server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
 server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
+
+#
+# Catch All
+#
+def four_oh_four(request):
+    return "Not found", 404
+
+server.set_callback(four_oh_four)
+
+#
+# AP mode routes
+#
+def add_ap_mode_routes():
+    '''Routes only available in AP mode'''
+
+    @add_route("/api/settings/wifi", methods=["POST"])
+    def app_setWifi(request):
+        '''Set the wifi SSID and password'''
+        data = request.json
+        DataStore.write_record("configuration",
+            {
+                "ssid": data['ssid'],
+                "password": data['password'],
+                "Gpassword": data['gpassword'],
+                "gamename": data['gamename'],
+
+            }
+        )
+        Pico_Led.off()
+        #TODO redirect to "configuration saved" page? possibly just have this baked into web page on 200
+    
+
+
+#TODO we dont really need the fault message since it can only be one message and it's already in the shared state as a bool
+def go(ap_mode, fault_msg=None):
+    '''Start the server and run the main loop'''
+    if ap_mode:
+        add_ap_mode_routes()
+    else:
+        wifi_credentials = DataStore.read_record("configuration", 0)
+        if not wifi_credentials:
+            raise ValueError("No wifi credentials found in configuration")
+
+        ssid = wifi_credentials["ssid"]
+        password = wifi_credentials["password"]
+        for i in range(WIFI_MAX_ATTEMPTS):
+            print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
+            ip_address = connect_to_wifi(ssid, password, timeout_seconds=10) 
+            if is_connected_to_wifi():
+                writeIP(ip_address)
+                Pico_Led.on()
+                displayMessage.init(ip_address)
+                break
+    
+    server.run()
+    
+    
+
