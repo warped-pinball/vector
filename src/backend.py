@@ -35,39 +35,94 @@ CHALLENGE_EXPIRATION_SECONDS = 60
 
 
 #
-# Standard Route Decorator
+# Standardized Route Methods
 #
+def route_wrapper(func):
+    def wrapped_route(request):
+        gc.collect()
+        try:
+            response = func(request)
+
+            if response is None:
+                return "ok", 200
+            return response
+
+        except Exception as e:
+            msg = f"Error in {func.__name__}: {e}"
+            print(msg)
+            return msg, 500
+
+        finally:
+            gc.collect()
+    return wrapped_route
+
 def add_route(path, methods=["GET"], auth=False):
     '''Decorator to add a route to the server with gc.collect() and error handling'''
     if isinstance(methods, str):
             methods = [methods]
-
-    def route_adder(func):
+    def decorator(func):
         if auth:
             func = require_auth(func)
+        
+        wrapped = route_wrapper(func)
 
-        # @server.route(path, methods=methods)
-        def handle_errors(request):
-            gc.collect()
-            try:
-                response = func(request)
-            
-                if response is None:
-                    return "ok", 200
-                else:
-                    return response
-            
-            except Exception as e:
-                msg = f"Error in {func.__name__}: {e}"
-                print(msg)
-                return msg, 500
-            
-            finally:
-                gc.collect()
+        @server.route(path, methods=methods)
+        def route(request):
+            return wrapped(request)
+        
+        return route
+    return decorator
 
-        server.add_route(path, handle_errors, methods=methods)
-    return route_adder
+def get_content_type(file_path):
+    content_type_mapping = {
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.html': 'text/html',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.gz': 'application/gzip'
+    }
+    for extension, content_type in content_type_mapping.items():
+        if file_path.endswith(extension):
+            return content_type
+    return 'application/octet-stream'
 
+def create_file_handler(file_path):
+    def file_stream_generator():
+        gc.collect()
+        with open(file_path, 'rb') as f:
+            while True:
+                chunk = f.read(1024)  # Read in chunks of 1KB
+                if not chunk:
+                    break
+                yield chunk
+        gc.collect()
+
+    def file_handler(request):
+        headers = {
+            'Content-Type': get_content_type(file_path),
+            'Connection': 'close'
+        }
+        return file_stream_generator(), 200, headers
+
+    # Wrap the file_handler with the same error/memory logic
+    return route_wrapper(file_handler)
+
+def four_oh_four(request):
+    print("--- 404 ---")
+    print(request)
+    print()
+    return "Not found", 404
+
+def redirect(request):
+    #TODO old AP mode had this, not sure if we need it
+    #if request.headers.get("host") != AP_DOMAIN:
+    #    return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
+
+    #TODO add page name query to direct to configuration page when in AP mode
+    return "Redirecting...", 301, {"Location": "/index.html"}
 #
 # Authentication
 #
@@ -127,54 +182,11 @@ def get_challenge(request):
 #
 # Static File Server
 #
-
-def get_content_type(file_path):
-    content_type_mapping = {
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.html': 'text/html',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.gz': 'application/gzip'
-    }
-    for extension, content_type in content_type_mapping.items():
-        if file_path.endswith(extension):
-            return content_type
-    return 'application/octet-stream'
-
-def serve_file(file_path, url=None):
-    '''Serve a static file from the filesystem'''
-    if url is None:
-        url = file_path
-    @add_route(url, methods=["GET"])
-    def route(request):
-        headers = {
-            'Content-Type': get_content_type(file_path),
-            'Connection': 'close'
-        }
-
-        def file_stream_generator():
-            gc.collect()
-            with open(file_path, 'rb') as f:
-                while True:
-                    chunk = f.read(1024)  # Read in chunks of 1KB
-                    if not chunk:
-                        break
-                    yield chunk
-            gc.collect() 
-
-        return file_stream_generator(), 200, headers
-    return route
-
-# Automatically serve all files in the 'web' directory
-for file_path in ls('web'):        
-    route = file_path[3:]
-    print(f"Adding route for {route}")
-    serve_file(file_path)
+for file_path in ls('web'):
+    route = file_path[3:]  # This should give '/index.html' for 'web/index.html'
+    server.add_route(route, create_file_handler(file_path), methods=['GET'])
     if route == "/index.html":
-        serve_file(file_path, url="/")
+        server.add_route("/", create_file_handler(file_path), methods=['GET'])
 
 #
 # Game
@@ -369,6 +381,9 @@ def app_getAvailableSSIDs(request):
 #
 # Miscellaneous
 #
+
+#TODO version number
+
 @add_route("/api/fault", methods=["GET"])
 def app_install_fault(request):
     if SharedState.installation_fault:
@@ -413,19 +428,7 @@ server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
 server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
 server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
 
-#
-# Catch All
-#
-def four_oh_four(request):
-    return "Not found", 404
 
-def redirect(request):
-#TODO old AP mode had this, not sure if we need it
-#if request.headers.get("host") != AP_DOMAIN:
-            #return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
-
-    #TODO add page name query to direct to configuration page
-    return "Redirecting...", 301, {"Location": "/index.html"}
 
 
 
@@ -483,6 +486,7 @@ def go(ap_mode, fault_msg=None):
             print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
             ip_address = connect_to_wifi(ssid, password, timeout_seconds=10) 
             if is_connected_to_wifi():
+                print(f"Connected to wifi with IP address {ip_address}")
                 writeIP(ip_address)
                 Pico_Led.on()
                 displayMessage.init(ip_address)
