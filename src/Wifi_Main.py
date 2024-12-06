@@ -46,62 +46,6 @@ APP_TEMPLATE_PATH = "app_templates"
 WIFI_FILE = "wifi.json"
 WIFI_MAX_ATTEMPTS = 12
 
-#Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
-#wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)   
-Pico_Led.off()
-
-#print("thres----  ",gc.threshold())
-gc.threshold(2048 * 6) 
-
-
-def setup_mode(fault_msg):
-    Pico_Led.start_fast_blink()    
-    print("WIFI: Entering setup mode")
-    available_networks = None
-    
-    
-    def ap_catch_all(request):    
-        if request.headers.get("host") != AP_DOMAIN:
-            return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
-        return "Not found.", 404
-
-    def app_initData(request):    
-        dat = DataStore.read_record("configuration")
-        print("SETUP MODE: init data,",dat)
-        return json.dumps(dat)
-
-          
-    server.add_route("/listnetworks", handler = app_listNetworks, methods = ["GET"])        
-    server.add_route("/initdata", handler = app_initData, methods = ["GET"])    
-    server.add_route("/", handler = ap_index, methods = ["GET"])
-    server.add_route("/configure", handler = ap_configure, methods = ["POST"])
-
-    # add static files
-    serve_static_files()
-
-    server.set_callback(ap_catch_all)
-
-    ap = access_point(AP_NAME)
-    ip = ap.ifconfig()[0]
-    dns.run_catchall(ip)
-   
-
-#main application wifi mode
-def application_mode(fault_msg):
-    print("WIFI: Entering application mode.")       
-
-    def app_catch_all(request):
-        return "Not found.", 404
-      
-    
-  
-    # add static files
-    serve_static_files()
-
-    print("WIFI: end application mode callback")
-    server.set_callback(app_catch_all)
- 
-
 #run WIFI - gets connected and starts the web server
 #  timed functions are spawned in server.py, event driven stuff in wifi_main.py
 #  This call DOES NOT RETURN unless there is a fault

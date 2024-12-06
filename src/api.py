@@ -8,7 +8,7 @@ import time
 import gc
 import os
 from Utilities.random_bytes import random_hex
-from phew import server, connect_to_wifi, is_connected_to_wifi
+from phew import server, connect_to_wifi, is_connected_to_wifi, access_point, dns
 import reset_control
 import SharedState
 from Memory_Main import save_ram,blank_ram
@@ -26,6 +26,7 @@ import displayMessage
 rtc = RTC()
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 12
+AP_NAME = "WarpedPinball"
 
 # Authentication variables
 current_challenge = None
@@ -167,7 +168,7 @@ def serve_file(file_path, url=None):
         return file_stream_generator(), 200, headers
     return route
 
-
+# Automatically serve all files in the 'web' directory
 for file_path in ls('web'):        
     route = file_path[3:]
     print(f"Adding route for {route}")
@@ -418,7 +419,15 @@ server.add_route('/upload_results',handler = FileIO.incoming_file_results, metho
 def four_oh_four(request):
     return "Not found", 404
 
-server.set_callback(four_oh_four)
+def redirect(request):
+#TODO old AP mode had this, not sure if we need it
+#if request.headers.get("host") != AP_DOMAIN:
+            #return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
+
+    #TODO add page name query to direct to configuration page
+    return "Redirecting...", 301, {"Location": "/index.html"}
+
+
 
 #
 # AP mode routes
@@ -447,9 +456,23 @@ def add_ap_mode_routes():
 #TODO we dont really need the fault message since it can only be one message and it's already in the shared state as a bool
 def go(ap_mode, fault_msg=None):
     '''Start the server and run the main loop'''
+    
+    #TODO this was earlier in the code, might need moved to the top of this file
+    #Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
+    #wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)   
+    Pico_Led.off()
+    gc.threshold(2048 * 6) 
+
     if ap_mode:
+        Pico_Led.start_fast_blink()    
         add_ap_mode_routes()
+        # send clients to the configure page
+        server.set_callback(redirect)
+        ap = access_point(AP_NAME)
+        ip = ap.ifconfig()[0]
+        dns.run_catchall(ip)
     else:
+        server.set_callback(four_oh_four)
         wifi_credentials = DataStore.read_record("configuration", 0)
         if not wifi_credentials:
             raise ValueError("No wifi credentials found in configuration")
