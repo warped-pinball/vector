@@ -6,7 +6,7 @@
     fault check updated for early sys11 game compatability
 '''
 
-import Wifi_Main as Wifi
+# import Wifi_Main as Wifi
 import Memory_Main as MemoryMain
 import machine
 from machine import Pin
@@ -144,6 +144,8 @@ if bus_activity_fault == False:
         reset_control.release(True)
 
 #launch wifi, and server. Should not return
-Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
+from backend import go
+go(ap_mode,fault_msg)   #ap mode / bus fault
+# Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
 
 Log.log("MAIN: drop through fault")
