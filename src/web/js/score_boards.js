@@ -141,9 +141,14 @@ fetch('/api/players')
 
 
 // Auto-refresh intervals
-const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
-const tournamentIntervalId = setInterval(updateTournament, 60000); // Update every minute
-const personalIntervalId = setInterval(updatePersonal, 60000); // Update every minute
+// check if leaderboardIntervalId, tournamentIntervalId and personalIntervalId are not defined
+try {
+    const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
+    const tournamentIntervalId = setInterval(updateTournament, 60000); // Update every minute
+    const personalIntervalId = setInterval(updatePersonal, 60000); // Update every minute
+} catch (error) {
+    console.log('intervals already defined');
+}
 updateLeaderboard();
 updateTournament();
 updatePersonal();
