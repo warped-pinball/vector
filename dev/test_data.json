@@ -14,13 +14,13 @@
         {
             "initials": "AAA",
             "full_name": "Player 1",
-            "date": "12062024",
+            "date": "12/06/2024",
             "score": 100
         },
         {
             "initials": "BBB",
             "full_name": "Player 2",
-            "date": "11052023",
+            "date": "11/05/2023",
             "score": 200
         }
     ],
@@ -28,13 +28,13 @@
         {
             "initials": "AAA",
             "score": 100,
-            "date": "12062024",
+            "date": "12/06/2024",
             "index": 1
         },
         {
             "initials": "BBB",
             "score": 200,
-            "date": "11052023",
+            "date": "11/05/2023",
             "index": 2
         }
     ]
