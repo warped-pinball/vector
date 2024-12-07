@@ -113,6 +113,7 @@ def create_file_handler(file_path):
 def four_oh_four(request):
     print("--- 404 ---")
     print(request)
+    print(request.query)
     print()
     return "Not found", 404
 
@@ -170,7 +171,7 @@ def require_auth(handler):
     return wrapper
 
 
-@add_route("/api/auth/challenge", methods=["GET"])
+@add_route("/api/auth/challenge")
 def get_challenge(request):
     global current_challenge, challenge_timestamp
     # Generate a random nonce (challenge)
@@ -191,34 +192,34 @@ for file_path in ls('web'):
 #
 # Game
 #
-@add_route("/api/game/reset", methods=["GET"], auth=True)
-def app_resetGame(request):              
+@add_route("/api/game/reboot", auth=True)
+def app_reboot_game(request):              
     reset_control.reset()
     time.sleep(2)
     reset_control.release(True)         
     server.reset_bootup_counters()
 
 
-@add_route("/api/game/list_names", methods=["GET"])
-def app_listgames(request):
+@add_route("/api/game/list_games")
+def app_list_games(request):
     files = os.listdir("GameDefs")
     games = [f[:-5] for f in files]
     response = json.dumps(games)
     return response
 
-@add_route("/api/game/name", methods=["GET"])
-def app_gameName(request):
-    return json.dumps(SharedState.gdata["GameInfo"]["GameName"]), 200
+@add_route("/api/game/name")
+def app_game_name(request):
+    return SharedState.gdata["GameInfo"]["GameName"], 200
 
-@add_route("/api/game/status", methods=["GET"])
+@add_route("/api/game/status")
 def app_gameStatus(request):
     return game_status_report(request)
 
 #
 # Memory
 #
-@add_route("/api/memory/reset", methods=["GET"], auth=True)
-def app_resetMemory(request):
+@add_route("/api/memory/reset", auth=True)
+def app_reset_memory(request):
     reset_control.reset()
     time.sleep(2)
     blank_ram()
@@ -227,7 +228,7 @@ def app_resetMemory(request):
     server.reset_bootup_counters()
     
 
-@add_route("/api/memory/save", methods=["GET"])
+@add_route("/api/memory/save")
 def download_memory(request):
     # Stream memory values directly to the response to save RAM
     def memory_values_generator():
@@ -246,7 +247,7 @@ def download_memory(request):
 #
 # Leaderboard
 #
-@add_route("/api/leaders", methods=["GET"])
+@add_route("/api/leaders")
 def app_leaderBoardRead(request):
     leaders = []
     try:
@@ -257,7 +258,7 @@ def app_leaderBoardRead(request):
     return json.dumps(leaders), 200
 
 
-@add_route("/api/leaderboard/reset", methods=["GET"], auth=True)
+@add_route("/api/leaderboard/reset", auth=True)
 def app_resetScores(request):
     DataStore.blankStruct("leaders")
 
@@ -265,13 +266,13 @@ def app_resetScores(request):
 #
 # Tournament
 #
-@add_route("/api/tournament/reset", methods=["GET"], auth=True)
+@add_route("/api/tournament/reset", auth=True)
 def app_tournamentClear(request):
     DataStore.blankStruct("tournament")
     SharedState.gameCounter=0
 
 
-@add_route("/api/tournament", methods=["GET"], auth=True)
+@add_route("/api/tournament")
 def app_tournamentRead(request):
     leaders = []
     try:
@@ -285,7 +286,7 @@ def app_tournamentRead(request):
 #
 # Players
 #
-@add_route("/api/players", methods=["GET"])
+@add_route("/api/players")
 def app_getPlayers(request):
     players = {}
     count = DataStore.memory_map["names"]["count"]
@@ -311,25 +312,24 @@ def app_updatePlayer(request):
     DataStore.write_record("names",{"initials":initials,"full_name":name},index)
 
 
-@add_route("/api/player/scores", methods=["GET"], auth=True)
+@add_route("/api/player/scores")
 def app_getScores(request):
-    player_id = int(request.args.get("id"))
+    player_id = int(request.query.get("id"))
     scores = []                      
-    name = DataStore.read_record("names", player_id)['full_name'].strip('\0')
     numberOfScores = DataStore.memory_map["individual"]["count"]
     for i in range(numberOfScores):
         record = DataStore.read_record("individual", i, player_id)  
         score = record['score']
         date = record['date'].strip().replace('\x00', ' ')          
-        scores.append({
-            "score": score,
-            "full_name": name,
-            "date": date
-        })                       
+        if score > 0:
+            scores.append({
+                "score": score,
+                "date": date
+            })                           
     return json.dumps(scores), 200
 
 
-@add_route("/api/player/scores/reset", methods=["GET"], auth=True)
+@add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
     index = int(request.args.get("id"))
     DataStore.blankIndPlayerScores(index)
@@ -338,7 +338,7 @@ def app_resetIndScores(request):
 #
 # Settings
 #
-@add_route("/api/settings/score_capture_methods", methods=["GET"])
+@add_route("/api/settings/score_capture_methods")
 def app_getScoreCap(request):
     score_cap = bool(DataStore.read_record("extras", 0)["other"])
     return json.dumps({"on-machine": score_cap}), 200
@@ -352,13 +352,13 @@ def app_setScoreCap(request):
     DataStore.write_record("extras", info, 0)
 
 
-# @add_route("/api/settings/tournament_mode", methods=["GET"])
+# @add_route("/api/settings/tournament_mode")
 
 @add_route("/api/settings/tournament_mode", methods=["POST"], auth=True)
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
         
-@add_route("/api/settings/config_file", methods=["GET"])
+@add_route("/api/settings/config_file")
 def app_getConfig(request):
     return json.dumps(DataStore.read_record("configuration", 0)["gamename"]), 200    
 
@@ -366,11 +366,11 @@ def app_getConfig(request):
 #
 # Networking
 #
-@add_route("/api/last_ip", methods=["GET"])
+@add_route("/api/last_ip")
 def app_getLastIP(request):
     return DataStore.read_record("extras", 0)["lastIP"], 200
 
-@add_route("/api/available_ssids", methods=["GET"])
+@add_route("/api/available_ssids")
 def app_getAvailableSSIDs(request):
     import scanwifi
     available_networks=scanwifi.scan_wifi2()
@@ -384,7 +384,7 @@ def app_getAvailableSSIDs(request):
 
 #TODO version number
 
-@add_route("/api/fault", methods=["GET"])
+@add_route("/api/fault")
 def app_install_fault(request):
     if SharedState.installation_fault:
         return "fault", 500
@@ -405,14 +405,14 @@ def app_setDateTime(request):
     rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
     
 
-@add_route("/api/date_time", methods=["GET"])
+@add_route("/api/date_time")
 def app_getDateTime(request):
     return rtc.datetime(), 200
 
 
 
 #TODO not sure we need this anymore
-# @add_route("/api/date", methods=["GET"])
+# @add_route("/api/date")
 # def app_getDate(request):
 #     y, m, d, _,_,_,_,_= time.localtime()
 #     return f"{y:04d}-{m:02d}-{d:02d}", 200
@@ -492,6 +492,9 @@ def go(ap_mode, fault_msg=None):
                 displayMessage.init(ip_address)
                 break
     
+    print("-"*10)
+    print("Starting server")
+    print("-"*10)
     server.run()
     
     

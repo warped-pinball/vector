@@ -48,15 +48,15 @@ async function updateTable(tableId, endpoint, minRows = 4) {
 }
 
 function updateLeaderboard() {
-    updateTable('leaderboardTable', '/leaderboard');
+    updateTable('leaderboardTable', '/api/leaders');
 }
 
 function updateTournament() {
-    updateTable('tournamentTable', '/tournamentboard');
+    updateTable('tournamentTable', '/api/tournament');
 }
 
 function updatePersonal() {
-    // updateTable('personalTable', '/personal');
+    //TODO implement this function
 }
 
 // Function to update individual scores
@@ -74,14 +74,8 @@ async function updateIndividualScores(player) {
         playerNameElement.textContent = cachedScores[0]?.full_name || player;
     }
 
-    await fetch('/IndPlayerSet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player })
-    });
-
     try {
-        const response = await fetch('/IndScores');
+        const response = await fetch(`/api/playeer/scores?id=${player}`);
         if (!response.ok) {
             console.warn(`Failed to fetch scores for ${player}: ${response.statusText}`);
             return;
@@ -132,7 +126,7 @@ async function loadPlayers(data) {
 
 
 // Initial fetch to populate the form
-fetch('/players')
+fetch('/api/players')
     .then(response => response.json())
     .then(data => loadPlayers(data))
     .catch(error => console.error('Error fetching player data:', error));

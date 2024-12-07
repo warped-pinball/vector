@@ -116,12 +116,11 @@ async function set_title() {
     document.title = config.title;
 
     try {
-        const response = await fetch('/GameName');
+        const response = await fetch('/api/game/name');
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        const data = await response.json();
-        const gameName = data.gamename;
+        const gameName = await response.text();
         const gameNameElem = document.getElementById('game_name');
         if (gameNameElem) {
             gameNameElem.textContent = gameName;

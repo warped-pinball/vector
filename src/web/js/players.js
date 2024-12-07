@@ -83,7 +83,7 @@ async function savePlayer(index, initials, name) {
     console.log('Saving player:', index, initials, name);
     console.log(JSON.stringify({ index: index, initials: initials, full_name: name }));
     try {
-        const response = await fetch('/updatePlayer', {
+        const response = await fetch('/api/player/update', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ async function savePlayer(index, initials, name) {
 }
 
 // Initial fetch to populate the form
-fetch('/players')
+fetch('/api/players')
     .then(response => response.json())
     .then(data => populateForm(data))
     .catch(error => console.error('Error fetching player data:', error));

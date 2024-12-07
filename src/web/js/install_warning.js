@@ -1,5 +1,5 @@
 async function fault_check() {
-    const response = await fetch('/install_fault');
+    const response = await fetch('/api/fault');
     if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
     }

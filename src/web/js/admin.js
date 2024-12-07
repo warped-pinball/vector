@@ -85,7 +85,7 @@ function closeModal() {
 
 async function resetLeaderboard() {
   try {
-    await fetch('/leaderboardClear');
+    await fetch('/api/leaderbaord/reset');
     alert('Leaderboard reset!');
   } catch (error) {
     console.error('Failed to reset leaderboard:', error);
@@ -95,7 +95,7 @@ async function resetLeaderboard() {
 
 async function resetTournamentBoard() {
   try {
-    await fetch('/tournamentClear');
+    await fetch('/api/tournament/reset');
     alert('Tournament board reset!');
   } catch (error) {
     console.error('Failed to reset tournament board:', error);
@@ -105,7 +105,7 @@ async function resetTournamentBoard() {
 
 async function rebootGame() {
   try {
-    await fetch('/ResetGame');
+    await fetch('/api/game/reboot');
     alert('Game rebooted!');
   } catch (error) {
     console.error('Failed to reboot game:', error);
@@ -115,7 +115,7 @@ async function rebootGame() {
 
 async function resetGameMemory() {
   try {
-    await fetch('/ResetGameMemory');
+    await fetch('/api/memory/reset');
     alert('Game memory reset!');
   } catch (error) {
     console.error('Failed to reset game memory:', error);
@@ -141,17 +141,18 @@ async function saveSettings() {
 
   try {
     // Update enableScoreCapture
-    await fetch('/setEnableScoreCapture', {
+    await fetch('/api/settings/score_capture_methods', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enableScoreCapture })
+      body: JSON.stringify({ "on-machine": enableScoreCapture })
     });
 
     // Update date
-    await fetch('/updateDate', {
+    await fetch('/api/date_time', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newDate })
+      // list of 6 numbers, [year, month, day, hour, minute, second]
+      body: JSON.stringify(newDate.split('-').map(Number))
     });
 
     alert('Settings saved!');
@@ -188,7 +189,7 @@ async function uploadUpdateFile() {
       }
       alert('All dictionaries uploaded successfully');
 
-      const resultResponse = await fetch('/upload_results');
+      const resultResponse = await fetch('/upload_results');//TODO update this route when it's written
       const resultText = await resultResponse.text();
       alert(resultText);
     } else {
@@ -209,7 +210,7 @@ async function sendDictionary(dict) {
   formData.append('dictionary', JSON.stringify(dict));
 
   try {
-    const response = await fetch('/upload_file', {
+    const response = await fetch('/upload_file', { //TODO update this route when it's written
       method: 'POST',
       body: formData
     });
