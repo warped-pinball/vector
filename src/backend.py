@@ -50,6 +50,8 @@ def route_wrapper(func):
         except Exception as e:
             msg = f"Error in {func.__name__}: {e}"
             print(msg)
+            print(request)
+            print(request.query)
             return msg, 500
 
         finally:
@@ -275,13 +277,11 @@ def app_tournamentClear(request):
 @add_route("/api/tournament")
 def app_tournamentRead(request):
     leaders = []
-    try:
-        for i in range(DataStore.memory_map["tournament"]["count"]):
-            leaders.append(DataStore.read_record("tournament", i))
-    except Exception as e:
-        print(f"Error loading tournament: {e}")
-        leaders = []
-    return json.dumps(leaders)
+    for i in range(DataStore.memory_map["tournament"]["count"]):
+        row = DataStore.read_record("tournament", i)
+        if row["score"] > 0:
+            leaders.append(row)
+    return json.dumps(leaders), 200
 
 #
 # Players

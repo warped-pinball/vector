@@ -61,6 +61,13 @@ function updatePersonal() {
 
 // Function to update individual scores
 async function updateIndividualScores(player) {
+
+    // check if the player is a number
+    if (isNaN(player)) {
+        console.error("Invalid player ID:", player);
+        return;
+    }
+
     const tableBody = document.getElementById('personalTable').getElementsByTagName('tbody')[0];
     const cachedScores = JSON.parse(localStorage.getItem(`indScores_${player}`));
     const playerNameElement = document.getElementById('player-name');
@@ -75,7 +82,7 @@ async function updateIndividualScores(player) {
     }
 
     try {
-        const response = await fetch(`/api/playeer/scores?id=${player}`);
+        const response = await fetch(`/api/player/scores?id=${player}`);
         if (!response.ok) {
             console.warn(`Failed to fetch scores for ${player}: ${response.statusText}`);
             return;
@@ -137,6 +144,10 @@ fetch('/api/players')
 const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
 const tournamentIntervalId = setInterval(updateTournament, 60000); // Update every minute
 const personalIntervalId = setInterval(updatePersonal, 60000); // Update every minute
+updateLeaderboard();
+updateTournament();
+updatePersonal();
+
 
 // Cleanup function to clear intervals when needed
 window.cleanupTables = function() {

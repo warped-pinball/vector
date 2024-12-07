@@ -416,6 +416,55 @@ def apply_local_config_to_pico():
         print(f"Error reading or applying configuration: {e}")
         sys.exit(1)
 
+def write_test_data():
+    """Write test data to the Pico."""
+    print("Writing test data to Pico...")
+    test_data_file_path = Path(__file__).parent / 'test_data.json'
+    if not test_data_file_path.exists():
+        print("Test data file not found.")
+        return
+    with open(test_data_file_path, 'r') as f:
+        test_data = json.load(f)
+
+    # set player names
+
+    test_data_update_cmd = '\n'.join(
+        # set leaderboard data
+        [
+            # "import SPI_DataStore as datastore",
+            "from ScoreTrack import update_leaderboard",
+        ] +
+        [
+            f'update_leaderboard({json.dumps(record)})'
+            for record in test_data["leaders"]
+        ] +
+        # turn on tournament mode
+        [
+            "import SharedState",
+            "SharedState.tournamentModeOn = 1"
+        ] +
+        [
+            f'update_leaderboard({json.dumps(record)})'
+            for record in test_data["tournament"]
+        ] +
+        # turn off tournament mode
+        [
+            "SharedState.tournamentModeOn = 0"
+        ]
+    )
+
+    cmd = f'mpremote connect {PICO_PORT} exec \'{test_data_update_cmd}\''
+    for attempt in range(3):
+        time.sleep(REPL_RETRY_DELAY)
+        result = subprocess.run(cmd, shell=True)
+        if result.returncode == 0:
+            break
+        print(f"Error writing test data to Pico. Retrying... ({attempt + 1})")
+    if result.returncode != 0:
+        print("Error writing test data to Pico.")
+        sys.exit(1)
+    print("Test data written successfully to Pico.")
+
 def main():
     parser = argparse.ArgumentParser(
     formatter_class=argparse.RawTextHelpFormatter,
@@ -446,7 +495,8 @@ def main():
         " 12. copy - Copy files to the Pico.",
         " 13. restart - Restart the Pico.",
         " 14. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 15. connect_repl - Connect to the Pico REPL."
+        " 15. write_test_data - Write test data to the Pico.",
+        " 16. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -476,6 +526,7 @@ def main():
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
         ("apply_local_config", apply_local_config_to_pico),
+        ("write_test_data", write_test_data),
         ("restart", restart_pico),
         ("connect_repl", connect_to_repl),
     ]

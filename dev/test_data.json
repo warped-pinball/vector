@@ -1,0 +1,41 @@
+{
+    "names": [
+        {
+            "initials": "AAA",
+            "full_name": "Player 1"
+        },
+        {
+            "initials": "BBB",
+            "full_name": "Player 2"
+        }
+        
+    ],
+    "leaders": [
+        {
+            "initials": "AAA",
+            "full_name": "Player 1",
+            "date": "12062024",
+            "score": 100
+        },
+        {
+            "initials": "BBB",
+            "full_name": "Player 2",
+            "date": "11052023",
+            "score": 200
+        }
+    ],
+    "tournament": [
+        {
+            "initials": "AAA",
+            "score": 100,
+            "date": "12062024",
+            "index": 1
+        },
+        {
+            "initials": "BBB",
+            "score": 200,
+            "date": "11052023",
+            "index": 2
+        }
+    ]
+}
