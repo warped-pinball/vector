@@ -122,7 +122,7 @@ def blankStruct(structure_name):
         'initials': "",
         'full_name': "",
         'score': 0,
-        'date': '04/17/2023',
+        'date': '',
         'game': 0,
         'index': 0
     }
@@ -153,7 +153,7 @@ def blankConfig(structure_name):
 def blankIndPlayerScores(playernum):
     fake_entry = {       
         'score': 0,
-        'date': '04/17/2023'
+        'date': ''
     }
     structure = memory_map["individual"]    
     for i in range(structure["count"]):

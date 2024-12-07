@@ -299,11 +299,10 @@ def download_memory(request):
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
     leaders = []
-    try:
-        for i in range(DataStore.memory_map["leaders"]["count"]):
-            leaders.append(DataStore.read_record("leaders", i))
-    except Exception as e:
-        return json.dumps([]), 500
+    for i in range(DataStore.memory_map["leaders"]["count"]):
+        row = DataStore.read_record("leaders", i)
+        if row["score"] > 0:
+            leaders.append(row)
     return json.dumps(leaders), 200
 
 
