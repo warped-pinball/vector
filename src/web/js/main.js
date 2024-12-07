@@ -4,8 +4,8 @@ const pageConfig = {
         resources: [
             { url: '/html/score_boards.html.gz', targetId: 'page_html' },
             { url: '/js/score_boards.js.gz', targetId: 'page_js' },
-            { url: '/js/sortable_table.js.gz', targetId: 'extra_js' },
-            { url: '/css/score_boards.css.gz', targetId: 'page_css' }
+            { url: '/css/score_boards.css.gz', targetId: 'page_css' },
+            { url: '/js/sortable_table.js.gz', targetId: 'extra_js' }
         ]
     },
     'about': {

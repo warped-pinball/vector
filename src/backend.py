@@ -296,38 +296,39 @@ def download_memory(request):
 #
 # Leaderboard
 #
+def get_scoreboard(key):
+    '''Get the leaderboard from memory'''
+    rows = []
+    for i in range(DataStore.memory_map[key]["count"]):
+        row = DataStore.read_record(key, i)
+        if row.get("score", 0) > 0:
+            rows.append(row)
+    
+    # sort the rows by score
+    rows.sort(key=lambda x: x["score"], reverse=True)
+    
+    # add the rank to each row
+    for i, row in enumerate(rows):
+        row["rank"] = i + 1
+        
+    return json.dumps(rows), 200
+
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
-    leaders = []
-    for i in range(DataStore.memory_map["leaders"]["count"]):
-        row = DataStore.read_record("leaders", i)
-        if row["score"] > 0:
-            leaders.append(row)
-    return json.dumps(leaders), 200
+    return get_scoreboard("leaders")
 
+@add_route("/api/tournament")
+def app_tournamentRead(request):
+    return get_scoreboard("tournament")
 
 @add_route("/api/leaderboard/reset", auth=True)
 def app_resetScores(request):
     DataStore.blankStruct("leaders")
 
-
-#
-# Tournament
-#
 @add_route("/api/tournament/reset", auth=True)
 def app_tournamentClear(request):
     DataStore.blankStruct("tournament")
     SharedState.gameCounter=0
-
-
-@add_route("/api/tournament")
-def app_tournamentRead(request):
-    leaders = []
-    for i in range(DataStore.memory_map["tournament"]["count"]):
-        row = DataStore.read_record("tournament", i)
-        if row["score"] > 0:
-            leaders.append(row)
-    return json.dumps(leaders), 200
 
 #
 # Players
