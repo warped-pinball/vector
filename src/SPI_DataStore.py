@@ -119,8 +119,8 @@ def deserialize(data, structure_name):
 
 def blankStruct(structure_name):
     fake_entry = {
-        'initials': "_",
-        'full_name': "_",
+        'initials': "",
+        'full_name': "",
         'score': 0,
         'date': '04/17/2023',
         'game': 0,
