@@ -291,3 +291,41 @@ function verifyDOMElements(pageKey) {
     });
     return allExist;
 }
+
+async function authenticateAndFetch(password, url, data = null) {
+    // Get challenge
+    const challengeResponse = await fetch("/api/auth/challenge");
+    if (!challengeResponse.ok) {
+        throw new Error("Failed to get challenge.");
+    }
+    const challengeData = await challengeResponse.json();
+    const challenge = challengeData.challenge;
+  
+    const urlObj = new URL(url, window.location.origin);
+    const path = urlObj.pathname;
+    const queryString = urlObj.search;
+    const requestBodyString = data ? JSON.stringify(data) : "";
+    
+    // Message must match the server construction
+    const message = challenge + path + queryString + requestBodyString;
+  
+    // Compute HMAC using js-sha256
+    const hmacHex = sha256.hmac(password, message);  
+  
+    const headers = {
+      "X-Auth-HMAC": hmacHex,
+      "Content-Type": "application/json"
+    };
+  
+    const method = data ? "POST" : "GET";
+  
+    const response = await fetch(url, {
+      method: method,
+      headers: headers,
+      body: requestBodyString || undefined
+    });
+  
+    return response;
+}
+
+window.authenticateAndFetch = authenticateAndFetch;

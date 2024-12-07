@@ -173,7 +173,7 @@ def minify_js_files():
         if os.path.exists(full_js_dir):
             for root, dirs, files in os.walk(full_js_dir):
                 for file in files:
-                    if file.endswith('.js'):
+                    if file.endswith('.js') and not file.endswith('.min.js'):
                         js_file = os.path.join(root, file)
                         with open(js_file, 'r') as f:
                             minified = jsmin(f.read())

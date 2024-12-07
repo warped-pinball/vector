@@ -1,4 +1,5 @@
 #TODO change all of these to more specific imports to save memory
+#TODO organize these imports between 3rd party and local imports
 import SPI_DataStore as DataStore
 from SPI_DataStore import writeIP
 import ujson as json
@@ -20,6 +21,10 @@ from machine import RTC
 from Utilities.ls import ls
 import Pico_Led
 import displayMessage
+import ujson as json
+import uhashlib as hashlib
+import binascii
+import time
 #
 # Constants
 #
@@ -129,39 +134,75 @@ def redirect(request):
 #
 # Authentication
 #
+def hmac_sha256(key, message):
+    """
+    Compute HMAC-SHA256 using the given key and message.
+    key and message should be bytes.
+    """
+    BLOCK_SIZE = 64  # block size for SHA-256
+
+    # If key longer than block size, hash it
+    if len(key) > BLOCK_SIZE:
+        h = hashlib.sha256()
+        h.update(key)
+        key = h.digest()
+
+    # Pad the key
+    if len(key) < BLOCK_SIZE:
+        key = key + b'\x00' * (BLOCK_SIZE - len(key))
+
+    # Create inner and outer pads
+    o_key_pad = bytes([b ^ 0x5c for b in key])
+    i_key_pad = bytes([b ^ 0x36 for b in key])
+
+    # Inner hash
+    h_inner = hashlib.sha256()
+    h_inner.update(i_key_pad + message)
+    inner_hash = h_inner.digest()
+
+    # Outer hash
+    h_outer = hashlib.sha256()
+    h_outer.update(o_key_pad + inner_hash)
+    return h_outer.digest()
+
 def require_auth(handler):
-    '''decorator to require authentication'''
+    '''Decorator to require authentication using HMAC-SHA256'''
     def wrapper(request, *args, **kwargs):
         global current_challenge, challenge_timestamp
-        # Check if the challenge exists and is valid
+
         if not current_challenge or not challenge_timestamp:
-            return json.dumps({"error": "Challenge missing"}), 401, {'Content-Type': 'application/json'}
-        
+            msg = json.dumps({"error": "Challenge missing"}), 401, {'Content-Type': 'application/json'}
+            print(msg)
+            return msg
+
         if (time.time() - challenge_timestamp) > CHALLENGE_EXPIRATION_SECONDS:
-            return json.dumps({"error": "Challenge expired"}), 401, {'Content-Type': 'application/json'}
-        
+            msg = json.dumps({"error": "Challenge expired"}), 401, {'Content-Type': 'application/json'}
+            print(msg)
+            return msg
+
         # Get the HMAC from the request headers
-        client_hmac = request.headers.get('X-Auth-HMAC')
+        client_hmac = request.headers.get('X-Auth-HMAC') or request.headers.get('x-auth-hmac')
         if not client_hmac:
-            return json.dumps({"error": "Missing authentication HMAC"}), 401, {'Content-Type': 'application/json'}
-        
-        # Reconstruct the message used for HMAC: challenge + request path + request body
+            msg = json.dumps({"error": "Missing authentication HMAC"}), 401, {'Content-Type': 'application/json'}
+            print(msg)
+            print(request.headers)
+            return msg
+
+        # Retrieve stored password (the key)
         credentials = DataStore.read_record("configuration", 0)
-        stored_password = credentials["Gpassword"]
-        key = stored_password.encode('utf-8')
-        msg = (
-            current_challenge +           # Challenge
-            request.path +                # Request path
-            request.query_string +        # Query string (if any)
-            request.data_string           # Request body (if any)
-        ).encode('utf-8')
-        
+        stored_password = credentials["Gpassword"].encode('utf-8')
+
+        # Construct the message string
+        path = request.path
+        query_string = request.query_string or ""
+        body_str = request.data or ""
+        message_str = current_challenge + path + query_string + body_str
+        message_bytes = message_str.encode('utf-8')
+
         # Compute expected HMAC
-        hasher = hashlib.sha256()
-        hasher.update(key + msg)
-        expected_hmac = binascii.hexlify(hasher.digest()).decode()
-        
-        # Compare HMACs
+        expected_digest = hmac_sha256(stored_password, message_bytes)
+        expected_hmac = binascii.hexlify(expected_digest).decode()
+
         if client_hmac == expected_hmac:
             # Authentication successful
             current_challenge = None
@@ -169,8 +210,14 @@ def require_auth(handler):
             return handler(request, *args, **kwargs)
         else:
             # Authentication failed
+            print("Authentication failed")
+            print(f"Expected HMAC: {expected_hmac}")
+            print(f"Client HMAC: {client_hmac}")
+            print(message_bytes)
             return json.dumps({"error": "Authentication failed"}), 401, {'Content-Type': 'application/json'}
+
     return wrapper
+
 
 
 @add_route("/api/auth/challenge")
