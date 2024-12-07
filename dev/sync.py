@@ -355,6 +355,32 @@ def connect_to_repl():
     sys.exit(1)
 
 @step_report(time_report=True)
+def wipe_config_data():
+    try:  
+        script = '\n'.join(
+            [
+                "import SPI_DataStore as datastore",
+                "datastore.blankAll()"
+            ]
+        )
+
+        cmd = f"mpremote connect {PICO_PORT} exec \"{script}\""
+        
+        for attempt in range(3):
+            time.sleep(REPL_RETRY_DELAY)
+            result = subprocess.run(cmd, shell=True)
+            if result.returncode == 0:
+                break
+            print(f"Error applying configuration to Pico. Retrying... ({attempt + 1})")
+        if result.returncode != 0:
+            print("Error applying configuration to Pico.")
+            sys.exit(1)
+        print("Configuration updated successfully on Pico.")
+    except Exception as e:
+        print(f"Error reading or applying configuration: {e}")
+        sys.exit(1)
+
+@step_report(time_report=True)
 def apply_local_config_to_pico():
     """
     Apply configuration from a JSON file to the Pico's configuration.
@@ -416,6 +442,7 @@ def apply_local_config_to_pico():
         print(f"Error reading or applying configuration: {e}")
         sys.exit(1)
 
+@step_report(time_report=True)
 def write_test_data():
     """Write test data to the Pico."""
     print("Writing test data to Pico...")
@@ -499,9 +526,10 @@ def main():
         " 11. write_commit - Write the current git commit hash to a file.",
         " 12. copy - Copy files to the Pico.",
         " 13. restart - Restart the Pico.",
-        " 14. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 15. write_test_data - Write test data to the Pico.",
-        " 16. connect_repl - Connect to the Pico REPL."
+        " 14. wipe_config - Wipe configuration data on the Pico.",
+        " 15. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 16. write_test_data - Write test data to the Pico.",
+        " 17. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -530,6 +558,7 @@ def main():
         ("zip", zip_files),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
+        ("wipe_config", wipe_config_data),
         ("apply_local_config", apply_local_config_to_pico),
         ("write_test_data", write_test_data),
         ("restart", restart_pico),
