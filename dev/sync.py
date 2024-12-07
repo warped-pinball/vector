@@ -426,34 +426,39 @@ def write_test_data():
     with open(test_data_file_path, 'r') as f:
         test_data = json.load(f)
 
-    # set player names
-
-    test_data_update_cmd = '\n'.join(
+    test_data_script = '\n'.join(
+        # set player names
+        [
+            "import SPI_DataStore as datastore"
+        ]
+        + [
+            f'datastore.write_record("names", {json.dumps(record)}, {index})'
+            for index, record in enumerate(test_data["names"])
+        ]
         # set leaderboard data
-        [
-            # "import SPI_DataStore as datastore",
+        + [
             "from ScoreTrack import update_leaderboard",
-        ] +
-        [
+        ]
+        + [
             f'update_leaderboard({json.dumps(record)})'
             for record in test_data["leaders"]
-        ] +
+        ]
         # turn on tournament mode
-        [
+        + [
             "import SharedState",
             "SharedState.tournamentModeOn = 1"
-        ] +
-        [
+        ]
+        + [
             f'update_leaderboard({json.dumps(record)})'
             for record in test_data["tournament"]
-        ] +
+        ]
         # turn off tournament mode
-        [
+        + [
             "SharedState.tournamentModeOn = 0"
         ]
     )
 
-    cmd = f'mpremote connect {PICO_PORT} exec \'{test_data_update_cmd}\''
+    cmd = f'mpremote connect {PICO_PORT} exec \'{test_data_script}\''
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
         result = subprocess.run(cmd, shell=True)
