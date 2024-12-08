@@ -476,10 +476,13 @@ server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=
 server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
 
 
-
-@add_route("/api/in_ap_mode")
-def app_inAPMode(request):
-    return "false", 200
+def add_app_mode_routes():
+    '''Routes only available in app mode'''
+    @add_route("/api/in_ap_mode")
+    def app_inAPMode(request):
+        # return json.dumps({"in_ap_mode": False}), 200
+        #TODO temporarilly set to true for testing
+        return json.dumps({"in_ap_mode": True}), 200
 
 #
 # AP mode routes
@@ -489,7 +492,7 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return "true", 200
+        return json.dumps({"in_ap_mode": True}), 200
 
     @add_route("/api/settings/wifi", methods=["POST"])
     def app_setWifi(request):
@@ -529,6 +532,7 @@ def go(ap_mode, fault_msg=None):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        add_app_mode_routes()
         server.set_callback(four_oh_four)
         wifi_credentials = DataStore.read_record("configuration", 0)
         if not wifi_credentials:
@@ -545,7 +549,7 @@ def go(ap_mode, fault_msg=None):
                 Pico_Led.on()
                 displayMessage.init(ip_address)
                 break
-    
+
     print("-"*10)
     print("Starting server")
     print("-"*10)

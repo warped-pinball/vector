@@ -16,12 +16,19 @@
           </select>
         <input type="password" name="wifi_password" placeholder="Your WiFi password..." aria-label="WiFi Password">
 
-        <p>
-            Please <mark>double check your selected game and ROM version</mark> If you are unsure, please check with us.
-            If you have a ROM that is not listed we can add it for you.<a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
-        </p>
-        
+        <!-- TODO set clock? -->
 
-        <button onclick="document.getElementById('configure_modal').removeAttribute('open')">💾 Save</button>
+        <p>
+            Please <mark>double check your game and ROM version</mark> If you are unsure, please check with us.
+            If you have a ROM that is not listed we may be able to add it for you.
+        </p>
+
+        <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+        
+        <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network. Then navigate to <a href="warpedpinball.local">warpedpinball.local</a> to start using your Vector</p>
+
+        <footer>
+            <button onclick="document.getElementById('configure_modal').removeAttribute('open')">💾 Save</button>
+        </footer>
     </article>
 </dialog>
