@@ -310,7 +310,7 @@ def get_scoreboard(key):
     # add the rank to each row
     for i, row in enumerate(rows):
         row["rank"] = i + 1
-        
+
     return json.dumps(rows), 200
 
 @add_route("/api/leaders")
@@ -477,13 +477,19 @@ server.add_route('/upload_results',handler = FileIO.incoming_file_results, metho
 
 
 
-
+@add_route("/api/in_ap_mode")
+def app_inAPMode(request):
+    return "false", 200
 
 #
 # AP mode routes
 #
 def add_ap_mode_routes():
     '''Routes only available in AP mode'''
+
+    @add_route("/api/in_ap_mode")
+    def app_inAPMode(request):
+        return "true", 200
 
     @add_route("/api/settings/wifi", methods=["POST"])
     def app_setWifi(request):
@@ -514,6 +520,7 @@ def go(ap_mode, fault_msg=None):
     gc.threshold(2048 * 6) 
 
     if ap_mode:
+        print("Starting in AP mode")
         Pico_Led.start_fast_blink()    
         add_ap_mode_routes()
         # send clients to the configure page

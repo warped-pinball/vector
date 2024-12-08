@@ -29,6 +29,7 @@
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
         <div id="install_warning_html" style="display: none;"></div>
+        <div id="configure_html" style="display: none;"></div>
         <div id="page_html" style="display: none;"></div>
     </main>
 
@@ -50,6 +51,7 @@
     <div id="extra_js" style="display: none;"></div>
     <div id="js-sha256" style="display: none;"></div>
     <div id="install_warning_js" style="display: none;"></div>
+    <div id="configure_js" style="display: none;"></div>
 
     <script>
         // Determine resource type based on URL
@@ -155,6 +157,8 @@
         loadResource('/css/main.css.gz', 'main_css');
         loadResource('/html/install_warning.html.gz', 'install_warning_html');
         loadResource('/js/install_warning.js.gz', 'install_warning_js');
+        loadResource('/html/configure.html.gz', 'configure_html');
+        loadResource('/js/configure.js.gz', 'configure_js');
         loadResource('/js/js-sha256.min.js.gz', 'js-sha256');
     </script>
 </body>
