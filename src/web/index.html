@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style id="custom_styles"></style>
+    <div id="pico_css" style="display: none;"></div>
+    <div id="main_css" style="display: none;"></div>
+    <div id="page_css" style="display: none;"></div>
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li>
+                    <strong id="game_name"></strong>
+                </li>
+            </ul>
+            <ul>
+                <li><a href="#" id="navigate-score-boards">Score Boards</a></li>
+                <li><a href="#" id="navigate-players">Players</a></li>
+                <li><a href="#" id="navigate-about">About</a></li>
+                <li><a href="#" id="navigate-admin">Admin</a></li>
+                <li><button id="dark-mode-button" onclick="window.toggleTheme()">🌙</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
+        <div id="install_warning_html" style="display: none;"></div>
+        <div id="configure_html" style="display: none;"></div>
+        <div id="page_html" style="display: none;"></div>
+    </main>
+
+    <footer class="container" style="text-align: center; text-wrap: auto;">
+        <div class="grid">
+            <div></div>
+            <section>
+                <div id="logo" aria-busy="true" width="175px"></div>
+                <div>Powered by <a href="https://warpedpinball.com">Warped Pinball</a></div>
+                <p><code>Vector v00.20</code></p>
+            </section>
+            <div></div>
+        </div>
+        
+    </footer>
+
+    <div id="main_js" style="display: none;"></div>
+    <div id="page_js" style="display: none;"></div>
+    <div id="extra_js" style="display: none;"></div>
+    <div id="js-sha256" style="display: none;"></div>
+    <div id="install_warning_js" style="display: none;"></div>
+    <div id="configure_js" style="display: none;"></div>
+
+    <script>
+        // Determine resource type based on URL
+        function determineResourceType(url) {
+            const extension = url.split('.').pop().toLowerCase();
+            if (extension === 'gz') return determineResourceType(url.slice(0, -3));
+            switch (extension) {
+                case 'css': return 'css';
+                case 'js': return 'js';
+                case 'html': return 'html';
+                case 'svg': return 'svg';
+                case 'png':
+                case 'jpg':
+                case 'jpeg':
+                case 'gif':
+                case 'webp': return 'image';
+                default: return 'unknown';
+            }
+        }
+
+        // Load and insert resource into the DOM
+        async function loadResource(url, targetId) {
+            const cacheKey = url;
+            const cacheTimeKey = `${cacheKey}_time`;
+            // const cacheTTL = 1000 * 60 * 60 * 24; // 24 hours
+            // const cacheTTL = 1000 * 60 * 60; // 1 hour
+            const cacheTTL = 1000 * 60; // 1 minute
+            const currentTime = Date.now();
+            let cachedData = localStorage.getItem(cacheKey);
+            let cachedTime = localStorage.getItem(cacheTimeKey);
+
+            if (!cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL)) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Fetch error: ${response.statusText}`);
+                    let data;
+                    if (url.endsWith('.gz')) {
+                        const decompressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
+                        data = await new Response(decompressedStream).text();
+                    } else {
+                        data = await response.text();
+                    }
+                    localStorage.setItem(cacheKey, data);
+                    localStorage.setItem(cacheTimeKey, currentTime.toString());
+                    cachedData = data;
+                } catch {
+                    const placeholder = document.getElementById(targetId);
+                    if (placeholder) placeholder.style.display = 'none';
+                    return;
+                }
+            }
+
+            const type = determineResourceType(url);
+            const placeholder = document.getElementById(targetId);
+            if (!placeholder) return;
+
+            let newElement;
+            switch(type) {
+                case 'css':
+                    newElement = document.createElement('style');
+                    newElement.textContent = cachedData;
+                    break;
+                case 'js':
+                    newElement = document.createElement('script');
+                    newElement.src = URL.createObjectURL(new Blob([cachedData], { type: 'application/javascript' }));
+                    newElement.async = false;
+                    break;
+                case 'html':
+                    newElement = document.createElement('div');
+                    newElement.innerHTML = cachedData;
+                    break;
+                case 'svg':
+                    newElement = new DOMParser().parseFromString(cachedData, "image/svg+xml").documentElement;
+                    break;
+                case 'image':
+                    newElement = document.createElement('img');
+                    newElement.src = URL.createObjectURL(new Blob([cachedData], { type: 'image/png' }));
+                    break;
+                default:
+                    placeholder.style.display = 'none';
+                    return;
+            }
+
+            placeholder.replaceWith(newElement);
+            newElement.id = targetId;
+            newElement.style.display = '';
+        }
+
+        // Clear cache and reload the page
+        async function clearCache() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // Expose functions to the global scope
+        window.loadResource = loadResource;
+        window.clearCache = clearCache;
+
+        // Load main.js.gz
+        loadResource('/css/pico.min.css.gz', 'pico_css');
+        loadResource('/svg/logo.svg.gz', 'logo');
+        loadResource('/js/main.js.gz', 'main_js');
+        loadResource('/css/main.css.gz', 'main_css');
+        loadResource('/html/install_warning.html.gz', 'install_warning_html');
+        loadResource('/js/install_warning.js.gz', 'install_warning_js');
+        loadResource('/html/configure.html.gz', 'configure_html');
+        loadResource('/js/configure.js.gz', 'configure_js');
+        loadResource('/js/js-sha256.min.js.gz', 'js-sha256');
+    </script>
+</body>
+</html>

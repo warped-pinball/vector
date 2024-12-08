@@ -1,0 +1,34 @@
+<dialog id="configure_modal">
+    <article>
+        <h2>Configure Your Vector</h2>
+        <select name="game_config" aria-label="Select your game" required>
+            <option selected disabled value="">
+              Select which game Vector is installed in...
+            </option>
+        </select>
+        <input type="password" name="vector_password" placeholder="Set an Admin Password..." aria-label="Pinball Admin Password">
+
+
+        <select name="WiFi_ssid" aria-label="Select your WiFi..." required>
+            <option selected disabled value="">
+              Select your WiFi...
+            </option>
+          </select>
+        <input type="password" name="wifi_password" placeholder="Your WiFi password..." aria-label="WiFi Password">
+
+        <!-- TODO set clock? -->
+
+        <p>
+            Please <mark>double check your game and ROM version</mark> If you are unsure, please check with us.
+            If you have a ROM that is not listed we may be able to add it for you.
+        </p>
+
+        <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+        
+        <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network. Then navigate to <a href="warpedpinball.local">warpedpinball.local</a> to start using your Vector</p>
+
+        <footer>
+            <button onclick="document.getElementById('configure_modal').removeAttribute('open')">💾 Save</button>
+        </footer>
+    </article>
+</dialog>
