@@ -106,9 +106,6 @@ async function fetchDataAndUpdateTable(tableId, endpoint, columns, sortColumnInd
     }
 }
 
-// Example columns configuration for leaderboard
-
-
 // Example usage functions
 function updateLeaderboard() {
     const leaderboardColumns = [
@@ -132,56 +129,17 @@ function updateTournament() {
 }
 
 function updatePersonal() {
-    //TODO: Implement similar logic when ready
-    // For now just a placeholder call (or no-op)
+    const player_id = document.getElementById('players').value;
+    if (!player_id) return;
+
     const personalColumns = [
         { header: "Score", key: "score" },
         { header: "Date", key: "date" }
     ];
-    // If we had endpoint and data, we would do something similar:
-    // fetchDataAndUpdateTable('personalTable', '/api/personal', personalColumns, 0, 'desc', 4);
-}
 
-// Update individual scores
-async function updateIndividualScores(player) {
-    if (isNaN(player)) {
-        console.error("Invalid player ID:", player);
-        return;
-    }
-
-    const tableBody = document.getElementById('personalTable').getElementsByTagName('tbody')[0];
-    const playerNameElement = document.getElementById('player-name');
-    const cacheKey = `indScores_${player}`;
-    const cachedScores = JSON.parse(localStorage.getItem(cacheKey));
-
-    if (playerNameElement && cachedScores) {
-        tableBody.innerHTML = '';
-        cachedScores.forEach(score => {
-            const row = tableBody.insertRow();
-            row.innerHTML = `<td>${score.score}</td><td>${score.date}</td>`;
-        });
-        playerNameElement.textContent = cachedScores[0]?.full_name || player;
-    }
-
-    try {
-        const response = await fetch(`/api/player/scores?id=${player}`);
-        if (!response.ok) {
-            console.warn(`Failed to fetch scores for ${player}: ${response.statusText}`);
-            return;
-        }
-        const scores = await response.json();
-        localStorage.setItem(cacheKey, JSON.stringify(scores));
-        tableBody.innerHTML = '';
-        scores.forEach(score => {
-            const row = tableBody.insertRow();
-            row.innerHTML = `<td>${score.score}</td><td>${score.date}</td>`;
-        });
-        if (playerNameElement) {
-            playerNameElement.textContent = scores[0]?.full_name || player;
-        }
-    } catch (error) {
-        console.error(`Failed to load individual scores for ${player}:`, error);
-    }
+    fetchDataAndUpdateTable('personalTable', `/api/player/scores?id=${player_id}`, personalColumns, 0, 'desc', 4);
+    const player_name = document.getElementById('players').selectedOptions[0].text;
+    document.getElementById('personal_scoreboard_caption').innerText = `personal_${player_name}`;
 }
 
 // Load players for dropdown
@@ -201,12 +159,11 @@ async function loadPlayers(data) {
 
     if (players.length > 0) {
         playersSelect.value = players[0][0];
-        await updateIndividualScores(players[0][0]);
+        updatePersonal()
     }
 
     playersSelect.addEventListener('change', async function () {
-        const selectedPlayer = playersSelect.value;
-        await updateIndividualScores(selectedPlayer);
+        updatePersonal()
     });
 }
 

@@ -2,3 +2,7 @@ svg {
   width: 50%;
   height: auto;
 }
+
+.hide {
+  display: none;
+}

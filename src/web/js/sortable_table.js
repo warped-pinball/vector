@@ -59,17 +59,18 @@ function sortTable(table, columnIndex, ascending = true) {
 
 function addDownloadButton(table) {
     const downloadButton = document.createElement('button');
-    downloadButton.textContent = 'Download CSV';
+    downloadButton.textContent = '💾 Download Data';
     downloadButton.addEventListener('click', () => {
         downloadCSV(table);
     });
 
     // Insert the button before the table or in some suitable location
-    table.parentNode.insertBefore(downloadButton, table);
+    table.parentNode.appendChild(downloadButton, table);
 }
 
 function downloadCSV(table) {
     // Get headers from the thead
+    const tcaption = table.querySelector('caption');
     const thead = table.querySelector('thead');
     const tbody = table.querySelector('tbody');
 
@@ -98,7 +99,22 @@ function downloadCSV(table) {
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'table_data.csv';
+    
+    // template string for filename:
+    // game name, date, table caption(if any), .csv
+    // fill spaces with underscores
+    
+    let filename = document.getElementById('game_name').innerText;
+    if (tcaption) {
+        filename += '_' + tcaption.innerText;
+    }
+    filename += '_';
+    filename += new Date().toISOString().split('T')[0];
+    filename += '.csv';
+
+    filename = filename.replace(/ /g, '_');
+
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

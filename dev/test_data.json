@@ -7,6 +7,10 @@
         {
             "initials": "BBB",
             "full_name": "Player 2"
+        },
+        {
+            "initials": "CCC",
+            "full_name": "Player 3"
         }
         
     ],
@@ -16,6 +20,12 @@
             "full_name": "Player 1",
             "date": "12/06/2024",
             "score": 100
+        },
+        {
+            "initials": "AAA",
+            "full_name": "Player 1",
+            "date": "12/05/2024",
+            "score": 300
         },
         {
             "initials": "BBB",
