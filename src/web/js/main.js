@@ -1,3 +1,6 @@
+// 
+// Navigation & Resrouce Loading
+// 
 const pageConfig = {
     'score-boards': {
         title: 'Score Boards',
@@ -181,6 +184,22 @@ function getCurrentPage() {
     return page;
 }
 
+function verifyDOMElements(pageKey) {
+    const config = pageConfig[pageKey];
+    if (!config) {
+        console.warn(`No config found for page: ${pageKey}`);
+        return false;
+    }
+    const allExist = config.resources.every(resource => {
+        const exists = document.getElementById(resource.targetId) !== null;
+        if (!exists) {
+            console.warn(`Required element with ID "${resource.targetId}" is missing.`);
+        }
+        return exists;
+    });
+    return allExist;
+}
+
 async function initializePage() {
     const pageKey = getCurrentPage();
     if (!verifyDOMElements(pageKey)) {
@@ -209,6 +228,22 @@ if (document.readyState === 'loading') {
     init();
     console.log('Document already loaded. Initializing now.');
 }
+
+// Expose functions to window for debugging
+window.loadPageResources = loadPageResources;
+window.handleNavigation = handleNavigation;
+window.set_title = set_title;
+window.clearResource = clearResource;
+window.clearPreviousResources = clearPreviousResources;
+window.initializeNavigation = initializeNavigation;
+window.initializePage = initializePage;
+window.init = init;
+window.toggleTheme = toggleTheme;
+
+
+// 
+// Index.html required js
+// 
 
 function setFaviconFromSVGElement(elementId) {
     console.log(`Setting favicon from SVG element: ${elementId}`);
@@ -264,33 +299,13 @@ function toggleTheme() {
     button.textContent = newTheme === 'dark' ? '🌙' : '☀️';
 }
 
-// Expose functions to window for debugging
-window.loadPageResources = loadPageResources;
-window.handleNavigation = handleNavigation;
-window.set_title = set_title;
-window.clearResource = clearResource;
-window.clearPreviousResources = clearPreviousResources;
-window.initializeNavigation = initializeNavigation;
-window.initializePage = initializePage;
-window.init = init;
-window.toggleTheme = toggleTheme;
 
 
-function verifyDOMElements(pageKey) {
-    const config = pageConfig[pageKey];
-    if (!config) {
-        console.warn(`No config found for page: ${pageKey}`);
-        return false;
-    }
-    const allExist = config.resources.every(resource => {
-        const exists = document.getElementById(resource.targetId) !== null;
-        if (!exists) {
-            console.warn(`Required element with ID "${resource.targetId}" is missing.`);
-        }
-        return exists;
-    });
-    return allExist;
-}
+
+
+// 
+// Authentication and Routing
+// 
 
 async function authenticateAndFetch(password, url, data = null) {
     // Get challenge
@@ -329,3 +344,72 @@ async function authenticateAndFetch(password, url, data = null) {
 }
 
 window.authenticateAndFetch = authenticateAndFetch;
+
+// 
+// Page Element js utilities
+// 
+
+// Add a dropdown option dynamically
+async function addDropDownOption(dropDownElement, value, text) {
+    const ulElement = dropDownElement.querySelector('ul');
+    const listItem = document.createElement('li');
+    const anchorElement = document.createElement('a');
+
+    anchorElement.innerText = text;
+    anchorElement.dataset.value = value;
+    anchorElement.href = "#";
+
+    // Add click event to select this option
+    anchorElement.addEventListener('click', (event) => {
+        event.preventDefault(); // Prevent default navigation
+        setDropDownValue(dropDownElement, value, text);
+    });
+
+    listItem.appendChild(anchorElement);
+    ulElement.appendChild(listItem);
+}
+
+// Get the currently selected dropdown value
+function getDropDownValue(dropDownElement) {
+    return dropDownElement.dataset.selectedValue || null;
+}
+
+// Set the dropdown value when an option is clicked
+function setDropDownValue(dropDownElement, value, text) {
+    const summaryElement = dropDownElement.querySelector('summary');
+    summaryElement.innerText = text;
+    dropDownElement.dataset.selectedValue = value; // Store the value
+    dropDownElement.removeAttribute("open"); // Close the dropdown
+}
+
+// Create a dropdown element from a key-value mapping
+async function createDropDownElement(id, summaryText, options, defaultValue = null) {
+    const dropDownElement = document.createElement('details');
+    dropDownElement.id = id;
+    dropDownElement.className = "dropdown";
+    dropDownElement.dataset.selectedValue = ""; // Initialize no selection
+
+    const summaryElement = document.createElement('summary');
+    summaryElement.innerText = summaryText;
+
+    const ulElement = document.createElement('ul');
+
+    // Add options to the dropdown
+    for (const [value, text] of Object.entries(options)) {
+        await addDropDownOption(dropDownElement, value, text);
+        // Pre-select the default value if it matches
+        if (defaultValue === value) {
+            setDropDownValue(dropDownElement, value, text);
+        }
+    }
+
+    dropDownElement.appendChild(summaryElement);
+    dropDownElement.appendChild(ulElement);
+
+    return dropDownElement; // Return the dropdown element for placement
+}
+
+window.addDropDownOption = addDropDownOption;
+window.getDropDownValue = getDropDownValue;
+window.setDropDownValue = setDropDownValue;
+window.createDropDownElement = createDropDownElement;

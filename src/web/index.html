@@ -54,81 +54,110 @@
     <div id="configure_js" style="display: none;"></div>
 
     <script>
-        // Determine resource type based on URL
         function determineResourceType(url) {
-            const extension = url.split('.').pop().toLowerCase();
-            if (extension === 'gz') return determineResourceType(url.slice(0, -3));
-            switch (extension) {
-                case 'css': return 'css';
-                case 'js': return 'js';
-                case 'html': return 'html';
-                case 'svg': return 'svg';
-                case 'png':
-                case 'jpg':
-                case 'jpeg':
-                case 'gif':
-                case 'webp': return 'image';
-                default: return 'unknown';
-            }
+            const extensionToType = {
+                '.css': 'css',
+                '.js': 'js',
+                '.html': 'html',
+                '.svg': 'svg',
+                '.png': 'image',
+                '.jpg': 'image',
+                '.jpeg': 'image',
+                '.gif': 'image',
+                '.json': 'json',
+                '.gz': 'gzip'
+            };
+
+            const extension = url.split('.').pop();
+            return extensionToType[`.${extension}`] || 'unknown';
         }
 
-        // Load and insert resource into the DOM
-        async function loadResource(url, targetId) {
+
+        async function fetchAndCache(url, useCache = true, timeout = 5000, auth = false) {
             const cacheKey = url;
             const cacheTimeKey = `${cacheKey}_time`;
-            // const cacheTTL = 1000 * 60 * 60 * 24; // 24 hours
-            // const cacheTTL = 1000 * 60 * 60; // 1 hour
             const cacheTTL = 1000 * 60; // 1 minute
             const currentTime = Date.now();
+
             let cachedData = localStorage.getItem(cacheKey);
             let cachedTime = localStorage.getItem(cacheTimeKey);
 
-            if (!cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL)) {
+            const shouldFetch = !useCache || !cachedData || !cachedTime || (currentTime - cachedTime >= cacheTTL);
+
+            if (shouldFetch) {
                 try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`Fetch error: ${response.statusText}`);
-                    let data;
-                    if (url.endsWith('.gz')) {
-                        const decompressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
-                        data = await new Response(decompressedStream).text();
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), timeout);
+
+                    let response;
+                    if (auth) {
+                        const password = localStorage.getItem('auth_password'); // Retrieve stored password
+                        if (!password) {
+                            throw new Error('Authentication required but no password found in localStorage.');
+                        }
+                        response = await authenticateAndFetch(password, url);
                     } else {
-                        data = await response.text();
+                        response = await fetch(url, { signal: controller.signal });
                     }
+                    clearTimeout(timer);
+
+                    if (!response.ok) throw new Error(`Fetch error: ${response.statusText}`);
+
+                    const data = await response.text();
                     localStorage.setItem(cacheKey, data);
                     localStorage.setItem(cacheTimeKey, currentTime.toString());
-                    cachedData = data;
-                } catch {
-                    const placeholder = document.getElementById(targetId);
-                    if (placeholder) placeholder.style.display = 'none';
-                    return;
+                    return data;
+                } catch (error) {
+                    console.warn(`Fetch failed: ${error.message}. Using cache if available.`);
                 }
             }
 
+            if (cachedData) {
+                return cachedData;
+            } else {
+                throw new Error('No valid data available from cache or server.');
+            }
+        }
+
+
+        // Decompress data if necessary
+        async function decompressData(data, url) {
+            if (url.endsWith('.gz')) {
+                const decompressedStream = new Response(
+                    new Blob([data]).stream().pipeThrough(new DecompressionStream("gzip"))
+                );
+                return await decompressedStream.text();
+            }
+            return data;
+        }
+
+        // Apply the resource data to a DOM element
+        function applyResourceToDOM(data, url, targetId) {
             const type = determineResourceType(url);
             const placeholder = document.getElementById(targetId);
             if (!placeholder) return;
 
             let newElement;
-            switch(type) {
+            switch (type) {
                 case 'css':
                     newElement = document.createElement('style');
-                    newElement.textContent = cachedData;
+                    newElement.textContent = data;
                     break;
                 case 'js':
                     newElement = document.createElement('script');
-                    newElement.src = URL.createObjectURL(new Blob([cachedData], { type: 'application/javascript' }));
+                    newElement.src = URL.createObjectURL(new Blob([data], { type: 'application/javascript' }));
                     newElement.async = false;
                     break;
                 case 'html':
                     newElement = document.createElement('div');
-                    newElement.innerHTML = cachedData;
+                    newElement.innerHTML = data;
                     break;
                 case 'svg':
-                    newElement = new DOMParser().parseFromString(cachedData, "image/svg+xml").documentElement;
+                    newElement = new DOMParser().parseFromString(data, "image/svg+xml").documentElement;
                     break;
                 case 'image':
                     newElement = document.createElement('img');
-                    newElement.src = URL.createObjectURL(new Blob([cachedData], { type: 'image/png' }));
+                    newElement.src = URL.createObjectURL(new Blob([data], { type: 'image/png' }));
                     break;
                 default:
                     placeholder.style.display = 'none';
@@ -139,6 +168,21 @@
             newElement.id = targetId;
             newElement.style.display = '';
         }
+
+        // Composite function to fetch, decompress, and apply data
+        async function fetchDecompressAndApply(url, targetId, useCache = true, timeout = 5000, auth = false) {
+            try {
+                const rawData = await fetchAndCache(url, useCache, timeout, auth);
+                const decompressedData = await decompressData(rawData, url);
+                applyResourceToDOM(decompressedData, url, targetId);
+            } catch (error) {
+                console.error(`Error in fetchDecompressAndApply: ${error.message}`);
+                const placeholder = document.getElementById(targetId);
+                if (placeholder) placeholder.style.display = 'none';
+            }
+        }
+
+
 
         // Clear cache and reload the page
         async function clearCache() {
