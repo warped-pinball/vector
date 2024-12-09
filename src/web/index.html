@@ -13,9 +13,7 @@
     <header class="container">
         <nav>
             <ul>
-                <li>
-                    <strong id="game_name"></strong>
-                </li>
+                <li><strong id="game_name"></strong></li>
             </ul>
             <ul>
                 <li><a href="#" id="navigate-score-boards">Score Boards</a></li>
@@ -43,7 +41,6 @@
             </section>
             <div></div>
         </div>
-        
     </footer>
 
     <div id="main_js" style="display: none;"></div>
@@ -188,17 +185,23 @@
             newElement.style.display = '';
         }
 
+        // === New Function: Fetch and Decompress (No Apply) ===
+        async function fetchDecompress(url, useCache=true, timeout=5000, auth=false) {
+            let data = useCache ? cacheGet(url) : null;
+            if (!data) {
+                data = await fetchResource(url, timeout, auth);
+                // Cache non-gz data immediately
+                if (!url.endsWith('.gz')) {
+                    cacheSet(url, data);
+                }
+            }
+            return decompressData(data, url);
+        }
+
         // === Main Orchestration: Fetch, Decompress, and Apply ===
         async function fetchDecompressAndApply(url, targetId, useCache=true, timeout=5000, auth=false) {
             try {
-                let data = useCache ? cacheGet(url) : null;
-                if (!data) {
-                    data = await fetchResource(url, timeout, auth);
-                    if (!url.endsWith('.gz')) {
-                        cacheSet(url, data);
-                    }
-                }
-                data = await decompressData(data, url);
+                const data = await fetchDecompress(url, useCache, timeout, auth);
                 applyResourceToDOM(data, url, targetId);
             } catch (error) {
                 console.error(`Error in fetchDecompressAndApply(${url}): ${error.message}`);
@@ -210,6 +213,7 @@
 
         // Expose functions globally if needed
         window.fetchDecompressAndApply = fetchDecompressAndApply;
+        window.fetchDecompress = fetchDecompress;
         window.clearCache = clearCache;
 
         // Load default/common resources
