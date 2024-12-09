@@ -55,6 +55,10 @@
 
     <script>
         function determineResourceType(url) {
+            if (url.endsWith('.gz')) {
+                url = url.slice(0, -3); // remove the .gz extension
+            }
+            
             const extensionToType = {
                 '.css': 'css',
                 '.js': 'js',
@@ -103,10 +107,15 @@
 
                     if (!response.ok) throw new Error(`Fetch error: ${response.statusText}`);
 
-                    const data = await response.text();
-                    localStorage.setItem(cacheKey, data);
-                    localStorage.setItem(cacheTimeKey, currentTime.toString());
-                    return data;
+                    // Return raw body for .gz files
+                    if (url.endsWith('.gz')) {
+                        return response.body; // Return as a readable stream
+                    } else {
+                        const data = await response.text();
+                        localStorage.setItem(cacheKey, data);
+                        localStorage.setItem(cacheTimeKey, currentTime.toString());
+                        return data;
+                    }
                 } catch (error) {
                     console.warn(`Fetch failed: ${error.message}. Using cache if available.`);
                 }
@@ -120,23 +129,32 @@
         }
 
 
-        // Decompress data if necessary
         async function decompressData(data, url) {
-            if (url.endsWith('.gz')) {
-                const decompressedStream = new Response(
-                    new Blob([data]).stream().pipeThrough(new DecompressionStream("gzip"))
-                );
-                return await decompressedStream.text();
+            console.log(`Decompressing data from ${url}`);
+            if (!url.endsWith('.gz')) {
+                return data; // No decompression needed
             }
-            return data;
+
+            try {
+                const decompressedStream = data.pipeThrough(new DecompressionStream("gzip"));
+                const decompressedData = await new Response(decompressedStream).text();
+                return decompressedData;
+            } catch (error) {
+                console.error(`Decompression failed for ${url}:`, error.message);
+                throw new Error(`Decompression failed: ${error.message}`);
+            }
         }
 
         // Apply the resource data to a DOM element
         function applyResourceToDOM(data, url, targetId) {
-            const type = determineResourceType(url);
+            console.log(`Applying data to ${targetId} from ${url}`);
+            console.log(data.length);
             const placeholder = document.getElementById(targetId);
-            if (!placeholder) return;
-
+            if (!placeholder){
+                console.error(`Placeholder not found for ${targetId}`);
+                return;
+            }
+            const type = determineResourceType(url);
             let newElement;
             switch (type) {
                 case 'css':
@@ -167,6 +185,8 @@
             placeholder.replaceWith(newElement);
             newElement.id = targetId;
             newElement.style.display = '';
+            console.log(`Applied data to ${targetId} from ${url}`);
+            console.log(newElement);
         }
 
         // Composite function to fetch, decompress, and apply data
@@ -184,6 +204,7 @@
 
 
 
+
         // Clear cache and reload the page
         async function clearCache() {
             localStorage.clear();
@@ -191,19 +212,21 @@
         }
 
         // Expose functions to the global scope
-        window.loadResource = loadResource;
+        window.fetchAndCache = fetchAndCache;
+        window.fetchDecompressAndApply = fetchDecompressAndApply;
+        window.applyResourceToDOM = applyResourceToDOM;
         window.clearCache = clearCache;
 
-        // Load main.js.gz
-        loadResource('/css/pico.min.css.gz', 'pico_css');
-        loadResource('/svg/logo.svg.gz', 'logo');
-        loadResource('/js/main.js.gz', 'main_js');
-        loadResource('/css/main.css.gz', 'main_css');
-        loadResource('/html/install_warning.html.gz', 'install_warning_html');
-        loadResource('/js/install_warning.js.gz', 'install_warning_js');
-        loadResource('/html/configure.html.gz', 'configure_html');
-        loadResource('/js/configure.js.gz', 'configure_js');
-        loadResource('/js/js-sha256.min.js.gz', 'js-sha256');
+        // Load default/common resources
+        fetchDecompressAndApply('/css/pico.min.css.gz', 'pico_css');
+        fetchDecompressAndApply('/svg/logo.svg.gz', 'logo');
+        fetchDecompressAndApply('/js/main.js.gz', 'main_js');
+        fetchDecompressAndApply('/css/main.css.gz', 'main_css');
+        fetchDecompressAndApply('/html/install_warning.html.gz', 'install_warning_html');
+        fetchDecompressAndApply('/js/install_warning.js.gz', 'install_warning_js');
+        fetchDecompressAndApply('/html/configure.html.gz', 'configure_html');
+        fetchDecompressAndApply('/js/configure.js.gz', 'configure_js');
+        fetchDecompressAndApply('/js/js-sha256.min.js.gz', 'js-sha256');
     </script>
 </body>
 </html>

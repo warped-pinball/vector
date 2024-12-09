@@ -47,7 +47,7 @@ async function loadPageResources(pageKey) {
     }
     clearPreviousResources(previousResourceIds);
     const loadPromises = config.resources.map(resource => 
-        window.loadResource(resource.url, resource.targetId)
+        fetchDecompressAndApply(resource.url, resource.targetId)
             .then(() => {
                 console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
                 return resource.targetId;
