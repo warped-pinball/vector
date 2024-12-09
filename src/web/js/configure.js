@@ -11,23 +11,39 @@ const modal = document.getElementById('configure_modal');
 
 
 
-
 async function populate_configure_modal() {
-    // get list of game configs
-    const response = await fetch('/api/game/list_games');
-    const games = await response.json();
-    const vector_config_select = document.getElementById('vector_config');
+    // get json of all possible configurations
+    const all_configs = JSON.parse(await window.fetchDecompress('/config/all.json.gz'));
+    
 
 
-    // get list of wifi networks
-    const response = await fetch('/api/available_ssids');
-    const data = await response.json();
+    // list all keys in the json
+    const filenames = Object.keys(all_configs)
+
+    // create mapping of key to key/GameInfo/GameName
+    const filename_to_name = {}
+    for (const filename of filenames) {
+        try {
+            filename_to_name[filename] = all_configs[filename].GameInfo.GameName
+        } catch (error) {
+            console.error(`Error parsing ${filename}: ${error}`)
+        }
+    }
+
+    // TODO currently active configuration as default
+    const game_config_dropdown = window.createDropDownElement(
+        'game_config_select', 
+        'Select a game configuration', 
+        filename_to_name
+    )
+
+    document.getElementById('game_config_placeholder').replaceWith(game_config_dropdown)
 
 }
 
 
 
-
+populate_configure_modal();
 
 
 
@@ -54,32 +70,19 @@ async function configure_check() {
 configure_check();
 
 
-async function populate_configure_modal() {
-    // last IP?
-    
-    // TODO figure out the currently active configuration if any and select that in the dropdowns
-    // get list of game configs
-    const response2 = await fetch('/api/game/list_games');
-    const data2 = await response2.json();
-    vector_config_select.innerHTML = '';    
-    for (const game of data2) {
-        const option_element = document.createElement('option');
-        option_element.value = game;
-        option_element.innerText = game;
-        vector_config_select.appendChild(option_element);
-    }
-    
-    // get list of wifi networks
-    const response = await fetch('/api/available_ssids');
-    const data = await response.json();
-    WiFi_ssid_select.innerHTML = '';
-    for (const [ssid, rssi] of data) {
-        const option_element = document.createElement('option');
-        option_element.value = ssid;
-        option_element.innerText = ssid;
-        WiFi_ssid_select.appendChild(option_element);
-    }
-}
+// async function populate_configure_modal() {
+//     // last IP?    
+//     // get list of wifi networks
+//     const response = await fetch('/api/available_ssids');
+//     const data = await response.json();
+//     WiFi_ssid_select.innerHTML = '';
+//     for (const [ssid, rssi] of data) {
+//         const option_element = document.createElement('option');
+//         option_element.value = ssid;
+//         option_element.innerText = ssid;
+//         WiFi_ssid_select.appendChild(option_element);
+//     }
+// }
 
 // populate_configure_modal();
 
