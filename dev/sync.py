@@ -6,11 +6,15 @@ import subprocess
 import shutil
 from pathlib import Path
 import argparse
-import serial.tools.list_ports
+# import serial.tools.list_ports
 import json
 import time
 import gzip
 import math
+from bs4 import BeautifulSoup
+from jsmin import jsmin
+from csscompressor import compress
+from htmlmin import minify as minify_html
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -19,9 +23,10 @@ REPL_MAX_RETRIES = 5  # Maximum number of retries to connect to REPL
 SOURCE_DIR = 'src'  # Source directory containing your code
 BUILD_DIR = 'build'  # Build directory for compiled and minified files
 MPY_CROSS = 'mpy-cross'  # Path to the mpy-cross compiler
-JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to minify
-CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
-HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
+# JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to minify
+# CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
+# HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
+WEB_DIR = os.path.join(BUILD_DIR, 'web')  # Web directory containing HTML, CSS, and JS files
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
 
 #TODO calculate number of 4Kb blocks we need to fit all files in the Pico (since that's the block size)
@@ -43,6 +48,14 @@ def get_directory_size(path: str) -> tuple[int, int]:
                 total_size += true_size
                 
     return total_size, space_lost_to_blocks
+
+def read_file(filepath):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def write_file(filepath, content):
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
 
 def step_report(size_report=False, time_report=True):
     def build_step_report(func):
@@ -160,67 +173,43 @@ def create_minimal_boot_main():
             f.write(main_py_content)
 
 @step_report(time_report=True, size_report=True)
-def minify_js_files():
-    """Minify JavaScript files."""
-    print("Minifying JavaScript files...")
-    try:
-        from jsmin import jsmin
-    except ImportError:
-        print("jsmin module not found. Please install it with 'pip install jsmin'")
-        sys.exit(1)
-    for js_dir in JS_MINIFY_DIRS:
-        full_js_dir = js_dir.replace(SOURCE_DIR, BUILD_DIR)
-        if os.path.exists(full_js_dir):
-            for root, dirs, files in os.walk(full_js_dir):
-                for file in files:
-                    if file.endswith('.js') and not file.endswith('.min.js'):
-                        js_file = os.path.join(root, file)
-                        with open(js_file, 'r') as f:
-                            minified = jsmin(f.read())
-                        with open(js_file, 'w') as f:
-                            f.write(minified)
+def minify_web_files():
+    """Minify HTML, CSS, and JS files in the 'web' directory."""
+    print("Minifying web files...")
+    for root, dirs, files in os.walk(WEB_DIR):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if file.endswith('.html'):
+                # Handle HTML files
+                content = read_file(file_path)
+                # Parse HTML
+                soup = BeautifulSoup(content, 'html.parser')
+                
+                # Minify inline JS
+                for script_tag in soup.find_all('script'):
+                    if script_tag.string:
+                        script_tag.string.replace_with(jsmin(script_tag.string))
 
-@step_report(time_report=True, size_report=True)
-def minify_css_files():
-    """Minify CSS files."""
-    print("Minifying CSS files...")
-    try:
-        from csscompressor import compress
-    except ImportError:
-        print("csscompressor module not found. Please install it with 'pip install csscompressor'")
-        sys.exit(1)
-    for css_dir in CSS_MINIFY_DIRS:
-        full_css_dir = css_dir.replace(SOURCE_DIR, BUILD_DIR)
-        if os.path.exists(full_css_dir):
-            for root, dirs, files in os.walk(full_css_dir):
-                for file in files:
-                    if file.endswith('.css'):
-                        css_file = os.path.join(root, file)
-                        with open(css_file, 'r') as f:
-                            minified = compress(f.read())
-                        with open(css_file, 'w') as f:
-                            f.write(minified)
+                # Minify inline CSS
+                for style_tag in soup.find_all('style'):
+                    if style_tag.string:
+                        style_tag.string.replace_with(compress(style_tag.string))
+                
+                # Convert soup back to HTML and minify HTML
+                final_html = minify_html(str(soup))
+                write_file(file_path, final_html)
 
-@step_report(time_report=True, size_report=True)
-def minify_html_files():
-    """Minify HTML files."""
-    print("Minifying HTML files...")
-    try:
-        from htmlmin import minify
-    except ImportError:
-        print("htmlmin module not found. Please install it with 'pip install htmlmin'")
-        sys.exit(1)
-    for html_dir in HTML_MINIFY_DIRS:
-        full_html_dir = html_dir.replace(SOURCE_DIR, BUILD_DIR)
-        if os.path.exists(full_html_dir):
-            for root, dirs, files in os.walk(full_html_dir):
-                for file in files:
-                    if file.endswith('.html'):
-                        html_file = os.path.join(root, file)
-                        with open(html_file, 'r') as f:
-                            minified = minify(f.read())
-                        with open(html_file, 'w') as f:
-                            f.write(minified)
+            elif file.endswith('.css'):
+                # Handle CSS files
+                content = read_file(file_path)
+                minified_css = compress(content)
+                write_file(file_path, minified_css)
+
+            elif file.endswith('.js'):
+                # Handle JS files
+                content = read_file(file_path)
+                minified_js = jsmin(content)
+                write_file(file_path, minified_js)
 
 @step_report(time_report=True, size_report=True)
 def scour_svg_files():
@@ -514,19 +503,17 @@ def main():
         "  2. wipe - Wipe the Pico filesystem.",
         "  3. build_init - Copy files to the build directory.",
         "  4. compile - Compile Python files to .mpy.",
-        "  5. minify_js - Minify JavaScript files.",
-        "  6. minify_css - Minify CSS files.",
-        "  7. minify_html - Minify HTML files.",
-        "  8. scour_svg - Run scour on all svg files in the build/web/svg directory.",
-        "  9. combine_json_configs - Combine all JSON config files in build/web/config into a single file.",
-        " 10. zip - gzip all files in the build/web/* directory.",
-        " 11. write_commit - Write the current git commit hash to a file.",
-        " 12. copy - Copy files to the Pico.",
-        " 13. restart - Restart the Pico.",
-        " 14. wipe_config - Wipe configuration data on the Pico.",
-        " 15. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 16. write_test_data - Write test data to the Pico.",
-        " 17. connect_repl - Connect to the Pico REPL."
+        "  5. minify_web_files - Minify HTML, CSS, and JS files in the web directory.",
+        "  6. scour_svg - Run scour on all svg files in the build/web/svg directory.",
+        "  7. combine_json_configs - Combine all JSON config files in build/web/config into a single file.",
+        "  8. zip - gzip all files in the build/web/* directory.",
+        "  9. write_commit - Write the current git commit hash to a file.",
+        " 10. copy - Copy files to the Pico.",
+        " 11. restart - Restart the Pico.",
+        " 12. wipe_config - Wipe configuration data on the Pico.",
+        " 13. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 14. write_test_data - Write test data to the Pico.",
+        " 15. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -547,9 +534,7 @@ def main():
         ("wipe", wipe_pico),
         ("build_init", copy_files_to_build),
         ("compile", compile_py_files),
-        ("minify_js", minify_js_files),
-        ("minify_css", minify_css_files),
-        ("minify_html", minify_html_files),
+        ("minify_web_files", minify_web_files),
         ("scour_svg", scour_svg_files),
         ("combine_json_configs", combine_json_config_files),
         ("zip", zip_files),
