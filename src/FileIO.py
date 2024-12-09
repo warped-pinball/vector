@@ -1,6 +1,6 @@
 '''
 file operations generally for the admin page
-
+V12/9/2024 support for software download
 '''
 import gc
 import json
@@ -109,7 +109,6 @@ def download_names(request):
         })
 
 
-
 def download_log(request):
     try:
         # Prepare the response headers
@@ -145,71 +144,93 @@ def crc16(data: bytes) -> str:
     crc_value = crc16_ccitt(data)
     return '{:04X}'.format(crc_value)
 
+# Base64 decoding function for MicroPython
+def base64_decode(data):
+    """Decode a Base64 encoded string into bytes."""
+    import ubinascii
+    return ubinascii.a2b_base64(data)
+
 
 #file upload.  can include directories int the file name if the directory already exists
 #  ex:  "phew/test.py"
 #browser side (java script) calls once for each file structure inside of download file
-def process_incoming_file(request):   
-    gc.collect()    
-    print("incomming")
-    try:    
-        form_data = request.form        
-        #key is a strange form from browser, look for generic key
+def process_incoming_file(request):
+    import gc
+    import json
+    import ubinascii
+
+    # Base64 decoding for MicroPython
+    def base64_decode(data):
+        """Decode a Base64 encoded string into bytes."""
+        return ubinascii.a2b_base64(data)
+
+    gc.collect()
+    try:
+        form_data = request.form
+
+        # Extract the file data from the form
         for key in form_data:
             value = form_data[key]
 
-        data = json.loads(value)    
-        file_type=data.get("FileType")
-        contents =data.get("contents")
+        gc.collect()
+
+        data = json.loads(value)
+        file_type = data.get("FileType")
+        contents = data.get("contents")
         received_checksum = data.get("Checksum")
-        Log.log(f"FIO: load file: {file_type}")        
+        is_binary = data.get("Binary", False)
+        append = data.get("append", 1)  # Default to 1 if "append" is missing
 
-        if file_type.endswith(".mpy"):
-            contents = contents.encode('latin1')
+        Log.log(f"FIO: Load file: {file_type}, append={append}")
+
+        # Process content based on Binary flag
+        if is_binary:        
+            contents = base64_decode(contents)
             if received_checksum:
-                calculated_checksum = crc16(contents)
-        elif file_type.endswith(".py") or file_type.endswith(".json"):
+                calculated_checksum = crc16(contents)  # Use raw binary data
+        else:
             if received_checksum:
-                calculated_checksum = crc16(contents.encode('utf-8'))        
+                calculated_checksum = crc16(contents.encode('utf-8'))  # Encode as UTF-8
 
-        if received_checksum:
-            if calculated_checksum != received_checksum:
-                Log.log("FIO: checksum fail")
-                raise ValueError(f"FIO: Checksum fail Expected {received_checksum}, got {calculated_checksum}")
-            else:
-                print("FIO: Checksum good: ", calculated_checksum)
+        # Verify checksum
+        #if received_checksum:
+        received_checksum = received_checksum.lower()
+        calculated_checksum = f"{calculated_checksum}".lower()
 
-        save_path = f"/test/{file_type}"    
-        if file_type=="RunMe.py":
-             save_path = f"{file_type}"    
+        if calculated_checksum != received_checksum:
+            Log.log("FIO: Checksum fail")
+            raise ValueError(
+                f"FIO: Checksum fail. Expected {received_checksum}, got {calculated_checksum}"
+            )
+        else:
+            print("FIO: Checksum good:", f"{calculated_checksum}")
 
-        if file_type.endswith(".py") or file_type.endswith(".json"):    #text
-            with open(save_path, 'w') as f:                               
-                f.write(contents)
-            print(f"FIO: File saved: {file_type}")      
-        elif file_type.endswith(".mpy"):                                #binary
-            with open(save_path, 'wb') as f:
-                f.write(contents)
-            print(f"FIO: Binary file saved: {file_type}")
-        else:   
-            print("FIO: process file as datastore: ", file_type)    
-            if file_type in DataStore.memory_map:      
-                Log.log(f"FIO: Datastore file in: {file_type}")              
-                for idx, record in enumerate(contents):           
-                    print("FIO: ",idx)         
-                    DataStore.write_record(file_type, record, idx)
-        gc.collect()                
+        # Define save path
+        save_path = f"{file_type}"  # Place directly in root directory
+        if file_type == "RunMe.py":
+            save_path = f"{file_type}"
 
-        #file... RunMe?        
-        if file_type=="RunMe.py":
-            print("Run me now")
-            module_name = "RunMe"            
+        print(save_path)
+
+        # Determine file mode based on append value
+        mode = 'ab' if append > 1 else 'wb' if is_binary else 'a' if append > 1 else 'w'
+
+        # Save file
+        with open(save_path, mode) as f:
+            f.write(contents if is_binary else contents.encode('utf-8'))
+        print(f"FIO: File {'appended' if append > 1 else 'saved'}: {file_type}")
+
+        gc.collect()
+
+        # If it's RunMe.py and the final append, execute it
+        if file_type == "RunMe.py" and append == 1:
+            print("Executing RunMe.py")
+            module_name = "RunMe"
             imported_module = __import__(module_name)
             try:
                 result = imported_module.go()  # Call the main function
                 if result is not None:
                     Log.log(f"FIO: RunMe returned {result}")
-                    #store result
                     S.update_load_result = result
                 else:
                     Log.log("FIO: RunMe executed, no return value")
@@ -217,74 +238,19 @@ def process_incoming_file(request):
                 print(f"FIO: Error importing module {module_name}: {e}")
             except Exception as e:
                 print(f"FIO: An error occurred while running {module_name}.go(): {e}")
-      
-        return ("Upload complete")  
+
+        return "Upload complete"
 
     except Exception as e:
         print(f"Error processing file upload: {e}")
-        return (f"An error occurred: {e}")
+        return f"An error occurred: {e}"
+
 
 
 def incoming_file_results(request):
     if S.update_load_result is None:
-        return ("Nothing to report")
+        return "Nothing to report"
     else:
         return S.update_load_result
 
-#
-#use this to build files or file sets for uploading
-#
-def process_files(files):
-    combined_data = []
-    gname = "11" #S.gdata["GameInfo"]["GameName"]
-
-    print(files)
-
-    if isinstance(files, str):
-        files = [files]  
-    
-    for file in files:
-        gc.collect()
-        
-        if file.endswith('.mpy'):
-            mode = 'rb'
-        else:
-            mode = 'r'
-
-        with open(file, mode) as f:
-            data = f.read() 
-            
-            if mode == 'rb':
-                checksum = crc16(data)
-                contents = data.decode('latin1')  
-            else:
-                checksum = crc16(data.encode('utf-8'))
-                contents = data
-
-            combined_data.append({
-                "FileType": file,
-                "GameName": gname,
-                "Version": S.WarpedVersion,
-                "contents": data,
-                "Checksum": checksum
-            })
-    
-    return json.dumps(combined_data)
-
-
-if __name__ == "__main__":
-    print("combine files")
-    gc.collect()
-
-    files_to_copy = [
-        'nothing.py'
-    ]    
-
-    files_to_copy += ['RunMe.py']
-    combined_data = process_files(files_to_copy)    
-    print (combined_data)
-    with open("combined_files.json", 'w') as f:
-        f.write(combined_data)
-
-    
        
