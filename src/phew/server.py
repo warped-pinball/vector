@@ -5,7 +5,6 @@ import machine
 import SPI_Store as fram
 from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-import GameDefs
 from machine import RTC
 import ntptime,time
 import displayMessage

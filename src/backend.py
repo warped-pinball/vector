@@ -252,9 +252,17 @@ def app_reboot_game(request):
 @add_route("/api/game/list_games")
 def app_list_games(request):
     files = os.listdir("GameDefs")
-    games = [f[:-5] for f in files]
-    response = json.dumps(games)
-    return response
+    # parse the json file to get the game name
+    games = {}
+    for file in files:
+        try:
+            with open(f"GameDefs/{file}") as f:
+                data = json.load(f)
+                games[file] = data["GameName"]
+        except Exception as e:
+            print(f"Error reading {file}: {e}")
+
+    return json.dumps(games), 200
 
 @add_route("/api/game/name")
 def app_game_name(request):

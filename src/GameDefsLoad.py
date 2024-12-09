@@ -50,7 +50,7 @@ def convert_hex_to_int(data):
 
 #take a game file name and build path with extension
 def build_path(game_name):
-    directory = 'GameDefs'
+    directory = 'config'
     file_extension = '.json'
     return f"{directory}/{game_name}{file_extension}"
 

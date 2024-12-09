@@ -240,27 +240,26 @@ def scour_svg_files():
                     print(f"Error scouring {file_path}")
 
 @step_report(time_report=True, size_report=True)
-def minify_json_files():
-    """Minify JSON files."""
-    print("Minifying JSON files...")
-    paths = [
-        os.path.join(BUILD_DIR, 'web'),
-        os.path.join(BUILD_DIR, 'GameDefs')
-    ]
-    for path in paths:
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith('.json'):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, 'r') as f:
-                        data = json.load(f)
-                    with open(file_path, 'w') as f:
-                        json.dump(data, f, separators=(',', ':'))
+def combine_json_config_files():
+    """Combine all JSON config files in build/web/config into a single file."""
+    print("Combining JSON config files...")
+    all_conf = {}
+    for root, dirs, files in os.walk('build/web/config'):
+        for file in files:
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                all_conf[file] = data
+                os.remove(file_path)
+    with open('build/web/config/all.json', 'w') as f:
+        json.dump(all_conf, f, separators=(',', ':'))
 
 @step_report(time_report=True, size_report=True)
 def zip_files():
     """gzip all files in the build/web/* directory. (but not files in /web like web/index.html)"""
     print("Zipping files...")
+
     def zip_files_in_dir(dir):
         """gzip all files in the given directory."""
         print(f"Zipping files in {dir}...")
@@ -278,8 +277,6 @@ def zip_files():
     web_dirs = [os.path.join(web_dir, d) for d in os.listdir(web_dir) if os.path.isdir(os.path.join(web_dir, d))]
     for dir in web_dirs:
         zip_files_in_dir(os.path.join(dir))
-    
-    zip_files_in_dir('build/GameDefs')
     
 @step_report(time_report=True, size_report=True)
 def copy_files_to_pico():
@@ -521,7 +518,7 @@ def main():
         "  6. minify_css - Minify CSS files.",
         "  7. minify_html - Minify HTML files.",
         "  8. scour_svg - Run scour on all svg files in the build/web/svg directory.",
-        "  9. minify_json - Minify JSON files.",
+        "  9. combine_json_configs - Combine all JSON config files in build/web/config into a single file.",
         " 10. zip - gzip all files in the build/web/* directory.",
         " 11. write_commit - Write the current git commit hash to a file.",
         " 12. copy - Copy files to the Pico.",
@@ -554,7 +551,7 @@ def main():
         ("minify_css", minify_css_files),
         ("minify_html", minify_html_files),
         ("scour_svg", scour_svg_files),
-        ("minify_json", minify_json_files),
+        ("combine_json_configs", combine_json_config_files),
         ("zip", zip_files),
         ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
