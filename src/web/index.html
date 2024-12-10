@@ -98,12 +98,15 @@
         }
 
         // === Utility: Authenticated Fetch ===
-        async function smartFetch(password, url, data=null, auth=true) {
+        async function smartFetch(url, data=null, auth=true) {
             const headers = { 
                 "Content-Type": "application/json" 
             };
             
             if (auth) {
+                const password = localStorage.getItem('auth_password');
+                if (!password) throw new Error('Auth required, no password.');
+
                 const cRes = await fetch("/api/auth/challenge");
                 if (!cRes.ok) throw new Error("Failed to get challenge.");
                 const { challenge } = await cRes.json();
@@ -114,7 +117,7 @@
                 headers["X-Auth-HMAC"] = hmacHex;
             }
 
-            
+
 
             const method = data ? "POST" : "GET";
             return fetch(url, { 
@@ -131,9 +134,7 @@
 
             let response;
             if (auth) {
-                const password = localStorage.getItem('auth_password');
-                if (!password) throw new Error('Auth required, no password.');
-                response = await smartFetch(password, url);
+                response = await smartFetch(url);
             } else {
                 response = await fetch(url, { signal: controller.signal });
             }

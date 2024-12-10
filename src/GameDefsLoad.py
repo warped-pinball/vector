@@ -96,7 +96,7 @@ safe_defaults = {
 
   
 def go(safe_mode=False):  
-    Log.log("Loading game definitions with safe mode set to {safe_mode}")
+    Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
     data = safe_defaults
     if not safe_mode:    
         try:   

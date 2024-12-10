@@ -42,29 +42,36 @@ async function build_ssid_select(){
 }
 
 async function populate_configure_modal() {
-    await build_game_config_select();
-    await build_ssid_select();
+    build_ssid_select();
+    build_game_config_select();
 }
-
-// modal
-const modal = document.getElementById('configure_modal');
 
 async function configure_check() {
     const response = await fetch('/api/in_ap_mode');
+    if (!response.ok) {
+        console.log('Retrying in AP mode check');
+        const response = await fetch('/api/in_ap_mode');
+    }
+    if (!response.ok) {
+        console.error('Error checking AP mode status');
+        return;
+    }
     const data = await response.json();
     if (data.in_ap_mode) {
         await populate_configure_modal();
-        modal.setAttribute('open', ''); // Add the "open" attribute to the dialog
+        // open the modal
+        document.getElementById('configure_modal').setAttribute('open', '');
     }
 }
 
 configure_check();
 
-// function to  save the configuration  and restart the device
-async function save_configuration() {
+
+
+async function set_game_config() {
     // get the selected configuration
     const selected_config = window.getDropDownValue('game_config_select');
-    
+        
     // get all configurations (this will likely be cached)
     const all_configs = JSON.parse(await window.fetchDecompress('/config/all.json.gz'));
     const config = all_configs[selected_config];
@@ -74,15 +81,49 @@ async function save_configuration() {
 
     // send a POST with the selected configuration
     // auth is not required because this route is only available in AP mode
-    const response = await window.smartFetch('no_password', '/api/game/set_config', data = config, auth=false);
+    const response = await window.smartFetch('/api/game/set_config', data = config, auth=false);
+    return response;
+}
 
-    // check if the response is ok
-    if (!response.ok) {
-        alert('Error saving configuration try again');
+async function set_vector_config() {
+    // save the other configuration options
+    // ssid select
+    const ssid = window.getDropDownValue('ssid_select');
+    const wifi_password = document.querySelector('input[name="wifi_password"]').value;
+    const vector_password = document.querySelector('input[name="vector_password"]').value;
+
+    data = {
+        ssid: ssid,
+        wifi_password: wifi_password,
+        vector_password: vector_password
+    }
+    
+    // send a POST with the selected configuration
+    // auth is not required because this route is only available in AP mode
+    const response = await window.smartFetch('/api/game/set_vector_config', data = data, auth=false);
+    return response;
+}
+
+// function to  save the configuration  and restart the device
+async function save_configuration() {
+
+    // save the game configuration
+    const response_game = await set_game_config();
+
+    if (!response_game.ok) {
+        alert('Error saving game configuration; Try again');
         return;
     }
 
-    alert('Configuration saved, please power cycle your Pinball Machine to apply the changes');
+    // save the vector configuration
+    const response_vector = await set_vector_config();
+
+    if (!response_vector.ok) {
+        alert('Error saving vector configuration; Try again');
+        return;
+    }
+
+    alert('Configuration saved. Power cycle your Pinball Machine to apply the changes');
 }
 
 window.save_configuration = save_configuration;

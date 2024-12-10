@@ -495,18 +495,16 @@ def add_ap_mode_routes():
     @add_route("/api/settings/wifi", method="POST")
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
-        data = request.json
+        data = request.data
         DataStore.write_record("configuration",
             {
                 "ssid": data['ssid'],
-                "password": data['password'],
-                "Gpassword": data['gpassword'],
-                "gamename": data['gamename'],
-
+                "password": data['wifi_password'],
+                "Gpassword": data['vector_password'],
+                "gamename": "",
             }
         )
         Pico_Led.off()
-        #TODO redirect to "configuration saved" page? possibly just have this baked into web page on 200
     
 
 
