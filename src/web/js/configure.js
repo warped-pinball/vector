@@ -1,22 +1,9 @@
-// modal
-const modal = document.getElementById('configure_modal');
-
-// // config values
-// const vector_config_select = document.getElementById('vector_config');
-// const vector_password_input = document.querySelector('input[name="vector_password"]');
-// const WiFi_ssid_select = document.querySelector('select[name="WiFi_ssid"]');
-// const WiFi_password_input = document.querySelector('input[name="WiFi_password"]');
 
 
-
-
-
-async function populate_configure_modal() {
-    // get json of all possible configurations
+async function build_game_config_select(){
+    // get all configurations    
     const all_configs = JSON.parse(await window.fetchDecompress('/config/all.json.gz'));
     
-
-
     // list all keys in the json
     const filenames = Object.keys(all_configs)
 
@@ -31,74 +18,71 @@ async function populate_configure_modal() {
     }
 
     // TODO currently active configuration as default
-    const game_config_dropdown = window.createDropDownElement(
+    const game_config_select = await window.createDropDownElement(
         'game_config_select', 
         'Select a game configuration', 
         filename_to_name
     )
 
-    document.getElementById('game_config_placeholder').replaceWith(game_config_dropdown)
-
+    document.getElementById('game_config_select_placeholder').replaceWith(game_config_select)
 }
 
+async function build_ssid_select(){
+    // get list of wifi networks
+    const response = await fetch('/api/available_ssids');
+    const data = await response.json(); // list of [ssid, rssi]
 
+    const ssid_select = await window.createDropDownElement(
+        'ssid_select',
+        'Select a WiFi network',
+        data.map(([ssid, rssi]) => ssid)
+    )
 
-populate_configure_modal();
+    document.getElementById('ssid_select_placeholder').replaceWith(ssid_select)
+}
 
+async function populate_configure_modal() {
+    await build_game_config_select();
+    await build_ssid_select();
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+// modal
+const modal = document.getElementById('configure_modal');
 
 async function configure_check() {
     const response = await fetch('/api/in_ap_mode');
     const data = await response.json();
     if (data.in_ap_mode) {
+        await populate_configure_modal();
         modal.setAttribute('open', ''); // Add the "open" attribute to the dialog
     }
 }
 
 configure_check();
 
-
-// async function populate_configure_modal() {
-//     // last IP?    
-//     // get list of wifi networks
-//     const response = await fetch('/api/available_ssids');
-//     const data = await response.json();
-//     WiFi_ssid_select.innerHTML = '';
-//     for (const [ssid, rssi] of data) {
-//         const option_element = document.createElement('option');
-//         option_element.value = ssid;
-//         option_element.innerText = ssid;
-//         WiFi_ssid_select.appendChild(option_element);
-//     }
-// }
-
-// populate_configure_modal();
-
 // function to  save the configuration  and restart the device
 async function save_configuration() {
-    const config = {
-        ssid: WiFi_ssid_select.value,
-        password: WiFi_password_input.value,
-        game: vector_config_select.value,
-        game_password: vector_password_input.value
+    // get the selected configuration
+    const selected_config = window.getDropDownValue('game_config_select');
+    
+    // get all configurations (this will likely be cached)
+    const all_configs = JSON.parse(await window.fetchDecompress('/config/all.json.gz'));
+    const config = all_configs[selected_config];
+
+    console.log('Selected configuration:', selected_config);
+    console.log('Configuration:', config);
+
+    // send a POST with the selected configuration
+    // auth is not required because this route is only available in AP mode
+    const response = await window.smartFetch('no_password', '/api/game/set_config', data = config, auth=false);
+
+    // check if the response is ok
+    if (!response.ok) {
+        alert('Error saving configuration try again');
+        return;
     }
-    const response = await fetch('/api/configure', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(config)
-    });
+
+    alert('Configuration saved, please power cycle your Pinball Machine to apply the changes');
 }
+
+window.save_configuration = save_configuration;

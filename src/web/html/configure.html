@@ -1,24 +1,10 @@
 <dialog id="configure_modal">
     <article>
-        <h2>Configure Your Vector</h2>
-        <p>Name your game(???)</p>
-        <select name="game_config" aria-label="Select your game" required>
-            <option selected disabled value="">
-              Select which game Vector is installed in...
-            </option>
-        </select>
-
-        <div id="game_config_placeholder"></div>
-
-
+        <h3>Configure Your Vector</h3>
+        <div id="game_config_select_placeholder"></div>
         <input type="password" name="vector_password" placeholder="Set an Admin Password..." aria-label="Pinball Admin Password">
-
-
-        <select name="WiFi_ssid" aria-label="Select your WiFi..." required>
-            <option selected disabled value="">
-              Select your WiFi...
-            </option>
-          </select>
+        <h3>WiFi Settings</h3>
+        <div id="ssid_select_placeholder"></div>
         <input type="password" name="wifi_password" placeholder="Your WiFi password..." aria-label="WiFi Password">
 
         <p>
@@ -31,7 +17,7 @@
         <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network. Then navigate to <a href="warpedpinball.local">warpedpinball.local</a> to start using your Vector</p>
 
         <footer>
-            <button onclick="document.getElementById('configure_modal').removeAttribute('open')">💾 Save</button>
+            <button onclick="window.save_configuration()">💾 Save</button>
         </footer>
     </article>
 </dialog>

@@ -40,7 +40,7 @@ CHALLENGE_EXPIRATION_SECONDS = 60
 
 
 #
-# Standardized Route Methods
+# Standardized Route Functions
 #
 def route_wrapper(func):
     def wrapped_route(request):
@@ -63,17 +63,15 @@ def route_wrapper(func):
             gc.collect()
     return wrapped_route
 
-def add_route(path, methods=["GET"], auth=False):
+def add_route(path, method="GET", auth=False):
     '''Decorator to add a route to the server with gc.collect() and error handling'''
-    if isinstance(methods, str):
-            methods = [methods]
     def decorator(func):
         if auth:
             func = require_auth(func)
-        
+
         wrapped = route_wrapper(func)
 
-        @server.route(path, methods=methods)
+        @server.route(path, methods=[method])
         def route(request):
             return wrapped(request)
         
@@ -248,22 +246,6 @@ def app_reboot_game(request):
     reset_control.release(True)         
     server.reset_bootup_counters()
 
-
-@add_route("/api/game/list_games")
-def app_list_games(request):
-    files = os.listdir("GameDefs")
-    # parse the json file to get the game name
-    games = {}
-    for file in files:
-        try:
-            with open(f"GameDefs/{file}") as f:
-                data = json.load(f)
-                games[file] = data["GameName"]
-        except Exception as e:
-            print(f"Error reading {file}: {e}")
-
-    return json.dumps(games), 200
-
 @add_route("/api/game/name")
 def app_game_name(request):
     return SharedState.gdata["GameInfo"]["GameName"], 200
@@ -355,7 +337,7 @@ def app_getPlayers(request):
     return json.dumps(players), 200
 
     
-@add_route("/api/player/update", methods=["POST"], auth=True)
+@add_route("/api/player/update", method="POST", auth=True)
 def app_updatePlayer(request):
     body = request.json                   
     initials = body['initials'].upper()[:3]
@@ -399,7 +381,7 @@ def app_getScoreCap(request):
     return json.dumps({"on-machine": score_cap}), 200
 
 
-@add_route("/api/settings/score_capture_methods", methods=["POST"], auth=True)
+@add_route("/api/settings/score_capture_methods", method="POST", auth=True)
 def app_setScoreCap(request):
     new_state = int(request.json['on-machine'])
     info = DataStore.read_record("extras", 0)
@@ -409,7 +391,7 @@ def app_setScoreCap(request):
 
 # @add_route("/api/settings/tournament_mode")
 
-@add_route("/api/settings/tournament_mode", methods=["POST"], auth=True)
+@add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
         
@@ -444,7 +426,7 @@ def app_install_fault(request):
     if SharedState.installation_fault:
         return "fault", 500
 
-@add_route("/api/date_time", methods=["POST"], auth=True)
+@add_route("/api/date_time", method="POST", auth=True)
 def app_setDateTime(request):
     '''Set the date and time on the device'''
     date = [int(e) for e in request.json['date']]
@@ -502,7 +484,15 @@ def add_ap_mode_routes():
     def app_inAPMode(request):
         return json.dumps({"in_ap_mode": True}), 200
 
-    @add_route("/api/settings/wifi", methods=["POST"])
+    @add_route("/api/game/set_config", method="POST")
+    def app_setGameConfig(request):
+        '''Set the game configuration'''
+        config = request.data
+        print(config)
+        with open("game_config.json", "w") as f:
+            json.dump(config, f)    
+
+    @add_route("/api/settings/wifi", method="POST")
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
         data = request.json
@@ -540,6 +530,7 @@ def go(ap_mode, fault_msg=None):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        add_ap_mode_routes()# TODO remove after testing
         add_app_mode_routes()
         server.set_callback(four_oh_four)
         wifi_credentials = DataStore.read_record("configuration", 0)

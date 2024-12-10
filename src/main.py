@@ -128,7 +128,7 @@ else:
 if bus_activity_fault==False and ap_mode==False:
     GameDefsLoad.go() 
 else:
-    GameDefsLoad.load_safe_defaults()
+    GameDefsLoad.go(safe_mode=True)
 
 if bus_activity_fault == False:
     MemoryMain.go()     

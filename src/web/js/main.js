@@ -349,9 +349,8 @@ window.authenticateAndFetch = authenticateAndFetch;
 // Page Element js utilities
 // 
 
-// Add a dropdown option dynamically
-async function addDropDownOption(dropDownElement, value, text) {
-    const ulElement = dropDownElement.querySelector('ul');
+// Create a dropdown option dynamically
+async function createDropDownOption(value, text) {
     const listItem = document.createElement('li');
     const anchorElement = document.createElement('a');
 
@@ -362,16 +361,18 @@ async function addDropDownOption(dropDownElement, value, text) {
     // Add click event to select this option
     anchorElement.addEventListener('click', (event) => {
         event.preventDefault(); // Prevent default navigation
+        const dropDownElement = anchorElement.closest('details');
         setDropDownValue(dropDownElement, value, text);
     });
 
     listItem.appendChild(anchorElement);
-    ulElement.appendChild(listItem);
+    return listItem;
 }
 
 // Get the currently selected dropdown value
-function getDropDownValue(dropDownElement) {
-    return dropDownElement.dataset.selectedValue || null;
+function getDropDownValue(dropDownElementID) {
+    // get the attribute data-selected-value
+    return document.getElementById(dropDownElementID).dataset.selectedValue;
 }
 
 // Set the dropdown value when an option is clicked
@@ -394,9 +395,18 @@ async function createDropDownElement(id, summaryText, options, defaultValue = nu
 
     const ulElement = document.createElement('ul');
 
+    // if options is an array, convert to object
+    if (Array.isArray(options)) {
+        options = options.reduce((acc, val) => {
+            acc[val] = val;
+            return acc;
+        }, {});
+    }
+
     // Add options to the dropdown
     for (const [value, text] of Object.entries(options)) {
-        await addDropDownOption(dropDownElement, value, text);
+        const listItem = await createDropDownOption(value, text);
+        ulElement.appendChild(listItem);
         // Pre-select the default value if it matches
         if (defaultValue === value) {
             setDropDownValue(dropDownElement, value, text);
@@ -409,7 +419,7 @@ async function createDropDownElement(id, summaryText, options, defaultValue = nu
     return dropDownElement; // Return the dropdown element for placement
 }
 
-window.addDropDownOption = addDropDownOption;
+window.addDropDownOption = createDropDownElement;
 window.getDropDownValue = getDropDownValue;
 window.setDropDownValue = setDropDownValue;
 window.createDropDownElement = createDropDownElement;

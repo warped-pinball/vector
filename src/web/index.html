@@ -98,18 +98,30 @@
         }
 
         // === Utility: Authenticated Fetch ===
-        async function authenticateAndFetch(password, url, data=null) {
-            const cRes = await fetch("/api/auth/challenge");
-            if (!cRes.ok) throw new Error("Failed to get challenge.");
-            const { challenge } = await cRes.json();
+        async function smartFetch(password, url, data=null, auth=true) {
+            const headers = { 
+                "Content-Type": "application/json" 
+            };
+            
+            if (auth) {
+                const cRes = await fetch("/api/auth/challenge");
+                if (!cRes.ok) throw new Error("Failed to get challenge.");
+                const { challenge } = await cRes.json();
 
-            const urlObj = new URL(url, window.location.origin);
-            const msg = challenge + urlObj.pathname + urlObj.search + (data ? JSON.stringify(data) : "");
-            const hmacHex = sha256.hmac(password, msg);
+                const urlObj = new URL(url, window.location.origin);
+                const msg = challenge + urlObj.pathname + urlObj.search + (data ? JSON.stringify(data) : "");
+                const hmacHex = sha256.hmac(password, msg);
+                headers["X-Auth-HMAC"] = hmacHex;
+            }
 
-            const headers = { "X-Auth-HMAC": hmacHex, "Content-Type": "application/json" };
+            
+
             const method = data ? "POST" : "GET";
-            return fetch(url, { method, headers, body: data ? JSON.stringify(data) : undefined });
+            return fetch(url, { 
+                method, 
+                headers, 
+                body: data ? JSON.stringify(data) : undefined 
+            });
         }
 
         // === Utility: Fetch Resource (with optional auth) ===
@@ -121,7 +133,7 @@
             if (auth) {
                 const password = localStorage.getItem('auth_password');
                 if (!password) throw new Error('Auth required, no password.');
-                response = await authenticateAndFetch(password, url);
+                response = await smartFetch(password, url);
             } else {
                 response = await fetch(url, { signal: controller.signal });
             }
@@ -215,6 +227,7 @@
         window.fetchDecompressAndApply = fetchDecompressAndApply;
         window.fetchDecompress = fetchDecompress;
         window.clearCache = clearCache;
+        window.smartFetch = smartFetch;
 
         // Load default/common resources
         fetchDecompressAndApply('/css/pico.min.css.gz', 'pico_css');

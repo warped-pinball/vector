@@ -95,13 +95,6 @@ def autodetect_pico_port():
         print(f"Error detecting Pico port: {e}")
     sys.exit(1)
 
-def check_mpy_cross():
-    """Check if mpy-cross is available."""
-    result = subprocess.run(f"{MPY_CROSS} --version", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print("mpy-cross not found. Please ensure mpy-cross is installed and in your PATH.")
-        sys.exit(1)
-
 @step_report(time_report=True)
 def wipe_pico():
     """Wipe all files from the Pico."""
@@ -148,19 +141,14 @@ def compile_py_files():
         for file in files:
             if file.endswith('.py'):
                 py_file = os.path.join(root, file)
-                cmd = f"{MPY_CROSS} {py_file}"
+                cmd = f"{MPY_CROSS} -O3 {py_file}"
                 result = subprocess.run(cmd, shell=True)
                 if result.returncode != 0:
                     print(f"Error compiling {py_file}")
                     sys.exit(1)
                 os.remove(py_file)
 
-    create_minimal_boot_main()
-
-@step_report(time_report=True, size_report=True)
-def create_minimal_boot_main():
-    """Create minimal boot.py and main.py that import mboot.mpy and mmain.mpy."""
-    print("Creating minimal boot.py and main.py...")
+    # Create boot.py and main.py to import the compiled files
     mboot_mpy = os.path.join(BUILD_DIR, 'mboot.mpy')
     if os.path.exists(mboot_mpy):
         boot_py_content = "import mboot\n"
