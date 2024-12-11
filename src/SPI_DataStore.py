@@ -149,6 +149,7 @@ def blankConfig(structure_name):
             "other": 0      
         }   
         write_record("configuration", fake_entry, 0, 0)
+        print("blank config done")
 
 def blankIndPlayerScores(playernum):
     fake_entry = {       

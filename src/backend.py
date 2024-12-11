@@ -9,10 +9,10 @@ import time
 import gc
 import os
 from Utilities.random_bytes import random_hex
-from phew import server, connect_to_wifi, is_connected_to_wifi, access_point, dns
+from phew import server
 import reset_control
 import SharedState
-from Memory_Main import save_ram,blank_ram
+from Memory_Main import save_ram, blank_ram
 import uctypes
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, SRAM_COUNT_BASE
 from GameStatus import report as game_status_report
@@ -25,6 +25,7 @@ import ujson as json
 import uhashlib as hashlib
 import binascii
 import time
+import faults
 #
 # Constants
 #
@@ -127,7 +128,6 @@ def redirect(request):
     #if request.headers.get("host") != AP_DOMAIN:
     #    return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
 
-    #TODO add page name query to direct to configuration page when in AP mode
     return "Redirecting...", 301, {"Location": "/index.html"}
 #
 # Authentication
@@ -395,6 +395,7 @@ def app_setScoreCap(request):
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
         
+# TODO make this the current game
 @add_route("/api/settings/config_file")
 def app_getConfig(request):
     return json.dumps(DataStore.read_record("configuration", 0)["gamename"]), 200    
@@ -423,8 +424,7 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/fault")
 def app_install_fault(request):
-    if SharedState.installation_fault:
-        return "fault", 500
+    return json.dumps(SharedState.faults), 200
 
 @add_route("/api/date_time", method="POST", auth=True)
 def app_setDateTime(request):
@@ -462,7 +462,11 @@ def app_getDateTime(request):
 # server.add_route('/download_tournament',handler = FileIO.download_tournament, methods=['GET'])
 # server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
 server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
+
+#
 server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
+
+# kinda logs for update
 server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
 
 
@@ -508,17 +512,50 @@ def add_ap_mode_routes():
     
 
 
+def connect_to_wifi():
+    from phew import connect_to_wifi as phew_connect, is_connected_to_wifi as phew_is_connected
+    wifi_credentials = DataStore.read_record("configuration", 0)
+    if not wifi_credentials or wifi_credentials.get("ssid") == "":
+        raise ValueError(faults.WIFI01)
+
+    ssid = wifi_credentials["ssid"]
+    password = wifi_credentials["password"]
+    for i in range(WIFI_MAX_ATTEMPTS):
+        print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
+        ip_address = phew_connect(ssid, password, timeout_seconds=10) 
+        if phew_is_connected():
+            print(f"Connected to wifi with IP address {ip_address}")
+            writeIP(ip_address)
+            Pico_Led.on()
+            displayMessage.init(ip_address)
+            return
+    raise ValueError(faults.WIFI02)
+
 #TODO we dont really need the fault message since it can only be one message and it's already in the shared state as a bool
-def go(ap_mode, fault_msg=None):
+def go(ap_mode):
     '''Start the server and run the main loop'''
     
-    #TODO this was earlier in the code, might need moved to the top of this file
+    #TODO this was earlier in the code, might need moved to the top of this file OG comments:
     #Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
     #wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)   
     Pico_Led.off()
     gc.threshold(2048 * 6) 
 
+    if not ap_mode:
+        # try to connect to WiFi
+        try:
+            connect_to_wifi()
+        except Exception as e:
+            ap_mode = True
+            print(f"Error connecting to wifi: {e}")
+            if str(e) in [faults.WIFI01, faults.WIFI02]:
+                SharedState.faults.append(str(e))
+            else:
+                SharedState.faults.append(faults.WIFI00 +": " + str(e))
+
+    # check if we are in AP mode again incase we failed to connect to wifi 
     if ap_mode:
+        from phew import access_point, dns
         print("Starting in AP mode")
         Pico_Led.start_fast_blink()    
         add_ap_mode_routes()
@@ -528,24 +565,8 @@ def go(ap_mode, fault_msg=None):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        add_ap_mode_routes()# TODO remove after testing
         add_app_mode_routes()
         server.set_callback(four_oh_four)
-        wifi_credentials = DataStore.read_record("configuration", 0)
-        if not wifi_credentials:
-            raise ValueError("No wifi credentials found in configuration")
-
-        ssid = wifi_credentials["ssid"]
-        password = wifi_credentials["password"]
-        for i in range(WIFI_MAX_ATTEMPTS):
-            print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
-            ip_address = connect_to_wifi(ssid, password, timeout_seconds=10) 
-            if is_connected_to_wifi():
-                print(f"Connected to wifi with IP address {ip_address}")
-                writeIP(ip_address)
-                Pico_Led.on()
-                displayMessage.init(ip_address)
-                break
 
     print("-"*10)
     print("Starting server")
