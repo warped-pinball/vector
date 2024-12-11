@@ -32,8 +32,7 @@ import faults
 rtc = RTC()
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 12
-AP_NAME = "WarpedPinball"
-
+AP_NAME = "Warped Pinball" + " " + str(random_hex(2))
 # Authentication variables
 current_challenge = None
 challenge_timestamp = None
@@ -124,11 +123,9 @@ def four_oh_four(request):
     return "Not found", 404
 
 def redirect(request):
-    #TODO old AP mode had this, not sure if we need it
-    #if request.headers.get("host") != AP_DOMAIN:
-    #    return render_template(f"{AP_TEMPLATE_PATH}/redirect.html", domain = AP_DOMAIN)
-
-    return "Redirecting...", 301, {"Location": "/index.html"}
+    from phew.server import redirect
+    #TODO check that the route is a valid one for the server, else 404
+    return redirect(f"/index.html", status=303)
 #
 # Authentication
 #
@@ -496,7 +493,7 @@ def add_ap_mode_routes():
         with open("game_config.json", "w") as f:
             json.dump(config, f)    
 
-    @add_route("/api/settings/wifi", method="POST")
+    @add_route("/api/settings/set_vector_config", method="POST")
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
         data = request.data
@@ -508,6 +505,7 @@ def add_ap_mode_routes():
                 "gamename": "",
             }
         )
+        print(request.data)
         Pico_Led.off()
     
 

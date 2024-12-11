@@ -100,7 +100,7 @@ async function set_vector_config() {
     
     // send a POST with the selected configuration
     // auth is not required because this route is only available in AP mode
-    const response = await window.smartFetch('/api/game/set_vector_config', data = data, auth=false);
+    const response = await window.smartFetch('/api/settings/set_vector_config', data = data, auth=false);
     return response;
 }
 
@@ -110,7 +110,7 @@ async function save_configuration() {
     // save the game configuration
     const response_game = await set_game_config();
 
-    if (!response_game.ok) {
+    if (!response_game.status == 200) {
         alert('Error saving game configuration; Try again');
         return;
     }
@@ -118,7 +118,7 @@ async function save_configuration() {
     // save the vector configuration
     const response_vector = await set_vector_config();
 
-    if (!response_vector.ok) {
+    if (!response_vector.status == 200) {
         alert('Error saving vector configuration; Try again');
         return;
     }
