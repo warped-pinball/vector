@@ -536,11 +536,21 @@ def main():
     ]
 
     if args.steps and "all" not in args.steps:
+        # validate selected steps
+        for step in args.steps:
+            if step not in [step for step, func in steps_to_run]:
+                print(f"Invalid step selected: {step}")
+                sys.exit(1)
         selected_steps = [step for step, func in steps_to_run if step in args.steps]
     else:
         selected_steps = [step for step, func in steps_to_run]
 
     if args.skip:
+        # validate skipped steps
+        for step in args.skip:
+            if step not in [step for step, func in steps_to_run]:
+                print(f"Invalid step to skip: {step}")
+                sys.exit(1)
         selected_steps = [step for step in selected_steps if step not in args.skip]
 
     try:
