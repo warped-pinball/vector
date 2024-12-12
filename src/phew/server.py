@@ -5,7 +5,6 @@ import machine
 import SPI_Store as fram
 from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-import GameDefs
 from machine import RTC
 import ntptime,time
 import displayMessage
@@ -15,6 +14,7 @@ import reset_control
 import gc
 import SPI_DataStore as DataStore
 import GameStatus
+import faults
 
 ntptime.host = 'pool.ntp.org'  # Setting a specific NTP server
 rtc = RTC()
@@ -425,18 +425,6 @@ async def ScoreCheck():  #scCount=[0],enableScoreChecks=[0]):
     if enableScoreChecks[0] == 1:      
       CheckForNewScores()
         
-    #password mess...
-    gpw=DataStore.read_record("configuration",0)["Gpassword"]
-    if gpw is None or not isinstance(gpw, str) or len(gpw) <= 1:
-      SharedState.password_status = "open"
-    else:
-      SharedState.password_failCount = max(SharedState.password_failCount - 1, 0)
-      if SharedState.password_status == "open":
-        SharedState.password_expire = SharedState.password_expire + 1
-        if SharedState.password_expire > 20:
-          SharedState.password_status = "block"
-          SharedState.password_expire=0
-
     #power up init - each count is 5 seconds
     #runs 0->10 and ends
     if  scCount[0]<10:
@@ -472,7 +460,7 @@ def run(host = "0.0.0.0", port = 80):
   loop.create_task(uasyncio.start_server(_handle_request, host, port))
   
   #perodic tasks specific to Warped Pinball SYS11
-  if SharedState.installation_fault != True:
+  if not faults.fault_is_raised(faults.ALL_HDWR):
     loop.create_task(FRAMTimer())    #store ram values in non-volatile Fram
     
   loop.create_task(ScoreCheck())   #Check For new scores
