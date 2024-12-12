@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 from jsmin import jsmin
 from csscompressor import compress
 from htmlmin import minify as minify_html
+import zlib
 
 # Configuration
 PICO_PORT = None  # Placeholder for auto-detected port
@@ -23,6 +24,7 @@ REPL_MAX_RETRIES = 5  # Maximum number of retries to connect to REPL
 SOURCE_DIR = 'src'  # Source directory containing your code
 BUILD_DIR = 'build'  # Build directory for compiled and minified files
 MPY_CROSS = 'mpy-cross'  # Path to the mpy-cross compiler
+ZIP_WINDOW_BITS = 9  # window_bits for gzip compression (8-15)
 # JS_MINIFY_DIRS = ['src/web/js']  # Directories containing JavaScript files to minify
 # CSS_MINIFY_DIRS = ['src/web/css']  # Directories containing CSS files to minify
 # HTML_MINIFY_DIRS = ['src/web']  # Directories containing HTML files to minify
@@ -81,6 +83,41 @@ def step_report(size_report=False, time_report=True):
             print('-' * 40)
         return wrapper
     return build_step_report
+
+def compress_to_gzip(input_filepath, output_filepath=None, window_bits=9, compress_level=9):
+    """
+    Compress a file into GZIP format using zlib with a specified window size and compression level.
+    
+    Parameters:
+        input_filepath (str): The path to the input file to compress.
+        output_filepath (str, optional): The path to the output compressed file. Defaults to input_filepath + '.gz'.
+        window_bits (int): The base-2 logarithm of the window size. Valid range is 8 to 15.
+                           Adding 16 to this value will produce a GZIP header, 
+                           e.g., 16 + 9 = 25 yields GZIP with ~512-byte window.
+        compress_level (int): Compression level (1=fastest, 9=slowest but most compressed).
+    
+    Returns:
+        None
+    """
+    if output_filepath is None:
+        output_filepath = input_filepath + '.gz'
+    
+    with open(input_filepath, 'rb') as f_in:
+        data_bytes = f_in.read()
+    
+    compressor = zlib.compressobj(
+        level=compress_level,
+        method=zlib.DEFLATED,
+        wbits=16 + window_bits
+    )
+    
+    compressed_data = compressor.compress(data_bytes) + compressor.flush()
+    
+    with open(output_filepath, 'wb') as f_out:
+        f_out.write(compressed_data)
+    
+    # remove the original file
+    os.remove(input_filepath)
 
 def autodetect_pico_port():
     """Auto-detect the Pico port using mpremote."""
@@ -221,7 +258,7 @@ def combine_json_config_files():
     """Combine all JSON config files in build/web/config into a single file."""
     print("Combining JSON config files...")
     all_conf = {}
-    for root, dirs, files in os.walk('build/web/config'):
+    for root, dirs, files in os.walk('build/config'):
         for file in files:
             if file.endswith('.json'):
                 file_path = os.path.join(root, file)
@@ -229,8 +266,10 @@ def combine_json_config_files():
                     data = json.load(f)
                 all_conf[file] = data
                 os.remove(file_path)
-    with open('build/web/config/all.json', 'w') as f:
+    with open('build/config/all.json', 'w') as f:
         json.dump(all_conf, f, separators=(',', ':'))
+    
+    # compress_to_gzip('build/config/all.json', 'build/config/all.json.gz')
 
 @step_report(time_report=True, size_report=True)
 def zip_files():
