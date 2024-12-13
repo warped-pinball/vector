@@ -84,41 +84,6 @@ def step_report(size_report=False, time_report=True):
         return wrapper
     return build_step_report
 
-def compress_to_gzip(input_filepath, output_filepath=None, window_bits=9, compress_level=9):
-    """
-    Compress a file into GZIP format using zlib with a specified window size and compression level.
-    
-    Parameters:
-        input_filepath (str): The path to the input file to compress.
-        output_filepath (str, optional): The path to the output compressed file. Defaults to input_filepath + '.gz'.
-        window_bits (int): The base-2 logarithm of the window size. Valid range is 8 to 15.
-                           Adding 16 to this value will produce a GZIP header, 
-                           e.g., 16 + 9 = 25 yields GZIP with ~512-byte window.
-        compress_level (int): Compression level (1=fastest, 9=slowest but most compressed).
-    
-    Returns:
-        None
-    """
-    if output_filepath is None:
-        output_filepath = input_filepath + '.gz'
-    
-    with open(input_filepath, 'rb') as f_in:
-        data_bytes = f_in.read()
-    
-    compressor = zlib.compressobj(
-        level=compress_level,
-        method=zlib.DEFLATED,
-        wbits=16 + window_bits
-    )
-    
-    compressed_data = compressor.compress(data_bytes) + compressor.flush()
-    
-    with open(output_filepath, 'wb') as f_out:
-        f_out.write(compressed_data)
-    
-    # remove the original file
-    os.remove(input_filepath)
-
 def autodetect_pico_port():
     """Auto-detect the Pico port using mpremote."""
     try:
@@ -264,12 +229,12 @@ def combine_json_config_files():
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r') as f:
                     data = json.load(f)
+                # remove the file extension
+                file = os.path.splitext(file)[0]
                 all_conf[file] = data
                 os.remove(file_path)
     with open('build/config/all.json', 'w') as f:
         json.dump(all_conf, f, separators=(',', ':'))
-    
-    # compress_to_gzip('build/config/all.json', 'build/config/all.json.gz')
 
 @step_report(time_report=True, size_report=True)
 def zip_files():

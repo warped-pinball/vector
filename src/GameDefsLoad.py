@@ -9,6 +9,7 @@
 '''
 import json
 import SharedState
+import SPI_DataStore
 from logger import logger_instance
 Log = logger_instance
 
@@ -100,8 +101,9 @@ def go(safe_mode=False):
     data = safe_defaults
     if not safe_mode:    
         try:   
-            with open("game_config.json", "r") as f:
-                data = json.load(f)
+            config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
+            with open("config/all.json", "r") as f:
+                data = json.load(f)[config_filename]
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")

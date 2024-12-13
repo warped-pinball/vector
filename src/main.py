@@ -142,9 +142,6 @@ if bus_activity_fault == False:
         time.sleep(2)
         reset_control.release(True)
 
-S.faults.append(faults.DUNO01)
-S.faults.append(faults.HDWR01)
-
 
 #launch wifi, and server. Should not return
 from backend import go

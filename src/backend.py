@@ -32,7 +32,7 @@ import faults
 rtc = RTC()
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 12
-AP_NAME = "Warped Pinball" + " " + str(random_hex(2))
+AP_NAME = "Warped Pinball"
 # Authentication variables
 current_challenge = None
 challenge_timestamp = None
@@ -251,6 +251,29 @@ def app_game_name(request):
 def app_gameStatus(request):
     return game_status_report(request)
 
+@add_route("/api/game/active_config")
+def app_game_config_filename(request):
+    return json.dumps({
+        "active_config":DataStore.read_record("configuration", 0)["gamename"]
+    }), 200
+
+@add_route("/api/game/configs_list")
+def app_game_configs_list(request):
+    '''List all the game configuration files on the device'''
+    with open("config/all.json", "r") as f:
+        data = json.load(f)
+
+        # extract each key and their game name
+        configs = {}
+        for key in data.keys():
+            configs[key] = {
+                'name':data[key]["GameInfo"]["GameName"],
+                'rom': key.split("_")[-1]
+            }
+
+    return json.dumps(configs), 200
+        
+
 #
 # Memory
 #
@@ -392,11 +415,6 @@ def app_setScoreCap(request):
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
         
-# TODO make this the current game
-@add_route("/api/settings/config_file")
-def app_getConfig(request):
-    return json.dumps(DataStore.read_record("configuration", 0)["gamename"]), 200    
-
 
 #
 # Networking
@@ -483,39 +501,31 @@ def add_ap_mode_routes():
     def app_inAPMode(request):
         return json.dumps({"in_ap_mode": True}), 200
 
-    @add_route("/api/game/set_config", method="POST")
-    def app_setGameConfig(request):
-        '''Set the game configuration'''
-        config = request.data
-        print(config)
-        with open("game_config.json", "w") as f:
-            json.dump(config, f)    
-
     @add_route("/api/settings/set_vector_config", method="POST")
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
         data = request.data
+        #TODO validate the data
         DataStore.write_record("configuration",
             {
                 "ssid": data['ssid'],
                 "password": data['wifi_password'],
                 "Gpassword": data['vector_password'],
-                "gamename": "",
+                "gamename": data['game_config_filename'],
             }
         )
         print(request.data)
         Pico_Led.off()
-    
-
 
 def connect_to_wifi():
     from phew import connect_to_wifi as phew_connect, is_connected_to_wifi as phew_is_connected
     wifi_credentials = DataStore.read_record("configuration", 0)
-    if not wifi_credentials or wifi_credentials.get("ssid") == "":
-        raise ValueError(faults.WIFI01)
-
     ssid = wifi_credentials["ssid"]
     password = wifi_credentials["password"]
+
+    if not ssid:
+        return False # Wifi not configured
+    
     for i in range(WIFI_MAX_ATTEMPTS):
         print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
         ip_address = phew_connect(ssid, password, timeout_seconds=10) 
@@ -524,10 +534,15 @@ def connect_to_wifi():
             writeIP(ip_address)
             Pico_Led.on()
             displayMessage.init(ip_address)
-            return
-    raise ValueError(faults.WIFI02)
+            return True
+    # check that we get signal form the ssid
+    import scanwifi
+    available_networks=scanwifi.scan_wifi2()
+    if ssid in available_networks:
+        raise ValueError(faults.WIFI01) # invalid wifi credentials
+    
+    raise ValueError(faults.WIFI02) # low wifi signal
 
-#TODO we dont really need the fault message since it can only be one message and it's already in the shared state as a bool
 def go(ap_mode):
     '''Start the server and run the main loop'''
     
@@ -540,7 +555,8 @@ def go(ap_mode):
     if not ap_mode:
         # try to connect to WiFi
         try:
-            connect_to_wifi()
+            if not connect_to_wifi():
+                ap_mode = True # If we can't connect to wifi(because it isn't configured), start in AP mode
         except Exception as e:
             ap_mode = True
             print(f"Error connecting to wifi: {e}")
