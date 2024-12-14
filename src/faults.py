@@ -23,9 +23,9 @@ WIFI02 = "WIFI02: No Wifi Signal"
 
 ALL_WIFI = [WIFI00, WIFI01, WIFI02]
 
-DUNO01 = "DUNO01: Unknown Error"
+DUNO00 = "DUNO00: Unknown Error"
 
-ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO01]
+ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO00]
 
 def raise_fault(fault, msg=None):
     import SharedState as S
