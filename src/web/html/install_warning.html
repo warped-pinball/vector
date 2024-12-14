@@ -1,14 +1,14 @@
 <dialog id="install_warning_modal">
     <article>
-        <h2>Warning: Hardware Installation Issue</h2>
+        <h2>Warning: Issues Detected</h2>
         <p>
-            To protect your pinball machine from damage, Vector has fallen back to a safe operating mode.
-            This is likely due to a reset-pin installation issue. 
-            Please read our <a href="https://warpedpinball.com">troubleshooting guide</a>
+            For more information on how to resolve these issues, please read our guide: <a href="https://warpedpinball.com/troubleshoot_codes">https://warpedpinball.com/troubleshoot_codes</a>
+            Until these issues are resolved, we strongly recommend that you <b>turn off your pinball machine</b>. 
+            We take every precaution to prevent damage to your machine, but unresolved issues can cause damage to your machine.
         </p>
         <code id="fault_list"></code>
         <footer>
-            <button onclick="document.getElementById('install_warning_modal').removeAttribute('open')">I Understand</button>
+            <button onclick="document.getElementById('install_warning_modal').removeAttribute('open')">I want to risk it</button>
         </footer>
     </article>
 </dialog>

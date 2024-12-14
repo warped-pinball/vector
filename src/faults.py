@@ -7,6 +7,7 @@ ALL_HDWR = [HDWR00, HDWR01]
 # Software Faults
 SFWR00 = "SFWR00: Unknown Software Error"
 SFTW01 = "SFTW01: Drop Through"
+SFTW02 = "SFTW02: Configuration Error"
 
 ALL_SFWR = [SFWR00, SFTW01]
 

@@ -11,6 +11,7 @@ import json
 import SharedState
 import SPI_DataStore
 from logger import logger_instance
+import faults
 Log = logger_instance
 
 #convert any data entered as "0x" (hex) into integers
@@ -30,7 +31,7 @@ def convert_hex_to_int(data):
 
 safe_defaults = {
     "GameInfo": {
-        "GameName": "Generic Sys11",
+        "GameName": "Generic System 11",
         "System": "11x"        
     },
     "Definition": {
@@ -107,6 +108,7 @@ def go(safe_mode=False):
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")
+            SharedState.faults.append(faults.SFTW02 + f": {e}")
             # in case the variable was unset before error
             data = safe_defaults
     
