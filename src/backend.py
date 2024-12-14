@@ -478,7 +478,8 @@ def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json.dumps({"in_ap_mode": False}), 200
+        # TODO reset this to false after testing
+        return json.dumps({"in_ap_mode": True}), 200
 
 #
 # AP mode routes
@@ -495,6 +496,8 @@ def add_ap_mode_routes():
         '''Set the wifi SSID and password'''
         data = request.data
         #TODO validate the data
+            # check game config is a known file
+            
         DataStore.write_record("configuration",
             {
                 "ssid": data['ssid'],

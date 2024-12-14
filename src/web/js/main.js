@@ -376,7 +376,27 @@ function getDropDownValue(dropDownElementID) {
 }
 
 // Set the dropdown value when an option is clicked
-function setDropDownValue(dropDownElement, value, text) {
+function setDropDownValue(dropDownElement, value, text) {    
+    // if dropDownElement is a string, get the element
+    if (typeof dropDownElement === 'string') {
+        dropDownElement = document.getElementById(dropDownElement);
+    }    
+
+    // check that value is one of the options
+    const optionElements = dropDownElement.querySelectorAll('a');
+    let found = false;
+    for (const optionElement of optionElements) {
+        if (optionElement.dataset.value === value) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        console.error(`Value ${value} not found in dropdown options.`);
+        return;
+    }
+
     const summaryElement = dropDownElement.querySelector('summary');
     summaryElement.innerText = text;
     dropDownElement.dataset.selectedValue = value; // Store the value
@@ -384,7 +404,7 @@ function setDropDownValue(dropDownElement, value, text) {
 }
 
 // Create a dropdown element from a key-value mapping
-async function createDropDownElement(id, summaryText, options, defaultValue = null) {
+async function createDropDownElement(id, summaryText, options, defaultValue = null, sortOptions = false) {
     const dropDownElement = document.createElement('details');
     dropDownElement.id = id;
     dropDownElement.className = "dropdown";
@@ -395,16 +415,16 @@ async function createDropDownElement(id, summaryText, options, defaultValue = nu
 
     const ulElement = document.createElement('ul');
 
-    // if options is an array, convert to object
-    if (Array.isArray(options)) {
-        options = options.reduce((acc, val) => {
-            acc[val] = val;
-            return acc;
-        }, {});
+    // Convert options to an array of entries
+    let entries = Array.isArray(options) ? options.map(val => [val, val]) : Object.entries(options);
+
+    // Sort entries if required
+    if (sortOptions) {
+        entries = entries.sort((a, b) => a[1].localeCompare(b[1]));
     }
 
     // Add options to the dropdown
-    for (const [value, text] of Object.entries(options)) {
+    for (const [value, text] of entries) {
         const listItem = await createDropDownOption(value, text);
         ulElement.appendChild(listItem);
         // Pre-select the default value if it matches

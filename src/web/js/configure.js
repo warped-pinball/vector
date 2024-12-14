@@ -17,7 +17,7 @@ async function build_game_config_select(){
             rom = data[filename].rom;
             // if the rom string is not a string with one or more characters, set it to NA
             if (typeof rom == 'string' && rom.length > 0) {
-                rom = ` ROM:${rom}`;
+                rom = `-${rom}`;
             } else {
                 rom = '';
             }
@@ -31,7 +31,8 @@ async function build_game_config_select(){
     const game_config_select = await window.createDropDownElement(
         'game_config_select', 
         'Select a game configuration', 
-        filename_to_name
+        filename_to_name,
+        sortOptions=true
     )
 
     document.getElementById('game_config_select_placeholder').replaceWith(game_config_select)
@@ -48,10 +49,9 @@ async function build_game_config_select(){
 
     // check if the active config is in the list of available configs
     if (active_config_filename in filename_to_name) {
-        filename_to_name[active_config_filename] = `${filename_to_name[active_config_filename]} (Current Config)`;
-        window.setDropDownValue('game_config_select', active_config_filename);
+        window.setDropDownValue('game_config_select', active_config_filename, `${filename_to_name[active_config_filename]} (Current Config)`);
     } else {
-        console.error('Active configuration not in list of available configurations');
+        console.error('Active configuration not in list of available configurations', active_config_filename);
     }
 
 }
