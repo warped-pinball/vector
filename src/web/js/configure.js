@@ -14,7 +14,15 @@ async function build_game_config_select(){
     const filename_to_name = {}
     for (const filename in data) {
         try {
-            filename_to_name[filename] = `${data[filename].name} (${data[filename].rom})`
+            rom = data[filename].rom;
+            // if the rom string is not a string with one or more characters, set it to NA
+            if (typeof rom == 'string' && rom.length > 0) {
+                rom = ` ROM:${rom}`;
+            } else {
+                rom = '';
+            }
+
+            filename_to_name[filename] = `${data[filename].name} ${rom}`;
         } catch (error) {
             console.error(`Error parsing ${filename}: ${error}`)
         }

@@ -574,3 +574,4 @@ def go(ap_mode):
     
     
 
+#TODO roller games and police force rom versions

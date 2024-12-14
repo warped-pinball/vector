@@ -144,7 +144,7 @@ def blankConfig(structure_name):
             "ssid": "",  
             "password": "", 
             "Gpassword": " ",
-            "gamename": "GenericSystem11", 
+            "gamename": "GenericSystem11_", 
             "enable": 1,    
             "other": 0      
         }   
