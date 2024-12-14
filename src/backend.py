@@ -26,6 +26,7 @@ import uhashlib as hashlib
 import binascii
 import time
 import faults
+import GameDefsLoad
 #
 # Constants
 #
@@ -259,19 +260,7 @@ def app_game_config_filename(request):
 
 @add_route("/api/game/configs_list")
 def app_game_configs_list(request):
-    '''List all the game configuration files on the device'''
-    with open("config/all.json", "r") as f:
-        data = json.load(f)
-
-        # extract each key and their game name
-        configs = {}
-        for key in data.keys():
-            configs[key] = {
-                'name':data[key]["GameInfo"]["GameName"],
-                'rom': key.split("_")[-1]
-            }
-
-    return json.dumps(configs), 200
+    return json.dumps(GameDefsLoad.list_game_configs()), 200
         
 
 #
@@ -535,13 +524,15 @@ def connect_to_wifi():
             Pico_Led.on()
             displayMessage.init(ip_address)
             return True
+    
     # check that we get signal form the ssid
     import scanwifi
-    available_networks=scanwifi.scan_wifi2()
-    if ssid in available_networks:
-        raise ValueError(faults.WIFI01) # invalid wifi credentials
+    if ssid in scanwifi.scan_wifi2():
+        faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+    else:
+        faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
     
-    raise ValueError(faults.WIFI02) # low wifi signal
+    return False
 
 def go(ap_mode):
     '''Start the server and run the main loop'''
@@ -556,14 +547,10 @@ def go(ap_mode):
         # try to connect to WiFi
         try:
             if not connect_to_wifi():
-                ap_mode = True # If we can't connect to wifi(because it isn't configured), start in AP mode
+                ap_mode = True # If we can't connect to wifi, start in AP mode
         except Exception as e:
             ap_mode = True
-            print(f"Error connecting to wifi: {e}")
-            if str(e) in [faults.WIFI01, faults.WIFI02]:
-                SharedState.faults.append(str(e))
-            else:
-                SharedState.faults.append(faults.WIFI00 +": " + str(e))
+            faults.raise_fault(faults.WIFI00, e)
 
     # check if we are in AP mode again incase we failed to connect to wifi 
     if ap_mode:

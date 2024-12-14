@@ -119,7 +119,7 @@ ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check() 
 if bus_activity_fault == True:
     set_error_led()
-    S.faults.append(faults.HDWR01)
+    faults.raise_fault(faults.HDWR01)
     print("Main: Bus Activity fault detected !!")
     Log.log("Main: Reset Circuit fault detected !!")
 
@@ -149,4 +149,4 @@ go(ap_mode)
 
 
 Log.log("MAIN: drop through fault")
-S.faults.append(faults.SFTW01)
+faults.raise_fault(faults.SFTW01)

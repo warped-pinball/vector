@@ -96,19 +96,37 @@ safe_defaults = {
     }
 }
 
-  
+def list_game_configs():
+    '''List all the game configuration files on the device'''
+    with open("config/all.json", "r") as f:
+        data = json.load(f)
+
+        # extract each key and their game name
+        configs = {}
+        for key in data.keys():
+            configs[key] = {
+                'name':data[key]["GameInfo"]["GameName"],
+                'rom': key.split("_")[-1]
+            }
+        return configs
+
 def go(safe_mode=False):  
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
     data = safe_defaults
     if not safe_mode:    
         try:   
             config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
-            with open("config/all.json", "r") as f:
-                data = json.load(f)[config_filename]
+            all_configs = list_game_configs()
+            if config_filename not in all_configs.keys():
+                faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
+                data = safe_defaults
+            else:
+                with open("config/all.json", "r") as f:
+                    data = json.load(f)[config_filename]
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")
-            SharedState.faults.append(faults.SFTW02 + f": {e}")
+            faults.raise_fault(faults.CONF00)
             # in case the variable was unset before error
             data = safe_defaults
     

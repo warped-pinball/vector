@@ -7,9 +7,14 @@ ALL_HDWR = [HDWR00, HDWR01]
 # Software Faults
 SFWR00 = "SFWR00: Unknown Software Error"
 SFTW01 = "SFTW01: Drop Through"
-SFTW02 = "SFTW02: Configuration Error"
 
 ALL_SFWR = [SFWR00, SFTW01]
+
+# Configuration Faults
+CONF00 = "CONF00: Unknown Configuration Error"
+CONF01 = "CONF01: Invalid Configuration"
+
+ALL_CONF = [CONF00, CONF01]
 
 #WiFi Faults
 WIFI00 = "WIFI00: Unknown Wifi Error"
@@ -20,7 +25,18 @@ ALL_WIFI = [WIFI00, WIFI01, WIFI02]
 
 DUNO01 = "DUNO01: Unknown Error"
 
-ALL = ALL_HDWR + ALL_SFWR + ALL_WIFI + [DUNO01]
+ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO01]
+
+def raise_fault(fault, msg=None):
+    import SharedState as S
+    if not isinstance(msg, str):
+        msg = str(msg)
+
+    full_fault = f"{fault} - {msg}" if msg else fault
+    S.faults.append(full_fault)
+    
+    from logger import logger_instance as Log
+    Log.log(f"Fault raised: {full_fault}")
 
 def fault_is_raised(fault):
     import SharedState as S
