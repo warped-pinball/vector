@@ -484,8 +484,7 @@ def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        # TODO reset this to false after testing
-        return json.dumps({"in_ap_mode": True}), 200
+        return json.dumps({"in_ap_mode": False}), 200
 
 #
 # AP mode routes
@@ -501,8 +500,12 @@ def add_ap_mode_routes():
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
         data = request.data
-        #TODO validate the data
-            # check game config is a known file
+        
+        # confirm that the game config exists
+        all_game_configs = GameDefsLoad.list_game_configs().keys()
+        if data['game_config_filename'] not in all_game_configs:
+            return f"Invalid game config filename {data['game_config_filename']}", 400
+        
 
         DataStore.write_record("configuration",
             {
@@ -587,3 +590,4 @@ def go(ap_mode):
     
 
 #TODO roller games and police force rom versions
+#TODO implement cool-down decorator for sensitive actions

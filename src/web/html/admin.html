@@ -5,71 +5,121 @@
         <button id="save-button" style="display: none;" onclick="saveSettings()">Save Settings</button>
         <h3>Score Claim Methods</h3>
         <fieldset>
-            <!-- <legend><b>Score Claim Methods</b></legend> -->
             <label>
-            <input type="checkbox" role="switch" name="claim-on-machine" checked />
-            <b>On-Machine:</b> triggers high score every game to collect players initials
+                <input type="checkbox" role="switch" name="claim-on-machine" checked />
+                <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where players can enter initials)
             </label>
             <label>
-            <input type="checkbox" role="switch" name="claim-web" checked />
-            <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
+                <input type="checkbox" role="switch" name="claim-web" checked />
+                <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
             </label>
             <label>
-            <input type="checkbox" role="switch" name="claim-scanner" disabled/>
-            <b>Ray QR Scanner Add-on:</b> games started by scanning a QR code automatically claims scores <a href="https://www.warpedpinball.com">Learn More</a>
+                <input type="checkbox" role="switch" name="claim-scanner" disabled/>
+                <b>Ray QR Scanner Add-on:</b> games started by scanning a QR code automatically claims scores <a href="https://www.warpedpinball.com">Learn More</a>
             </label>
         </fieldset>
         <h3>Adjustments Profiles (Coming Soon!)</h3>
-        <fieldset>
-            <!-- <legend><b>Adjustments Profiles (Coming Soon!)</b></legend> -->
-            <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
-            <p>Setup new profiles by configuring adjustments on the machine normally. Then optionally name the profile and press the "Update Profile" button.</p>
-            <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
-            <div class="profile-row">
-                <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()" checked>
-                <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
-                <button onclick="saveProfile(1)">Update Profile</button>
+        <div class="grid">
+            <fieldset>
+                <div class="profile-row">
+                    <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()" checked>
+                    <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
+                    <button onclick="saveProfile(1)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-2" type="radio" onchange="settingsChanged()">
+                    <input name="profile-2-name" type="text" placeholder="Profile 2" onchange="settingsChanged()">
+                    <button onclick="saveProfile(2)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-3" type="radio" onchange="settingsChanged()">
+                    <input name="profile-3-name" type="text" placeholder="Profile 3" onchange="settingsChanged()">
+                    <button onclick="saveProfile(3)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-4" type="radio" onchange="settingsChanged()">
+                    <input name="profile-4-name" type="text" placeholder="Profile 4" onchange="settingsChanged()">
+                    <button onclick="saveProfile(4)">Update Profile</button>
+                </div>
+            </fieldset>
+            <div>
+                <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
+                <p>Setup new profiles by configuring adjustments on the machine normally. Then optionally name the profile and press the "Update Profile" button.</p>
+                <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
             </div>
-            <div class="profile-row">
-                <input name="profile" id="profile-2" type="radio" onchange="settingsChanged()" disabled>
-                <input name="profile-2-name" type="text" placeholder="Profile 2" onchange="settingsChanged()">
-                <button onclick="saveProfile(2)">Update Profile</button>
-            </div>
-            <div class="profile-row">
-                <input name="profile" id="profile-3" type="radio" onchange="settingsChanged()" disabled>
-                <input name="profile-3-name" type="text" placeholder="Profile 3" onchange="settingsChanged()">
-                <button onclick="saveProfile(3)">Update Profile</button>
-            </div>
-            <div class="profile-row">
-                <input name="profile" id="profile-4" type="radio" onchange="settingsChanged()" disabled>
-                <input name="profile-4-name" type="text" placeholder="Profile 4" onchange="settingsChanged()">
-                <button onclick="saveProfile(4)">Update Profile</button>
-            </div>
-        </fieldset>
+        </div>
         <label for="date-picker">Set Date</label>
         <input type="date" id="date-picker" name="date-picker" onchange="settingsChanged()"> 
     </section>
+    
     <section>
         <h2>Actions</h2>
         <hr>
-        <h3>Downloads</h3>
-        <p>Download data files from your Vector</p>
-        <button onclick="downloadFile('leaderboard')">Leaderboard</button>
-        <button onclick="downloadFile('player-names')">Player Names</button>
-        <button onclick="downloadFile('tournament-scores')">Tournament Scores</button>
         <h3>Updates</h3>
-        <p>Upload a new update to your Vector.</p>
-        <p><b>To prevent risk of damaging your machine; only apply updates from <a href="https://www.warpedpinball.com">warpedpinball.com</a></b></p>
-        <button onclick="document.getElementById('update-upload').click()">Upload Update File</button>
+        <div class="grid">
+            <div>
+                <button onclick="document.getElementById('update-upload').click()">Upload Update File</button>
+            </div>
+            <div>
+                <p>Upload a new update to your Vector.</p>
+                <p><b>To prevent risk of damaging your machine; only apply updates from <a href="https://www.warpedpinball.com">warpedpinball.com</a></b></p>
+            </div>
+        </div>
+            
         <input type="file" id="update-upload" name="update-upload" onchange="settingsChanged()" hidden>
+    </section>
+    <section>
         <h3>Reset</h3>
-        <button class="danger" onclick="confirmAction('Reset Leaderboard', resetLeaderboard)">Reset Leaderboard</button>
-        <button class="danger" onclick="confirmAction('Reset Tournament Board', resetTournamentBoard)">Reset Tournament Board</button>
-        <button class="danger" onclick="confirmAction('Reboot Game', rebootGame)">Reboot Game</button>
-        <button class="danger" onclick="confirmAction('Reset Game Memory', resetGameMemory)">Reset Game Memory</button>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirmAction('Reset Leaderboard', resetLeaderboard)">Reset Leaderboard</button>
+            </div>
+            <div>
+                <p>Reset all scores on the Leaderboard, Tournament scores will not be effected</p>
+            </div>  
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirmAction('Reset Tournament Board', resetTournamentBoard)">Reset Tournament Board</button>
+            </div>
+            <div>
+                <p>Reset all scores on the Tournament Board, Leaderboard scores will not be effected</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirmAction('Factory Reset', factoryReset)">Factory Reset</button>
+            </div>
+            <div>
+                <p>Reset all settings and scores to factory defaults. Required before installing vector in a new Pinball Machine</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirmAction('Reboot Game', rebootGame)">Reboot Game</button>
+            </div>
+            <div>
+                <p>Power Cycle the Pinball Machine</p>
+            </div>
+        </div>
+        <!-- <div class="grid">
+            <div>
+                <button class="danger" onclick="confirmAction('Reset Game Memory', resetGameMemory)">Reset Game Memory</button>
+            </div>
+            <div>
+                <p>Clear the pinball machine's RAM. </p>
+            </div>
+        </div> -->
+    </section>
+    <section>
         <h3>Debug</h3>
         <button class="secondary" onclick="downloadFile('memory-values')">Download Memory Snapshot</button>
         <button class="secondary" onclick="downloadFile('logs')">Download Logs</button>
+    </section>
+    <section>
+        <h3>Help</h3>
+        <h5>How to reset the admin password</h5>
+        <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
     </section>
 
 
@@ -86,5 +136,4 @@
     </dialog>
 </div>
 
-<!-- TODO factory reset with msg (do this before installing in a new game) -->
  <!-- TODO password recovery options note -->
