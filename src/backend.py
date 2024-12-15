@@ -111,6 +111,8 @@ def create_file_handler(file_path):
             'Content-Type': get_content_type(file_path),
             'Connection': 'close'
         }
+        # TODO add 'Cache-Control': 'max-age=86400'  #to headers  in order to cache for a day
+        # not sure how we would clear this cache, we might want to consider options first
         return file_stream_generator(), 200, headers
 
     # Wrap the file_handler with the same error/memory logic

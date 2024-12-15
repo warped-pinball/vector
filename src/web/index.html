@@ -35,7 +35,40 @@
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
         <div id="configure_html" style="display: none;"></div>
-        <div id="install_warning_html" style="display: none;"></div>
+        <dialog id="install_warning_modal">
+            <article>
+                <h2>Warning: Issues Detected</h2>
+                <p>
+                    We strongly recommend that you <b>turn off your pinball machine</b> until these issues are resolved. 
+                    For guidence on how to resolve these issues, please read our guide: 
+                </p>
+                <a href="https://warpedpinball.com/troubleshoot_codes">https://warpedpinball.com/troubleshoot_codes</a>
+                <p>
+                    We take every preventive measure we can, but some types of issues when left unresolved can cause damage to your machine.
+                </p>
+                <code id="fault_list"></code>
+                <footer>
+                    <button onclick="document.getElementById('install_warning_modal').removeAttribute('open')">OK I want to risk it anyway</button>
+                </footer>
+            </article>
+        </dialog>
+        <dialog id="login_modal">
+            <article>
+                <h2>Login</h2>
+                <p>
+                    Please enter your admin password.
+                </p>
+                <form id="login_form" onsubmit="return false;">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </form>
+                <p>See admin page help section for password reset instructions</p>
+                <footer>
+                    <button onclick="document.getElementById('login_modal').removeAttribute('open')">Cancel</button>
+                    <button onclick="login()">Login</button>
+                </footer>
+            </article>
+        </dialog>
         <div id="page_html" style="display: none;"></div>
     </main>
 
@@ -240,7 +273,6 @@
         fetchDecompressAndApply('/css/pico.min.css.gz', 'pico_css');
         fetchDecompressAndApply('/js/main.js.gz', 'main_js');
         fetchDecompressAndApply('/css/main.css.gz', 'main_css');
-        fetchDecompressAndApply('/html/install_warning.html.gz', 'install_warning_html');
         fetchDecompressAndApply('/js/install_warning.js.gz', 'install_warning_js');
         fetchDecompressAndApply('/html/configure.html.gz', 'configure_html');
         fetchDecompressAndApply('/js/configure.js.gz', 'configure_js');

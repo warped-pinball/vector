@@ -343,6 +343,15 @@ async function authenticateAndFetch(password, url, data = null) {
     return response;
 }
 
+async function get_password() {
+    const password = prompt("Enter the admin password:");
+    if (!password) {
+        alert("Password is required.");
+        return null;
+    }
+    return password;
+}
+
 window.authenticateAndFetch = authenticateAndFetch;
 
 // 
