@@ -49,7 +49,7 @@ async function build_game_config_select(){
 
     // check if the active config is in the list of available configs
     if (active_config_filename in filename_to_name) {
-        window.setDropDownValue('game_config_select', active_config_filename, `${filename_to_name[active_config_filename]} (Current Config)`);
+        window.setDropDownValue('game_config_select', active_config_filename, `${filename_to_name[active_config_filename]} (Current Setting)`);
     } else {
         console.error('Active configuration not in list of available configurations', active_config_filename);
     }
@@ -59,15 +59,33 @@ async function build_game_config_select(){
 async function build_ssid_select(){
     // get list of wifi networks
     const response = await fetch('/api/available_ssids');
-    const data = await response.json(); // list of [ssid, rssi]
+    const data = await response.json(); // list of [{'ssid':'wifi name', 'rssi': -50, 'configured': true}]
+
+    // create mapping of ssid to "ssid + configured"
+    const ssid_to_name = {}
+    for (const ssid of data) {
+        let name = ssid.ssid;
+        if (ssid.configured) {
+            name = `${name} (Current Setting)`;
+            configured_ssid = ssid.ssid;
+        }
+        ssid_to_name[ssid.ssid] = name;
+    }
 
     const ssid_select = await window.createDropDownElement(
         'ssid_select',
         'Select a WiFi network',
-        data.map(([ssid, rssi]) => ssid)
+        ssid_to_name,   
     )
 
     document.getElementById('ssid_select_placeholder').replaceWith(ssid_select)
+
+    // set configured ssid as default
+    if (configured_ssid) {
+        window.setDropDownValue('ssid_select', configured_ssid, `${configured_ssid} (Current Setting)`);
+    }
+
+
 }
 
 async function populate_configure_modal() {

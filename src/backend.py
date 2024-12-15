@@ -416,7 +416,15 @@ def app_getLastIP(request):
 def app_getAvailableSSIDs(request):
     import scanwifi
     available_networks=scanwifi.scan_wifi2()
+    ssid = DataStore.read_record("configuration", 0)["ssid"]
+
+    for network in available_networks:
+        if network['ssid'] == ssid:
+            network['configured'] = True
+            break
+
     return json.dumps(available_networks), 200
+
 
 #TODO setup domain name
 
@@ -449,8 +457,6 @@ def app_setDateTime(request):
 @add_route("/api/date_time")
 def app_getDateTime(request):
     return rtc.datetime(), 200
-
-
 
 #TODO not sure we need this anymore
 # @add_route("/api/date")
@@ -497,7 +503,7 @@ def add_ap_mode_routes():
         data = request.data
         #TODO validate the data
             # check game config is a known file
-            
+
         DataStore.write_record("configuration",
             {
                 "ssid": data['ssid'],
@@ -530,11 +536,14 @@ def connect_to_wifi():
     
     # check that we get signal form the ssid
     import scanwifi
-    if ssid in scanwifi.scan_wifi2():
-        faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
-    else:
-        faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
+    networks = scanwifi.scan_wifi2()
+    for network in networks:
+        if network['ssid'] == ssid:
+            faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+            return False
     
+    # We have credentials but no signal so raise a fault
+    faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
 
 def go(ap_mode):
