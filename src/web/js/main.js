@@ -304,55 +304,43 @@ function toggleTheme() {
 
 
 // 
-// Authentication and Routing
+// Authentication
 // 
-
-async function authenticateAndFetch(password, url, data = null) {
-    // Get challenge
-    const challengeResponse = await fetch("/api/auth/challenge");
-    if (!challengeResponse.ok) {
-        throw new Error("Failed to get challenge.");
+function get_password() {
+    // check to see if password is already stored in local storage
+    password_obj = localStorage.getItem("password")
+    if (password_obj) {
+        return password_obj['password'];
     }
-    const challengeData = await challengeResponse.json();
-    const challenge = challengeData.challenge;
-  
-    const urlObj = new URL(url, window.location.origin);
-    const path = urlObj.pathname;
-    const queryString = urlObj.search;
-    const requestBodyString = data ? JSON.stringify(data) : "";
-    
-    // Message must match the server construction
-    const message = challenge + path + queryString + requestBodyString;
-  
-    // Compute HMAC using js-sha256
-    const hmacHex = sha256.hmac(password, message);  
-  
-    const headers = {
-      "X-Auth-HMAC": hmacHex,
-      "Content-Type": "application/json"
-    };
-  
-    const method = data ? "POST" : "GET";
-  
-    const response = await fetch(url, {
-      method: method,
-      headers: headers,
-      body: requestBodyString || undefined
-    });
-  
-    return response;
-}
 
-async function get_password() {
-    const password = prompt("Enter the admin password:");
+    password = prompt("Enter your Admin password", "");
     if (!password) {
-        alert("Password is required.");
-        return null;
+        throw new Error("Password required.");
     }
+
+    // un-hide the logout button
+    document.getElementById("logout-button").classList.remove("hide");
+
+    // store password in local storage
+    localStorage.setItem("password", {"password": password});
+    console.log("Password: ", password);
     return password;
 }
 
-window.authenticateAndFetch = authenticateAndFetch;
+async function logout() {
+    // remove password from local storage
+    localStorage.removeItem("password");
+}
+
+// window.authenticateAndFetch = authenticateAndFetch;
+window.get_password = get_password;
+window.logout = logout;
+
+// check if password is already stored in local storage
+if (localStorage.getItem("password")) {
+    // un-hide the logout button
+    document.getElementById("logout-button").classList.remove("hide");
+}
 
 // 
 // Page Element js utilities

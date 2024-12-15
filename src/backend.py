@@ -227,6 +227,10 @@ def get_challenge(request):
     # Return the nonce to the client
     return json.dumps({"challenge": current_challenge}), 200, {'Content-Type': 'application/json'}
 
+@add_route("api/auth/password_check", method="POST", auth=True)
+def check_password(request):
+    return "ok", 200
+
 #
 # Static File Server
 #

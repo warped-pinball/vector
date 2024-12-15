@@ -104,23 +104,21 @@ async function resetTournamentBoard() {
 }
 
 async function rebootGame() {
-  try {
-    await fetch('/api/game/reboot');
-    alert('Game rebooted!');
-  } catch (error) {
-    console.error('Failed to reboot game:', error);
+  const response = await window.smartFetch('/api/game/reboot', null, true);
+  if (response.status !== 200) {
+    console.error('Failed to reboot game:', response.status);
     alert('Failed to reboot game.');
   }
 }
 
+window.rebootGame = rebootGame;
+
 async function resetGameMemory() {
-  try {
-    await fetch('/api/memory/reset');
-    alert('Game memory reset!');
-  } catch (error) {
-    console.error('Failed to reset game memory:', error);
-    alert('Failed to reset game memory.');
-  }
+    const response = await fetch('/api/memory/reset');
+    if (response.status !== 200) {
+        console.error('Failed to reset game memory:', response.status);
+        alert('Failed to reset game memory.');
+    }
 }
 
 function settingsChanged() {

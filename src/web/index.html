@@ -23,7 +23,7 @@
                     <li><a href="#" id="navigate-admin">Admin</a></li>
                     <li><button id="dark-mode-button" onclick="window.toggleTheme()">🌙</button></li>
                     <li>
-                        <button class="hide" id="logout-button" onclick="window.logout_out()">
+                        <button class="hide" id="logout-button" onclick="window.logout()">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>logout</title><path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" /></svg>
                         </button>
                     </li>
@@ -137,14 +137,14 @@
         }
 
         // === Utility: Authenticated Fetch ===
-        async function smartFetch(url, data=null, auth=true) {
+        async function smartFetch(url, data=false, auth=true) {
+            console.log(url, data, auth);
             const headers = { 
                 "Content-Type": "application/json" 
             };
             
             if (auth) {
-                const password = localStorage.getItem('auth_password');
-                if (!password) throw new Error('Auth required, no password.');
+                const password = window.get_password();
 
                 const cRes = await fetch("/api/auth/challenge");
                 if (!cRes.ok) throw new Error("Failed to get challenge.");
@@ -152,18 +152,23 @@
 
                 const urlObj = new URL(url, window.location.origin);
                 const msg = challenge + urlObj.pathname + urlObj.search + (data ? JSON.stringify(data) : "");
+                console.log('HMAC Message:', msg);
+                console.log('HMAC Password:', password);
                 const hmacHex = sha256.hmac(password, msg);
                 headers["X-Auth-HMAC"] = hmacHex;
             }
 
-
-
             const method = data ? "POST" : "GET";
-            return fetch(url, { 
+            const response = await fetch(url, { 
                 method, 
                 headers, 
                 body: data ? JSON.stringify(data) : undefined 
             });
+            if (auth && response.status === 401) {
+                alert("Authentication failed. Please try again.");
+                window.logout();
+            }
+            return response;
         }
 
         // === Utility: Fetch Resource (with optional auth) ===
