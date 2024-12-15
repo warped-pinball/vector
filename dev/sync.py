@@ -31,8 +31,6 @@ ZIP_WINDOW_BITS = 9  # window_bits for gzip compression (8-15)
 WEB_DIR = os.path.join(BUILD_DIR, 'web')  # Web directory containing HTML, CSS, and JS files
 GIT_COMMIT_FILE = 'git_commit.txt'  # File to store git commit hash
 
-#TODO calculate number of 4Kb blocks we need to fit all files in the Pico (since that's the block size)
-
 def get_directory_size(path: str) -> tuple[int, int]:
     total_size = 0
     file_system_block_size = 4096
@@ -287,19 +285,6 @@ def restart_pico():
     print("Pico restarted.")
 
 @step_report(time_report=True)
-def write_git_commit():
-    """Write the current git commit hash to a file."""
-    print("Writing git commit hash...")
-    result = subprocess.run("git rev-parse HEAD", shell=True, stdout=subprocess.PIPE)
-    if result.returncode == 0:
-        commit_hash = result.stdout.decode().strip()
-        with open(os.path.join(BUILD_DIR, GIT_COMMIT_FILE), 'w') as f:
-            f.write(commit_hash + "\n")
-    else:
-        print("Error obtaining git commit hash.")
-        sys.exit(1)
-
-@step_report(time_report=True)
 def read_git_commit_on_pico():
     """Read the git commit hash from the file on the Pico."""
     print("Reading git commit hash from Pico...")
@@ -499,13 +484,12 @@ def main():
         "  6. scour_svg - Run scour on all svg files in the build/web/svg directory.",
         "  7. combine_json_configs - Combine all JSON config files in build/web/config into a single file.",
         "  8. zip - gzip all files in the build/web/* directory.",
-        "  9. write_commit - Write the current git commit hash to a file.",
-        " 10. copy - Copy files to the Pico.",
-        " 11. restart - Restart the Pico.",
-        " 12. wipe_config - Wipe configuration data on the Pico.",
-        " 13. apply_local_config - Apply local configuration from JSON file to the Pico.",
-        " 14. write_test_data - Write test data to the Pico.",
-        " 15. connect_repl - Connect to the Pico REPL."
+        "  9. copy - Copy files to the Pico.",
+        " 10. restart - Restart the Pico.",
+        " 11. wipe_config - Wipe configuration data on the Pico.",
+        " 12. apply_local_config - Apply local configuration from JSON file to the Pico.",
+        " 13. write_test_data - Write test data to the Pico.",
+        " 14. connect_repl - Connect to the Pico REPL."
     ])
 )
     parser.add_argument(
@@ -530,7 +514,6 @@ def main():
         ("scour_svg", scour_svg_files),
         ("combine_json_configs", combine_json_config_files),
         ("zip", zip_files),
-        ("write_commit", write_git_commit),
         ("copy", copy_files_to_pico),
         ("wipe_config", wipe_config_data),
         ("apply_local_config", apply_local_config_to_pico),
