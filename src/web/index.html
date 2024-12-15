@@ -9,20 +9,28 @@
     <div id="page_css" style="display: none;"></div>
     <link rel="manifest" href="/manifest.json">
 </head>
-<body>
+<body class="container-fluid">
     <header class="container">
-        <nav>
-            <ul>
-                <li><strong id="game_name"></strong></li>
-            </ul>
-            <ul>
-                <li><a href="#" id="navigate-score-boards">Score Boards</a></li>
-                <li><a href="#" id="navigate-players">Players</a></li>
-                <li><a href="#" id="navigate-about">About</a></li>
-                <li><a href="#" id="navigate-admin">Admin</a></li>
-                <li><button id="dark-mode-button" onclick="window.toggleTheme()">🌙</button></li>
-            </ul>
-        </nav>
+        <div class="grid">
+            <div style="align-self: center;justify-self: center;">
+                <strong id="game_name"></strong>
+            </div>
+            <nav style="justify-self:end">
+                <ul>
+                    <li><a href="#" id="navigate-scores">Scores</a></li>
+                    <li><a href="#" id="navigate-players">Players</a></li>
+                    <li><a href="#" id="navigate-about">About</a></li>
+                    <li><a href="#" id="navigate-admin">Admin</a></li>
+                    <li><button id="dark-mode-button" onclick="window.toggleTheme()">🌙</button></li>
+                    <li>
+                        <button class="hide" id="logout-button" onclick="window.logout_out()">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>logout</title><path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" /></svg>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        
     </header>
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
@@ -33,13 +41,11 @@
 
     <footer class="container" style="text-align: center; text-wrap: auto;">
         <div class="grid">
-            <div></div>
             <section>
                 <div id="logo" aria-busy="true" width="175px"></div>
                 <div>Powered by <a href="https://warpedpinball.com">Warped Pinball</a></div>
                 <p><code>Vector v00.20</code></p>
             </section>
-            <div></div>
         </div>
     </footer>
 
@@ -232,7 +238,6 @@
 
         // Load default/common resources
         fetchDecompressAndApply('/css/pico.min.css.gz', 'pico_css');
-        fetchDecompressAndApply('/svg/logo.svg.gz', 'logo');
         fetchDecompressAndApply('/js/main.js.gz', 'main_js');
         fetchDecompressAndApply('/css/main.css.gz', 'main_css');
         fetchDecompressAndApply('/html/install_warning.html.gz', 'install_warning_html');
@@ -240,6 +245,7 @@
         fetchDecompressAndApply('/html/configure.html.gz', 'configure_html');
         fetchDecompressAndApply('/js/configure.js.gz', 'configure_js');
         fetchDecompressAndApply('/js/js-sha256.min.js.gz', 'js-sha256');
+        fetchDecompressAndApply('/svg/logo.svg.gz', 'logo');
     </script>
 </body>
 </html>

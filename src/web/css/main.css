@@ -6,3 +6,16 @@ svg {
 .hide {
   display: none;
 }
+
+/* button tags in nav tag set to w/h of 28px */
+nav button {
+  padding: 0;
+  width: 45px;
+  height: 45px;
+}
+
+/* SVGs in nav buttons should fill the space */
+nav button svg {
+  width: 100%;
+  height: 100%;
+}

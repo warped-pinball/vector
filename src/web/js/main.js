@@ -2,12 +2,12 @@
 // Navigation & Resrouce Loading
 // 
 const pageConfig = {
-    'score-boards': {
-        title: 'Score Boards',
+    'scores': {
+        title: 'Scores',
         resources: [
-            { url: '/html/score_boards.html.gz', targetId: 'page_html' },
-            { url: '/js/score_boards.js.gz', targetId: 'page_js' },
-            { url: '/css/score_boards.css.gz', targetId: 'page_css' },
+            { url: '/html/scores.html.gz', targetId: 'page_html' },
+            { url: '/js/scores.js.gz', targetId: 'page_js' },
+            { url: '/css/scores.css.gz', targetId: 'page_css' },
             { url: '/js/sortable_table.js.gz', targetId: 'extra_js' }
         ]
     },
@@ -157,7 +157,7 @@ function clearPreviousResources(resourceIds) {
 
 function initializeNavigation() {
     const navLinks = [
-        { id: 'navigate-score-boards', page: 'score-boards' },
+        { id: 'navigate-scores', page: 'scores' },
         { id: 'navigate-about', page: 'about' },
         { id: 'navigate-players', page: 'players' },
         { id: 'navigate-admin', page: 'admin' }
@@ -179,7 +179,7 @@ function initializeNavigation() {
 
 function getCurrentPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const page = urlParams.get('page') || 'score-boards';
+    const page = urlParams.get('page') || 'scores';
     console.log(`Current page determined as: ${page}`);
     return page;
 }
