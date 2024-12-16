@@ -326,7 +326,7 @@ def app_leaderBoardRead(request):
 def app_tournamentRead(request):
     return get_scoreboard("tournament")
 
-@add_route("/api/leaderboard/reset", auth=True)
+@add_route("/api/leaders/reset", auth=True)
 def app_resetScores(request):
     DataStore.blankStruct("leaders")
 
@@ -409,7 +409,15 @@ def app_setScoreCap(request):
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):    
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
-        
+
+
+@add_route("/api/settings/factory_reset", auth=True)
+def app_factoryReset(request):
+    # TODO confirm with this is an ok way to reset the device
+    import machine
+    reset_control.reset() # turn off pinbal machine
+    DataStore.blankAll()
+    machine.reset()
 
 #
 # Networking

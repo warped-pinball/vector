@@ -72,7 +72,7 @@
         <h3>Reset</h3>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirmAction('Reset Leaderboard', resetLeaderboard)">Reset Leaderboard</button>
+                <button class="danger" onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')">Reset Leaderboard</button>
             </div>
             <div>
                 <p>Reset all scores on the Leaderboard, Tournament scores will not be effected</p>
@@ -80,7 +80,7 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirmAction('Reset Tournament Board', resetTournamentBoard)">Reset Tournament Board</button>
+                <button class="danger" onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')">Reset Tournament Board</button>
             </div>
             <div>
                 <p>Reset all scores on the Tournament Board, Leaderboard scores will not be effected</p>
@@ -88,15 +88,15 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirmAction('Factory Reset', factoryReset)">Factory Reset</button>
+                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset</button>
             </div>
             <div>
-                <p>Reset all settings and scores to factory defaults. Required before installing vector in a new Pinball Machine</p>
+                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
             </div>
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirmAction('Reboot Game', window.rebootGame)">Reboot Game</button>
+                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Game</button>
             </div>
             <div>
                 <p>Power Cycle the Pinball Machine</p>
@@ -125,9 +125,12 @@
 
     
 
-    <dialog id="modal">
+    <dialog id="confirm-modal">
         <article>
-            <h2 id="modal-message">Confirm Action</h2>
+            <header>
+                <h2>Confirm Action</h2>
+            </header>
+            <p id="modal-message"></p>
             <footer>
                 <button class="secondary" onclick="closeModal()">Cancel</button>
                 <button id="modal-confirm-button">Confirm</button>
@@ -136,5 +139,6 @@
     </dialog>
 </div>
 
- <!-- TODO password recovery options note -->
-  <!-- clear browser cache -->
+ 
+<!-- TODO clear local storage cache -->
+<!-- TODO tournament mode enable->

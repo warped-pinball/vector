@@ -1,86 +1,33 @@
 let isSettingsChanged = false;
 
-const fileTypeEndpoints = {
-  'leaderboard': {
-    endpoint: '/download_leaders',
-    defaultFileName: 'Leaders.json',
-    contentType: 'application/json;charset=utf-8'
-  },
-  'player-names': {
-    endpoint: '/download_names',
-    defaultFileName: 'Names.json',
-    contentType: 'application/json;charset=utf-8'
-  },
-  'tournament-scores': {
-    endpoint: '/download_tournament',
-    defaultFileName: 'Tournament.json',
-    contentType: 'application/json;charset=utf-8'
-  },
-  'memory-values': {
-    endpoint: '/download_memory',
-    defaultFileName: 'MemoryImage.txt',
-    contentType: 'text/plain;charset=utf-8'
-  },
-  'logs': {
-    endpoint: '/download_log',
-    defaultFileName: 'Log.txt',
-    contentType: 'text/plain;charset=utf-8'
-  }
-};
-
-async function downloadFile(fileType) {
-  const fileInfo = fileTypeEndpoints[fileType];
-  if (!fileInfo) {
-    console.error(`Unknown file type: ${fileType}`);
-    return;
-  }
-
-  const { endpoint, defaultFileName } = fileInfo;
-  try {
-    const response = await fetch(endpoint);
-
-    if (!response.ok) {
-      console.error(`Failed to download ${fileType}`);
-      alert(`Failed to download ${fileType}`);
-      return;
-    }
-
-    const blob = await response.blob();
-    const fileName = prompt("Enter the file name for the download:", defaultFileName) || defaultFileName;
-    const url = window.URL.createObjectURL(blob);
-    const element = document.createElement('a');
-    element.setAttribute('href', url);
-    element.setAttribute('download', fileName);
-
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-
-    window.URL.revokeObjectURL(url); // Clean up the object URL
-  } catch (error) {
-    console.error(`Failed to download ${fileType}:`, error);
-    alert(`Failed to download ${fileType}.`);
-  }
+async function confirm_auth_get(url, purpose) {
+    confirmAction(purpose, async () => {
+        const response = await window.smartFetch(url, null, true);
+        if (response.status !== 200) {
+            console.error(`Failed to ${purpose}:`, response.status);
+            alert(`Failed to ${purpose}.`);
+        }
+    });
 }
 
 function confirmAction(message, callback) {
-  const modal = document.getElementById('modal');
-  const modalMessage = document.getElementById('modal-message');
-  const confirmButton = document.getElementById('modal-confirm-button');
+    const modal = document.getElementById('confirm-modal');
+    const modalMessage = document.getElementById('modal-message');
+    const confirmButton = document.getElementById('modal-confirm-button');
 
-  modalMessage.textContent = `Are you sure you want to ${message}?`;
+    modalMessage.textContent = `Are you sure you want to ${message}?`;
 
-  confirmButton.onclick = () => {
-    callback();
-    closeModal();
-  };
+    confirmButton.onclick = () => {
+        callback();
+        closeModal();
+    };
 
-  modal.showModal();
+    modal.showModal();
 }
 
 function closeModal() {
-  const modal = document.getElementById('modal');
-  modal.close();
+    const modal = document.getElementById('confirm-modal');
+    modal.close();
 }
 
 async function resetLeaderboard() {
@@ -102,16 +49,6 @@ async function resetTournamentBoard() {
     alert('Failed to reset tournament board.');
   }
 }
-
-async function rebootGame() {
-  const response = await window.smartFetch('/api/game/reboot', null, true);
-  if (response.status !== 200) {
-    console.error('Failed to reboot game:', response.status);
-    alert('Failed to reboot game.');
-  }
-}
-
-window.rebootGame = rebootGame;
 
 async function resetGameMemory() {
     const response = await fetch('/api/memory/reset');
@@ -161,63 +98,5 @@ async function saveSettings() {
     alert('Failed to save settings.');
   } finally {
     saveButton.disabled = false;
-  }
-}
-
-async function uploadUpdateFile() {
-  const fileInput = document.getElementById('update-upload');
-  const file = fileInput.files[0];
-
-  if (!file) {
-    alert('Please select a file.');
-    return;
-  }
-
-  const uploadButton = document.querySelector('button[onclick*="update-upload"]');
-  uploadButton.disabled = true;
-  uploadButton.textContent = 'Uploading...';
-
-  try {
-    const fileContent = await file.text();
-    const data = JSON.parse(fileContent);
-
-    if (Array.isArray(data)) {
-      for (const item of data) {
-        await sendDictionary(item);
-      }
-      alert('All dictionaries uploaded successfully');
-
-      const resultResponse = await fetch('/upload_results');//TODO update this route when it's written
-      const resultText = await resultResponse.text();
-      alert(resultText);
-    } else {
-      alert('File does not contain a valid JSON array.');
-    }
-  } catch (error) {
-    console.error('Failed to process file:', error);
-    alert('File processing failed');
-  } finally {
-    uploadButton.disabled = false;
-    uploadButton.textContent = 'Upload Update File';
-    fileInput.value = '';
-  }
-}
-
-async function sendDictionary(dict) {
-  const formData = new FormData();
-  formData.append('dictionary', JSON.stringify(dict));
-
-  try {
-    const response = await fetch('/upload_file', { //TODO update this route when it's written
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-  } catch (error) {
-    console.error('Failed to upload dictionary:', error);
-    alert('Dictionary upload failed');
   }
 }
