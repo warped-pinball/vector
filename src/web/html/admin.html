@@ -22,7 +22,11 @@
         <div class="grid">
             <fieldset>
                 <div class="profile-row">
-                    <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()" checked>
+                    <input name="profile" id="profile-0" type="radio" onchange="settingsChanged()" checked>
+                    <input name="profile-0-name" type="text" placeholder="Factory Default Adjustments" onchange="settingsChanged()" disabled>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()">
                     <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
                     <button onclick="saveProfile(1)">Update Profile</button>
                 </div>
@@ -52,9 +56,10 @@
         <input type="date" id="date-picker" name="date-picker" onchange="settingsChanged()"> 
     </section>
     
+    
+    <h2>Actions</h2>
+    <hr>
     <section>
-        <h2>Actions</h2>
-        <hr>
         <h3>Updates</h3>
         <div class="grid">
             <div>
@@ -88,7 +93,7 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset</button>
+                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset Vector</button>
             </div>
             <div>
                 <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
@@ -96,7 +101,7 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Game</button>
+                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Game Machine</button>
             </div>
             <div>
                 <p>Power Cycle the Pinball Machine</p>
@@ -117,7 +122,8 @@
         <button class="secondary" onclick="downloadFile('logs')">Download Logs</button>
     </section>
     <section>
-        <h3>Help</h3>
+        <h2>Help</h2>
+        <hr>
         <h5>How to reset the admin password</h5>
         <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
     </section>
@@ -141,4 +147,4 @@
 
  
 <!-- TODO clear local storage cache -->
-<!-- TODO tournament mode enable->
+<!-- TODO tournament mode enable -->
