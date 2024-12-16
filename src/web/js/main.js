@@ -304,18 +304,75 @@ function toggleTheme() {
 // 
 // Authentication
 // 
-function get_password() {
-    // check to see if password is already stored in local storage
-    const password = localStorage.getItem("password")
-    
-    if (!password) {
-        password = prompt("Enter your Admin password");
-    
-        // un-hide the logout button
-        document.getElementById("logout-button").classList.remove("hide");
+async function showPasswordPrompt() {
+    return new Promise((resolve) => {
+        const dialog = document.getElementById("password_modal");
+        const passwordInput = document.getElementById("admin_password_input");
+        const saveButton = document.getElementById("password_save_button");
+        const cancelButton = document.getElementById("password_cancel_button");
 
-        // store password in local storage
-        localStorage.setItem("password", password);    
+        // Clear previous value from input just in case
+        passwordInput.value = "";
+
+        // Function to handle saving password
+        function onSave() {
+            const password = passwordInput.value.trim();
+            // store password in local storage
+            localStorage.setItem("password", password);
+
+            // un-hide the logout button since we now have a stored password
+            const logoutButton = document.getElementById("logout-button");
+            if (logoutButton) {
+                logoutButton.classList.remove("hide");
+            }
+
+            cleanup();
+            resolve(password);
+        }
+
+        // Function to handle cancel
+        function onCancel() {
+            cleanup();
+            resolve(null);
+        }
+
+        // Cleanup event listeners and close dialog
+        function cleanup() {
+            saveButton.removeEventListener("click", onSave);
+            cancelButton.removeEventListener("click", onCancel);
+            dialog.close();
+        }
+
+        // Add event listeners
+        saveButton.addEventListener("click", onSave);
+        cancelButton.addEventListener("click", onCancel);
+
+        // Show the modal
+        dialog.showModal();
+    });
+}
+
+// Example usage of showPasswordPrompt
+async function get_password() {
+    // check if password is already in localStorage
+    let password = localStorage.getItem("password");
+
+    if (!password) {
+        password = await showPasswordPrompt();
+
+        // If user canceled, password is null, so handle that if needed
+        if (password !== null) {
+            // password is now stored in localStorage by showPasswordPrompt
+            console.log("Password set:", password);
+        } else {
+            console.log("User canceled password input.");
+        }
+    } else {
+        // un-hide the logout button if password is already stored
+        const logoutButton = document.getElementById("logout-button");
+        if (logoutButton) {
+            logoutButton.classList.remove("hide");
+        }
     }
 
     console.log("Password: ", password);
@@ -325,17 +382,27 @@ function get_password() {
 async function logout() {
     // remove password from local storage
     localStorage.removeItem("password");
+
+    // Hide the logout button again if desired
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+        logoutButton.classList.add("hide");
+    }
 }
 
-// window.authenticateAndFetch = authenticateAndFetch;
+// Call get_password on load if needed
+if (localStorage.getItem("password")) {
+    // un-hide the logout button
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+        logoutButton.classList.remove("hide");
+    }
+}
+
+// Make functions accessible from window if needed
 window.get_password = get_password;
 window.logout = logout;
 
-// check if password is already stored in local storage
-if (localStorage.getItem("password")) {
-    // un-hide the logout button
-    document.getElementById("logout-button").classList.remove("hide");
-}
 
 // 
 // Page Element js utilities

@@ -75,23 +75,19 @@
                 </footer>
             </article>
         </dialog>
-        <dialog id="login_modal">
+        <!-- Existing modal you showed can remain separate, or you can reuse a similar structure for the password prompt -->
+        <dialog id="password_modal">
             <article>
-                <h2>Login</h2>
-                <p>
-                    Please enter your admin password.
-                </p>
-                <form id="login_form" onsubmit="return false;">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </form>
-                <p>See admin page help section for password reset instructions</p>
+                <h3>Enter Admin Password</h3>
+                <input type="password" id="admin_password_input" placeholder="Admin Password" aria-label="Admin Password">
+
                 <footer>
-                    <button onclick="document.getElementById('login_modal').removeAttribute('open')">Cancel</button>
-                    <button onclick="login()">Login</button>
+                    <button id="password_cancel_button">Cancel</button>
+                    <button id="password_save_button">Save</button>
                 </footer>
             </article>
         </dialog>
+
         <div id="page_html" style="display: none;"></div>
     </main>
 
@@ -167,7 +163,7 @@
             };
             
             if (auth) {
-                const password = window.get_password();
+                const password = await window.get_password();
 
                 const cRes = await fetch("/api/auth/challenge");
                 if (!cRes.ok) throw new Error("Failed to get challenge.");
