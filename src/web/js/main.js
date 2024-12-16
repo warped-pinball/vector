@@ -7,15 +7,13 @@ const pageConfig = {
         resources: [
             { url: '/html/scores.html.gz', targetId: 'page_html' },
             { url: '/js/scores.js.gz', targetId: 'page_js' },
-            { url: '/css/scores.css.gz', targetId: 'page_css' },
             { url: '/js/sortable_table.js.gz', targetId: 'extra_js' }
         ]
     },
     'about': {
         title: 'About Warped Pinball',
         resources: [
-            { url: '/html/about.html.gz', targetId: 'page_html' },
-            { url: '/css/about.css.gz', targetId: 'page_css' }
+            { url: '/html/about.html.gz', targetId: 'page_html' }
         ]
     },
     'players': {
@@ -308,21 +306,18 @@ function toggleTheme() {
 // 
 function get_password() {
     // check to see if password is already stored in local storage
-    password_obj = localStorage.getItem("password")
-    if (password_obj) {
-        return password_obj['password'];
-    }
-
-    password = prompt("Enter your Admin password", "");
+    const password = localStorage.getItem("password")
+    
     if (!password) {
-        throw new Error("Password required.");
+        password = prompt("Enter your Admin password");
+    
+        // un-hide the logout button
+        document.getElementById("logout-button").classList.remove("hide");
+
+        // store password in local storage
+        localStorage.setItem("password", password);    
     }
 
-    // un-hide the logout button
-    document.getElementById("logout-button").classList.remove("hide");
-
-    // store password in local storage
-    localStorage.setItem("password", {"password": password});
     console.log("Password: ", password);
     return password;
 }
