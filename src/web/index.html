@@ -44,7 +44,7 @@
                     <li><a href="#" id="navigate-players">Players</a></li>
                     <li><a href="#" id="navigate-about">About</a></li>
                     <li><a href="#" id="navigate-admin">Admin</a></li>
-                    <li><button id="dark-mode-button" onclick="window.toggleTheme()" data-tooltip="Dark Mode Toggle">🌙</button></li>
+                    <li><button id="dark-mode-button" onclick="window.toggleTheme()" data-tooltip="Dark Mode Toggle" data-placement="bottom">🌙</button></li>
                     <li>
                         <button class="hide" id="logout-button" onclick="window.logout()" data-tooltip="Logout" data-placement="bottom">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>logout</title><path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" /></svg>
@@ -83,10 +83,9 @@
                 <fieldset>
                     <label>
                         <input id="stay-logged-in" type="checkbox" role="switch" id="stay_logged_in" aria-label="Stay Logged In" checked>
-                        Stay Logged In.
+                        Stay Logged In
                     </label>
                 </fieldset>
-                <p>Logout using the button at the top right of the page.</p>
                 <footer>
                     <button id="password_cancel_button">Cancel</button>
                     <button id="password_save_button">Save</button>
@@ -176,8 +175,10 @@
                 const { challenge } = await cRes.json();
 
                 const urlObj = new URL(url, window.location.origin);
-                // we need to replace all \" with " and remove wrapping quotes in the JSON string so it matches with python's json.dumps
-                const data_str = data ? JSON.stringify(data).replace(/\\\"/g, '"').slice(1, -1) : "";
+                
+                // stringify data if present and unescape characters
+                const data_str = data ? JSON.stringify(data): '';
+
                 const msg = challenge + urlObj.pathname + urlObj.search + data_str;
                 console.log('HMAC Message:', msg);
                 console.log('HMAC Password:', password);
@@ -189,7 +190,7 @@
             const response = await fetch(url, { 
                 method, 
                 headers, 
-                body: data ? JSON.stringify(data) : undefined 
+                body: data ? JSON.stringify(data) : undefined
             });
             if (auth && response.status === 401) {
                 alert("Authentication failed. Please try again.");

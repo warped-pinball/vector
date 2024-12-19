@@ -134,18 +134,26 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset Vector</button>
+                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball Machine</button>
             </div>
             <div>
-                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
+                <p>Power Cycle the Pinball Machine. This does not check for and will erase currently running games</p>
             </div>
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball Machine</button>
+                <button onclick="localStorage.clear(); window.location.reload();">Clear Browser Storage</button>
             </div>
             <div>
-                <p>Power Cycle the Pinball Machine</p>
+                <p>Clears stored data from browser, use this if you are getting weird behaviour that refreshing does not clear. This will log you out.</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset Vector</button>
+            </div>
+            <div>
+                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
             </div>
         </div>
     </section>

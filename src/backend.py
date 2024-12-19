@@ -165,23 +165,23 @@ def hmac_sha256(key, message):
 
 def require_auth(handler):
     '''Decorator to require authentication using HMAC-SHA256'''
-    def wrapper(request, *args, **kwargs):
+    def auth_wrapper(request, *args, **kwargs):
         global current_challenge, challenge_timestamp
 
         if not current_challenge or not challenge_timestamp:
-            msg = json.dumps({"error": "Challenge missing"}), 401, {'Content-Type': 'application/json'}
+            msg = json.dumps({"error": "Challenge missing"}), 401, 'application/json'
             print(msg)
             return msg
 
         if (time.time() - challenge_timestamp) > CHALLENGE_EXPIRATION_SECONDS:
-            msg = json.dumps({"error": "Challenge expired"}), 401, {'Content-Type': 'application/json'}
+            msg = json.dumps({"error": "Challenge expired"}), 401, 'application/json'
             print(msg)
             return msg
 
         # Get the HMAC from the request headers
         client_hmac = request.headers.get('X-Auth-HMAC') or request.headers.get('x-auth-hmac')
         if not client_hmac:
-            msg = json.dumps({"error": "Missing authentication HMAC"}), 401, {'Content-Type': 'application/json'}
+            msg = json.dumps({"error": "Missing authentication HMAC"}), 401, 'application/json'
             print(msg)
             print(request.headers)
             return msg
@@ -193,7 +193,7 @@ def require_auth(handler):
         # Construct the message string
         path = request.path
         query_string = request.query_string or ""
-        body_str = request.data or ""
+        body_str = request.raw_data or ""
         message_str = current_challenge + path + query_string + body_str
         message_bytes = message_str.encode('utf-8')
 
@@ -205,6 +205,7 @@ def require_auth(handler):
             # Authentication successful
             current_challenge = None
             challenge_timestamp = None
+            print("Authentication successful")
             return handler(request, *args, **kwargs)
         else:
             # Authentication failed
@@ -212,9 +213,9 @@ def require_auth(handler):
             print(f"Expected HMAC: {expected_hmac}")
             print(f"Client HMAC: {client_hmac}")
             print(message_bytes)
-            return json.dumps({"error": "Authentication failed"}), 401, {'Content-Type': 'application/json'}
+            return json.dumps({"error": "Authentication failed"}), 401, 'application/json'
 
-    return wrapper
+    return auth_wrapper
 
 
 
@@ -225,7 +226,7 @@ def get_challenge(request):
     current_challenge = random_hex(64)
     challenge_timestamp = time.time()
     # Return the nonce to the client
-    return json.dumps({"challenge": current_challenge}), 200, {'Content-Type': 'application/json'}
+    return json.dumps({"challenge": current_challenge}), 200, 'application/json'
 
 @add_route("api/auth/password_check", method="POST", auth=True)
 def check_password(request):
@@ -354,7 +355,7 @@ def app_getPlayers(request):
     
 @add_route("/api/player/update", method="POST", auth=True)
 def app_updatePlayer(request):
-    body = request.json                   
+    body = request.data
     initials = body['initials'].upper()[:3]
     name = body['full_name'][:16]
     index = int(body['id'])  
@@ -401,8 +402,10 @@ def app_getScoreCap(request):
 @add_route("/api/settings/score_claim_methods", method="POST", auth=True)
 def app_setScoreCap(request):
     #TODO this should only update the methods in the json, the others should be left as is
-    json_data = json.loads(request.data)
-    new_state = int(json_data['on-machine'])
+    json_data = request.data
+    print(type(json_data))
+    print(f"json_data: {json_data}")
+    new_state = json_data['on-machine']
     info = DataStore.read_record("extras", 0)
     info["other"] = new_state
     DataStore.write_record("extras", info, 0)
@@ -611,5 +614,5 @@ def go(ap_mode):
     
     
 
-#TODO roller games and police force rom versions
+#TODO roller games and police force need rom versions
 #TODO implement cool-down decorator for sensitive actions

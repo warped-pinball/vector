@@ -67,6 +67,7 @@ class Request:
     self.protocol = protocol
     self.form = {}
     self.data = {}
+    self.raw_data = None  # Will hold the raw JSON body if present
     self.query = {}
     query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
     self.path = uri[:query_string_start]
@@ -228,7 +229,8 @@ async def _parse_json_body(reader, headers):
   import json
   content_length_bytes = int(headers["content-length"])
   body = await reader.readexactly(content_length_bytes)
-  return json.loads(body.decode())
+  body_str = body.decode()
+  return body_str, json.loads(body_str)
 
 
 status_message_map = {
@@ -266,7 +268,9 @@ async def _handle_request(reader, writer):
     if request.headers["content-type"].startswith("multipart/form-data"):
       request.form = await _parse_form_data(reader, request.headers)
     if request.headers["content-type"].startswith("application/json"):
-      request.data = await _parse_json_body(reader, request.headers)
+      raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+      request.raw_data = raw_body
+      request.data = parsed_data
     if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
       form_data = await reader.read(int(request.headers["content-length"]))
       request.form = _parse_query_string(form_data.decode()) 

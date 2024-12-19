@@ -47,7 +47,7 @@ async function getScoreClaimMethods() {
 
   // add event listener to update the setting when the checkbox is changed
   onMachineCheckbox.addEventListener('change', async () => {
-    const data = JSON.stringify({ 'on-machine': onMachineCheckbox.checked });
+    const data = { 'on-machine': onMachineCheckbox.checked ? 1 : 0 };
     await window.smartFetch('/api/settings/score_claim_methods', data, true);
   });
 }

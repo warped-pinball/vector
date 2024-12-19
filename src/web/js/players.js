@@ -1,59 +1,43 @@
-function getCurrentPlayers(data) {
-    return Object.entries(data)
-        .filter(([index, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
-        .sort(([, a], [, b]) => a.name.localeCompare(b.name)); // Sort by name alphabetically
+function createInputField(type, name, value, placeholder, onInput) {
+    const input = document.createElement('input');
+    input.type = type;
+    input.name = name;
+    input.value = value;
+    input.placeholder = placeholder;
+    input.addEventListener('input', onInput);
+    return input;
 }
 
-function populateForm(data) {
-    const form = document.getElementById('players_form');
-    form.innerHTML = ''; // Clear existing form groups
+function getCurrentPlayers(data) {
+    return Object.entries(data)
+        .filter(([, player]) => player.name.trim() !== '' || player.initials.trim() !== '')
+        .sort(([, a], [, b]) => a.name.localeCompare(b.name));
+}
 
-    const players = getCurrentPlayers(data);
-    const allIndices = Object.keys(data).map(index => parseInt(index, 10));
-
-    // Populate form with existing players
-    players.forEach(([index, player]) => {
-        addPlayerRow(form, index, player.initials, player.name);
-    });
-
-    // Always add one extra blank form group for new players
-    const extraRowIndex = getAvailableIndex(allIndices, 20); // Get the lowest available index under 20
-    addPlayerRow(form, extraRowIndex, '', '');
+function getAvailableIndex(allIndices, maxIndex) {
+    const indicesSet = new Set(allIndices);
+    for (let i = 1; i <= maxIndex; i++) {
+        if (!indicesSet.has(i)) {
+            return i;
+        }
+    }
+    return maxIndex + 1;
 }
 
 function addPlayerRow(form, index, initials, name) {
     const fieldset = document.createElement('fieldset');
     fieldset.setAttribute('role', 'group');
-    fieldset.dataset.index = index; // Assign the index as a data attribute
+    fieldset.dataset.index = index;
 
-    const initialsInput = document.createElement('input');
-    initialsInput.type = 'text';
-    initialsInput.name = 'initials';
-    initialsInput.value = initials;
-    initialsInput.placeholder = 'Initials';
-    initialsInput.addEventListener('input', () => toggleSaveButton(fieldset, initials, name));
+    const onInput = () => toggleSaveButton(fieldset, initials, name);
+
+    const initialsInput = createInputField('text', 'initials', initials, 'Initials', onInput);
+    const nameInput = createInputField('text', 'name', name, 'Full Name', onInput);
+
     fieldset.appendChild(initialsInput);
-
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.name = 'name';
-    nameInput.value = name;
-    nameInput.placeholder = 'Full Name';
-    nameInput.addEventListener('input', () => toggleSaveButton(fieldset, initials, name));
     fieldset.appendChild(nameInput);
 
     form.appendChild(fieldset);
-}
-
-function getAvailableIndex(allIndices, maxIndex) {
-    // Find the first available index under maxIndex
-    for (let i = 1; i <= maxIndex; i++) {
-        if (!allIndices.includes(i)) {
-            return i;
-        }
-    }
-    // If all indices are used, return maxIndex + 1 to ensure a unique new index
-    return maxIndex + 1;
 }
 
 function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
@@ -67,48 +51,59 @@ function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
             saveButton.type = 'button';
             saveButton.value = 'Save';
             saveButton.addEventListener('click', () => {
-                const index = fieldset.dataset.index; // Use the index from the dataset
+                const index = fieldset.dataset.index;
                 savePlayer(index, initialsInput.value, nameInput.value);
             });
             fieldset.appendChild(saveButton);
         }
-    } else {
-        if (saveButton) {
-            saveButton.remove();
-        }
+    } else if (saveButton) {
+        saveButton.remove();
     }
 }
 
 async function savePlayer(index, initials, name) {
     console.log('Saving player:', index, initials, name);
-    console.log(JSON.stringify({ index: index, initials: initials, full_name: name }));
-    try {
-        const response = await fetch('/api/player/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ index: index, initials: initials, full_name: name }),
-        });
+    const data = {
+        "id": index,
+        "initials": initials,
+        "full_name": name        
+    };
 
-        const message = await response.text();
-        if (message !== 'Update successful') {
-            throw new Error(`Error from server: ${message}`);
+    try {
+        const response = await window.smartFetch('/api/player/update', data, true);
+        
+        if (response.status !== 200) {
+            console.error('Failed to save player:', response.status);
+            alert('Failed to save player. Try again.');
+            return;
         }
 
-        console.log('Success:', message);
-
-        // Re-fetch and update the form
-        const playersResponse = await fetch('/players');
-        const playersData = await playersResponse.json();
-        populateForm(playersData);
+        populateForm();
     } catch (error) {
         console.error('Error saving player:', error);
     }
 }
 
-// Initial fetch to populate the form
-fetch('/api/players')
-    .then(response => response.json())
-    .then(data => populateForm(data))
-    .catch(error => console.error('Error fetching player data:', error));
+async function populateForm() {
+    try {
+        const response = await window.smartFetch('/api/players', false, false);
+        const data = await response.json();
+
+        const form = document.getElementById('players_form');
+        form.innerHTML = '';
+
+        const players = getCurrentPlayers(data);
+        const allIndices = Object.keys(data).map(index => parseInt(index, 10));
+
+        players.forEach(([index, player]) => {
+            addPlayerRow(form, index, player.initials, player.name);
+        });
+
+        const extraRowIndex = getAvailableIndex(allIndices, 20);
+        addPlayerRow(form, extraRowIndex, '', '');
+    } catch (error) {
+        console.error('Error fetching player data:', error);
+    }
+}
+
+populateForm();
