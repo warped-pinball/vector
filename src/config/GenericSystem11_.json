@@ -1,8 +1,12 @@
 {
     "GameInfo": {
-        "GameName": "System11",
+        "GameName": "Generic System 11",
         "System": "11x",
         "FileVer": 1     
+    },
+    
+    "Definition": {
+        "version": 1
     },
 
     "Memory" : {
