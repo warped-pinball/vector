@@ -488,7 +488,7 @@ async function createDropDownElement(id, summaryText, options, defaultValue = nu
 
     // Sort entries if required
     if (sortOptions) {
-        entries = entries.sort((a, b) => a[1].localeCompare(b[1]));
+        entries = entries.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
     }
 
     // Add options to the dropdown
