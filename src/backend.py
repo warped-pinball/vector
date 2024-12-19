@@ -390,15 +390,19 @@ def app_resetIndScores(request):
 #
 # Settings
 #
-@add_route("/api/settings/score_capture_methods")
+@add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
-    score_cap = bool(DataStore.read_record("extras", 0)["other"])
+    raw_data = DataStore.read_record("extras", 0)["other"]
+    print(f"raw_data: {raw_data}")
+    score_cap = bool(raw_data)
     return json.dumps({"on-machine": score_cap}), 200
 
 
-@add_route("/api/settings/score_capture_methods", method="POST", auth=True)
+@add_route("/api/settings/score_claim_methods", method="POST", auth=True)
 def app_setScoreCap(request):
-    new_state = int(request.json['on-machine'])
+    #TODO this should only update the methods in the json, the others should be left as is
+    json_data = json.loads(request.data)
+    new_state = int(json_data['on-machine'])
     info = DataStore.read_record("extras", 0)
     info["other"] = new_state
     DataStore.write_record("extras", info, 0)
@@ -443,15 +447,8 @@ def app_getAvailableSSIDs(request):
 #TODO setup domain name
 
 #
-# Miscellaneous
+# Time
 #
-
-#TODO version number
-
-@add_route("/api/fault")
-def app_install_fault(request):
-    return json.dumps(SharedState.faults), 200
-
 @add_route("/api/date_time", method="POST", auth=True)
 def app_setDateTime(request):
     '''Set the date and time on the device'''
@@ -477,6 +474,17 @@ def app_getDateTime(request):
 # def app_getDate(request):
 #     y, m, d, _,_,_,_,_= time.localtime()
 #     return f"{y:04d}-{m:02d}-{d:02d}", 200
+
+
+#
+# Miscellaneous
+#
+
+#TODO version number
+
+@add_route("/api/fault")
+def app_install_fault(request):
+    return json.dumps(SharedState.faults), 200
 
 #
 # File IO

@@ -28,7 +28,6 @@ const pageConfig = {
         resources: [
             { url: '/html/admin.html.gz', targetId: 'page_html' },
             { url: '/js/admin.js.gz', targetId: 'page_js' },
-            { url: '/css/admin.css.gz', targetId: 'page_css' }
         ]
     },
 };
@@ -317,13 +316,26 @@ async function showPasswordPrompt() {
         // Function to handle saving password
         function onSave() {
             const password = passwordInput.value.trim();
-            // store password in local storage
-            localStorage.setItem("password", password);
-
-            // un-hide the logout button since we now have a stored password
-            const logoutButton = document.getElementById("logout-button");
-            if (logoutButton) {
-                logoutButton.classList.remove("hide");
+            
+            // if stay logged in is checked, store password in local storage
+            if (document.getElementById("stay_logged_in").checked) {
+                // store password in local storage
+                localStorage.setItem("password", password);
+        
+                // un-hide the logout button since we now have a stored password
+                const logoutButton = document.getElementById("logout-button");
+                if (logoutButton) {
+                    logoutButton.classList.remove("hide");
+                }
+            } else {
+                // remove password from local storage
+                localStorage.removeItem("password");
+        
+                // Hide the logout button
+                const logoutButton = document.getElementById("logout-button");
+                if (logoutButton) {
+                    logoutButton.classList.add("hide");
+                }
             }
 
             cleanup();
@@ -352,7 +364,6 @@ async function showPasswordPrompt() {
     });
 }
 
-// Example usage of showPasswordPrompt
 async function get_password() {
     // check if password is already in localStorage
     let password = localStorage.getItem("password");
@@ -390,7 +401,7 @@ async function logout() {
     }
 }
 
-// Call get_password on load if needed
+// Call get_password on load
 if (localStorage.getItem("password")) {
     // un-hide the logout button
     const logoutButton = document.getElementById("logout-button");
@@ -399,7 +410,7 @@ if (localStorage.getItem("password")) {
     }
 }
 
-// Make functions accessible from window if needed
+// Make functions accessible from window
 window.get_password = get_password;
 window.logout = logout;
 

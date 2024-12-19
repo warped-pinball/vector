@@ -1,48 +1,92 @@
+<style>
+    input[type="date"] {
+        width: auto;
+        /* max-width: 10rem;
+        text-align: center; */
+    }
+
+    button.danger {
+        background-color: #e73434;
+        color: white;
+        border: none;
+    }
+
+    button.danger:hover {
+        background-color: #c53d3d;
+    }
+
+    /* Adjustments Profiles Styling */
+    .profile-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem; /* Space between elements */
+        margin-bottom: 0.5rem; /* Space between rows */
+    }
+
+    .profile-row input {
+        margin: 0; /* Remove any default margin */
+    }
+
+    .profile-row input[type="radio"] {
+        flex-shrink: 0; /* Prevents shrinking of the radio button */
+    }
+
+    .profile-row input[type="text"] {
+        flex-grow: 1; /* Allows the text field to expand and take available space */
+        max-width: 200px; /* Optional: Limit the width of the text field */
+    }
+
+    .profile-row button {
+        flex-shrink: 0; /* Keeps the button size consistent */
+    }
+</style>
+
 <div style="text-align: left;">
+    <h2>Settings</h2>
+    <hr>
     <section>
-        <h2>Settings</h2>
-        <hr>
-        <button id="save-button" style="display: none;" onclick="saveSettings()">Save Settings</button>
         <h3>Score Claim Methods</h3>
-        <fieldset>
+        <fieldset id="score-claim-methods">
             <label>
-                <input type="checkbox" role="switch" name="claim-on-machine" checked />
+                <input type="checkbox" role="switch" name="on-machine"/>
                 <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where players can enter initials)
             </label>
             <label>
-                <input type="checkbox" role="switch" name="claim-web" checked />
+                <input type="checkbox" role="switch" name="web" disabled/>
                 <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
             </label>
             <label>
-                <input type="checkbox" role="switch" name="claim-scanner" disabled/>
+                <input type="checkbox" role="switch" name="scanner" disabled/>
                 <b>Ray QR Scanner Add-on:</b> games started by a QR code scan, automatically claim score <a href="https://www.warpedpinball.com">Learn More</a>
             </label>
         </fieldset>
+    </section>
+    <section>
         <h3>Adjustments Profiles (Coming Soon!)</h3>
         <div class="grid">
             <fieldset>
                 <div class="profile-row">
-                    <input name="profile" id="profile-0" type="radio" onchange="settingsChanged()" checked>
-                    <input name="profile-0-name" type="text" placeholder="Factory Default Adjustments" onchange="settingsChanged()" disabled>
+                    <input name="profile" id="profile-0" type="radio" checked>
+                    <input name="profile-0-name" type="text" placeholder="Default Adjustments" disabled>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-1" type="radio" onchange="settingsChanged()">
-                    <input name="profile-1-name" type="text" placeholder="Profile 1" onchange="settingsChanged()">
+                    <input name="profile" id="profile-1" type="radio">
+                    <input name="profile-1-name" type="text" placeholder="Name profile 1">
                     <button onclick="saveProfile(1)">Update Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-2" type="radio" onchange="settingsChanged()">
-                    <input name="profile-2-name" type="text" placeholder="Profile 2" onchange="settingsChanged()">
+                    <input name="profile" id="profile-2" type="radio">
+                    <input name="profile-2-name" type="text" placeholder="Name profile 2">
                     <button onclick="saveProfile(2)">Update Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-3" type="radio" onchange="settingsChanged()">
-                    <input name="profile-3-name" type="text" placeholder="Profile 3" onchange="settingsChanged()">
+                    <input name="profile" id="profile-3" type="radio">
+                    <input name="profile-3-name" type="text" placeholder="Name profile 3">
                     <button onclick="saveProfile(3)">Update Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-4" type="radio" onchange="settingsChanged()">
-                    <input name="profile-4-name" type="text" placeholder="Profile 4" onchange="settingsChanged()">
+                    <input name="profile" id="profile-4" type="radio">
+                    <input name="profile-4-name" type="text" placeholder="Name profile 4">
                     <button onclick="saveProfile(4)">Update Profile</button>
                 </div>
             </fieldset>
@@ -52,10 +96,7 @@
                 <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
             </div>
         </div>
-        <label for="date-picker">Set Date</label>
-        <input type="date" id="date-picker" name="date-picker" onchange="settingsChanged()"> 
     </section>
-    
     
     <h2>Actions</h2>
     <hr>
@@ -71,7 +112,7 @@
             </div>
         </div>
             
-        <input type="file" id="update-upload" name="update-upload" onchange="settingsChanged()" hidden>
+        <input type="file" id="update-upload" name="update-upload" hidden>
     </section>
     <section>
         <h3>Reset</h3>
@@ -101,20 +142,12 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Game Machine</button>
+                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball Machine</button>
             </div>
             <div>
                 <p>Power Cycle the Pinball Machine</p>
             </div>
         </div>
-        <!-- <div class="grid">
-            <div>
-                <button class="danger" onclick="confirmAction('Reset Game Memory', resetGameMemory)">Reset Game Memory</button>
-            </div>
-            <div>
-                <p>Clear the pinball machine's RAM. </p>
-            </div>
-        </div> -->
     </section>
     <section>
         <h3>Debug</h3>

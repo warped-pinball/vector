@@ -1,4 +1,6 @@
-let isSettingsChanged = false;
+// 
+// Generic / Utility functions
+// 
 
 async function confirm_auth_get(url, purpose) {
     confirmAction(purpose, async () => {
@@ -30,73 +32,33 @@ function closeModal() {
     modal.close();
 }
 
-async function resetLeaderboard() {
-  try {
-    await fetch('/api/leaderbaord/reset');
-    alert('Leaderboard reset!');
-  } catch (error) {
-    console.error('Failed to reset leaderboard:', error);
-    alert('Failed to reset leaderboard.');
-  }
+
+// 
+// Settings
+// 
+
+// score Claim methods
+async function getScoreClaimMethods() {
+  const response = await fetch('/api/settings/score_claim_methods');
+  const data = await response.json();
+
+  const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
+  onMachineCheckbox.checked = data['on-machine'];
+
+  // add event listener to update the setting when the checkbox is changed
+  onMachineCheckbox.addEventListener('change', async () => {
+    const data = JSON.stringify({ 'on-machine': onMachineCheckbox.checked });
+    await window.smartFetch('/api/settings/score_claim_methods', data, true);
+  });
 }
 
-async function resetTournamentBoard() {
-  try {
-    await fetch('/api/tournament/reset');
-    alert('Tournament board reset!');
-  } catch (error) {
-    console.error('Failed to reset tournament board:', error);
-    alert('Failed to reset tournament board.');
-  }
-}
 
-async function resetGameMemory() {
-    const response = await fetch('/api/memory/reset');
-    if (response.status !== 200) {
-        console.error('Failed to reset game memory:', response.status);
-        alert('Failed to reset game memory.');
-    }
-}
+getScoreClaimMethods();
 
-function settingsChanged() {
-  isSettingsChanged = true;
-  const saveButton = document.getElementById('save-button');
-  saveButton.style.display = 'block';
-}
 
-async function saveSettings() {
-  const saveButton = document.getElementById('save-button');
-  saveButton.disabled = true;
+// adjustments profiles
+// TODO: implement this
 
-  const onMachineCheckbox = document.querySelector('input[name="claim-on-machine"]');
-  const enableScoreCapture = onMachineCheckbox.checked;
-
-  const datePicker = document.getElementById('date-picker');
-  const newDate = datePicker.value;
-
-  try {
-    // Update enableScoreCapture
-    await fetch('/api/settings/score_capture_methods', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ "on-machine": enableScoreCapture })
-    });
-
-    // Update date
-    await fetch('/api/date_time', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // list of 6 numbers, [year, month, day, hour, minute, second]
-      body: JSON.stringify(newDate.split('-').map(Number))
-    });
-
-    alert('Settings saved!');
-    isSettingsChanged = false;
-    saveButton.style.display = 'none';
-  } catch (error) {
-    console.error('Failed to save settings:', error);
-    alert('Failed to save settings.');
-  } finally {
-    saveButton.disabled = false;
-  }
-}
+// 
+// Actions
+// 
