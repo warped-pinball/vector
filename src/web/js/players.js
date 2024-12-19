@@ -65,19 +65,19 @@ function toggleSaveButton(fieldset) {
     const saveButton = fieldset.querySelector('input[type="button"]');
     const initialsInput = fieldset.querySelector('input[name="initials"]');
     const nameInput = fieldset.querySelector('input[name="name"]');
-    const deleteButton = fieldset.querySelector('input[type="button"]');
+    const deleteButton = fieldset.querySelector('input[value="Delete"]');
     const initials = initialsInput.value;
     const name = nameInput.value;
 
     if (initials.trim() === '' && name.trim() === '') {
         saveButton.classList.add('hide');
         if (deleteButton) {
-            deleteButton.classList.add('hide');
+            deleteButton.classList.remove('hide');
         }
     } else {
         saveButton.classList.remove('hide');
         if (deleteButton) {
-            deleteButton.classList.remove('hide');
+            deleteButton.classList.add('hide');
         }
     }
 }
