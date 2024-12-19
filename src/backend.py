@@ -355,6 +355,8 @@ def app_getPlayers(request):
     
 @add_route("/api/player/update", method="POST", auth=True)
 def app_updatePlayer(request):
+    #TODO if initials and name are empty, we need to delete the scores
+    
     body = request.data
     initials = body['initials'].upper()[:3]
     name = body['full_name'][:16]
