@@ -37,27 +37,48 @@ function addPlayerRow(form, index, initials, name) {
     fieldset.appendChild(initialsInput);
     fieldset.appendChild(nameInput);
 
+    // add the save button hidden with the "hide" class
+    const saveButton = document.createElement('input');
+    saveButton.type = 'button';
+    saveButton.value = 'Save';
+    saveButton.classList.add('hide');
+    saveButton.addEventListener('click', () => {
+        const index = fieldset.dataset.index;
+        savePlayer(index, initialsInput.value, nameInput.value);
+    });
+    fieldset.appendChild(saveButton);
+    
+    // Only show the delete button if the player has initials or a name
+    if (initials.trim() !== '' || name.trim() !== '') {
+        const deleteButton = document.createElement('input');
+        deleteButton.type = 'button';
+        deleteButton.classList.add('secondary');
+        deleteButton.value = 'Delete';
+        deleteButton.addEventListener('click', () => savePlayer(index, '', ''));
+        fieldset.appendChild(deleteButton);
+    }
+
     form.appendChild(fieldset);
 }
 
-function toggleSaveButton(fieldset, originalInitials = '', originalName = '') {
+function toggleSaveButton(fieldset) {
+    const saveButton = fieldset.querySelector('input[type="button"]');
     const initialsInput = fieldset.querySelector('input[name="initials"]');
     const nameInput = fieldset.querySelector('input[name="name"]');
-    let saveButton = fieldset.querySelector('input[type="button"]');
+    const deleteButton = fieldset.querySelector('input[type="button"]');
+    const initials = initialsInput.value;
+    const name = nameInput.value;
 
-    if (initialsInput.value !== originalInitials || nameInput.value !== originalName) {
-        if (!saveButton) {
-            saveButton = document.createElement('input');
-            saveButton.type = 'button';
-            saveButton.value = 'Save';
-            saveButton.addEventListener('click', () => {
-                const index = fieldset.dataset.index;
-                savePlayer(index, initialsInput.value, nameInput.value);
-            });
-            fieldset.appendChild(saveButton);
+    if (initials.trim() === '' && name.trim() === '') {
+        saveButton.classList.add('hide');
+        if (deleteButton) {
+            deleteButton.classList.add('hide');
         }
-    } else if (saveButton) {
-        saveButton.remove();
+    } else {
+        saveButton.classList.remove('hide');
+        if (deleteButton) {
+            deleteButton.classList.remove('hide');
+        }
     }
 }
 
@@ -74,7 +95,6 @@ async function savePlayer(index, initials, name) {
         
         if (response.status !== 200) {
             console.error('Failed to save player:', response.status);
-            alert('Failed to save player. Try again.');
             return;
         }
 

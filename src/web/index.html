@@ -21,8 +21,8 @@
         /* button tags in nav tag set to w/h of 28px */
         nav button {
             padding: 0;
-            width: 47px;
-            height: 47px;
+            width: 45px !important;
+            height: 45px !important;
         }
 
         /* SVGs in nav buttons should fill the space */
@@ -44,7 +44,11 @@
                     <li><a href="#" id="navigate-players">Players</a></li>
                     <li><a href="#" id="navigate-about">About</a></li>
                     <li><a href="#" id="navigate-admin">Admin</a></li>
-                    <li><button id="dark-mode-button" onclick="window.toggleTheme()" data-tooltip="Dark Mode Toggle" data-placement="bottom">🌙</button></li>
+                    <li>
+                        <button id="dark-mode-button" onclick="window.toggleTheme()" data-tooltip="Dark Mode Toggle" data-placement="bottom">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>brightness-6</title><path d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z" /></svg>
+                        </button>
+                    </li>
                     <li>
                         <button class="hide" id="logout-button" onclick="window.logout()" data-tooltip="Logout" data-placement="bottom">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>logout</title><path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" /></svg>
@@ -57,7 +61,33 @@
     </header>
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
-        <div id="configure_html" style="display: none;"></div>
+        <!--        -->
+        <!-- MODALS -->
+        <!--        -->
+        <dialog id="configure_modal">
+            <article>
+                <h3>WiFi Settings</h3>
+                <details id="ssid_select_placeholder" class="dropdown"><summary>Scanning for WiFi networks</summary></details>
+                <input type="password" name="wifi_password" placeholder="WiFi password" aria-label="WiFi Password">
+        
+                <h3>Configure Your Vector</h3>
+                <details id="game_config_select_placeholder" class="dropdown"><summary>Building list of games</summary></details>
+                <input type="password" name="vector_password" placeholder="Admin Password" aria-label="Pinball Admin Password">
+        
+                <p>
+                    Please <mark>double check your game and ROM version</mark> If you are unsure, do not guess.
+                    If you have a ROM that is not listed we may be able to add it for you.
+                </p>
+        
+                <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+                
+                <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network.</p>
+        
+                <footer>
+                    <button onclick="window.save_configuration()">💾 Save</button>
+                </footer>
+            </article>
+        </dialog>
         <dialog id="install_warning_modal">
             <article>
                 <h2>Warning: Issues Detected</h2>
@@ -92,7 +122,18 @@
                 </footer>
             </article>
         </dialog>
-
+        <dialog id="confirm-modal">
+            <article>
+                <header>
+                    <h2>Confirm Action</h2>
+                </header>
+                <p id="modal-message"></p>
+                <footer>
+                    <button class="secondary" onclick="closeModal()">Cancel</button>
+                    <button id="modal-confirm-button">Confirm</button>
+                </footer>
+            </article>
+        </dialog>
         <div id="page_html" style="display: none;"></div>
     </main>
 
@@ -307,7 +348,6 @@
         fetchDecompressAndApply('/svg/logo.svg.gz', 'logo');
         fetchDecompressAndApply('/js/main.js.gz', 'main_js');
         fetchDecompressAndApply('/js/install_warning.js.gz', 'install_warning_js');
-        fetchDecompressAndApply('/html/configure.html.gz', 'configure_html');
         fetchDecompressAndApply('/js/configure.js.gz', 'configure_js');
         fetchDecompressAndApply('/js/js-sha256.min.js.gz', 'js-sha256');
     </script>

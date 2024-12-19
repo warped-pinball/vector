@@ -292,8 +292,6 @@ function toggleTheme() {
     const currentTheme = html.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', newTheme);
-    const button = document.querySelector('button[onclick="window.toggleTheme()"]');
-    button.textContent = newTheme === 'dark' ? '🌙' : '☀️';
 }
 
 

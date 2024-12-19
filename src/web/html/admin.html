@@ -67,7 +67,8 @@
             <fieldset>
                 <div class="profile-row">
                     <input name="profile" id="profile-0" type="radio" checked>
-                    <input name="profile-0-name" type="text" placeholder="Default Adjustments" disabled>
+                    <p style="margin: 5px">Machine Defaults</p>
+                    <!-- <input name="profile-0-name" type="text" placeholder="Default Adjustments" disabled> -->
                 </div>
                 <div class="profile-row">
                     <input name="profile" id="profile-1" type="radio">
@@ -168,22 +169,6 @@
         <h5>How to reset the admin password</h5>
         <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
     </section>
-
-
-    
-
-    <dialog id="confirm-modal">
-        <article>
-            <header>
-                <h2>Confirm Action</h2>
-            </header>
-            <p id="modal-message"></p>
-            <footer>
-                <button class="secondary" onclick="closeModal()">Cancel</button>
-                <button id="modal-confirm-button">Confirm</button>
-            </footer>
-        </article>
-    </dialog>
 </div>
 
  
