@@ -446,8 +446,15 @@ def write_test_data():
         + [
             "SharedState.tournamentModeOn = 0"
         ]
-    )
+        # set score capture
+        + [
+            'extras = datastore.read_record("extras", 0)',
+            f'extras["other"] = {test_data['settings']['score_capture']}',
+            'datastore.write_record("extras", extras, 0)'
+        ]
 
+    )
+    
     cmd = f'mpremote connect {PICO_PORT} exec \'{test_data_script}\''
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
