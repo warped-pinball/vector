@@ -64,9 +64,17 @@ def route_wrapper(func):
             gc.collect()
     return wrapped_route
 
-def add_route(path, method="GET", auth=False):
+def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instance=False):
     '''Decorator to add a route to the server with gc.collect() and error handling'''
+    # If auth is True only allow a single instance of the route to run at a time
+    if auth:
+        single_instance = True
+        cool_down_seconds = 2
+
     def decorator(func):
+        if cool_down_seconds > 0 or single_instance:
+            func = cool_down(cool_down_seconds, single_instance)(func)
+
         if auth:
             func = require_auth(func)
 
@@ -117,6 +125,30 @@ def create_file_handler(file_path):
 
     # Wrap the file_handler with the same error/memory logic
     return route_wrapper(file_handler)
+
+def cool_down(cool_down_seconds=0, single_instance=False):
+    '''Decorator to prevent a route from being called more than once within a given time period and optionally ensuring the previous call has completed before another can be made'''
+    def decorator(func):
+        last_call = 0
+        running = False
+
+        def wrapped_route(request):
+            nonlocal last_call, running
+            if running and single_instance:
+                return "Already running", 409
+
+            if (time.time() - last_call) < cool_down_seconds:
+                return "Cooling down", 429
+
+            running = True
+            last_call = time.time()
+            try:
+                return func(request)
+            finally:
+                running = False
+
+        return wrapped_route
+    return decorator
 
 def four_oh_four(request):
     print("--- 404 ---")
@@ -219,7 +251,7 @@ def require_auth(handler):
 
 
 
-@add_route("/api/auth/challenge")
+@add_route("/api/auth/challenge", cool_down_seconds=2)
 def get_challenge(request):
     global current_challenge, challenge_timestamp
     # Generate a random nonce (challenge)
@@ -617,4 +649,3 @@ def go(ap_mode):
     
 
 #TODO roller games and police force need rom versions
-#TODO implement cool-down decorator for sensitive actions
