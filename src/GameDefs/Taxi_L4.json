@@ -1,8 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Roller Games",
-        "System": "11c",
-        "FileVer": 2     
+        "GameName": "Taxi",
+        "System": "11B"        
     },
 
     "Memory" : {
@@ -14,7 +13,7 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": 56,
+        "Address": 56, 
         "Ball1": "0xF1",
         "Ball2": "0xF2",
         "Ball3": "0xF3",
@@ -39,8 +38,8 @@
 
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": "0x6ED",
-        "InitialAdr": "0x6FD",
+        "ScoreAdr": "0x703",
+        "InitialAdr": "0x713",
         "BytesInScore": 4
     },
 
@@ -57,11 +56,5 @@
         "Type": 0,
         "Address": 56,
         "Length": 23
-    },
-
-    "CoinDrop": {
-        "Type": 0
     }
-
-    
 }
