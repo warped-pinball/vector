@@ -3,6 +3,7 @@
 # This work is licensed under CC BY-NC 4.0 
 '''
     Warped Pinball - SYS11.Wifi
+    fault check updated for early sys11 game compatability
 '''
 
 import Wifi_Main as Wifi
@@ -38,25 +39,30 @@ def set_error_led():
     led_board = machine.Pin(26, machine.Pin.OUT)
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
 
+
 def bus_activity_fault_check():
-    # looking for bus acitivty that indicates reset hold is not working
-    pins = [machine.Pin(i, machine.Pin.IN) for i in range(14, 22)]  #data lines
+    # Looking for bus activity via transitions - reset hold is not working?
+    pins = [machine.Pin(i, machine.Pin.IN) for i in range(14, 22)]  # Data lines
+    transitions = 0
     total_reads = 0
-    zero_reads = 0
     start_time = time.ticks_us()
-    # Keep reading for a bit
-    while time.ticks_diff(time.ticks_us(), start_time) < 800000:        
-        for pin in pins:
-            if pin.value() == 0:
-                 zero_reads += 1
+    previous_states = [pin.value() for pin in pins]
+    
+    while time.ticks_diff(time.ticks_us(), start_time) < 800000:
+        for i, pin in enumerate(pins):
+            current_state = pin.value()
+            if current_state != previous_states[i]:  
+                transitions += 1
+                previous_states[i] = current_state 
         total_reads += 1    
-    print(f"Total reads: {total_reads}")
-    print(f"Reads with any bit 0: {zero_reads}")
-    #return fault is true/false
-    if (zero_reads>1):
-        return(True)   #fault
+    
+    Log.log(f"Total reads: {total_reads}")
+    Log.log(f"Total transitions: {transitions}")
+    
+    if transitions > 250:
+        return True   # Fault
     else:
-        return (False) #all ok
+        return False  # All ok
 
 
 def adr_activity_check():
