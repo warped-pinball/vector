@@ -1,12 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Whirl Wind",
-        "System": "11B",
-        "FileVer": 2   
-    },
-
-    "Definition": {
-        "version": 1
+        "GameName": "Taxi",
+        "System": "11B"        
     },
 
     "Memory" : {
@@ -18,16 +13,16 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": "0x38",
-        "Ball1": "0x01",
-        "Ball2": "0x02",
-        "Ball3": "0x03",
-        "Ball4": "0x04",
-        "Ball5": "0x05"
+        "Address": 56, 
+        "Ball1": "0xF1",
+        "Ball2": "0xF2",
+        "Ball3": "0xF3",
+        "Ball4": "0xF4",
+        "Ball5": "0xF5"
     },
 
     "DisplayMessage": {
-        "Type": 3,
+        "Type": 2,
         "Address": "0x7B4",
         "Length": 16,
         "Number": 3,
@@ -38,13 +33,13 @@
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7E6"
+        "ChecksumResultAdr": "0x7EC"
     },
 
     "HighScores": {
-        "Type": 3,
-        "ScoreAdr": "0x735",
-        "InitialAdr": "0x755",
+        "Type": 1,
+        "ScoreAdr": "0x703",
+        "InitialAdr": "0x713",
         "BytesInScore": 4
     },
 
@@ -61,10 +56,5 @@
         "Type": 0,
         "Address": 56,
         "Length": 23
-    },
-    
-    "CoinDrop": {
-        "Type": 0
     }
 }
-
