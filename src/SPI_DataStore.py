@@ -1,10 +1,13 @@
 '''
-SPI Data (player and scores)
+SPI Data (player names, scores, wifi config, tournament scores, some extra config stuff)
 
 '''
 import SPI_Store as fram
 import struct
 from micropython import const
+from logger import logger_instance
+Log = logger_instance
+
 numberOfPlayers=const(30)
 top_mem = const(32767)
 
@@ -111,8 +114,13 @@ def deserialize(data, structure_name):
         return {"ssid": ssid.decode().strip('\0'), "password": password.decode().strip('\0'), "gamename": gamename.decode().strip('\0'), "Gpassword": gpassword.decode().strip('\0')}
     
     elif structure_name == "extras":
-        enable, other , lastIP, message = struct.unpack("<II20s20s",data)
-        return {"enable": enable, "other": other, "lastIP": lastIP.decode().strip('\0'), "message": message.decode().strip('\0')}
+        #print (data,"length= ",len(data))  #,"s-> ",data.strip('\00'))
+        try:
+            enable, other , lastIP, message = struct.unpack("<II20s20s",data)
+            return {"enable": enable, "other": other, "lastIP": lastIP.decode().strip('\0'), "message": message.decode().strip('\0')}
+        except:
+            print("fault 3452")
+            return {"enable": "true", "other": "1", "lastIP": "none", "message": "none"}
     else:
         raise ValueError("Unknown structure name")
 
@@ -124,20 +132,30 @@ def blankStruct(structure_name):
         'score': 0,
         'date': '04/17/2023',
         'game': 0,
-        'index': 0
+        'index': 0,
+        'enable': 1,
+        'lastIP': 'none',
+        'message': "ok",
+        'other': 1,
+        "ssid": "",  
+        "password": "", 
+        "Gpassword": " ",
+        "gamename": "GenericSystem11", 
+        "enable": 1,    
+        "other": 0      
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
-        print("sets")
+        print("   +sets")
         for x in range(structure["sets"]):
             for i in range(structure["count"]):
                 write_record(structure_name, fake_entry, i, x)
     else:    
         for i in range(structure["count"]):
-            write_record(structure_name, fake_entry, i)
-    print("blank struct done")
+            write_record(structure_name, fake_entry, i)    
+    Log.log(f"DATST: blank {structure_name}")
 
-
+'''
 def blankConfig(structure_name):
     if structure_name=="configuration":
         fake_entry = {
@@ -149,6 +167,9 @@ def blankConfig(structure_name):
             "other": 0      
         }   
         write_record("configuration", fake_entry, 0, 0)
+        Log.log(f"DATST: blank {structure_name}")
+'''
+
 
 def blankIndPlayerScores(playernum):
     fake_entry = {       
@@ -159,14 +180,17 @@ def blankIndPlayerScores(playernum):
     for i in range(structure["count"]):
         write_record("individual", fake_entry, i, playernum)
 
+
 def blankAll():
     blankStruct("tournament")
     blankStruct("leaders")
     blankStruct("names")
     blankStruct("individual")
-    blankConfig("configuration")    
+    blankStruct("configuration")    
+    blankStruct("extras")
     record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)    
+
 
 def writeIP(ipaddress):    
     rec=read_record("extras")    
@@ -182,10 +206,13 @@ if __name__ == "__main__":
     print ("DAT: version= ",readver["version"])
 
     blankAll()
+
     record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)
 
+    print("\n\n")
     show_mem_map()
+    print("\n\n")
 
     readver = read_record("MapVersion", index=0)
     print ("read ver string=",readver["version"])
