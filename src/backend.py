@@ -69,7 +69,6 @@ def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instan
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
         single_instance = True
-        cool_down_seconds = 2
 
     def decorator(func):
         if cool_down_seconds > 0 or single_instance:
@@ -138,6 +137,7 @@ def cool_down(cool_down_seconds=0, single_instance=False):
                 return "Already running", 409
 
             if (time.time() - last_call) < cool_down_seconds:
+                # TODO rather then returning a 429, sleep until the cool down period is over if there is only one instance (to prevent pileups)
                 return "Cooling down", 429
 
             running = True
@@ -251,7 +251,7 @@ def require_auth(handler):
 
 
 
-@add_route("/api/auth/challenge", cool_down_seconds=2)
+@add_route("/api/auth/challenge")
 def get_challenge(request):
     global current_challenge, challenge_timestamp
     # Generate a random nonce (challenge)
@@ -532,8 +532,70 @@ def app_install_fault(request):
 # server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
 server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
 
-#
-server.add_route('/upload_file',handler = FileIO.process_incoming_file, methods=['POST'])
+# cool down needs to be set to 0 to keep updates moving quickly/error free
+@add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
+def app_upload_file_json(request):
+    """
+    Receives a JSON body representing a single "file update" dictionary, e.g.:
+        {
+          "FileType": "SomeFile.py" or "SomeFile.json",
+          "contents": "...",
+          "Checksum": "1234ABCD",
+          ...
+        }
+
+    Then it creates a fake form-based request to call the existing process_incoming_file,
+    which expects request.form and does:
+        for key in request.form:
+            value = request.form[key]
+        data = json.loads(value)
+
+    Returns:
+      200 on success,
+      500 on error (with a JSON body containing the error).
+    """
+    import json
+    import FileIO
+
+    class FakeRequest:
+        def __init__(self, dict_value):
+            # The form in your code is accessed by request.form
+            self.form = {
+                "dictionary": dict_value
+            }
+
+    try:
+        # request.data should be a single dictionary
+        # If it’s not, that’s an error
+        if not isinstance(request.data, dict):
+            raise ValueError("Expected a JSON dictionary (single file), but got something else.")
+
+        # Convert the dict to a JSON string, 
+        # because process_incoming_file does `json.loads(value)`
+        item_json_str = json.dumps(request.data)
+
+        # Build a fake request object
+        fake_request = FakeRequest(item_json_str)
+
+        # Call your existing function
+        result = FileIO.process_incoming_file(fake_request)
+
+        # Return success
+        return json.dumps({
+            "status": "ok",
+            "result": result
+        }), 200, "application/json"
+
+    except Exception as e:
+        # Return an error with status code 500
+        error_message = f"Error uploading file: {e}"
+        print(error_message)
+        return json.dumps({
+            "status": "error",
+            "message": error_message
+        }), 500, "application/json"
+
+
 
 # kinda logs for update
 server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])

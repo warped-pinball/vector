@@ -449,7 +449,7 @@ def write_test_data():
         # set score capture
         + [
             'extras = datastore.read_record("extras", 0)',
-            f'extras["other"] = {test_data['settings']['score_capture']}',
+            f'extras["other"] = {test_data["settings"]["score_capture"]}',
             'datastore.write_record("extras", extras, 0)'
         ]
 
