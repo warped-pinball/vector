@@ -4,7 +4,7 @@
 """
 Score Track
     V0.2 9/7/2024  period after initials handling
-    New for System 9 machines  (Nov. 2024) - changed to score claim method
+    V0.3 11/25/2024 game over fix for high speed
 """
 
 import json
@@ -342,13 +342,8 @@ def CheckForNewScores(nState=[0]):
                 nState[0]=1
             
         elif nState[0]==1:
-            print("SERV: game end check")
-
-            #collect scores in progress...
-            for i in range(4):
-                print(readMachineScore(i))
-                    
-            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
+            print("SERV: game end check")            
+            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
                 #game over, get new scores
                 nState[0]=0                
                 for i in range(4): 

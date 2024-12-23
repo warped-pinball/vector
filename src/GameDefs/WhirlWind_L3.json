@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Whirl Wind",
         "System": "11B",
-        "FileVer": 1   
+        "FileVer": 2   
     },
 
     "Definition": {
@@ -42,7 +42,7 @@
     },
 
     "HighScores": {
-        "Type": 1,
+        "Type": 3,
         "ScoreAdr": "0x735",
         "InitialAdr": "0x755",
         "BytesInScore": 4

@@ -257,15 +257,6 @@ def application_mode(fault_msg):
         year, month, day = map(int, data.split('-'))
         rtc.datetime((year, month, day, 0, 0, 0, 0, 0))
         return "OK"
-       
-    def load_leaders():
-        try:
-            leaders = []
-            for i in range(DataStore.memory_map["leaders"]["count"]):
-                leaders.append(DataStore.read_record("leaders",i))
-        except OSError:
-            leaders = []
-        return leaders   
     
     def app_leaderBoardRead(request):
         leaders = load_leaders()
