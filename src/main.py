@@ -145,6 +145,7 @@ if bus_activity_fault == False:
 
 #launch wifi, and server. Should not return
 from backend import go
+Log.log("MAIN: Launching Wifi")
 go(ap_mode)
 
 

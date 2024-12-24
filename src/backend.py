@@ -23,7 +23,6 @@ import Pico_Led
 import displayMessage
 import ujson as json
 import uhashlib as hashlib
-import binascii
 import time
 import faults
 import GameDefsLoad
@@ -315,7 +314,7 @@ def app_reset_memory(request):
     server.reset_bootup_counters()
     
 
-@add_route("/api/memory/save")
+@add_route("/api/memory-snapshot")
 def download_memory(request):
     # Stream memory values directly to the response to save RAM
     def memory_values_generator():
@@ -530,7 +529,14 @@ def app_install_fault(request):
 # server.add_route('/download_leaders',handler = FileIO.download_leaders, methods=['GET'])
 # server.add_route('/download_tournament',handler = FileIO.download_tournament, methods=['GET'])
 # server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
-server.add_route('/download_log',handler = FileIO.download_log, methods=['GET'])
+
+@add_route("/api/memory-snapshot")
+def app_memory_snapshot(request):
+    return save_ram(), 200
+
+@add_route("/api/logs", cool_down_seconds=10, single_instance=True)
+def app_getLogs(request):
+    return FileIO.download_log()
 
 # cool down needs to be set to 0 to keep updates moving quickly/error free
 @add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
@@ -598,7 +604,7 @@ def app_upload_file_json(request):
 
 
 # kinda logs for update
-server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
+# server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
 
 
 def add_app_mode_routes():

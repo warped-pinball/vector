@@ -78,7 +78,7 @@ window.handleUpdateUploadChange = async function(event) {
     const file = fileInput.files[0];
     
     // Confirm we want to apply this update
-    window.confirmAction(`apply the update from "${file.name}"`, async () => {
+    window.confirmAction(`apply the update in ${file.name}`, async () => {
       // If the user confirms, run the upload
       await window.uploadUpdateFile(file);
       // Optionally clear the input so the user can select again
@@ -143,3 +143,86 @@ window.handleUpdateUploadChange = async function(event) {
       alert("Error applying updates:\n" + err.message);
     }
   };
+
+
+//
+// Download Logs
+//
+window.downloadLogs = async function() {
+  console.log("Downloading logs...");
+
+  // Perform the fetch (no auth needed if your endpoint doesn't require it)
+  const response = await window.smartFetch('/api/logs', null, false);
+
+  if (!response.ok) {
+      console.error("Failed to download logs:", response.status, response.statusText);
+      alert("Failed to download logs.");
+      return;
+  }
+
+  // Get the response as a blob
+  const blob = await response.blob();
+
+  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
+  let filename = document.getElementById('game_name').innerText;
+  filename += '_log_';
+  filename += new Date().toISOString().split('T')[0];
+  filename += '.txt';
+
+  // Replace spaces with underscores
+  filename = filename.replace(/ /g, '_');
+
+  // Create a temporary link to trigger the download
+  const url = window.URL.createObjectURL(blob);
+  const element = document.createElement('a');
+  element.href = url;
+  element.download = filename;
+  document.body.appendChild(element);
+  element.click();
+
+  // Clean up
+  document.body.removeChild(element);
+  window.URL.revokeObjectURL(url);
+
+  console.log("Logs download initiated.");
+};
+
+//
+// Download Memory Snapshot
+//
+window.downloadMemorySnapshot = async function() {
+  console.log("Downloading memory snapshot...");
+
+  // Perform the fetch (no auth needed if your endpoint doesn't require it)
+  const response = await window.smartFetch('/api/memory-snapshot', null, false);
+
+  if (!response.ok) {
+      console.error("Failed to fetch memory snapshot:", response.status, response.statusText);
+      alert("Failed to download memory snapshot.");
+      return;
+  }
+
+  // Get the response as text
+  const content = await response.text();
+
+  // Generate a filename similar to how you do CSVs
+  let filename = document.getElementById('game_name').innerText;
+  filename += '_memory_';
+  filename += new Date().toISOString().split('T')[0];
+  filename += '.txt';
+
+  // Replace spaces with underscores
+  filename = filename.replace(/ /g, '_');
+
+  // Create a temporary link to trigger the download
+  const element = document.createElement('a');
+  element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  element.download = filename;
+  document.body.appendChild(element);
+  element.click();
+
+  // Clean up
+  document.body.removeChild(element);
+
+  console.log("Memory snapshot download initiated.");
+};
