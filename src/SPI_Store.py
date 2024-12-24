@@ -73,9 +73,9 @@ def mem_write(spi, cs, address, data):
     # Split data into chunks of 16 bytes
     chunk_size = 16
     for i in range(0, len(data), chunk_size):
-        print("x",i)
+        #print("x",i)
         chunk = data[i:i + chunk_size]
-        print(chunk)
+        #print(chunk)
         reg_cmd(spi, cs, OPCODE_WREN)
 
         msg = bytearray()
@@ -83,7 +83,7 @@ def mem_write(spi, cs, address, data):
         msg.append((address & 0xFF00) >> 8)
         msg.append(address & 0x00FF)
         msg.extend(chunk)
-        print(msg)
+        #print(msg)
        
         cs.value(0)
         spi.write(msg)
@@ -220,7 +220,7 @@ def _sflash_cmd_dat(spi, cs, reg, data=bytearray()):
     cs.value(1)
     spi.write(msg)
     cs.value(0)
-    utime.sleep_us(50) 
+    utime.sleep_us(20) 
     cs.value(1)
 
 #read a register (can be multiple read bytes)
@@ -232,7 +232,7 @@ def _sflash_reg_read(spi, cs, reg, nbytes=1):
     spi.write(msg)
     data = spi.read(nbytes)
     cs.value(0)
-    utime.sleep_us(50) 
+    utime.sleep_us(20) 
     cs.value(1)
     return data
 
@@ -301,7 +301,7 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
         address += chunk_size
         offset += chunk_size    
 
-    utime.sleep_us(50) 
+    utime.sleep_us(20) 
     cs.value(1)  
     return data
 
@@ -468,9 +468,11 @@ def sflash_init():
 
     #set WPSEL
     _sflash_write_enable()
-    _sflash_cmd_dat(spi, cs, SFLASH_WPSEL) 
+    _sflash_cmd_dat(spi, cs, SFLASH_WPSEL)    
     _sflash_write_enable()
     _sflash_cmd_dat(spi, cs, SFLASH_GBLK) 
+
+
 
 
 #
@@ -481,7 +483,18 @@ def initialize():
     #init flash chip if it is there
     sflash_init()         
 
+    #check fram?, version?
 
+
+
+#
+# get system versions
+#         (module version:fram type:serial flash type)
+def version():
+    sflash_ver=0
+    if sflash_is_on_board:
+        sflash_ver=1
+    return SPI_store_version,1,sflash_ver
 
 
 
@@ -492,17 +505,18 @@ if __name__ == "__main__":
     initialize()
     print("ready?",sflash_is_ready())
 
-
+    print("V",version())
+    '''
     sflash_protect_sectors(0x0000, 0x1FF0000, "off")
 
-    
+   
     
     start_time = utime.ticks_ms() 
     sflash_erase(0x00,0x10000 * 96,True)
     elapsed_time = utime.ticks_diff(utime.ticks_ms(), start_time)  
     print(f"The function took {elapsed_time} milliseconds to complete.")
    
-    '''
+    
     print("READ 1  ",sflash_read(0, 18))    
  
     data_buffer = bytearray([0xFF] * 1024)
@@ -512,13 +526,16 @@ if __name__ == "__main__":
     
     start_time = utime.ticks_ms() 
     for i in range(96):
-        sflash_write(0x10000 * i, data_buffer)
+        #sflash_write(0x10000 * i, data_buffer)
+        sflash_read(0x10000*i, 96)
+        _sflash_cmd_dat(spi, cs, SFLASH_RDID)
+        #SFLASH_RDID
     elapsed_time = utime.ticks_diff(utime.ticks_ms(), start_time)  
     print(f"The function took {elapsed_time} milliseconds to complete.")
-    '''
+    
 
 
     print ("READ 2 ",sflash_read(0, 18))
     
     print("done")
-
+    '''
