@@ -38,7 +38,7 @@ cs.value(1)
 
 # Initialize SPI Port
 spi = machine.SPI(0,
-                  baudrate=20000,  #10000,
+                  baudrate=60000,  #20000,
                   polarity=1,
                   phase=1,
                   bits=8,
@@ -199,10 +199,14 @@ SFLASH_PP   = 0x02      #page program (inside 256 byte page)
 #erases set all bits to '1'
 SFLASH_WREN = 0x06      #write enable command
 SFLASH_WRDI = 0x04      #write disable
-
 SFLASH_SE   = 0x20      #sector erase  (4k-byte sector)
 SFLASH_BE4B = 0xDC      #block erase   (64k-byte block) 4byte adr
 SFLASH_CE   = 0x60      #Chip erase    (whole chip)
+#sector protection - using WPSEL=1 mode
+SFLASH_WPSEL = 0x68
+SFLASH_GBLK  = 0x7E  #lock all
+SFLASH_WRDPB = 0xE1
+SFLASH_RDDPB = 0xE0
 #WIP write in progress bit for erases also
 #serial l=flash CS active when HIGH
 
@@ -383,12 +387,58 @@ def sflash_is_ready():
     if (sr[0] & 0x01): return False
     else: return True
 
-#protect all locations
-def sflash_protect_on():
-    pass
 
-def sflash_proteect_off():
-    pass
+def sflash_protect_sectors(start_address, end_address, protect="on"):
+    block_size = 0x10000  # 64K blocks
+    sector_size = 0x1000  # 4K sectors
+    first_block_address = 0x0000000
+    last_block_address  = 0x1FF0000  
+
+    if protect=="on":
+        data_byte = 0xFF
+    else:
+        data_byte = 0
+
+    # 64K blocks from 1 to 510
+    for block_num in range(1, 511):
+        block_address = block_num * block_size
+        if block_address < start_address or block_address >= end_address:
+            continue
+        print ("block # ",block_num," prot= ",protect)
+        _sflash_write_enable()
+        msg = bytearray()        
+        address_bytes = bytearray([
+            (block_address >> 24) & 0xFF,  #MSByte
+            (block_address >> 16) & 0xFF,
+            (block_address >>8) & 0xFF,
+            (block_address & 0xFF),
+            data_byte
+        ])  
+        msg.extend(address_bytes)
+        _sflash_cmd_dat(spi, cs, SFLASH_WRDPB, msg)
+ 
+    # Protect 4K sectors within the first and last block (block 0 and 511)
+    for block_num in [0, 511]:
+        block_address = block_num * block_size
+        for sector_offset in range(0, block_size, sector_size):
+            sector_address = block_address + sector_offset
+            if sector_address < start_address or sector_address >= end_address:
+                continue
+            _sflash_write_enable()
+            print("4k sector # ",sector_offset," prot= ",protect)
+            msg = bytearray()        
+            address_bytes = bytearray([
+                (sector_address >> 24) & 0xFF,  #MSByte
+                (sector_address >> 16) & 0xFF,
+                (sector_address >>8) & 0xFF,
+                (sector_address & 0xFF),
+                data_byte
+            ])  
+            msg.extend(address_bytes)
+            _sflash_cmd_dat(spi, cs, SFLASH_WRDPB, msg)
+
+
+
 
 #init flash chip
 def sflash_init():  
@@ -405,6 +455,7 @@ def sflash_init():
             sflash_is_on_board=False
 
     #4 byte address mode
+    _sflash_write_enable()
     _sflash_cmd_dat(spi, cs, SFLASH_EN4B)       
     #read config, check bit 5
     config_reg=_sflash_reg_read(spi,cs,SFLASH_RDCR)
@@ -415,92 +466,20 @@ def sflash_init():
             print("SFLASH: Fault, cannot set 4byte mode")
             sflash_is_on_board=False
 
-
-
-
-
-
-
-
+    #set WPSEL
+    _sflash_write_enable()
+    _sflash_cmd_dat(spi, cs, SFLASH_WPSEL) 
+    _sflash_write_enable()
+    _sflash_cmd_dat(spi, cs, SFLASH_GBLK) 
 
 
 #
-#Initialize Sysytem!   - Enable and prep spi fram
+#Initialize Sysytem!   - Enable and prep spi fram and serial flash
 #
 def initialize():
     
-    #inti flash chip if it is there
+    #init flash chip if it is there
     sflash_init()         
-
-
-    #write Enable - WEL is 1
-    #reg_cmd(spi,cs,OPCODE_WREN) 
-    time.sleep(0.1)             
-    datret = reg_read(spi, cs, OPCODE_RDSR)  
-    firstbyte=0
-    if len(datret) > 0: 
-        first_byte = datret[0]  
-    if (first_byte & 0x02) == 0:
-        print("SPI: init fault 2")
-
-
-    datret = reg_read(spi, cs, OPCODE_RDSR)    
-    print ("after wrtie: ",datret)
-
-    time.sleep(0.54)
-
-    #reg_cmd(spi,cs,OPCODE_WRDI)     
-    datret = reg_read(spi, cs, OPCODE_RDSR)    
-    print ("after wrtie: ",datret)
-
-
-
-    #status register bit WEL should be clear
-    reg_cmd(spi, cs, OPCODE_WRDI)  #wr disable
-    time.sleep(0.1) 
-    datret = reg_read(spi, cs, OPCODE_RDSR)    
-    firstbyte=0x02
-    if len(datret) > 0: 
-        first_byte = datret[0]  
-    if (first_byte & 0x02) == 0x02:
-        print("SPI: init fault 1")
-        
-
-
-    #write Enable - WEL is 1
-    reg_cmd(spi,cs,OPCODE_WREN) 
-    time.sleep(0.1) 
-    datret = reg_read(spi, cs, OPCODE_RDSR)  
-    firstbyte=0
-    if len(datret) > 0: 
-        first_byte = datret[0]  
-    if (first_byte & 0x02) == 0:
-        print("SPI: init fault 2")
-
-
-    #write_16_fram(SRAM_DATA_BASE+0, 0)
-
-    fram_add=0
-    shadowRam[0]=0x75
-    shadowRam[1]=0x7A
-    RamData=uctypes.bytearray_at(SRAM_DATA_BASE,16)   
-    mem_write(spi, cs, fram_add,RamData)
-
-    datret = reg_read(spi, cs, OPCODE_RDSR)    
-    print ("wr22324 ",datret)
-
-    utime.sleep_ms(100)  
-
-
-    print("read->",mem_read(spi, cs, 0, 5))
-
-
-    time.sleep(0.1)  #confirmd that WREN resets after each write cycle
-    datret = reg_read(spi, cs, OPCODE_RDSR)    
-    print ("SPIinit: ",datret)
-
-
-
 
 
 
@@ -509,26 +488,23 @@ def initialize():
 if __name__ == "__main__":
     import utime
 
-    print("start")
-   
-    sflash_init()           
+    print("spi store running as main")
+    initialize()
     print("ready?",sflash_is_ready())
 
-    print("erase")
 
+    sflash_protect_sectors(0x0000, 0x1FF0000, "off")
 
-
+    
+    
     start_time = utime.ticks_ms() 
     sflash_erase(0x00,0x10000 * 96,True)
     elapsed_time = utime.ticks_diff(utime.ticks_ms(), start_time)  
     print(f"The function took {elapsed_time} milliseconds to complete.")
-
-       
-
-
+   
+    '''
     print("READ 1  ",sflash_read(0, 18))    
-
-    
+ 
     data_buffer = bytearray([0xFF] * 1024)
     data_buffer[0]=155
     data_buffer[1]=133
@@ -539,7 +515,7 @@ if __name__ == "__main__":
         sflash_write(0x10000 * i, data_buffer)
     elapsed_time = utime.ticks_diff(utime.ticks_ms(), start_time)  
     print(f"The function took {elapsed_time} milliseconds to complete.")
-
+    '''
 
 
     print ("READ 2 ",sflash_read(0, 18))
