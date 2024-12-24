@@ -464,7 +464,9 @@ def app_factoryReset(request):
 #
 @add_route("/api/last_ip")
 def app_getLastIP(request):
-    return DataStore.read_record("extras", 0)["lastIP"], 200
+    ip_address = DataStore.read_record("extras", 0)["lastIP"]
+    return json.dumps({"ip": ip_address}), 200
+
 
 @add_route("/api/available_ssids")
 def app_getAvailableSSIDs(request):
@@ -611,7 +613,8 @@ def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json.dumps({"in_ap_mode": False}), 200
+        #TODO put this back
+        return json.dumps({"in_ap_mode": True}), 200
 
 #
 # AP mode routes

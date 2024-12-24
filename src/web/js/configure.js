@@ -88,16 +88,31 @@ async function build_ssid_select(){
 
 }
 
+async function populate_previous_ip() {
+    const response = await window.smartFetch('/api/last_ip', null, false);
+    if (!response.ok) {
+        console.error('Error fetching previous IP');
+        return;
+    }
+    const data = await response.json();
+    const previous_ip = "http://" + data.ip;
+    const ip_link = document.getElementById('previous-ip');
+    ip_link.innerText = previous_ip;
+    ip_link.href = previous_ip;
+}
+
+
 async function populate_configure_modal() {
     build_ssid_select();
     build_game_config_select();
+    populate_previous_ip();
 }
 
 async function configure_check() {
-    const response = await fetch('/api/in_ap_mode');
+    let response = await window.smartFetch('/api/in_ap_mode', null, false);
     if (!response.ok) {
         console.log('Retrying in AP mode check');
-        const response = await fetch('/api/in_ap_mode');
+        response = await window.smartFetch('/api/in_ap_mode', null, false);
     }
     if (!response.ok) {
         console.error('Error checking AP mode status');

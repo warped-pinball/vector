@@ -66,11 +66,14 @@
         <!--        -->
         <dialog id="configure_modal">
             <article>
+                <header>
+                    <h2>Configure Your Vector</h2>
+                </header>
                 <h3>WiFi Settings</h3>
                 <details id="ssid_select_placeholder" class="dropdown"><summary>Scanning for WiFi networks</summary></details>
                 <input type="password" name="wifi_password" placeholder="WiFi password" aria-label="WiFi Password">
         
-                <h3>Configure Your Vector</h3>
+                <h3>Game Settings</h3>
                 <details id="game_config_select_placeholder" class="dropdown"><summary>Building list of games</summary></details>
                 <input type="password" name="vector_password" placeholder="Admin Password" aria-label="Pinball Admin Password">
         
@@ -83,7 +86,8 @@
                 
                 <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network.</p>
         
-                <footer>
+                <footer style="position: relative;">
+                    <small style="position: absolute; display: block; top: 50%; transform: translateY(-50%); bottom: auto;">Previous IP: <a id="previous-ip" href="#"></a></small>
                     <button onclick="window.save_configuration()">💾 Save</button>
                 </footer>
             </article>
@@ -265,11 +269,9 @@
                 return data;
             }
 
-            console.log(`Decompressing ${url}`);
             const start = performance.now();
             const stream = data.pipeThrough(new DecompressionStream("gzip"));
             const decompressed = await new Response(stream).text();
-            console.log(`Decompressed ${url} in ${(performance.now()-start).toFixed(2)}ms`);
             // Cache decompressed data for future loads
             cacheSet(url, decompressed);
             return decompressed;
