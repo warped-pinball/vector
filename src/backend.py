@@ -1,36 +1,32 @@
-#TODO change all of these to more specific imports to save memory
-#TODO organize these imports between 3rd party and local imports
-import SPI_DataStore as DataStore
-from SPI_DataStore import writeIP
-import ujson as json
-import uhashlib as hashlib
-import binascii
-import time
-import gc
-import os
-from Utilities.random_bytes import random_hex
+from  ujson import dumps as json_dumps 
+from hashlib import sha256 as hashlib_sha256
+from binascii import hexlify
+from time import time, sleep
+from gc import collect as gc_collect, threshold as gc_threshold
+from uctypes import bytearray_at
+from machine import RTC
+
 from phew import server
-import reset_control
-import SharedState
+
+from SPI_DataStore import (
+    writeIP, 
+    read_record as ds_read_record, 
+    write_record as ds_write_record, 
+    memory_map as ds_memory_map
+)
+from Utilities.random_bytes import random_hex
+from Utilities.ls import ls
 from Memory_Main import save_ram, blank_ram
-import uctypes
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, SRAM_COUNT_BASE
 from GameStatus import report as game_status_report
-import FileIO
-from machine import RTC
-from Utilities.ls import ls
 import Pico_Led
-import displayMessage
-import ujson as json
-import uhashlib as hashlib
-import time
 import faults
-import GameDefsLoad
+
 #
 # Constants
 #
 rtc = RTC()
-ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
+ram_access = bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 12
 AP_NAME = "Warped Pinball"
 # Authentication variables
@@ -44,7 +40,7 @@ CHALLENGE_EXPIRATION_SECONDS = 60
 #
 def route_wrapper(func):
     def wrapped_route(request):
-        gc.collect()
+        gc_collect()
         try:
             response = func(request)
 
@@ -60,11 +56,11 @@ def route_wrapper(func):
             return msg, 500
 
         finally:
-            gc.collect()
+            gc_collect()
     return wrapped_route
 
 def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instance=False):
-    '''Decorator to add a route to the server with gc.collect() and error handling'''
+    '''Decorator to add a route to the server with gc_collect() and error handling'''
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
         single_instance = True
@@ -103,14 +99,14 @@ def get_content_type(file_path):
 
 def create_file_handler(file_path):
     def file_stream_generator():
-        gc.collect()
+        gc_collect()
         with open(file_path, 'rb') as f:
             while True:
                 chunk = f.read(1024)  # Read in chunks of 1KB
                 if not chunk:
                     break
                 yield chunk
-        gc.collect()
+        gc_collect()
 
     def file_handler(request):
         headers = {
@@ -135,12 +131,12 @@ def cool_down(cool_down_seconds=0, single_instance=False):
             if running and single_instance:
                 return "Already running", 409
 
-            if (time.time() - last_call) < cool_down_seconds:
+            if (time() - last_call) < cool_down_seconds:
                 # TODO rather then returning a 429, sleep until the cool down period is over if there is only one instance (to prevent pileups)
                 return "Cooling down", 429
 
             running = True
-            last_call = time.time()
+            last_call = time()
             try:
                 return func(request)
             finally:
@@ -172,7 +168,7 @@ def hmac_sha256(key, message):
 
     # If key longer than block size, hash it
     if len(key) > BLOCK_SIZE:
-        h = hashlib.sha256()
+        h = hashlib_sha256()
         h.update(key)
         key = h.digest()
 
@@ -185,12 +181,12 @@ def hmac_sha256(key, message):
     i_key_pad = bytes([b ^ 0x36 for b in key])
 
     # Inner hash
-    h_inner = hashlib.sha256()
+    h_inner = hashlib_sha256()
     h_inner.update(i_key_pad + message)
     inner_hash = h_inner.digest()
 
     # Outer hash
-    h_outer = hashlib.sha256()
+    h_outer = hashlib_sha256()
     h_outer.update(o_key_pad + inner_hash)
     return h_outer.digest()
 
@@ -200,25 +196,25 @@ def require_auth(handler):
         global current_challenge, challenge_timestamp
 
         if not current_challenge or not challenge_timestamp:
-            msg = json.dumps({"error": "Challenge missing"}), 401, 'application/json'
+            msg = json_dumps({"error": "Challenge missing"}), 401, 'application/json'
             print(msg)
             return msg
 
-        if (time.time() - challenge_timestamp) > CHALLENGE_EXPIRATION_SECONDS:
-            msg = json.dumps({"error": "Challenge expired"}), 401, 'application/json'
+        if (time() - challenge_timestamp) > CHALLENGE_EXPIRATION_SECONDS:
+            msg = json_dumps({"error": "Challenge expired"}), 401, 'application/json'
             print(msg)
             return msg
 
         # Get the HMAC from the request headers
         client_hmac = request.headers.get('X-Auth-HMAC') or request.headers.get('x-auth-hmac')
         if not client_hmac:
-            msg = json.dumps({"error": "Missing authentication HMAC"}), 401, 'application/json'
+            msg = json_dumps({"error": "Missing authentication HMAC"}), 401, 'application/json'
             print(msg)
             print(request.headers)
             return msg
 
         # Retrieve stored password (the key)
-        credentials = DataStore.read_record("configuration", 0)
+        credentials = ds_read_record("configuration", 0)
         stored_password = credentials["Gpassword"].encode('utf-8')
 
         # Construct the message string
@@ -230,7 +226,7 @@ def require_auth(handler):
 
         # Compute expected HMAC
         expected_digest = hmac_sha256(stored_password, message_bytes)
-        expected_hmac = binascii.hexlify(expected_digest).decode()
+        expected_hmac = hexlify(expected_digest).decode()
 
         if client_hmac == expected_hmac:
             # Authentication successful
@@ -244,7 +240,7 @@ def require_auth(handler):
             print(f"Expected HMAC: {expected_hmac}")
             print(f"Client HMAC: {client_hmac}")
             print(message_bytes)
-            return json.dumps({"error": "Authentication failed"}), 401, 'application/json'
+            return json_dumps({"error": "Authentication failed"}), 401, 'application/json'
 
     return auth_wrapper
 
@@ -255,9 +251,9 @@ def get_challenge(request):
     global current_challenge, challenge_timestamp
     # Generate a random nonce (challenge)
     current_challenge = random_hex(64)
-    challenge_timestamp = time.time()
+    challenge_timestamp = time()
     # Return the nonce to the client
-    return json.dumps({"challenge": current_challenge}), 200, 'application/json'
+    return json_dumps({"challenge": current_challenge}), 200, 'application/json'
 
 @add_route("api/auth/password_check", method="POST", auth=True)
 def check_password(request):
@@ -277,13 +273,15 @@ for file_path in ls('web'):
 #
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):              
+    import reset_control
     reset_control.reset()
-    time.sleep(2)
+    sleep(2)
     reset_control.release(True)         
     server.reset_bootup_counters()
 
 @add_route("/api/game/name")
 def app_game_name(request):
+    import SharedState
     return SharedState.gdata["GameInfo"]["GameName"], 200
 
 @add_route("/api/game/status")
@@ -292,13 +290,14 @@ def app_gameStatus(request):
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
-    return json.dumps({
-        "active_config":DataStore.read_record("configuration", 0)["gamename"]
+    return json_dumps({
+        "active_config":ds_read_record("configuration", 0)["gamename"]
     }), 200
 
 @add_route("/api/game/configs_list")
 def app_game_configs_list(request):
-    return json.dumps(GameDefsLoad.list_game_configs()), 200
+    from GameDefsLoad import list_game_configs
+    return json_dumps(list_game_configs()), 200
         
 
 #
@@ -306,10 +305,11 @@ def app_game_configs_list(request):
 #
 @add_route("/api/memory/reset", auth=True)
 def app_reset_memory(request):
+    import reset_control
     reset_control.reset()
-    time.sleep(2)
+    sleep(2)
     blank_ram()
-    time.sleep(1)
+    sleep(1)
     reset_control.release(True)
     server.reset_bootup_counters()
     
@@ -336,8 +336,8 @@ def download_memory(request):
 def get_scoreboard(key):
     '''Get the leaderboard from memory'''
     rows = []
-    for i in range(DataStore.memory_map[key]["count"]):
-        row = DataStore.read_record(key, i)
+    for i in range(ds_memory_map[key]["count"]):
+        row = ds_read_record(key, i)
         if row.get("score", 0) > 0:
             rows.append(row)
     
@@ -348,7 +348,7 @@ def get_scoreboard(key):
     for i, row in enumerate(rows):
         row["rank"] = i + 1
 
-    return json.dumps(rows), 200
+    return json_dumps(rows), 200
 
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
@@ -360,11 +360,14 @@ def app_tournamentRead(request):
 
 @add_route("/api/leaders/reset", auth=True)
 def app_resetScores(request):
-    DataStore.blankStruct("leaders")
+    from SPI_DataStore import blankStruct
+    blankStruct("leaders")
 
 @add_route("/api/tournament/reset", auth=True)
 def app_tournamentClear(request):
-    DataStore.blankStruct("tournament")
+    from SPI_DataStore import blankStruct
+    import SharedState
+    blankStruct("tournament")
     SharedState.gameCounter=0
 
 #
@@ -373,15 +376,15 @@ def app_tournamentClear(request):
 @add_route("/api/players")
 def app_getPlayers(request):
     players = {}
-    count = DataStore.memory_map["names"]["count"]
+    count = ds_memory_map["names"]["count"]
     # Iterate through the player records
     for i in range(count):
-        record = DataStore.read_record("names", i)
+        record = ds_read_record("names", i)
         initials = record['initials'].replace('\x00', ' ').strip('\0')
         full_name = record['full_name'].replace('\x00', ' ').strip('\0')
         if initials or full_name: # ensure that at least one field is not empty
             players[str(i)] = {"initials": initials, "name": full_name}             
-    return json.dumps(players), 200
+    return json_dumps(players), 200
 
     
 @add_route("/api/player/update", method="POST", auth=True)
@@ -392,19 +395,19 @@ def app_updatePlayer(request):
     initials = body['initials'].upper()[:3]
     name = body['full_name'][:16]
     index = int(body['id'])  
-    if index < 0 or index > DataStore.memory_map["names"]["count"]:
+    if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
             
-    DataStore.write_record("names",{"initials":initials,"full_name":name},index)
+    ds_write_record("names",{"initials":initials,"full_name":name},index)
 
 
 @add_route("/api/player/scores")
 def app_getScores(request):
     player_id = int(request.query.get("id"))
     scores = []                      
-    numberOfScores = DataStore.memory_map["individual"]["count"]
+    numberOfScores = ds_memory_map["individual"]["count"]
     for i in range(numberOfScores):
-        record = DataStore.read_record("individual", i, player_id)  
+        record = ds_read_record("individual", i, player_id)  
         score = record['score']
         date = record['date'].strip().replace('\x00', ' ')          
         if score > 0:
@@ -412,13 +415,14 @@ def app_getScores(request):
                 "score": score,
                 "date": date
             })                           
-    return json.dumps(scores), 200
+    return json_dumps(scores), 200
 
 
 @add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
+    from SPI_DataStore import blankIndPlayerScores
     index = int(request.args.get("id"))
-    DataStore.blankIndPlayerScores(index)
+    blankIndPlayerScores(index)
 
 
 #
@@ -426,10 +430,10 @@ def app_resetIndScores(request):
 #
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
-    raw_data = DataStore.read_record("extras", 0)["other"]
+    raw_data = ds_read_record("extras", 0)["other"]
     print(f"raw_data: {raw_data}")
     score_cap = bool(raw_data)
-    return json.dumps({"on-machine": score_cap}), 200
+    return json_dumps({"on-machine": score_cap}), 200
 
 
 @add_route("/api/settings/score_claim_methods", method="POST", auth=True)
@@ -439,47 +443,51 @@ def app_setScoreCap(request):
     print(type(json_data))
     print(f"json_data: {json_data}")
     new_state = json_data['on-machine']
-    info = DataStore.read_record("extras", 0)
+    info = ds_read_record("extras", 0)
     info["other"] = new_state
-    DataStore.write_record("extras", info, 0)
+    ds_write_record("extras", info, 0)
 
 
 # @add_route("/api/settings/tournament_mode")
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):    
+    import SharedState
     SharedState.tournamentModeOn = int(request.json['tournament_mode'])
 
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     # TODO confirm with this is an ok way to reset the device
-    import machine
+    from SPI_DataStore import blankAll
+    from machine import reset
+    import reset_control
+
     reset_control.reset() # turn off pinbal machine
-    DataStore.blankAll()
-    machine.reset()
+    blankAll()
+    reset()
 
 #
 # Networking
 #
 @add_route("/api/last_ip")
 def app_getLastIP(request):
-    ip_address = DataStore.read_record("extras", 0)["lastIP"]
-    return json.dumps({"ip": ip_address}), 200
+    ip_address = ds_read_record("extras", 0)["lastIP"]
+    return json_dumps({"ip": ip_address}), 200
 
 
 @add_route("/api/available_ssids")
 def app_getAvailableSSIDs(request):
     import scanwifi
     available_networks=scanwifi.scan_wifi2()
-    ssid = DataStore.read_record("configuration", 0)["ssid"]
+    ssid = ds_read_record("configuration", 0)["ssid"]
 
     for network in available_networks:
         if network['ssid'] == ssid:
             network['configured'] = True
             break
 
-    return json.dumps(available_networks), 200
+    return json_dumps(available_networks), 200
 
 
 #TODO setup domain name
@@ -510,7 +518,7 @@ def app_getDateTime(request):
 #TODO not sure we need this anymore
 # @add_route("/api/date")
 # def app_getDate(request):
-#     y, m, d, _,_,_,_,_= time.localtime()
+#     y, m, d, _,_,_,_,_= localtime()
 #     return f"{y:04d}-{m:02d}-{d:02d}", 200
 
 
@@ -522,23 +530,20 @@ def app_getDateTime(request):
 
 @add_route("/api/fault")
 def app_install_fault(request):
-    return json.dumps(SharedState.faults), 200
+    import SharedState
+    return json_dumps(SharedState.faults), 200
 
 #
 # File IO
 #
-#TODO probably not required if we can enable downloading files form score boards in javascript
-# server.add_route('/download_leaders',handler = FileIO.download_leaders, methods=['GET'])
-# server.add_route('/download_tournament',handler = FileIO.download_tournament, methods=['GET'])
-# server.add_route('/download_names',handler = FileIO.download_names, methods=['GET'])
-
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
     return save_ram(), 200
 
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True)
 def app_getLogs(request):
-    return FileIO.download_log()
+    from FileIO import download_log
+    return download_log()
 
 # cool down needs to be set to 0 to keep updates moving quickly/error free
 @add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
@@ -562,8 +567,7 @@ def app_upload_file_json(request):
       200 on success,
       500 on error (with a JSON body containing the error).
     """
-    import json
-    import FileIO
+    from FileIO import process_incoming_file
 
     class FakeRequest:
         def __init__(self, dict_value):
@@ -580,16 +584,16 @@ def app_upload_file_json(request):
 
         # Convert the dict to a JSON string, 
         # because process_incoming_file does `json.loads(value)`
-        item_json_str = json.dumps(request.data)
+        item_json_str = json_dumps(request.data)
 
         # Build a fake request object
         fake_request = FakeRequest(item_json_str)
 
         # Call your existing function
-        result = FileIO.process_incoming_file(fake_request)
+        result = process_incoming_file(fake_request)
 
         # Return success
-        return json.dumps({
+        return json_dumps({
             "status": "ok",
             "result": result
         }), 200, "application/json"
@@ -598,7 +602,7 @@ def app_upload_file_json(request):
         # Return an error with status code 500
         error_message = f"Error uploading file: {e}"
         print(error_message)
-        return json.dumps({
+        return json_dumps({
             "status": "error",
             "message": error_message
         }), 500, "application/json"
@@ -606,14 +610,14 @@ def app_upload_file_json(request):
 
 
 # kinda logs for update
-# server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
+# TODO server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
 
 
 def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json.dumps({"in_ap_mode": False}), 200
+        return json_dumps({"in_ap_mode": False}), 200
 
 #
 # AP mode routes
@@ -623,20 +627,20 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json.dumps({"in_ap_mode": True}), 200
+        return json_dumps({"in_ap_mode": True}), 200
 
     @add_route("/api/settings/set_vector_config", method="POST")
     def app_setWifi(request):
         '''Set the wifi SSID and password'''
-        data = request.data
+        from GameDefsLoad import list_game_configs
+        all_game_configs = list_game_configs().keys()
         
-        # confirm that the game config exists
-        all_game_configs = GameDefsLoad.list_game_configs().keys()
+        data = request.data
         if data['game_config_filename'] not in all_game_configs:
             return f"Invalid game config filename {data['game_config_filename']}", 400
         
 
-        DataStore.write_record("configuration",
+        ds_write_record("configuration",
             {
                 "ssid": data['ssid'],
                 "password": data['wifi_password'],
@@ -644,12 +648,12 @@ def add_ap_mode_routes():
                 "gamename": data['game_config_filename'],
             }
         )
-        print(request.data)
+
         Pico_Led.off()
 
 def connect_to_wifi():
     from phew import connect_to_wifi as phew_connect, is_connected_to_wifi as phew_is_connected
-    wifi_credentials = DataStore.read_record("configuration", 0)
+    wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
     password = wifi_credentials["password"]
 
@@ -663,7 +667,8 @@ def connect_to_wifi():
             print(f"Connected to wifi with IP address {ip_address}")
             writeIP(ip_address)
             Pico_Led.on()
-            displayMessage.init(ip_address)
+            from displayMessage import init
+            init(ip_address)
             return True
     
     # check that we get signal form the ssid
@@ -685,7 +690,7 @@ def go(ap_mode):
     #Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
     #wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)   
     Pico_Led.off()
-    gc.threshold(2048 * 6) 
+    gc_threshold(2048 * 6) 
 
     if not ap_mode:
         # try to connect to WiFi
