@@ -5,7 +5,7 @@
 async function confirm_auth_get(url, purpose) {
     confirmAction(purpose, async () => {
         const response = await window.smartFetch(url, null, true);
-        if (response.status !== 200) {
+        if (response.status !== 200 && response.status !== 401) { // 401 already alerted the user that their password was wrong
             console.error(`Failed to ${purpose}:`, response.status);
             alert(`Failed to ${purpose}.`);
         }

@@ -363,28 +363,24 @@ async function showPasswordPrompt() {
 }
 
 async function get_password() {
-    // check if password is already in localStorage
     let password = localStorage.getItem("password");
 
-    if (!password) {
+    if (password === null) {
+        // Password not set in storage
         password = await showPasswordPrompt();
-
-        // If user canceled, password is null, so handle that if needed
         if (password !== null) {
-            // password is now stored in localStorage by showPasswordPrompt
             console.log("Password set:", password);
         } else {
             console.log("User canceled password input.");
         }
     } else {
-        // un-hide the logout button if password is already stored
+        // Un-hide logout button if password is stored
         const logoutButton = document.getElementById("logout-button");
         if (logoutButton) {
             logoutButton.classList.remove("hide");
         }
     }
 
-    console.log("Password: ", password);
     return password;
 }
 

@@ -613,8 +613,7 @@ def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        #TODO put this back
-        return json.dumps({"in_ap_mode": True}), 200
+        return json.dumps({"in_ap_mode": False}), 200
 
 #
 # AP mode routes
