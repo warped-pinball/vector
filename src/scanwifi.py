@@ -8,26 +8,27 @@ def scan_wifi2():
     # Scan for networks
     networks = wlan.scan()
 
-    ssid_rssi_list = []
+    output = {}
     for net in networks:
         ssid = net[0].decode('utf-8').strip()  #SSID
-        rssi = net[3]  
+        rssi = net[3]
         if ssid:
-            ssid_rssi_list.append((ssid, rssi))  # Store SSID and RSSI
+            if ssid not in output or rssi > output[ssid]['rssi']:
+                output[ssid] = {
+                    'ssid': ssid,
+                    'rssi': rssi
+                }
 
     wlan.active(False)  # Deactivate the interface
-    # Remove duplicates
-    ssid_rssi_dict = {ssid: rssi for ssid, rssi in ssid_rssi_list}
 
-    #sort by RSSI from highest to lowest
-    sorted_ssid_rssi = sorted(ssid_rssi_dict.items(), key=lambda x: x[1], reverse=True)
-
-    return sorted_ssid_rssi
+    return sorted(list(output.values()), key=lambda x: x['rssi'], reverse=True)
 
 if __name__ == "__main__":
     sorted_networks = scan_wifi2()
     print("Unique SSIDs in the area (sorted by RSSI):")
-    for ssid, rssi in sorted_networks:
+    for network in sorted_networks:
+        ssid = network['ssid']
+        rssi = network['rssi']
         print(f"SSID: {ssid}, RSSI: {rssi}")
 
 

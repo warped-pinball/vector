@@ -110,7 +110,7 @@ def download_names(request):
 
 
 
-def download_log(request):
+def download_log():
     try:
         # Prepare the response headers
         headers = {

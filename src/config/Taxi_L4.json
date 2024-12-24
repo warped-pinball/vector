@@ -1,8 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "System11",
-        "System": "11x",
-        "FileVer": 1     
+        "GameName": "Taxi",
+        "System": "11B"        
     },
 
     "Memory" : {
@@ -13,8 +12,8 @@
     },
 
     "BallInPlay": {
-        "Type": 0,
-        "Address": 56,
+        "Type": 1,
+        "Address": 56, 
         "Ball1": "0xF1",
         "Ball2": "0xF2",
         "Ball3": "0xF3",
@@ -23,24 +22,24 @@
     },
 
     "DisplayMessage": {
-        "Type": 0,
+        "Type": 2,
         "Address": "0x7B4",
-        "Length": 7,
-        "Number": 6,
+        "Length": 16,
+        "Number": 3,
         "EnableByteAddress": "0x7B0"
     },
 
     "Adjustments" :{
-        "Type": 0,
+        "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7ED"
+        "ChecksumResultAdr": "0x7EC"
     },
 
     "HighScores": {
-        "Type": 0,
-        "ScoreAdr": "0x727",
-        "InitialAdr": "0x737",
+        "Type": 1,
+        "ScoreAdr": "0x703",
+        "InitialAdr": "0x713",
         "BytesInScore": 4
     },
 
@@ -57,9 +56,5 @@
         "Type": 0,
         "Address": 56,
         "Length": 23
-    },
-
-    "CoinDrop": {
-        "Type": 0
     }
 }
