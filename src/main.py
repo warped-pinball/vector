@@ -6,7 +6,6 @@
     fault check updated for early sys11 game compatability
 '''
 
-# import Wifi_Main as Wifi
 import Memory_Main as MemoryMain
 import machine
 from machine import Pin

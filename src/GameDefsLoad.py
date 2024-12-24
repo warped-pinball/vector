@@ -98,6 +98,7 @@ safe_defaults = {
 
 def list_game_configs():
     '''List all the game configuration files on the device'''
+    #TODO loop through all files in /config so a user could use a custom config
     with open("config/all.json", "r") as f:
         data = json.load(f)
 
