@@ -1,6 +1,6 @@
 #  Shared State 
 
-WarpedVersion = "00.20"
+WarpedVersion = "0.3.0"
 WarpedCodeBase = "SYSTEM11"
 
 #true false - tournament mode

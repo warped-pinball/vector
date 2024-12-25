@@ -14,11 +14,10 @@ from SPI_DataStore import (
     write_record as ds_write_record, 
     memory_map as ds_memory_map
 )
-from Utilities.random_bytes import random_hex
-from Utilities.ls import ls
+from random_bytes import random_hex
+from ls import ls
 from Memory_Main import save_ram, blank_ram
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, SRAM_COUNT_BASE
-from GameStatus import report as game_status_report
 import Pico_Led
 import faults
 
@@ -154,7 +153,6 @@ def four_oh_four(request):
 
 def redirect(request):
     from phew.server import redirect
-    #TODO check that the route is a valid one for the server, else 404
     return redirect(f"/index.html", status=303)
 #
 # Authentication
@@ -283,10 +281,6 @@ def app_reboot_game(request):
 def app_game_name(request):
     import SharedState
     return SharedState.gdata["GameInfo"]["GameName"], 200
-
-@add_route("/api/game/status")
-def app_gameStatus(request):
-    return game_status_report(request)
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
@@ -490,8 +484,6 @@ def app_getAvailableSSIDs(request):
     return json_dumps(available_networks), 200
 
 
-#TODO setup domain name
-
 #
 # Time
 #
@@ -527,6 +519,10 @@ def app_getDateTime(request):
 #
 
 #TODO version number
+@add_route("/api/version")
+def app_version():
+    import SharedState
+    return json.dumps({'version':SharedState.WarpedVersion}), 200
 
 @add_route("/api/fault")
 def app_install_fault(request):
