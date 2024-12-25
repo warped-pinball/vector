@@ -507,3 +507,8 @@ window.addDropDownOption = createDropDownElement;
 window.getDropDownValue = getDropDownValue;
 window.setDropDownValue = setDropDownValue;
 window.createDropDownElement = createDropDownElement;
+
+// create version tag in footer
+// TODO debug this
+const version_response = await window.smartFetch('/api/version/')['version'];
+document.getElementById("version").innerText = "Vector " + version_response.body;

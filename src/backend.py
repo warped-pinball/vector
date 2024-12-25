@@ -517,11 +517,11 @@ def app_getDateTime(request):
 #
 # Miscellaneous
 #
-
-#TODO version number
+#TODO make web ui use this route
 @add_route("/api/version")
-def app_version():
+def app_version(request):
     import SharedState
+    import json
     return json.dumps({'version':SharedState.WarpedVersion}), 200
 
 @add_route("/api/fault")
