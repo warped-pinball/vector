@@ -207,7 +207,7 @@
 
         // === Utility: Authenticated Fetch ===
         async function smartFetch(url, data=false, auth=true) {
-            console.log(url, data, auth);
+            console.log({ url, data, auth });
             const headers = { 
                 "Content-Type": "application/json" 
             };

@@ -521,8 +521,7 @@ def app_getDateTime(request):
 @add_route("/api/version")
 def app_version(request):
     import SharedState
-    import json
-    return json.dumps({'version':SharedState.WarpedVersion}), 200
+    return json_dumps({'version':SharedState.WarpedVersion}), 200
 
 @add_route("/api/fault")
 def app_install_fault(request):
@@ -613,8 +612,7 @@ def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        #TODO make this false
-        return json_dumps({"in_ap_mode": True}), 200
+        return json_dumps({"in_ap_mode": False}), 200
 
 #
 # AP mode routes

@@ -508,6 +508,12 @@ window.setDropDownValue = setDropDownValue;
 window.createDropDownElement = createDropDownElement;
 
 // create version tag in footer
-// TODO debug this
-const version_response = window.smartFetch('/api/version/')['version'];
-document.getElementById("version").innerText = "Vector " + version_response.body;
+async function set_version() {
+    const response = await window.smartFetch('/api/version', data=null, auth=false)
+    const version = await response.json();
+    console.log(response);
+    console.log("Version:", version);
+    document.getElementById("version").innerText = "Vector " + version['version'];
+}
+
+set_version();
