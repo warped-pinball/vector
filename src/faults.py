@@ -32,6 +32,10 @@ def raise_fault(fault, msg=None):
     if not isinstance(msg, str):
         msg = str(msg)
 
+    # If the fault is already raised, don't raise it again
+    if fault_is_raised(fault):
+        return
+
     full_fault = f"{fault} - {msg}" if msg else fault
     S.faults.append(full_fault)
     
