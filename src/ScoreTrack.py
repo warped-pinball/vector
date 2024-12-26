@@ -4,6 +4,7 @@
 """
 Score Track
     V0.2 9/7/2024  period after initials handling
+    V0.3 11/25/2024 game over fix for high speed
 """
 
 import json
@@ -331,9 +332,8 @@ def CheckForNewScores(nState=[0]):
                 nState[0]=1
             
         elif nState[0]==1:
-            print("SERV: game end check")
-            #if (shadowRam[BallInPlayAdr] >> 4) != 0xF:
-            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
+            print("SERV: game end check")            
+            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
                 #game over, get new scores
                 nState[0]=0
                 #print("   leader update")
