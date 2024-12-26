@@ -651,22 +651,22 @@ def connect_to_wifi():
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
     password = wifi_credentials["password"]
-
-    if not ssid:
-        return False # Wifi not configured
     
+    if not ssid:
+        return False
+
+    # Try a few times before raising a fault
     for i in range(WIFI_MAX_ATTEMPTS):
-        print(f"Attempt {i+1} to connect to wifi ssid:{ssid}")
         ip_address = phew_connect(ssid, password, timeout_seconds=10) 
         if phew_is_connected():
-            print(f"Connected to wifi with IP address {ip_address}")
+            print(f"Connected to wifi with IP address: {ip_address}")
             writeIP(ip_address)
-            Pico_Led.on()
             from displayMessage import init
             init(ip_address)
             return True
     
-    # check that we get signal form the ssid
+    
+    # If there's signal that means the credentials are wrong
     import scanwifi
     networks = scanwifi.scan_wifi2()
     for network in networks:
@@ -674,7 +674,6 @@ def connect_to_wifi():
             faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
             return False
     
-    # We have credentials but no signal so raise a fault
     faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
 
@@ -687,16 +686,12 @@ def go(ap_mode):
     Pico_Led.off()
     gc_threshold(2048 * 6) 
 
-    if not ap_mode:
-        # try to connect to WiFi
-        try:
-            if not connect_to_wifi():
-                ap_mode = True # If we can't connect to wifi, start in AP mode
-        except Exception as e:
-            ap_mode = True
-            faults.raise_fault(faults.WIFI00, e)
+    # check if configuration is valid
+    wifi_credentials = ds_read_record("configuration", 0)
+    if not wifi_credentials["ssid"]:
+        print("No wifi credentials configured")
+        ap_mode = True
 
-    # check if we are in AP mode again incase we failed to connect to wifi 
     if ap_mode:
         from phew import access_point, dns
         print("Starting in AP mode")
@@ -708,6 +703,10 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        while not connect_to_wifi():
+            print("Failed to connect to wifi, retrying in 2 seconds")
+            sleep(2)
+        Pico_Led.on()
         add_app_mode_routes()
         server.set_callback(four_oh_four)
 
