@@ -32,6 +32,7 @@ async function build_game_config_select(){
         'game_config_select', 
         'Select a game configuration', 
         filename_to_name,
+        defaultValue=null,
         sortOptions=true
     )
 
@@ -75,7 +76,9 @@ async function build_ssid_select(){
     const ssid_select = await window.createDropDownElement(
         'ssid_select',
         'Select a WiFi network',
-        ssid_to_name,   
+        ssid_to_name,
+        defaultValue=null,
+        sortOptions=false
     )
 
     document.getElementById('ssid_select_placeholder').replaceWith(ssid_select)
