@@ -109,9 +109,6 @@ def parse_config_line(line):
         filename = line[:brace_index].strip()
         json_data = line[brace_index:].strip()
         data = json.loads(json_data)
-        from resource import get_ram_usage
-        ram_usage_percent = get_ram_usage()
-        print(f"RESOURCE: RAM= {ram_usage_percent:.2f}% full")
         return filename, data
     except Exception as e:
         Log.log(f"Error parsing config line: {e}")
