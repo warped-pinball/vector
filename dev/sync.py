@@ -230,7 +230,7 @@ def combine_json_config_files():
                     # Remove the file extension
                     file_name = os.path.splitext(file)[0]
                     # Write filename{json_data} format
-                    outfile.write(f"{file_name}{json.dumps(data)}\n")
+                    outfile.write(f"{file_name}{json.dumps(data, separators=(',',':'))}\n")
                     os.remove(file_path)
 
 @step_report(time_report=True, size_report=True)
