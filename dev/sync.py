@@ -218,21 +218,20 @@ def scour_svg_files():
 
 @step_report(time_report=True, size_report=True)
 def combine_json_config_files():
-    """Combine all JSON config files in build/web/config into a single file."""
+    """Combine all JSON config files in build/config into a line-based format file."""
     print("Combining JSON config files...")
-    all_conf = {}
-    for root, dirs, files in os.walk('build/config'):
-        for file in files:
-            if file.endswith('.json'):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r') as f:
-                    data = json.load(f)
-                # remove the file extension
-                file = os.path.splitext(file)[0]
-                all_conf[file] = data
-                os.remove(file_path)
-    with open('build/config/all.json', 'w') as f:
-        json.dump(all_conf, f, separators=(',', ':'))
+    with open('build/config/all.jsonl', 'w') as outfile:
+        for root, dirs, files in os.walk('build/config'):
+            for file in files:
+                if file.endswith('.json'):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                    # Remove the file extension
+                    file_name = os.path.splitext(file)[0]
+                    # Write filename{json_data} format
+                    outfile.write(f"{file_name}{json.dumps(data)}\n")
+                    os.remove(file_path)
 
 @step_report(time_report=True, size_report=True)
 def zip_files():

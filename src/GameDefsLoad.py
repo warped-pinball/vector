@@ -12,6 +12,7 @@ import SharedState
 import SPI_DataStore
 from logger import logger_instance
 import faults
+from gc import collect as gc_collect
 Log = logger_instance
 
 #convert any data entered as "0x" (hex) into integers
@@ -96,39 +97,83 @@ safe_defaults = {
     }
 }
 
+
+def parse_config_line(line):
+    """Parse a line in format: filename{json_data}"""
+    try:
+        # Find the first opening brace
+        brace_index = line.find('{')
+        if brace_index == -1:
+            return None, None
+            
+        filename = line[:brace_index].strip()
+        json_data = line[brace_index:].strip()
+        data = json.loads(json_data)
+        from resource import get_ram_usage
+        ram_usage_percent = get_ram_usage()
+        print(f"RESOURCE: RAM= {ram_usage_percent:.2f}% full")
+        return filename, data
+    except Exception as e:
+        Log.log(f"Error parsing config line: {e}")
+        return None, None
+
+def find_config_in_file(target_filename):
+    """Read the JSONL file line by line until we find the requested config."""
+    try:
+        with open("config/all.jsonl", "r") as f:
+            for line in f:
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename == target_filename:
+                    return data
+    except Exception as e:
+        Log.log(f"Error reading config file: {e}")
+        return None
+    return None
+
 def list_game_configs():
     '''List all the game configuration files on the device'''
-    #TODO loop through all files in /config so a user could use a custom config
-    with open("config/all.json", "r") as f:
-        data = json.load(f)
-
-        # extract each key and their game name
-        configs = {}
-        for key in data.keys():
-            configs[key] = {
-                'name':data[key]["GameInfo"]["GameName"],
-                'rom': key.split("_")[-1]
-            }
-        return configs
+    configs = {}
+    try:
+        with open("config/all.jsonl", "r") as f:
+            for line in f:
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename and data:
+                    configs[filename] = {
+                        'name': data["GameInfo"]["GameName"],
+                        'rom': filename.split("_")[-1]
+                    }
+    except Exception as e:
+        Log.log(f"Error listing game configs: {e}")
+        return {}
+    return configs
 
 def go(safe_mode=False):  
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
     data = safe_defaults
+    
     if not safe_mode:    
         try:   
             config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
             all_configs = list_game_configs()
+            
             if config_filename not in all_configs.keys():
                 faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
                 data = safe_defaults
             else:
-                with open("config/all.json", "r") as f:
-                    data = json.load(f)[config_filename]
+                config_data = find_config_in_file(config_filename)
+                if config_data:
+                    data = config_data
+                else:
+                    Log.log(f"Error loading game config {config_filename}")
+                    faults.raise_fault(faults.CONF01)
+                    data = safe_defaults
+                    
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")
             faults.raise_fault(faults.CONF00)
-            # in case the variable was unset before error
             data = safe_defaults
     
     # This isn't wrapped in try/except because if this fails we want to stop execution
