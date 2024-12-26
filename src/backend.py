@@ -131,7 +131,6 @@ def cool_down(cool_down_seconds=0, single_instance=False):
                 return "Already running", 409
 
             if (time() - last_call) < cool_down_seconds:
-                # TODO rather then returning a 429, sleep until the cool down period is over if there is only one instance (to prevent pileups)
                 return "Cooling down", 429
 
             running = True
@@ -432,17 +431,13 @@ def app_getScoreCap(request):
 
 @add_route("/api/settings/score_claim_methods", method="POST", auth=True)
 def app_setScoreCap(request):
-    #TODO this should only update the methods in the json, the others should be left as is
     json_data = request.data
-    print(type(json_data))
-    print(f"json_data: {json_data}")
-    new_state = json_data['on-machine']
-    info = ds_read_record("extras", 0)
-    info["other"] = new_state
-    ds_write_record("extras", info, 0)
+    if "on-machine" in json_data:        
+        info = ds_read_record("extras", 0)
+        info["other"] = json_data['on-machine']
+        ds_write_record("extras", info, 0)
 
 
-# @add_route("/api/settings/tournament_mode")
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):    
@@ -517,7 +512,6 @@ def app_getDateTime(request):
 #
 # Miscellaneous
 #
-#TODO make web ui use this route
 @add_route("/api/version")
 def app_version(request):
     import SharedState
@@ -601,8 +595,6 @@ def app_upload_file_json(request):
             "status": "error",
             "message": error_message
         }), 500, "application/json"
-
-
 
 # kinda logs for update
 # TODO server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
