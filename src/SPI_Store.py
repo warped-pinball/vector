@@ -260,7 +260,7 @@ def _sflash_block_erase(block_address,wait=False):
         0x00           
     ])
     _sflash_cmd_dat(spi, cs, SFLASH_BE4B, address_bytes)    
-    print("ear ",address_bytes)
+    #print("ear ",address_bytes)
     if wait:
         utime.sleep_ms(5)  
         loop=0
@@ -305,15 +305,27 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
     cs.value(1)  
     return data
 
+#
 #write any number of bytes
+#single write cannot cross 256 byte boundary!
 def _sflash_mem_write(spi, cs, address, data, wait=False):    
     cs.value(0)
 
     chunk_size = 16
     for i in range(0, len(data), chunk_size):
         print("x",i)
+       
+
         chunk = data[i:i + chunk_size]
-        print(chunk)
+
+        if len(chunk)+(address&0x0FF) >0x0FF:
+            #fix boundary
+            
+
+        if  ( (address+len(chunk))&0xFFFFFF00) != (address & 0xFFFFFF00):
+            #problem, cannot cross 256 byte boundary
+
+
         _sflash_write_enable()  
 
         msg = bytearray()
@@ -364,14 +376,14 @@ def sflash_write(address, data, wait=False):
 #erase multiple blocks, wait required    
 #one block can slecet no wait
 def sflash_erase(start_block_address,end_block_address=0,wait=False):
-    if sflash_is_on_board == False: 
+    if sflash_is_on_board == False:         
         return
     start_block_address &= 0xFFFF0000
     end_block_address &= 0xFFFF0000
     #64k blocks
     if start_block_address==end_block_address or end_block_address==0:
         _sflash_block_erase(start_block_address,wait)
-        print("erase one block done")
+        print(f"erase 1 block: {start_block_address:#x}")
     else:    
         block_address = start_block_address
         while block_address <= end_block_address:

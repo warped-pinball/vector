@@ -8,22 +8,24 @@ calls lower level SPI_Store driver (shared with FRAM)
 '''
 import uctypes
 import SPI_Store
+from logger import logger_instance
+Log = logger_instance
 
 # the first 64k and the last 64k blocks can be protected in 4k sectors
 # so we will not use those here.  we need only 3 aresa of 6Mbyte each
 
 #Serial Flash usage 
 SFLASH_PRG_START = 0x0010000
-SFLASH_PRG_SIZE  = 0x600000   #6Mbyte
+SFLASH_PRG_SIZE  = 0x0600000   #6Mbyte
 SFLASH_ERASE_SECTOR_SIZE = 0x010000  #64k
 SFLASH_NUM_PGMS  = 3
 '''
 total SFLASH part is 32M byte:
 
 Three section of 6M byte each used in this module
-    0x0010000-0x0610000
-    0x0610000-0x0C10000
-    0x0C10000-0x1210000
+    0x0010000-0x0610000  block 1-96
+    0x0610000-0x0C10000  block 97-192
+    0x0C10000-0x1210000  block 193-288
     
 '''
 
@@ -55,15 +57,17 @@ BLOCK_STATUS_OFFSETS = [16, 48, 80]
 DATA_STRUCTURE_DESC = {
     "state": uctypes.UINT32 | 0,          # 4 bytes  (general state)
     "block": uctypes.UINT32 | 4,          # 4 bytes  (block progress in active states)
-    "block_status_1": (BLOCK_STATUS_OFFSETS[0], SECTION_STATUS_DESC),  
-    "block_status_2": (BLOCK_STATUS_OFFSETS[1], SECTION_STATUS_DESC), 
-    "block_status_3": (BLOCK_STATUS_OFFSETS[2], SECTION_STATUS_DESC)   
+    "block_status_0": (BLOCK_STATUS_OFFSETS[0], SECTION_STATUS_DESC),  
+    "block_status_1": (BLOCK_STATUS_OFFSETS[1], SECTION_STATUS_DESC), 
+    "block_status_2": (BLOCK_STATUS_OFFSETS[2], SECTION_STATUS_DESC)   
 }
 
-#overall state types
+#overall state types  
 SYSTEM_STATUS_IDLE = 0x100
-SYSTEM_STATUS_SECTION_WORK = 0x200
-SYSTEM_STATUS_VALID = {SYSTEM_STATUS_IDLE, SYSTEM_STATUS_SECTION_WORK}
+SYSTEM_STATUS_ERASING = 0x200
+SYSTEM_STATUS_READING = 0x300
+SYSYTEM_STATUS_FILING = 0x400
+SYSTEM_STATUS_VALID = {SYSTEM_STATUS_IDLE, SYSTEM_STATUS_ERASING, SYSTEM_STATUS_READING, SYSYTEM_STATUS_FILING}
 
 data_buffer = bytearray(FRAM_BYTES_USED)  
 data = uctypes.struct(uctypes.addressof(data_buffer), DATA_STRUCTURE_DESC, uctypes.LITTLE_ENDIAN)
@@ -71,12 +75,12 @@ data = uctypes.struct(uctypes.addressof(data_buffer), DATA_STRUCTURE_DESC, uctyp
 
 
 #write structure to fram
-def _write_status_to_fram(data):
-    SPI_Store.write(FRAM_ADDRESS,data)
+def _write_status_to_fram():
+    SPI_Store.write(FRAM_ADDRESS,data_buffer)
 
 #read struct from fram to local ram
 def _read_status_from_fram():    
-    return SPI_Store.read(FRAM_ADDRESS,FRAM_BYTES_USED)
+    data_buffer[:]=SPI_Store.read(FRAM_ADDRESS,FRAM_BYTES_USED)
 
 
 
@@ -92,16 +96,12 @@ def _get_block_status(data, index):
     else:
         return None 
 
-
-
 def _print_block_status(block_status, name):
             print(f"  {name}:")
             print("    State:", block_status.state)                    
             print("    Version:", block_status.version_major,":", block_status.version_middle,":", block_status.version_minor)            
             print("    Complete:", bool(block_status.complete))
             print("    progress:", block_status.progress)
-
-
 
 def _find_next_task():
     print("next task find")
@@ -111,12 +111,19 @@ def _find_next_task():
         #test for uncomplete task or inconsistent state
         if dblk.state not in SECTION_STATUS_VALID:
             print("invalid state in block",i)
+            dblk.state = SECTION_STATUS_ERASING
+            dblk.progress = 0
         if dblk.state == SECTION_STATUS_ERASING:
-            data.state = SYSTEM_STATUS_SECTION_WORK
+            data.state = SYSTEM_STATUS_ERASING
             data.block = i
+            dblk.complete = False
+            dblk.progress = 0
             print("next task is block (erasing)",i)
-            return 
-    print("next task done")
+        _write_status_to_fram()       
+
+    #no sections to erase        
+    data.state = SYSTEM_STATUS_IDLE
+    print("next task done, IDLE")
 
 
 def _set_block_status(block, state, progress, complete, version_major, version_middle, version_minor):
@@ -133,7 +140,11 @@ def _set_block_status(block, state, progress, complete, version_major, version_m
 def tick():
     if data.state == SYSTEM_STATUS_IDLE:
         return
-        
+    if data.state not in SYSTEM_STATUS_VALID:
+        #data.state = SYSTEM_STATUS_IDLE
+        _find_next_task()
+        return 
+
     blk_num = data.block  #this is the block we're working on right now
     #print("block num",blk_num)
     dblk = _get_block_status(data,blk_num)
@@ -145,27 +156,30 @@ def tick():
         if True == SPI_Store.sflash_is_ready():
             if dblk.progress == 0:
                 #unlock all sectrors in this block
-                SPI_Store.sflash_protect_sectors(SFLASH_PRG_START + SFLASH_PRG_SIZE * blk_num, SFLASH_PRG_START -1+ SFLASH_PRG_SIZE * (blk_num+1), "off")            
-                
+                SPI_Store.sflash_protect_sectors(SFLASH_PRG_START + SFLASH_PRG_SIZE * blk_num, SFLASH_PRG_START - 8 + SFLASH_PRG_SIZE * (blk_num+1), "off")            
+            
             #erase next 64k
             dblk.progress += 1
-            next_address = SFLASH_PRG_START + SFLASH_PRG_SIZE * blk_num + SFLASH_ERASE_SECTOR_SIZE * dblk.progress
+            next_address = SFLASH_PRG_START + (SFLASH_PRG_SIZE * blk_num) - 8 + (SFLASH_ERASE_SECTOR_SIZE * dblk.progress)
     
             if next_address >= SFLASH_PRG_START + SFLASH_PRG_SIZE * (blk_num+1):
                 #done erasing with all seectors
-                SPI_Store.sflash_protect_sectors(SFLASH_PRG_START + SFLASH_PRG_SIZE * blk_num, SFLASH_PRG_START -1+ SFLASH_PRG_SIZE * (blk_num+1), "on")                           
+                SPI_Store.sflash_protect_sectors(SFLASH_PRG_START + SFLASH_PRG_SIZE * blk_num, SFLASH_PRG_START - 8 + SFLASH_PRG_SIZE * (blk_num+1), "on")                           
                 _set_block_status(dblk, SECTION_STATUS_EMPTY, 0, True, 0, 0, 0)               
-                _write_status_to_fram(data_buffer)                
+                _write_status_to_fram()                
                 _find_next_task()
                 return
             print(f"erase {next_address:#x}")
-            SPI_Store.sflash_erase(next_address,next_address+1,False)
+            SPI_Store.sflash_erase(next_address,next_address)
 
         else:
-            print("busy")
+            print(" b ",end="")
+    
+   
 
 
-def open_program_space():
+
+def find_open_program_space():
     #find an empty block
     for i in range(SFLASH_NUM_PGMS):
         dblk=_get_block_status(data, i)
@@ -173,12 +187,14 @@ def open_program_space():
             return i
     return None    
 
+'''
 def is_empty_program_space_available():
     for i in range(SFLASH_NUM_PGMS):
         dblk=_get_block_status(data, i)
         if dblk.state == SECTION_STATUS_EMPTY  &  dblk.complete == True:
             return True
     return False
+'''
 
 def oldest_nonempty_version_program_space():
     oldest = 999999    
@@ -192,6 +208,7 @@ def oldest_nonempty_version_program_space():
                 ans = i
     return ans
 
+
 def newest_version_program_space():
     newest = 0
     ans = None
@@ -204,20 +221,113 @@ def newest_version_program_space():
                 ans = i
     return ans
 
+
+
+
+#
+#
+#
 def is_busy():
     return data.state != SYSTEM_STATUS_IDLE
+
+#
+#will only erase if all spaces are full
+#erase can interrupt other operations
+def erase_oldest_version_program_space():
+    if find_open_program_space() != None:
+        return
+    oldest = oldest_nonempty_version_program_space()
+    if oldest != None:        
+        dblk=_get_block_status(data, oldest)
+        _set_block_status(dblk, SECTION_STATUS_ERASING, 0, False, 0, 0, 0)
+        data.state = SYSTEM_STATUS_ERASING
+        data.block = oldest      
+        _write_status_to_fram() 
+        return True
+    Log.log("UPST: fault erase oldest")
+
+#
+#start write to an empty space
+#will not interrupt an erase operation
+def start_write_program_space(version_major, version_middle, version_minor):
+    if find_open_program_space() == None:        
+        return False
+    #find the open space
+    open_space = find_open_program_space()
+    dblk=_get_block_status(data, open_space)
+    _set_block_status(dblk, SECTION_STATUS_FILLING, 0, False, version_major, version_middle, version_minor)
+    data.state = SYSTEM_STATUS_
+    data.block = open_space
+    _write_status_to_fram() 
+    return True
+
+
+def write_program_space(data,last=False):
+    pass
+
+
+def report_all_version_numbers():
+    pass
+
+#
+#start a read operation
+#will not interrupt an erase operation 
+def start_read_program_space(version_major, version_middle, version_minor):
+    if find_open_program_space() == None:        
+        return False
+    #find the open space
+    open_space = find_open_program_space()
+    dblk=_get_block_status(data, open_space)
+    _set_block_status(dblk, SECTION_STATUS_READING, 0, False, version_major, version_middle, version_minor)
+    data.state = SYSTEM_STATUS_
+    data.block = open_space
+    _write_status_to_fram() 
+    return True
+
+
+
+def read_program_space():
+    pass
+
 
 
 # call at power up - will do integrity check
 # relaunch paused processes etc...  
 def initialize():
-    _read_status_from_fram
+    print("init")
+
+    _read_status_from_fram()
+    
+    if data.state not in SYSTEM_STATUS_VALID:
+        data.state = SYSTEM_STATUS_IDLE
+
+    #unfinished filling changes to erase on power up---
+    for i in range(SFLASH_NUM_PGMS):
+        dblk=_get_block_status(data, i)
+        if dblk.state == SECTION_STATUS_FILLING:
+            dblk.state = SECTION_STATUS_ERASING
+            dblk.progress = 0                       
+            dblk.complete = False
+            data.state = SYSTEM_STATUS_ERASING
+            data.block = i
+    
+    for i in range(SFLASH_NUM_PGMS):
+        er=0
+        dblk=_get_block_status(data, i)
+        if dblk.state == SECTION_STATUS_ERASING:
+            er=1
+    if er == 0:  #no erase, goto idle
+        data.state = SYSTEM_STATUS_IDLE    
+
+    _write_status_to_fram()        
+            
+
     
 
 #dump all sflash data for all programs, reset structures
 def blank_all():
     #active work, start with block 0
-    data.state = SYSTEM_STATUS_SECTION_WORK
+    data.state = SYSTEM_STATUS_ERASING
     data.block = 0
     # Set each block to ERASE
     for offset in range(SFLASH_NUM_PGMS):
@@ -245,6 +355,11 @@ def blank_all():
 if __name__ == "__main__":
 
     #blank()
+    import time
+
+    SPI_Store.sflash_init()
+
+    initialize()
 
     def print_data_structure(data):
         print("Main Data Structure:")
@@ -258,52 +373,58 @@ if __name__ == "__main__":
             print("    Complete:", bool(block_status.complete))
             print("    progress:", block_status.progress)
 
+        print_block_status(data.block_status_0, "Block Status 0")
         print_block_status(data.block_status_1, "Block Status 1")
         print_block_status(data.block_status_2, "Block Status 2")
-        print_block_status(data.block_status_3, "Block Status 3")
 
 
-
+    '''
     data.state = SYSTEM_STATUS_SECTION_WORK
     data.block = 0
+    data.block_status_0.state = SECTION_STATUS_ERASING
+    data.block_status_0.version_major = 112
+    data.block_status_0.version_middle = 113
+    data.block_status_0.version_minor = 114
+    data.block_status_0.complete = False
+    data.block_status_0.progress = 0
+
     data.block_status_1.state = SECTION_STATUS_ERASING
-    data.block_status_1.version_major = 12
-    data.block_status_1.version_middle = 13
-    data.block_status_1.version_minor = 14
-    data.block_status_1.complete = False
+    data.block_status_1.version_major = 122
+    data.block_status_1.version_middle = 133
+    data.block_status_1.version_minor = 144
+    data.block_status_1.complete = True
     data.block_status_1.progress = 0
 
     data.block_status_2.state = SECTION_STATUS_ERASING
-    data.block_status_2.version_major = 22
-    data.block_status_2.version_middle = 33
-    data.block_status_2.version_minor = 44
-    data.block_status_2.complete = 0
-    data.block_status_2.progress = 1
+    data.block_status_2.version_major = 72
+    data.block_status_2.version_middle = 83
+    data.block_status_2.version_minor = 94
+    data.block_status_2.complete = False
+    data.block_status_2.progress = 0
 
-    data.block_status_3.state = SECTION_STATUS_ERASING
-    data.block_status_3.version_major = 72
-    data.block_status_3.version_middle = 83
-    data.block_status_3.version_minor = 94
-    data.block_status_3.complete = 1
-    data.block_status_3.progress = 2
-
-    _write_status_to_fram(data_buffer)  
-
+    _write_status_to_fram()  
+    
     '''
-    restored_data_buffer = _read_status_from_fram()
-    restored_data = uctypes.struct(uctypes.addressof(restored_data_buffer), DATA_STRUCTURE_DESC, uctypes.LITTLE_ENDIAN)
-    print_data_structure(restored_data)
+   
+    print_data_structure(data)
+    
+    
     #blank()
-    restored_data_buffer = _read_status_from_fram()
-    restored_data = uctypes.struct(uctypes.addressof(restored_data_buffer), DATA_STRUCTURE_DESC, uctypes.LITTLE_ENDIAN)
-    print_data_structure(restored_data)
-    '''
-
+    
     #print("Restored block status 1 version:", bytes(restored_data.block_status_1.version[0:8]).decode())
-
+    
+    b=True
     print("BUSY? ",is_busy())
     print_data_structure(data)
-    for i in range(100):
+    print("stat  ",data.state)
+    #for i in range(200):
+    while b==True:
         tick()        
+        b=is_busy()
+        if b==True:
+            time.sleep(0.5)
+            print("b",b,data.state)
+
     print_data_structure(data)
     print("BUSY? ",is_busy())
+    
