@@ -67,7 +67,6 @@ def route_wrapper(func):
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
                         headers = default_headers | headers
-                    print(headers)
                     return body, status, headers
             else:
                 raise ValueError(f"Invalid response type: {type(response)}")
@@ -419,6 +418,7 @@ def app_getPlayers(request):
     
 @add_route("/api/player/update", method="POST", auth=True)
 def app_updatePlayer(request):    
+    #TODO this correctly deletes the player and unlinks their scores, but should it remove their name from leaderbaord scores? (currently it does not)
     body = request.data
     
     index = int(body['id'])  
