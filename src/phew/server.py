@@ -293,12 +293,21 @@ async def _handle_request(reader, writer):
   if isinstance(response, tuple):
     body = response[0]
     status = response[1] if len(response) >= 2 else 200
-    content_type = response[2] if len(response) >= 3 else "text/html"
+    headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+
+    # Handle legacy single content type as a string
+    if isinstance(headers, str):
+        headers = {"Content-Type": headers}
+
     response = Response(body, status=status)
-    response.add_header("Content-Type", content_type)
+
+    # Add all headers
+    for key, value in headers.items():
+      response.add_header(key, value)
+      
     if hasattr(body, '__len__'):
       response.add_header("Content-Length", len(body))
-  
+
   # write status line
   status_message = status_message_map.get(response.status, "Unknown")
   writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))

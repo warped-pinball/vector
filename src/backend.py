@@ -97,27 +97,39 @@ def get_content_type(file_path):
     return 'application/octet-stream'
 
 def create_file_handler(file_path):
+    # Compute ETag incrementally to save memory
+    try:
+        hasher = hashlib_sha256()
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(1024):  # Read in 1KB chunks
+                hasher.update(chunk)
+        etag = hexlify(hasher.digest()[:8]).decode()
+    except Exception as e:
+        print(f"Failed to calculate ETag for {file_path}: {e}")
+        etag = random_hex(8)  # Fallback to a random ETag
+
     def file_stream_generator():
         gc_collect()
         with open(file_path, 'rb') as f:
-            while True:
-                chunk = f.read(1024)  # Read in chunks of 1KB
-                if not chunk:
-                    break
+            while chunk := f.read(1024):  # Read in 1KB chunks
                 yield chunk
         gc_collect()
 
     def file_handler(request):
+        # Check for conditional request
+        if request.headers.get('if-none-match') == etag:
+            return "", 304, {"ETag": etag}  # Tell the browser to use it's cached copy
+
         headers = {
             'Content-Type': get_content_type(file_path),
-            'Connection': 'close'
+            'Connection': 'close',
+            'Cache-Control': 'public, max-age=31536000, immutable',  # Cache for 1 year, immutable
+            'ETag': etag
         }
-        # TODO add 'Cache-Control': 'max-age=86400'  #to headers  in order to cache for a day
-        # not sure how we would clear this cache, we might want to consider options first
         return file_stream_generator(), 200, headers
 
-    # Wrap the file_handler with the same error/memory logic
     return route_wrapper(file_handler)
+
 
 def cool_down(cool_down_seconds=0, single_instance=False):
     '''Decorator to prevent a route from being called more than once within a given time period and optionally ensuring the previous call has completed before another can be made'''
