@@ -43,10 +43,35 @@ def route_wrapper(func):
         try:
             response = func(request)
 
-            if response is None:
-                return "ok", 200
-            return response
+            default_headers = {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache"
+            }
 
+            if response is None:
+                response = "ok", 200
+            
+            if isinstance(response, str):
+                response = response, 200
+
+            if isinstance(response, tuple):
+                if len(response) == 2:
+                    response = response[0], response[1], default_headers
+
+                if len(response) == 3:
+                    body, status, headers = response
+                    if isinstance(headers, str):
+                        headers = {"Content-Type": headers}
+
+                    if isinstance(headers, dict):
+                        # Merge the default headers with the custom headers
+                        headers = default_headers | headers
+                    print(headers)
+                    return body, status, headers
+            else:
+                raise ValueError(f"Invalid response type: {type(response)}")
+                    
         except Exception as e:
             msg = f"Error in {func.__name__}: {e}"
             print(msg)
@@ -205,7 +230,7 @@ def require_auth(handler):
         global current_challenge, challenge_timestamp
 
         if not current_challenge or not challenge_timestamp:
-            msg = json_dumps({"error": "Challenge missing"}), 401, 'application/json'
+            msg = json_dumps({"error": "Challenge not set"}), 401, 'application/json'
             print(msg)
             return msg
 
@@ -215,7 +240,7 @@ def require_auth(handler):
             return msg
 
         # Get the HMAC from the request headers
-        client_hmac = request.headers.get('X-Auth-HMAC') or request.headers.get('x-auth-hmac')
+        client_hmac = request.headers.get('x-auth-hmac')
         if not client_hmac:
             msg = json_dumps({"error": "Missing authentication HMAC"}), 401, 'application/json'
             print(msg)
@@ -262,7 +287,7 @@ def get_challenge(request):
     current_challenge = random_hex(64)
     challenge_timestamp = time()
     # Return the nonce to the client
-    return json_dumps({"challenge": current_challenge}), 200, 'application/json'
+    return json_dumps({"challenge": current_challenge}), 200
 
 @add_route("api/auth/password_check", method="POST", auth=True)
 def check_password(request):
@@ -393,16 +418,24 @@ def app_getPlayers(request):
 
     
 @add_route("/api/player/update", method="POST", auth=True)
-def app_updatePlayer(request):
-    #TODO if initials and name are empty, we need to delete the scores
-    
+def app_updatePlayer(request):    
     body = request.data
-    initials = body['initials'].upper()[:3]
-    name = body['full_name'][:16]
+    
     index = int(body['id'])  
     if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
-            
+
+    initials = body['initials'].upper()[:3]
+    name = body['full_name'][:16]
+
+    # if name and initials are empty, delete the record
+    if len(initials) == 0 and len(name) == 0:
+        print("Deleting record")
+        from SPI_DataStore import blankIndPlayerScores
+        blankIndPlayerScores(int(body['id']))
+    
+    print(f"Updating record {index} with {initials} and {name}")
+
     ds_write_record("names",{"initials":initials,"full_name":name},index)
 
 
