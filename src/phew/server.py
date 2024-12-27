@@ -84,7 +84,10 @@ data: {self.data}"""
 
 
 class Response:
-  def __init__(self, body, status=200, headers={}):
+  def __init__(self, body, status=200, headers=None):
+    # we can't use {} as default value for headers as it is mutable and would be shared between instances
+    if headers is None:
+      headers = {}
     self.status = status
     self.headers = headers
     self.body = body
@@ -304,7 +307,7 @@ async def _handle_request(reader, writer):
     # Add all headers
     for key, value in headers.items():
       response.add_header(key, value)
-      
+
     if hasattr(body, '__len__'):
       response.add_header("Content-Length", len(body))
 
