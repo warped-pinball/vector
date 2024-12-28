@@ -55,10 +55,6 @@ async function getScoreClaimMethods() {
 
 getScoreClaimMethods();
 
-
-// adjustments profiles
-// TODO: implement this
-
 // 
 // Actions
 // 

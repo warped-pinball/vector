@@ -418,7 +418,6 @@ def app_getPlayers(request):
     
 @add_route("/api/player/update", method="POST", auth=True)
 def app_updatePlayer(request):    
-    #TODO this correctly deletes the player and unlinks their scores, but should it remove their name from leaderbaord scores? (currently it does not)
     body = request.data
     
     index = int(body['id'])  
@@ -492,7 +491,6 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
-    # TODO confirm with this is an ok way to reset the device
     from SPI_DataStore import blankAll
     from machine import reset
     import reset_control
@@ -546,13 +544,6 @@ def app_setDateTime(request):
 @add_route("/api/date_time")
 def app_getDateTime(request):
     return rtc.datetime(), 200
-
-#TODO not sure we need this anymore
-# @add_route("/api/date")
-# def app_getDate(request):
-#     y, m, d, _,_,_,_,_= localtime()
-#     return f"{y:04d}-{m:02d}-{d:02d}", 200
-
 
 #
 # Miscellaneous
@@ -641,10 +632,6 @@ def app_upload_file_json(request):
             "message": error_message
         }), 500, "application/json"
 
-# kinda logs for update
-# TODO server.add_route('/upload_results',handler = FileIO.incoming_file_results, methods=['GET'])
-
-
 def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
@@ -716,8 +703,6 @@ def connect_to_wifi():
 
 def go(ap_mode):
     '''Start the server and run the main loop'''
-    
-    #TODO this was earlier in the code, might need moved to the top of this file OG comments:
     #Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
     #wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)   
     Pico_Led.off()
@@ -751,7 +736,3 @@ def go(ap_mode):
     print("Starting server")
     print("-"*10)
     server.run()
-    
-    
-
-#TODO roller games and police force need rom versions
