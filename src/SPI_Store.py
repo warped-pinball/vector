@@ -315,17 +315,12 @@ def _sflash_mem_write(spi, cs, address, data, wait=False):
     for i in range(0, len(data), chunk_size):
         print("x",i)
        
-
         chunk = data[i:i + chunk_size]
-
-        if len(chunk)+(address&0x0FF) >0x0FF:
-            #fix boundary
-            
-
-        if  ( (address+len(chunk))&0xFFFFFF00) != (address & 0xFFFFFF00):
-            #problem, cannot cross 256 byte boundary
-
-
+       
+        if len(chunk)+(address&0x0FF) > 0x0FF:
+            #too long, cannot cross 256 byte boundary
+            chunk = data[i:i + 0x0FF-(address&0x0FF)]
+      
         _sflash_write_enable()  
 
         msg = bytearray()
