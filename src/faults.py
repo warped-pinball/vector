@@ -18,7 +18,7 @@ ALL_CONF = [CONF00, CONF01]
 
 #WiFi Faults
 WIFI00 = "WIFI00: Unknown Wifi Error"
-WIFI01 = "WIFI01: Invalid Wifi Credentaials"
+WIFI01 = "WIFI01: Invalid Wifi Credentials"
 WIFI02 = "WIFI02: No Wifi Signal"
 
 ALL_WIFI = [WIFI00, WIFI01, WIFI02]
