@@ -491,8 +491,6 @@ def app_getTournamentMode(request):
 def app_setTournamentMode(request):    
     import SharedState
     SharedState.tournamentModeOn = int(request.data['tournament_mode'])
-    #TODO shouldn't this be written to the datastore somewhere?
-
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
