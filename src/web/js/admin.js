@@ -37,6 +37,21 @@ function closeModal() {
 // Settings
 // 
 
+// Tournament Mode
+async function tournamentModeToggle() {
+    const response = await window.smartFetch('/api/settings/tournament_mode');
+    const data = await response.json();
+
+    const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
+    tournamentModeCheckbox.checked = data['tournament_mode'];
+
+    // add event listener to update the setting when the checkbox is changed
+    tournamentModeCheckbox.addEventListener('change', async () => {
+        const data = { 'tournament_mode': tournamentModeCheckbox.checked ? 1 : 0 };
+        await window.smartFetch('/api/settings/tournament_mode', data, true);
+    });
+}
+
 // score Claim methods
 async function getScoreClaimMethods() {
   const response = await fetch('/api/settings/score_claim_methods');
@@ -52,7 +67,7 @@ async function getScoreClaimMethods() {
   });
 }
 
-
+tournamentModeToggle();
 getScoreClaimMethods();
 
 // 

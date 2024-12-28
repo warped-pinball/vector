@@ -482,11 +482,16 @@ def app_setScoreCap(request):
         ds_write_record("extras", info, 0)
 
 
+@add_route("/api/settings/tournament_mode")
+def app_getTournamentMode(request):
+    import SharedState
+    return json_dumps({"tournament_mode": SharedState.tournamentModeOn}), 200
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):    
     import SharedState
-    SharedState.tournamentModeOn = int(request.json['tournament_mode'])
+    SharedState.tournamentModeOn = int(request.data['tournament_mode'])
+    #TODO shouldn't this be written to the datastore somewhere?
 
 
 @add_route("/api/settings/factory_reset", auth=True)
