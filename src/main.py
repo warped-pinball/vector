@@ -65,7 +65,7 @@ def bus_activity_fault_check():
         return False  # All ok
 
 
-def adr_activity_check():
+def adr_activity_ok():
     initial_values = [shadowRam[i] for i in range(0x10, 0x18)]
 
     for _ in range(20):
@@ -74,11 +74,11 @@ def adr_activity_check():
         # Changing?
         if current_values != initial_values:
             Log.log("Main: Acitivy Check OK")
-            return "Pass"  
+            return True
         time.sleep_ms(100)
     
-    Log.log("Main: Acitivy Check FAIL")
-    return "Fail"
+    faults.raise_fault(faults.HDWR02)
+    return False
 
 
 def check_ap_button():
@@ -136,7 +136,7 @@ reset_control.release(True)
 time.sleep(4) 
 
 if bus_activity_fault == False:
-    if "Fail"==adr_activity_check():
+    if not adr_activity_ok():
         reset_control.reset()
         time.sleep(2)
         reset_control.release(True)

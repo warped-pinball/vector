@@ -1,6 +1,7 @@
 # Hardware Faults
 HDWR00 = "HDWR00: Unknown Hardware Error"
-HDWR01 = "HDWR01: Bus Activity"
+HDWR01 = "HDWR01: Early Bus Activity"
+HDWR02 = "HDWR02: No Bus Activity"
 
 ALL_HDWR = [HDWR00, HDWR01]
 
@@ -29,7 +30,7 @@ ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO00]
 
 def raise_fault(fault, msg=None):
     import SharedState as S
-    if not isinstance(msg, str):
+    if msg is not None and not isinstance(msg, str):
         msg = str(msg)
 
     # If the fault is already raised, don't raise it again
