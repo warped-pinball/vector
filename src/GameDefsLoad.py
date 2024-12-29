@@ -153,6 +153,7 @@ def go(safe_mode=False):
     if not safe_mode:    
         try:   
             config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
+            logger_instance.log(f"Loading game config {config_filename}")
             all_configs = list_game_configs()
             
             if config_filename not in all_configs.keys():
@@ -163,8 +164,7 @@ def go(safe_mode=False):
                 if config_data:
                     data = config_data
                 else:
-                    Log.log(f"Error loading game config {config_filename}")
-                    faults.raise_fault(faults.CONF01)
+                    faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
                     data = safe_defaults
                     
         except Exception as e:
