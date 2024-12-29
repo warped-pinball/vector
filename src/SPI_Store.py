@@ -260,7 +260,9 @@ def _sflash_block_erase(block_address,wait=False):
         0x00           
     ])
     _sflash_cmd_dat(spi, cs, SFLASH_BE4B, address_bytes)    
-    #print("ear ",address_bytes)
+
+    print(f"ear {address_bytes.hex()}")
+
     if wait:
         utime.sleep_ms(5)  
         loop=0
@@ -272,13 +274,14 @@ def _sflash_block_erase(block_address,wait=False):
             loop += 1
 
 
-#read any number of bytes
+#read any number of bytes (no page boundary problems with read)
 def _sflash_mem_read(spi, cs, address, nbytes=16):
     cs.value(0)
     data = bytearray()
     chunk_size = 16
     offset = 0
-    
+    #print(f"address {address:#x}")
+
     while offset < nbytes:
         remaining = nbytes - offset
         read_size = min(chunk_size, remaining)
@@ -286,10 +289,10 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
         # Prepare the message
         msg = bytearray()
         msg.append(SFLASH_READ)
-        msg.append((address >> 24) & 0xFF)  # adr(MSB)
-        msg.append((address >> 16) & 0xFF)
-        msg.append((address >> 8) & 0xFF)
-        msg.append(address & 0xFF)
+        msg.append((address >> 24) & 0x0FF)  # adr(MSB)
+        msg.append((address >> 16) & 0x0FF)
+        msg.append((address >> 8) & 0x0FF)
+        msg.append(address & 0x0FF)
         
         # Send the message and read the data
         cs.value(1)
@@ -297,6 +300,8 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
         data.extend(spi.read(read_size))
         cs.value(0)
         
+        #print(f" read adr= {address:#x} len= {read_size} msg={msg.hex()} data={data.hex()}")
+
         # Update the address and offset for the next chunk
         address += chunk_size
         offset += chunk_size    
@@ -310,35 +315,35 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
 #single write cannot cross 256 byte boundary!
 def _sflash_mem_write(spi, cs, address, data, wait=False):    
     cs.value(0)
+    i=0
+    chunk_size = 16    
+    while i < len(data):              
+        distance_to_boundary = 0x100 - (address & 0x0FF)
+        write_size = min(chunk_size, distance_to_boundary)
+        chunk = data[i:i + write_size]                          
 
-    chunk_size = 16
-    for i in range(0, len(data), chunk_size):
-        print("x",i)
-       
-        chunk = data[i:i + chunk_size]
-       
-        if len(chunk)+(address&0x0FF) > 0x0FF:
-            #too long, cannot cross 256 byte boundary
-            chunk = data[i:i + 0x0FF-(address&0x0FF)]
-      
         _sflash_write_enable()  
 
         msg = bytearray()
         msg.append(SFLASH_PP)    
         address_bytes = bytearray([
-            (address >> 24) & 0xFF,  #MSByte
-            (address >> 16) & 0xFF,
-            (address >>8) & 0xFF,
-            (address & 0xFF)           
+            (address >> 24) & 0x0FF,  #MSByte
+            (address >> 16) & 0x0FF,
+            (address >> 8) & 0x0FF,
+            (address & 0x0FF)           
         ])  
         msg.extend(address_bytes)
         msg.extend(chunk)
-        print(msg)
-       
+        #print(msg)
+        print(f" write adr= {address:#x} len= {len(chunk)} msg={msg.hex()}")
+        #print(f" write adr= {address:#x} len= {len(chunk)} msg={msg}")
+
         cs.value(1)
         spi.write(msg)
         cs.value(0)
-        address += chunk_size
+
+        address += write_size
+        i += write_size
 
     if wait:
         utime.sleep_ms(5)  
@@ -383,7 +388,7 @@ def sflash_erase(start_block_address,end_block_address=0,wait=False):
         block_address = start_block_address
         while block_address <= end_block_address:
             _sflash_block_erase(block_address,True)
-            print("er block",block_address)
+            print(f"erase block {block_address:#x}")
             block_address += 0x010000 
         print("erase multi blocks done")
 
@@ -406,19 +411,22 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
     else:
         data_byte = 0
 
+    print(f"     st={start_address:#x} end={end_address:#x} prot= {protect}")
+
     # 64K blocks from 1 to 510
     for block_num in range(1, 511):
         block_address = block_num * block_size
-        if block_address < start_address or block_address >= end_address:
+        #print(f"block # {block_num} st={start_address:#x} end={end_address:#x} prot= {protect}")
+        if block_address < (start_address&0xFFFF0000) or block_address > (end_address&0xFFFF0000):
             continue
         print ("block # ",block_num," prot= ",protect)
         _sflash_write_enable()
         msg = bytearray()        
         address_bytes = bytearray([
-            (block_address >> 24) & 0xFF,  #MSByte
-            (block_address >> 16) & 0xFF,
-            (block_address >>8) & 0xFF,
-            (block_address & 0xFF),
+            (block_address >> 24) & 0x0FF,  #MSByte
+            (block_address >> 16) & 0x0FF,
+            (block_address >>8) & 0x0FF,
+            (block_address & 0x0FF),
             data_byte
         ])  
         msg.extend(address_bytes)
@@ -429,7 +437,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
         block_address = block_num * block_size
         for sector_offset in range(0, block_size, sector_size):
             sector_address = block_address + sector_offset
-            if sector_address < start_address or sector_address >= end_address:
+            if sector_address < (start_address & 0xFFFFF000) or sector_address >= (end_address & 0xFFFFF000):
                 continue
             _sflash_write_enable()
             print("4k sector # ",sector_offset," prot= ",protect)
@@ -513,6 +521,57 @@ if __name__ == "__main__":
     print("ready?",sflash_is_ready())
 
     print("V",version())
+
+    print("init done")
+    time.sleep(2)
+    
+    #read_data = _sflash_mem_read(spi, cs, 0x1F101014 , 4)
+
+
+    # Test: Write a known pattern to 520 bytes at address 0x10000 and read it back
+    test_address = 0x5002f
+    test_length = 673
+    test_data = bytearray([(i+3) % 216 for i in range(test_length)])  # Known pattern: 0, 1, 2, ..., 255, 0, 1, 2, ...
+
+    sflash_protect_sectors(test_address,test_address +test_length , "off")
+
+    #sflash_erase(00,test_address + 0x20000,True)
+    sflash_erase(test_address ,test_address + test_length,True)
+
+    # Write the test data
+    _sflash_mem_write(spi, cs, test_address, test_data)
+    
+    # Read back the data
+    #read_data = bytearray(520)
+    read_data = _sflash_mem_read(spi, cs, test_address, test_length)
+    #read_data = _sflash_mem_read(spi, cs,0x10000 , 520)
+
+
+    # Check for errors
+    if test_data == read_data:
+        print("Test passed: Data written and read back correctly.")
+    else:
+        print("Test failed: Data mismatch.")
+        for i in range(len(test_data)):
+            if test_data[i] != read_data[i]:
+                #print(f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}")
+                pass
+
+
+
+    '''
+    sflash_protect_sectors(0x0000, 0x1FF0000, "off")
+    '''
+
+
+
+
+
+
+
+
+
+
     '''
     sflash_protect_sectors(0x0000, 0x1FF0000, "off")
 
