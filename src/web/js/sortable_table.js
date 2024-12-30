@@ -30,10 +30,10 @@ function attachTableSortingAndDownloading() {
             });
         }
 
-        // Add download button if .downloadable
-        if (table.classList.contains('downloadable')) {
-            addDownloadButton(table);
-        }
+        // // Add download button if .downloadable
+        // if (table.classList.contains('downloadable')) {
+        //     addDownloadButton(table);
+        // }
     });
 }
 
@@ -57,81 +57,81 @@ function sortTable(table, columnIndex, ascending = true) {
     rows.forEach(row => tbody.appendChild(row));
 }
 
-function addDownloadButton(table) {
-    const downloadButton = document.createElement('button');
-    downloadButton.textContent = '💾 Download Data';
-    downloadButton.addEventListener('click', () => {
-        downloadCSV(table);
-    });
+// function addDownloadButton(table) {
+//     const downloadButton = document.createElement('button');
+//     downloadButton.textContent = '💾 Download Data';
+//     downloadButton.addEventListener('click', () => {
+//         downloadCSV(table);
+//     });
 
-    // Insert the button before the table or in some suitable location
-    table.parentNode.appendChild(downloadButton, table);
-}
+//     // Insert the button before the table or in some suitable location
+//     table.parentNode.appendChild(downloadButton, table);
+// }
 
-function downloadCSV(table) {
-    // Get headers from the thead
-    const tcaption = table.querySelector('caption');
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
+// function downloadCSV(table) {
+//     // Get headers from the thead
+//     const tcaption = table.querySelector('caption');
+//     const thead = table.querySelector('thead');
+//     const tbody = table.querySelector('tbody');
 
-    if (!thead || !tbody) {
-        console.warn('Table is missing thead or tbody. Cannot create CSV.');
-        return;
-    }
+//     if (!thead || !tbody) {
+//         console.warn('Table is missing thead or tbody. Cannot create CSV.');
+//         return;
+//     }
 
-    const headerCells = thead.querySelectorAll('th');
-    const headers = Array.from(headerCells).map(th => cleanCSVValue(th.innerText));
+//     const headerCells = thead.querySelectorAll('th');
+//     const headers = Array.from(headerCells).map(th => cleanCSVValue(th.innerText));
 
-    const rows = Array.from(tbody.querySelectorAll('tr')).map(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        return cells.map(td => cleanCSVValue(td.innerText));
-    });
+//     const rows = Array.from(tbody.querySelectorAll('tr')).map(row => {
+//         const cells = Array.from(row.querySelectorAll('td'));
+//         return cells.map(td => cleanCSVValue(td.innerText));
+//     });
 
-    // Combine headers and rows
-    const csvData = [headers].concat(rows);
+//     // Combine headers and rows
+//     const csvData = [headers].concat(rows);
 
-    // Convert to CSV string
-    const csvContent = csvData.map(rowArr => rowArr.join(',')).join('\n');
+//     // Convert to CSV string
+//     const csvContent = csvData.map(rowArr => rowArr.join(',')).join('\n');
 
-    // Create a blob and trigger download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+//     // Create a blob and trigger download
+//     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+//     const url = URL.createObjectURL(blob);
 
-    const link = document.createElement('a');
-    link.href = url;
+//     const link = document.createElement('a');
+//     link.href = url;
     
-    // template string for filename:
-    // game name, date, table caption(if any), .csv
-    // fill spaces with underscores
+//     // template string for filename:
+//     // game name, date, table caption(if any), .csv
+//     // fill spaces with underscores
     
-    let filename = document.getElementById('game_name').innerText;
-    if (tcaption) {
-        filename += '_' + tcaption.innerText;
-    }
-    filename += '_';
-    filename += new Date().toISOString().split('T')[0];
-    filename += '.csv';
+//     let filename = document.getElementById('game_name').innerText;
+//     if (tcaption) {
+//         filename += '_' + tcaption.innerText;
+//     }
+//     filename += '_';
+//     filename += new Date().toISOString().split('T')[0];
+//     filename += '.csv';
 
-    filename = filename.replace(/ /g, '_');
+//     filename = filename.replace(/ /g, '_');
 
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
+//     link.download = filename;
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     URL.revokeObjectURL(url);
+// }
 
-// Clean CSV values by escaping double quotes and trimming whitespace
-function cleanCSVValue(value) {
-    const trimmed = value.trim();
-    // Escape double quotes by doubling them
-    const escaped = trimmed.replace(/"/g, '""');
-    // Wrap in quotes if it contains a comma or newline
-    if (escaped.search(/("|,|\n)/g) >= 0) {
-        return `"${escaped}"`;
-    }
-    return escaped;
-}
+// // Clean CSV values by escaping double quotes and trimming whitespace
+// function cleanCSVValue(value) {
+//     const trimmed = value.trim();
+//     // Escape double quotes by doubling them
+//     const escaped = trimmed.replace(/"/g, '""');
+//     // Wrap in quotes if it contains a comma or newline
+//     if (escaped.search(/("|,|\n)/g) >= 0) {
+//         return `"${escaped}"`;
+//     }
+//     return escaped;
+// }
 
 // Initial call
 attachTableSortingAndDownloading();
