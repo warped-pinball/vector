@@ -10,69 +10,25 @@ import SharedState as S
 from logger import logger_instance
 Log = logger_instance
 
+def download_scores():
+    data = []
+    
+    data.append({
+        "FileType": "leaders",
+        "contents": [
+            DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])
+        ]
+    })
 
-def pretty_json(data, indent=4):
-    return json.dumps(data).replace('{', '{\n' + ' ' * indent).replace('}', '\n' + ' ' * indent + '}').replace('[', '[\n' + ' ' * indent).replace(']', '\n' + ' ' * indent + ']').replace(',', ',\n' + ' ' * indent)
+    data.append({
+        "FileType": "tournament",
+        "contents": [
+            DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])
+        ]
+    })
 
-# download leader board
-def download_leaders(request):
-    print("download leaders - - - ")
-    try:
-        leaders = [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])]
-        response_body = [{
-            "FileType": "leaders",
-            "contents": leaders
-        }]
-        response = {
-            'headers': {
-                'Content-Type': 'application/json',
-                'Content-Disposition': 'attachment; filename=leaders.json',
-                'Connection': 'close'
-            },
-            'body': pretty_json(response_body)
-        }
-        return json.dumps(response)    
-    except Exception as e:
-        print(f"Error generating download: {e}")
-        error_response = {
-            'headers': {
-                'Content-Type': 'application/json',
-                'Connection': 'close'
-            },
-            'body': json.dumps({"error": "An error occurred while generating the download."})
-        }
-        return json.dumps(error_response)
-
-
-#download the tournament board
-def download_tournament(request):
-    gc.collect()
-    print("download tournament - - - ")
-    try:
-        tournament_data = [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])]
-        response_body = [{
-            "FileType": "tournament",
-            "contents": tournament_data
-        }]
-        response = {
-            'headers': {
-                'Content-Type': 'application/json',
-                'Content-Disposition': 'attachment; filename=tournament.json',
-                'Connection': 'close'
-            },
-            'body': json.dumps(response_body)
-        }
-        return json.dumps(response)    
-    except Exception as e:
-        print(f"Error generating download: {e}")
-        error_response = {
-            'headers': {
-                'Content-Type': 'application/json',
-                'Connection': 'close'
-            },
-            'body': json.dumps({"error": "An error occurred while generating the download."})
-        }
-        return json.dumps(error_response)
+    
+    return json.dumps(data)
 
 
 #download the list of players
@@ -195,6 +151,7 @@ def process_incoming_file(request):
             print("FIO: process file as datastore: ", file_type)    
             if file_type in DataStore.memory_map:      
                 Log.log(f"FIO: Datastore file in: {file_type}")              
+                #TODO what happens if the contents are longer than the record size?
                 for idx, record in enumerate(contents):           
                     print("FIO: ",idx)         
                     DataStore.write_record(file_type, record, idx)

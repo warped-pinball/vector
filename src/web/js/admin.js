@@ -237,3 +237,42 @@ window.downloadMemorySnapshot = async function() {
 
   console.log("Memory snapshot download initiated.");
 };
+
+// 
+// Download Scores
+// 
+window.downloadScores = async function() {
+  console.log("Downloading scores...");
+
+  const response = await window.smartFetch('/api/export/scores', null, false);
+
+  if (!response.ok) {
+      console.error("Failed to download scores:", response.status, response.statusText);
+      alert("Failed to download scores.");
+      return;
+  }
+
+  // Get the response
+  const data = await response.json();
+
+  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
+  let filename = document.getElementById('game_name').innerText;
+  filename += '_scores_';
+  filename += new Date().toISOString().split('T')[0];
+  filename += '.json';
+
+  // Replace spaces with underscores
+  filename = filename.replace(/ /g, '_');
+
+  // Create a temporary link to trigger the download
+  const element = document.createElement('a');
+  element.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data));
+  element.download = filename;
+  document.body.appendChild(element);
+  element.click();
+
+  // Clean up
+  document.body.removeChild(element);
+
+  console.log("Scores download initiated.");
+}

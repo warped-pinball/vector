@@ -117,13 +117,23 @@
                 <button onclick="document.getElementById('update-upload').click()">Upload Update File</button>
             </div>
             <div>
-                <p>Upload a new update to your Vector.</p>
-                <p><b>To prevent risk of damaging your machine; only apply updates from <a href="https://www.warpedpinball.com">warpedpinball.com</a></b></p>
+                <p>Upload a new update to your Vector.<b>To prevent risk of damaging your machine; only apply updates from <a href="https://www.warpedpinball.com">warpedpinball.com</a></b></p>
             </div>
         </div>
             
         <input type="file" id="update-upload" name="update-upload" hidden onChange="window.handleUpdateUploadChange(event)">
     </section>
+    <section>
+        <h3>Export Data</h3>
+        <div class="grid">
+            <div>
+                <button onclick="window.downloadScores()">Export Scores</button>
+            </div>
+            <div>
+                <p>Export all scores from the Leaderboard and Tournament Board as an update file</p>
+            </div>
+        </div>
+    </section>  
     <section>
         <h3>Reset</h3>
         <div class="grid">

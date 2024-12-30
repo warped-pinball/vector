@@ -564,6 +564,11 @@ def app_install_fault(request):
 #
 # File IO
 #
+@add_route("/api/export/scores")
+def app_export_leaderboard(request):
+    from FileIO import download_scores
+    return download_scores()
+
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
     return save_ram(), 200
@@ -617,7 +622,7 @@ def app_upload_file_json(request):
         # Build a fake request object
         fake_request = FakeRequest(item_json_str)
 
-        # Call your existing function
+        # Call existing function
         result = process_incoming_file(fake_request)
 
         # Return success
