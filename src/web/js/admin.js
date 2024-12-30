@@ -39,7 +39,7 @@ function closeModal() {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-    const response = await window.smartFetch('/api/settings/tournament_mode');
+    const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
     const data = await response.json();
 
     const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
@@ -54,7 +54,7 @@ async function tournamentModeToggle() {
 
 // score Claim methods
 async function getScoreClaimMethods() {
-  const response = await fetch('/api/settings/score_claim_methods');
+  const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
   const data = await response.json();
 
   const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
