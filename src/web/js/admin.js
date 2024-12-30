@@ -39,11 +39,16 @@ function closeModal() {
 
 // Tournament Mode
 async function tournamentModeToggle() {
+    const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');  
+
+    // disable the checkbox until we have the current setting
+    tournamentModeCheckbox.disabled = true;
+
     const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
     const data = await response.json();
 
-    const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
     tournamentModeCheckbox.checked = data['tournament_mode'];
+    tournamentModeCheckbox.disabled = false;
 
     // add event listener to update the setting when the checkbox is changed
     tournamentModeCheckbox.addEventListener('change', async () => {
@@ -54,11 +59,16 @@ async function tournamentModeToggle() {
 
 // score Claim methods
 async function getScoreClaimMethods() {
+  const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
+
+  // disable the checkbox until we have the current setting
+  onMachineCheckbox.disabled = true;
+
   const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
   const data = await response.json();
 
-  const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
   onMachineCheckbox.checked = data['on-machine'];
+  onMachineCheckbox.disabled = false;
 
   // add event listener to update the setting when the checkbox is changed
   onMachineCheckbox.addEventListener('change', async () => {
