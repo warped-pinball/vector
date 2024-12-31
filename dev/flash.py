@@ -119,45 +119,63 @@ def apply_local_config_to_pico(pico_port, config_file='dev/config.json'):
 
 def write_test_data(pico_port, test_data_file='dev/test_data.json'):
     """Write test data to the Pico."""
-    data_path = Path(test_data_file).resolve()
-    if not data_path.exists():
-        print("Test data file not found at:", data_path)
+    test_data_file_path = Path(__file__).parent / 'test_data.json'
+    if not test_data_file_path.exists():
+        print("Test data file not found.")
         return
-
-    print("Writing test data to Pico...")
-    with open(data_path, 'r') as f:
+    with open(test_data_file_path, 'r') as f:
         test_data = json.load(f)
 
-    script_lines = ["import SPI_DataStore as datastore"]
-    # player names
-    for idx, record in enumerate(test_data.get("names", [])):
-        script_lines.append(f'datastore.write_record("names", {json.dumps(record)}, {idx})')
-    # leaderboard
-    script_lines.append("from ScoreTrack import update_leaderboard")
-    for record in test_data.get("leaders", []):
-        script_lines.append(f'update_leaderboard({json.dumps(record)})')
-    # turn on tournament mode
-    script_lines.append("import SharedState")
-    script_lines.append("SharedState.tournamentModeOn = 1")
-    for record in test_data.get("tournament", []):
-        script_lines.append(f'update_leaderboard({json.dumps(record)})')
-    # turn off tournament mode
-    script_lines.append("SharedState.tournamentModeOn = 0")
-    # set score capture
-    script_lines.append('extras = datastore.read_record("extras", 0)')
-    script_lines.append(f'extras["other"] = {test_data.get("settings", {}).get("score_capture", {})}')
-    script_lines.append('datastore.write_record("extras", extras, 0)')
+    test_data_script = '\n'.join(
+        # set player names
+        [
+            "import SPI_DataStore as datastore"
+        ]
+        + [
+            f'datastore.write_record("names", {json.dumps(record)}, {index})'
+            for index, record in enumerate(test_data["names"])
+        ]
+        # set leaderboard data
+        + [
+            "from ScoreTrack import update_leaderboard",
+        ]
+        + [
+            f'update_leaderboard({json.dumps(record)})'
+            for record in test_data["leaders"]
+        ]
+        # turn on tournament mode
+        + [
+            "import SharedState",
+            "SharedState.tournamentModeOn = 1"
+        ]
+        + [
+            f'update_leaderboard({json.dumps(record)})'
+            for record in test_data["tournament"]
+        ]
+        # turn off tournament mode
+        + [
+            "SharedState.tournamentModeOn = 0"
+        ]
+        # set score capture
+        + [
+            'extras = datastore.read_record("extras", 0)',
+            f'extras["other"] = {test_data["settings"]["score_capture"]}',
+            'datastore.write_record("extras", extras, 0)'
+        ]
 
-    cmd = f"mpremote connect {pico_port} exec \"{';'.join(script_lines)}\""
+    )
+    
+    cmd = f'mpremote connect {pico_port} exec \'{test_data_script}\''
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
         result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
-            print("Test data written successfully to Pico.")
-            return
+            break
         print(f"Error writing test data to Pico. Retrying... ({attempt + 1})")
-    print("Error writing test data to Pico after 3 attempts.")
-    sys.exit(1)
+    if result.returncode != 0:
+        print("Error writing test data to Pico.")
+        sys.exit(1)
+    print("Test data written successfully to Pico.")
 
 def main():
     parser = argparse.ArgumentParser(
