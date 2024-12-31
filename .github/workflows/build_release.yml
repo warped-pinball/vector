@@ -87,5 +87,5 @@ jobs:
           asset_name: build_artifact.zip
           asset_content_type: application/zip
         env:
-          GITHUB_TOKEN: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

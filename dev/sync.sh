@@ -36,4 +36,11 @@ fi
 
 # --- 3. Connect to REPL ---
 echo "Connecting to mpremote REPL ..."
-mpremote
+# try to connect to the REPL once every second for 10 seconds
+for i in {1..10}; do
+  mpremote
+  if [ $? -eq 0 ]; then
+    break
+  fi
+  sleep 1
+done
