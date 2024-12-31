@@ -28,7 +28,7 @@ jobs:
 
       - name: Build project
         run: |
-          python dev/build_project.py --build-dir build --env dev
+          python dev/build.py --build-dir build --env dev
 
       - name: Archive build output
         run: |
