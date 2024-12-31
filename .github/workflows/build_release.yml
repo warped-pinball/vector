@@ -11,8 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    # This is critical for uploading release assets:
+    
     permissions:
       contents: write
 
@@ -30,30 +29,63 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
+      #######################################################################
+      # STEP: Determine environment based on event type
+      #######################################################################
+      - name: Determine build environment
+        id: build_env
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ENV=dev" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # We assume push to main => "beta". 
+            # If you also have other branches you want to handle differently, 
+            # you can check branch names in GITHUB_REF.
+            echo "ENV=beta" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            # The release event => "prod"
+            echo "ENV=prod" >> $GITHUB_ENV
+          else
+            # Default/fallback if needed
+            echo "ENV=dev" >> $GITHUB_ENV
+          fi
+          echo "Using environment=$ENV"
+
+      #######################################################################
+      # STEP: Build
+      #######################################################################
       - name: Build project
         run: |
+          echo "Building with env=$ENV"
           python dev/build.py --build-dir build --env $ENV
 
+      #######################################################################
+      # STEP: Archive build output (zip)
+      #######################################################################
       - name: Archive build output
         run: |
           zip -r build_artifact.zip build
 
-      - name: Upload build artifact (as GitHub Actions artifact)
+      #######################################################################
+      # STEP: Upload as an Action artifact (always, for debugging or manual download)
+      #######################################################################
+      - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
           name: pico-build
           path: build_artifact.zip
 
+      #######################################################################
+      # STEP: Upload to Release (only when event is "release")
+      #######################################################################
       - name: Upload artifact to GitHub Release
-        # only run for release events
         if: ${{ github.event_name == 'release' }}
         uses: actions/upload-release-asset@v1
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: build_artifact.zip
           asset_name: build_artifact.zip
           asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+
