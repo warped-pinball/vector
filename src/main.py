@@ -171,10 +171,12 @@ for i in range(50):
     for y in range(9):
         print(SPI_Store.sflash_is_ready())
 
-
     print("W")
     SPI_Store.sflash_write(test_address, test_data, True)
     print(test_data)
+
+    rd=SPI_Store.sflash_read(test_address, test_length)
+    print("read ",rd)
 
 
 

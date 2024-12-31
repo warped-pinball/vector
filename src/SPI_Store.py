@@ -213,7 +213,6 @@ SFLASH_RDDPB = 0xE0
 #WIP write in progress bit for erases also
 #serial l=flash CS active when HIGH
 
-
 #send command with optional following data bytes
 def _sflash_cmd_dat(spi, cs, reg, data=bytearray()):       
     try:
@@ -221,26 +220,31 @@ def _sflash_cmd_dat(spi, cs, reg, data=bytearray()):
         msg = bytearray()
         msg.append(reg)    
         msg.extend(data)
+        if len(data) > 5:
+            raise ValueError("Data length exceeds 5 bytes")
         cs.value(1)
         spi.write(msg)
         cs.value(0)
         time.sleep_us(20) 
         cs.value(1)
-        print (micropython.mem_info())
-    except:
-        print("SFLASH: cmd fault")
+    except ValueError as ve:
+        print(f"SFLASH: ValueError - {ve}")
+    except Exception as e:
+        print(f"SFLASH: Unexpected error - {e}")
         
 
 #read a register (can be multiple read bytes)
 def _sflash_reg_read(spi, cs, reg, nbytes=1):  
     try:
-        print (micropython.mem_info())
+        #print (micropython.mem_info())
         cs.value(0)
         msg = bytearray()
         time.sleep_us(20) 
         msg.append(reg)        
         cs.value(1)
-        print("rreg",msg,nbytes)
+        #print("rreg",msg,nbytes)
+        if nbytes > 10:
+            raise ValueError("Data length exceeds 10 bytes")
         spi.write(msg)
         data = spi.read(nbytes)
         cs.value(0)
@@ -266,7 +270,7 @@ def _sflash_block_erase(block_address,wait=False):
     if sflash_is_ready() is False:
         print("SFLASH: fault not ready, block erase")
         return "fault"
-    print("e")
+    #print("e")
     _sflash_write_enable()    
     address_bytes = bytearray([
         (block_address >> 24) & 0xFF,  #MSByte
@@ -277,7 +281,7 @@ def _sflash_block_erase(block_address,wait=False):
     
     _sflash_cmd_dat(spi, cs, SFLASH_BE4B, address_bytes)    
     print(f"ear {address_bytes.hex()}")
-    print (micropython.mem_info())
+    #print (micropython.mem_info())
 
     if wait:    
         loop=0
@@ -313,6 +317,8 @@ def _sflash_mem_read(spi, cs, address, nbytes=16):
         
         # Send the message and read the data
         cs.value(1)
+        if len(msg) > 5:
+            raise ValueError("Data length exceeds 5 bytes  !!")
         spi.write(msg)
         data.extend(spi.read(read_size))
         cs.value(0)
@@ -426,7 +432,7 @@ def sflash_is_ready():
 
     try:    
         sr = _sflash_reg_read(spi, cs, SFLASH_RDSR)
-        print("frdy?",sr)
+        #print("frdy?",sr)
         return (sr[0] & 0x01) == 0x00
       
     except Exception as e:
@@ -511,10 +517,19 @@ def sflash_init():
     _sflash_cmd_dat(spi, cs, SFLASH_EN4B)       
     #read config, check bit 5
     config_reg=_sflash_reg_read(spi,cs,SFLASH_RDCR)
+
+
+    if config_reg is None or len(config_reg) == 0:
+        print("SFLASH: Fault, cannot read config register")
+        sflash_is_on_board=False
+        return    
+    #print("config reg=",config_reg)
+    #config_reg = bytearray()
+
     if (config_reg[0] & 0x20) == 0:
         _sflash_cmd_dat(spi, cs, SFLASH_EN4B)
         config_reg=_sflash_reg_read(spi,cs,SFLASH_RDCR)
-        if (config_reg[0] & 0x20) == 0:
+        if config_reg is None or len(config_reg) == 0 or (config_reg[0] & 0x20) == 0:
             print("SFLASH: Fault, cannot set 4byte mode")
             sflash_is_on_board=False
 
@@ -589,7 +604,7 @@ def test():
                 try:
                     print(":",end="")
                     rdty=sflash_is_ready()
-                    print("r",rdty)
+                    print("r",rdty,end="")
                     time.sleep_ms(3)
                     #rdty=True
                     print(";",end="")
