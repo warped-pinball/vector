@@ -144,6 +144,39 @@ if bus_activity_fault == False:
         reset_control.release(True)
 
 #launch wifi, and server. Should not return
-Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
 
+
+
+
+#Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
+
+
+import SPI_Store
+#SPI_Store.test()
+
+for i in range(50):
+
+    SPI_Store.initialize()
+    print("ready?",SPI_Store.sflash_is_ready())
+    print("V",SPI_Store.version())
+    time.sleep(1)
+
+    test_address = 0x10000
+    test_length = 16
+    test_data = bytearray([(ii) % 200 for ii in range(test_length)]) 
+
+    SPI_Store.sflash_protect_sectors(test_address, test_address+test_length, "off")
+    SPI_Store.sflash_erase(test_address ,test_address + test_length, True)
+
+    for y in range(9):
+        print(SPI_Store.sflash_is_ready())
+
+
+    print("W")
+    SPI_Store.sflash_write(test_address, test_data, True)
+    print(test_data)
+
+
+
+print("done----")
 Log.log("MAIN: drop through fault")
