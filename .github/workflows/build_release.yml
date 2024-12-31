@@ -1,6 +1,10 @@
-name: Build Realease
+name: Build and Deploy
 
 on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   release:
     types: [published]
 
@@ -9,66 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
+      - name: Check out code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js environment for minifying HTML, CSS, and JS
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
+          python-version: "3.10"
 
-      # Step 3: Install HTML minifier and other dependencies
-      - name: Install HTML minifier and dependencies
+      - name: Install dependencies
         run: |
-          npm install html-minifier-terser --save-dev
+          python -m pip install --upgrade pip
+          pip install -r dev/requirements.txt
 
-      # Step 4: Minify HTML, CSS, and JS
-      - name: Minify HTML, CSS, and JS
+      - name: Build project
         run: |
-          mkdir -p compiled
-          find ./src -name "*.html" -not -path "*/app_templates/*" -exec sh -c '
-          mkdir -p compiled/$(dirname "{}")
-          npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "{}" -o compiled/"{}"
-          ' \;
+          python dev/build_project.py --build-dir build --env dev
 
-      # Step 5: Install dependencies for compiling MicroPython files
-      - name: Install build dependencies (gcc, make, etc.)
-        run: sudo apt-get update && sudo apt-get install -y build-essential
-
-      # Step 6: Clone MicroPython and build mpy-cross
-      - name: Clone MicroPython and build mpy-cross
+      - name: Archive build output
         run: |
-          git clone https://github.com/micropython/micropython.git
-          cd micropython/mpy-cross
-          make  # Build the mpy-cross compiler
+          zip -r build_artifact.zip build
+        # Or use python's shutil.make_archive, whichever you prefer.
 
-      # Step 7: Precompile Python files to .mpy
-      - name: Precompile Python files to .mpy
-        run: |
-          find ./src -name "*.py" -exec micropython/mpy-cross/mpy-cross {} -o compiled/{} \;
-
-      # Step 8: Copy over all non .html and .py files to the compiled directory
-      - name: Copy non-minified files
-        run: |
-          rsync -av --progress ./src/ ./compiled/ --exclude '*.html' --exclude '*.py'
-
-      # Step 9: Zip the compiled files into an artifact
-      - name: Create zip of compiled files
-        run: |
-          zip -r compiled_artifact.zip compiled/
-
-      # Step 10: Upload the artifact to GitHub as part of the release
-      - name: Upload compiled artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: compiled-artifact
-          path: compiled_artifact.zip
+          name: pico-build
+          path: build_artifact.zip
 
-      # Step 11: Attach compiled files to the release
-      - name: Attach compiled artifact to the release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: compiled_artifact.zip
 
