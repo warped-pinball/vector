@@ -60,20 +60,21 @@ jobs:
           python dev/build.py --build-dir build --env $ENV
 
       #######################################################################
-      # STEP: Archive build output (zip)
+      # STEP: Create update.json
       #######################################################################
-      - name: Archive build output
+      - name: Generate update.json
         run: |
-          zip -r build_artifact.zip build
+          python dev/build_update.py --build-dir build --output update.json
 
       #######################################################################
-      # STEP: Upload as an Action artifact (always, for debugging or manual download)
+      # STEP: Upload artifact (always)
       #######################################################################
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: pico-build
-          path: build_artifact.zip
+          name: pico-update
+          path: update.json
+
 
       #######################################################################
       # STEP: Upload to Release (only when event is "release")
@@ -83,8 +84,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build_artifact.zip
-          asset_name: build_artifact.zip
+          asset_path: update.json
+          asset_name: update.json
           asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
