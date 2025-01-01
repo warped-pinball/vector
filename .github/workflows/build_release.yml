@@ -16,9 +16,6 @@ jobs:
       contents: write
 
     steps:
-      #######################################################################
-      # STEP: Set Up Environment
-      #######################################################################
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -32,72 +29,50 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      #######################################################################
-      # STEP: Determine Environment and Version
-      #######################################################################
-      - name: Determine build environment
+      - name: Determine build environment and version
         id: build_env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BUILD_ENV="dev"
-            VERSION_SUFFIX="-dev-${{ github.run_number }}"
+            ENV="dev"
+            SUFFIX="-dev-${{ github.run_number }}"
           elif [ "${{ github.event_name }}" = "push" ]; then
-            BUILD_ENV="beta"
-            VERSION_SUFFIX="-beta-${{ github.run_number }}"
+            ENV="beta"
+            SUFFIX="-beta-${{ github.run_number }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
-            BUILD_ENV="prod"
-            VERSION_SUFFIX=""
+            ENV="prod"
+            SUFFIX=""
           else
-            BUILD_ENV="dev"
-            VERSION_SUFFIX="-dev"
+            ENV="dev"
+            SUFFIX="-dev"
           fi
 
-          # Extract version from SharedState.py and append suffix
-          VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')${VERSION_SUFFIX}
-          echo "ENV=$BUILD_ENV" >> $GITHUB_ENV
+          VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')${SUFFIX}
+          echo "ENV=$ENV" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-          echo "Environment: $BUILD_ENV"
-          echo "Version: $VERSION"
 
       - name: Update SharedState.py Version
         run: |
           sed -i "s/WarpedVersion = .*/WarpedVersion = \"$VERSION\"/" src/SharedState.py
-          git diff SharedState.py
+          git diff src/SharedState.py
 
-      #######################################################################
-      # STEP: Build Project
-      #######################################################################
       - name: Build project
         run: |
-          echo "Building with env=$ENV"
           python dev/build.py --build-dir build --env $ENV
 
-      #######################################################################
-      # STEP: Create Update JSON
-      #######################################################################
       - name: Generate update.json
         run: |
-          python dev/build_update.py --build-dir build --output update.json
+          python dev/build_update.py --build-dir build --output update.json --version $VERSION
 
-      #######################################################################
-      # STEP: Upload as Artifact
-      #######################################################################
+      - name: Upload artifact to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name == 'release' }}
+        with:
+          files: update.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
           name: pico-update
           path: update.json
-
-      #######################################################################
-      # STEP: Upload to GitHub Release
-      #######################################################################
-      - name: Create and Upload Release
-        if: ${{ github.event_name == 'release' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: update.json
-          tag_name: ${{ github.ref_name }}
-          name: "Release ${{ github.ref_name }} - ${{ env.VERSION }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

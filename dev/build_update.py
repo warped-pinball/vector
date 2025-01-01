@@ -29,6 +29,20 @@ def get_file_contents(file_path: str) -> bytes:
         return f.read()
 
 
+def extract_version(build_dir: str) -> str:
+    """Extract version from SharedState.py."""
+    shared_state_path = Path(build_dir) / "src" / "SharedState.py"
+    if not shared_state_path.exists():
+        raise FileNotFoundError(f"SharedState.py not found at {shared_state_path}")
+
+    with open(shared_state_path, "r") as f:
+        for line in f:
+            if "WarpedVersion" in line:
+                return line.split("=")[1].strip().strip('"')
+
+    raise ValueError("WarpedVersion not found in SharedState.py")
+
+
 def build_runme_script(file_list):
     """Generate RunMe.py to handle .mpy renaming on the board."""
     rename_script = [
@@ -52,7 +66,7 @@ def build_runme_script(file_list):
     return "\n".join(rename_script)
 
 
-def build_update_json(build_dir: str, output_file: str):
+def build_update_json(build_dir: str, output_file: str, version: str):
     update_data = []
     file_list = []
 
@@ -77,7 +91,7 @@ def build_update_json(build_dir: str, output_file: str):
                 "contents": contents,
                 "FileType": file_type,
                 "Checksum": checksum,
-                "Version": "00.20",
+                "Version": version,
                 "GameName": "11",
             })
 
@@ -90,7 +104,7 @@ def build_update_json(build_dir: str, output_file: str):
         "contents": runme_script,
         "FileType": "RunMe.py",
         "Checksum": runme_checksum,
-        "Version": "00.20",
+        "Version": version,
         "GameName": "11",
     })
 
@@ -106,6 +120,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build update JSON file for the board.")
     parser.add_argument("--build-dir", default=BUILD_DIR, help="Path to the build directory.")
     parser.add_argument("--output", default=OUTPUT_FILE, help="Path to the output JSON file.")
+    parser.add_argument("--version", help="Version string (e.g., '0.3.0'). If omitted, extracted from SharedState.py.")
     args = parser.parse_args()
 
-    build_update_json(args.build_dir, args.output)
+    version = args.version or extract_version(args.build_dir)
+    build_update_json(args.build_dir, args.output, version)
