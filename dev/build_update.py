@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import json
 from pathlib import Path
@@ -44,7 +46,7 @@ def build_runme_script(file_list):
             rename_script.append(f"        os.rename('{original}', '{renamed}')")
             rename_script.append(f"        Log.log('Renamed {original} to {renamed}')")
             rename_script.append(f"    except Exception as e:")
-            rename_script.append(f"        Log.log('Failed to rename {original}: {e}')")
+            rename_script.append(f"        Log.log('Failed to rename {original}: ' + str(e))")
     rename_script.append("if __name__ == '__main__':")
     rename_script.append("    rename_files()")
     return "\n".join(rename_script)

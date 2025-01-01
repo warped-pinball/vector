@@ -11,11 +11,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: write
 
     steps:
+      #######################################################################
+      # STEP: Set Up Environment
+      #######################################################################
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -30,29 +33,40 @@ jobs:
           pip install -r dev/requirements.txt
 
       #######################################################################
-      # STEP: Determine environment based on event type
+      # STEP: Determine Environment and Version
       #######################################################################
       - name: Determine build environment
         id: build_env
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "ENV=dev" >> $GITHUB_ENV
+            BUILD_ENV="dev"
+            VERSION_SUFFIX="-dev-${{ github.run_number }}"
           elif [ "${{ github.event_name }}" = "push" ]; then
-            # We assume push to main => "beta". 
-            # If you also have other branches you want to handle differently, 
-            # you can check branch names in GITHUB_REF.
-            echo "ENV=beta" >> $GITHUB_ENV
+            BUILD_ENV="beta"
+            VERSION_SUFFIX="-beta-${{ github.run_number }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
-            # The release event => "prod"
-            echo "ENV=prod" >> $GITHUB_ENV
+            BUILD_ENV="prod"
+            VERSION_SUFFIX=""
           else
-            # Default/fallback if needed
-            echo "ENV=dev" >> $GITHUB_ENV
+            BUILD_ENV="dev"
+            VERSION_SUFFIX="-dev"
           fi
-          echo "Using environment=$ENV"
+
+          # Extract version from SharedState.py and append suffix
+          VERSION=$(grep WarpedVersion SharedState.py | awk -F'"' '{print $2}')${VERSION_SUFFIX}
+          echo "ENV=$BUILD_ENV" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          echo "Environment: $BUILD_ENV"
+          echo "Version: $VERSION"
+
+      - name: Update SharedState.py Version
+        run: |
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"$VERSION\"/" SharedState.py
+          git diff SharedState.py
 
       #######################################################################
-      # STEP: Build
+      # STEP: Build Project
       #######################################################################
       - name: Build project
         run: |
@@ -60,14 +74,14 @@ jobs:
           python dev/build.py --build-dir build --env $ENV
 
       #######################################################################
-      # STEP: Create update.json
+      # STEP: Create Update JSON
       #######################################################################
       - name: Generate update.json
         run: |
           python dev/build_update.py --build-dir build --output update.json
 
       #######################################################################
-      # STEP: Upload artifact (always)
+      # STEP: Upload as Artifact
       #######################################################################
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
@@ -75,18 +89,15 @@ jobs:
           name: pico-update
           path: update.json
 
-
       #######################################################################
-      # STEP: Upload to Release (only when event is "release")
+      # STEP: Upload to GitHub Release
       #######################################################################
-      - name: Upload artifact to GitHub Release
+      - name: Create and Upload Release
         if: ${{ github.event_name == 'release' }}
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: update.json
-          asset_name: update.json
-          asset_content_type: application/zip
+          files: update.json
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }} - ${{ env.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
