@@ -53,7 +53,7 @@ jobs:
           fi
 
           # Extract version from SharedState.py and append suffix
-          VERSION=$(grep WarpedVersion SharedState.py | awk -F'"' '{print $2}')${VERSION_SUFFIX}
+          VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')${VERSION_SUFFIX}
           echo "ENV=$BUILD_ENV" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
@@ -62,7 +62,7 @@ jobs:
 
       - name: Update SharedState.py Version
         run: |
-          sed -i "s/WarpedVersion = .*/WarpedVersion = \"$VERSION\"/" SharedState.py
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"$VERSION\"/" src/SharedState.py
           git diff SharedState.py
 
       #######################################################################
