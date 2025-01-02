@@ -1,9 +1,11 @@
 '''
 serial flash program update storage driver
 
+Be sure to call initialize() at power  up !  
+
 calls lower level SPI_Store driver (shared with FRAM)
 
-- planning to use fram to track the statu sof the update slots
+- planning to use fram to track the status of the update slots
 - will also include headers int he serial flash sections
 '''
 import uctypes

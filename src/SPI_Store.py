@@ -8,11 +8,6 @@
     SYS11Wifi Project
     Dec 2024        
 """
-
-import micropython
-
-
-
 import machine
 from machine import SPI
 import time
@@ -195,8 +190,10 @@ sflash_is_on_board = False
 SFLASH_EN4B = 0xB7      #enable 4 byte addresses
 SFLASH_RDCR = 0x15      #read config register
 SFLASH_RDSR = 0x05      #read status register
-SFLASH_RDID = 0x9F      #read chip ID  (0xC2,0x20,0x19)
+SFLASH_RDID = 0x9F      #read chip ID
 SFLASH_CHIP_ID = [0xC2, 0x20, 0x19]
+#SFLASH_CHIP_ID = [0xC2, 0x20, 0x17]  prototyre pcb chip
+
 SFLASH_READ = 0x13      #regular 4adr byte read
 SFLASH_PP   = 0x02      #page program (inside 256 byte page)
 #erases set all bits to '1'
@@ -213,64 +210,46 @@ SFLASH_RDDPB = 0xE0
 #WIP write in progress bit for erases also
 #serial l=flash CS active when HIGH
 
+
 #send command with optional following data bytes
 def _sflash_cmd_dat(spi, cs, reg, data=bytearray()):       
-    try:
-        cs.value(0)
-        msg = bytearray()
-        msg.append(reg)    
-        msg.extend(data)
-        if len(data) > 5:
-            raise ValueError("Data length exceeds 5 bytes")
-        cs.value(1)
-        spi.write(msg)
-        cs.value(0)
-        time.sleep_us(20) 
-        cs.value(1)
-    except ValueError as ve:
-        print(f"SFLASH: ValueError - {ve}")
-    except Exception as e:
-        print(f"SFLASH: Unexpected error - {e}")
+    msg = bytearray([reg]) + data          
+    cs.value(0) 
+    time.sleep_us(20)         
+    cs.value(1)
+    time.sleep_us(20) 
+    spi.write(msg)
+    cs.value(0)
+    time.sleep_us(20) 
+    cs.value(1)
         
 
-#read a register (can be multiple read bytes)
+#read a register (can be multiple read bytes, deafault 1)
 def _sflash_reg_read(spi, cs, reg, nbytes=1):  
-    try:
-        #print (micropython.mem_info())
-        cs.value(0)
-        msg = bytearray()
-        time.sleep_us(20) 
-        msg.append(reg)        
-        cs.value(1)
-        #print("rreg",msg,nbytes)
-        if nbytes > 10:
-            raise ValueError("Data length exceeds 10 bytes")
-        spi.write(msg)
-        data = spi.read(nbytes)
-        cs.value(0)
-        time.sleep_us(20) 
-        cs.value(1)
-        return data
-    except:
-        print("SFLASH: reg read fault")
-        return None
+    msg = bytearray([reg])       
+    cs.value(0)
+    time.sleep_us(20)           
+    cs.value(1)    
+    time.sleep_us(20)   
+    spi.write(msg)
+    data = spi.read(nbytes)
+    cs.value(0)
+    time.sleep_us(20) 
+    cs.value(1)
+    return data
 
 def _sflash_write_enable():
     _sflash_cmd_dat(spi,cs,SFLASH_WREN)
    
 def _sflash_get_chip_id():
     sig=_sflash_reg_read(spi, cs, SFLASH_RDID ,3)
-    hex_values = ' '.join(f"{byte:02X}" for byte in sig)
-    print("SFLASH: Signature in hex:", hex_values)
+    print(f"SFLASH: Signature: {sig[0]:02X},{sig[1]:02X},{sig[2]:02X}")
     return sig
 
-
-#64k block size ERASE
+#erase a single 64k block
 def _sflash_block_erase(block_address,wait=False):
-    if sflash_is_ready() is False:
-        print("SFLASH: fault not ready, block erase")
-        return "fault"
-    #print("e")
+    if sflash_is_ready() is False:        
+        return "ready fault"
     _sflash_write_enable()    
     address_bytes = bytearray([
         (block_address >> 24) & 0xFF,  #MSByte
@@ -280,138 +259,114 @@ def _sflash_block_erase(block_address,wait=False):
     ])
     
     _sflash_cmd_dat(spi, cs, SFLASH_BE4B, address_bytes)    
-    print(f"ear {address_bytes.hex()}")
-    #print (micropython.mem_info())
+    print(f"erase {address_bytes.hex()}")
 
     if wait:    
-        loop=0
-        while sflash_is_ready() is False:
-            if loop >= 60:
-                print("SFLASH: timeout, block erase")
-                return 
-            if loop > 4:
-                print(".",end="")                           
-            #time.sleep_ms(10)  
+        loop = 0
+        while not sflash_is_ready():
+            if loop >= 60:        
+                return "timeout"
+            time.sleep_us(50)
             loop += 1
 
 
 #read any number of bytes (no page boundary problems with read)
-def _sflash_mem_read(spi, cs, address, nbytes=16):
+def _sflash_mem_read(spi, cs, address, nbytes=16):    
+    rd_data = bytearray(nbytes)
+    size = 16
+    rd_offset = 0
+    num_bytes = nbytes 
+
     cs.value(0)
-    data = bytearray()
-    chunk_size = 16
-    offset = 0
-    #print(f"address {address:#x}")
-
-    while offset < nbytes:
-        remaining = nbytes - offset
-        read_size = min(chunk_size, remaining)
+    while rd_offset < num_bytes:
+        remaining = num_bytes - rd_offset
+        read_size = min(size, remaining)
+    
+        rd_msg = bytearray([
+            SFLASH_READ,
+            (address >> 24) & 0x0FF, 
+            (address >> 16) & 0x0FF,
+            (address >> 8) & 0x0FF,
+            address & 0x0FF
+        ])
         
-        # Prepare the message
-        msg = bytearray()
-        msg.append(SFLASH_READ)
-        msg.append((address >> 24) & 0x0FF)  # adr(MSB)
-        msg.append((address >> 16) & 0x0FF)
-        msg.append((address >> 8) & 0x0FF)
-        msg.append(address & 0x0FF)
-        
-        # Send the message and read the data
+        # Send the message and read the data        
         cs.value(1)
-        if len(msg) > 5:
-            raise ValueError("Data length exceeds 5 bytes  !!")
-        spi.write(msg)
-        data.extend(spi.read(read_size))
+        time.sleep_us(20) 
+        spi.write(rd_msg)
+        rd_data[rd_offset:rd_offset + read_size] = spi.read(read_size)
         cs.value(0)
-        
-        #print(f" read adr= {address:#x} len= {read_size} msg={msg.hex()} data={data.hex()}")
-
         # Update the address and offset for the next chunk
-        address += chunk_size
-        offset += chunk_size    
+        address += read_size
+        rd_offset += read_size    
 
     time.sleep_us(20) 
     cs.value(1)  
-    return data
+    return rd_data
 
 #
-#write any number of bytes
+#write any number of bytes  - - must wait for finish
 #single write cannot cross 256 byte boundary!
-def _sflash_mem_write(spi, cs, address, data, wait=False):    
-    cs.value(0)
+def _sflash_mem_write(spi, cs, address, data):    
     i=0
-    chunk_size = 8 #16    
-    while i < len(data):              
+    w_chunk_size = 16   
+    w_data_length = len(data) 
+
+    while i < w_data_length:     
         distance_to_boundary = 0x100 - (address & 0x0FF)
-        write_size = min(chunk_size, distance_to_boundary)
-        chunk = data[i:i + write_size]                          
+        write_size = min(w_chunk_size, distance_to_boundary)
+        w_chunk_data = data[i:i + write_size]                          
 
-        _sflash_write_enable()  
-
-        msg = bytearray()
-        msg.append(SFLASH_PP)    
-        address_bytes = bytearray([
-            (address >> 24) & 0x0FF,  #MSByte
+        w_msg = bytearray([
+            SFLASH_PP,
+            (address >> 24) & 0x0FF,  # MSByte
             (address >> 16) & 0x0FF,
             (address >> 8) & 0x0FF,
-            (address & 0x0FF)           
-        ])  
-        msg.extend(address_bytes)
-        msg.extend(chunk)
-        #print(msg)
-        print(f" write adr= {address:#x} len= {len(chunk)} msg={msg.hex()}")
-        #print(f" write adr= {address:#x} len= {len(chunk)} msg={msg}")
-
-        cs.value(1)
-        spi.write(msg)
+            (address & 0x0FF)
+        ] + list(w_chunk_data))
+        print(f" write adr= {address:#x}   msg={w_msg.hex()}")
+ 
+        _sflash_write_enable()         
         cs.value(0)
+        time.sleep_us(20) 
+        cs.value(1)
+        time.sleep_us(20) 
+        spi.write(w_msg)      
+        cs.value(0)
+        time.sleep_us(20) 
+        cs.value(1)
 
+        sflash_wait_for_ready()
         address += write_size
-        i += write_size
-
-    if wait:
-        time.sleep_ms(5)  
-        loop=0
-        while not sflash_is_ready():
-            if loop >= 400:
-                cs.value(1)  
-                print("SFLASH: timeout, write")
-                return "timeout"
-            if loop > 4:
-                print(".",end="")   
-            time.sleep_ms(10)  
-            loop += 1
-    cs.value(1)  
-
-
-
-
+        i += write_size   
 
 
 
 def sflash_read(address, nbytes=16):
     global sflash_is_on_board
-
     if sflash_is_on_board == False: 
-        return (0)
+        return (bytearray(0))
     return _sflash_mem_read(spi, cs, address, nbytes)
+
 
 def sflash_write(address, data, wait=False):   
     global sflash_is_on_board
-
     if sflash_is_on_board == False: 
         return
     return _sflash_mem_write(spi, cs, address, data, wait)
+    
     
 #erase multiple blocks, wait required    
 #one block can slecet no wait
 def sflash_erase(start_block_address, end_block_address=0, wait=False):
     global sflash_is_on_board
-
     if sflash_is_on_board == False:
         return
 
     start_block_address &= 0xFFFF0000
     end_block_address &= 0xFFFF0000
+    if start_block_address > end_block_address:
+        return
 
     if start_block_address == end_block_address or end_block_address == 0:
         _sflash_block_erase(start_block_address, wait)       
@@ -423,24 +378,27 @@ def sflash_erase(start_block_address, end_block_address=0, wait=False):
             print("block erase+")
        
 
-
+#check for ready status
 def sflash_is_ready():
     global sflash_is_on_board
-
     if sflash_is_on_board == False: 
         return True
+ 
+    sr = _sflash_reg_read(spi, cs, SFLASH_RDSR)  
+    return (sr[0] & 0x01) == 0x00
 
-    try:    
-        sr = _sflash_reg_read(spi, cs, SFLASH_RDSR)
-        #print("frdy?",sr)
-        return (sr[0] & 0x01) == 0x00
-      
-    except Exception as e:
-        print(f"SFLASH: Error checking readiness - {e}")
-        return False
+# Wait until ready with timeout
+def sflash_wait_for_ready(timeout=120):
+    while not sflash_is_ready() and timeout > 0:
+        time.sleep_ms(10)
+        print("w",end="")
+        timeout -= 1
+    if timeout == 0:
+        return "fault"
+    print("D")
+    return "ok"
 
-
-
+#default on - send "off" to unprotect
 def sflash_protect_sectors(start_address, end_address, protect="on"):
     block_size = 0x10000  # 64K blocks
     sector_size = 0x1000  # 4K sectors
@@ -452,27 +410,25 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
     else:
         data_byte = 0
 
-    print(f"     st={start_address:#x} end={end_address:#x} prot= {protect}")
-
     # 64K blocks from 1 to 510
     for block_num in range(1, 511):
         block_address = block_num * block_size
         #print(f"block # {block_num} st={start_address:#x} end={end_address:#x} prot= {protect}")
         if block_address < (start_address&0xFFFF0000) or block_address > (end_address&0xFFFF0000):
             continue
-        print ("block # ",block_num," prot= ",protect)
-        _sflash_write_enable()
-        msg = bytearray()        
-        address_bytes = bytearray([
+
+        #print ("block # ",block_num," prot= ",protect)              
+        msg = bytearray([
             (block_address >> 24) & 0x0FF,  #MSByte
             (block_address >> 16) & 0x0FF,
             (block_address >>8) & 0x0FF,
             (block_address & 0x0FF),
             data_byte
-        ])  
-        msg.extend(address_bytes)
+        ])      
+        _sflash_write_enable()
         _sflash_cmd_dat(spi, cs, SFLASH_WRDPB, msg)
  
+
     # Protect 4K sectors within the first and last block (block 0 and 511)
     for block_num in [0, 511]:
         block_address = block_num * block_size
@@ -480,20 +436,19 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
             sector_address = block_address + sector_offset
             if sector_address < (start_address & 0xFFFFF000) or sector_address >= (end_address & 0xFFFFF000):
                 continue
-            _sflash_write_enable()
+          
             print("4k sector # ",sector_offset," prot= ",protect)
-            msg = bytearray()        
-            address_bytes = bytearray([
+
+            msg = bytearray([
                 (sector_address >> 24) & 0xFF,  #MSByte
                 (sector_address >> 16) & 0xFF,
                 (sector_address >>8) & 0xFF,
                 (sector_address & 0xFF),
                 data_byte
-            ])  
-            msg.extend(address_bytes)
+            ])              
+            _sflash_write_enable()
             _sflash_cmd_dat(spi, cs, SFLASH_WRDPB, msg)
     
-    print("sector protect done")
 
 
 
@@ -502,36 +457,24 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
 def sflash_init():  
     global sflash_is_on_board
 
-    #confirm chip id
-    id=_sflash_get_chip_id()
-    sflash_is_on_board=True
-    if list(id) != SFLASH_CHIP_ID:
-        print("First attempt ID mismatch. Trying again...")
-        id =  id=_sflash_get_chip_id()
-        if list(id) != SFLASH_CHIP_ID:
-            print("SFLASH: chip ID error")
-            sflash_is_on_board=False
+    # Confirm chip id
+    for attempt in range(2):
+        chip_id = _sflash_get_chip_id()
+        if list(chip_id) == SFLASH_CHIP_ID:
+            sflash_is_on_board = True
+            break
+        print(f"SFLASH: Attempt {attempt + 1} ID mismatch")        
+        sflash_is_on_board = False
 
     #4 byte address mode
     _sflash_write_enable()
     _sflash_cmd_dat(spi, cs, SFLASH_EN4B)       
-    #read config, check bit 5
+    #read config, check bit 5 for 4 byte mode
     config_reg=_sflash_reg_read(spi,cs,SFLASH_RDCR)
-
-
-    if config_reg is None or len(config_reg) == 0:
-        print("SFLASH: Fault, cannot read config register")
+    if config_reg is None or len(config_reg) == 0 or (config_reg[0] & 0x20) == 0:
+        print("SFLASH: Fault, cannot confirm config register")
         sflash_is_on_board=False
         return    
-    #print("config reg=",config_reg)
-    #config_reg = bytearray()
-
-    if (config_reg[0] & 0x20) == 0:
-        _sflash_cmd_dat(spi, cs, SFLASH_EN4B)
-        config_reg=_sflash_reg_read(spi,cs,SFLASH_RDCR)
-        if config_reg is None or len(config_reg) == 0 or (config_reg[0] & 0x20) == 0:
-            print("SFLASH: Fault, cannot set 4byte mode")
-            sflash_is_on_board=False
 
     #set WPSEL
     _sflash_write_enable()
@@ -568,85 +511,42 @@ def version():
 
 
 def test():
+    initialize()
+    print("ready?",sflash_is_ready())
+    print("V",version())
     
-    import resource
-    print("spi store running as main")
+    modder = 256
+    for looper in range(2):
+        print("loop ",looper)    
 
-    test=1
+        # Test: Write a known pattern and read it back
+        test_address = 0x100Af
+        test_length = 479
+        test_data = bytearray([(i+3) % modder for i in range(test_length)])  
 
+        sflash_protect_sectors(test_address, test_address+test_length, "off")
+        sflash_erase(test_address ,test_address + test_length, False)
+                
+        sflash_wait_for_ready()
+        
+        # Write the test data
+        _sflash_mem_write(spi, cs, test_address, test_data)
+        sflash_protect_sectors(test_address, test_address+test_length, "on")
+        # Read back the data
+        read_data = _sflash_mem_read(spi, cs, test_address, test_length)
 
-    if(test==1):
-        initialize()
-
-        print("ready?",sflash_is_ready())
-        print("V",version())
-        #time.sleep(0.3)
-
-        modder = 2
-        for looper in range(50):
-            print("loop ",looper)
-            modder = modder +1
-            #resource.go()
-
-            print("init done")
-            time.sleep(2)
-
-            # Test: Write a known pattern and read it back
-            test_address = 0x100Af
-            test_length = 133 #279
-            test_data = bytearray([(i+13) % modder for i in range(test_length)])  # Known pattern: 0, 1, 2, ..., 255, 0, 1, 2, ...
-
-            sflash_protect_sectors(test_address, test_address+test_length, "off")
-            sflash_erase(test_address ,test_address + test_length, False)
-                    
-            rdty=False
-            while not rdty:
-                try:
-                    print(":",end="")
-                    rdty=sflash_is_ready()
-                    print("r",rdty,end="")
-                    time.sleep_ms(3)
-                    #rdty=True
-                    print(";",end="")
-                    time.sleep_ms(6)
-                except Exception as e:
-                    print(f"loop fault: {e}")  #<<< fault here when sleep_ms(6) is used
-            print("D")    
-            
-            # Write the test data
-            _sflash_mem_write(spi, cs, test_address, test_data)
-            
-            sflash_protect_sectors(test_address, test_address+test_length, "on")
-
-            # Read back the data
-            read_data = _sflash_mem_read(spi, cs, test_address, test_length)
-
-            # Check for errors
-            if test_data == read_data:
-                print("Test passed: Data written and read back correctly.")
-            else:
-                print("Test failed: Data mismatch.")
-                for i in range(len(test_data)):
-                    if test_data[i] != read_data[i]:
-                        print(f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}")
-                        pass
-
-
-    else:        
-
-
-        for looper in range(50):
-            print("loop ",looper)
-            write_all_fram_now()        
-            time.sleep_ms(10)
-
-            print("ok"  ,looper)
-            print(read(0, 12))
-            time.sleep_ms(10)
-
-
+        # Check for errors
+        if test_data == read_data:
+            print("Test passed: Data written and read back correctly.")
+        else:
+            print("Test failed: Data mismatch.")
+            for i in range(len(test_data)):
+                if test_data[i] != read_data[i]:
+                    print(f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}")
+                    pass
 
 
 
 if __name__ == "__main__":
-    test()
+    test() 
+    print("done")
