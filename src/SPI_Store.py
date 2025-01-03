@@ -262,11 +262,12 @@ def _sflash_block_erase(block_address,wait=False):
     print(f"erase {address_bytes.hex()}")
 
     if wait:    
-        loop = 0
+        loop = 0        
         while not sflash_is_ready():
             if loop >= 60:        
+                print("timeout")
                 return "timeout"
-            time.sleep_us(50)
+            time.sleep_ms(50)
             loop += 1
 
 
@@ -372,10 +373,11 @@ def sflash_erase(start_block_address, end_block_address=0, wait=False):
         _sflash_block_erase(start_block_address, wait)       
     else:
         block_address = start_block_address
-        while block_address <= end_block_address:
+        while block_address < end_block_address:
+            #print(f"e-{block_address:#x}")
             _sflash_block_erase(block_address, True)
             block_address += 0x010000
-            print("block erase+")
+           
        
 
 #check for ready status
@@ -414,10 +416,10 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
     for block_num in range(1, 511):
         block_address = block_num * block_size
         #print(f"block # {block_num} st={start_address:#x} end={end_address:#x} prot= {protect}")
-        if block_address < (start_address&0xFFFF0000) or block_address > (end_address&0xFFFF0000):
+        if block_address < (start_address&0xFFFF0000) or block_address >= (end_address&0xFFFF0000):
             continue
 
-        #print ("block # ",block_num," prot= ",protect)              
+        print ("block # ",block_num," prot= ",protect)              
         msg = bytearray([
             (block_address >> 24) & 0x0FF,  #MSByte
             (block_address >> 16) & 0x0FF,
