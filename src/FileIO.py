@@ -105,6 +105,49 @@ def crc16(data: bytes) -> str:
 #file upload.  can include directories int the file name if the directory already exists
 #  ex:  "phew/test.py"
 #browser side (java script) calls once for each file structure inside of download file
+
+
+#TODO update file format
+    # once-per-file keys:
+        # update_file_format: version of the update file format
+        # supported_hardware_versions: list of hardware versions supported by the update
+        # supported_software_versions: list of software versions supported by the update
+        # version: what version of the software this update contains
+        # full_checksum: checksum of all files that should be on the board after the update, excluding any custom files
+        # board_signature: signed copy of the full_checksum to validate who created the update
+        # js_signature: signed copy of a hash of the files in the update to validate within the web UI
+    # per-file/chunk keys in key ('files') list:
+        # required keys:
+            # path: path to the file including the file name
+            # checksum: checksum of the file data note: cumulative checksum of all previous chunks
+            # data: base 85 encoded file data
+        # optional keys:
+            # part_number: part number of the file being uploaded (1-indexed, 1 implies do not append; overwrite)
+            # total_parts: total number of parts for the file
+            # compressed: int, level of compression applied to the file data. 0 or none implies no compression
+            # log: for web UI only, message to display to user ex: "uploading file 1 of 10"
+            # execute: command to run after the file is uploaded, ex: "import RunMe; RunMe.go()"
+
+
+#TODO steps the update process should take:
+
+# confirm update supports the hardware and software 421
+    
+# delete all files not present in the update (possibly exceptions for custom uploaded files)
+
+# hash all remaining files and return to web UI
+
+# web UI uploads just the files that have changed by checking the checksums:
+    # all files in bytes-like format
+    # update build process options to support:
+        # optional compression & decompression of files
+        # optionally group small files into a single request
+
+
+
+
+
+
 def process_incoming_file(request):   
     gc.collect()    
     print("incomming")
