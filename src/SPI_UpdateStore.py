@@ -413,7 +413,32 @@ def test():
     #blank_all()  #<<manufacturing reset all 
 
 
-    if (True):  #write progrm to block
+    #basic read newest block out
+    if False:
+        r=read_generator(25,True)        
+        for d in r:
+            print ("data read: ",d)
+
+
+
+    #read test looking at data pattern
+    expected_value = 0
+    num_of_bytes = 0
+    if True:  #read test
+        rgen=read_generator(25,True)        
+        for d in rgen:
+            print ("data read-: ",d)
+            for byte in d:
+                num_of_bytes +=1
+                #print(" ",byte,end="")
+                if byte != expected_value:
+                    print ("FAULT")
+                expected_value= (expected_value+1)%11
+    print("total bytes = ",num_of_bytes)
+ 
+
+
+    if (False):  #write progrm to block
         #test_data = bytearray([(i) for i in range(9)]) 
         #test_data = bytearray([(i) for i in range(15)]) 
         test_data = bytearray([(i) for i in range(11)])
