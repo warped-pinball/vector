@@ -8,6 +8,7 @@ import SPI_DataStore as DataStore
 import os
 import SharedState as S
 from logger import logger_instance
+import ubinascii
 Log = logger_instance
 
 def download_scores():
@@ -101,6 +102,30 @@ def crc16(data: bytes) -> str:
     crc_value = crc16_ccitt(data)
     return '{:04X}'.format(crc_value)
 
+def file_base64_crc16s(path: str, chunk_size: int) -> str:
+    """
+    Calculate the CRC16-CCITT checksum of a file by reading it in chunks.
+
+    :param path: Path to the file.
+    :param chunk_size: Size of each chunk to read in bytes.
+    :return: CRC16 checksum as a 4-character hexadecimal string.
+    """
+    crc = 0xFFFF  # Initial CRC value    
+    checksums = []
+    try:
+        with open(path, 'rb') as file:
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                # base64 encode the chunk and calculate the CRC
+                # note: the base64 encoding adds a newline character at the end, so we remove it
+                crc = crc16_ccitt(ubinascii.b2a_base64(chunk)[:-1], crc)
+                checksums.append('{:04X}'.format(crc))
+        return checksums
+    except Exception as e:
+        print(f"Error calculating checksum: {e}")
+        return None
 
 #file upload.  can include directories int the file name if the directory already exists
 #  ex:  "phew/test.py"

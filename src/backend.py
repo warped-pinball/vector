@@ -573,10 +573,24 @@ def app_export_leaderboard(request):
 def app_memory_snapshot(request):
     return save_ram(), 200
 
-@add_route("/api/logs", cool_down_seconds=10, single_instance=True)
+@add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
     from FileIO import download_log
     return download_log()
+
+@add_route("/api/file_index")
+def app_file_index(request):
+    # list all files in the file system
+    from ls import ls
+    from FileIO import file_base64_crc16s
+    chunk_size = request.data.get("chunk_size", 1024)
+    files = ls('/')
+    file_checksums = {}
+    for file in files:
+        # returns the cc16 checksum of the file at each chunk
+        file_checksums[file] = file_base64_crc16s(file, chunk_size)
+    return json_dumps(file_checksums), 200
+
 
 # cool down needs to be set to 0 to keep updates moving quickly/error free
 @add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)

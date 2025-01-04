@@ -4,11 +4,12 @@ import os
 import json
 import base64
 from pathlib import Path
+import zlib
 
 BUILD_DIR = "build"
 SOURCE_DIR = "src"
 OUTPUT_FILE = "update.json"
-DEFAULT_CHUNK_SIZE = 1024  # Default chunk size in bytes
+DEFAULT_CHUNK_SIZE = 1024
 
 def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
     for byte in data:
@@ -19,10 +20,7 @@ def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
             else:
                 crc <<= 1
             crc &= 0xFFFF
-    return crc
-
-def crc16(data: bytes) -> str:
-    return "{:04X}".format(crc16_ccitt(data))
+    return "{:04X}".format(crc)
 
 def get_file_contents(file_path: str) -> bytes:
     with open(file_path, "rb") as f:
@@ -33,7 +31,17 @@ def split_into_chunks(data: bytes, chunk_size: int) -> list[bytes]:
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
 
 def build_update_json(build_dir: str, output_file: str, version: str, chunk_size: int):
-    update_data = []
+    update_data = {
+        "update_file_format": "1.0",
+        "supported_hardware": ["vector_v1", "vector_v2", "vector_v3", "vector_v4", "vector_v5"],
+        "supported_software_versions": ["0.3.0"],
+        "micropython_versions": ["1.23.0"],
+        "version": version,
+        "full_checksum": "",
+        "files": []
+    }
+
+    cumulative_checksum_data = b""
 
     for root, _, files in os.walk(build_dir):
         for file_name in files:
@@ -42,30 +50,39 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
 
             contents = get_file_contents(file_path)
 
-            # Base64 encode all file contents
-            encoded_contents = base64.b64encode(contents)
-
             # Split into chunks
-            chunks = split_into_chunks(encoded_contents, chunk_size)
+            chunks = split_into_chunks(contents, chunk_size)
 
-            cumulative_data = b""  # To keep track of cumulative data for checksum calculation
+            # cumulative_data = b""
+            total_parts = len(chunks)
 
-            for append, chunk in enumerate(chunks, start=1):
-                cumulative_data += chunk  # Append current chunk to cumulative data
-                chunk_checksum = crc16(cumulative_data)  # Calculate checksum of cumulative data
+            previous_chunk_checksum = 0xFFFF
+            for part_number, chunk in enumerate(chunks, start=1):
+                encoded_chunk = base64.b64encode(chunk)
+                chunk_checksum = crc16_ccitt(encoded_chunk, previous_chunk_checksum)
+                previous_chunk_checksum = int(chunk_checksum, 16)
+                log_message = f"Uploading {relative_path} (part {part_number} of {total_parts})"
 
-                update_data.append({
-                    "contents": chunk.decode("utf-8"),  # Chunks are Base64 encoded bytes, so decode to str
-                    "FileType": relative_path.replace("\\", "/"),
-                    "Checksum": chunk_checksum,  # Use cumulative checksum
-                    "Binary": True,  # Always treated as binary
-                    "append": append,
-                    "Version": version,
-                    "GameName": "11",
-                })
+                file_entry = {
+                    "path": relative_path.replace("\\", "/"),
+                    "checksum": chunk_checksum,
+                    "data": encoded_chunk.decode("utf-8"),
+                    "log": log_message
+                }
+
+                if total_parts > 1:
+                    file_entry["part_number"] = part_number
+                    file_entry["total_parts"] = total_parts
+
+                update_data["files"].append(file_entry)
+
+
+            cumulative_checksum_data += encoded_chunk
+
+    update_data["full_checksum"] = crc16_ccitt(cumulative_checksum_data)
 
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(update_data, f, indent=4)
+        json.dump(update_data, f, indent=2)
 
     print(f"Update file '{output_file}' generated successfully.")
 
