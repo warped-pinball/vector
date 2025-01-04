@@ -225,8 +225,6 @@
                 const data_str = data ? JSON.stringify(data): '';
 
                 const msg = challenge + urlObj.pathname + urlObj.search + data_str;
-                console.log('HMAC Message:', msg);
-                console.log('HMAC Password:', password);
                 const hmacHex = sha256.hmac(password, msg);
                 headers["X-Auth-HMAC"] = hmacHex;
             }
