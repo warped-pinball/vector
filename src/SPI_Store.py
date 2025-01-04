@@ -354,7 +354,7 @@ def sflash_write(address, data, wait=False):
     global sflash_is_on_board
     if sflash_is_on_board == False: 
         return
-    return _sflash_mem_write(spi, cs, address, data, wait)
+    return _sflash_mem_write(spi, cs, address, data)
     
     
 #erase multiple blocks, wait required    
