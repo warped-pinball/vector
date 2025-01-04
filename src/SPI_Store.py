@@ -166,9 +166,8 @@ def write_all_fram_now():
     while True:
         write_16_fram(SRAM_DATA_BASE+MemIndex, MemIndex)
         MemIndex = MemIndex + 16
-        print(".",end="")
-        if MemIndex >= SRAM_DATA_LENGTH:
-            print(" ")
+        #print(".",end="")
+        if MemIndex >= SRAM_DATA_LENGTH:            
             print("FRAM: complete store done")
             return
              
@@ -325,7 +324,7 @@ def _sflash_mem_write(spi, cs, address, data):
             (address >> 8) & 0x0FF,
             (address & 0x0FF)
         ] + list(w_chunk_data))
-        print(f" write adr= {address:#x}   msg={w_msg.hex()}")
+        #print(f" write adr= {address:#x}   msg={w_msg.hex()}")
  
         _sflash_write_enable()         
         cs.value(0)
@@ -393,11 +392,11 @@ def sflash_is_ready():
 def sflash_wait_for_ready(timeout=120):
     while not sflash_is_ready() and timeout > 0:
         time.sleep_ms(10)
-        print("w",end="")
+        #print("w",end="")
         timeout -= 1
     if timeout == 0:
         return "fault"
-    print("D")
+    #print("D")
     return "ok"
 
 #default on - send "off" to unprotect
@@ -419,7 +418,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
         if block_address < (start_address&0xFFFF0000) or block_address >= (end_address&0xFFFF0000):
             continue
 
-        print ("block # ",block_num," prot= ",protect)              
+        #print ("block # ",block_num," prot= ",protect)              
         msg = bytearray([
             (block_address >> 24) & 0x0FF,  #MSByte
             (block_address >> 16) & 0x0FF,
