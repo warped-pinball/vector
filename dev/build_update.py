@@ -38,6 +38,7 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
         "micropython_versions": ["1.23.0"],
         "version": version,
         "full_checksum": "",
+        "chunk_size": chunk_size,
         "files": []
     }
 
@@ -71,8 +72,8 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
                 }
 
                 if total_parts > 1:
-                    file_entry["part_number"] = part_number
-                    file_entry["total_parts"] = total_parts
+                    file_entry["part"] = part_number
+                    file_entry["parts"] = total_parts
 
                 update_data["files"].append(file_entry)
 
@@ -113,3 +114,6 @@ if __name__ == "__main__":
 
     version = args.version or extract_version(args.source_dir)
     build_update_json(args.build_dir, args.output, version, args.chunk_size)
+
+
+#TODO first step of update should be to rewrite boot or main to hold reset pin and go to a transparent mode / safe state

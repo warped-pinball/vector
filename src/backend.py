@@ -578,7 +578,12 @@ def app_getLogs(request):
     from FileIO import download_log
     return download_log()
 
-@add_route("/api/file_index")
+@add_route("/api/validate_update", method="POST", auth=True)
+def app_validate_update(request):
+    #TODO implement this
+    return
+
+@add_route("/api/file/index", method="POST", single_instance=True, auth=True)
 def app_file_index(request):
     # list all files in the file system
     from ls import ls
@@ -591,68 +596,97 @@ def app_file_index(request):
         file_checksums[file] = file_base64_crc16s(file, chunk_size)
     return json_dumps(file_checksums), 200
 
+@add_route("api/file/upload", method="POST", auth=True)
+def app_upload_file(request):
+    data = request.data
+    
+    file_mode = "wb+"
+    if data.get("part", 1) > 1:
+        file_mode = "ab+"
+    
+    with open(data["path"], file_mode) as f:
+        f.write(data["data"].encode("utf-8"))
 
-# cool down needs to be set to 0 to keep updates moving quickly/error free
-@add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
-def app_upload_file_json(request):
-    """
-    Receives a JSON body representing a single "file update" dictionary, e.g.:
-        {
-          "FileType": "SomeFile.py" or "SomeFile.json",
-          "contents": "...",
-          "Checksum": "1234ABCD",
-          ...
-        }
+    from FileIO import file_base64_crc16s
+    chunk_size = request.data.get("chunk_size", 1024)
+    checksum = file_base64_crc16s(data["path"], chunk_size)[-1], 200       
+    
+    # confirm that checksums match
+    if 'checksum' in data and checksum != data['checksum']:
+        #TODO some sort of roll back option?
+        return f"Checksums do not match: {checksum} != {data['checksum']}", 500
 
-    Then it creates a fake form-based request to call the existing process_incoming_file,
-    which expects request.form and does:
-        for key in request.form:
-            value = request.form[key]
-        data = json.loads(value)
+    # if execute is set to true, execute the file
+    if data.get("execute", False):
+        try:
+            exec(open(data["path"]).read())
+        except Exception as e:
+            return f"Error executing file: {e}", 500
 
-    Returns:
-      200 on success,
-      500 on error (with a JSON body containing the error).
-    """
-    from FileIO import process_incoming_file
+    return checksum, 200
+    
 
-    class FakeRequest:
-        def __init__(self, dict_value):
-            # The form in your code is accessed by request.form
-            self.form = {
-                "dictionary": dict_value
-            }
+# # cool down needs to be set to 0 to keep updates moving quickly/error free
+# @add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
+# def app_upload_file_json(request):
+#     """
+#     Receives a JSON body representing a single "file update" dictionary, e.g.:
+#         {
+#           "FileType": "SomeFile.py" or "SomeFile.json",
+#           "contents": "...",
+#           "Checksum": "1234ABCD",
+#           ...
+#         }
 
-    try:
-        # request.data should be a single dictionary
-        # If it’s not, that’s an error
-        if not isinstance(request.data, dict):
-            raise ValueError("Expected a JSON dictionary (single file), but got something else.")
+#     Then it creates a fake form-based request to call the existing process_incoming_file,
+#     which expects request.form and does:
+#         for key in request.form:
+#             value = request.form[key]
+#         data = json.loads(value)
 
-        # Convert the dict to a JSON string, 
-        # because process_incoming_file does `json.loads(value)`
-        item_json_str = json_dumps(request.data)
+#     Returns:
+#       200 on success,
+#       500 on error (with a JSON body containing the error).
+#     """
+#     from FileIO import process_incoming_file
 
-        # Build a fake request object
-        fake_request = FakeRequest(item_json_str)
+#     class FakeRequest:
+#         def __init__(self, dict_value):
+#             # The form in your code is accessed by request.form
+#             self.form = {
+#                 "dictionary": dict_value
+#             }
 
-        # Call existing function
-        result = process_incoming_file(fake_request)
+#     try:
+#         # request.data should be a single dictionary
+#         # If it’s not, that’s an error
+#         if not isinstance(request.data, dict):
+#             raise ValueError("Expected a JSON dictionary (single file), but got something else.")
 
-        # Return success
-        return json_dumps({
-            "status": "ok",
-            "result": result
-        }), 200, "application/json"
+#         # Convert the dict to a JSON string, 
+#         # because process_incoming_file does `json.loads(value)`
+#         item_json_str = json_dumps(request.data)
 
-    except Exception as e:
-        # Return an error with status code 500
-        error_message = f"Error uploading file: {e}"
-        print(error_message)
-        return json_dumps({
-            "status": "error",
-            "message": error_message
-        }), 500, "application/json"
+#         # Build a fake request object
+#         fake_request = FakeRequest(item_json_str)
+
+#         # Call existing function
+#         result = process_incoming_file(fake_request)
+
+#         # Return success
+#         return json_dumps({
+#             "status": "ok",
+#             "result": result
+#         }), 200, "application/json"
+
+#     except Exception as e:
+#         # Return an error with status code 500
+#         error_message = f"Error uploading file: {e}"
+#         print(error_message)
+#         return json_dumps({
+#             "status": "error",
+#             "message": error_message
+#         }), 500, "application/json"
 
 def add_app_mode_routes():
     '''Routes only available in app mode'''
