@@ -12,7 +12,7 @@ Log = logger_instance
 import SharedState as S
 import displayMessage
 
-ADJ_FRAM_START = 0x2100
+ADJ_FRAM_START = 0x2100  # to 0x2340
 ADJ_FRAM_RECORD_SIZE = 0x80
 ADJ_NUM_SLOTS = 4
 ADJ_NAMES_START = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
@@ -23,7 +23,7 @@ def blank_all():
     for i in range(4):
         set_name(i, "")
     
-    
+
 
 #get names for all four indexes
 def get_names():
@@ -39,8 +39,10 @@ def set_name(index, name):
         Log.log("ADJS: invalid index nm")
         return
    
+    print(name)
     name = name[:16]     
     name_bytes = bytearray(name.encode('ascii') + b'\x00' * (16 - len(name)))
+    print(name_bytes)
 
     # Calculate the FRAM address for this index
     fram_address = ADJ_NAMES_START + index * ADJ_NAMES_LENGTH
@@ -142,31 +144,27 @@ if __name__ == "__main__":
     import GameDefsLoad
     GameDefsLoad.go() 
 
-    ADJ_FRAM_START = 0x2000
-    ADJ_FRAM_RECORD_SIZE = 0x80
-    ADJ_NUM_SLOTS = 4
-    ADJ_NAMES_START = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
-    ADJ_NAMES_LENGTH = 16    
+    print("ADJUSTMENT save settings:")
+    print(f"   data start=0x{ADJ_FRAM_START:X} size=0x{ADJ_FRAM_RECORD_SIZE:X} slots={ADJ_NUM_SLOTS}")
+    print(f"   data used area=0x{ADJ_FRAM_START:X} to 0x{ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS:X}")
+    print(f"   names start=0x{ADJ_NAMES_START:X} length=0x{ADJ_NAMES_LENGTH:X}")
+    print(f"   names used area=0x{ADJ_NAMES_START:X} to 0x{ADJ_NAMES_START + ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS:X}\n")
 
-    print("ADJIUSTMENT save settings:")
-    print("   data start=",ADJ_FRAM_START," size=",ADJ_FRAM_RECORD_SIZE," slots=",ADJ_NUM_SLOTS)
-    print("   data used area=",ADJ_FRAM_START," to ",ADJ_FRAM_START+ADJ_FRAM_RECORD_SIZE*ADJ_NUM_SLOTS)
-    print("   names start=",ADJ_NAMES_START," length=",ADJ_NAMES_LENGTH)
-    print("   names used area=", ADJ_NAMES_START, " to ", ADJ_NAMES_START + ADJ_NAMES_LENGTH*ADJ_NUM_SLOTS)
+    #blank_all()
 
-    blank_all()
-    store_adjustments(0)
-    store_adjustments(1)
-    store_adjustments(2)
+    #store_adjustments(0)
+    #store_adjustments(1)
+    #store_adjustments(2)
 
-
-    set_name(0,"One")
+    set_name(0,'One')
     set_name(1,"two  ")
     set_name(2,"abcdefghijationj")
     set_name(3,"123456789123456789")
+    
 
     store_adjustments(3)
     print(get_names())
+
 
     restore_adjustments(1,False)
 
