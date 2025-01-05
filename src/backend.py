@@ -590,12 +590,49 @@ def app_getLogs(request):
     from FileIO import download_log
     return download_log()
 
-@add_route("/api/validate_update", method="POST", auth=True)
+#
+# Updates
+#
+@add_route("/api/update/validate_compatibility", method="POST", auth=True)
 def app_validate_update(request):
-    #TODO implement this
-    return
+    data = request.data
 
-@add_route("/api/file/index", method="POST", single_instance=True, auth=True)
+    # update file format
+    supported_update_file_formats = ["1.0"]
+    incoming_update_file_format = data.get("update_file_format", "")
+    if not incoming_update_file_format in supported_update_file_formats:
+        return f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}", 400
+    
+    # warped pinball version
+    from SharedState import WarpedVersion
+    if WarpedVersion not in data.get("supported_software_versions", []):
+        return f"Version {WarpedVersion} not in supported versions: {data.get('supported_software_versions')}", 400
+    
+    # micopython version
+    from sys import implementation
+    mp_version = ".".join([str(e) for e in implementation.version])
+    if mp_version not in data.get("micropython_versions", []):
+        return f"MicroPython version {mp_version} not in supported versions: {data.get('micropython_versions')}", 400
+
+    # hardware version
+    hardware = "Unknown"
+    try:
+        if implementation._machine == 'Raspberry Pi Pico W with RP2040':
+            hardware = "vector_v3"
+    except Exception as e:
+        pass
+    #TODO implement flash chip check
+    has_sflash = True
+    if has_sflash:
+        hardware = "vector_v5"
+
+    if not hardware in data.get("supported_hardware", []):
+        return f"Hardware ({hardware}) not in supported hardware list: {data.get('supported_hardware')}", 400
+    
+
+    return "ok", 200
+
+@add_route("/api/update/file_index", method="POST", single_instance=True, auth=True)
 def app_file_index(request):
     # list all files in the file system
     from ls import ls
@@ -609,7 +646,7 @@ def app_file_index(request):
         file_checksums[file] = file_base64_crc16s(file, chunk_size)
     return json_dumps(file_checksums), 200
 
-@add_route("/api/file/upload", method="POST", auth=True, single_instance=True)
+@add_route("/api/update/file_part", method="POST", auth=True, single_instance=True)
 def app_upload_file(request):
     from FileIO import set_file_size, file_base64_crc16s
     from ubinascii import a2b_base64
@@ -670,13 +707,8 @@ def app_upload_file(request):
     return actual_checksum, 200
     
 
-def add_app_mode_routes():
-    '''Routes only available in app mode'''
-    @add_route("/api/in_ap_mode")
-    def app_inAPMode(request):
-        return json_dumps({"in_ap_mode": False}), 200
 
-@add_route("/api/updates/github_available")
+@add_route("/api/update/list_available", auth=True)
 def app_updates_available(request):
     """
     Fetches GitHub releases for the specified repository and returns them as a dictionary,
@@ -762,6 +794,14 @@ def app_updates_available(request):
         structured_releases["releases"].append(release_info)
 
     return json_dumps(structured_releases), 200
+
+
+
+def add_app_mode_routes():
+    '''Routes only available in app mode'''
+    @add_route("/api/in_ap_mode")
+    def app_inAPMode(request):
+        return json_dumps({"in_ap_mode": False}), 200
 
 
 #
