@@ -210,9 +210,15 @@ class Builder:
                 file_path = os.path.join(root, file)
                 with open(file_path, "rb") as f:
                     content = f.read()
+
                 gz_path = file_path + ".gz"
-                with gzip.open(gz_path, "wb", compresslevel=9) as gz:
-                    gz.write(content)
+
+                # Replicate the "-n" effect from the CLI by setting a fixed timestamp
+                # This is required to ensure the gzip files are byte-for-byte identical to get matching checksums
+                zipper = gzip.GzipFile(gz_path, "wb", compresslevel=9, mtime=0)
+                zipper.write(content)
+                zipper.close()
+                
                 os.remove(file_path)
 
     def read_file(self, filepath):
