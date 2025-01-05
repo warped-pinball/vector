@@ -646,27 +646,21 @@ def app_upload_file(request):
     # if execute is set to true, execute the file
     if execute:
         try:
-            print(open(path).read())
-            
             # build what the import statement would look like
             module_path = path.replace("/", ".").replace(".py", "")
             if module_path.startswith("."):
                 module_path = module_path[1:]
-            print(f"Importing module: {module_path}")
             imported_module = __import__(module_path)
 
             # if the module has a main function, execute it
-            print("Executing main function")
             if hasattr(imported_module, "main"):
-                print("Executing main function")
                 imported_module.main()
 
             try:
                 from os import remove
-                print("Removing file", path)
-                remove(path) # execute once and remove
+                remove(path) # execute once then remove
             except Exception as e:
-                pass # file probably cleaned itself up if not; whatever
+                pass # file probably cleaned itself up. if not; whatever
         except Exception as e:
             return f"Error executing file: {e}", 500
 
