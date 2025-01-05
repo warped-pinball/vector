@@ -67,6 +67,8 @@ def route_wrapper(func):
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
                         headers = default_headers | headers
+                    if status != 200:
+                        print(f"Status: {status}, Body: {body}")
                     return body, status, headers
             else:
                 raise ValueError(f"Invalid response type: {type(response)}")
@@ -502,6 +504,15 @@ def app_factoryReset(request):
     blankAll()
     reset()
 
+@add_route("/api/settings/reboot", auth=True)
+def app_reboot(request):
+    from machine import reset
+    import reset_control
+    reset_control.reset()
+    sleep(2)
+    reset()
+    
+
 #
 # Networking
 #
@@ -593,37 +604,53 @@ def app_file_index(request):
     file_checksums = {}
     for file in files:
         # returns the cc16 checksum of the file at each chunk
-        file_checksums[file] = file_base64_crc16s(file, chunk_size)
+        # we remove the implicit '/' at the start of the file path
+        file_checksums[file[1:]] = file_base64_crc16s(file, chunk_size)
     return json_dumps(file_checksums), 200
 
-@add_route("api/file/upload", method="POST", auth=True)
+@add_route("/api/file/upload", method="POST", auth=True, single_instance=True)
 def app_upload_file(request):
-    data = request.data
-    
-    file_mode = "wb+"
-    if data.get("part", 1) > 1:
-        file_mode = "ab+"
-    
-    with open(data["path"], file_mode) as f:
-        f.write(data["data"].encode("utf-8"))
-
-    from FileIO import file_base64_crc16s
+    print(request.data)
+    from FileIO import set_file_size, file_base64_crc16s
+    from ubinascii import a2b_base64
+    path = request.data['path']
+    part = request.data.get("part", 1)
+    expected_checksum = request.data.get("checksum", None)
     chunk_size = request.data.get("chunk_size", 1024)
-    checksum = file_base64_crc16s(data["path"], chunk_size)[-1], 200       
-    
-    # confirm that checksums match
-    if 'checksum' in data and checksum != data['checksum']:
-        #TODO some sort of roll back option?
-        return f"Checksums do not match: {checksum} != {data['checksum']}", 500
+    contents = a2b_base64(request.data['data'])
+    start_byte = (part - 1) * chunk_size
+    # end_byte = start_byte + len(contents)
+    final_bytes = request.data.get("final_bytes", 0)
+    execute = request.data.get("execute", False)
 
+    # ensure file is of correct size
+    set_file_size(path, final_bytes)
+    
+
+
+    print(start_byte, len(contents), final_bytes)
+    # write the contents to the file
+    with open(path, 'r+b') as f:
+        f.seek(start_byte)
+        f.write(contents)
+    
+    # calculate the checksum of the file
+    actual_checksums = file_base64_crc16s(path, chunk_size)
+    print(f"Checksums: {actual_checksums}")
+    actual_checksum = actual_checksums[part - 1]
+    if actual_checksum != expected_checksum:
+        #TODO some sort of roll back option?
+        return f"Checksums do not match: {actual_checksum} != {expected_checksum}; part {part}", 500
+
+    print(f"Checksums match: {actual_checksum}")
     # if execute is set to true, execute the file
-    if data.get("execute", False):
+    if execute:
         try:
-            exec(open(data["path"]).read())
+            exec(open(path).read())
         except Exception as e:
             return f"Error executing file: {e}", 500
 
-    return checksum, 200
+    return actual_checksum, 200
     
 
 # # cool down needs to be set to 0 to keep updates moving quickly/error free

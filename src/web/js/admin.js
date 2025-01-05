@@ -233,17 +233,13 @@ async function updateIsCompatible(updateData) {
 async function generateFileIndex(updateData) {
 	const chunk_size = updateData.chunk_size;
 	const server_index_response = await window.smartFetch("/api/file/index", { chunk_size }, true);
-	const server_index = await server_index_response.json();
+	const serverFileIndex = await server_index_response.json();
 
-	if (server_index.status !== 200) {
-		console.error("Failed to get server file index:", server_index.status);
+	if (server_index_response.status !== 200) {
+		console.error("Failed to get server file index:", server_index_response.status);
 		alert("Failed to get server file index.");
 		return;
 	}
-
-	const serverFileIndex = server_index.data;
-
-
 
 	// update data in format:
 
@@ -275,13 +271,21 @@ async function generateFileIndex(updateData) {
 	const updateFileIndex = {};
 	for (const file of updateData.files) {
 		if (!updateFileIndex[file.path]) {
+			let parts;
 			// make list the length of the number of parts
-			updateFileIndex[file.path] = new Array(file.parts);
+			if (!file.final_bytes) {
+				parts = 1;
+			} else {
+				parts = Math.ceil(file.final_bytes / chunk_size);
+			}
+			console.log("File", file.path, "has", parts, "parts");
+			updateFileIndex[file.path] = new Array(parts);
 		}
 		// we need to make sure the index we insert into is sorted by part number
-		updateFileIndex[file.path][file.part] = file.checksum;
+		updateFileIndex[file.path][file.part-1] = file.checksum;
 	}
 
+	
 
 	// "zip" the two indexes together with true/false for each part of each file
 	// true if the checksums don't match and we need to upload this part
@@ -315,7 +319,7 @@ async function generateFileIndex(updateData) {
 
 	// filter original updateData.files to only include changed files
 	const changedFiles = updateData.files.filter((file) => {
-		return changedParts[file.path][file.part];
+		return changedParts[file.path][file.part-1];
 	});
 
 	return changedFiles;
@@ -323,15 +327,24 @@ async function generateFileIndex(updateData) {
 
 
 // Upload only changed files
-async function uploadFiles(files) {
+async function uploadFiles(files, chunk_size) {
 	for (const file of files) {
-		console.log(`Uploading file ${file.path}, part ${file.part} of ${file.parts}...`);
-		const response = await window.smartFetch("/api/upload_file", file, true);
+		let parts;
+		// make list the length of the number of parts
+		if (!file.final_bytes) {
+			parts = 1;
+		} else {
+			parts = Math.ceil(file.final_bytes / chunk_size);
+		}
+		console.log(`Uploading file ${file.path}, part ${file.part} of ${parts}...`);
+		const response = await window.smartFetch("/api/file/upload", file, true);
 		if (response.status !== 200) {
+			console.error(`Failed to upload file ${file.path}, part ${file.part} of ${parts}:`, response.status, response.statusText)
+			console.error(response);
 			//TODO retry the upload?
 			//TODO restart the update process? we don't know if this file is corrupted now
 			//TODO send over checksums in the hopes that the server can walk back the changes so we can try again
-			alert(`Failed to upload file ${file.path}, part ${file.part} of ${file.parts}.`);
+			alert(`Failed to upload file ${file.path}, part ${file.part} of ${parts}.`);
 		}
 	}
 }
@@ -353,19 +366,25 @@ window.applyUpdate = async function (file) {
 		alert("This file does not appear to be a valid update.", response.statusText);
 		return;
 	}
+	console.log("Update is compatible.");
 
 	// Step 2: Generate file index and get server's file state
 	const serverFileIndex = await generateFileIndex(updateData, null, true);
+	console.log("File index generated.");
+
+	console.log("Changed files:");
+	console.log(serverFileIndex);
 
 	// Step 3: Upload changed files
-	await uploadFiles(serverFileIndex);
+	await uploadFiles(serverFileIndex, updateData.chunk_size);
+	console.log("Files uploaded.");
 
 	// Step 4: Confirm the update
 	// TODO check the final full checksum of file system
 	alert("Update applied successfully. rebooting...");
 
 	// Step 5: Reboot the device
-	await window.smartFetch("/api/reboot", null, true);
+	await window.smartFetch("/api/settings/reboot", null, true);
 };
 
 // File input handler
@@ -382,6 +401,7 @@ window.handleUpdateUploadChange = async function (event) {
 	window.confirmAction(`apply the update in ${file.name}`, async () => {
 		// disable the input while processing
 		fileInput.disabled = true;
+		console.log("Applying update...");
 		await window.applyUpdate(file);
 		fileInput.disabled = false;
 		fileInput.value = ""; // Clear the input after processing

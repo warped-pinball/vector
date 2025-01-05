@@ -2,9 +2,8 @@
 
 import os
 import json
-import base64
+import binascii
 from pathlib import Path
-import zlib
 
 BUILD_DIR = "build"
 SOURCE_DIR = "src"
@@ -59,7 +58,9 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
 
             previous_chunk_checksum = 0xFFFF
             for part_number, chunk in enumerate(chunks, start=1):
-                encoded_chunk = base64.b64encode(chunk)
+                # encode with binascii because that's what available on the board
+                # remove the trailing newline
+                encoded_chunk = binascii.b2a_base64(chunk)[:-1]
                 chunk_checksum = crc16_ccitt(encoded_chunk, previous_chunk_checksum)
                 previous_chunk_checksum = int(chunk_checksum, 16)
                 log_message = f"Uploading {relative_path} (part {part_number} of {total_parts})"
@@ -73,7 +74,8 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
 
                 if total_parts > 1:
                     file_entry["part"] = part_number
-                    file_entry["parts"] = total_parts
+                    # if final bytes is not set, we will assume there is only a single chunk
+                    file_entry["final_bytes"] = len(contents)
 
                 update_data["files"].append(file_entry)
 
