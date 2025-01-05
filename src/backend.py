@@ -55,6 +55,9 @@ def route_wrapper(func):
             if isinstance(response, str):
                 response = response, 200
 
+            if isinstance(response, dict):
+                response = json_dumps(response), 200
+
             if isinstance(response, tuple):
                 if len(response) == 2:
                     response = response[0], response[1], default_headers
@@ -672,6 +675,94 @@ def add_app_mode_routes():
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
         return json_dumps({"in_ap_mode": False}), 200
+
+@add_route("/api/updates/github_available")
+def app_updates_available(request):
+    """
+    Fetches GitHub releases for the specified repository and returns them as a dictionary,
+    including asset download URLs for each release.
+
+    Args:
+        repo_owner (str): Owner of the repository (e.g., 'warped-pinball').
+        repo_name (str): Name of the repository (e.g., 'vector').
+
+    Returns:
+        dict: A dictionary containing release information and asset URLs.
+              Structure:
+              {
+                  "releases": [
+                      {
+                          "name": "Release Name",
+                          "tag": "v1.0",
+                          "prerelease": False,
+                          "assets": [
+                              "https://download.url/asset1",
+                              "https://download.url/asset2",
+                              ...
+                          ]
+                      },
+                      ...
+                  ]
+              }
+              Returns None if fetching fails.
+    """
+    import urequests
+    def fetch_releases(owner, name):
+        """
+        Fetches releases from the GitHub API.
+
+        Args:
+            owner (str): Repository owner.
+            name (str): Repository name.
+
+        Returns:
+            list: A list of release dictionaries if successful, else None.
+        """
+        api_url = f'https://api.github.com/repos/{owner}/{name}/releases'
+        headers = {
+            'User-Agent': 'MicroPython-Device',
+            'Accept': 'application/vnd.github.v3+json'
+        }
+        try:
+            response = urequests.get(api_url, headers=headers)
+            if response.status_code == 200:
+                releases = response.json()
+                response.close()
+                return releases
+            else:
+                print(f'Error: Received status code {response.status_code}')
+                response.close()
+                return None
+        except Exception as e:
+            print(f'Exception occurred while fetching releases: {e}')
+            return None
+
+    # Fetch releases
+    releases_data = fetch_releases('warped-pinball', 'vector')
+    if releases_data is None:
+        return None
+
+    # Structure the data
+    structured_releases = {"releases": []}
+    for release in releases_data:
+        release_info = {
+            "name": release.get('name', 'No name provided'),
+            "tag": release.get('tag_name', 'No tag provided'),
+            "prerelease": release.get('prerelease', False),
+            "assets": []
+        }
+
+        # Extract asset download URLs
+        assets = release.get('assets', [])
+        for asset in assets:
+            download_url = asset.get('browser_download_url')
+            if download_url:
+                release_info["assets"].append(download_url)
+
+        structured_releases["releases"].append(release_info)
+
+    return json_dumps(structured_releases), 200
+
 
 #
 # AP mode routes
