@@ -12,7 +12,7 @@ Log = logger_instance
 import SharedState as S
 import displayMessage
 
-ADJ_FRAM_START = 0x2000
+ADJ_FRAM_START = 0x2100
 ADJ_FRAM_RECORD_SIZE = 0x80
 ADJ_NUM_SLOTS = 4
 ADJ_NAMES_START = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
