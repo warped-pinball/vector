@@ -212,18 +212,66 @@ window.downloadScores = async function () {
 // 
 // Updates
 // 
+async function update_file_is_valid(updateData) {
+	if (!updateData.update_file_format) {
+		console.error("Missing update_file_format in update:", update);
+		return false;
+	} else if (updateData.update_file_format !== "1.0") {
+		console.error("Invalid update_file_format in update:", updateData.update_file_format);
+		return false;
+	}
+
+	// confirm that all files have required fields
+	for (const file of updateData.files) {
+		if (!file.path || !file.checksum || !file.data || !file.final_bytes) {
+			console.error("Invalid file in update:", file);
+			return false;
+		}
+	}
+	
+	// confirm that all parts of all files are present
+	const parts = {};
+	for (const file of updateData.files) {
+		const num_parts = Math.ceil(file.final_bytes / updateData.chunk_size);
+		if (num_parts > 1){
+			if (!parts[file.path]) {
+				// make a list the length of the number of parts
+				parts[file.path] = new Array(num_parts);
+			}
+			parts[file.path][file.part-1] = { checksum: file.checksum, data: file.data };
+		}
+	}
+	for (const path in parts) {
+		const fileParts = parts[path];
+		for (let i = 0; i < fileParts.length; i++) {
+			if (fileParts[i] === undefined) {
+				console.error(`Missing part ${i+1} of file ${path}`);
+				console.log(parts);
+				return false;
+			}
+		}
+	}
+	
+	// TODO validate checksums for each part of each file
+
+	return true;
+
+}
 
 // confirm compatibility with the update
 async function updateIsCompatible(updateData) {
 	const compatibility_data = {
-		hardware: updateData.hardware,
-		micropython_version: updateData.micropython_version,
-		software: updateData.software,
+		update_file_format: updateData.update_file_format,
+		supported_hardware: updateData.supported_hardware,
+		micropython_versions: updateData.micropython_versions,
+		supported_software_versions: updateData.supported_software_versions,
 		version: updateData.version
 	};
-	const response = await window.smartFetch("/api/validate_update", compatibility_data, true);
-	if (response.status !== 200) {
-		console.error("Failed to validate update compatibility:", response.status);
+	const response = await window.smartFetch("/api/update/validate_compatibility", compatibility_data, true);
+	const status = await response.status;
+	
+	if (status !== 200) {
+		console.error("Failed to validate update compatibility:", status);
 		return false;
 	}
 	return true;
@@ -232,7 +280,7 @@ async function updateIsCompatible(updateData) {
 // Filter list of files to only include changed files
 async function generateFileIndex(updateData) {
 	const chunk_size = updateData.chunk_size;
-	const server_index_response = await window.smartFetch("/api/file/index", { chunk_size }, true);
+	const server_index_response = await window.smartFetch("/api/update/file_index", { chunk_size }, true);
 
 	if (server_index_response.status !== 200) {
 		console.error("Failed to get server file index:", server_index_response.status);
@@ -335,7 +383,7 @@ async function uploadFiles(files, chunk_size) {
 			parts = Math.ceil(file.final_bytes / chunk_size);
 		}
 		console.log(`Uploading file ${file.path}, part ${file.part} of ${parts}...`);
-		const response = await window.smartFetch("/api/file/upload", file, true);
+		const response = await window.smartFetch("/api/update/file_part", file, true);
 		if (response.status !== 200) {
 			console.error(`Failed to upload file ${file.path}, part ${file.part} of ${parts}:`, response.status, response.statusText)
 			console.error(response);
@@ -353,10 +401,11 @@ window.applyUpdate = async function (file) {
 	const updateData = JSON.parse(fileText);
 
 	// Step 0: Validate the update file
-	// TODO confirm the upate format is one this code is compatible with
-	// TODO confirm that all files have required fields
-	// TODO confirm that all parts of all files are present
-	// TODO confirm the checksums
+	const valid_update = await update_file_is_valid(updateData);
+	if (!valid_update){
+		alert("This file does not appear to be a valid update.");
+		return;
+	}
 
 	// ensure all updateData.files.path start with /
 	for (const file of updateData.files) {
