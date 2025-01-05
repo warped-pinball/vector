@@ -233,14 +233,13 @@ async function updateIsCompatible(updateData) {
 async function generateFileIndex(updateData) {
 	const chunk_size = updateData.chunk_size;
 	const server_index_response = await window.smartFetch("/api/file/index", { chunk_size }, true);
-	const serverFileIndex = await server_index_response.json();
 
 	if (server_index_response.status !== 200) {
 		console.error("Failed to get server file index:", server_index_response.status);
 		alert("Failed to get server file index.");
 		return;
 	}
-
+	const serverFileIndex = await server_index_response.json();
 	// update data in format:
 
 	// {
@@ -278,14 +277,13 @@ async function generateFileIndex(updateData) {
 			} else {
 				parts = Math.ceil(file.final_bytes / chunk_size);
 			}
-			console.log("File", file.path, "has", parts, "parts");
 			updateFileIndex[file.path] = new Array(parts);
 		}
-		// we need to make sure the index we insert into is sorted by part number
+		// insert the checksum by part number
 		updateFileIndex[file.path][file.part-1] = file.checksum;
 	}
 
-	
+	// TODO always include files with execute=True
 
 	// "zip" the two indexes together with true/false for each part of each file
 	// true if the checksums don't match and we need to upload this part
@@ -359,6 +357,13 @@ window.applyUpdate = async function (file) {
 	// TODO confirm that all files have required fields
 	// TODO confirm that all parts of all files are present
 	// TODO confirm the checksums
+
+	// ensure all updateData.files.path start with /
+	for (const file of updateData.files) {
+		if (file.path[0] !== '/') {
+			file.path = '/' + file.path;
+		}
+	}
 
 
 	// Step 1: Confirm update compatibility

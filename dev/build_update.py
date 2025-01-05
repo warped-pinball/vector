@@ -4,6 +4,7 @@ import os
 import json
 import binascii
 from pathlib import Path
+from typing import Union
 
 BUILD_DIR = "build"
 SOURCE_DIR = "src"
@@ -29,6 +30,90 @@ def split_into_chunks(data: bytes, chunk_size: int) -> list[bytes]:
     """Split data into chunks of a given size."""
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
 
+def build_extra_file_removal_step(build_dir: str, chunk_size: int = 1024) -> list[dict]:
+    "build a step to remove any file that is not in the build directory"
+    known_files = []
+    for root, _, files in os.walk(build_dir):
+        for file_name in files:
+            file_path = Path(root) / file_name
+            relative_path = os.path.relpath(file_path, build_dir)
+            known_files.append('/' + relative_path)
+
+    # micropython code to walk the filesystem and remove any file that is not in the known_files list
+    # this code will be executed by the board at the start of the update process
+    removal_code = '\n'.join(
+        [
+            "import os",
+            "",
+            "known_files={}".format(known_files),
+            "def rm_walk(top):",
+            "    try:",
+            "        entries = os.listdir(top)",
+            "    except OSError:",
+            "        return",
+            "    for entry in entries:",
+            '        path=top + "/" + entry if top != "/" else "/" + entry',
+            "        try:",
+                        # 0x4000 is the S_IFDIR flag indicating a directory
+            "            if os.stat(path)[0] & 0x4000:",
+            "                rm_walk(path)",
+            "            elif path not in known_files:",
+            "                print('Removing', path)",
+            "                os.remove(path)",
+            "        except OSError:",
+            "            continue",
+            "rm_walk('/')"            
+        ]
+    )
+
+    # make removal code into bytes
+    removal_code = removal_code.encode("utf-8")
+
+    return make_file_entries("remove_extra_files.py", removal_code, chunk_size, execute=True, custom_log="Removing extra files")
+
+def make_file_entries(file_path: str, file_contents: bytes, chunk_size: int, execute: bool=False, custom_log:Union[str, None]=None) -> list[dict]:
+    """Create a file entry for the update JSON."""
+    
+    # Split into chunks
+    chunks = split_into_chunks(file_contents, chunk_size)
+
+    # encode the chunks
+    encoded_chunks = [binascii.b2a_base64(chunk)[:-1] for chunk in chunks]
+
+    # Calculate cumulative checksums of encoded chunks
+    cumulative_checksum_data = b""
+    previous_chunk_checksum = 0xFFFF
+    checksums = []
+    for chunk in encoded_chunks:
+        chunk_checksum = crc16_ccitt(chunk, previous_chunk_checksum)
+        previous_chunk_checksum = int(chunk_checksum, 16)
+        checksums.append(chunk_checksum)
+        cumulative_checksum_data += chunk
+    
+    parts = [
+        {
+            "path": file_path,
+            "checksum": checksum,
+            "data": chunk.decode("utf-8"),
+            # add the part number if there are more than one
+            "part": part_number if len(chunks) > 1 else None,
+            "final_bytes": len(file_contents),
+            "log": custom_log if custom_log else f"Uploading {file_path} (part {part_number} of {len(chunks)})",
+            # add the execute flag (false for all but the last part) if the file should be executed
+            "execute": bool(execute and part_number == len(chunks)) if execute else None
+        }
+        for part_number, (chunk, checksum) in enumerate(zip(encoded_chunks, checksums), start=1)
+    ]
+
+    # remove keys that are null/None
+    for part in parts:
+        for key in list(part.keys()):
+            if part[key] is None:
+                del part[key]
+    
+    return parts
+    
+
 def build_update_json(build_dir: str, output_file: str, version: str, chunk_size: int):
     update_data = {
         "update_file_format": "1.0",
@@ -36,58 +121,19 @@ def build_update_json(build_dir: str, output_file: str, version: str, chunk_size
         "supported_software_versions": ["0.3.0"],
         "micropython_versions": ["1.23.0"],
         "version": version,
-        "full_checksum": "",
         "chunk_size": chunk_size,
-        "files": []
+        "files": build_extra_file_removal_step(build_dir)
     }
-
-    cumulative_checksum_data = b""
 
     for root, _, files in os.walk(build_dir):
         for file_name in files:
             file_path = Path(root) / file_name
             relative_path = os.path.relpath(file_path, build_dir)
-
             contents = get_file_contents(file_path)
-
-            # Split into chunks
-            chunks = split_into_chunks(contents, chunk_size)
-
-            # cumulative_data = b""
-            total_parts = len(chunks)
-
-            previous_chunk_checksum = 0xFFFF
-            for part_number, chunk in enumerate(chunks, start=1):
-                # encode with binascii because that's what available on the board
-                # remove the trailing newline
-                encoded_chunk = binascii.b2a_base64(chunk)[:-1]
-                chunk_checksum = crc16_ccitt(encoded_chunk, previous_chunk_checksum)
-                previous_chunk_checksum = int(chunk_checksum, 16)
-                log_message = f"Uploading {relative_path} (part {part_number} of {total_parts})"
-
-                file_entry = {
-                    "path": relative_path.replace("\\", "/"),
-                    "checksum": chunk_checksum,
-                    "data": encoded_chunk.decode("utf-8"),
-                    "log": log_message
-                }
-
-                if total_parts > 1:
-                    file_entry["part"] = part_number
-                    # if final bytes is not set, we will assume there is only a single chunk
-                    file_entry["final_bytes"] = len(contents)
-
-                update_data["files"].append(file_entry)
-
-
-            cumulative_checksum_data += encoded_chunk
-
-    update_data["full_checksum"] = crc16_ccitt(cumulative_checksum_data)
+            update_data["files"] += make_file_entries(relative_path, contents, chunk_size)
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(update_data, f, indent=2)
-
-    print(f"Update file '{output_file}' generated successfully.")
 
 if __name__ == "__main__":
     import argparse

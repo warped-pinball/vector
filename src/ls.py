@@ -6,6 +6,7 @@ def ls(top):
         entries = os.listdir(top)
     except OSError:
         return
+    
     for entry in entries:
         path = top + "/" + entry if top != "/" else "/" + entry
         try:

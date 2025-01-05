@@ -102,7 +102,7 @@ def crc16(data: bytes) -> str:
     crc_value = crc16_ccitt(data)
     return '{:04X}'.format(crc_value)
 
-def file_base64_crc16s(path: str, chunk_size: int) -> str:
+def file_base64_crc16s(path: str, chunk_size: int) -> list[str]:
     """
     Calculate the CRC16-CCITT checksum of a file by reading it in chunks.
 
@@ -125,7 +125,7 @@ def file_base64_crc16s(path: str, chunk_size: int) -> str:
         return checksums
     except Exception as e:
         print(f"Error calculating checksum: {e}")
-        return None
+        return []
 
 def set_file_size(path, num_bytes):
     # makes a file of a certain size with minimal edits
@@ -146,11 +146,14 @@ def set_file_size(path, num_bytes):
                 f.write(b'\x00' * (num_bytes - file_size))
                 file_size = num_bytes
 
-    except OSError:
+    # catch ENOENT exception
+    except OSError as e:
         # if the file does not exist, create it with the correct size
         with open(path, 'w') as f:
             f.write(b'\x00' * num_bytes)
             file_size = num_bytes
+    except Exception as e:
+        raise e
 
     # delete the file if it exists, but is not the correct size
     if file_size > num_bytes:

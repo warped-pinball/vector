@@ -267,7 +267,6 @@ def require_auth(handler):
             # Authentication successful
             current_challenge = None
             challenge_timestamp = None
-            print("Authentication successful")
             return handler(request, *args, **kwargs)
         else:
             # Authentication failed
@@ -470,7 +469,6 @@ def app_resetIndScores(request):
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
     raw_data = ds_read_record("extras", 0)["other"]
-    print(f"raw_data: {raw_data}")
     score_cap = bool(raw_data)
     return json_dumps({"on-machine": score_cap}), 200
 
@@ -605,15 +603,16 @@ def app_file_index(request):
     for file in files:
         # returns the cc16 checksum of the file at each chunk
         # we remove the implicit '/' at the start of the file path
-        file_checksums[file[1:]] = file_base64_crc16s(file, chunk_size)
+        file_checksums[file] = file_base64_crc16s(file, chunk_size)
     return json_dumps(file_checksums), 200
 
 @add_route("/api/file/upload", method="POST", auth=True, single_instance=True)
 def app_upload_file(request):
-    print(request.data)
     from FileIO import set_file_size, file_base64_crc16s
     from ubinascii import a2b_base64
     path = request.data['path']
+    if not path.startswith("/"):
+        path = "/" + path
     part = request.data.get("part", 1)
     expected_checksum = request.data.get("checksum", None)
     chunk_size = request.data.get("chunk_size", 1024)
@@ -623,97 +622,56 @@ def app_upload_file(request):
     final_bytes = request.data.get("final_bytes", 0)
     execute = request.data.get("execute", False)
 
+    print("setting file size")
     # ensure file is of correct size
     set_file_size(path, final_bytes)
     
-
-
-    print(start_byte, len(contents), final_bytes)
+    print('writing to file')
     # write the contents to the file
     with open(path, 'r+b') as f:
         f.seek(start_byte)
         f.write(contents)
     
+    print('calculating checksum')
     # calculate the checksum of the file
     actual_checksums = file_base64_crc16s(path, chunk_size)
-    print(f"Checksums: {actual_checksums}")
     actual_checksum = actual_checksums[part - 1]
     if actual_checksum != expected_checksum:
         #TODO some sort of roll back option?
+        print(f"Checksums do not match: {actual_checksum} != {expected_checksum}")
+        print(actual_checksums)
         return f"Checksums do not match: {actual_checksum} != {expected_checksum}; part {part}", 500
 
-    print(f"Checksums match: {actual_checksum}")
+    print('optinally executing file')
     # if execute is set to true, execute the file
     if execute:
         try:
-            exec(open(path).read())
+            print(open(path).read())
+            
+            # build what the import statement would look like
+            module_path = path.replace("/", ".").replace(".py", "")
+            if module_path.startswith("."):
+                module_path = module_path[1:]
+            print(f"Importing module: {module_path}")
+            imported_module = __import__(module_path)
+
+            # if the module has a main function, execute it
+            print("Executing main function")
+            if hasattr(imported_module, "main"):
+                print("Executing main function")
+                imported_module.main()
+
+            try:
+                from os import remove
+                print("Removing file", path)
+                remove(path) # execute once and remove
+            except Exception as e:
+                pass # file probably cleaned itself up if not; whatever
         except Exception as e:
             return f"Error executing file: {e}", 500
 
     return actual_checksum, 200
     
-
-# # cool down needs to be set to 0 to keep updates moving quickly/error free
-# @add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
-# def app_upload_file_json(request):
-#     """
-#     Receives a JSON body representing a single "file update" dictionary, e.g.:
-#         {
-#           "FileType": "SomeFile.py" or "SomeFile.json",
-#           "contents": "...",
-#           "Checksum": "1234ABCD",
-#           ...
-#         }
-
-#     Then it creates a fake form-based request to call the existing process_incoming_file,
-#     which expects request.form and does:
-#         for key in request.form:
-#             value = request.form[key]
-#         data = json.loads(value)
-
-#     Returns:
-#       200 on success,
-#       500 on error (with a JSON body containing the error).
-#     """
-#     from FileIO import process_incoming_file
-
-#     class FakeRequest:
-#         def __init__(self, dict_value):
-#             # The form in your code is accessed by request.form
-#             self.form = {
-#                 "dictionary": dict_value
-#             }
-
-#     try:
-#         # request.data should be a single dictionary
-#         # If it’s not, that’s an error
-#         if not isinstance(request.data, dict):
-#             raise ValueError("Expected a JSON dictionary (single file), but got something else.")
-
-#         # Convert the dict to a JSON string, 
-#         # because process_incoming_file does `json.loads(value)`
-#         item_json_str = json_dumps(request.data)
-
-#         # Build a fake request object
-#         fake_request = FakeRequest(item_json_str)
-
-#         # Call existing function
-#         result = process_incoming_file(fake_request)
-
-#         # Return success
-#         return json_dumps({
-#             "status": "ok",
-#             "result": result
-#         }), 200, "application/json"
-
-#     except Exception as e:
-#         # Return an error with status code 500
-#         error_message = f"Error uploading file: {e}"
-#         print(error_message)
-#         return json_dumps({
-#             "status": "error",
-#             "message": error_message
-#         }), 500, "application/json"
 
 def add_app_mode_routes():
     '''Routes only available in app mode'''
