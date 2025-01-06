@@ -1,5 +1,5 @@
 '''
-Save and Restosre adjustments 
+Save and Restore adjustments 
 
 four save indexes
 16 character name for each
@@ -20,45 +20,41 @@ ADJ_NAMES_LENGTH = 16
 
 
 def blank_all():
+    """ blank out all names and storage """    
     for i in range(4):
         set_name(i, "")
+        #blank the data also
+        data = bytearray(ADJ_FRAM_RECORD_SIZE)
+        fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * i
+        fram.write(fram_adr, data)       
     
-
-
-#get names for all four indexes
 def get_names():
-     return [
+    """read out all four names"""
+    return [
         fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH).decode('ascii').rstrip('\x00')
         for i in range(4)
     ]
 
 
-#set a name value
 def set_name(index, name):
+    """set name"""
     if index<0 or index>=ADJ_NUM_SLOTS :
         Log.log("ADJS: invalid index nm")
         return
-   
-    print(name)
+       
     name = name[:16]     
     name_bytes = bytearray(name.encode('ascii') + b'\x00' * (16 - len(name)))
-    print(name_bytes)
-
     # Calculate the FRAM address for this index
     fram_address = ADJ_NAMES_START + index * ADJ_NAMES_LENGTH
     fram.write(fram_address, name_bytes)
-
     Log.log(f"ADJS: Name set at index {index}: {name}")
 
 
-
-
-#pull memory of index and pu in the game memory
-#optionally cause a reset so the change take effectdef restore_adjustments(index, reset=True):
 def restore_adjustments(index, reset=True):
+    """pull from fram data and put in shadow ram, reset after by default"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
         Log.log("ADJS: Invalid index ra")
-        return
+        return "Fault: Invalid Index"
 
     # Check if a game is in progress and reset is requested
     if reset and shadowRam[S.gdata["BallInPlay"]["Address"]] in [
@@ -73,13 +69,20 @@ def restore_adjustments(index, reset=True):
 
     fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
     data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)
+    
+    # Check the first 20 bytes of data
+    if all(byte == 0 for byte in data[:20]):
+        Log.log("ADJS: Fault - Data is empty")
+        return "Fault: empty"
 
+    #game file can have special range
     cpyStart = S.gdata["Adjustments"].get("cpyStart", -1)
     cpyEnd = S.gdata["Adjustments"].get("cpyEnd", -1)
+    #or load standard based on adjustment types in game file
     if cpyStart < 0 or cpyEnd < 0:
         if S.gdata["Adjustments"].get("Type", 0) == 1:
             cpyStart = 0x780
-            cpyEnd = 0x800  
+            cpyEnd = 0x800        
 
     # copy
     if cpyStart > 0 and cpyEnd > 0 and (cpyEnd - cpyStart) <= len(data):
@@ -92,18 +95,14 @@ def restore_adjustments(index, reset=True):
         # trigger a reset
         if reset:
             Log.log("ADJS: Reset")
-            #machine.reset()
+            machine.reset()
     else:
         Log.log("ADJS: range fault")
 
 
 
-    
-
-
-
-#store current game adjustments into a storage location (0-3)
 def store_adjustments(index):
+    """store current adjustments into a storage location (0-3)"""
     if index<0 or index>=ADJ_NUM_SLOTS :
         Log.log("ADJS: invalid index sa")
         return
@@ -132,8 +131,8 @@ def store_adjustments(index):
         print(f"ADR: {fram_adr:04X} DAT: {hex_data}")
         
     else:
-        Log.log("ADJS: No Store")
-        print(S.gdata)
+        Log.log("ADJS: No Ranges")
+    
 
 
 
@@ -150,22 +149,23 @@ if __name__ == "__main__":
     print(f"   names start=0x{ADJ_NAMES_START:X} length=0x{ADJ_NAMES_LENGTH:X}")
     print(f"   names used area=0x{ADJ_NAMES_START:X} to 0x{ADJ_NAMES_START + ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS:X}\n")
 
-    #blank_all()
-
-    #store_adjustments(0)
-    #store_adjustments(1)
-    #store_adjustments(2)
+    print("blank all")
+    blank_all()
+    print("blank all done\n")
 
     set_name(0,'One')
     set_name(1,"two  ")
     set_name(2,"abcdefghijationj")
     set_name(3,"123456789123456789")
     
+    print(restore_adjustments(0))
 
-    store_adjustments(3)
-    print(get_names())
+    print("\n read names: ",get_names())
 
+    print(store_adjustments(0))
+    print(store_adjustments(1))
+    print(store_adjustments(2))
+    print(store_adjustments(3))
 
-    restore_adjustments(1,False)
-
-
+    print("\n read names: ",get_names())
+    print(restore_adjustments(0,False))

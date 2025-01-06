@@ -204,6 +204,7 @@ SFLASH_CE   = 0x60      #Chip erase    (whole chip)
 #sector protection - using WPSEL=1 mode
 SFLASH_WPSEL = 0x68
 SFLASH_GBLK  = 0x7E  #lock all
+SFLASH_GBULK = 0x98  #unlock all
 SFLASH_WRDPB = 0xE1
 SFLASH_RDDPB = 0xE0
 #WIP write in progress bit for erases also
@@ -356,6 +357,33 @@ def sflash_write(address, data, wait=False):
     return _sflash_mem_write(spi, cs, address, data)
     
     
+
+def sflash_sector_erase(sector_address):
+    global sflash_is_on_board
+    if sflash_is_on_board == False:
+        return
+    if sflash_is_ready() is False:        
+        return "ready fault"
+    _sflash_write_enable()    
+    address_bytes = bytearray([
+        (sector_address >> 24) & 0xFF,  #MSByte
+        (sector_address >> 16) & 0xFF,
+        (sector_address >> 8) & 0xFF,
+        sector_address & 0xFF           
+    ])
+    
+    _sflash_cmd_dat(spi, cs, SFLASH_SE, address_bytes)    
+    print(f"erase {address_bytes.hex()}")
+
+    loop = 0        
+    while not sflash_is_ready():
+        if loop >= 100:        
+            print("timeout")
+            return "timeout"
+        time.sleep_ms(10)
+        loop += 1
+
+
 #erase multiple blocks, wait required    
 #one block can slecet no wait
 def sflash_erase(start_block_address, end_block_address=0, wait=False):
@@ -373,7 +401,7 @@ def sflash_erase(start_block_address, end_block_address=0, wait=False):
     else:
         block_address = start_block_address
         while block_address < end_block_address:
-            #print(f"e-{block_address:#x}")
+            print(f"e-{block_address:#x}")
             _sflash_block_erase(block_address, True)
             block_address += 0x010000
            
@@ -410,6 +438,11 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
         data_byte = 0xFF
     else:
         data_byte = 0
+        #print("all protection off  ")
+        #_sflash_write_enable()
+        #_sflash_cmd_dat(spi, cs, SFLASH_GBULK)
+        #return
+
 
     # 64K blocks from 1 to 510
     for block_num in range(1, 511):
@@ -545,7 +578,6 @@ def test():
                 if test_data[i] != read_data[i]:
                     print(f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}")
                     pass
-
 
 
 if __name__ == "__main__":

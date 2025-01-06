@@ -372,6 +372,7 @@ def blank_all():
         SPI_Store.sflash_protect_sectors(SFLASH_PRG_START+SFLASH_PRG_SIZE*i,SFLASH_PRG_START+SFLASH_PRG_SIZE*(i+1),"off")
         print("UPDSTORE: erasing block",i)
         SPI_Store.sflash_erase(SFLASH_PRG_START+SFLASH_PRG_SIZE*i,SFLASH_PRG_START+SFLASH_PRG_SIZE*(i+1),True)
+
         block_status=_get_block_status(data, i)
         _set_block_status(block_status, BLOCK_STATUS_EMPTY, 0, 0, 0, 0, 0,0)
         _write_status_to_fram()
@@ -519,4 +520,12 @@ def test():
    
     
 if __name__ == "__main__":
-    test()
+    #test()
+    #blank_all()
+
+    SPI_Store.initialize()
+
+    print("blank everything")
+    SPI_Store.sflash_protect_sectors(SFLASH_PRG_START+SFLASH_PRG_SIZE , SFLASH_PRG_START+SFLASH_PRG_SIZE,"off")
+    SPI_Store.sflash_erase(0, 0xFFFF0000  ,True)
+
