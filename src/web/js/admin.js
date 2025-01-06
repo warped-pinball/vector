@@ -213,6 +213,7 @@ window.downloadScores = async function () {
 // Updates
 // 
 async function update_file_is_valid(updateData) {
+	updateProgress("Validating compatible update file format");
 	if (!updateData.update_file_format) {
 		console.error("Missing update_file_format in update:", update);
 		return false;
@@ -222,6 +223,7 @@ async function update_file_is_valid(updateData) {
 	}
 
 	// confirm that all files have required fields
+	updateProgress("Validating update file structure");
 	for (const file of updateData.files) {
 		if (!file.path || !file.checksum || !file.data || !file.final_bytes) {
 			console.error("Invalid file in update:", file);
@@ -229,7 +231,16 @@ async function update_file_is_valid(updateData) {
 		}
 	}
 	
+	// ensure all updateData.files.path start with '/'
+	updateProgress("Validating file paths");
+	for (const file of updateData.files) {
+		if (file.path[0] !== '/') {
+			file.path = '/' + file.path;
+		}
+	}
+	
 	// confirm that all parts of all files are present
+	updateProgress("Validating complete file parts");
 	const parts = {};
 	for (const file of updateData.files) {
 		const num_parts = Math.ceil(file.final_bytes / updateData.chunk_size);
@@ -252,14 +263,13 @@ async function update_file_is_valid(updateData) {
 		}
 	}
 	
-	// TODO validate checksums for each part of each file
-
 	return true;
 
 }
 
 // confirm compatibility with the update
 async function updateIsCompatible(updateData) {
+	updateProgress("Requesting compatibility check from board");
 	const compatibility_data = {
 		update_file_format: updateData.update_file_format,
 		supported_hardware: updateData.supported_hardware,
@@ -332,6 +342,7 @@ async function generateFileIndex(updateData) {
 				continue;
 			} else {
 				changedPartsForFile.push(false);
+				updateProgress('Skipping files not altered by update', 2);
 			}
 		}
 		changedParts[path] = changedPartsForFile;
@@ -357,7 +368,7 @@ async function uploadFiles(files, chunk_size) {
 		} else {
 			parts = Math.ceil(file.final_bytes / chunk_size);
 		}
-		console.log(`Uploading file ${file.path}, part ${file.part} of ${parts}...`);
+		updateProgress(`Uploading ${file.path} (${file.part} of ${parts} parts)`, 2);
 		const response = await window.smartFetch("/api/update/file_part", file, true);
 		if (response.status !== 200) {
 			console.error(`Failed to upload file ${file.path}, part ${file.part} of ${parts}:`, response.status, response.statusText)
@@ -373,44 +384,56 @@ async function uploadFiles(files, chunk_size) {
 // Handle the update process
 window.applyUpdate = async function (file) {
 	const fileText = await file.text();
-	const updateData = JSON.parse(fileText);
+	const updateData = await JSON.parse(fileText);
 
-	// Step 0: Validate the update file
+	// Step 0: setup the update progress modal
+	let num_files = 70;
+	try {
+		num_files = updateData.files.length;
+	} catch (error) {
+		console.error("Failed to get number of files in update:", error);
+	}
+	
+	const estimated_seconds = (
+		2 + // validate update locally
+		10 + // confirm compatibility on board
+		18 + // generate file index
+		num_files * 2 + // upload files
+		18 // confirm the update
+	);
+	updateProgress("Initializing Update", 0, 0, estimated_seconds);
+
+	const update_progress_modal = document.getElementById('update-progress-modal');
+	update_progress_modal.showModal();
+
+
+	// Step 1: Validate the update file
 	const valid_update = await update_file_is_valid(updateData);
 	if (!valid_update){
 		alert("This file does not appear to be a valid update.");
 		return;
 	}
 
-	// ensure all updateData.files.path start with /
-	for (const file of updateData.files) {
-		if (file.path[0] !== '/') {
-			file.path = '/' + file.path;
-		}
-	}
-
-
-	// Step 1: Confirm update compatibility
+	// Step 2: Confirm update compatibility
 	if (!await updateIsCompatible(updateData)) {
 		alert("This file does not appear to be a valid update.", response.statusText);
 		return;
 	}
 	console.log("Update is compatible.");
 
-	// Step 2: Generate file index and get server's file state
+	// Step 3: Generate file index and get server's file state
+	updateProgress("Requesting server file checksums (this may take a few seconds)", 1);
 	const serverFileIndex = await generateFileIndex(updateData);
-	console.log("File index generated.");
+	// second progress bar step to make the main "progress" happen after the call to the server
+	updateProgress("Requesting server file checksums (this may take a few seconds)", 17);
 
-	console.log("Changed files:");
-	console.log(serverFileIndex);
-
-	// Step 3: Upload changed files
+	// Step 4: Upload changed files
 	await uploadFiles(serverFileIndex, updateData.chunk_size);
-	console.log("Files uploaded.");
 
-	// Step 4: Confirm the update
+	// Step 5: Confirm the update
 	// check the final full checksum of file system by redoing step 2 and expecting no changes
 	// with the exception of files that were marked as execute=True
+	updateProgress("Validating update (this may take a few seconds)", 1);
 	const finalFileIndex = await generateFileIndex(updateData);
 	const paths_with_execute = updateData.files.filter((file) => {
 		return file.execute;
@@ -429,9 +452,12 @@ window.applyUpdate = async function (file) {
 			return;
 		}
 	}
+	// second progress bar step to make the main "progress" happen after the call to the server
+	updateProgress("Validating update (this may take a few seconds)", 17);
 	
-	// Step 5: Reboot the device
-	alert("Update applied successfully. rebooting...");
+	// Step 6: Reboot the device
+	updateProgress("Update complete", 1, 1, 1);
+	// TODO enable "finalize" button
 	await window.smartFetch("/api/settings/reboot", null, true);
 };
 
@@ -455,3 +481,22 @@ window.handleUpdateUploadChange = async function (event) {
 		fileInput.value = ""; // Clear the input after processing
 	});
 };
+
+// function for updating the update progress modal
+window.updateProgress = function (log_msg, increment_value=1, set_value=false, max=false) {
+	const progress_bar = document.getElementById('update-progress-bar');
+	const progress_log = document.getElementById('update-progress-log');
+
+	if (max) {
+		progress_bar.max = max;
+	}
+
+	if (increment_value) {
+		progress_bar.value += increment_value;
+	}
+	if (set_value) {
+		progress_bar.value = set_value;
+	}
+	progress_log.textContent = log_msg;
+	console.log(log_msg);
+}

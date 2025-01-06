@@ -189,5 +189,26 @@
         <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
     </section>
 </div>
+<dialog id="update-progress-modal">
+    <article>
+        <header>
+            <h2>Updating - Please wait</h2>
+        </header>
+
+        <p>
+            <b>Do not close this window or disconnect from network while update is in progress.</b>
+            Updates typically take less than 10 minutes to complete.
+        </p>
+        <br>
+        <br>
+
+        <progress id="update-progress-bar" value="0" max="100" />
+        <p id="update-progress-log">Parsing update file</p>
+        <footer>
+            <button class="secondary hide" onclick="" disabled>Retry Update</button>
+            <button class="secondary" onclick="" disabled>Finalize (Restart machine)</button>
+        </footer>
+    </article>
+</dialog>
 
 
