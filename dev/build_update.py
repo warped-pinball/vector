@@ -117,7 +117,7 @@ def make_file_entries(file_path: str, file_contents: bytes, chunk_size: int, exe
 def build_update_json(build_dir: str, output_file: str, version: str, chunk_size: int):
     update_data = {
         "update_file_format": "1.0",
-        "supported_hardware": ["vector_v1", "vector_v2", "vector_v3", "vector_v4", "vector_v5"],
+        "supported_hardware": ["vector_v4", "vector_v5"],
         "supported_software_versions": ["0.3.0"],
         "micropython_versions": ["1.23.0.preview"],
         "version": version,
