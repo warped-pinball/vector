@@ -288,31 +288,6 @@ async function generateFileIndex(updateData) {
 		return;
 	}
 	const serverFileIndex = await server_index_response.json();
-	// update data in format:
-
-	// {
-	// 	"path": "phew/__init__.mpy",
-	// 	"checksum": "8394",
-	// 	"data": "TQYAHzU",
-	// 	"log": "Uploading phew/__init__.mpy (part 1 of 2)",
-	// 	"part": 1,
-	// 	"parts": 2
-	//   },
-	//   {
-	// 	"path": "phew/__init__.mpy",
-	// 	"checksum": "5102",
-	// 	"data": "Z1lCMlFjhAC6AQYoMSuAURsMwrIUDbITKTYB",
-	// 	"log": "Uploading phew/__init__.mpy (part 2 of 2)",
-	// 	"part": 2,
-	// 	"parts": 2
-	//   },
-
-	// server data in format:
-
-	// {
-	// 	"phew/__init__.mpy": ["5102", "8394"],
-	// 	...
-	// }	
 
 	// convert updateData.files to a map of checksums by path
 	const updateFileIndex = {};
@@ -423,7 +398,7 @@ window.applyUpdate = async function (file) {
 	console.log("Update is compatible.");
 
 	// Step 2: Generate file index and get server's file state
-	const serverFileIndex = await generateFileIndex(updateData, null, true);
+	const serverFileIndex = await generateFileIndex(updateData);
 	console.log("File index generated.");
 
 	console.log("Changed files:");
@@ -434,7 +409,39 @@ window.applyUpdate = async function (file) {
 	console.log("Files uploaded.");
 
 	// Step 4: Confirm the update
-	// TODO check the final full checksum of file system
+	// check the final full checksum of file system by redoing step 2 and expecting no changes
+	// with the exception of files that were marked as execute=True
+	const finalFileIndex = await generateFileIndex(updateData);
+	const paths_with_execute = updateData.files.filter((file) => {
+		return file.execute;
+	}).map((file) => {
+		return file.path;
+	});
+	
+	// check that the finalFileIndex is the same as the serverFileIndex except for files with execute=True
+	for (const path in finalFileIndex) {
+		if (paths_with_execute.includes(path)) {
+			continue;
+		}
+		if (finalFileIndex[path] !== serverFileIndex[path]) {
+			console.error("Failed to apply update: checksums do not match after upload:", path, finalFileIndex[path], serverFileIndex[path]);
+			alert("Failed to apply update.");
+			return;
+		}
+	}
+	
+	
+	// const changedFiles = finalFileIndex.filter((file) => {
+	// 	return file.execute;
+	// });
+	// if (changedFiles.length > 0) {
+	// 	console.error("Failed to apply update: changed files after upload:", changedFiles);
+	// 	alert("Failed to apply update.");
+	// 	return;
+	// }
+
+
+
 	alert("Update applied successfully. rebooting...");
 
 	// Step 5: Reboot the device
