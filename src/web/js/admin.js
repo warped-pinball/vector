@@ -457,8 +457,8 @@ window.applyUpdate = async function (file) {
 	
 	// Step 6: Reboot the device
 	updateProgress("Update complete", 1, 1, 1);
-	// TODO enable "finalize" button
-	await window.smartFetch("/api/settings/reboot", null, true);
+	// TODO enable "finalize" button which calls reboot
+	// await window.smartFetch("/api/settings/reboot", null, true);
 };
 
 // File input handler
