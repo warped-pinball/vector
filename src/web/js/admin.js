@@ -430,21 +430,8 @@ window.applyUpdate = async function (file) {
 		}
 	}
 	
-	
-	// const changedFiles = finalFileIndex.filter((file) => {
-	// 	return file.execute;
-	// });
-	// if (changedFiles.length > 0) {
-	// 	console.error("Failed to apply update: changed files after upload:", changedFiles);
-	// 	alert("Failed to apply update.");
-	// 	return;
-	// }
-
-
-
-	alert("Update applied successfully. rebooting...");
-
 	// Step 5: Reboot the device
+	alert("Update applied successfully. rebooting...");
 	await window.smartFetch("/api/settings/reboot", null, true);
 };
 
