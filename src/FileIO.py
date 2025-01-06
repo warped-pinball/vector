@@ -127,7 +127,7 @@ def file_base64_crc16s(path: str, chunk_size: int) -> list[str]:
         print(f"Error calculating checksum: {e}")
         return []
 
-def set_file_size(path, num_bytes):
+def set_file_size(path, num_bytes, preserve_to_byte=0):
     # makes a file of a certain size with minimal edits
     # used in updating files
     from os import remove
@@ -143,6 +143,7 @@ def set_file_size(path, num_bytes):
             
             # if it's smaller than the final size, pad it with null bytes
             if file_size < num_bytes:
+                print(f"Padding file {path} with {num_bytes - file_size} null bytes")
                 f.write(b'\x00' * (num_bytes - file_size))
                 file_size = num_bytes
 
@@ -150,18 +151,41 @@ def set_file_size(path, num_bytes):
     except OSError as e:
         # if the file does not exist, create it with the correct size
         with open(path, 'w') as f:
+            print(f"Creating file {path} with {num_bytes} null bytes")
             f.write(b'\x00' * num_bytes)
             file_size = num_bytes
     except Exception as e:
         raise e
 
-    # delete the file if it exists, but is not the correct size
+    # if the file exists, but is too large
     if file_size > num_bytes:
+        if preserve_to_byte > 0:
+            print(f"Truncating file {path} to {num_bytes} bytes")
+            # copy the file up to preserve_to_byte to a temporary file in 1000 byte chunks
+            temp_path = path + ".temp"
+            with open(path, 'rb') as f:
+                with open(temp_path, 'wb') as temp_f:
+                    while f.tell() < preserve_to_byte:
+                        temp_f.write(f.read(min(1000, preserve_to_byte - f.tell())))
+        
+        # remove the original file
+        print(f"Removing {path}")
         remove(path)
     
         # create the file with the correct size of null bytes
         with open(path, 'w') as f:
             f.write(b'\x00' * num_bytes)
+
+        # if we copied part of the file, copy it back
+        if preserve_to_byte > 0:
+            print(f"Copying {temp_path} to {path}")
+            with open(path, 'rb') as f:
+                with open(temp_path, 'rb') as temp_f:
+                    while True:
+                        chunk = temp_f.read(1000)
+                        if not chunk:
+                            break
+                        f.write(chunk)
 
 
 if __name__ == "__main__":

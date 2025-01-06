@@ -618,7 +618,7 @@ def app_validate_update(request):
     hardware = "Unknown"
     try:
         if implementation._machine == 'Raspberry Pi Pico W with RP2040':
-            hardware = "vector_v3"
+            hardware = "vector_v4"
     except Exception as e:
         pass
     #TODO implement flash chip check
@@ -664,7 +664,7 @@ def app_upload_file(request):
 
     print("setting file size")
     # ensure file is of correct size
-    set_file_size(path, final_bytes)
+    set_file_size(path, final_bytes, start_byte)
     
     print('writing to file')
     # write the contents to the file
