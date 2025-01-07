@@ -39,6 +39,11 @@
     .profile-row button {
         flex-shrink: 0; /* Keeps the button size consistent */
     }
+
+    #update-progress-log::-webkit-scrollbar {
+        display: none;
+    }
+
 </style>
 
 <div style="text-align: left;">
@@ -199,14 +204,12 @@
             <b>Do not close this window or disconnect from network while update is in progress.</b>
             Updates typically take less than 10 minutes to complete.
         </p>
-        <br>
-        <br>
-
-        <progress id="update-progress-bar" value="0" max="100" />
-        <p id="update-progress-log">Parsing update file</p>
+        <code id="update-progress-log" style="width:100%; height: 200px; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; text-align: left; padding-bottom: 1em;"></code>
+        <progress id="update-progress-bar" value="0" max="100"/>
         <footer>
             <button class="secondary hide" onclick="" disabled>Retry Update</button>
             <button class="secondary" onclick="" disabled>Finalize (Restart machine)</button>
+            
         </footer>
     </article>
 </dialog>

@@ -5,4 +5,5 @@ jsmin
 scour
 htmlmin2
 beautifulsoup4
-# pre-commit
+cryptography
+#TODO pre-commit

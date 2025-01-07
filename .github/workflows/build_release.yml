@@ -6,7 +6,7 @@ on:
   push:
     branches: [ "main" ]
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
@@ -28,6 +28,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
+          # Ensure cryptography is installed (in case it's not in requirements.txt)
+          pip install cryptography
 
       - name: Determine build environment and version
         id: build_env
@@ -59,9 +61,33 @@ jobs:
         run: |
           python dev/build.py --build-dir build --env $ENV
 
+      - name: Create key files (if provided)
+        run: |
+          # Only create local key files if the secrets are non-empty
+          if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+            echo "${{ secrets.WARPED_PINBALL_PUBLIC_KEY }}" > public_key.pem
+          else
+            echo "No private key specified, will build unsigned."
+          fi
+
       - name: Generate update.json
         run: |
-          python dev/build_update.py --build-dir build --output update.json --version $VERSION
+          # If the private key file exists, pass both the private & public key.
+          # Otherwise, omit them for an unsigned build.
+          if [ -f "private_key.pem" ] && [ -f "public_key.pem" ]; then
+            python dev/build_update.py \
+              --build-dir build \
+              --output update.json \
+              --version $VERSION \
+              --private-key private_key.pem \
+              --public-key public_key.pem
+          else
+            python dev/build_update.py \
+              --build-dir build \
+              --output update.json \
+              --version $VERSION
+          fi
 
       - name: Upload artifact to GitHub Release
         uses: softprops/action-gh-release@v2

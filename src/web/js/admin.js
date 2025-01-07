@@ -342,7 +342,10 @@ async function generateFileIndex(updateData) {
 				continue;
 			} else {
 				changedPartsForFile.push(false);
-				updateProgress('Skipping files not altered by update', 2);
+				// log that we are skipping this part
+				updateProgress(`${path} part ${i+1} of ${updateChecksums.length} checksum matches`, 2);
+				// sleep for one tenth of a second to allow the progress bar to update
+				await new Promise(resolve => setTimeout(resolve, 20));
 			}
 		}
 		changedParts[path] = changedPartsForFile;
@@ -398,14 +401,21 @@ window.applyUpdate = async function (file) {
 		2 + // validate update locally
 		10 + // confirm compatibility on board
 		18 + // generate file index
-		num_files * 2 + // upload files
-		18 // confirm the update
+		num_files * 4 + // upload files
+		18 + // confirm the update
+		20 // buffer
 	);
 	updateProgress("Initializing Update", 0, 0, estimated_seconds);
 
 	const update_progress_modal = document.getElementById('update-progress-modal');
 	update_progress_modal.showModal();
-
+	
+	// once per second, add a . to the log to show that the page is still alive
+	// save it in a variable so we can stop it later
+	const interval = setInterval(() => {
+		document.getElementById('update-progress-log').innerText += '.';
+	}, 1000);
+		
 
 	// Step 1: Validate the update file
 	const valid_update = await update_file_is_valid(updateData);
@@ -422,10 +432,9 @@ window.applyUpdate = async function (file) {
 	console.log("Update is compatible.");
 
 	// Step 3: Generate file index and get server's file state
-	updateProgress("Requesting server file checksums (this may take a few seconds)", 1);
+	updateProgress("Requesting server file checksums (may take a few seconds)", 18);
 	const serverFileIndex = await generateFileIndex(updateData);
 	// second progress bar step to make the main "progress" happen after the call to the server
-	updateProgress("Requesting server file checksums (this may take a few seconds)", 17);
 
 	// Step 4: Upload changed files
 	await uploadFiles(serverFileIndex, updateData.chunk_size);
@@ -433,7 +442,7 @@ window.applyUpdate = async function (file) {
 	// Step 5: Confirm the update
 	// check the final full checksum of file system by redoing step 2 and expecting no changes
 	// with the exception of files that were marked as execute=True
-	updateProgress("Validating update (this may take a few seconds)", 1);
+	updateProgress("Validating update (may take a few seconds)", 18);
 	const finalFileIndex = await generateFileIndex(updateData);
 	const paths_with_execute = updateData.files.filter((file) => {
 		return file.execute;
@@ -453,10 +462,13 @@ window.applyUpdate = async function (file) {
 		}
 	}
 	// second progress bar step to make the main "progress" happen after the call to the server
-	updateProgress("Validating update (this may take a few seconds)", 17);
 	
 	// Step 6: Reboot the device
 	updateProgress("Update complete", 1, 1, 1);
+
+	// stop adding .s to the log
+	clearInterval(interval);
+
 	// TODO enable "finalize" button which calls reboot
 	// await window.smartFetch("/api/settings/reboot", null, true);
 };
@@ -497,6 +509,20 @@ window.updateProgress = function (log_msg, increment_value=1, set_value=false, m
 	if (set_value) {
 		progress_bar.value = set_value;
 	}
-	progress_log.textContent = log_msg;
+	
+	
+	// this is a seperate call to prevent any possible xss issues
+	progress_log.appendChild(document.createElement('br'));
+	// append log message to the log element with a <br> at the end
+	progress_log.innerText += log_msg.replace(/ /g, '\u00A0') + ' '; // add space to encourage wrapping
+
+	// automatically scroll the log to the bottom
+	progress_log.scroll({
+		top: progress_log.scrollHeight,
+		behavior: 'smooth'
+	});
+
 	console.log(log_msg);
 }
+
+
