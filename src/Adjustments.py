@@ -11,6 +11,7 @@ from logger import logger_instance
 Log = logger_instance
 import SharedState as S
 import displayMessage
+import machine
 
 ADJ_FRAM_START = 0x2100  # to 0x2340
 ADJ_FRAM_RECORD_SIZE = 0x80
