@@ -21,7 +21,6 @@ Log = logger_instance
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE,SRAM_DATA_LENGTH)
 #count_access = uctypes.bytearray_at(SRAM_COUNT_BASE,SRAM_DATA_LENGTH)                 
 
-fram.initialize()
 
 def go():            
     #A_Select pin initializtion

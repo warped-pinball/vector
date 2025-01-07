@@ -21,7 +21,7 @@ ADJ_NAMES_LENGTH = 16
 
 
 def blank_all():
-    """ blank out all names and storage """    
+    """ blank out all names and storage - only for manufacturing init"""    
     for i in range(4):
         set_name(i, "")
         #blank the data also
@@ -36,25 +36,22 @@ def get_names():
         for i in range(4)
     ]
 
-
 def set_name(index, name):
-    """set name"""
-    if index<0 or index>=ADJ_NUM_SLOTS :
-        Log.log("ADJS: invalid index nm")
-        return
+    """set name for index"""
+    if index<0 or index>=ADJ_NUM_SLOTS :        
+        return "Fault: index"
        
     name = name[:16]     
     name_bytes = bytearray(name.encode('ascii') + b'\x00' * (16 - len(name)))
     # Calculate the FRAM address for this index
     fram_address = ADJ_NAMES_START + index * ADJ_NAMES_LENGTH
     fram.write(fram_address, name_bytes)
-    Log.log(f"ADJS: Name set at index {index}: {name}")
+    #Log.log(f"ADJS: Name set at index {index}: {name}")
 
 
 def restore_adjustments(index, reset=True):
-    """pull from fram data and put in shadow ram, reset after by default"""
-    if index < 0 or index >= ADJ_NUM_SLOTS:
-        Log.log("ADJS: Invalid index ra")
+    """pull from fram data and put in shadow ram in the machine, reset after by default"""
+    if index < 0 or index >= ADJ_NUM_SLOTS:        
         return "Fault: Invalid Index"
 
     # Check if a game is in progress and reset is requested
@@ -88,7 +85,7 @@ def restore_adjustments(index, reset=True):
     # copy
     if cpyStart > 0 and cpyEnd > 0 and (cpyEnd - cpyStart) <= len(data):
         shadowRam[cpyStart:cpyEnd] = data[:cpyEnd - cpyStart]
-        Log.log(f"ADJS: Adjustments restored {cpyStart:04X}-{cpyEnd - 1:04X}")
+        Log.log(f"ADJS: Adjustments restored {index}")
 
         displayMessage.fixAdjustmentChecksum()
         fram.write_all_fram_now()
@@ -105,8 +102,7 @@ def restore_adjustments(index, reset=True):
 def store_adjustments(index):
     """store current adjustments into a storage location (0-3)"""
     if index<0 or index>=ADJ_NUM_SLOTS :
-        Log.log("ADJS: invalid index sa")
-        return
+        return "Fault: Invalid Index"
 
     #for ranges check game data:
     #       1) check Adjustment.cpyStart / cpyEnd
@@ -128,45 +124,10 @@ def store_adjustments(index):
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
         fram.write(fram_adr, data)   
 
-        hex_data = " ".join(f"{byte:02X}" for byte in data)
-        print(f"ADR: {fram_adr:04X} DAT: {hex_data}")
+        #hex_data = " ".join(f"{byte:02X}" for byte in data)
+        #print(f"ADR: {fram_adr:04X} DAT: {hex_data}")
         
     else:
         Log.log("ADJS: No Ranges")
     
 
-
-
-
-
-if __name__ == "__main__":
-
-    import GameDefsLoad
-    GameDefsLoad.go() 
-
-    print("ADJUSTMENT save settings:")
-    print(f"   data start=0x{ADJ_FRAM_START:X} size=0x{ADJ_FRAM_RECORD_SIZE:X} slots={ADJ_NUM_SLOTS}")
-    print(f"   data used area=0x{ADJ_FRAM_START:X} to 0x{ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS:X}")
-    print(f"   names start=0x{ADJ_NAMES_START:X} length=0x{ADJ_NAMES_LENGTH:X}")
-    print(f"   names used area=0x{ADJ_NAMES_START:X} to 0x{ADJ_NAMES_START + ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS:X}\n")
-
-    print("blank all")
-    blank_all()
-    print("blank all done\n")
-
-    set_name(0,'One')
-    set_name(1,"two  ")
-    set_name(2,"abcdefghijationj")
-    set_name(3,"123456789123456789")
-    
-    print(restore_adjustments(0))
-
-    print("\n read names: ",get_names())
-
-    print(store_adjustments(0))
-    print(store_adjustments(1))
-    print(store_adjustments(2))
-    print(store_adjustments(3))
-
-    print("\n read names: ",get_names())
-    print(restore_adjustments(0,False))

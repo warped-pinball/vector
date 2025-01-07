@@ -21,6 +21,8 @@ import SharedState as S
 from Shadow_Ram_Definitions import shadowRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE,SRAM_COUNT_BASE
 from logger import logger_instance
 Log = logger_instance
+from SPI_Store import initialize as initialize_spi_store
+
 
 #other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -113,6 +115,8 @@ print("""
 SYS11.Wifi from Warped Pinball 
 This work is licensed under CC BY-NC 4.0     
 """)
+
+initialize_spi_store()
 
 ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check() 
