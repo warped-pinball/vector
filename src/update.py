@@ -1,31 +1,34 @@
-def find_dividers(filename, separator=b'----\n'):
-    offsets = []
-    offset = 0
+def find_dividers(filename):
+    '''
+    find the byte location of the dividers in a file by scanning the file one btye at a time
+    '''
+    dividers = []
     with open(filename, 'rb') as f:
+        file_length = f.seek(0, 2)
+        f.seek(0)
         while True:
-            line = f.readline()
-            if not line:
-                break
-            if line == separator:
-                offsets.append(offset)
-            offset += len(line)
-    return offsets
+            # skip ahead to the next \n
+            while True:
+                if f.read(1) == b'\n':
+                    break
+                if f.tell() == file_length:
+                    break
+            # check if the next 5 bytes are ----\n
+            if f.read(5) == b'----\n':
+                print(dividers)
+                dividers.append(f.tell())
+    
+    return dividers
 
-
-def validate_signature() -> bool:
-    from rsa.key import PublicKey
-    from rsa.pkcs1 import verify
-    from binascii import a2b_base64, unhexlify
+def get_check_data():
     from hashlib import sha256 as hashlib_sha256
+    from binascii import a2b_base64, unhexlify
     from json import loads as json_loads
-
-    PUBLIC_KEY_N = 25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099
-    PUBLIC_KEY_E = 65537
-
-    pub_key = PublicKey(PUBLIC_KEY_N, PUBLIC_KEY_E)
     hasher = hashlib_sha256()
 
+    print('Finding dividers')
     dividers = find_dividers('update.json')
+    print(dividers)
     update_content_end = dividers[-1]
     
     with open('update.json', 'rb') as f:
@@ -36,33 +39,57 @@ def validate_signature() -> bool:
             if not chunk:
                 break
             hasher.update(chunk)
-
+        print('Hash calculated')
         calculated_hash = hasher.digest()
 
         # read to next newline
         f.readline()
 
         # extract the check data
-        check_data = json_loads(f.read(update_content_end - f.tell()))
+        print('Reading check data')
+        f.seek(dividers[-1] + len(b'----\n'))
+        check_data = json_loads(f.read())
     
     expected_hash = unhexlify(check_data['hash'])
     signature = a2b_base64(check_data['signature'])
-    if calculated_hash != expected_hash:
-        print('Hash mismatch')
-        return False
+    return calculated_hash, expected_hash, signature
+
+def validate_signature(hash, signature) -> bool:
+    from rsa.key import PublicKey
+    from rsa.pkcs1 import verify
+    from logger import logger_instance as Log
+
+    pub_key = PublicKey(
+        n = 25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099, 
+        e = 65537
+    )
     
-    if verify(expected_hash, signature, pub_key) != 'SHA-256':
-        print('Signature verification failed')
+    if verify(hash, signature, pub_key) != 'SHA-256':
+        Log.log('Signature verification failed')
         return False
     return True
 
 def apply_update(url):
-    
+    from logger import logger_instance as Log
+    from gc import collect as gc_collect
+
     # download the file
-    download_update(url)
+    Log.log(f'Downloading update from {url}')
+    download_update(url)    
+    gc_collect()
+
+    # get the check data
+    Log.log('Getting check data')
+    calculated_hash, expected_hash, signature = get_check_data()
+
+    if calculated_hash != expected_hash:
+        Log.log('Hash mismatch')
+        return
+    gc_collect()
 
     # validate the signature of the file
-    validate_signature()
+    Log.log('Validating signature')
+    validate_signature(calculated_hash, signature)
 
     # validate compatibility of the file
     
@@ -141,3 +168,11 @@ def download_update(url):
     # download_update('https://github.com/warped-pinball/vector/releases/download/0.3.1/update.json')
     # with open('update.json', 'r') as f:
     #     print(f.read(1000))
+
+
+
+
+
+# https://github.com/warped-pinball/vector/actions/runs/12663958895/artifacts/2399433428
+# https://github.com/warped-pinball/vector/actions/runs/12663958895/artifacts/2399433428
+# https://github.com/warped-pinball/vector/releases/download/0.3.1/update.json

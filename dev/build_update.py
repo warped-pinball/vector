@@ -109,14 +109,6 @@ def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
       (sha256_hex, signature_text)
        - sha256_hex: hex digest of the data
        - signature_text: base64-encoded RSA signature, or 'NOT_ENCRYPTED'
-
-    About the RSA signature call:
-      - We use RSA PKCS#1 v1.5 padding (padding.PKCS1v15()).
-      - This is the standard older padding scheme for RSA. 
-        It's still commonly used for signing (though PSS is considered more secure). 
-      - utils.Prehashed(hashes.SHA256()) means we're telling cryptography we already hashed 
-        the data (the 'data' parameter is the digest, not the original plaintext). 
-        So we pass the raw digest to private_key.sign() along with the chosen padding/hashing scheme.
     """
     sha256_digest = hashlib.sha256(data).digest()
     sha256_hex = hashlib.sha256(data).hexdigest()
@@ -155,8 +147,9 @@ def build_update_file(
       5) A final signature block containing: sha256=... and signature=...
          (the signature is over everything above it).
 
-    If public_key_path is provided, we copy that public key into the build directory
-    so that it will be included on the board as well. (Named 'public_key.pem'.)
+    Then add at the top of the final file a single-line JSON object that indicates
+    the byte start and length of each section (metadata, files, signature), as
+    divided by the \n----\n separators.
     """
     # If a public key is provided, copy it to the build directory so it gets included.
     # Name it consistently, e.g. "public_key.pem".
@@ -201,43 +194,93 @@ def build_update_file(
             )
             file_lines.append(line)
 
-    # Combine everything (except the signature) into one text block.
-    lines_to_write = []
-
-    # a) The metadata in pretty JSON
+    # a) The metadata in JSON
     meta_str = json.dumps(meta_data, indent=2)
-    lines_to_write.append(meta_str)
 
-    # b) A separator
-    lines_to_write.append("----")
+    # b) Prepare the content before signature as one big string
+    #    We'll insert a \n----\n as the section delimiter
+    #    Section 1: metadata
+    #    Section 2: removal_line + all file lines
+    section_1 = meta_str
+    section_2_list = [removal_line] + file_lines
+    section_2 = "\n".join(section_2_list)
 
-    # c) The "remove_extra_files.py" line
-    lines_to_write.append(removal_line)
+    content_before_signature = section_1 + "\n----\n" + section_2
 
-    # d) Each file line
-    lines_to_write.extend(file_lines)
-
-    # Build one big string from these parts
-    # each part in lines_to_write is its own line
-    content_before_signature = "\n".join(lines_to_write)
-
-    # Now sign that content
+    # Sign that content
     sha256_hex, signature_b64 = sign_data(content_before_signature.encode("utf-8"), private_key_path)
 
-    # e) Final signature block with the same separator in json format
-    signature_block = [
-        "----",
-        json.dumps(
-            {
-                "sha256": sha256_hex,
-                "signature": signature_b64
-            }
-        )
-    ]
-    signature_section = "\n".join(signature_block)
+    # c) Prepare the signature block as its own section
+    #    (with the leading ---- delimiter so it's recognized as a new section)
+    signature_obj = {
+        "sha256": sha256_hex,
+        "signature": signature_b64
+    }
+    section_3 = json.dumps(signature_obj)
+    full_body = content_before_signature + "\n----\n" + section_3 + "\n"
 
-    # Final output
-    final_output = content_before_signature + "\n" + signature_section + "\n"
+    # Now determine the byte offsets of each section within full_body
+    # We'll search for the two \n----\n delimiters
+    #   Section layout in full_body:
+    #   [metadata text]
+    #   \n----\n
+    #   [files text]
+    #   \n----\n
+    #   [signature text]\n
+    #
+    # The signature text includes a trailing newline.  
+    # We want: 
+    #   metadata:   start=0               length= up to (but not including) \n----\n
+    #   files:      start= (delim1_end)   length= up to (but not including) next \n----\n
+    #   signature:  start= (delim2_end)   length= the remainder of the file
+    #
+    # The final output will get a new line at the top, but we measure offsets from the beginning
+    # of that final file, so we have to add the length of that new offsets line + newline
+    # if we want correct absolute offsets. Let’s do it that way: first compute raw offsets
+    # in full_body, then we’ll shift them by the length of the offsets line once we know it.
+
+    delim1_pos = full_body.index("\n----\n")
+    delim2_pos = full_body.index("\n----\n", delim1_pos + 1)
+
+    # The metadata section goes [0 : delim1_pos]
+    metadata_start_raw = 0
+    metadata_length = delim1_pos  # everything up to that delimiter
+
+    # The files section starts right after delim1_pos + len("\n----\n")
+    files_start_raw = delim1_pos + len("\n----\n")
+    files_length = delim2_pos - files_start_raw
+
+    # The signature section starts right after delim2_pos + len("\n----\n")
+    signature_start_raw = delim2_pos + len("\n----\n")
+    signature_length = len(full_body) - signature_start_raw
+
+    # Offsets after we prepend the offsets line:
+    # We'll build the offsets line JSON with placeholders for now, measure its length,
+    # then add that to the raw offsets. We only need to do it once.
+    offsets_stub = {"metadata": {"start": 0, "length": metadata_length},
+                    "files": {"start": 0, "length": files_length},
+                    "signature": {"start": 0, "length": signature_length}}
+    # Measure the JSON line if we were to put real offsets in
+    # We'll guess maximum length; for safety, just build the final now:
+    offsets_test_line = json.dumps(offsets_stub, separators=(',',':'))
+    # We'll add 1 for the newline
+    stub_line_len = len(offsets_test_line) + 1
+
+    # Now shift all raw starts by stub_line_len
+    metadata_start = metadata_start_raw + stub_line_len
+    files_start = files_start_raw + stub_line_len
+    signature_start = signature_start_raw + stub_line_len
+
+    # Build the actual offsets dictionary
+    offsets = {
+        "metadata": {"start": metadata_start, "length": metadata_length},
+        "files": {"start": files_start, "length": files_length},
+        "signature": {"start": signature_start, "length": signature_length},
+    }
+    offsets_line = json.dumps(offsets, separators=(',', ':'))
+
+    # Final output = offsets line + newline + the full body
+    final_output = offsets_line + "\n" + full_body
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_output)
@@ -277,5 +320,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# TODO add release notes to file metadata
