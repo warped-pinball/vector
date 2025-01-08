@@ -132,7 +132,7 @@ def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
         signature = private_key.sign(
             sha256_digest,
             padding.PKCS1v15(),
-            utils.Prehashed(hashes.SHA256())
+            hashes.SHA256()
         )
         signature_b64 = base64.b64encode(signature).decode('utf-8')
         return (sha256_hex, signature_b64)
