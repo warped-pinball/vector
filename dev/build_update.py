@@ -224,11 +224,15 @@ def build_update_file(
     # Now sign that content
     sha256_hex, signature_b64 = sign_data(content_before_signature.encode("utf-8"), private_key_path)
 
-    # e) Final signature block with the same separator
+    # e) Final signature block with the same separator in json format
     signature_block = [
         "----",
-        f"sha256={sha256_hex}",
-        f"signature={signature_b64}"
+        json.dumps(
+            {
+                "sha256": sha256_hex,
+                "signature": signature_b64
+            }
+        )
     ]
     signature_section = "\n".join(signature_block)
 
@@ -273,3 +277,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# TODO add release notes to file metadata
