@@ -3,42 +3,83 @@ import os
 from binascii import a2b_base64, unhexlify
 from hashlib import sha256 as hashlib_sha256
 
-def read_last_line(path):
+def read_last_significant_line(path):
     """
-    Read the last line from 'path' by seeking from the end
-    and scanning backwards for b'\\n'.
+    Returns the last non-whitespace line from 'path' in bytes.
+    
+    Algorithm:
+      1. Seek to end of file, skipping all trailing whitespace (b'\\n', b'\\r', b' ', etc.).
+      2. Once found a non-whitespace char, mark that as end_of_line.
+      3. Continue backward until we find a b'\\n' or reach the beginning of the file.
+      4. The line is then the region (start_of_line..end_of_line).
+      5. If the entire file is whitespace, return b"".
     """
+    WHITESPACE = b' \t\n\r'
+    
+    with open(path, "rb") as f:
+        # Step A: find file size
+        f.seek(0, 2)
+        file_size = f.tell()
+        if file_size == 0:
+            return b""  # empty file => no line
+
+        # Step B: skip trailing whitespace
+        # We'll move backward from the end until we find a non-whitespace char
+        end_pos = file_size
+        while end_pos > 0:
+            end_pos -= 1
+            f.seek(end_pos, 0)
+            c = f.read(1)
+            if c not in WHITESPACE:
+                # Found a non-whitespace char
+                # => The last line ends at end_pos + 1
+                end_pos += 1
+                break
+        else:
+            # If we never broke from the loop, the entire file is whitespace
+            return b""
+
+        # Step C: from that end_pos, keep moving backward until we find b'\n' or reach start of file
+        start_pos = end_pos
+        while start_pos > 0:
+            start_pos -= 1
+            f.seek(start_pos, 0)
+            c = f.read(1)
+            if c == b'\n':
+                # The line starts after this newline
+                start_pos += 1
+                break
+
+        # Step D: read from start_pos..end_pos
+        length = end_pos - start_pos
+        f.seek(start_pos, 0)
+        line_bytes = f.read(length)
+        return line_bytes
+
+
+def get_check_data(path="update.json"):
+    import json
+    from binascii import a2b_base64, unhexlify
+    from hashlib import sha256
+
+    # 1) Read the last non-whitespace line
+    last_line_bytes = read_last_significant_line(path)
+    if not last_line_bytes:
+        # If empty, file might be incomplete or no signature line
+        raise ValueError("Could not find a valid last line in the update file.")
+    
+    # print out the last line as str
+    print(f"Last line: {last_line_bytes.decode('utf-8')}")
+
+    # 2) Compute the hash excluding that line
     with open(path, "rb") as f:
         f.seek(0, 2)
         file_size = f.tell()
+    end_of_content = file_size - len(last_line_bytes) - 2 # -1 for the newline at the end and another for off by one I guess
+    print(f"End of content: {end_of_content}")
 
-        read_pos = file_size
-        while read_pos > 0:
-            read_pos -= 1
-            f.seek(read_pos)
-            byte = f.read(1)
-            if byte == b'\n':
-                start_of_line = read_pos + 1
-                f.seek(start_of_line)
-                return f.read(file_size - start_of_line)
-        # No newline found => entire file is last line
-        f.seek(0)
-        return f.read(file_size)
-
-def compute_hash_excluding_last_line(path):
-    """
-    Compute a SHA-256 over everything except the last line.
-    """
-    with open(path, "rb") as f:
-        f.seek(0, 2)
-        file_size = f.tell()
-
-    last_line = read_last_line(path)
-    last_line_len = len(last_line)
-    end_of_content = file_size - last_line_len
-    print("End of content:", end_of_content)
-
-    hasher = hashlib_sha256()
+    # We do a chunk-based read up to 'end_of_content'
+    hasher = sha256()
     with open(path, "rb") as f:
         to_read = end_of_content
         chunk_size = 1024
@@ -50,23 +91,14 @@ def compute_hash_excluding_last_line(path):
             hasher.update(chunk)
             to_read -= len(chunk)
 
-    print("Hashed content")
-    return hasher.digest()
+    calculated_hash = hasher.digest()
 
-def get_check_data(path="update.json"):
-    """
-    - Hash all content except last line.
-    - Parse last line as signature JSON.
-    - Return (calculated_hash, expected_hash, signature).
-    """
-    calculated_hash = compute_hash_excluding_last_line(path)
-    print("Calculated hash:", calculated_hash)
-    # parse last line => signature data
-    last_line_bytes = read_last_line(path)
-    sig_obj = json.loads(last_line_bytes.decode("utf-8").strip())
+    # 3) Parse the last line as JSON => get sha256, signature
+    line_str = last_line_bytes.decode("utf-8").strip()
+    sig_obj = json.loads(line_str)
+    expected_hash = unhexlify(sig_obj.get("sha256", ""))
+    signature = a2b_base64(sig_obj.get("signature", ""))
 
-    expected_hash = unhexlify(sig_obj.get("sha256", ""))  # from hex to bytes
-    signature = a2b_base64(sig_obj.get("signature", ""))  # from base64 to bytes
     return calculated_hash, expected_hash, signature
 
 def validate_signature(hash_bytes, signature) -> bool:
@@ -152,7 +184,7 @@ def apply_update(url):
     Log.log("Getting check data")
     calculated_hash, expected_hash, signature = get_check_data("update.json")
     if calculated_hash != expected_hash:
-        Log.log("Hash mismatch!")
+        Log.log(f"Hash mismatch - expected {expected_hash}, got {calculated_hash}")
         return
 
     Log.log("Validating signature")
