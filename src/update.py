@@ -1,7 +1,35 @@
-import json
-import os
-from binascii import a2b_base64, unhexlify
-from hashlib import sha256 as hashlib_sha256
+def check_for_updates():
+    from urequests import get
+    response = get(
+        url="https://api.github.com/repos/warped-pinball/vector/releases",
+        headers={
+            "User-Agent": "MicroPython-Device",
+            "Accept": "application/vnd.github.v3+json"
+        }
+    )
+    if response.status_code == 200:
+        releases_data = response.json()
+        response.close()
+    else:
+        raise Exception(f"Failed to fetch releases: {response.status_code}")
+
+    structured_releases = {"releases": []}
+    for release in releases_data:
+        release_info = {
+            "name": release.get("name", "No name provided"),
+            "tag": release.get("tag_name", "No tag provided"),
+            "prerelease": release.get("prerelease", False),
+            "assets": []
+        }
+        assets = release.get("assets", [])
+        for asset in assets:
+            download_url = asset.get("browser_download_url")
+            if download_url:
+                release_info["assets"].append(download_url)
+
+        structured_releases["releases"].append(release_info)
+    return structured_releases
+
 
 def read_last_significant_line(path):
     """
@@ -101,7 +129,11 @@ def get_check_data(path="update.json"):
 
     return calculated_hash, expected_hash, signature
 
-def validate_signature(hash_bytes, signature) -> bool:
+def validate_signature():
+    hash_bytes, expected_hash, signature = get_check_data("update.json")
+    if hash_bytes != expected_hash:
+        raise Exception(f"Hash mismatch - expected {expected_hash}, got {hash_bytes}")
+    
     from rsa.key import PublicKey
     from rsa.pkcs1 import verify
     from logger import logger_instance as Log
@@ -113,40 +145,7 @@ def validate_signature(hash_bytes, signature) -> bool:
     
     result = verify(hash_bytes, signature, pub_key)
     if result != 'SHA-256':
-        return False
-    return True
-
-def check_for_updates():
-    from urequests import get
-    response = get(
-        url="https://api.github.com/repos/warped-pinball/vector/releases",
-        headers={
-            "User-Agent": "MicroPython-Device",
-            "Accept": "application/vnd.github.v3+json"
-        }
-    )
-    if response.status_code == 200:
-        releases_data = response.json()
-        response.close()
-    else:
-        raise Exception(f"Failed to fetch releases: {response.status_code}")
-
-    structured_releases = {"releases": []}
-    for release in releases_data:
-        release_info = {
-            "name": release.get("name", "No name provided"),
-            "tag": release.get("tag_name", "No tag provided"),
-            "prerelease": release.get("prerelease", False),
-            "assets": []
-        }
-        assets = release.get("assets", [])
-        for asset in assets:
-            download_url = asset.get("browser_download_url")
-            if download_url:
-                release_info["assets"].append(download_url)
-
-        structured_releases["releases"].append(release_info)
-    return structured_releases
+        raise Exception(f"Signature invalid! {result}")
 
 def download_update(url):
     from urequests import get
@@ -172,6 +171,45 @@ def download_update(url):
     response.close()
     print("Update downloaded")
 
+def validate_compatibility():
+    from json import load as json_load
+
+    # Check if the update is compatible with the current firmware
+    with open("update.json", "r") as f:
+        data = json_load(f.readline())
+
+    # update file format
+    supported_update_file_formats = ["1.0"]
+    incoming_update_file_format = data.get("update_file_format", "")
+    if not incoming_update_file_format in supported_update_file_formats:
+        raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
+    
+    # warped pinball version
+    from SharedState import WarpedVersion
+    if WarpedVersion not in data.get("supported_software_versions", []):
+        raise Exception(f"Version {WarpedVersion} not in supported versions: {data.get('supported_software_versions')}")
+    
+    # micopython version
+    from sys import implementation
+    mp_version = ".".join([str(e) for e in implementation.version])
+    if mp_version not in data.get("micropython_versions", []):
+        raise Exception(f"MicroPython version {mp_version} not in supported versions: {data.get('micropython_versions')}")
+
+    # hardware version
+    hardware = "Unknown"
+    try:
+        if implementation._machine == 'Raspberry Pi Pico W with RP2040':
+            hardware = "vector_v4"
+    except Exception as e:
+        pass
+    #TODO implement flash chip check
+    has_sflash = True
+    if has_sflash:
+        hardware = "vector_v5"
+
+    if not hardware in data.get("supported_hardware", []):
+        raise Exception(f"Hardware ({hardware}) not in supported hardware list: {data.get('supported_hardware')}")
+
 def apply_update(url):
     from logger import logger_instance as Log
     from gc import collect as gc_collect
@@ -180,23 +218,98 @@ def apply_update(url):
     download_update(url)
     gc_collect()
 
-    # get_check_data -> (calculated_hash, expected_hash, signature)
-    Log.log("Getting check data")
-    calculated_hash, expected_hash, signature = get_check_data("update.json")
-    if calculated_hash != expected_hash:
-        Log.log(f"Hash mismatch - expected {expected_hash}, got {calculated_hash}")
-        return
+    Log.log("Validating update")
+    validate_signature()
+    gc_collect()
+    
+    Log.log("Checking compatibility")
+    validate_compatibility()
+    gc_collect()
+    
 
-    Log.log("Validating signature")
-    if not validate_signature(calculated_hash, signature):
-        Log.log("Signature invalid!")
-        return
+    Log.log("Copying files")
+    copy_files()
+    
 
-    # If we reach here, signature is valid and hash matches
-    Log.log("Signature verified, applying update...")
+def copy_files():
+    from json import loads as json_loads
+    from os import remove
+    from binascii import a2b_base64
 
-    # ... do stuff: parse lines, create files, run code, etc. ...
-    # e.g. read "update.json" lines except the last line
-    # or follow your existing approach for each line
-    # once done, maybe reboot or exit
-    Log.log("Update applied successfully.")
+    last_line_len = len(read_last_significant_line("update.json"))
+    with open("update.json", "rb") as f:
+        f.seek(0, 2)
+        end_of_content = f.tell() - last_line_len - 1
+        
+
+    # remove_extra_files.py{"checksum":"04D9","bytes":1827,"log":"Removing extra files","execute":true}aW1wb3J0IG9zCgpr
+    with open("update.json", "r") as f:
+        # Skip the first line (metadata)
+        f.readline()
+
+        # loop until we reach the end of the files section
+        while f.tell() < end_of_content:
+            # read character by character to the first { to get the path
+            path = ""
+            while True:
+                c = f.read(1)
+                if c == "{":
+                    break
+                path += c
+            
+            # read in json until the end of the object
+            json_str = c
+            while True:
+                c = f.read(1)
+                json_str += c
+                if c == "}":
+                    break
+            metadata = json_loads(json_str)
+
+            # TODO skip on matched checksum
+
+            # delete the original file if it exists
+            try:
+                remove(path)
+            except OSError:
+                pass
+
+            with open(path, "wb") as out_f:
+                while chars_remaining > 0:
+                    chunk = f.readline(1024)
+                    out_f.write(a2b_base64(chunk))
+                    # if the last character is a newline, we're done
+                    if chunk[-1] == "\n":
+                        break
+                    chars_remaining -= len(chunk)
+
+            # if execute is true, run the file
+            if metadata.get("execute", False):
+                try:
+                    #  build what the import statement would look like
+                    module_path = path.replace("/", ".").replace(".py", "")
+                    if module_path.startswith("."):
+                        module_path = module_path[1:]
+                    imported_module = __import__(module_path)
+
+                    # if the module has a main function, execute it
+                    if hasattr(imported_module, "main"):
+                        imported_module.main()
+
+                    try:
+                        from os import remove
+                        remove(path) # execute once then remove
+                    except OSError:
+                        pass # if the file doesn't exist, that's fine
+                except Exception as e:
+                    #TODO should we make an option to indiacte if we should continue or not on error?
+                    raise Exception(f"Failed to execute {path}: {e}")
+
+
+                
+                
+                
+                
+            
+
+            
