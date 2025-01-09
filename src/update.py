@@ -63,48 +63,52 @@ def check_for_updates():
     else:
         raise Exception(f"Failed to fetch releases: {response.status_code}")
 
-    structured_releases = {"releases": []}
+    from SharedState import WarpedVersion
+    current_version_obj = Version.from_str(WarpedVersion)
+    output = {
+        "current": str(current_version_obj),
+        "reccomended": str(current_version_obj),
+        "releases": {}
+    }
+
+    # Parse all releases
+    parsed_releases = []
     for release in releases_data:
         try:
-            release_info = {
+            ver = Version.from_str(release.get("tag_name"))
+            parsed_releases.append({
                 "name": release.get("name", "No name provided"),
-                "tag": Version.from_str(release.get("tag_name")),
+                "tag": ver,
                 "prerelease": release.get("prerelease", False),
-                "assets": []
-            }
-            assets = release.get("assets", [])
-            for asset in assets:
-                download_url = asset.get("browser_download_url")
-                if download_url:
-                    release_info["assets"].append(download_url)
-
-            structured_releases["releases"].append(release_info)
+                "update-url": [asset["browser_download_url"] for asset in release.get("assets", []) if asset.get("name") == "update.json"],
+                "release-url": release.get("html_url")
+            })
         except Exception as e:
-            # likely a version parsing error
             print(f"Failed to parse release: {e}")
-    
-    # sort by highest to lowest version
-    structured_releases["releases"].sort(key=lambda x: x["tag"], reverse=True)
-    
-    # get the current version
-    from SharedState import WarpedVersion
-    current_version = Version.from_str(WarpedVersion)
 
-    # flag all that are of a higher version than the current version
-    for release in structured_releases["releases"]:
-        release["newer"] = release["tag"] > current_version
-        release["current"] = release["tag"] == current_version
-        # if it's a prerelease, we should only show it if it's the current version
-        if release["prerelease"] and not release["current"]:
-            release["newer"] = False
+    # filter assets to just the update.json file 
 
-    # flag reccomended version (non prerelease, highest version)
-    for release in structured_releases["releases"]:
-        if not release["prerelease"]:
-            release["reccomended"] = True
+
+    # Sort by highest to lowest version
+    parsed_releases.sort(key=lambda x: x["tag"], reverse=True)
+
+    # Fill output structure
+    for release in parsed_releases:
+        tag_str = str(release["tag"])
+        output["releases"][tag_str] = {
+            "name": release["name"],
+            "prerelease": release["prerelease"],
+            "update-url": release["update-url"],
+            "release-url": release["release-url"]
+        }
+
+    # Determine recommended (first stable release in descending order with an asset)
+    for release in parsed_releases:
+        if not release["prerelease"] and release["update-url"]:
+            output["reccomended"] = str(release["tag"])
             break
 
-    return structured_releases
+    return output
 
 
 def read_last_significant_line(path):

@@ -212,3 +212,48 @@ window.downloadScores = async function () {
 // 
 // Updates
 // 
+
+async function checkForUpdates() {
+	const response = await window.smartFetch('/api/update/check', null, false);
+	const data = await response.json();
+
+	if (data['current'] === data['reccomended']) {
+		// no update available
+		const updateButton = document.getElementById('update-button');
+		updateButton.style.backgroundColor = '#8e8e8e';
+		updateButton.style.borderColor = '#8e8e8e';
+		updateButton.textContent = 'Up to date';
+		updateButton.disabled = true;
+	} else {
+		// update available
+		const updateButton = document.getElementById('update-button');
+		updateButton.style.backgroundColor = '#e8b85a';
+		updateButton.style.borderColor = '#e8b85a';
+		updateButton.textContent = `Update to ${data['reccomended']}`;
+
+		updateButton.addEventListener('click', async () => {
+			const response = await window.smartFetch('/api/update/apply', {'url':data['update-url']}, true);
+			if (response.status !== 200) {
+				console.error('Failed to apply update:', response.status);
+				alert('Failed to apply update.');
+			}
+		});
+	}
+
+
+
+
+
+
+
+
+// if update is available:
+// make admin page link gold: #e8b85a
+// color and text-decoration-color
+
+// color update button gold
+// background & border-color: #e8b85a
+
+// Install version 0.3.1 text on button
+
+// button link to release notes / github
