@@ -214,46 +214,54 @@ window.downloadScores = async function () {
 // 
 
 async function checkForUpdates() {
+	
+	// wait 3 seconds before checking for updates
+	// this lets us prioritize loading the page and settings
+	await new Promise(resolve => setTimeout(resolve, 3000));
+	
 	const response = await window.smartFetch('/api/update/check', null, false);
 	const data = await response.json();
-
+	const updateButton = document.getElementById('update-button');
+	
 	if (data['current'] === data['reccomended']) {
-		// no update available
-		const updateButton = document.getElementById('update-button');
+		// no update available	
 		updateButton.style.backgroundColor = '#8e8e8e';
 		updateButton.style.borderColor = '#8e8e8e';
 		updateButton.textContent = 'Up to date';
 		updateButton.disabled = true;
+
+		// try to link to current release notes data[data['current']]['release-url']
+		const releaseNotes = document.getElementById('release-notes');
+		try {
+			releaseNotes.href = data['releases'][data['current']]['release-url'];
+			releaseNotes.textContent = 'Release Notes for ' + data['current'];
+		} catch (e) {
+			releaseNotes.classList.add('hide');
+		}
+		
 	} else {
 		// update available
-		const updateButton = document.getElementById('update-button');
+		updateButton.disabled = false;
 		updateButton.style.backgroundColor = '#e8b85a';
 		updateButton.style.borderColor = '#e8b85a';
 		updateButton.textContent = `Update to ${data['reccomended']}`;
 
+		// link to release notes in text
+		const releaseNotes = document.getElementById('release-notes');
+		releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
+		releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
+
 		updateButton.addEventListener('click', async () => {
-			const response = await window.smartFetch('/api/update/apply', {'url':data['update-url']}, true);
+			req_data = {
+				'url':data['releases'][data['reccomended']]['update-url']
+			};
+			const response = await window.smartFetch('/api/update/apply', req_data, true);
 			if (response.status !== 200) {
 				console.error('Failed to apply update:', response.status);
 				alert('Failed to apply update.');
 			}
 		});
 	}
+}
 
-
-
-
-
-
-
-
-// if update is available:
-// make admin page link gold: #e8b85a
-// color and text-decoration-color
-
-// color update button gold
-// background & border-color: #e8b85a
-
-// Install version 0.3.1 text on button
-
-// button link to release notes / github
+checkForUpdates();

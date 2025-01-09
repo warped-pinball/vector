@@ -76,13 +76,21 @@ def check_for_updates():
     for release in releases_data:
         try:
             ver = Version.from_str(release.get("tag_name"))
-            parsed_releases.append({
+            parsed_release = {
                 "name": release.get("name", "No name provided"),
                 "tag": ver,
                 "prerelease": release.get("prerelease", False),
-                "update-url": [asset["browser_download_url"] for asset in release.get("assets", []) if asset.get("name") == "update.json"],
+                "update-url": None,
                 "release-url": release.get("html_url")
-            })
+            }
+
+            # get the update.json file
+            for asset in release.get("assets", []):
+                if asset.get("name") == "update.json":
+                    parsed_release["update-url"] = asset["browser_download_url"]
+                    break
+
+            parsed_releases.append(parsed_release)
         except Exception as e:
             print(f"Failed to parse release: {e}")
 
