@@ -252,6 +252,7 @@ async function checkForUpdates() {
 		releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
 
 		updateButton.addEventListener('click', async () => {
+			// TODO confirm action
 			req_data = {
 				'url':data['releases'][data['reccomended']]['update-url']
 			};
