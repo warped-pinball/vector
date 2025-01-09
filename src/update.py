@@ -172,28 +172,29 @@ def download_update(url):
     print("Update downloaded")
 
 def validate_compatibility():
-    from json import load as json_load
+    from json import loads as json_loads
 
     # Check if the update is compatible with the current firmware
     with open("update.json", "r") as f:
-        data = json_load(f.readline())
+        metadata = f.readline()
+        metadata = json_loads(metadata)
 
     # update file format
     supported_update_file_formats = ["1.0"]
-    incoming_update_file_format = data.get("update_file_format", "")
+    incoming_update_file_format = metadata.get("update_file_format", "")
     if not incoming_update_file_format in supported_update_file_formats:
         raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
     
     # warped pinball version
     from SharedState import WarpedVersion
-    if WarpedVersion not in data.get("supported_software_versions", []):
-        raise Exception(f"Version {WarpedVersion} not in supported versions: {data.get('supported_software_versions')}")
+    if WarpedVersion not in metadata.get("supported_software_versions", []):
+        raise Exception(f"Version {WarpedVersion} not in supported versions: {metadata.get('supported_software_versions')}")
     
     # micopython version
     from sys import implementation
     mp_version = ".".join([str(e) for e in implementation.version])
-    if mp_version not in data.get("micropython_versions", []):
-        raise Exception(f"MicroPython version {mp_version} not in supported versions: {data.get('micropython_versions')}")
+    if mp_version not in metadata.get("micropython_versions", []):
+        raise Exception(f"MicroPython version {mp_version} not in supported versions: {metadata.get('micropython_versions')}")
 
     # hardware version
     hardware = "Unknown"
@@ -207,8 +208,8 @@ def validate_compatibility():
     if has_sflash:
         hardware = "vector_v5"
 
-    if not hardware in data.get("supported_hardware", []):
-        raise Exception(f"Hardware ({hardware}) not in supported hardware list: {data.get('supported_hardware')}")
+    if not hardware in metadata.get("supported_hardware", []):
+        raise Exception(f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}")
 
 def apply_update(url):
     from logger import logger_instance as Log
@@ -222,21 +223,45 @@ def apply_update(url):
     validate_signature()
     gc_collect()
     
-    Log.log("Checking compatibility")
+    Log.log("Validating compatibility")
     validate_compatibility()
     gc_collect()
     
 
     Log.log("Copying files")
-    copy_files()
+    write_files()
+
+
+def crc16_of_file(path: str) -> str:
+    def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
+        for byte in data:
+            crc ^= (byte << 8)
+            for _ in range(8):
+                if crc & 0x8000:
+                    crc = (crc << 1) ^ 0x1021
+                else:
+                    crc <<= 1
+                crc &= 0xFFFF
+        return crc
+
+    crc = 0xFFFF
+    with open(path, "rb") as file:
+        while True:
+            chunk = file.read(1024)
+            if not chunk:
+                break
+            crc = crc16_ccitt(chunk, crc)
+
+    return f"{crc:04X}"
     
 
-def copy_files():
+def write_files():
     from json import loads as json_loads
     from os import remove
     from binascii import a2b_base64
 
     last_line_len = len(read_last_significant_line("update.json"))
+    end_of_content = 0
     with open("update.json", "rb") as f:
         f.seek(0, 2)
         end_of_content = f.tell() - last_line_len - 1
@@ -266,22 +291,39 @@ def copy_files():
                     break
             metadata = json_loads(json_str)
 
-            # TODO skip on matched checksum
-
+            try:
+                # get the check
+                current_crc16 = crc16_of_file(path)
+                if current_crc16 == metadata.get("checksum", ""):
+                    print(f"Skipping {path} - checksums match")
+                    # skip in f until the next newline which will be the start of the next file
+                    while True:
+                        c = f.readline(1024)
+                        if c[-1] == "\n":
+                            break
+                    break
+            except Exception as e:
+                # we want to skip if we can
+                # but if there are any errors, we should just copy the file
+                pass
+            
             # delete the original file if it exists
             try:
                 remove(path)
             except OSError:
                 pass
-
+            
+            print(f"Writing {path}")
             with open(path, "wb") as out_f:
-                while chars_remaining > 0:
+                while True:
                     chunk = f.readline(1024)
-                    out_f.write(a2b_base64(chunk))
                     # if the last character is a newline, we're done
                     if chunk[-1] == "\n":
+                        out_f.write(a2b_base64(chunk[:-1]))
                         break
-                    chars_remaining -= len(chunk)
+                    else:
+                        out_f.write(a2b_base64(chunk))
+                    
 
             # if execute is true, run the file
             if metadata.get("execute", False):
