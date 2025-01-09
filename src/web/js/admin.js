@@ -224,6 +224,9 @@ async function checkForUpdates() {
 	const updateButton = document.getElementById('update-button');
 	
 	if (data['current'] === data['reccomended']) {
+		
+		// TODO when no update allow the user to input their own url to download the update
+		
 		// no update available	
 		updateButton.style.backgroundColor = '#8e8e8e';
 		updateButton.style.borderColor = '#8e8e8e';
