@@ -119,7 +119,37 @@ def ascii_to_type3(c):
   
 #write four highest scores from storage to machine memory    
 def placeMachineScores():
-   return 0
+    global top_scores
+    print("SCORE: Place Machine Scores")
+
+    #only for system 11.!
+    if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
+
+        for index in range(4):    
+            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4      
+            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3  
+            try:
+                scoreBCD = int_to_bcd(top_scores[index]['score'])
+            except:
+                print("score convert problem")
+                scoreBCD = int_to_bcd(100)   
+
+            for i in range(S.gdata["HighScores"]["BytesInScore"]):
+                shadowRam[score_start + i] = scoreBCD[i]                      
+            try:
+                print("  top scores: ",top_scores[index])     
+                initials = top_scores[index]["initials"]
+                for i in range(3):
+                    if S.gdata["HighScores"]["Type"] == 1:
+                        shadowRam[initial_start + i] = ord(initials[i])
+                    elif S.gdata["HighScores"]["Type"] == 3:
+                        shadowRam[initial_start + i] = ascii_to_type3(ord(initials[i]))
+
+            except:
+                print("place machine scores eception")
+                shadowRam[initial_start]=64
+                shadowRam[initial_start+1]=64
+                shadowRam[initial_start+2]=64
     
    
 #remove machine scores - replace with high #s
