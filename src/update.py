@@ -1,3 +1,53 @@
+class Version():
+    def __init__(self, major:int, minor:int, patch:int, candidate=None):
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.candidate = candidate
+
+    def __str__(self):
+        if self.candidate:
+            return f"{self.major}.{self.minor}.{self.patch}-{self.candidate}"
+        return f"{self.major}.{self.minor}.{self.patch}"
+    
+    def __repr__(self):
+        return '"' + self.__str__() + '"'
+
+    def __gt__(self, other):
+        if self.major > other.major:
+            return True
+        if self.minor > other.minor:
+            return True
+        if self.patch > other.patch:
+            return True
+        if not self.candidate and other.candidate:
+            return True
+        return False
+
+    def __lt__(self, other):
+        return not self.__gt__(other) and self != other
+
+    def __eq__(self, other):
+        return (
+            self.major == other.major 
+            and self.minor == other.minor 
+            and self.patch == other.patch 
+            and self.candidate == other.candidate
+        )
+
+    @staticmethod
+    def from_str(version_str):
+        parts = version_str.split(".")
+        if len(parts) != 3:
+            raise ValueError("Version string must have 3 parts")
+        if "-" in parts[2]:
+            parts[2], candidate = parts[2].split("-")
+        else:
+            candidate = None
+        return Version(int(parts[0]), int(parts[1]), int(parts[2]), candidate=candidate)
+
+
+
 def check_for_updates():
     from urequests import get
     response = get(
@@ -15,19 +65,45 @@ def check_for_updates():
 
     structured_releases = {"releases": []}
     for release in releases_data:
-        release_info = {
-            "name": release.get("name", "No name provided"),
-            "tag": release.get("tag_name", "No tag provided"),
-            "prerelease": release.get("prerelease", False),
-            "assets": []
-        }
-        assets = release.get("assets", [])
-        for asset in assets:
-            download_url = asset.get("browser_download_url")
-            if download_url:
-                release_info["assets"].append(download_url)
+        try:
+            release_info = {
+                "name": release.get("name", "No name provided"),
+                "tag": Version.from_str(release.get("tag_name")),
+                "prerelease": release.get("prerelease", False),
+                "assets": []
+            }
+            assets = release.get("assets", [])
+            for asset in assets:
+                download_url = asset.get("browser_download_url")
+                if download_url:
+                    release_info["assets"].append(download_url)
 
-        structured_releases["releases"].append(release_info)
+            structured_releases["releases"].append(release_info)
+        except Exception as e:
+            # likely a version parsing error
+            print(f"Failed to parse release: {e}")
+    
+    # sort by highest to lowest version
+    structured_releases["releases"].sort(key=lambda x: x["tag"], reverse=True)
+    
+    # get the current version
+    from SharedState import WarpedVersion
+    current_version = Version.from_str(WarpedVersion)
+
+    # flag all that are of a higher version than the current version
+    for release in structured_releases["releases"]:
+        release["newer"] = release["tag"] > current_version
+        release["current"] = release["tag"] == current_version
+        # if it's a prerelease, we should only show it if it's the current version
+        if release["prerelease"] and not release["current"]:
+            release["newer"] = False
+
+    # flag reccomended version (non prerelease, highest version)
+    for release in structured_releases["releases"]:
+        if not release["prerelease"]:
+            release["reccomended"] = True
+            break
+
     return structured_releases
 
 
@@ -282,6 +358,10 @@ def write_files():
                     break
                 path += c
             
+            # if path doesn't start with a / add it
+            if not path.startswith("/"):
+                path = "/" + path
+
             # read in json until the end of the object
             json_str = c
             while True:

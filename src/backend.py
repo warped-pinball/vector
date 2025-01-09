@@ -646,69 +646,8 @@ def app_file_index(request):
         file_checksums[file] = file_base64_crc16s(file, chunk_size)
     return json_dumps(file_checksums), 200
 
-# @add_route("/api/update/file_part", method="POST", auth=True, single_instance=True)
-# def app_upload_file(request):
-#     from FileIO import set_file_size, file_base64_crc16s
-#     from ubinascii import a2b_base64
-#     path = request.data['path']
-#     if not path.startswith("/"):
-#         path = "/" + path
-#     part = request.data.get("part", 1)
-#     expected_checksum = request.data.get("checksum", None)
-#     chunk_size = request.data.get("chunk_size", 1024)
-#     contents = a2b_base64(request.data['data'])
-#     start_byte = (part - 1) * chunk_size
-#     # end_byte = start_byte + len(contents)
-#     final_bytes = request.data.get("final_bytes", 0)
-#     execute = request.data.get("execute", False)
 
-#     print("setting file size")
-#     # ensure file is of correct size
-#     set_file_size(path, final_bytes, start_byte)
-    
-#     print('writing to file')
-#     # write the contents to the file
-#     with open(path, 'r+b') as f:
-#         f.seek(start_byte)
-#         f.write(contents)
-    
-#     print('calculating checksum')
-#     # calculate the checksum of the file
-#     actual_checksums = file_base64_crc16s(path, chunk_size)
-#     actual_checksum = actual_checksums[part - 1]
-#     if actual_checksum != expected_checksum:
-#         #TODO some sort of roll back option?
-#         print(f"Checksums do not match: {actual_checksum} != {expected_checksum}")
-#         print(actual_checksums)
-#         return f"Checksums do not match: {actual_checksum} != {expected_checksum}; part {part}", 500
-
-#     print('optinally executing file')
-#     # if execute is set to true, execute the file
-#     if execute:
-#         try:
-#             # build what the import statement would look like
-#             module_path = path.replace("/", ".").replace(".py", "")
-#             if module_path.startswith("."):
-#                 module_path = module_path[1:]
-#             imported_module = __import__(module_path)
-
-#             # if the module has a main function, execute it
-#             if hasattr(imported_module, "main"):
-#                 imported_module.main()
-
-#             try:
-#                 from os import remove
-#                 remove(path) # execute once then remove
-#             except Exception as e:
-#                 pass # file probably cleaned itself up. if not; whatever
-#         except Exception as e:
-#             return f"Error executing file: {e}", 500
-
-#     return actual_checksum, 200
-    
-
-
-@add_route("/api/update/list_available")
+@add_route("/api/update/check")
 def app_updates_available(request):
     from update import check_for_updates
     print('checking for updates')
