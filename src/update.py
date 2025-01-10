@@ -9,19 +9,33 @@ class Version():
         if self.candidate:
             return f"{self.major}.{self.minor}.{self.patch}-{self.candidate}"
         return f"{self.major}.{self.minor}.{self.patch}"
-    
+
     def __repr__(self):
         return '"' + self.__str__() + '"'
 
     def __gt__(self, other):
+        # Compare major first
         if self.major > other.major:
             return True
+        elif self.major < other.major:
+            return False
+
+        # Same major, compare minor
         if self.minor > other.minor:
             return True
+        elif self.minor < other.minor:
+            return False
+
+        # Same minor, compare patch
         if self.patch > other.patch:
             return True
+        elif self.patch < other.patch:
+            return False
+        
+        # If self has no candidate but other does, self is "greater"
         if not self.candidate and other.candidate:
             return True
+        
         return False
 
     def __lt__(self, other):
@@ -29,22 +43,27 @@ class Version():
 
     def __eq__(self, other):
         return (
-            self.major == other.major 
-            and self.minor == other.minor 
-            and self.patch == other.patch 
+            self.major == other.major
+            and self.minor == other.minor
+            and self.patch == other.patch
             and self.candidate == other.candidate
         )
 
     @staticmethod
     def from_str(version_str):
+        """Parses 'major.minor.patch' or 'major.minor.patch-candidate' format."""
         parts = version_str.split(".")
         if len(parts) != 3:
-            raise ValueError("Version string must have 3 parts")
-        if "-" in parts[2]:
-            parts[2], candidate = parts[2].split("-")
-        else:
-            candidate = None
-        return Version(int(parts[0]), int(parts[1]), int(parts[2]), candidate=candidate)
+            raise ValueError("Version string must have 3 dot-separated parts, e.g. '1.2.3' or '1.2.3-dev'")
+        patch_part = parts[2]
+        candidate = None
+        if "-" in patch_part:
+            patch_part, candidate = patch_part.split("-", 1)
+        major = int(parts[0])
+        minor = int(parts[1])
+        patch = int(patch_part)
+        return Version(major, minor, patch, candidate=candidate)
+
 
 
 
