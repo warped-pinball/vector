@@ -73,7 +73,7 @@ jobs:
               --build-dir build \
               --output update.json \
               --version $VERSION \
-              --private-key private_key.pem \
+              --private-key private_key.pem
           else
             python dev/build_update.py \
               --build-dir build \
