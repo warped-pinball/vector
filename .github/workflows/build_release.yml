@@ -11,7 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
 
@@ -69,7 +68,7 @@ jobs:
 
       - name: Generate update.json
         run: |
-          if [ -f "private_key.pem" ] && [ -f "public_key.pem" ]; then
+          if [ -f "private_key.pem" ]; then
             python dev/build_update.py \
               --build-dir build \
               --output update.json \
@@ -82,28 +81,31 @@ jobs:
               --version $VERSION
           fi
 
-      # Create (or update) exactly ONE Pre-Release for this PR
-      # with the same tag "pr-NUMBER" every time. This avoids multiple releases.
+      - name: Debug: list files
+        run: |
+          echo "Listing files in the current directory:"
+          ls -lah
+          echo "Listing files in build directory:"
+          ls -lah build || echo "No 'build' directory"
+          cat update.json || echo "No update.json in the root directory"
+
       - name: Create or Update Pre-Release for Pull Request
         if: ${{ github.event_name == 'pull_request' }}
         uses: softprops/action-gh-release@v2
         with:
-          # Tag name stays the same for the life of the PR
           tag_name: "pr-${{ github.event.pull_request.number }}"
-          # Include version or branch in the name if you'd like
-          release_name: "PR #${{ github.event.pull_request.number }} [${{ github.event.pull_request.head.ref }}] - ${{ steps.build_env.outputs.VERSION }}"
+          name: "PR #${{ github.event.pull_request.number }} [${{ github.event.pull_request.head.ref }}] - ${{ steps.build_env.outputs.VERSION }}"
           body: |
             PR: ${{ github.event.pull_request.html_url }}
             Branch: ${{ github.event.pull_request.head.ref }}
             Version: ${{ steps.build_env.outputs.VERSION }}
-
           prerelease: true
-          overwrite: true
           files: "update.json"
+          fail_on_unmatched_files: false
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Create a release only on "release" events (i.e. published release).
       - name: Upload artifact to GitHub Release
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'release' }}
