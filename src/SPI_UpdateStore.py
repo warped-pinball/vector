@@ -32,31 +32,36 @@ Log = logger_instance
 
 #Serial Flash usage 
 SFLASH_PRG_START = 0x0010000
-SFLASH_PRG_SIZE  = 0x0600000   #6Mbyte
+SFLASH_PRG_SIZE  = 0x0200000   #2Mbyte
 SFLASH_ERASE_SECTOR_SIZE = 0x010000  #64k
-SFLASH_NUM_PGMS  = 3
+SFLASH_NUM_PGMS  = 5
 '''
 total SFLASH part is 32M byte:
-Three blocks of 6M byte each used in this module (could be expanded to more)
-    0x0010000-0x0610000  sflash protect= 1-96
-    0x0610000-0x0C10000  sflash protect= 97-192
-    0x0C10000-0x1210000  sflash protect= 193-288    
+Five Blocks of Mbyte each used in this module (could be expanded to more)
+    0x0010000-0x0210000  sflash protect= 1-32
+    0x0210000-0x0410000  sflash protect= 33-64
+    0x0410000-0x0610000  sflash protect= 65-96
+    0x0610000-0x0810000  sflash protect= 97-128
+    0x0810000-0x0A10000  sflash protect= 129-160
 '''
 
 #status of state machines stuff in FRAM
 FRAM_ADDRESS = 0x2000
 FRAM_LENGTH  = 0x0FF     #reserved (256 bytes)
-FRAM_BYTES_USED = 120
+FRAM_BYTES_USED = 210
 
 # each section has a status descriptor in FRAM:
 SECTION_STATUS_DESC = {
     "state": (uctypes.UINT32 | 0),              # 4 bytes (section status types below)
     "version_major": (uctypes.UINT8 | 4),       #0-99, byte
     "version_middle": (uctypes.UINT8 | 5),      #0-99, byte
-    "version_minor": (uctypes.UINT8 | 6),       #0-99, byte
+    "version_minor": (uctypes.UINT8 | 6),       #0-99, byte    
     "erase_pointer": (uctypes.UINT8 | 7),       # 1 byte (block number)
     "read_pointer": (uctypes.UINT32 | 8),       #32 bit address
-    "write_pointer": (uctypes.UINT32 | 12)      #32 bit address   (offset 12,13,14,15)
+    "write_pointer": (uctypes.UINT32 | 12),     #32 bit address   (offset 12,13,14,15)
+    "description": (uctypes.ARRAY | 16, uctypes.UINT8 | 20),  # string of length 20  (16-36)
+    "dev_version_flag": (uctypes.UINT8 | 36),   # 1 byte (0=dev version, 1=production version)
+    "reserved": (uctypes.ARRAY | 37, uctypes.UINT8 | 3)  # reserved for future use
 }
 
 #section state types
@@ -68,13 +73,13 @@ BLOCK_STATUS_READING = 5
 BLOCK_STATUS_VALID = {BLOCK_STATUS_FULL, BLOCK_STATUS_EMPTY, BLOCK_STATUS_ERASING, BLOCK_STATUS_FILLING, BLOCK_STATUS_READING}
 
 #overall data structure in FRAM
-BLOCK_STATUS_OFFSETS = [16, 48, 80]  #80-112
-DATA_STRUCTURE_DESC = {
-    "state_reserve": uctypes.UINT32 | 0,          # 4 bytes reserved, not used
-    "progr_reserve": uctypes.UINT32 | 4,          # 4 bytes reserved, not used
+BLOCK_STATUS_OFFSETS = [0, 40, 80, 120, 160]  
+DATA_STRUCTURE_DESC = {   
     "block_status_0": (BLOCK_STATUS_OFFSETS[0], SECTION_STATUS_DESC),  
     "block_status_1": (BLOCK_STATUS_OFFSETS[1], SECTION_STATUS_DESC), 
-    "block_status_2": (BLOCK_STATUS_OFFSETS[2], SECTION_STATUS_DESC)   
+    "block_status_2": (BLOCK_STATUS_OFFSETS[2], SECTION_STATUS_DESC),
+    "block_status_3": (BLOCK_STATUS_OFFSETS[3], SECTION_STATUS_DESC),   
+    "block_status_4": (BLOCK_STATUS_OFFSETS[4], SECTION_STATUS_DESC)   
 }
 
 data_buffer = bytearray(FRAM_BYTES_USED)  
@@ -285,7 +290,7 @@ def read_generator(chunk_size_bytes=1000,readNewest=True):
     dblk.state = BLOCK_STATUS_FULL   
 
 
-def write_consumer(version,):
+def write_consumer(version):
     """
     A generator *consumer* that waits for data chunks sent via `.send(chunk)`,
     writes them to the SPI flash, and stops when `None` is sent.
@@ -298,6 +303,7 @@ def write_consumer(version,):
         print("Can't write: erasing in progress.")
         return "fault busy"
 
+    
     blk_num = _find_empty_block()
     if blk_num is None:
         return "fault - no block"
@@ -305,13 +311,26 @@ def write_consumer(version,):
     dblk = _get_block_status(data, blk_num)
     dblk.state = BLOCK_STATUS_FILLING
     dblk.write_pointer = 0
-
+    
     # Decompose version string into three ints xx, yy, and zz
     try:
-        dblk.version_major, dblk.version_middle, dblk.version_minor = map(int, version.split('.'))
+        print(version)
+        # Find the first non-numeric or non-decimal point character
+        for i, char in enumerate(version):
+            if not (char.isdigit() or char == '.'):
+                version = version[:i]
+                break
+        print(version)
+        version_numbers = version.split('.')[0:3]
+        print(version_numbers)
+        # Extract only the numeric part from each version component
+        version_numbers = [int(''.join(filter(str.isdigit, v))) for v in version_numbers]
+        print(version_numbers)
+        dblk.version_major, dblk.version_middle, dblk.version_minor = version_numbers
+        print(dblk.version_major, dblk.version_middle, dblk.version_minor)
     except ValueError:
         print("Invalid version format. Expected 'xx.yy.zz'")
-        return "fault invalid version"       
+        return "fault invalid version"
 
     _write_status_to_fram()
 
@@ -374,7 +393,7 @@ def blank_all():
         SPI_Store.sflash_erase(SFLASH_PRG_START+SFLASH_PRG_SIZE*i,SFLASH_PRG_START+SFLASH_PRG_SIZE*(i+1),True)
 
         block_status=_get_block_status(data, i)
-        _set_block_status(block_status, BLOCK_STATUS_EMPTY, 0, 0, 0, 0, 0,0)
+        _set_block_status(block_status, BLOCK_STATUS_EMPTY, 0, 0, 0, 0, 0, 0)
         _write_status_to_fram()
         SPI_Store.sflash_protect_sectors(SFLASH_PRG_START+SFLASH_PRG_SIZE*i,SFLASH_PRG_START+SFLASH_PRG_SIZE*(i+1),"on")
     
@@ -387,10 +406,7 @@ def test():
 
     import time
 
-    def print_data_structure(data):
-        print("Main Data Structure:")
-        print("  State Reserve:", data.state_reserve)
-        print("  Progr Reserve:", data.progr_reserve)
+    def print_data_structure(data):               
         print(" Each Block:")
         _print_block_status(data.block_status_0, "Block Status 0")
         _print_block_status(data.block_status_1, "Block Status 1")
@@ -425,7 +441,7 @@ def test():
     #read test looking at data pattern
     expected_value = 0
     num_of_bytes = 0
-    if True:  #read test
+    if False:  #read test
         rgen=read_generator(25,True)        
         for d in rgen:
             print ("data read-: ",d)
@@ -439,11 +455,12 @@ def test():
  
 
 
-    if (False):  #write progrm to block
+    if (True):  #write progrm to block
+        print("start test write")
         #test_data = bytearray([(i) for i in range(9)]) 
         #test_data = bytearray([(i) for i in range(15)]) 
         test_data = bytearray([(i) for i in range(11)])
-        w=write_consumer("21.42.34")
+        w=write_consumer("21.42.34 dev 3")
         next(w)
         for i in range(1000):            
             w.send(test_data)
@@ -460,7 +477,7 @@ def test():
             tick()
             print(".",end="")
 
-        for x in range(110):
+        for x in range(40):
             tick()
             print(";",end="")
             time.sleep(1)
@@ -520,12 +537,12 @@ def test():
    
     
 if __name__ == "__main__":
-    #test()
+    test()
     #blank_all()
 
-    SPI_Store.initialize()
+    #SPI_Store.initialize()
 
-    print("blank everything")
-    SPI_Store.sflash_protect_sectors(SFLASH_PRG_START+SFLASH_PRG_SIZE , SFLASH_PRG_START+SFLASH_PRG_SIZE,"off")
-    SPI_Store.sflash_erase(0, 0xFFFF0000  ,True)
+    #print("blank everything")
+    #SPI_Store.sflash_protect_sectors(SFLASH_PRG_START+SFLASH_PRG_SIZE , SFLASH_PRG_START+SFLASH_PRG_SIZE,"off")
+    #SPI_Store.sflash_erase(0, 0xFFFF0000  ,True)
 
