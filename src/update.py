@@ -65,78 +65,112 @@ class Version():
         return Version(major, minor, patch, candidate=candidate)
 
 
+def fetch_github_releases():
+    """
+    Generator that yields *one release dict* at a time from GitHub's releases API,
+    paginating so we never load all releases at once.
+    """
+    import urequests
+
+    base_url = "https://api.github.com/repos/warped-pinball/vector/releases"
+    headers = {
+        "User-Agent": "MicroPython-Device",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    page = 1
+    per_page = 5
+
+    while True:
+        url = f"{base_url}?per_page={per_page}&page={page}"
+        resp = urequests.get(url, headers=headers)
+
+        if resp.status_code != 200:
+            # In case of error, we raise an exception or break
+            resp.close()
+            raise Exception("Failed to fetch releases (page={}): {}".format(page, resp.status_code))
+
+        data = resp.json()
+        resp.close()
+
+        # If this page is empty, we are done
+        if not data:
+            break
+
+        # yield each release in this page
+        for release in data:
+            yield release
+
+        page += 1
+
+        # If the page was smaller than per_page, we've likely reached the last page
+        if len(data) < per_page:
+            break
 
 
 def check_for_updates():
-    # TODO also find PRs with the update.json file
-    from urequests import get
-    response = get(
-        url="https://api.github.com/repos/warped-pinball/vector/releases",
-        headers={
-            "User-Agent": "MicroPython-Device",
-            "Accept": "application/vnd.github.v3+json"
-        }
-    )
-    if response.status_code == 200:
-        releases_data = response.json()
-        response.close()
-    else:
-        raise Exception(f"Failed to fetch releases: {response.status_code}")
-
     from SharedState import WarpedVersion
+
+    # Current device's version as a Version object
     current_version_obj = Version.from_str(WarpedVersion)
+
     output = {
         "current": str(current_version_obj),
         "reccomended": str(current_version_obj),
         "releases": {}
     }
 
-    # Parse all releases
+    # We'll collect all releases that parse successfully
     parsed_releases = []
-    for release in releases_data:
+
+    # Iterate over each release (page by page)
+    for release_data in fetch_github_releases():
+        tag_name = release_data.get("tag_name", "")
         try:
-            ver = Version.from_str(release.get("tag_name"))
-            parsed_release = {
-                "name": release.get("name", "No name provided"),
-                "tag": ver,
-                "prerelease": release.get("prerelease", False),
-                "update-url": None,
-                "release-url": release.get("html_url")
-            }
-
-            # get the update.json file
-            for asset in release.get("assets", []):
-                if asset.get("name") == "update.json":
-                    parsed_release["update-url"] = asset["browser_download_url"]
-                    break
-
-            parsed_releases.append(parsed_release)
+            ver = Version.from_str(tag_name)
         except Exception as e:
-            print(f"Failed to parse release: {e}")
+            # If it doesn't parse, just skip
+            print("Skipping release '{}': {}".format(tag_name, e))
+            continue
 
-    # filter assets to just the update.json file 
-
-
-    # Sort by highest to lowest version
-    parsed_releases.sort(key=lambda x: x["tag"], reverse=True)
-
-    # Fill output structure
-    for release in parsed_releases:
-        tag_str = str(release["tag"])
-        output["releases"][tag_str] = {
-            "name": release["name"],
-            "prerelease": release["prerelease"],
-            "update-url": release["update-url"],
-            "release-url": release["release-url"]
+        # Gather the relevant info
+        release_info = {
+            "name": release_data.get("name", "No name provided"),
+            "tag": ver,
+            "prerelease": release_data.get("prerelease", False),
+            "update-url": None,
+            "release-url": release_data.get("html_url")
         }
 
-    # Determine recommended (first stable release in descending order with an asset)
-    for release in parsed_releases:
-        if not release["prerelease"] and release["update-url"]:
-            output["reccomended"] = str(release["tag"])
+        # Find the update.json asset
+        assets = release_data.get("assets", [])
+        for asset in assets:
+            if asset.get("name") == "update.json":
+                release_info["update-url"] = asset["browser_download_url"]
+                break
+        
+        parsed_releases.append(release_info)
+
+    # Now that we have them all, sort by version descending
+    parsed_releases.sort(key=lambda x: x["tag"], reverse=True)
+
+    # Build the 'releases' sub-dict
+    for r in parsed_releases:
+        tag_str = str(r["tag"])
+        output["releases"][tag_str] = {
+            "name": r["name"],
+            "prerelease": r["prerelease"],
+            "update-url": r["update-url"],
+            "release-url": r["release-url"]
+        }
+
+    # Choose recommended: first stable release (not prerelease) with update.json
+    for r in parsed_releases:
+        if not r["prerelease"] and r["update-url"]:
+            output["reccomended"] = str(r["tag"])
             break
 
     return output
+
 
 
 def read_last_significant_line(path):
