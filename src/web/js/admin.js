@@ -256,16 +256,35 @@ async function checkForUpdates() {
 
 		updateButton.addEventListener('click', async () => {
 			// TODO confirm action
-			req_data = {
-				'url':data['releases'][data['reccomended']]['update-url']
-			};
-			const response = await window.smartFetch('/api/update/apply', req_data, true);
-			if (response.status !== 200) {
-				console.error('Failed to apply update:', response.status);
-				alert('Failed to apply update.');
-			}
+			const url = data['releases'][data['reccomended']]['update-url']
+			await applyUpdate(url);
 		});
 	}
 }
 
+// apply update
+async function applyUpdate(url) {
+	// TODO confirm action
+	req_data = {
+		'url':url
+	};
+	const response = await window.smartFetch('/api/update/apply', req_data, true);
+	if (!response.ok) {
+		throw new Error('Failed to start update');
+	}
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+
+	while (true) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		console.log(decoder.decode(value, { stream: true }));
+	}
+	if (response.status !== 200) {
+		console.error('Failed to apply update:', response.status);
+		alert('Failed to apply update.');
+	}
+}
+
 checkForUpdates();
+window.applyUpdate = applyUpdate;

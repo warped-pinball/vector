@@ -51,7 +51,10 @@ def route_wrapper(func):
 
             if response is None:
                 response = "ok", 200
-            
+
+            if type(response).__name__ == "generator":
+                return response
+
             if isinstance(response, str):
                 response = response, 200
 
@@ -655,6 +658,7 @@ def app_updates_available(request):
 
 @add_route("/api/update/apply", method="POST", auth=True)
 def app_apply_update(request):
+    yield "test string"
     from update import apply_update
     data = request.data
     apply_update(data['url'])

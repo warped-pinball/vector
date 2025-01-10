@@ -49,6 +49,7 @@ class Version():
 
 
 def check_for_updates():
+    # TODO also find PRs with the update.json file
     from urequests import get
     response = get(
         url="https://api.github.com/repos/warped-pinball/vector/releases",
@@ -446,4 +447,4 @@ def write_files():
                 
             
 
-            
+# TODO probably make use of walrus operator in this file to simplify some of the code
