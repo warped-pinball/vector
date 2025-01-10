@@ -81,14 +81,6 @@ jobs:
               --version $VERSION
           fi
 
-      - name: Debug: list files
-        run: |
-          echo "Listing files in the current directory:"
-          ls -lah
-          echo "Listing files in build directory:"
-          ls -lah build || echo "No 'build' directory"
-          cat update.json || echo "No update.json in the root directory"
-
       - name: Create or Update Pre-Release for Pull Request
         if: ${{ github.event_name == 'pull_request' }}
         uses: softprops/action-gh-release@v2
