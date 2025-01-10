@@ -11,6 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
 
@@ -29,7 +30,7 @@ jobs:
           pip install -r dev/requirements.txt
 
       - name: Determine build environment and version
-        id: build_env
+        id: determine_version
         run: |
           BASE_VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')
 
@@ -55,12 +56,12 @@ jobs:
 
       - name: Update SharedState.py Version
         run: |
-          sed -i "s/WarpedVersion = .*/WarpedVersion = \"$VERSION\"/" src/SharedState.py
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/SharedState.py
           git diff src/SharedState.py
 
       - name: Build project
         run: |
-          python dev/build.py --build-dir build --env $ENV
+          python dev/build.py --build-dir build --env ${{ env.ENV }}
 
       - name: Create key files (if provided)
         run: |
@@ -76,31 +77,33 @@ jobs:
             python dev/build_update.py \
               --build-dir build \
               --output update.json \
-              --version $VERSION
+              --version "${{ env.VERSION }}" \
               --private-key private_key.pem
           else
             python dev/build_update.py \
               --build-dir build \
               --output update.json \
-              --version $VERSION
+              --version "${{ env.VERSION }}"
           fi
 
+      # Create (or update) a single pre-release for PRs, using the dev version as the tag_name.
       - name: Create or Update Pre-Release for Pull Request
         if: ${{ github.event_name == 'pull_request' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.build_env.outputs.VERSION }}
-          name: ${{ steps.build_env.outputs.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
           body: |
             PR: ${{ github.event.pull_request.html_url }}
             Branch: ${{ github.event.pull_request.head.ref }}
-            Version: ${{ steps.build_env.outputs.VERSION }}
+            Version: ${{ env.VERSION }}
           prerelease: true
           files: "update.json"
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Only attach update.json to the official GitHub Release if it's a "published" release.
       - name: Upload artifact to GitHub Release
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'release' }}
@@ -109,6 +112,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Always upload update.json as an artifact for debugging or future reference.
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
