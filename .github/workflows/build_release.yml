@@ -76,7 +76,7 @@ jobs:
             python dev/build_update.py \
               --build-dir build \
               --output update.json \
-              --version ${{ steps.build_env.outputs.VERSION }}
+              --version $VERSION
               --private-key private_key.pem
           else
             python dev/build_update.py \
