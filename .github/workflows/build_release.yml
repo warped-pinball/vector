@@ -31,23 +31,32 @@ jobs:
       - name: Determine build environment and version
         id: build_env
         run: |
+          # Start with the base version in SharedState.py:
+          VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')
+      
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             ENV="dev"
-            SUFFIX="-dev-${{ github.run_number }}"
+            # For PR #44, this becomes 0.3.1-dev44
+            SUFFIX="-dev${{ github.event.pull_request.number }}"
+            VERSION="$VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "push" ]; then
             ENV="beta"
+            # You can still append a run number for push if you want
             SUFFIX="-beta-${{ github.run_number }}"
+            VERSION="$VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "release" ]; then
             ENV="prod"
             SUFFIX=""
+            VERSION="$VERSION$SUFFIX"
           else
             ENV="dev"
             SUFFIX="-dev"
+            VERSION="$VERSION$SUFFIX"
           fi
-
-          VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')${SUFFIX}
+      
           echo "ENV=$ENV" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+        
 
       - name: Update SharedState.py Version
         run: |
@@ -85,18 +94,25 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         uses: softprops/action-gh-release@v2
         with:
+          # Tag name stays stable for each PR
           tag_name: "pr-${{ github.event.pull_request.number }}"
-          name: "PR #${{ github.event.pull_request.number }} [${{ github.event.pull_request.head.ref }}] - ${{ steps.build_env.outputs.VERSION }}"
+      
+          # The release's display name is just the version string (e.g. "0.3.1-dev44")
+          name: ${{ steps.build_env.outputs.VERSION }}
+      
           body: |
             PR: ${{ github.event.pull_request.html_url }}
             Branch: ${{ github.event.pull_request.head.ref }}
             Version: ${{ steps.build_env.outputs.VERSION }}
           prerelease: true
+      
+          # The update.json file to attach
           files: "update.json"
           fail_on_unmatched_files: false
-
+      
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
 
       - name: Upload artifact to GitHub Release
         uses: softprops/action-gh-release@v2
