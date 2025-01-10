@@ -303,15 +303,19 @@ def download_update(url):
     if response.status_code != 200:
         raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
 
-    with open("update.json", "wb") as f:
+    total_percent = 30
+    total_length = int(response.headers.get("Content-Length", 200000))
+    with open("update.json", "wb") as f:    
         while True:
             chunk = response.raw.read(1024)
             if not chunk:
                 break
             f.write(chunk)
+            yield {
+                "percent": (f.tell() / total_length) * total_percent
+            }
 
     response.close()
-    print("Update downloaded")
 
 def validate_compatibility():
     from json import loads as json_loads
@@ -354,25 +358,37 @@ def validate_compatibility():
         raise Exception(f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}")
 
 def apply_update(url):
-    from logger import logger_instance as Log
-    from gc import collect as gc_collect
+    from time import sleep
 
-    Log.log(f"Downloading update from {url}")
-    download_update(url)
-    gc_collect()
+    yield {"log": f"Downloading update from {url}", "percent": 0}
+    # will yield percent updates as it downloads
+    yield from download_update(url)
 
-    Log.log("Validating update")
+    yield {"log": "Validating signature", "percent": 30}
     validate_signature()
-    gc_collect()
     
-    Log.log("Validating compatibility")
+    yield {"log": "Validating compatibility", "percent": 35}
     validate_compatibility()
-    gc_collect()
-    
 
-    Log.log("Copying files")
-    write_files()
+    yield {"log": "Writing files to board", "percent": 40}
+    try:
+        yield from write_files()
+    except Exception as e:
+        yield {"log": f"Failed to write files: {e}", "percent": 40}
+        yield {"log": "Trying to write files again", "percent": 40}
+        try:
+            yield from write_files()
+        except Exception as e:
+            yield {"log": f"Failed to write files: {e}", "percent": 40}
+            yield {"log": "The update has failed at a critical point. If you are unable to recover, please contact us for help.", "percent": 40}
+            return
 
+    yield {"log": "Update complete, rebooting", "percent": 100}
+    from machine import reset as machine_reset
+    from reset_control import reset as reset_control
+    reset_control()
+    sleep(2)
+    machine_reset()
 
 def crc16_of_file(path: str) -> str:
     def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
@@ -402,13 +418,16 @@ def write_files():
     from os import remove
     from binascii import a2b_base64
 
+    start_percent = 40
+    end_percent = 98
+    range_percent = end_percent - start_percent
+
     last_line_len = len(read_last_significant_line("update.json"))
     end_of_content = 0
     with open("update.json", "rb") as f:
         f.seek(0, 2)
         end_of_content = f.tell() - last_line_len - 1
         
-
     # remove_extra_files.py{"checksum":"04D9","bytes":1827,"log":"Removing extra files","execute":true}aW1wb3J0IG9zCgpr
     with open("update.json", "r") as f:
         # Skip the first line (metadata)
@@ -416,6 +435,11 @@ def write_files():
 
         # loop until we reach the end of the files section
         while f.tell() < end_of_content:
+            # yield a percent update
+            percent = (f.tell() / end_of_content) * range_percent
+            percent += start_percent
+            yield {"percent": percent}
+
             # read character by character to the first { to get the path
             path = ""
             while True:

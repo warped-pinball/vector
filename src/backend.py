@@ -658,10 +658,24 @@ def app_updates_available(request):
 
 @add_route("/api/update/apply", method="POST", auth=True)
 def app_apply_update(request):
-    yield "test string"
     from update import apply_update
+    from logger import logger_instance as Log
     data = request.data
-    apply_update(data['url'])
+    try:
+        for response in apply_update(data['url']):
+            log = response.get('log', None)
+            if log:
+                Log.log(log)
+            yield json_dumps(response)
+            gc_collect()
+    except Exception as e:
+        Log.log(f"Error applying update: {e}")
+        yield json_dumps(
+            {'log': f"Error applying update: {e}", 'percent': 100}
+        )
+        yield json_dumps(
+            {'log': 'Try again in a moment', 'percent': 100}
+        )
 
 def add_app_mode_routes():
     '''Routes only available in app mode'''

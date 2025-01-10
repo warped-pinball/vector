@@ -223,42 +223,48 @@ async function checkForUpdates() {
 	const data = await response.json();
 	const updateButton = document.getElementById('update-button');
 	
-	if (data['current'] === data['reccomended']) {
-		
-		// TODO when no update allow the user to input their own url to download the update
-		
-		// no update available	
-		updateButton.style.backgroundColor = '#8e8e8e';
-		updateButton.style.borderColor = '#8e8e8e';
-		updateButton.textContent = 'Up to date';
-		updateButton.disabled = true;
+	try {
+		if (data['current'] === data['reccomended']) {
+			
+			// TODO when no update allow the user to input their own url to download the update
+			
+			// no update available	
+			updateButton.style.backgroundColor = '#8e8e8e';
+			updateButton.style.borderColor = '#8e8e8e';
+			updateButton.textContent = 'Up to date';
+			updateButton.disabled = true;
 
-		// try to link to current release notes data[data['current']]['release-url']
-		const releaseNotes = document.getElementById('release-notes');
-		try {
-			releaseNotes.href = data['releases'][data['current']]['release-url'];
-			releaseNotes.textContent = 'Release Notes for ' + data['current'];
-		} catch (e) {
-			releaseNotes.classList.add('hide');
+			// try to link to current release notes data[data['current']]['release-url']
+			const releaseNotes = document.getElementById('release-notes');
+			try {
+				releaseNotes.href = data['releases'][data['current']]['release-url'];
+				releaseNotes.textContent = 'Release Notes for ' + data['current'];
+			} catch (e) {
+				releaseNotes.classList.add('hide');
+			}
+			
+		} else {
+			// update available
+			updateButton.disabled = false;
+			updateButton.style.backgroundColor = '#e8b85a';
+			updateButton.style.borderColor = '#e8b85a';
+			updateButton.textContent = `Update to ${data['reccomended']}`;
+
+			// link to release notes in text
+			const releaseNotes = document.getElementById('release-notes');
+			releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
+			releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
+
+			updateButton.addEventListener('click', async () => {
+				// TODO confirm action
+				const url = data['releases'][data['reccomended']]['update-url']
+				await applyUpdate(url);
+			});
 		}
-		
-	} else {
-		// update available
-		updateButton.disabled = false;
-		updateButton.style.backgroundColor = '#e8b85a';
-		updateButton.style.borderColor = '#e8b85a';
-		updateButton.textContent = `Update to ${data['reccomended']}`;
-
-		// link to release notes in text
-		const releaseNotes = document.getElementById('release-notes');
-		releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
-		releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
-
-		updateButton.addEventListener('click', async () => {
-			// TODO confirm action
-			const url = data['releases'][data['reccomended']]['update-url']
-			await applyUpdate(url);
-		});
+	} catch (e) {
+		console.error('Failed to check for updates:', e);
+		updateButton.textContent = 'Could not get updates';
+		updateButton.disabled = true;
 	}
 }
 
