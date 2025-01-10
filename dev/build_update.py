@@ -125,7 +125,6 @@ def build_update_file(
     output_file: str,
     version: str,
     private_key_path: Optional[str],
-    public_key_path: Optional[str] = None
 ):
     """
     1) Create one JSON line of metadata at the top.
@@ -134,11 +133,6 @@ def build_update_file(
 
     No 'section' headers or lengths. The user can just read the last line as the signature.
     """
-    # Optionally copy the public key to the build directory so it’s included.
-    if public_key_path:
-        dest = Path(build_dir) / "public_key.pem"
-        with open(public_key_path, "rb") as in_f, open(dest, "wb") as out_f:
-            out_f.write(in_f.read())
 
     # 1) Build top-level metadata as a single line
     meta_data = {
@@ -215,7 +209,6 @@ def main():
     parser.add_argument("--output", default=OUTPUT_FILE, help="Path to the output file.")
     parser.add_argument("--version", help="Version string (e.g., '0.3.0'). If omitted, extracted from SharedState.py.")
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
-    parser.add_argument("--public-key", help="Path to a PEM-encoded public key to include in the build output.")
     args = parser.parse_args()
 
     # If no version is provided, extract from SharedState.py
@@ -225,8 +218,7 @@ def main():
         build_dir=args.build_dir,
         output_file=args.output,
         version=final_version,
-        private_key_path=args.private_key,
-        public_key_path=args.public_key
+        private_key_path=args.private_key
     )
 
 if __name__ == "__main__":

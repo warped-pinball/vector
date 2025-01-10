@@ -28,8 +28,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
-          # Ensure cryptography is installed (in case it's not in requirements.txt)
-          pip install cryptography
 
       - name: Determine build environment and version
         id: build_env
@@ -63,25 +61,20 @@ jobs:
 
       - name: Create key files (if provided)
         run: |
-          # Only create local key files if the secrets are non-empty
           if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
             echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
-            echo "${{ secrets.WARPED_PINBALL_PUBLIC_KEY }}" > public_key.pem
           else
-            echo "No private key specified, will build unsigned."
+            echo "No private key specified, building unsigned."
           fi
 
       - name: Generate update.json
         run: |
-          # If the private key file exists, pass both the private & public key.
-          # Otherwise, omit them for an unsigned build.
           if [ -f "private_key.pem" ] && [ -f "public_key.pem" ]; then
             python dev/build_update.py \
               --build-dir build \
               --output update.json \
               --version $VERSION \
               --private-key private_key.pem \
-              --public-key public_key.pem
           else
             python dev/build_update.py \
               --build-dir build \
@@ -89,6 +82,28 @@ jobs:
               --version $VERSION
           fi
 
+      # Create (or update) exactly ONE Pre-Release for this PR
+      # with the same tag "pr-NUMBER" every time. This avoids multiple releases.
+      - name: Create or Update Pre-Release for Pull Request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          # Tag name stays the same for the life of the PR
+          tag_name: "pr-${{ github.event.pull_request.number }}"
+          # Include version or branch in the name if you'd like
+          release_name: "PR #${{ github.event.pull_request.number }} [${{ github.event.pull_request.head.ref }}] - ${{ steps.build_env.outputs.VERSION }}"
+          body: |
+            PR: ${{ github.event.pull_request.html_url }}
+            Branch: ${{ github.event.pull_request.head.ref }}
+            Version: ${{ steps.build_env.outputs.VERSION }}
+
+          prerelease: true
+          overwrite: true
+          files: "update.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create a release only on "release" events (i.e. published release).
       - name: Upload artifact to GitHub Release
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'release' }}
