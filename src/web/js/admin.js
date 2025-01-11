@@ -3,33 +3,33 @@
 // 
 
 async function confirm_auth_get(url, purpose) {
-    confirmAction(purpose, async () => {
-        const response = await window.smartFetch(url, null, true);
-        if (response.status !== 200 && response.status !== 401) { // 401 already alerted the user that their password was wrong
-            console.error(`Failed to ${purpose}:`, response.status);
-            alert(`Failed to ${purpose}.`);
-        }
-    });
+	confirmAction(purpose, async () => {
+		const response = await window.smartFetch(url, null, true);
+		if (response.status !== 200 && response.status !== 401) { // 401 already alerted the user that their password was wrong
+			console.error(`Failed to ${purpose}:`, response.status);
+			alert(`Failed to ${purpose}.`);
+		}
+	});
 }
 
 function confirmAction(message, callback) {
-    const modal = document.getElementById('confirm-modal');
-    const modalMessage = document.getElementById('modal-message');
-    const confirmButton = document.getElementById('modal-confirm-button');
+	const modal = document.getElementById('confirm-modal');
+	const modalMessage = document.getElementById('modal-message');
+	const confirmButton = document.getElementById('modal-confirm-button');
 
-    modalMessage.textContent = `Are you sure you want to ${message}?`;
+	modalMessage.textContent = `Are you sure you want to ${message}?`;
 
-    confirmButton.onclick = () => {
-        callback();
-        closeModal();
-    };
+	confirmButton.onclick = () => {
+		callback();
+		closeModal();
+	};
 
-    modal.showModal();
+	modal.showModal();
 }
 
 function closeModal() {
-    const modal = document.getElementById('confirm-modal');
-    modal.close();
+	const modal = document.getElementById('confirm-modal');
+	modal.close();
 }
 
 
@@ -39,42 +39,42 @@ function closeModal() {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-    const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');  
+	const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
 
-    // disable the checkbox until we have the current setting
-    tournamentModeCheckbox.disabled = true;
+	// disable the checkbox until we have the current setting
+	tournamentModeCheckbox.disabled = true;
 
-    const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
-    const data = await response.json();
+	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
+	const data = await response.json();
 
-    tournamentModeCheckbox.checked = data['tournament_mode'];
-    tournamentModeCheckbox.disabled = false;
+	tournamentModeCheckbox.checked = data['tournament_mode'];
+	tournamentModeCheckbox.disabled = false;
 
-    // add event listener to update the setting when the checkbox is changed
-    tournamentModeCheckbox.addEventListener('change', async () => {
-        const data = { 'tournament_mode': tournamentModeCheckbox.checked ? 1 : 0 };
-        await window.smartFetch('/api/settings/tournament_mode', data, true);
-    });
+	// add event listener to update the setting when the checkbox is changed
+	tournamentModeCheckbox.addEventListener('change', async () => {
+		const data = { 'tournament_mode': tournamentModeCheckbox.checked ? 1 : 0 };
+		await window.smartFetch('/api/settings/tournament_mode', data, true);
+	});
 }
 
 // score Claim methods
 async function getScoreClaimMethods() {
-  const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
+	const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
 
-  // disable the checkbox until we have the current setting
-  onMachineCheckbox.disabled = true;
+	// disable the checkbox until we have the current setting
+	onMachineCheckbox.disabled = true;
 
-  const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
-  const data = await response.json();
+	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
+	const data = await response.json();
 
-  onMachineCheckbox.checked = data['on-machine'];
-  onMachineCheckbox.disabled = false;
+	onMachineCheckbox.checked = data['on-machine'];
+	onMachineCheckbox.disabled = false;
 
-  // add event listener to update the setting when the checkbox is changed
-  onMachineCheckbox.addEventListener('change', async () => {
-    const data = { 'on-machine': onMachineCheckbox.checked ? 1 : 0 };
-    await window.smartFetch('/api/settings/score_claim_methods', data, true);
-  });
+	// add event listener to update the setting when the checkbox is changed
+	onMachineCheckbox.addEventListener('change', async () => {
+		const data = { 'on-machine': onMachineCheckbox.checked ? 1 : 0 };
+		await window.smartFetch('/api/settings/score_claim_methods', data, true);
+	});
 }
 
 tournamentModeToggle();
@@ -84,205 +84,264 @@ getScoreClaimMethods();
 // Actions
 // 
 
-
-/**
- * The 'onChange' handler for our file input.
- * This is called directly from the HTML input via onChange="window.handleUpdateUploadChange(event)"
- */
-window.handleUpdateUploadChange = async function(event) {
-    const fileInput = event.target;
-    if (!fileInput.files || fileInput.files.length === 0) {
-      // No file selected, user canceled, or error
-      return;
-    }
-  
-    const file = fileInput.files[0];
-    
-    // Confirm we want to apply this update
-    window.confirmAction(`apply the update in ${file.name}`, async () => {
-      // If the user confirms, run the upload
-      await window.uploadUpdateFile(file);
-      // Optionally clear the input so the user can select again
-      fileInput.value = "";
-    });
-  };
-  
-  /**
-   * Reads the selected file, parses it as JSON, 
-   * then uploads any file definitions in sequence to /api/upload_file.
-   */
-  window.uploadUpdateFile = async function(file) {
-    try {
-      const fileText = await file.text();
-  
-      let updates;
-      try {
-        updates = JSON.parse(fileText);
-      } catch (parseErr) {
-        alert("Invalid JSON file.");
-        throw parseErr;
-      }
-  
-      // If the JSON might be a single object, make it an array
-      if (!Array.isArray(updates)) {
-        updates = [updates];
-      }
-  
-      // Loop over each item in 'updates' in order
-      for (let i = 0; i < updates.length; i++) {
-        const item = updates[i];
-        console.log(`Uploading file #${i + 1} of ${updates.length}:`, item.FileType || "Unknown");
-  
-        // Use your smartFetch with authentication
-        const response = await window.smartFetch("/api/upload_file", item, true);
-  
-        if (!response.ok) {
-          // Server returned e.g. 500 or other error
-          const errorText = await response.text();
-          console.error("Upload error:", errorText);
-          alert(`Upload of file #${i + 1} failed.\n${errorText}`);
-          return; // Stop processing further
-        }
-  
-        // Parse JSON
-        const resultData = await response.json();
-        if (resultData.status === "error") {
-          // The server returned 200 but with an "error" status in the JSON
-          console.error("Upload error (JSON response):", resultData);
-          alert(`Upload of file #${i + 1} failed.\n${resultData.message || "Unknown error"}`);
-          return; // Stop further
-        }
-  
-        console.log(`File #${i + 1} uploaded successfully:`, resultData);
-      }
-  
-      // If we made it here, all files in the array were uploaded successfully
-      alert("All updates applied successfully!");
-  
-    } catch (err) {
-      console.error("Exception during update upload:", err);
-      alert("Error applying updates:\n" + err.message);
-    }
-  };
-
-
-//
 // Download Logs
-//
-window.downloadLogs = async function() {
-  console.log("Downloading logs...");
+window.downloadLogs = async function () {
+	console.log("Downloading logs...");
 
-  // Perform the fetch (no auth needed if your endpoint doesn't require it)
-  const response = await window.smartFetch('/api/logs', null, false);
+	// Perform the fetch (no auth needed if your endpoint doesn't require it)
+	const response = await window.smartFetch('/api/logs', null, false);
 
-  if (!response.ok) {
-      console.error("Failed to download logs:", response.status, response.statusText);
-      alert("Failed to download logs.");
-      return;
-  }
+	if (!response.ok) {
+		console.error("Failed to download logs:", response.status, response.statusText);
+		alert("Failed to download logs.");
+		return;
+	}
 
-  // Get the response as a blob
-  const blob = await response.blob();
+	// Get the response as a blob
+	const blob = await response.blob();
 
-  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
-  let filename = document.getElementById('game_name').innerText;
-  filename += '_log_';
-  filename += new Date().toISOString().split('T')[0];
-  filename += '.txt';
+	// Generate a filename similar to how you do CSVs (with game name, date, etc.)
+	let filename = document.getElementById('game_name').innerText;
+	filename += '_log_';
+	filename += new Date().toISOString().split('T')[0];
+	filename += '.txt';
 
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, '_');
+	// Replace spaces with underscores
+	filename = filename.replace(/ /g, '_');
 
-  // Create a temporary link to trigger the download
-  const url = window.URL.createObjectURL(blob);
-  const element = document.createElement('a');
-  element.href = url;
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
+	// Create a temporary link to trigger the download
+	const url = window.URL.createObjectURL(blob);
+	const element = document.createElement('a');
+	element.href = url;
+	element.download = filename;
+	document.body.appendChild(element);
+	element.click();
 
-  // Clean up
-  document.body.removeChild(element);
-  window.URL.revokeObjectURL(url);
+	// Clean up
+	document.body.removeChild(element);
+	window.URL.revokeObjectURL(url);
 
-  console.log("Logs download initiated.");
+	console.log("Logs download initiated.");
 };
 
-//
+
 // Download Memory Snapshot
-//
-window.downloadMemorySnapshot = async function() {
-  console.log("Downloading memory snapshot...");
+window.downloadMemorySnapshot = async function () {
+	console.log("Downloading memory snapshot...");
 
-  // Perform the fetch (no auth needed if your endpoint doesn't require it)
-  const response = await window.smartFetch('/api/memory-snapshot', null, false);
+	// Perform the fetch (no auth needed if your endpoint doesn't require it)
+	const response = await window.smartFetch('/api/memory-snapshot', null, false);
 
-  if (!response.ok) {
-      console.error("Failed to fetch memory snapshot:", response.status, response.statusText);
-      alert("Failed to download memory snapshot.");
-      return;
-  }
+	if (!response.ok) {
+		console.error("Failed to fetch memory snapshot:", response.status, response.statusText);
+		alert("Failed to download memory snapshot.");
+		return;
+	}
 
-  // Get the response as text
-  const content = await response.text();
+	// Get the response as text
+	const content = await response.text();
 
-  // Generate a filename similar to how you do CSVs
-  let filename = document.getElementById('game_name').innerText;
-  filename += '_memory_';
-  filename += new Date().toISOString().split('T')[0];
-  filename += '.txt';
+	// Generate a filename similar to how you do CSVs
+	let filename = document.getElementById('game_name').innerText;
+	filename += '_memory_';
+	filename += new Date().toISOString().split('T')[0];
+	filename += '.txt';
 
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, '_');
+	// Replace spaces with underscores
+	filename = filename.replace(/ /g, '_');
 
-  // Create a temporary link to trigger the download
-  const element = document.createElement('a');
-  element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
+	// Create a temporary link to trigger the download
+	const element = document.createElement('a');
+	element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+	element.download = filename;
+	document.body.appendChild(element);
+	element.click();
 
-  // Clean up
-  document.body.removeChild(element);
+	// Clean up
+	document.body.removeChild(element);
 
-  console.log("Memory snapshot download initiated.");
+	console.log("Memory snapshot download initiated.");
 };
 
-// 
 // Download Scores
+window.downloadScores = async function () {
+	console.log("Downloading scores...");
+
+	const response = await window.smartFetch('/api/export/scores', null, false);
+
+	if (!response.ok) {
+		console.error("Failed to download scores:", response.status, response.statusText);
+		alert("Failed to download scores.");
+		return;
+	}
+
+	// Get the response
+	const data = await response.json();
+
+	// Generate a filename similar to how you do CSVs (with game name, date, etc.)
+	let filename = document.getElementById('game_name').innerText;
+	filename += '_scores_';
+	filename += new Date().toISOString().split('T')[0];
+	filename += '.json';
+
+	// Replace spaces with underscores
+	filename = filename.replace(/ /g, '_');
+
+	// Create a temporary link to trigger the download
+	const element = document.createElement('a');
+	element.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data));
+	element.download = filename;
+	document.body.appendChild(element);
+	element.click();
+
+	// Clean up
+	document.body.removeChild(element);
+
+	console.log("Scores download initiated.");
+}
+
+
+
+
+
+
+
+
+
+
 // 
-window.downloadScores = async function() {
-  console.log("Downloading scores...");
+// Updates
+// 
 
-  const response = await window.smartFetch('/api/export/scores', null, false);
+async function checkForUpdates() {
+	
+	// wait 3 seconds before checking for updates
+	// this lets us prioritize loading the page and settings
+	await new Promise(resolve => setTimeout(resolve, 3000));
+	
+	const response = await window.smartFetch('/api/update/check', null, false);
+	const data = await response.json();
+	const updateButton = document.getElementById('update-button');
+	
+	try {
+		if (data['current'] === data['reccomended']) {
+						
+			// no update available	
+			updateButton.style.backgroundColor = '#8e8e8e';
+			updateButton.style.borderColor = '#8e8e8e';
+			updateButton.textContent = 'Already up to date';
+			updateButton.disabled = true;
 
-  if (!response.ok) {
-      console.error("Failed to download scores:", response.status, response.statusText);
-      alert("Failed to download scores.");
-      return;
-  }
+			// try to link to current release notes data[data['current']]['release-url']
+			const releaseNotes = document.getElementById('release-notes');
+			try {
+				releaseNotes.href = data['releases'][data['current']]['release-url'];
+				releaseNotes.textContent = 'Release Notes for ' + data['current'];
+			} catch (e) {
+				releaseNotes.classList.add('hide');
+			}
+			
+		} else {
+			// update available
+			updateButton.disabled = false;
+			updateButton.style.backgroundColor = '#e8b85a';
+			updateButton.style.borderColor = '#e8b85a';
+			updateButton.textContent = `Update to ${data['reccomended']}`;
 
-  // Get the response
-  const data = await response.json();
+			// link to release notes in text
+			const releaseNotes = document.getElementById('release-notes');
+			releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
+			releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
 
-  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
-  let filename = document.getElementById('game_name').innerText;
-  filename += '_scores_';
-  filename += new Date().toISOString().split('T')[0];
-  filename += '.json';
+			updateButton.addEventListener('click', async () => {
+				const url = data['releases'][data['reccomended']]['update-url']
+				await confirmAction("update to " + data['reccomended'], applyUpdate(url));
+			});
+		}
+	} catch (e) {
+		console.error('Failed to check for updates:', e);
+		updateButton.textContent = 'Could not get updates';
+		updateButton.disabled = true;
+	}
+}
 
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, '_');
+async function applyUpdate(url) {
+	req_data = { 'url': url };
+	const response = await window.smartFetch('/api/update/apply', req_data, true);
+	if (!response.ok) {
+		throw new Error('Failed to start update');
+	}
 
-  // Create a temporary link to trigger the download
-  const element = document.createElement('a');
-  element.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data));
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
+	const updateModal = document.getElementById('update-progress-modal');
+	updateModal.showModal();
 
-  // Clean up
-  document.body.removeChild(element);
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	const progressBar = document.getElementById('update-progress-bar');
+	const updateProgressLog = document.getElementById('update-progress-log');
 
-  console.log("Scores download initiated.");
+	try {
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			let msg = decoder.decode(value, { stream: true });
+			
+			msg = msg.split('}{');
+			for (let i = 0; i < msg.length; i++) {
+				if (i !== 0) {
+					msg[i] = '{' + msg[i];
+				}
+				if (i !== msg.length - 1) {
+					msg[i] = msg[i] + '}';
+				}
+			}
+
+			for (let i = 0; i < msg.length; i++) {
+				const msg_obj = JSON.parse(msg[i]);
+				
+				if (msg_obj.log) {
+					updateProgressLog.textContent += msg_obj.log + '\n';
+				}
+				if (msg_obj.percent) {
+					progressBar.value = msg_obj.percent;
+				}
+			}
+
+			// scroll to the bottom of the log
+			updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
+		}
+	} catch (e) {
+		// if progress bar is at 100% then the update was successful and the server has just rebooted
+		if (progressBar.value === 100) {
+			// refresh the page
+			window.location.reload();
+		} else {		
+			updateProgressLog.textContent += 'Connection lost.\n';
+			updateProgressLog.textContent += 'Refresh the page and Try again.\n';
+			progressBar.value = 0;
+			return;
+		}
+	}
+
+	if (response.status !== 200) {
+		updateProgressLog.textContent += 'Failed to apply update.\n';
+		updateProgressLog.textContent += 'Status: ' + response.status + '\n';
+		updateProgressLog.textContent += 'Status Text: ' + response.statusText + '\n';
+	}
+}
+
+checkForUpdates();
+window.applyUpdate = applyUpdate;
+
+// custom update function
+window.customUpdate = async function () {
+	// prompt the user for the update url
+	const url = prompt('Enter the URL for the update');
+	if (url === null) {
+		return;
+	}
+	// confirm url
+	await confirmAction("update with file at " + url, async () => {
+		await window.applyUpdate(url);
+	});
 }

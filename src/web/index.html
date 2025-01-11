@@ -96,10 +96,10 @@
             <article>
                 <h2>Warning: Issues Detected</h2>
                 <p>
-                    We strongly recommend that you <b>turn off your pinball machine</b> until these issues are resolved. 
+                    Warped Pinball features may not work correctly until the issue(s) below are resolved.
                     For guidence on how to resolve these issues, please read our guide: 
                 </p>
-                <a href="https://warpedpinball.com/troubleshoot_codes">https://warpedpinball.com/troubleshoot_codes</a>
+                <a href="https://warpedpinball.com/warped-pinball-user-support/">https://warpedpinball.com/warped-pinball-user-support/</a>
                 <p>
                     We take every preventive measure we can, but some types of issues when left unresolved can cause damage to your machine.
                 </p>
@@ -122,7 +122,7 @@
                 </fieldset>
                 <footer>
                     <button class="secondary" id="password_cancel_button">Cancel</button>
-                    <button id="password_save_button">Save</button>
+                    <button id="password_save_button">Login</button>
                 </footer>
             </article>
         </dialog>
@@ -225,8 +225,6 @@
                 const data_str = data ? JSON.stringify(data): '';
 
                 const msg = challenge + urlObj.pathname + urlObj.search + data_str;
-                console.log('HMAC Message:', msg);
-                console.log('HMAC Password:', password);
                 const hmacHex = sha256.hmac(password, msg);
                 headers["X-Auth-HMAC"] = hmacHex;
             }

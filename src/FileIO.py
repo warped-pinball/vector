@@ -8,6 +8,7 @@ import SPI_DataStore as DataStore
 import os
 import SharedState as S
 from logger import logger_instance
+import ubinascii
 Log = logger_instance
 
 def download_scores():
@@ -101,132 +102,90 @@ def crc16(data: bytes) -> str:
     crc_value = crc16_ccitt(data)
     return '{:04X}'.format(crc_value)
 
+def file_base64_crc16s(path: str, chunk_size: int) -> list[str]:
+    """
+    Calculate the CRC16-CCITT checksum of a file by reading it in chunks.
 
-#file upload.  can include directories int the file name if the directory already exists
-#  ex:  "phew/test.py"
-#browser side (java script) calls once for each file structure inside of download file
-def process_incoming_file(request):   
-    gc.collect()    
-    print("incomming")
-    try:    
-        form_data = request.form        
-        #key is a strange form from browser, look for generic key
-        for key in form_data:
-            value = form_data[key]
-
-        data = json.loads(value)    
-        file_type=data.get("FileType")
-        contents =data.get("contents")
-        received_checksum = data.get("Checksum")
-        Log.log(f"FIO: load file: {file_type}")        
-
-        if file_type.endswith(".mpy"):
-            contents = contents.encode('latin1')
-            if received_checksum:
-                calculated_checksum = crc16(contents)
-        elif file_type.endswith(".py") or file_type.endswith(".json"):
-            if received_checksum:
-                calculated_checksum = crc16(contents.encode('utf-8'))        
-
-        if received_checksum:
-            if calculated_checksum != received_checksum:
-                Log.log("FIO: checksum fail")
-                raise ValueError(f"FIO: Checksum fail Expected {received_checksum}, got {calculated_checksum}")
-            else:
-                print("FIO: Checksum good: ", calculated_checksum)
-
-        save_path = f"/test/{file_type}"    
-        if file_type=="RunMe.py":
-             save_path = f"{file_type}"    
-
-        if file_type.endswith(".py") or file_type.endswith(".json"):    #text
-            with open(save_path, 'w') as f:                               
-                f.write(contents)
-            print(f"FIO: File saved: {file_type}")      
-        elif file_type.endswith(".mpy"):                                #binary
-            with open(save_path, 'wb') as f:
-                f.write(contents)
-            print(f"FIO: Binary file saved: {file_type}")
-        else:   
-            print("FIO: process file as datastore: ", file_type)    
-            if file_type in DataStore.memory_map:      
-                Log.log(f"FIO: Datastore file in: {file_type}")              
-                #TODO what happens if the contents are longer than the record size?
-                for idx, record in enumerate(contents):           
-                    print("FIO: ",idx)         
-                    DataStore.write_record(file_type, record, idx)
-        gc.collect()                
-
-        #file... RunMe?        
-        if file_type=="RunMe.py":
-            print("Run me now")
-            module_name = "RunMe"            
-            imported_module = __import__(module_name)
-            try:
-                result = imported_module.go()  # Call the main function
-                if result is not None:
-                    Log.log(f"FIO: RunMe returned {result}")
-                    #store result
-                    S.update_load_result = result
-                else:
-                    Log.log("FIO: RunMe executed, no return value")
-            except ImportError as e:
-                print(f"FIO: Error importing module {module_name}: {e}")
-            except Exception as e:
-                print(f"FIO: An error occurred while running {module_name}.go(): {e}")
-      
-        return ("Upload complete")  
-
+    :param path: Path to the file.
+    :param chunk_size: Size of each chunk to read in bytes.
+    :return: CRC16 checksum as a 4-character hexadecimal string.
+    """
+    crc = 0xFFFF  # Initial CRC value    
+    checksums = []
+    try:
+        with open(path, 'rb') as file:
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                # base64 encode the chunk and calculate the CRC
+                # note: the base64 encoding adds a newline character at the end, so we remove it
+                crc = crc16_ccitt(ubinascii.b2a_base64(chunk)[:-1], crc)
+                checksums.append('{:04X}'.format(crc))
+        return checksums
     except Exception as e:
-        print(f"Error processing file upload: {e}")
-        return (f"An error occurred: {e}")
+        print(f"Error calculating checksum: {e}")
+        return []
 
-
-def incoming_file_results(request):
-    if S.update_load_result is None:
-        return ("Nothing to report")
-    else:
-        return S.update_load_result
-
-#
-#use this to build files or file sets for uploading
-#
-def process_files(files):
-    combined_data = []
-    gname = "11" #S.gdata["GameInfo"]["GameName"]
-
-    print(files)
-
-    if isinstance(files, str):
-        files = [files]  
-    
-    for file in files:
-        gc.collect()
-        
-        if file.endswith('.mpy'):
-            mode = 'rb'
-        else:
-            mode = 'r'
-
-        with open(file, mode) as f:
-            data = f.read() 
+def set_file_size(path, num_bytes, preserve_to_byte=0):
+    # makes a file of a certain size with minimal edits
+    # used in updating files
+    from os import remove
+    # ensure file is of correct size
+    # We make sure the file is the correct total size even if we wont be writing to the whole file yet
+    # This is hopefully reduce fragmentation on the file system and it should be about 70ms faster per request to write to a file that is already the correct size
+    file_size = None
+    try:
+        # open for reading and writing, raise an exception if the file does not exist
+        with open(path, 'rb+') as f:
+            f.seek(0, 2)
+            file_size = f.tell()
             
-            if mode == 'rb':
-                checksum = crc16(data)
-                contents = data.decode('latin1')  
-            else:
-                checksum = crc16(data.encode('utf-8'))
-                contents = data
+            # if it's smaller than the final size, pad it with null bytes
+            if file_size < num_bytes:
+                print(f"Padding file {path} with {num_bytes - file_size} null bytes")
+                f.write(b'\x00' * (num_bytes - file_size))
+                file_size = num_bytes
 
-            combined_data.append({
-                "FileType": file,
-                "GameName": gname,
-                "Version": S.WarpedVersion,
-                "contents": data,
-                "Checksum": checksum
-            })
+    # catch ENOENT exception
+    except OSError as e:
+        # if the file does not exist, create it with the correct size
+        with open(path, 'w') as f:
+            print(f"Creating file {path} with {num_bytes} null bytes")
+            f.write(b'\x00' * num_bytes)
+            file_size = num_bytes
+    except Exception as e:
+        raise e
+
+    # if the file exists, but is too large
+    if file_size > num_bytes:
+        if preserve_to_byte > 0:
+            print(f"Truncating file {path} to {num_bytes} bytes")
+            # copy the file up to preserve_to_byte to a temporary file in 1000 byte chunks
+            temp_path = path + ".temp"
+            with open(path, 'rb') as f:
+                with open(temp_path, 'wb') as temp_f:
+                    while f.tell() < preserve_to_byte:
+                        temp_f.write(f.read(min(1000, preserve_to_byte - f.tell())))
+        
+        # remove the original file
+        print(f"Removing {path}")
+        remove(path)
     
-    return json.dumps(combined_data)
+        # create the file with the correct size of null bytes
+        with open(path, 'w') as f:
+            f.write(b'\x00' * num_bytes)
+
+        # if we copied part of the file, copy it back
+        if preserve_to_byte > 0:
+            print(f"Copying {temp_path} to {path}")
+            with open(path, 'rb') as f:
+                with open(temp_path, 'rb') as temp_f:
+                    while True:
+                        chunk = temp_f.read(1000)
+                        if not chunk:
+                            break
+                        f.write(chunk)
 
 
 if __name__ == "__main__":

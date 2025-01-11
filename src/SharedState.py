@@ -1,5 +1,3 @@
-#  Shared State 
-
 WarpedVersion = "0.3.0"
 WarpedCodeBase = "SYSTEM11"
 

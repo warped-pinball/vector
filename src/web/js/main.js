@@ -368,11 +368,6 @@ async function get_password() {
     if (password === null) {
         // Password not set in storage
         password = await showPasswordPrompt();
-        if (password !== null) {
-            console.log("Password set:", password);
-        } else {
-            console.log("User canceled password input.");
-        }
     } else {
         // Un-hide logout button if password is stored
         const logoutButton = document.getElementById("logout-button");

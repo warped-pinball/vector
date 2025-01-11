@@ -51,9 +51,15 @@ def route_wrapper(func):
 
             if response is None:
                 response = "ok", 200
-            
+
+            if type(response).__name__ == "generator":
+                return response
+
             if isinstance(response, str):
                 response = response, 200
+
+            if isinstance(response, dict):
+                response = json_dumps(response), 200
 
             if isinstance(response, tuple):
                 if len(response) == 2:
@@ -67,6 +73,8 @@ def route_wrapper(func):
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
                         headers = default_headers | headers
+                    if status != 200:
+                        print(f"Status: {status}, Body: {body}")
                     return body, status, headers
             else:
                 raise ValueError(f"Invalid response type: {type(response)}")
@@ -265,7 +273,6 @@ def require_auth(handler):
             # Authentication successful
             current_challenge = None
             challenge_timestamp = None
-            print("Authentication successful")
             return handler(request, *args, **kwargs)
         else:
             # Authentication failed
@@ -468,7 +475,6 @@ def app_resetIndScores(request):
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
     raw_data = ds_read_record("extras", 0)["other"]
-    print(f"raw_data: {raw_data}")
     score_cap = bool(raw_data)
     return json_dumps({"on-machine": score_cap}), 200
 
@@ -501,6 +507,15 @@ def app_factoryReset(request):
     reset_control.reset() # turn off pinbal machine
     blankAll()
     reset()
+
+@add_route("/api/settings/reboot", auth=True)
+def app_reboot(request):
+    from machine import reset
+    import reset_control
+    reset_control.reset()
+    sleep(2)
+    reset()
+    
 
 #
 # Networking
@@ -573,78 +588,51 @@ def app_export_leaderboard(request):
 def app_memory_snapshot(request):
     return save_ram(), 200
 
-@add_route("/api/logs", cool_down_seconds=10, single_instance=True)
+@add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
     from FileIO import download_log
     return download_log()
 
-# cool down needs to be set to 0 to keep updates moving quickly/error free
-@add_route("/api/upload_file", method="POST", auth=True, cool_down_seconds=0, single_instance=True)
-def app_upload_file_json(request):
-    """
-    Receives a JSON body representing a single "file update" dictionary, e.g.:
-        {
-          "FileType": "SomeFile.py" or "SomeFile.json",
-          "contents": "...",
-          "Checksum": "1234ABCD",
-          ...
-        }
+#
+# Updates
+#
+@add_route("/api/update/check")
+def app_updates_available(request):
+    from update import check_for_updates
+    return check_for_updates()
 
-    Then it creates a fake form-based request to call the existing process_incoming_file,
-    which expects request.form and does:
-        for key in request.form:
-            value = request.form[key]
-        data = json.loads(value)
-
-    Returns:
-      200 on success,
-      500 on error (with a JSON body containing the error).
-    """
-    from FileIO import process_incoming_file
-
-    class FakeRequest:
-        def __init__(self, dict_value):
-            # The form in your code is accessed by request.form
-            self.form = {
-                "dictionary": dict_value
-            }
-
+@add_route("/api/update/apply", method="POST", auth=True)
+def app_apply_update(request):
+    from update import apply_update
+    from logger import logger_instance as Log
+    data = request.data
     try:
-        # request.data should be a single dictionary
-        # If it’s not, that’s an error
-        if not isinstance(request.data, dict):
-            raise ValueError("Expected a JSON dictionary (single file), but got something else.")
-
-        # Convert the dict to a JSON string, 
-        # because process_incoming_file does `json.loads(value)`
-        item_json_str = json_dumps(request.data)
-
-        # Build a fake request object
-        fake_request = FakeRequest(item_json_str)
-
-        # Call existing function
-        result = process_incoming_file(fake_request)
-
-        # Return success
-        return json_dumps({
-            "status": "ok",
-            "result": result
-        }), 200, "application/json"
-
+        for response in apply_update(data['url']):
+            log = response.get('log', None)
+            if log:
+                Log.log(log)
+            yield json_dumps(response)
+            gc_collect()
     except Exception as e:
-        # Return an error with status code 500
-        error_message = f"Error uploading file: {e}"
-        print(error_message)
-        return json_dumps({
-            "status": "error",
-            "message": error_message
-        }), 500, "application/json"
+        Log.log(f"Error applying update: {e}")
+        yield json_dumps(
+            {'log': f"Error applying update: {e}", 'percent': 100}
+        )
+        yield json_dumps(
+            {'log': 'Try again in a moment', 'percent': 100}
+        )
 
+
+
+#
+# APP mode route of AP mode only routes
+#
 def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
         return json_dumps({"in_ap_mode": False}), 200
+
 
 #
 # AP mode routes
