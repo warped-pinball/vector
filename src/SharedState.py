@@ -1,6 +1,4 @@
-#  Shared State 
-
-WarpedVersion = "00.20"
+WarpedVersion = "0.3.0"
 WarpedCodeBase = "SYSTEM11"
 
 #true false - tournament mode
@@ -13,12 +11,7 @@ gameCounter=0
 update_load_result = None
 
 #install fault flag
-installation_fault = False
-
-#admin page password
-password_status="block"
-password_failCount =0
-password_expire =0
+faults = []
 
 #game data  (speicifc title data)
 gdata ={}

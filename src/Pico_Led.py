@@ -22,9 +22,6 @@ def start_fast_blink():
 def start_slow_blink():
     timer.init(freq=1, mode=machine.Timer.PERIODIC, callback=toggle_led)
 
-def start_long_short_blink():
-    timer.init(freq=1/3, mode=machine.Timer.PERIODIC, callback=toggle_led)
-
 def off():
     timer.deinit()
     pico_onboard_led.off()
