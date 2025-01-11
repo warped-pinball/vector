@@ -1,3 +1,5 @@
+#TODO add license for mrequests
+
 class Version():
     def __init__(self, major:int, minor:int, patch:int, candidate=None):
         self.major = major
@@ -51,14 +53,18 @@ class Version():
 
     @staticmethod
     def from_str(version_str):
-        """Parses 'major.minor.patch' or 'major.minor.patch-candidate' format."""
-        parts = version_str.split(".")
-        if len(parts) != 3:
-            raise ValueError("Version string must have 3 dot-separated parts, e.g. '1.2.3' or '1.2.3-dev'")
+        """Parses 'major.minor.patch' or 'major.minor.patch-candidate' format, 
+        also handling candidate separated by '.'. 
+        Example: 1.2.3-dev or 1.2.3.dev"""
+        parts = version_str.split(".", 2)
+        if len(parts) < 3:
+            raise ValueError(f"Version string must have at least major.minor.patch, e.g. '1.2.3' or '1.2.3-dev'. Got: {version_str}")
         patch_part = parts[2]
         candidate = None
-        if "-" in patch_part:
-            patch_part, candidate = patch_part.split("-", 1)
+        for sep in ["-", "."]:
+            if sep in patch_part:
+                patch_part, candidate = patch_part.split(sep, 1)
+                break
         major = int(parts[0])
         minor = int(parts[1])
         patch = int(patch_part)
@@ -78,7 +84,7 @@ def fetch_github_releases():
         "Accept": "application/vnd.github.v3+json"
     }
     page = 1
-    per_page = 5
+    per_page = 1
 
     while True:
         url = f"{base_url}?per_page={per_page}&page={page}"
@@ -105,6 +111,8 @@ def fetch_github_releases():
         # If the page was smaller than per_page, we've likely reached the last page
         if len(data) < per_page:
             break
+
+        #TODO how do we handle when it's exactly 5 releases Do we know it's the end somehow?
 
 
 def check_for_updates():
@@ -170,7 +178,6 @@ def check_for_updates():
             break
 
     return output
-
 
 
 def read_last_significant_line(path):
@@ -288,14 +295,14 @@ def validate_signature():
         raise Exception(f"Signature invalid! {result}")
 
 def download_update(url):
-    from urequests import get
+    from mrequests.mrequests import get
     response = get(
         url=url,
         headers={
             "User-Agent": "MicroPython-Device",
             "Accept": "application/octet-stream"
         },
-        stream=True
+        save_headers=True
     )
 
     if response.status_code != 200:
@@ -303,13 +310,20 @@ def download_update(url):
 
     start_percent = 2
     end_percent = 30
-    total_length = int(response.headers.get("Content-Length", 200000))
+
+    total_length = 200000
+    try:
+        for header in response.headers:
+            header_str = header.decode("utf-8")
+            if 'Content-Length' in header_str:                
+                # split on :
+                total_length = int(header_str.split(":")[1].strip())
+    except Exception as e:
+        pass # if we can't get the content length, we'll just use a default value
+
     percent_per_byte = (end_percent - start_percent) / total_length
     with open("update.json", "wb") as f:    
-        while True:
-            chunk = response.raw.read(1024)
-            if not chunk:
-                break
+        while chunk := response.read(1024):
             f.write(chunk)
             yield {
                 "percent": start_percent + (f.tell() * percent_per_byte)
@@ -331,16 +345,22 @@ def validate_compatibility():
     if not incoming_update_file_format in supported_update_file_formats:
         raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
     
-    # warped pinball version
     from SharedState import WarpedVersion
-    if WarpedVersion not in metadata.get("supported_software_versions", []):
-        raise Exception(f"Version {WarpedVersion} not in supported versions: {metadata.get('supported_software_versions')}")
-    
-    # micopython version
+    current_version_obj = Version.from_str(WarpedVersion)
+    supported_versions = [Version.from_str(v) for v in metadata.get("supported_software_versions", [])]
+    if not any(current_version_obj == sv for sv in supported_versions):
+        raise Exception(f"Version {current_version_obj} not in supported versions: {[str(v) for v in supported_versions]}")
+
     from sys import implementation
-    mp_version = ".".join([str(e) for e in implementation.version])
-    if mp_version not in metadata.get("micropython_versions", []):
-        raise Exception(f"MicroPython version {mp_version} not in supported versions: {metadata.get('micropython_versions')}")
+    mp_version_obj = Version(
+        major=implementation.version[0],
+        minor=implementation.version[1],
+        patch=implementation.version[2],
+        candidate=implementation.version[3]
+    )
+    supported_micropython_versions = [Version.from_str(v) for v in metadata.get("micropython_versions", [])]
+    if not any(mp_version_obj == m for m in supported_micropython_versions):
+        raise Exception(f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}")
 
     # hardware version
     hardware = "Unknown"
@@ -481,6 +501,7 @@ def write_files():
                 pass
             
             print(f"Writing {path}")
+            # TODO seek to josn_str + path length to make sure if we get an exception at a weird spot above we recover
             with open(path, "wb") as out_f:
                 while True:
                     chunk = f.readline(1024)
