@@ -258,7 +258,7 @@ async function checkForUpdates() {
 			updateButton.addEventListener('click', async () => {
 				// TODO confirm action
 				const url = data['releases'][data['reccomended']]['update-url']
-				await applyUpdate(url);
+				await confirmAction("update to " + data['reccomended'], applyUpdate(url));
 			});
 		}
 	} catch (e) {
@@ -268,27 +268,69 @@ async function checkForUpdates() {
 	}
 }
 
-// apply update
 async function applyUpdate(url) {
 	// TODO confirm action
-	req_data = {
-		'url':url
-	};
+	req_data = { 'url': url };
 	const response = await window.smartFetch('/api/update/apply', req_data, true);
 	if (!response.ok) {
 		throw new Error('Failed to start update');
 	}
+
+	const updateModal = document.getElementById('update-progress-modal');
+	updateModal.showModal();
+
 	const reader = response.body.getReader();
 	const decoder = new TextDecoder();
+	const progressBar = document.getElementById('update-progress-bar');
+	const updateProgressLog = document.getElementById('update-progress-log');
 
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		console.log(decoder.decode(value, { stream: true }));
+	try {
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			let msg = decoder.decode(value, { stream: true });
+			
+			msg = msg.split('}{');
+			for (let i = 0; i < msg.length; i++) {
+				if (i !== 0) {
+					msg[i] = '{' + msg[i];
+				}
+				if (i !== msg.length - 1) {
+					msg[i] = msg[i] + '}';
+				}
+			}
+
+			for (let i = 0; i < msg.length; i++) {
+				const msg_obj = JSON.parse(msg[i]);
+				
+				if (msg_obj.log) {
+					updateProgressLog.textContent += msg_obj.log + '\n';
+				}
+				if (msg_obj.percent) {
+					progressBar.value = msg_obj.percent;
+				}
+			}
+
+			// scroll to the bottom of the log
+			updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
+		}
+	} catch (e) {
+		// if progress bar is at 100% then the update was successful and the server has just rebooted
+		if (progressBar.value === 100) {
+			// refresh the page
+			window.location.reload();
+		} else {		
+			updateProgressLog.textContent += 'Connection lost.\n';
+			updateProgressLog.textContent += 'Refresh the page and Try again.\n';
+			progressBar.value = 0;
+			return;
+		}
 	}
+
 	if (response.status !== 200) {
-		console.error('Failed to apply update:', response.status);
-		alert('Failed to apply update.');
+		updateProgressLog.textContent += 'Failed to apply update.\n';
+		updateProgressLog.textContent += 'Status: ' + response.status + '\n';
+		updateProgressLog.textContent += 'Status Text: ' + response.statusText + '\n';
 	}
 }
 

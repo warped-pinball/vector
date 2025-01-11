@@ -360,7 +360,7 @@ def validate_compatibility():
 def apply_update(url):
     from time import sleep
 
-    yield {"log": f"Downloading update from {url}", "percent": 0}
+    yield {"log": f"Downloading update from {url}", "percent": 2}
     # will yield percent updates as it downloads
     yield from download_update(url)
 
@@ -383,11 +383,14 @@ def apply_update(url):
             yield {"log": "The update has failed at a critical point. If you are unable to recover, please contact us for help.", "percent": 40}
             return
 
-    yield {"log": "Update complete, rebooting", "percent": 100}
+    yield {"log": "Update complete, Device will now reboot", "percent": 98}
+    yield {"log": "Web interface changes may take up to 10 minutes to show up", "percent": 99}
+    yield {"log": "This page should automatically reload in ~30 seconds, if not please do so manually", "percent": 100}
+    
     from machine import reset as machine_reset
     from reset_control import reset as reset_control
     reset_control()
-    sleep(2)
+    sleep(2) # make sure the game fully shuts down and allow last messages to be finish sending
     machine_reset()
 
 def crc16_of_file(path: str) -> str:
