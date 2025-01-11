@@ -1,19 +1,14 @@
-#TODO remove unused imports
 import uasyncio, os, time
 from . import logging
-from machine import Timer
 import machine
 import SPI_Store as fram
-from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE
+from Shadow_Ram_Definitions import SRAM_DATA_LENGTH,SRAM_DATA_BASE
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from machine import RTC
 import ntptime,time
 import displayMessage
 import resource
-import SharedState
-import reset_control 
 import gc
-import SPI_DataStore as DataStore
 import GameStatus
 import faults
 
