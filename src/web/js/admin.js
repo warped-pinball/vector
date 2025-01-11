@@ -231,7 +231,7 @@ async function checkForUpdates() {
 			// no update available	
 			updateButton.style.backgroundColor = '#8e8e8e';
 			updateButton.style.borderColor = '#8e8e8e';
-			updateButton.textContent = 'Up to date';
+			updateButton.textContent = 'Already up to date';
 			updateButton.disabled = true;
 
 			// try to link to current release notes data[data['current']]['release-url']
@@ -336,3 +336,16 @@ async function applyUpdate(url) {
 
 checkForUpdates();
 window.applyUpdate = applyUpdate;
+
+// custom update function
+window.customUpdate = async function () {
+	// prompt the user for the update url
+	const url = prompt('Enter the URL for the update');
+	if (url === null) {
+		return;
+	}
+	// confirm url
+	await confirmAction("update with file at " + url, async () => {
+		await window.applyUpdate(url);
+	});
+}

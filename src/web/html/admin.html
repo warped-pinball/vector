@@ -126,8 +126,16 @@
                 <a id="release-notes" target="_blank" rel="noopener noreferrer"></a>
             </div>
         </div>
-            
-        <input type="file" id="update-upload" name="update-upload" hidden onChange="window.handleUpdateUploadChange(event)">
+    </section>
+    <section>
+        <div class="grid">
+            <div>
+                <button id="update-button" onclick="window.customUpdate()">Upload Developer Build</button>
+            </div>
+            <div>
+                <p>This feature is intended for developers, and advanced users. Use at your own risk.</p>
+            </div>
+        </div>  
     </section>
     <section>
         <h3>Export Data</h3>

@@ -303,8 +303,10 @@ def download_update(url):
     if response.status_code != 200:
         raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
 
-    total_percent = 30
+    start_percent = 2
+    end_percent = 30
     total_length = int(response.headers.get("Content-Length", 200000))
+    percent_per_byte = (end_percent - start_percent) / total_length
     with open("update.json", "wb") as f:    
         while True:
             chunk = response.raw.read(1024)
@@ -312,7 +314,7 @@ def download_update(url):
                 break
             f.write(chunk)
             yield {
-                "percent": (f.tell() / total_length) * total_percent
+                "percent": start_percent + (f.tell() * percent_per_byte)
             }
 
     response.close()
@@ -421,16 +423,16 @@ def write_files():
     from os import remove
     from binascii import a2b_base64
 
-    start_percent = 40
-    end_percent = 98
-    range_percent = end_percent - start_percent
-
     last_line_len = len(read_last_significant_line("update.json"))
     end_of_content = 0
     with open("update.json", "rb") as f:
         f.seek(0, 2)
         end_of_content = f.tell() - last_line_len - 1
         
+    start_percent = 40
+    end_percent = 98
+    percent_per_byte = end_percent - start_percent / end_of_content
+
     # remove_extra_files.py{"checksum":"04D9","bytes":1827,"log":"Removing extra files","execute":true}aW1wb3J0IG9zCgpr
     with open("update.json", "r") as f:
         # Skip the first line (metadata)
@@ -439,8 +441,7 @@ def write_files():
         # loop until we reach the end of the files section
         while f.tell() < end_of_content:
             # yield a percent update
-            percent = (f.tell() / end_of_content) * range_percent
-            percent += start_percent
+            percent = f.tell() * percent_per_byte + start_percent
             yield {"percent": percent}
 
             # read character by character to the first { to get the path
