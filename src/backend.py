@@ -596,60 +596,6 @@ def app_getLogs(request):
 #
 # Updates
 #
-@add_route("/api/update/validate_compatibility", method="POST", auth=True)
-def app_validate_update(request):
-    data = request.data
-
-    # update file format
-    supported_update_file_formats = ["1.0"]
-    incoming_update_file_format = data.get("update_file_format", "")
-    if not incoming_update_file_format in supported_update_file_formats:
-        return f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}", 400
-    
-    # warped pinball version
-    from SharedState import WarpedVersion
-    if WarpedVersion not in data.get("supported_software_versions", []):
-        return f"Version {WarpedVersion} not in supported versions: {data.get('supported_software_versions')}", 400
-    
-    # micopython version
-    from sys import implementation
-    mp_version = ".".join([str(e) for e in implementation.version])
-    if mp_version not in data.get("micropython_versions", []):
-        return f"MicroPython version {mp_version} not in supported versions: {data.get('micropython_versions')}", 400
-
-    # hardware version
-    hardware = "Unknown"
-    try:
-        if implementation._machine == 'Raspberry Pi Pico W with RP2040':
-            hardware = "vector_v4"
-    except Exception as e:
-        pass
-    #TODO implement flash chip check
-    has_sflash = True
-    if has_sflash:
-        hardware = "vector_v5"
-
-    if not hardware in data.get("supported_hardware", []):
-        return f"Hardware ({hardware}) not in supported hardware list: {data.get('supported_hardware')}", 400
-    
-
-    return "ok", 200
-
-@add_route("/api/update/file_index", method="POST", single_instance=True, auth=True)
-def app_file_index(request):
-    # list all files in the file system
-    from ls import ls
-    from FileIO import file_base64_crc16s
-    chunk_size = request.data.get("chunk_size", 1024)
-    files = ls('/')
-    file_checksums = {}
-    for file in files:
-        # returns the cc16 checksum of the file at each chunk
-        # we remove the implicit '/' at the start of the file path
-        file_checksums[file] = file_base64_crc16s(file, chunk_size)
-    return json_dumps(file_checksums), 200
-
-
 @add_route("/api/update/check")
 def app_updates_available(request):
     from update import check_for_updates
