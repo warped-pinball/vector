@@ -225,9 +225,7 @@ async function checkForUpdates() {
 	
 	try {
 		if (data['current'] === data['reccomended']) {
-			
-			// TODO when no update allow the user to input their own url to download the update
-			
+						
 			// no update available	
 			updateButton.style.backgroundColor = '#8e8e8e';
 			updateButton.style.borderColor = '#8e8e8e';
@@ -256,7 +254,6 @@ async function checkForUpdates() {
 			releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
 
 			updateButton.addEventListener('click', async () => {
-				// TODO confirm action
 				const url = data['releases'][data['reccomended']]['update-url']
 				await confirmAction("update to " + data['reccomended'], applyUpdate(url));
 			});
@@ -269,7 +266,6 @@ async function checkForUpdates() {
 }
 
 async function applyUpdate(url) {
-	// TODO confirm action
 	req_data = { 'url': url };
 	const response = await window.smartFetch('/api/update/apply', req_data, true);
 	if (!response.ok) {
