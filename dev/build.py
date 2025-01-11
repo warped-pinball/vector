@@ -9,7 +9,6 @@ import json
 import time
 import math
 import gzip
-from pathlib import Path
 from bs4 import BeautifulSoup
 from jsmin import jsmin
 from csscompressor import compress
