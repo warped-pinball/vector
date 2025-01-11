@@ -1,5 +1,3 @@
-#TODO add license for mrequests
-
 class Version():
     def __init__(self, major:int, minor:int, patch:int, candidate=None):
         self.major = major
@@ -465,7 +463,7 @@ def write_files():
                 if c == "{":
                     break
                 path += c
-            
+
             # if path doesn't start with a / add it
             if not path.startswith("/"):
                 path = "/" + path
@@ -477,6 +475,9 @@ def write_files():
                 if c == "}":
                     break
             metadata = json_loads(json_str)
+
+            # file start checkpoint
+            file_data_start = f.tell()
 
             try:
                 # get the check
@@ -491,8 +492,8 @@ def write_files():
                     break
             except Exception as e:
                 # we want to skip if we can
-                # but if there are any errors, we should just copy the file
-                pass
+                # but if there are any errors, we should just copy the file normally
+                f.seek(file_data_start) # jump back to the start of the file data
             
             # delete the original file if it exists
             try:
@@ -500,8 +501,6 @@ def write_files():
             except OSError:
                 pass
             
-            print(f"Writing {path}")
-            # TODO seek to josn_str + path length to make sure if we get an exception at a weird spot above we recover
             with open(path, "wb") as out_f:
                 while True:
                     chunk = f.readline(1024)
