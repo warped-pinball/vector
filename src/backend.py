@@ -622,6 +622,11 @@ def app_apply_update(request):
             {'log': 'Try again in a moment', 'percent': 100}
         )
 
+
+
+#
+# APP mode route of AP mode only routes
+#
 def add_app_mode_routes():
     '''Routes only available in app mode'''
     @add_route("/api/in_ap_mode")
