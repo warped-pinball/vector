@@ -599,7 +599,6 @@ def app_getLogs(request):
 @add_route("/api/update/check")
 def app_updates_available(request):
     from update import check_for_updates
-    print('checking for updates')
     return check_for_updates()
 
 @add_route("/api/update/apply", method="POST", auth=True)
