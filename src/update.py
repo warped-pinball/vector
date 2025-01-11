@@ -246,7 +246,6 @@ def get_check_data(path="update.json"):
         f.seek(0, 2)
         file_size = f.tell()
     end_of_content = file_size - len(last_line_bytes) - 2 # -1 for the newline at the end and another for off by one I guess
-    print(f"End of content: {end_of_content}")
 
     # We do a chunk-based read up to 'end_of_content'
     hasher = sha256()
@@ -278,7 +277,6 @@ def validate_signature():
     
     from rsa.key import PublicKey
     from rsa.pkcs1 import verify
-    from logger import logger_instance as Log
 
     pub_key = PublicKey(
         n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,
@@ -409,10 +407,7 @@ def crc16_of_file(path: str) -> str:
 
     crc = 0xFFFF
     with open(path, "rb") as file:
-        while True:
-            chunk = file.read(1024)
-            if not chunk:
-                break
+        while chunk := file.read(1024):
             crc = crc16_ccitt(chunk, crc)
 
     return f"{crc:04X}"
@@ -446,8 +441,7 @@ def write_files():
 
             # read character by character to the first { to get the path
             path = ""
-            while True:
-                c = f.read(1)
+            while c := f.read(1):
                 if c == "{":
                     break
                 path += c
@@ -458,8 +452,7 @@ def write_files():
 
             # read in json until the end of the object
             json_str = c
-            while True:
-                c = f.read(1)
+            while c := f.read(1):
                 json_str += c
                 if c == "}":
                     break
@@ -501,31 +494,26 @@ def write_files():
 
             # if execute is true, run the file
             if metadata.get("execute", False):
-                try:
-                    #  build what the import statement would look like
-                    module_path = path.replace("/", ".").replace(".py", "")
-                    if module_path.startswith("."):
-                        module_path = module_path[1:]
-                    imported_module = __import__(module_path)
-
-                    # if the module has a main function, execute it
-                    if hasattr(imported_module, "main"):
-                        imported_module.main()
-
-                    try:
-                        from os import remove
-                        remove(path) # execute once then remove
-                    except OSError:
-                        pass # if the file doesn't exist, that's fine
-                except Exception as e:
-                    #TODO should we make an option to indiacte if we should continue or not on error?
-                    raise Exception(f"Failed to execute {path}: {e}")
+                execute_file(path, remove_after=True)
 
 
-                
-                
-                
-                
-            
+def execute_file(path, remove_after=True):
+    try:
+        #  build what the import statement would look like
+        module_path = path.replace("/", ".").replace(".py", "")
+        if module_path.startswith("."):
+            module_path = module_path[1:]
+        imported_module = __import__(module_path)
 
-# TODO probably make use of walrus operator in this file to simplify some of the code
+        # if the module has a main function, execute it
+        if hasattr(imported_module, "main"):
+            imported_module.main()
+
+        if remove_after:
+            try:
+                from os import remove
+                remove(path) # execute once then remove
+            except OSError:
+                pass # if the file doesn't exist, that's fine
+    except Exception as e:
+        raise Exception(f"Failed to execute {path}: {e}")
