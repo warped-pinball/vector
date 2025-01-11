@@ -27,7 +27,7 @@ from rsa import common, transform, core
 
 try:
     from typing import Optional, Iterator, Union
-    from rsa.key import PublicKey, PrivateKey
+    from rsa.key import PublicKey
 
     try:
         from typing import Protocol
@@ -203,134 +203,6 @@ def encrypt(message: bytes, pub_key: PublicKey) -> bytes:
     return block
 
 
-def decrypt(crypto: bytes, priv_key: PrivateKey) -> bytes:
-    """Decrypts the given message using PKCS#1 v1.5
-
-    The decryption is considered 'failed' when the resulting cleartext doesn't
-    start with the bytes 00 02, or when the 00 byte between the padding and
-    the message cannot be found.
-
-    :param bytes crypto: the crypto text as returned by :py:func:`rsaencrypt`
-    :param PrivateKey priv_key: the :py:class:`rsaPrivateKey` to decrypt with.
-    :raise DecryptionError: when the decryption fails. No details are given as
-        to why the code thinks the decryption fails, as this would leak
-        information about the private key.
-
-
-    >>> import rsa.rsa
-    >>> (pub_key, priv_key) = rsanewkeys(256)
-
-    It works with strings:
-
-    >>> crypto = encrypt(b'hello', pub_key)
-    >>> decrypt(crypto, priv_key)
-    b'hello'
-
-    And with binary data:
-
-    >>> crypto = encrypt(b'\x00\x00\x00\x00\x01', pub_key)
-    >>> decrypt(crypto, priv_key)
-    b'\x00\x00\x00\x00\x01'
-
-    Altering the encrypted information will *likely* cause a
-    :py:class:`rsapkcs1.DecryptionError`. If you want to be *sure*, use
-    :py:func:`rsasign`.
-
-
-    .. warning::
-
-        Never display the stack trace of a
-        :py:class:`rsapkcs1.DecryptionError` exception. It shows where in the
-        code the exception occurred, and thus leaks information about the key.
-        It's only a tiny bit of information, but every bit makes cracking the
-        keys easier.
-
-    >>> crypto = encrypt(b'hello', pub_key)
-    >>> crypto = crypto[0:5] + b'X' + crypto[6:] # change a byte
-    >>> decrypt(crypto, priv_key)
-    Traceback (most recent call last):
-    ...
-    rsapkcs1.DecryptionError: Decryption failed
-
-    """
-
-    blocksize = common.byte_size(priv_key.n)
-    encrypted = transform.bytes2int(crypto)
-    decrypted = priv_key.blinded_decrypt(encrypted)
-    cleartext = transform.int2bytes(decrypted, blocksize)
-
-    # Find the 00 separator between the padding and the message
-    try:
-        sep_idx = cleartext.index(b"\x00", 2)
-    except ValueError as err:
-        raise DecryptionError("Decryption failed") from err
-
-    return cleartext[sep_idx + 1 :]
-
-
-def sign_hash(
-    hash_value: Optional[bytes],
-    priv_key: PrivateKey,
-    hash_method: Literal["MD5", "SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512"],
-) -> bytes:
-    """Signs a precomputed hash with the private key.
-
-    Hashes the message, then signs the hash with the given key. This is known
-    as a "detached signature", because the message itself isn't altered.
-
-    :param bytes hash_value: A precomputed hash to sign (ignores message). Should be
-        set to ``None`` if needing to hash and sign message.
-    :param PrivateKey priv_key: the :py:class:`rsaPrivateKey` to sign with
-    :param hash_method: the hash method used on the message. Use 'MD5', 'SHA-1',
-        'SHA-224', SHA-256', 'SHA-384' or 'SHA-512'.
-    :return: a message signature block.
-    :raise OverflowError: if the private key is too small to contain the
-        requested hash.
-
-    """
-
-    # Get the ASN1 code for this hash method
-    if hash_method not in HASH_ASN1:
-        raise ValueError("Invalid hash method: %s" % hash_method)
-    asn1code = HASH_ASN1[hash_method]
-
-    # Encrypt the hash with the private key
-    cleartext = asn1code + hash_value
-    keylength = common.byte_size(priv_key.n)
-    padded = _pad_for_signing(cleartext, keylength)
-
-    payload = transform.bytes2int(padded)
-    encrypted = priv_key.blinded_encrypt(payload)
-    block = transform.int2bytes(encrypted, keylength)
-
-    return block
-
-
-def sign(
-    message: Union[bytes, _FileLikeObject], priv_key: PrivateKey, hash_method: str
-) -> bytes:
-    """Signs the message with the private key.
-
-    Hashes the message, then signs the hash with the given key. This is known
-    as a "detached signature", because the message itself isn't altered.
-
-    :param message: the message to sign. Can be an 8-bit string or a file-like
-        object. If ``message`` has a ``read()`` method, it is assumed to be a
-        file-like object.
-    :param PrivateKey priv_key: the :py:class:`rsaPrivateKey` to sign
-        with
-    :param hash_method: the hash method used on the message. Use 'MD5', 'SHA-1',
-        'SHA-224', SHA-256', 'SHA-384' or 'SHA-512'.
-    :return: a message signature block.
-    :raise OverflowError: if the private key is too small to contain the
-        requested hash.
-
-    """
-
-    msg_hash = compute_hash(message, hash_method)
-    return sign_hash(msg_hash, priv_key, hash_method)
-
-
 def verify(
     message: Union[bytes, _FileLikeObject], signature: bytes, pub_key: PublicKey
 ) -> str:
@@ -459,8 +331,6 @@ def _find_method_hash(clearsig: bytes) -> str:
 
 __all__ = [
     "encrypt",
-    "decrypt",
-    "sign",
     "verify",
     "DecryptionError",
     "VerificationError",
