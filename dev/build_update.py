@@ -139,7 +139,7 @@ def build_update_file(
         "update_file_format": "1.0",
         "supported_hardware": ["vector_v4", "vector_v5"],
         "supported_software_versions": ["0.3.0"],
-        "micropython_versions": ["1.23.0.preview"],
+        "micropython_versions": ["1.24.1"],
         "version": version
     }
     metadata_line = json.dumps(meta_data, separators=(',', ':'))
