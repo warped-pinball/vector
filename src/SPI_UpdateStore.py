@@ -9,7 +9,6 @@ flash chip performance:
     block erase - max 2s
     byte program 30uS
 
-
 Usage:
     initialize() - call at power up
     tick() - call periodically always! to manage ongoing erase operations
@@ -47,8 +46,8 @@ Five Blocks of Mbyte each used in this module (could be expanded to more)
 
 #status of state machines stuff in FRAM
 FRAM_ADDRESS = 0x2000
-FRAM_LENGTH  = 0x0FF     #reserved (256 bytes)
-FRAM_BYTES_USED = 210
+FRAM_LENGTH = 0x0FF     #reserved (256 bytes)
+FRAM_BYTES_USED = 250
 
 # each section has a status descriptor in FRAM:
 SECTION_STATUS_DESC = {
@@ -59,9 +58,9 @@ SECTION_STATUS_DESC = {
     "erase_pointer": (uctypes.UINT8 | 7),       # 1 byte (block number)
     "read_pointer": (uctypes.UINT32 | 8),       #32 bit address
     "write_pointer": (uctypes.UINT32 | 12),     #32 bit address   (offset 12,13,14,15)
-    "description": (uctypes.ARRAY | 16, uctypes.UINT8 | 20),  # string of length 20  (16-36)
+    "description": (uctypes.ARRAY | 16, uctypes.UINT8 | 20),  # string of length 20  (16-35)
     "dev_version_flag": (uctypes.UINT8 | 36),   # 1 byte (0=dev version, 1=production version)
-    "reserved": (uctypes.ARRAY | 37, uctypes.UINT8 | 3)  # reserved for future use
+    "reserved": (uctypes.ARRAY | 37, uctypes.UINT8 | 2)  # reserved for future use
 }
 
 #section state types
@@ -103,7 +102,7 @@ def _get_block_status(data, index):
         return None 
 
 #helper function to set block status
-def _set_block_status(block, state, version_major, version_middle, version_minor, erase_pointer, read_pointer, write_pointer):            
+def _set_block_status(block, state, version_major, version_middle, version_minor, erase_pointer=0, read_pointer=0, write_pointer=0, description=" \n", devflag=0):            
     block.state=state
     block.version_major = version_major
     block.version_middle = version_middle
@@ -111,6 +110,13 @@ def _set_block_status(block, state, version_major, version_middle, version_minor
     block.erase_pointer = erase_pointer
     block.read_pointer = read_pointer
     block.write_pointer = write_pointer
+    
+    if isinstance(description, str):
+       description = description.encode('utf-8')
+    max_len = len(data.block_status_0.description) 
+    write_len = min(len(description), max_len)
+    block.description[:len(description)] = description[:write_len]
+    block.dev_version_flag = devflag
 
 def _print_block_status(block_status, name):
     print(f"  {name}:")
@@ -121,11 +127,15 @@ def _print_block_status(block_status, name):
         BLOCK_STATUS_FILLING: "FILLING",
         BLOCK_STATUS_READING: "READING"
     }.get(block_status.state, "UNKNOWN")
-    print("    State:", state_text)
-    print("    Version:", block_status.version_major,":", block_status.version_middle,":", block_status.version_minor)            
-    print("    Erase Pointer:", block_status.erase_pointer)
-    print("    Read Pointer:", block_status.read_pointer)
+    print("    State:", state_text,"    ",end="")
+    print("    Version:", block_status.version_major,":", block_status.version_middle,":", block_status.version_minor,"   ",end="")            
+    print("    Dev Version Flag:", block_status.dev_version_flag)
+    print("    Erase Pointer:", block_status.erase_pointer,"   ",end="")
+    print("    Read Pointer:", block_status.read_pointer,"   ",end="")
     print("    Write Pointer:", block_status.write_pointer)
+    description = block_status.description.split(b'\0', 1)[0].split(b'\n', 1)[0].decode('utf-8')
+    print("    Description:", description)
+   
 
 #return index for open block - return index
 def _find_empty_block():    
@@ -235,19 +245,23 @@ def erase_oldest_version_program_space():
         _write_status_to_fram() 
         return True
 
-
 def report_all_version_numbers():
     """
-    dignostic / reporting function
+    diagnostic / reporting function
     """
     versions = []
     for i in range(SFLASH_NUM_PGMS):
         dblk = _get_block_status(data, i)
         if dblk:
-            version_str = f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor}"
-            versions.append(version_str)
-    return versions
 
+            #description = bytes(filter(lambda x: 32 <= x <= 126, dblk.description)).decode('utf-8').split('\0', 1)[0].split('\n', 1)[0]
+
+            description = dblk.description.split(b'\0', 1)[0].split(b'\n', 1)[0].decode('utf-8')
+
+            version_str = f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor} - {description}"
+            versions.append(version_str)
+            
+    return versions
 
 #Reccomended to check for busy before using read/write below - 
 #can check before read or write or erase operation is started
@@ -259,32 +273,52 @@ def is_busy_erasing():
     return False
 
 
+def read_generator_by_description(description,chunk_size_bytes=1000):
+    """
+    read generator - pick program by description string
+    """
+    if isinstance(description, str):
+        description = description.encode('utf-8')
 
-def read_generator(chunk_size_bytes=1000,readNewest=True):
+    for i in range(SFLASH_NUM_PGMS):
+        dblk = _get_block_status(data, i)
+        block_description = dblk.description.split(b'\0', 1)[0].split(b'\n', 1)[0]
+        if block_description == description:
+            yield from read_generator(chunk_size_bytes, i)
+            return
+
+def read_generator_oldest(chunk_size_bytes=1000):
+    """
+    read the oldest stored block
+    """
+    block_number , _ = _find_oldest_version_program_block()
+    yield from read_generator(chunk_size_bytes,block_number)
+    return 
+
+def read_generator(chunk_size_bytes=1000,block_number=-1):
     """
     read generator
-        first call will return None if the chip is busy erasing something
+        picks the newest block if no block number is given
 
         repeat calls until end,
     ]"""
     if is_busy_erasing()==True:
         return None
 
-    if readNewest==True:
-        blk_num , _ = _find_newest_version_program_block()
-    else:
-        blk_num , _ = _find_oldest_version_program_block()
+    if block_number==-1:
+        block_number , _ = _find_newest_version_program_block()
 
-    if blk_num is None:
+    if block_number is None or block_number >= SFLASH_NUM_PGMS or block_number<0:
         return None
 
-    dblk = _get_block_status(data, blk_num)
+    dblk = _get_block_status(data, block_number)
     dblk.state = BLOCK_STATUS_READING
     dblk.read_pointer=0
+    print(f"Reading from block {block_number} ...")
 
     while dblk.read_pointer<dblk.write_pointer:
         read_size = min(chunk_size_bytes,dblk.write_pointer-dblk.read_pointer)
-        yield SPI_Store.sflash_read(SFLASH_PRG_START + (SFLASH_PRG_SIZE * blk_num) + dblk.read_pointer,read_size)
+        yield SPI_Store.sflash_read(SFLASH_PRG_START + (SFLASH_PRG_SIZE * block_number) + dblk.read_pointer,read_size)
         dblk.read_pointer += read_size
 
     dblk.state = BLOCK_STATUS_FULL   
@@ -302,32 +336,29 @@ def write_consumer(version):
     if is_busy_erasing():        
         print("Can't write: erasing in progress.")
         return "fault busy"
-
     
     blk_num = _find_empty_block()
     if blk_num is None:
         return "fault - no block"
-
     dblk = _get_block_status(data, blk_num)
-    dblk.state = BLOCK_STATUS_FILLING
-    dblk.write_pointer = 0
-    
-    # Decompose version string into three ints xx, yy, and zz
-    try:
-        print(version)
+    description = version + '\0'
+
+    try:        
         # Find the first non-numeric or non-decimal point character
+        dev = 0
+        non_numeric_count = 0
         for i, char in enumerate(version):
             if not (char.isdigit() or char == '.'):
+                non_numeric_count += 1
                 version = version[:i]
-                break
-        print(version)
-        version_numbers = version.split('.')[0:3]
-        print(version_numbers)
+                if non_numeric_count >= 3:               
+                    dev = 1            
+        
+        version_numbers = version.split('.')[0:3]        
         # Extract only the numeric part from each version component
-        version_numbers = [int(''.join(filter(str.isdigit, v))) for v in version_numbers]
-        print(version_numbers)
-        dblk.version_major, dblk.version_middle, dblk.version_minor = version_numbers
-        print(dblk.version_major, dblk.version_middle, dblk.version_minor)
+        a,b,c = [int(''.join(filter(str.isdigit, v))) for v in version_numbers]        
+        _set_block_status(dblk, BLOCK_STATUS_FILLING, a, b, c, 0, 0, 0, description, dev)
+
     except ValueError:
         print("Invalid version format. Expected 'xx.yy.zz'")
         return "fault invalid version"
@@ -360,9 +391,11 @@ def write_consumer(version):
 
 
 
-# call at power up - will do integrity check
-# relaunch paused erase processes
 def initialize():
+    """
+    call at power up
+    re-launches erase processes that were stopped mid way
+    """
     _read_status_from_fram()
     #look for any block in the middle of erase and restart it
     for i in range(SFLASH_NUM_PGMS):
@@ -382,9 +415,9 @@ def initialize():
 #dump all sflash data for all programs, reset structures
 #BLOCKING - intended for facotry reset only
 def blank_all():
-    
-    data.state_reserve = 0
-    data.progr_reserve = 0
+
+    block_status=_get_block_status(data, 0)
+    _set_block_status(block_status, BLOCK_STATUS_EMPTY, 0, 0, 0, 0, 0, 0)
 
     # Erase each block with wait on
     for i in range(SFLASH_NUM_PGMS):
@@ -411,6 +444,8 @@ def test():
         _print_block_status(data.block_status_0, "Block Status 0")
         _print_block_status(data.block_status_1, "Block Status 1")
         _print_block_status(data.block_status_2, "Block Status 2")
+        _print_block_status(data.block_status_3, "Block Status 3")
+        _print_block_status(data.block_status_4, "Block Status 4")
 
 
     def print_all_status():
@@ -429,7 +464,7 @@ def test():
 
     #blank_all()  #<<manufacturing reset all 
 
-
+   
     #basic read newest block out
     if False:
         r=read_generator(25,True)        
@@ -437,12 +472,12 @@ def test():
             print ("data read: ",d)
 
 
-
     #read test looking at data pattern
     expected_value = 0
     num_of_bytes = 0
     if False:  #read test
-        rgen=read_generator(25,True)        
+        #rgen=read_generator(25,True)        
+        rgen=read_generator_by_description("1.3.5 dev-3",25)
         for d in rgen:
             print ("data read-: ",d)
             for byte in d:
@@ -450,17 +485,17 @@ def test():
                 #print(" ",byte,end="")
                 if byte != expected_value:
                     print ("FAULT")
-                expected_value= (expected_value+1)%11
-    print("total bytes = ",num_of_bytes)
+                expected_value= (expected_value+1)%15
+        print("total bytes = ",num_of_bytes)
  
 
 
     if (True):  #write progrm to block
-        print("start test write")
+        print("start test write - - - - - ")
         #test_data = bytearray([(i) for i in range(9)]) 
-        #test_data = bytearray([(i) for i in range(15)]) 
-        test_data = bytearray([(i) for i in range(11)])
-        w=write_consumer("21.42.34 dev 3")
+        test_data = bytearray([(i) for i in range(15)])   #b1
+        #test_data = bytearray([(i) for i in range(11)])  #b0
+        w=write_consumer("2.2.2\n")
         next(w)
         for i in range(1000):            
             w.send(test_data)
@@ -469,77 +504,32 @@ def test():
         except StopIteration:
             pass
 
-    print_all_status()
 
-    #tick erase test
-    if True:
+
+    #print_all_status()
+    print_data_structure(data)
+   
+
+    #tick auto-erase test if all blocks are full
+    if False:
         for x in range(890):
             tick()
             print(".",end="")
 
-        for x in range(40):
+        for x in range(50):
             tick()
             print(";",end="")
             time.sleep(1)
         
-    print_all_status()
-
-    if (False):
-        data.state_reserve = 3
-        data.progr_reserve = 4
-        data.block_status_0.state = BLOCK_STATUS_FULL
-        data.block_status_0.version_major = 11
-        data.block_status_0.version_middle = 10
-        data.block_status_0.version_minor = 11
-        data.block_status_0.erase_pointer = 0
-        data.block_status_0.read_pointer = 0
-        data.block_status_0.write_pointer = 112
-
-        data.block_status_1.state = BLOCK_STATUS_EMPTY
-        data.block_status_1.version_major = 12
-        data.block_status_1.version_middle = 13
-        data.block_status_1.version_minor = 14
-        data.block_status_1.erase_pointer = 0
-        data.block_status_1.read_pointer = 0
-        data.block_status_1.write_pointer = 0
-
-        data.block_status_2.state = BLOCK_STATUS_EMPTY
-        data.block_status_2.version_major = 72
-        data.block_status_2.version_middle = 83
-        data.block_status_2.version_minor = 94
-        data.block_status_2.erase_pointer = 0
-        data.block_status_2.read_pointer = 0
-        data.block_status_2.write_pointer = 0
-        
-        _write_status_to_fram()     
-    
-        test_data = bytearray([(i) for i in range(9)]) 
-
-        w=write_consumer("34.12.34")
-        next(w)
-        for i in range(10):
-            #w.send(bytearray[1,2,3,4,5,6,7])
-            w.send(test_data)
-        try:    
-            w.send(None)
-        except StopIteration:
-            pass
-    
-        r=read_generator(25,True)
-        for d in r:
-            print ("data read: ",d)
-
-        print("\n\nagain?")
-        r=read_generator(25,True)
-        for d in r:
-            print ("data read: ",d)
+ 
+    print_data_structure(data)
+    print(report_all_version_numbers())
 
    
     
 if __name__ == "__main__":
     test()
-    #blank_all()
-
+ 
     #SPI_Store.initialize()
 
     #print("blank everything")
