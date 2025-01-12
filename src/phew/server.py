@@ -419,9 +419,9 @@ async def FRAMTimer():
 
         await uasyncio.sleep(0.1)
         if MemIndex >= SRAM_DATA_LENGTH:
-             MemIndex=0
-             print("MEM in SERVER: FRAM cycle complete")
-             led_board.toggle()
+            MemIndex=0
+            print("MEM in SERVER: FRAM cycle complete")
+            led_board.toggle()
 
              
 scCount=[0]
@@ -429,6 +429,9 @@ enableScoreChecks=[0]
 def reset_bootup_counters():
   scCount[0] = 0  
   enableScoreChecks[0] = 0
+
+
+#TODO add sflash tick function somewhere in here
 
 async def ScoreCheck():  #scCount=[0],enableScoreChecks=[0]):
   global scCount,enableScoreChecks
