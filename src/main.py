@@ -6,7 +6,6 @@
     fault check updated for early sys11 game compatability
 '''
 
-import Wifi_Main as Wifi
 import Memory_Main as MemoryMain
 import machine
 from machine import Pin
@@ -20,6 +19,7 @@ import GameDefsLoad
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE,SRAM_COUNT_BASE
 from logger import logger_instance
+import faults
 Log = logger_instance
 from SPI_Store import initialize as initialize_spi_store
 
@@ -67,7 +67,7 @@ def bus_activity_fault_check():
         return False  # All ok
 
 
-def adr_activity_check():
+def adr_activity_ok():
     initial_values = [shadowRam[i] for i in range(0x10, 0x18)]
 
     for _ in range(20):
@@ -76,11 +76,11 @@ def adr_activity_check():
         # Changing?
         if current_values != initial_values:
             Log.log("Main: Acitivy Check OK")
-            return "Pass"  
+            return True
         time.sleep_ms(100)
     
-    Log.log("Main: Acitivy Check FAIL")
-    return "Fail"
+    faults.raise_fault(faults.HDWR02)
+    return False
 
 
 def check_ap_button():
@@ -122,17 +122,15 @@ ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check() 
 if bus_activity_fault == True:
     set_error_led()
-    S.installation_fault = True
-    fault_msg = "Installation Fault Detected"
+    faults.raise_fault(faults.HDWR01)
+    print("Main: Bus Activity fault detected !!")
     Log.log("Main: Reset Circuit fault detected !!")
-else:
-    fault_msg = None
 
 #load up Game Definitions
 if bus_activity_fault==False and ap_mode==False:
     GameDefsLoad.go() 
 else:
-    GameDefsLoad.load_safe_defaults()
+    GameDefsLoad.go(safe_mode=True)
 
 if bus_activity_fault == False:
     MemoryMain.go()     
@@ -142,11 +140,15 @@ reset_control.release(True)
 time.sleep(4) 
 
 if bus_activity_fault == False:
-    if "Fail"==adr_activity_check():
+    if not adr_activity_ok():
         reset_control.reset()
         time.sleep(2)
         reset_control.release(True)
 
+
 #launch wifi, and server. Should not return
-Wifi.go(ap_mode,fault_msg)   #ap mode / bus fault
+from backend import go
+Log.log("MAIN: Launching Wifi")
+go(ap_mode)
 Log.log("MAIN: drop through fault")
+faults.raise_fault(faults.SFTW01)

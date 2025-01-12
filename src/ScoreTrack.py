@@ -174,7 +174,7 @@ def Update_individualScore(new_entry):
     # Load existing scores
     scores=[]
     num_scores=DataStore.memory_map["individual"]["count"]
-    print(" num sores = ",num_scores,playernum)
+    print(" num scores = ",num_scores,playernum)
     for i in range(num_scores): 
         scores.append(DataStore.read_record("individual", i, playernum))     
 

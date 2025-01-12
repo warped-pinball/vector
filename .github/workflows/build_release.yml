@@ -1,74 +1,120 @@
-name: Build Realease
+name: Build and Deploy
 
 on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
+      - name: Check out code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js environment for minifying HTML, CSS, and JS
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
+          python-version: "3.10"
 
-      # Step 3: Install HTML minifier and other dependencies
-      - name: Install HTML minifier and dependencies
+      - name: Install dependencies
         run: |
-          npm install html-minifier-terser --save-dev
+          python -m pip install --upgrade pip
+          pip install -r dev/requirements.txt
 
-      # Step 4: Minify HTML, CSS, and JS
-      - name: Minify HTML, CSS, and JS
+      - name: Determine build environment and version
+        id: determine_version
         run: |
-          mkdir -p compiled
-          find ./src -name "*.html" -not -path "*/app_templates/*" -exec sh -c '
-          mkdir -p compiled/$(dirname "{}")
-          npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "{}" -o compiled/"{}"
-          ' \;
+          BASE_VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')
 
-      # Step 5: Install dependencies for compiling MicroPython files
-      - name: Install build dependencies (gcc, make, etc.)
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ENV="dev"
+            SUFFIX="-dev${{ github.event.pull_request.number }}"
+            VERSION="$BASE_VERSION$SUFFIX"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            ENV="beta"
+            SUFFIX="-beta-${{ github.run_number }}"
+            VERSION="$BASE_VERSION$SUFFIX"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            ENV="prod"
+            VERSION="$BASE_VERSION"
+          else
+            ENV="dev"
+            SUFFIX="-dev"
+            VERSION="$BASE_VERSION$SUFFIX"
+          fi
 
-      # Step 6: Clone MicroPython and build mpy-cross
-      - name: Clone MicroPython and build mpy-cross
+          echo "ENV=$ENV" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Update SharedState.py Version
         run: |
-          git clone https://github.com/micropython/micropython.git
-          cd micropython/mpy-cross
-          make  # Build the mpy-cross compiler
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/SharedState.py
+          git diff src/SharedState.py
 
-      # Step 7: Precompile Python files to .mpy
-      - name: Precompile Python files to .mpy
+      - name: Build project
         run: |
-          find ./src -name "*.py" -exec micropython/mpy-cross/mpy-cross {} -o compiled/{} \;
+          python dev/build.py --build-dir build --env ${{ env.ENV }}
 
-      # Step 8: Copy over all non .html and .py files to the compiled directory
-      - name: Copy non-minified files
+      - name: Create key files (if provided)
         run: |
-          rsync -av --progress ./src/ ./compiled/ --exclude '*.html' --exclude '*.py'
+          if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+          else
+            echo "No private key specified, building unsigned."
+          fi
 
-      # Step 9: Zip the compiled files into an artifact
-      - name: Create zip of compiled files
+      - name: Generate update.json
         run: |
-          zip -r compiled_artifact.zip compiled/
+          if [ -f "private_key.pem" ]; then
+            python dev/build_update.py \
+              --build-dir build \
+              --output update.json \
+              --version "${{ env.VERSION }}" \
+              --private-key private_key.pem
+          else
+            python dev/build_update.py \
+              --build-dir build \
+              --output update.json \
+              --version "${{ env.VERSION }}"
+          fi
 
-      # Step 10: Upload the artifact to GitHub as part of the release
-      - name: Upload compiled artifact
+      # Create (or update) a single pre-release for PRs, using the dev version as the tag_name.
+      - name: Create or Update Pre-Release for Pull Request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          body: |
+            PR: ${{ github.event.pull_request.html_url }}
+            Branch: ${{ github.event.pull_request.head.ref }}
+            Version: ${{ env.VERSION }}
+          prerelease: true
+          files: "update.json"
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only attach update.json to the official GitHub Release if it's a "published" release.
+      - name: Upload artifact to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name == 'release' }}
+        with:
+          files: update.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Always upload update.json as an artifact for debugging or future reference.
+      - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: compiled-artifact
-          path: compiled_artifact.zip
-
-      # Step 11: Attach compiled files to the release
-      - name: Attach compiled artifact to the release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: compiled_artifact.zip
-
+          name: pico-update
+          path: update.json

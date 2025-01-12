@@ -8,21 +8,12 @@
    /GameDefs based on game name in the config
 '''
 import json
-import SPI_DataStore as DataStore
 import SharedState
+import SPI_DataStore
 from logger import logger_instance
+import faults
+from gc import collect as gc_collect
 Log = logger_instance
-
-#loads a game def.json file into memory
-def load_json(file_path):
-    try:
-        #print("open file ",file_path)
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-        return data
-    except Exception as e:
-        Log.log("DEFLOAD: Error loading JSON file:", str(e))
-        raise
 
 #convert any data entered as "0x" (hex) into integers
 def convert_hex_to_int(data):
@@ -39,102 +30,152 @@ def convert_hex_to_int(data):
             Log.log("DEFLOAD: game def Error converting:", str(e))
     return data
 
+safe_defaults = {
+    "GameInfo": {
+        "GameName": "Generic System 11",
+        "System": "11x"        
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory" : {
+        "Start": 0,
+        "Length": 2048,
+        "NvStart": 0,
+        "NvLength": 2048
+    },
 
-#take a game file name and build path with extension
-def build_path(game_name):
-    directory = 'GameDefs'
-    file_extension = '.json'
-    return f"{directory}/{game_name}{file_extension}"
+    "BallInPlay": {
+        "Type": 0,
+        "Address": 56,
+        "Ball1": "0xF1",
+        "Ball2": "0xF2",
+        "Ball3": "0xF3",
+        "Ball4": "0xF4",
+        "Ball5": "0xF5"
+    },
 
+    "DisplayMessage": {
+        "Type": 0,
+        "Address": "0x7B4",
+        "Length": 7,
+        "Number": 6,
+        "EnableByteAddress": "0x7B0"
+    },
 
-def load_safe_defaults():
-    #load up safe defaults
-    print ("DEFLOAD: load safe defaults")
-    data= {
-        "GameInfo": {
-            "GameName": "Generic Sys11",
-            "System": "11x"        
-        },
-        "Definition": {
-            "version": 1
-        },
-        "Memory" : {
-            "Start": 0,
-            "Length": 2048,
-            "NvStart": 0,
-            "NvLength": 2048
-        },
+    "Adjustments" :{
+        "Type": 0,
+        "ChecksumStartAdr": "0x780",
+        "ChecksumEndAdr": "0x7E3",
+        "ChecksumResultAdr": "0x7ED"
+    },
 
-        "BallInPlay": {
-            "Type": 0,
-            "Address": 56,
-            "Ball1": "0xF1",
-            "Ball2": "0xF2",
-            "Ball3": "0xF3",
-            "Ball4": "0xF4",
-            "Ball5": "0xF5"
-        },
+    "HighScores": {
+        "Type": 0,
+        "ScoreAdr": "0x727",
+        "InitialAdr": "0x737",
+        "BytesInScore": 4
+    },
 
-        "DisplayMessage": {
-            "Type": 0,
-            "Address": "0x7B4",
-            "Length": 7,
-            "Number": 6,
-            "EnableByteAddress": "0x7B0"
-        },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 1937,
+        "HS2": 1938,
+        "HS3": 1939,
+        "HS4": 1940,
+        "DisableByte": 0
+    },
 
-        "Adjustments" :{
-            "Type": 0,
-            "ChecksumStartAdr": "0x780",
-            "ChecksumEndAdr": "0x7E3",
-            "ChecksumResultAdr": "0x7ED"
-        },
+    "Switches": {
+        "Type": 0,
+        "Address": 56,
+        "Length": 23
+    },
 
-        "HighScores": {
-            "Type": 0,
-            "ScoreAdr": "0x727",
-            "InitialAdr": "0x737",
-            "BytesInScore": 4
-        },
-
-        "HSRewards": {
-            "Type": 0,
-            "HS1": 1937,
-            "HS2": 1938,
-            "HS3": 1939,
-            "HS4": 1940,
-            "DisableByte": 0
-        },
-
-        "Switches": {
-            "Type": 0,
-            "Address": 56,
-            "Length": 23
-        },
-
-        "CoinDrop": {
-            "Type": 0
-        }
+    "CoinDrop": {
+        "Type": 0
     }
-    SharedState.gdata = convert_hex_to_int(data)
-    print ("DEFLOAD: default data")   
+}
 
-  
-def go():  
-    try:            
-        name=DataStore.read_record("configuration",0)["gamename"].strip('\0')                     
-    except:            
-        name=None
-        Log.log(f"Error reading game name: {e}")
 
-    Log.log(f"DEFLOAD: game= {name}")
-
+def parse_config_line(line):
+    """Parse a line in format: filename{json_data}"""
     try:
-        data = load_json(build_path(name))    
-        SharedState.gdata = convert_hex_to_int(data)
-        #print ("DEFLOAD gdata= ",SharedState.gdata)
-    except:
-        load_safe_defaults()
+        # Find the first opening brace
+        brace_index = line.find('{')
+        if brace_index == -1:
+            return None, None
+            
+        filename = line[:brace_index].strip()
+        json_data = line[brace_index:].strip()
+        data = json.loads(json_data)
+        return filename, data
+    except Exception as e:
+        Log.log(f"Error parsing config line: {e}")
+        return None, None
+
+def find_config_in_file(target_filename):
+    """Read the JSONL file line by line until we find the requested config."""
+    try:
+        with open("config/all.jsonl", "r") as f:
+            for line in f:
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename == target_filename:
+                    return data
+    except Exception as e:
+        Log.log(f"Error reading config file: {e}")
+        return None
+    return None
+
+def list_game_configs():
+    '''List all the game configuration files on the device'''
+    configs = {}
+    try:
+        with open("config/all.jsonl", "r") as f:
+            for line in f:
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename and data:
+                    configs[filename] = {
+                        'name': data["GameInfo"]["GameName"],
+                        'rom': filename.split("_")[-1]
+                    }
+    except Exception as e:
+        Log.log(f"Error listing game configs: {e}")
+        return {}
+    return configs
+
+def go(safe_mode=False):  
+    Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
+    data = safe_defaults
+    
+    if not safe_mode:    
+        try:   
+            config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
+            logger_instance.log(f"Loading game config {config_filename}")
+            all_configs = list_game_configs()
+            
+            if config_filename not in all_configs.keys():
+                faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
+                data = safe_defaults
+            else:
+                config_data = find_config_in_file(config_filename)
+                if config_data:
+                    data = config_data
+                else:
+                    faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
+                    data = safe_defaults
+                    
+        except Exception as e:
+            Log.log(f"Error loading game config: {e}")
+            Log.log("Using safe defaults")
+            faults.raise_fault(faults.CONF00)
+            data = safe_defaults
+    
+    # This isn't wrapped in try/except because if this fails we want to stop execution
+    SharedState.gdata = convert_hex_to_int(data)
+
 
 
 

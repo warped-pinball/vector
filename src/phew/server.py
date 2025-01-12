@@ -1,20 +1,16 @@
 import uasyncio, os, time
 from . import logging
-from machine import Timer
 import machine
 import SPI_Store as fram
-from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE
+from Shadow_Ram_Definitions import SRAM_DATA_LENGTH,SRAM_DATA_BASE
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-import GameDefs
 from machine import RTC
 import ntptime,time
 import displayMessage
 import resource
-import SharedState
-import reset_control 
 import gc
-import SPI_DataStore as DataStore
 import GameStatus
+import faults
 
 ntptime.host = 'pool.ntp.org'  # Setting a specific NTP server
 rtc = RTC()
@@ -67,6 +63,7 @@ class Request:
     self.protocol = protocol
     self.form = {}
     self.data = {}
+    self.raw_data = None  # Will hold the raw JSON body if present
     self.query = {}
     query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
     self.path = uri[:query_string_start]
@@ -83,7 +80,10 @@ data: {self.data}"""
 
 
 class Response:
-  def __init__(self, body, status=200, headers={}):
+  def __init__(self, body, status=200, headers=None):
+    # we can't use {} as default value for headers as it is mutable and would be shared between instances
+    if headers is None:
+      headers = {}
     self.status = status
     self.headers = headers
     self.body = body
@@ -228,7 +228,8 @@ async def _parse_json_body(reader, headers):
   import json
   content_length_bytes = int(headers["content-length"])
   body = await reader.readexactly(content_length_bytes)
-  return json.loads(body.decode())
+  body_str = body.decode()
+  return body_str, json.loads(body_str)
 
 
 status_message_map = {
@@ -266,7 +267,9 @@ async def _handle_request(reader, writer):
     if request.headers["content-type"].startswith("multipart/form-data"):
       request.form = await _parse_form_data(reader, request.headers)
     if request.headers["content-type"].startswith("application/json"):
-      request.data = await _parse_json_body(reader, request.headers)
+      raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+      request.raw_data = raw_body
+      request.data = parsed_data
     if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
       form_data = await reader.read(int(request.headers["content-length"]))
       request.form = _parse_query_string(form_data.decode()) 
@@ -289,12 +292,21 @@ async def _handle_request(reader, writer):
   if isinstance(response, tuple):
     body = response[0]
     status = response[1] if len(response) >= 2 else 200
-    content_type = response[2] if len(response) >= 3 else "text/html"
+    headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+
+    # Handle legacy single content type as a string
+    if isinstance(headers, str):
+        headers = {"Content-Type": headers}
+
     response = Response(body, status=status)
-    response.add_header("Content-Type", content_type)
+
+    # Add all headers
+    for key, value in headers.items():
+      response.add_header(key, value)
+
     if hasattr(body, '__len__'):
       response.add_header("Content-Length", len(body))
-  
+
   # write status line
   status_message = status_message_map.get(response.status, "Unknown")
   writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
@@ -425,18 +437,6 @@ async def ScoreCheck():  #scCount=[0],enableScoreChecks=[0]):
     if enableScoreChecks[0] == 1:      
       CheckForNewScores()
         
-    #password mess...
-    gpw=DataStore.read_record("configuration",0)["Gpassword"]
-    if gpw is None or not isinstance(gpw, str) or len(gpw) <= 1:
-      SharedState.password_status = "open"
-    else:
-      SharedState.password_failCount = max(SharedState.password_failCount - 1, 0)
-      if SharedState.password_status == "open":
-        SharedState.password_expire = SharedState.password_expire + 1
-        if SharedState.password_expire > 20:
-          SharedState.password_status = "block"
-          SharedState.password_expire=0
-
     #power up init - each count is 5 seconds
     #runs 0->10 and ends
     if  scCount[0]<10:
@@ -472,7 +472,7 @@ def run(host = "0.0.0.0", port = 80):
   loop.create_task(uasyncio.start_server(_handle_request, host, port))
   
   #perodic tasks specific to Warped Pinball SYS11
-  if SharedState.installation_fault != True:
+  if not faults.fault_is_raised(faults.ALL_HDWR):
     loop.create_task(FRAMTimer())    #store ram values in non-volatile Fram
     
   loop.create_task(ScoreCheck())   #Check For new scores

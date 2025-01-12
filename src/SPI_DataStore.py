@@ -127,10 +127,10 @@ def deserialize(data, structure_name):
 
 def blankStruct(structure_name):
     fake_entry = {
-        'initials': "_",
-        'full_name': "_",
+        'initials': "",
+        'full_name': "",
         'score': 0,
-        'date': '04/17/2023',
+        'date': '',
         'game': 0,
         'index': 0,
         'enable': 1,
@@ -162,7 +162,7 @@ def blankConfig(structure_name):
             "ssid": "",  
             "password": "", 
             "Gpassword": " ",
-            "gamename": "GenericSystem11", 
+            "gamename": "GenericSystem11_", 
             "enable": 1,    
             "other": 0      
         }   
@@ -171,10 +171,11 @@ def blankConfig(structure_name):
 '''
 
 
+
 def blankIndPlayerScores(playernum):
     fake_entry = {       
         'score': 0,
-        'date': '04/17/2023'
+        'date': ''
     }
     structure = memory_map["individual"]    
     for i in range(structure["count"]):
