@@ -5,7 +5,7 @@ async function fault_check() {
     }
     const data = await response.json(); // list of faults as ["fault1", "fault2", ...]
 
-    const modal_element = document.getElementById('install_warning_modal'); 
+    const modal_element = document.getElementById('install_warning_modal');
     if (data.length > 0) {
         const fault_list = document.getElementById('fault_list');
         fault_list.innerHTML = ''; // Clear any existing faults

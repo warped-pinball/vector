@@ -1,6 +1,7 @@
 DEFAULT_EXPONENT = 65537
 
-class PublicKey():
+
+class PublicKey:
     """Represents a public RSA key.
 
     This key is also known as the 'encryption key'. It contains the 'n' and 'e'

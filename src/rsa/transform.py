@@ -14,11 +14,11 @@ From bytes to a number, number to bytes, etc.
 
 # from __future__ import absolute_import
 
-from struct import pack
 import binascii as binascii
+from struct import pack
 
-from rsa._compat import byte, is_integer
 from rsa import common, machine_size
+from rsa._compat import byte, is_integer
 
 try:
     from typing import Optional

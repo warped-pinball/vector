@@ -1,12 +1,13 @@
 import os
 
+
 def ls(top):
-    '''List all files in a directory tree.'''
+    """List all files in a directory tree."""
     try:
         entries = os.listdir(top)
     except OSError:
         return
-    
+
     for entry in entries:
         path = top + "/" + entry if top != "/" else "/" + entry
         try:

@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Whirl Wind",
         "System": "11B",
-        "FileVer": 2   
+        "FileVer": 2
     },
 
     "Definition": {
@@ -62,9 +62,8 @@
         "Address": 56,
         "Length": 23
     },
-    
+
     "CoinDrop": {
         "Type": 0
     }
 }
-

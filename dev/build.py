@@ -1,23 +1,25 @@
 #! /usr/bin/env python3
 
+import argparse
+import gzip
+import json
+import math
 import os
-import sys
 import shutil
 import subprocess
-import argparse
-import json
+import sys
 import time
-import math
-import gzip
 from pathlib import Path
+
 from bs4 import BeautifulSoup
-from jsmin import jsmin
 from csscompressor import compress
 from htmlmin import minify as minify_html
+from jsmin import jsmin
 
 BUILD_DIR_DEFAULT = "build"
 SOURCE_DIR_DEFAULT = "src"
 MPY_CROSS = "mpy-cross"
+
 
 def get_directory_size(path: str) -> tuple[int, int]:
     total_size = 0
@@ -37,6 +39,7 @@ def get_directory_size(path: str) -> tuple[int, int]:
 
 def step_report(func):
     """Decorator that prints timing and size info for each step."""
+
     def wrapper(*args, **kwargs):
         print(f"\nRunning step: {func.__name__}")
         original_size, _ = get_directory_size(args[0].build_dir)
@@ -54,6 +57,7 @@ def step_report(func):
             perc = (diff / original_size) * 100
             print(f"Size difference: {diff / 1024:.2f} KB ({perc:.2f}%)")
         print("-" * 40)
+
     return wrapper
 
 
@@ -185,7 +189,9 @@ class Builder:
                         with open(file_path, "r") as f:
                             data = json.load(f)
                         file_name = os.path.splitext(file)[0]
-                        outfile.write(f"{file_name}{json.dumps(data, separators=(',',':'))}\n")
+                        outfile.write(
+                            f"{file_name}{json.dumps(data, separators=(',',':'))}\n"
+                        )
                         os.remove(file_path)
 
     @step_report
@@ -218,7 +224,7 @@ class Builder:
                 zipper = gzip.GzipFile(gz_path, "wb", compresslevel=9, mtime=0)
                 zipper.write(content)
                 zipper.close()
-                
+
                 os.remove(file_path)
 
     def read_file(self, filepath):
@@ -229,17 +235,24 @@ class Builder:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Build the project into a specified build directory."
     )
-    parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
-    parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
-    parser.add_argument("--env", default="dev", help="Build environment (dev, test, prod, etc.)")
+    parser.add_argument(
+        "--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory"
+    )
+    parser.add_argument(
+        "--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory"
+    )
+    parser.add_argument(
+        "--env", default="dev", help="Build environment (dev, test, prod, etc.)"
+    )
     args = parser.parse_args()
 
     builder = Builder(args.build_dir, args.source_dir, args.env)
-    
+
     # Run build steps in sequence
     builder.copy_files_to_build()
     builder.compile_py_files()
@@ -252,6 +265,7 @@ def main():
     # e.g., shutil.make_archive("my_build_artifact", "zip", args.build_dir)
 
     print("Build complete.")
+
 
 if __name__ == "__main__":
     main()

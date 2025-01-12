@@ -13,7 +13,7 @@ Common functionality shared by several modules.
 # pylint: disable=invalid-name
 
 try:
-    from typing import Optional, Tuple, Sequence
+    from typing import Optional, Sequence, Tuple
 except ImportError:
     pass
 
@@ -187,7 +187,7 @@ def crt(a_values: Sequence[int], modulo_values: Sequence[int]) -> int:
     for modulo in modulo_values:
         m *= modulo
 
-    for (m_i, a_i) in zip(modulo_values, a_values):
+    for m_i, a_i in zip(modulo_values, a_values):
         M_i = m // m_i
         inv = inverse(M_i, m_i)
 

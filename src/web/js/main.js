@@ -1,6 +1,6 @@
-// 
+//
 // Navigation & Resrouce Loading
-// 
+//
 const pageConfig = {
     'scores': {
         title: 'Scores',
@@ -43,7 +43,7 @@ async function loadPageResources(pageKey) {
         return;
     }
     clearPreviousResources(previousResourceIds);
-    const loadPromises = config.resources.map(resource => 
+    const loadPromises = config.resources.map(resource =>
         fetchDecompressAndApply(resource.url, resource.targetId)
             .then(() => {
                 console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
@@ -238,9 +238,9 @@ window.init = init;
 window.toggleTheme = toggleTheme;
 
 
-// 
+//
 // Index.html required js
-// 
+//
 
 function setFaviconFromSVGElement(elementId) {
     console.log(`Setting favicon from SVG element: ${elementId}`);
@@ -298,9 +298,9 @@ function toggleTheme() {
 
 
 
-// 
+//
 // Authentication
-// 
+//
 async function showPasswordPrompt() {
     return new Promise((resolve) => {
         const dialog = document.getElementById("password_modal");
@@ -314,12 +314,12 @@ async function showPasswordPrompt() {
         // Function to handle saving password
         function onSave() {
             const password = passwordInput.value.trim();
-            
+
             // if stay logged in is checked, store password in local storage
             if (document.getElementById("stay_logged_in").checked) {
                 // store password in local storage
                 localStorage.setItem("password", password);
-        
+
                 // un-hide the logout button since we now have a stored password
                 const logoutButton = document.getElementById("logout-button");
                 if (logoutButton) {
@@ -328,7 +328,7 @@ async function showPasswordPrompt() {
             } else {
                 // remove password from local storage
                 localStorage.removeItem("password");
-        
+
                 // Hide the logout button
                 const logoutButton = document.getElementById("logout-button");
                 if (logoutButton) {
@@ -404,9 +404,9 @@ window.get_password = get_password;
 window.logout = logout;
 
 
-// 
+//
 // Page Element js utilities
-// 
+//
 
 // Create a dropdown option dynamically
 async function createDropDownOption(value, text) {
@@ -435,11 +435,11 @@ function getDropDownValue(dropDownElementID) {
 }
 
 // Set the dropdown value when an option is clicked
-function setDropDownValue(dropDownElement, value, text) {    
+function setDropDownValue(dropDownElement, value, text) {
     // if dropDownElement is a string, get the element
     if (typeof dropDownElement === 'string') {
         dropDownElement = document.getElementById(dropDownElement);
-    }    
+    }
 
     // check that value is one of the options
     const optionElements = dropDownElement.querySelectorAll('a');

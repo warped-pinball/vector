@@ -21,12 +21,14 @@ deduce where in the process the failure occurred. DO NOT PASS SUCH INFORMATION
 to your users.
 """
 
-import os
 import hashlib as hashlib
-from rsa import common, transform, core
+import os
+
+from rsa import common, core, transform
 
 try:
-    from typing import Optional, Iterator, Union
+    from typing import Iterator, Optional, Union
+
     from rsa.key import PublicKey
 
     try:
@@ -44,7 +46,6 @@ try:
 
         def read(self, blocksize: int) -> Union[bytes, str]:
             """A method that reads a given number of bytes or chracters"""
-
 
 except ImportError:
     pass
@@ -285,9 +286,7 @@ def yield_fixedblocks(
             break
 
 
-def compute_hash(
-    message: Union[bytes, str, _FileLikeObject], method_name: str
-) -> bytes:
+def compute_hash(message: Union[bytes, str, _FileLikeObject], method_name: str) -> bytes:
     """Returns the message digest.
 
     :param message: the signed message. Can be an 8-bit string or a file-like
@@ -322,7 +321,7 @@ def _find_method_hash(clearsig: bytes) -> str:
     :raise VerificationFailed: when the hash method cannot be found
     """
 
-    for (hashname, asn1code) in HASH_ASN1.items():
+    for hashname, asn1code in HASH_ASN1.items():
         if asn1code in clearsig:
             return hashname
 

@@ -54,7 +54,7 @@ def parse_url(url):
     # but it's not supported on the esp8266 port
     delim = url.find("//")
     if delim >= 0:
-        scheme, loc = url[:delim].rstrip(':'), url[delim+2:]
+        scheme, loc = url[:delim].rstrip(":"), url[delim + 2 :]
     else:
         loc = url
         scheme = ""
@@ -92,7 +92,13 @@ class RequestContext:
 
     @property
     def port(self):
-        return self._port if self._port is not None else 443 if self.scheme == "https" else 80
+        return (
+            self._port
+            if self._port is not None
+            else 443
+            if self.scheme == "https"
+            else 80
+        )
 
     @property
     def url(self):
@@ -151,7 +157,7 @@ class Response:
                 l = sf.readline().strip()
 
                 if not l:
-                    return b''
+                    return b""
 
                 # ignore chunk extensions
                 l = l.split(b";", 1)[0]
@@ -162,7 +168,9 @@ class Response:
                     sep = sf.read(2)
 
                     if sep != b"\r\n":
-                        raise ValueError("Expected final chunk separator, read %r instead." % sep)
+                        raise ValueError(
+                            "Expected final chunk separator, read %r instead." % sep
+                        )
 
                     return b""
 
@@ -193,10 +201,14 @@ class Response:
 
         if buf:
             if self.chunked:
-                raise NotImplementedError("Cannot use a buffer when saving a chunked response.")
+                raise NotImplementedError(
+                    "Cannot use a buffer when saving a chunked response."
+                )
             if chunk_size and not MICROPY:
-                raise NotImplementedError("Cannot set chunk_size when using a buffer with CPython."
-                    " Use a buffer or memoryview of appropriate size instead.")
+                raise NotImplementedError(
+                    "Cannot set chunk_size when using a buffer with CPython."
+                    " Use a buffer or memoryview of appropriate size instead."
+                )
 
         remain = self._content_size
 
@@ -211,8 +223,11 @@ class Response:
                 fobj.write(buf[:num_read_chunk])
             else:
                 # Read a chunk of data
-                chunk = self.read(size=None if self.chunked
-                                  else min(chunk_size or MAX_READ_SIZE, remain))
+                chunk = self.read(
+                    size=None
+                    if self.chunked
+                    else min(chunk_size or MAX_READ_SIZE, remain)
+                )
                 num_read_total += len(chunk)
 
                 if not chunk:
@@ -287,7 +302,7 @@ def request(
     save_headers=False,
     max_redirects=1,
     timeout=None,
-    ssl_context=None
+    ssl_context=None,
 ):
     if auth:
         headers.update(auth if callable(auth) else encode_basic_auth(auth[0], auth[1]))
@@ -327,7 +342,6 @@ def request(
                     except ImportError:
                         import ussl as ssl
 
-
                 # print("Wrapping socket with TLS")
                 if ssl_context is None:
                     if hasattr(ssl, "create_default_context"):
@@ -340,7 +354,10 @@ def request(
                 sock = ssl_context.wrap_socket(sock, server_hostname=ctx.host)
 
             sf = sock if MICROPY else sock.makefile("rwb")
-            sf.write(b"%s %s HTTP/1.1\r\n" % (ctx.method.encode("ascii"), ctx.path.encode("ascii")))
+            sf.write(
+                b"%s %s HTTP/1.1\r\n"
+                % (ctx.method.encode("ascii"), ctx.path.encode("ascii"))
+            )
             sf.write(b"Host: %s\r\n" % headers.get(b"Host", ctx.host.encode()))
 
             for k, val in headers.items():
@@ -367,7 +384,9 @@ def request(
             sf.write(b"Connection: close\r\n\r\n")
 
             if data and ctx.method not in ("GET", "HEAD"):
-                sf.write(data if isinstance(data, bytes) else data.encode(encoding or "utf-8"))
+                sf.write(
+                    data if isinstance(data, bytes) else data.encode(encoding or "utf-8")
+                )
 
             if not MICROPY:
                 sf.flush()

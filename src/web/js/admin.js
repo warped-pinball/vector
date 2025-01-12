@@ -1,6 +1,6 @@
-// 
+//
 // Generic / Utility functions
-// 
+//
 
 async function confirm_auth_get(url, purpose) {
 	confirmAction(purpose, async () => {
@@ -33,9 +33,9 @@ function closeModal() {
 }
 
 
-// 
+//
 // Settings
-// 
+//
 
 // Tournament Mode
 async function tournamentModeToggle() {
@@ -80,9 +80,9 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 
-// 
+//
 // Actions
-// 
+//
 
 // Download Logs
 window.downloadLogs = async function () {
@@ -209,24 +209,24 @@ window.downloadScores = async function () {
 
 
 
-// 
+//
 // Updates
-// 
+//
 
 async function checkForUpdates() {
-	
+
 	// wait 3 seconds before checking for updates
 	// this lets us prioritize loading the page and settings
 	await new Promise(resolve => setTimeout(resolve, 3000));
-	
+
 	const response = await window.smartFetch('/api/update/check', null, false);
 	const data = await response.json();
 	const updateButton = document.getElementById('update-button');
-	
+
 	try {
 		if (data['current'] === data['reccomended']) {
-						
-			// no update available	
+
+			// no update available
 			updateButton.style.backgroundColor = '#8e8e8e';
 			updateButton.style.borderColor = '#8e8e8e';
 			updateButton.textContent = 'Already up to date';
@@ -240,7 +240,7 @@ async function checkForUpdates() {
 			} catch (e) {
 				releaseNotes.classList.add('hide');
 			}
-			
+
 		} else {
 			// update available
 			updateButton.disabled = false;
@@ -285,7 +285,7 @@ async function applyUpdate(url) {
 			const { value, done } = await reader.read();
 			if (done) break;
 			let msg = decoder.decode(value, { stream: true });
-			
+
 			msg = msg.split('}{');
 			for (let i = 0; i < msg.length; i++) {
 				if (i !== 0) {
@@ -298,7 +298,7 @@ async function applyUpdate(url) {
 
 			for (let i = 0; i < msg.length; i++) {
 				const msg_obj = JSON.parse(msg[i]);
-				
+
 				if (msg_obj.log) {
 					updateProgressLog.textContent += msg_obj.log + '\n';
 				}
@@ -315,7 +315,7 @@ async function applyUpdate(url) {
 		if (progressBar.value === 100) {
 			// refresh the page
 			window.location.reload();
-		} else {		
+		} else {
 			updateProgressLog.textContent += 'Connection lost.\n';
 			updateProgressLog.textContent += 'Refresh the page and Try again.\n';
 			progressBar.value = 0;

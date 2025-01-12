@@ -9,12 +9,12 @@ def unquote(string):
 
     """
     if not string:
-        return b''
+        return b""
 
     if isinstance(string, str):
-        string = string.encode('utf-8')
+        string = string.encode("utf-8")
 
-    bits = string.split(b'%')
+    bits = string.split(b"%")
     if len(bits) == 1:
         return string
 
@@ -27,7 +27,7 @@ def unquote(string):
             append(int(item[:2], 16))
             extend(item[2:])
         except KeyError:
-            append(b'%')
+            append(b"%")
             extend(item)
 
     return bytes(res)

@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Game Show",
         "System": "11c",
-        "FileVer": 1      
+        "FileVer": 1
     },
 
     "Memory" : {
@@ -63,5 +63,5 @@
         "Type": 0
     }
 
-    
+
 }

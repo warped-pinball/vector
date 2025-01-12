@@ -147,7 +147,7 @@ async function loadPlayers(data) {
     const players = Object.entries(data)
         .filter(([ , player]) => player.name.trim() !== '' || player.initials.trim() !== '')
         .sort(([, a], [, b]) => a.name.localeCompare(b.name));
-    
+
     const playersSelect = document.getElementById('players');
     playersSelect.innerHTML = '';
     players.forEach(player => {
@@ -230,7 +230,7 @@ function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
-    
+
     document.getElementById(tabId).classList.add('active');
 
     document.querySelectorAll('#score-board-nav button').forEach(

@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Cyclone",
         "System": "11B",
-        "FileVer": 1 
+        "FileVer": 1
     },
 
     "Memory" : {
@@ -14,7 +14,7 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": 56, 
+        "Address": 56,
         "Ball1": "0x01",
         "Ball2": "0x02",
         "Ball3": "0x03",

@@ -1,13 +1,15 @@
-import sys
-import SPI_Store as fram
 import gc
+import sys
+
+import SPI_Store as fram
 
 # FRAM configuration
 AddressStart = 4096
 AddressEnd = 4096 + 8192 - 16
 AddressPointer = 4096 + 8192 - 6
 NextWriteAddress = 0
-LogEndMarker = "\n" #"<END>"
+LogEndMarker = "\n"  # "<END>"
+
 
 class Logger:
     def __init__(self):
@@ -17,39 +19,39 @@ class Logger:
     def _initialize_log(self):
         global NextWriteAddress
         address_bytes = fram.read(AddressPointer, 4)
-        NextWriteAddress = int.from_bytes(address_bytes, 'big')
+        NextWriteAddress = int.from_bytes(address_bytes, "big")
         if NextWriteAddress < AddressStart or NextWriteAddress > AddressEnd:
             NextWriteAddress = AddressStart
 
     def delete_log(self):
-        global NextWriteAddress        
+        global NextWriteAddress
         NextWriteAddress = AddressStart
 
-        clear_data = b'\x00' * 16  #16 bytes        
+        clear_data = b"\x00" * 16  # 16 bytes
         current_address = AddressStart
         while current_address <= AddressEnd:
             fram.write(current_address, clear_data)
             current_address += len(clear_data)
-    
-        address_bytes = NextWriteAddress.to_bytes(4, 'big')
+
+        address_bytes = NextWriteAddress.to_bytes(4, "big")
         fram.write(AddressPointer, address_bytes)
         self.log("LOG: Delete All")
-        
 
     def log(self, message):
         global NextWriteAddress
         print(message)
         message += LogEndMarker  # Append the end marker
         for char in message:
-            fram.write(NextWriteAddress, char.encode('utf-8'))  # Write each character as a byte
+            fram.write(
+                NextWriteAddress, char.encode("utf-8")
+            )  # Write each character as a byte
             NextWriteAddress += 1
             if NextWriteAddress > AddressEnd:
                 NextWriteAddress = AddressStart  # Wrap around if end is reached
 
         # Save the updated NextWriteAddress back to the fram
-        address_bytes = NextWriteAddress.to_bytes(4, 'big')
+        address_bytes = NextWriteAddress.to_bytes(4, "big")
         fram.write(AddressPointer, address_bytes)
-
 
     def get_logs(self):
         logs = []
@@ -68,8 +70,8 @@ class Logger:
                 current_address += 1
                 if current_address > AddressEnd:
                     current_address = AddressStart  # Wrap around if end is reached
-                if ''.join(logs).endswith(LogEndMarker):
-                    return ''.join(logs).replace(LogEndMarker, '')
+                if "".join(logs).endswith(LogEndMarker):
+                    return "".join(logs).replace(LogEndMarker, "")
 
     def get_logs_stream(self):
         gc.collect()
@@ -87,7 +89,7 @@ class Logger:
             remaining_bytes -= read_size
 
             for byte in data:
-                yield chr(byte).encode('utf-8')
+                yield chr(byte).encode("utf-8")
                 current_address += 1
                 if current_address > AddressEnd:
                     current_address = AddressStart
@@ -95,6 +97,6 @@ class Logger:
             if remaining_bytes < 16:
                 return
 
+
 # Singleton instance
 logger_instance = Logger()
-

@@ -1,7 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Radical!",
-        "System": "11c"        
+        "System": "11c"
     },
 
     "Memory" : {
@@ -62,5 +62,5 @@
         "Type": 0
     }
 
-    
+
 }

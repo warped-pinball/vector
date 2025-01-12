@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Big Guns",
         "System": "11B",
-        "FileVer": 1      
+        "FileVer": 1
     },
 
     "Definition": {
@@ -62,9 +62,8 @@
         "Address": 56,
         "Length": 23
     },
-    
+
     "CoinDrop": {
         "Type": 0
     }
 }
-

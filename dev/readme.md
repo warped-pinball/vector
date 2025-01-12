@@ -4,18 +4,18 @@
 
 ### Linux/Raspberry Pi
 
-1. **Download Miniforge Installer**  
+1. **Download Miniforge Installer**
    Choose `x86_64` for most Linux PCs or `aarch64` for Raspberry Pi:
 
    `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh`
    # OR for Raspberry Pi
    `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh`
 
-2. **Make the Installer Executable**  
+2. **Make the Installer Executable**
 
    `chmod +x Miniforge3-Linux-*.sh`
 
-3. **Run the Installer**  
+3. **Run the Installer**
 
    `./Miniforge3-Linux-*.sh`
 
@@ -30,13 +30,13 @@
 
 ### Windows
 
-1. **Download Miniforge Installer**  
+1. **Download Miniforge Installer**
    Visit https://github.com/conda-forge/miniforge/releases and download `Miniforge3-Windows-x86_64.exe`.
 
-2. **Run Installer and Add Conda to PATH**  
+2. **Run Installer and Add Conda to PATH**
    Follow the setup prompts, ensuring Conda is added to your PATH.
 
-3. **Activate Conda in New Terminals**  
+3. **Activate Conda in New Terminals**
    Open a new Command Prompt and run:
 
    `conda init`
@@ -47,25 +47,25 @@
 
 ## Setup Environment and Install Requirements
 
-1. **Create Environment**  
+1. **Create Environment**
    `conda create -n pico python=3.11`
 
-2. **Activate Environment**  
+2. **Activate Environment**
    `conda activate pico`
 
-3. **Install Requirements**  
+3. **Install Requirements**
    `pip install -r dev/requirements.txt`
 
 ---
 
 ## Usage
 
-1. **Build and Deploy to Pico**  
+1. **Build and Deploy to Pico**
    From the root of your repository:
 
    `./dev/sync.py`
 
-2. **Get Sync Script Help**  
+2. **Get Sync Script Help**
    `./dev/sync.py --help`
 
 ## Automatic Configuration
