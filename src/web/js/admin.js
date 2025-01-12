@@ -39,40 +39,40 @@ function closeModal() {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-	const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
+	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
 
 	// disable the checkbox until we have the current setting
-	tournamentModeCheckbox.disabled = true;
+	tournamentModeToggle.disabled = true;
 
 	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
 	const data = await response.json();
 
-	tournamentModeCheckbox.checked = data['tournament_mode'];
-	tournamentModeCheckbox.disabled = false;
+	tournamentModeToggle.checked = data['tournament_mode'];
+	tournamentModeToggle.disabled = false;
 
 	// add event listener to update the setting when the checkbox is changed
-	tournamentModeCheckbox.addEventListener('change', async () => {
-		const data = { 'tournament_mode': tournamentModeCheckbox.checked ? 1 : 0 };
+	tournamentModeToggle.addEventListener('change', async () => {
+		const data = { 'tournament_mode': tournamentModeToggle.checked ? 1 : 0 };
 		await window.smartFetch('/api/settings/tournament_mode', data, true);
 	});
 }
 
 // score Claim methods
 async function getScoreClaimMethods() {
-	const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
+	const onMachineToggle = document.getElementById('on-machine-toggle');
 
 	// disable the checkbox until we have the current setting
-	onMachineCheckbox.disabled = true;
+	onMachineToggle.disabled = true;
 
 	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
 	const data = await response.json();
 
-	onMachineCheckbox.checked = data['on-machine'];
-	onMachineCheckbox.disabled = false;
+	onMachineToggle.checked = data['on-machine'];
+	onMachineToggle.disabled = false;
 
 	// add event listener to update the setting when the checkbox is changed
-	onMachineCheckbox.addEventListener('change', async () => {
-		const data = { 'on-machine': onMachineCheckbox.checked ? 1 : 0 };
+	onMachineToggle.addEventListener('change', async () => {
+		const data = { 'on-machine': onMachineToggle.checked ? 1 : 0 };
 		await window.smartFetch('/api/settings/score_claim_methods', data, true);
 	});
 }
