@@ -1,6 +1,7 @@
 '''
 SPI Data (player and scores)
 
+    1/12/2025 update boolean flag support in extras-enable
 '''
 import SPI_Store as fram
 import struct
@@ -38,7 +39,7 @@ def show_mem_map():
 
 def write_record(structure_name, record, index=0, set=0):
     try:        
-        print("write ",structure_name,record,index,set)
+        print("write: ",structure_name,record,index,set)
         structure = memory_map[structure_name]
         start_address = structure["start"] + index * structure["size"] + structure["size"]*structure["count"]*set    
         data = serialize(record, structure_name)
@@ -62,9 +63,23 @@ def serialize(record, structure_name):
     elif structure_name == "MapVersion":
         return struct.pack("<16s", record["version"].encode())
     elif structure_name == "configuration":
-        return struct.pack("<32s32s16s16s", record["ssid"].encode(), record["password"].encode(), record["gamename"].encode(), record["Gpassword"].encode() )
+        return struct.pack("<32s32s16s16s", record["ssid"].encode(), record["password"].encode(), record["gamename"].encode(), record["Gpassword"].encode())
     elif structure_name == "extras":
-        return struct.pack("<II20s20s", record["enable"], record["other"], record["lastIP"].encode(), record["message"].encode()  )  
+        if record["enable"] is None:
+            enable = 0
+            if record.get("enter_intials_on_game", True):
+                enable |= 0x01
+            if record.get("claim_scores", True):
+                enable |= 0x02
+            if record.get("show_ip_address", True):
+                enable |= 0x04
+            if record.get("flag4", True):
+                enable |= 0x08
+            if record.get("flag5", True):
+                enable |= 0x10
+        else:
+            enable = record["enable"]
+        return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
     else:
         raise ValueError("Unknown structure name")
 
@@ -109,10 +124,20 @@ def deserialize(data, structure_name):
     elif structure_name == "configuration":
         ssid, password, gamename, gpassword  = struct.unpack("<32s32s16s16s",data)
         return {"ssid": ssid.decode().strip('\0'), "password": password.decode().strip('\0'), "gamename": gamename.decode().strip('\0'), "Gpassword": gpassword.decode().strip('\0')}
-    
+        
     elif structure_name == "extras":
         enable, other , lastIP, message = struct.unpack("<II20s20s",data)
-        return {"enable": enable, "other": other, "lastIP": lastIP.decode().strip('\0'), "message": message.decode().strip('\0')}
+        return {
+            "enable": enable,
+            "other": other,
+            "lastIP": lastIP.decode().strip('\0'),
+            "message": message.decode().strip('\0'),
+            "enter_intials_on_game": bool(enable & 0x01),
+            "claim_scores": bool(enable & 0x02),
+            "show_ip_address": bool(enable & 0x04),
+            "flag4": bool(enable & 0x08),  #true by default
+            "flag5": bool(enable & 0x10)   #true by default
+        }
     else:
         raise ValueError("Unknown structure name")
 
@@ -138,17 +163,19 @@ def blankStruct(structure_name):
     print("blank struct done")
 
 
-def blankConfig(structure_name):
-    if structure_name=="configuration":
-        fake_entry = {
-            "ssid": "",  
-            "password": "", 
-            "Gpassword": " ",
-            "gamename": "GenericSystem11", 
-            "enable": 1,    
-            "other": 0      
-        }   
-        write_record("configuration", fake_entry, 0, 0)
+def blankConfig():
+    fake_entry = {
+        "ssid": "",  
+        "password": "", 
+        "Gpassword": " ",
+        "gamename": "GenericSystem11", 
+        "enable": 0x1F,    
+        "other": 0,
+        "lastIP": " ",
+        "message": " "
+    }   
+    write_record("configuration", fake_entry, 0, 0)
+    write_record("extras",fake_entry,0)
 
 def blankIndPlayerScores(playernum):
     fake_entry = {       
@@ -164,7 +191,7 @@ def blankAll():
     blankStruct("leaders")
     blankStruct("names")
     blankStruct("individual")
-    blankConfig("configuration")    
+    blankConfig()    
     record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)    
 
@@ -178,6 +205,7 @@ def writeIP(ipaddress):
 
 if __name__ == "__main__":
 
+    
     readver = read_record("MapVersion", index=0)
     print ("DAT: version= ",readver["version"])
 
@@ -186,7 +214,15 @@ if __name__ == "__main__":
     write_record("MapVersion", record1, index=0)
 
     show_mem_map()
-
+    
     readver = read_record("MapVersion", index=0)
     print ("read ver string=",readver["version"])
 
+    read_extras = read_record("extras", index=0)
+    print ("read extras=",read_extras)
+
+    read_extras.update({"claim_scores": True})
+    read_extras.update({"enable": None})
+
+    write_record("extras",read_extras,0)
+    print ("read extras=",read_extras)

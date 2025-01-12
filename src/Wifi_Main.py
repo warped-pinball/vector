@@ -606,7 +606,7 @@ def application_mode(fault_msg):
     server.add_route("/index.html", handler = app_leaderBoardLoad, methods = ["GET"])      
     @server.route("/tournamentMode")
     def app_tournamentmode(request):
-        SharedState.tournamentModeOn=1
+        SharedState.tournament_mode_on=1
         return ("ok")
   
     #tournament mode page
@@ -618,7 +618,7 @@ def application_mode(fault_msg):
         return("ok")       
     @server.route("/leaderMode")
     def app_leaderMode(request):
-        SharedState.tournamentModeOn=0
+        SharedState.tournament_mode_on=0
         return("ok")
 
     #individual scores page

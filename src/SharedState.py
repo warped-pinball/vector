@@ -3,14 +3,12 @@
 WarpedVersion = "00.01"
 WarpedCodeBase = "SYSTEM9"
 
-#system from config file
-systemType = 0  #set to 9 or 11 in defsload
+
 
 #true false - tournament mode
 tournamentModeOn = 0
 
-#true false - claim scores system
-claimScoresOn = 0
+
 
 
 

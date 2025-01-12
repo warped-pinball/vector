@@ -5,6 +5,7 @@
 Score Track
     V0.2 9/7/2024  period after initials handling
     V0.3 11/25/2024 game over fix for high speed
+    V0.4 12/1/2024  combine support for system 11 and 9
 """
 
 import json
@@ -381,7 +382,7 @@ def CheckForNewScores(nState=[0]):
                     print("SCORE: new score: ",initials,score)                     
 
                 game=[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]              
-                if SharedState.tournamentModeOn == 1:
+                if SharedState.tournament_mode_on == 1:
                     place_game_in_tournament(game)
                 else:
                     place_game_in_claim_list(game)
