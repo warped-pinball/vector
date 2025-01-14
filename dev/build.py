@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 from bs4 import BeautifulSoup
 from csscompressor import compress
@@ -161,7 +160,9 @@ class Builder:
                     temp_file_path = file_path + ".tmp"
                     cmd = (
                         f"scour -i {file_path} "
-                        "--enable-viewboxing --enable-id-stripping --enable-comment-stripping "
+                        "--enable-viewboxing "
+                        "--enable-id-stripping "
+                        "--enable-comment-stripping "
                         "--shorten-ids --indent=none "
                         f"-o {temp_file_path}"
                     )
@@ -220,7 +221,8 @@ class Builder:
                 gz_path = file_path + ".gz"
 
                 # Replicate the "-n" effect from the CLI by setting a fixed timestamp
-                # This is required to ensure the gzip files are byte-for-byte identical to get matching checksums
+                # This is required to ensure the gzip files are
+                # byte-for-byte identical to get matching checksums
                 zipper = gzip.GzipFile(gz_path, "wb", compresslevel=9, mtime=0)
                 zipper.write(content)
                 zipper.close()

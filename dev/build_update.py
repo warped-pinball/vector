@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -85,7 +85,7 @@ def make_file_line(
         filename + jsonDictionary + base64EncodedFileContents
 
     Example line:
-        some_file.py{"checksum":"ABCD","bytes":1234,"log":"Uploading some_file.py"}c29tZSBiYXNlNjQgZGF0YQ==
+        some_file.py{"checksum":"ABCD","bytes":1234,"log":"Uploading file"}c29tZSB
     """
     checksum = crc16_ccitt(file_contents)
     file_size = len(file_contents)
@@ -134,8 +134,6 @@ def build_update_file(
     1) Create one JSON line of metadata at the top.
     2) Then a line per file in 'build_dir' (plus remove_extra_files.py).
     3) Finally one line containing {"sha256": "...", "signature": "..."} at the bottom.
-
-    No 'section' headers or lengths. The user can just read the last line as the signature.
     """
 
     # 1) Build top-level metadata as a single line

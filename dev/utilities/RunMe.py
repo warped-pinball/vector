@@ -38,7 +38,7 @@ def copy_specific_files_to_root(file_list, src_dir="/test", dest_dir="/"):
 
         # Check if the source file exists
         try:
-            with open(src_file, "rb") as f:
+            with open(src_file, "rb"):
                 pass
         except OSError:
             Log.log(f"RunMe: Source file {src_file} does not exist")
@@ -47,8 +47,9 @@ def copy_specific_files_to_root(file_list, src_dir="/test", dest_dir="/"):
             Log.log(f"RunMe: Copying {src_file} to {dest_file}")
             copy_file(src_file, dest_file)
             continue
-        except:
-            Log.log(f"RunMe: Copy fail")
+        except Exception as e:
+            print(e)
+            Log.log("RunMe: Copy fail")
             return False
 
 
@@ -58,7 +59,8 @@ def go():
     try:
         copy_specific_files_to_root(files_to_copy)
         Log.log("RunMe: Files copied to root")
-    except:
+    except Exception as e:
+        print(e)
         Log.log("RunMe: fault return from copy files")
 
     # change conf'd game

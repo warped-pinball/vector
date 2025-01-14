@@ -40,6 +40,7 @@ segment_map = {
     "R": 0b01010000,
     "S": 0b01101101,
     "T": 0b01111000,
+    # TODO which is the correct U?
     "U": 0b00111110,
     "U": 0b00011100,
     "Y": 0b01101110,
