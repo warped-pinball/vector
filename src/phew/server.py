@@ -14,6 +14,7 @@ import GameStatus
 import SPI_Store as fram
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
+from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
@@ -516,6 +517,13 @@ def create_schedule():
 
     # print out memory usage 45 seconds after boot
     schedule(resource.go, 45000)
+
+    # initialize the fram
+    schedule(fram.initialize, 200)
+
+    # initialize the sflash
+    schedule(sflash_initialize, 700)
+
     #
     # reoccuring tasks
     #
@@ -531,7 +539,7 @@ def create_schedule():
         schedule(copy_to_fram, 0, 100)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 0, 1000)
+    schedule(sflash_tick, 1000, 1000)
 
     restart_schedule()
 
