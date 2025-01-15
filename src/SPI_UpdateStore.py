@@ -303,6 +303,7 @@ def report_all_version_numbers():
     for i in range(SFLASH_NUM_PGMS):
         dblk = _get_block_status(data, i)
         if dblk:
+            # TODO use Version class to handle version numbers
             # description = bytes(filter(lambda x: 32 <= x <= 126, dblk.description)).decode('utf-8').split('\0', 1)[0].split('\n', 1)[0]
 
             description = dblk.description.split(b"\0", 1)[0].split(b"\n", 1)[0].decode("utf-8")
@@ -458,7 +459,7 @@ def initialize():
     call at power up
     re-launches erase processes that were stopped mid way
     """
-    # TODO do we need to check the sflash exists?
+    # TODO do we need to check the sflash exists? maybe by calling SPI_Store.sflash_init()?
     _read_status_from_fram()
     # look for any block in the middle of erase and restart it
     for i in range(SFLASH_NUM_PGMS):
