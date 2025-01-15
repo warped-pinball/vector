@@ -114,9 +114,7 @@ def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
 
     if private_key_path:
         with open(private_key_path, "rb") as key_file:
-            private_key = serialization.load_pem_private_key(
-                key_file.read(), password=None
-            )
+            private_key = serialization.load_pem_private_key(key_file.read(), password=None)
         signature = private_key.sign(sha256_digest, padding.PKCS1v15(), hashes.SHA256())
         signature_b64 = base64.b64encode(signature).decode("utf-8")
         return (sha256_hex, signature_b64)
@@ -142,6 +140,7 @@ def build_update_file(
         "supported_hardware": ["vector_v4", "vector_v5"],
         "supported_software_versions": ["0.3.0"],
         "micropython_versions": ["1.24.1"],
+        "downgradable_to": ["0.3.0"],
         "version": version,
     }
     metadata_line = json.dumps(meta_data, separators=(",", ":"))
@@ -165,20 +164,14 @@ def build_update_file(
             if relative_path == "remove_extra_files.py":
                 continue
             contents = get_file_contents(file_path)
-            file_lines.append(
-                make_file_line(
-                    relative_path, contents, custom_log=f"Uploading {relative_path}"
-                )
-            )
+            file_lines.append(make_file_line(relative_path, contents, custom_log=f"Uploading {relative_path}"))
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
     update_body = "\n".join([metadata_line] + file_lines)
     sha256_hex, signature_b64 = sign_data(update_body.encode("utf-8"), private_key_path)
 
-    signature_line = json.dumps(
-        {"sha256": sha256_hex, "signature": signature_b64}, separators=(",", ":")
-    )
+    signature_line = json.dumps({"sha256": sha256_hex, "signature": signature_b64}, separators=(",", ":"))
 
     # Final output: top line is metadata, then all file lines, then signature line
     final_output = "\n".join([metadata_line] + file_lines + [signature_line]) + "\n"
@@ -204,23 +197,15 @@ def extract_version(source_dir: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Build single-line-per-file update file with minimal overhead."
-    )
-    parser.add_argument(
-        "--build-dir", default=BUILD_DIR, help="Path to the build directory."
-    )
-    parser.add_argument(
-        "--source-dir", default=SOURCE_DIR, help="Path to the source directory."
-    )
+    parser = argparse.ArgumentParser(description="Build single-line-per-file update file with minimal overhead.")
+    parser.add_argument("--build-dir", default=BUILD_DIR, help="Path to the build directory.")
+    parser.add_argument("--source-dir", default=SOURCE_DIR, help="Path to the source directory.")
     parser.add_argument("--output", default=OUTPUT_FILE, help="Path to the output file.")
     parser.add_argument(
         "--version",
         help="Version string (e.g., '0.3.0'). If omitted, extracted from SharedState.py.",
     )
-    parser.add_argument(
-        "--private-key", help="Path to a PEM-encoded private key for signing."
-    )
+    parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
     args = parser.parse_args()
 
     # If no version is provided, extract from SharedState.py
