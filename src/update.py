@@ -327,7 +327,9 @@ def download_update(url):
     sflash_init()
     if sflash_is_on_board:
         # get first line
-        line_1 = response.readline()
+        first_lines = response.read(1024).split(b"\n")
+        line_1 = first_lines[0]
+        print(f"First line: {line_1}")
 
         # parse as json
         meta_data = json_loads(line_1)
@@ -337,10 +339,12 @@ def download_update(url):
 
         wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
         next(wc)
-        wc.send(line_1 + "\n")
+        wc.send("\n".join(first_lines))
+        bytes_so_far = 1024
         while chunk := response.read(1024):
             wc.send(chunk)
-            yield {"percent": start_percent + (response.tell() * percent_per_byte)}
+            bytes_so_far += len(chunk)
+            yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
 
         try:
             wc.send(None)

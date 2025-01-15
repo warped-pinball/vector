@@ -389,7 +389,14 @@ def write_consumer(version):
 
     you must close by sending 'None' after all data is sent to mark the end of the block
     """
-    if is_busy_erasing():
+    import time
+
+    timeout = time.time() + 5
+    while time.time() < timeout:
+        if not is_busy_erasing():
+            break
+        time.sleep(0.1)
+    else:
         print("Can't write: erasing in progress.")
         return "fault busy"
 
