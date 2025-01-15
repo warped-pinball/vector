@@ -42,12 +42,7 @@ class Version:
         return not self.__gt__(other) and self != other
 
     def __eq__(self, other):
-        return (
-            self.major == other.major
-            and self.minor == other.minor
-            and self.patch == other.patch
-            and self.candidate == other.candidate
-        )
+        return self.major == other.major and self.minor == other.minor and self.patch == other.patch and self.candidate == other.candidate
 
     @staticmethod
     def from_str(version_str):
@@ -56,9 +51,7 @@ class Version:
         Example: 1.2.3-dev or 1.2.3.dev"""
         parts = version_str.split(".", 2)
         if len(parts) < 3:
-            raise ValueError(
-                f"Version string must have at least major.minor.patch, e.g. '1.2.3' or '1.2.3-dev'. Got: {version_str}"
-            )
+            raise ValueError(f"Version string must have at least major.minor.patch, e.g. '1.2.3' or '1.2.3-dev'. Got: {version_str}")
         patch_part = parts[2]
         candidate = None
         for sep in ["-", "."]:
@@ -93,9 +86,7 @@ def fetch_github_releases():
         if resp.status_code != 200:
             # In case of error, we raise an exception or break
             resp.close()
-            raise Exception(
-                "Failed to fetch releases (page={}): {}".format(page, resp.status_code)
-            )
+            raise Exception("Failed to fetch releases (page={}): {}".format(page, resp.status_code))
 
         data = resp.json()
         resp.close()
@@ -254,9 +245,7 @@ def get_check_data(path="update.json"):
     with open(path, "rb") as f:
         f.seek(0, 2)
         file_size = f.tell()
-    end_of_content = (
-        file_size - len(last_line_bytes) - 2
-    )  # -1 for the newline at the end and another for off by one I guess
+    end_of_content = file_size - len(last_line_bytes) - 2  # -1 for the newline at the end and another for off by one I guess
 
     # We do a chunk-based read up to 'end_of_content'
     hasher = sha256()
@@ -291,7 +280,7 @@ def validate_signature():
     from rsa.pkcs1 import verify
 
     pub_key = PublicKey(
-        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,
+        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
         e=65537,
     )
 
@@ -313,9 +302,7 @@ def download_update(url):
     )
 
     if response.status_code != 200:
-        raise Exception(
-            f"Failed to download update: {response.status_code} {response.reason}"
-        )
+        raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
 
     start_percent = 2
     end_percent = 30
@@ -327,14 +314,44 @@ def download_update(url):
             if "Content-Length" in header_str:
                 # split on :
                 total_length = int(header_str.split(":")[1].strip())
-    except Exception as e:
+    except Exception:
         pass  # if we can't get the content length, we'll just use a default value
 
     percent_per_byte = (end_percent - start_percent) / total_length
-    with open("update.json", "wb") as f:
+    # if sflash is on board, store it in sflash
+    from json import loads as json_loads
+
+    from SPI_Store import sflash_init, sflash_is_on_board
+    from SPI_UpdateStore import write_consumer
+
+    sflash_init()
+    if sflash_is_on_board:
+        # get first line
+        line_1 = response.readline()
+
+        # parse as json
+        meta_data = json_loads(line_1)
+
+        # get incoming software version
+        version = Version.from_str(meta_data.get("version", ""))
+
+        wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
+        next(wc)
+        wc.send(line_1 + "\n")
         while chunk := response.read(1024):
-            f.write(chunk)
-            yield {"percent": start_percent + (f.tell() * percent_per_byte)}
+            wc.send(chunk)
+            yield {"percent": start_percent + (response.tell() * percent_per_byte)}
+
+        try:
+            wc.send(None)
+        except StopIteration:
+            pass
+
+    else:
+        with open("update.json", "wb") as f:
+            while chunk := response.read(1024):
+                f.write(chunk)
+                yield {"percent": start_percent + (f.tell() * percent_per_byte)}
 
     response.close()
 
@@ -350,21 +367,15 @@ def validate_compatibility():
     # update file format
     supported_update_file_formats = ["1.0"]
     incoming_update_file_format = metadata.get("update_file_format", "")
-    if not incoming_update_file_format in supported_update_file_formats:
-        raise Exception(
-            f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}"
-        )
+    if incoming_update_file_format not in supported_update_file_formats:
+        raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
 
     from SharedState import WarpedVersion
 
     current_version_obj = Version.from_str(WarpedVersion)
-    supported_versions = [
-        Version.from_str(v) for v in metadata.get("supported_software_versions", [])
-    ]
+    supported_versions = [Version.from_str(v) for v in metadata.get("supported_software_versions", [])]
     if not any(current_version_obj == sv for sv in supported_versions):
-        raise Exception(
-            f"Version {current_version_obj} not in supported versions: {[str(v) for v in supported_versions]}"
-        )
+        raise Exception(f"Version {current_version_obj} not in supported versions: {[str(v) for v in supported_versions]}")
 
     from sys import implementation
 
@@ -374,30 +385,26 @@ def validate_compatibility():
         patch=implementation.version[2],
         candidate=implementation.version[3],
     )
-    supported_micropython_versions = [
-        Version.from_str(v) for v in metadata.get("micropython_versions", [])
-    ]
+    supported_micropython_versions = [Version.from_str(v) for v in metadata.get("micropython_versions", [])]
     if not any(mp_version_obj == m for m in supported_micropython_versions):
-        raise Exception(
-            f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}"
-        )
+        raise Exception(f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}")
 
     # hardware version
     hardware = "Unknown"
     try:
         if implementation._machine == "Raspberry Pi Pico W with RP2040":
             hardware = "vector_v4"
-    except Exception as e:
+    except Exception:
         pass
-    # TODO implement flash chip check
-    has_sflash = True
-    if has_sflash:
+
+    from SPI_Store import sflash_init, sflash_is_on_board
+
+    sflash_init()
+    if sflash_is_on_board:
         hardware = "vector_v5"
 
-    if not hardware in metadata.get("supported_hardware", []):
-        raise Exception(
-            f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}"
-        )
+    if hardware not in metadata.get("supported_hardware", []):
+        raise Exception(f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}")
 
 
 def apply_update(url):
@@ -444,9 +451,7 @@ def apply_update(url):
     from reset_control import reset as reset_control
 
     reset_control()
-    sleep(
-        2
-    )  # make sure the game fully shuts down and allow last messages to be finish sending
+    sleep(2)  # make sure the game fully shuts down and allow last messages to be finish sending
     machine_reset()
 
 
@@ -529,7 +534,7 @@ def write_files():
                         if c[-1] == "\n":
                             break
                     break
-            except Exception as e:
+            except Exception:
                 # we want to skip if we can
                 # but if there are any errors, we should just copy the file normally
                 f.seek(file_data_start)  # jump back to the start of the file data
