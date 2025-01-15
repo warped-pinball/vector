@@ -14,7 +14,7 @@ from ls import ls
 from Memory_Main import blank_ram, save_ram
 from phew import server
 from random_bytes import random_hex
-from Shadow_Ram_Definitions import SRAM_COUNT_BASE, SRAM_DATA_BASE, SRAM_DATA_LENGTH
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
@@ -72,7 +72,7 @@ def route_wrapper(func):
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
                         headers = default_headers | headers
-                    if status != 200:
+                    if status not in [200, 304]:
                         print(f"Status: {status}, Body: {body}")
                     return body, status, headers
             else:
@@ -205,7 +205,7 @@ def four_oh_four(request):
 def redirect(request):
     from phew.server import redirect
 
-    return redirect(f"/index.html", status=303)
+    return redirect("/index.html", status=303)
 
 
 #
@@ -337,7 +337,7 @@ def app_reboot_game(request):
     reset_control.reset()
     sleep(2)
     reset_control.release(True)
-    server.reset_bootup_counters()
+    server.restart_schedule()
 
 
 @add_route("/api/game/name")
@@ -374,7 +374,7 @@ def app_reset_memory(request):
     blank_ram()
     sleep(1)
     reset_control.release(True)
-    server.reset_bootup_counters()
+    server.restart_schedule()
 
 
 @add_route("/api/memory-snapshot")
@@ -589,13 +589,6 @@ def app_getAvailableSSIDs(request):
 def app_setDateTime(request):
     """Set the date and time on the device"""
     date = [int(e) for e in request.json["date"]]
-    y = date[0]
-    m = date[1]
-    d = date[2]
-    if len(date) == 6:
-        h = date[3]
-        mi = date[4]
-        s = date[5]
 
     # rtc will calculate the day of the week for us
     rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
@@ -747,9 +740,7 @@ def connect_to_wifi():
     networks = scanwifi.scan_wifi2()
     for network in networks:
         if network["ssid"] == ssid:
-            faults.raise_fault(
-                faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}"
-            )
+            faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
             return False
 
     faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")

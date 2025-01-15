@@ -63,9 +63,7 @@ SECTION_STATUS_DESC = {
         uctypes.ARRAY | 16,
         uctypes.UINT8 | 20,
     ),  # string of length 20  (16-35)
-    "dev_version_flag": (
-        uctypes.UINT8 | 36
-    ),  # 1 byte (0=dev version, 1=production version)
+    "dev_version_flag": (uctypes.UINT8 | 36),  # 1 byte (0=dev version, 1=production version)
     "reserved": (uctypes.ARRAY | 37, uctypes.UINT8 | 2),  # reserved for future use
 }
 
@@ -94,9 +92,7 @@ DATA_STRUCTURE_DESC = {
 }
 
 data_buffer = bytearray(FRAM_BYTES_USED)
-data = uctypes.struct(
-    uctypes.addressof(data_buffer), DATA_STRUCTURE_DESC, uctypes.LITTLE_ENDIAN
-)
+data = uctypes.struct(uctypes.addressof(data_buffer), DATA_STRUCTURE_DESC, uctypes.LITTLE_ENDIAN)
 
 
 # write structure to fram
@@ -172,9 +168,7 @@ def _print_block_status(block_status, name):
     print("    Erase Pointer:", block_status.erase_pointer, "   ", end="")
     print("    Read Pointer:", block_status.read_pointer, "   ", end="")
     print("    Write Pointer:", block_status.write_pointer)
-    description = (
-        block_status.description.split(b"\0", 1)[0].split(b"\n", 1)[0].decode("utf-8")
-    )
+    description = block_status.description.split(b"\0", 1)[0].split(b"\n", 1)[0].decode("utf-8")
     print("    Description:", description)
 
 
@@ -195,16 +189,10 @@ def _find_newest_version_program_block():
     for i in range(SFLASH_NUM_PGMS):
         dblk = _get_block_status(data, i)
         if dblk.state != BLOCK_STATUS_EMPTY:
-            version = (
-                dblk.version_major * 10000
-                + dblk.version_middle * 100
-                + dblk.version_minor
-            )
+            version = dblk.version_major * 10000 + dblk.version_middle * 100 + dblk.version_minor
             if version > newest:
                 newest = version
-                version_str = (
-                    f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor}"
-                )
+                version_str = f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor}"
                 ans = i
     return ans, version_str
 
@@ -217,16 +205,10 @@ def _find_oldest_version_program_block():
     for i in range(SFLASH_NUM_PGMS):
         dblk = _get_block_status(data, i)
         if dblk.state != BLOCK_STATUS_EMPTY:
-            version = (
-                dblk.version_major * 10000
-                + dblk.version_middle * 100
-                + dblk.version_minor
-            )
+            version = dblk.version_major * 10000 + dblk.version_middle * 100 + dblk.version_minor
             if version < oldest:
                 oldest = version
-                version_str = (
-                    f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor}"
-                )
+                version_str = f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor}"
                 ans = i
     return ans, version_str
 
@@ -237,7 +219,7 @@ start_erase_count = 0
 def tick():
     """
     system must call periodically - minimum period 100mS - recommend 1 second
-    can be called continuous reguragless of use.
+    can be called continuous regardless of use.
     At 1 second call rate erase block will take 97 seconds
     set to automatically erase oldest block when all blocks are full
     """
@@ -256,11 +238,7 @@ def tick():
                     _set_block_status(dblk, BLOCK_STATUS_ERASING, 0, 0, 0, 0, 0, 0)
                     _write_status_to_fram()
 
-                next_address = (
-                    SFLASH_PRG_START
-                    + (SFLASH_PRG_SIZE * blk_num)
-                    + (SFLASH_ERASE_SECTOR_SIZE * dblk.erase_pointer)
-                )
+                next_address = SFLASH_PRG_START + (SFLASH_PRG_SIZE * blk_num) + (SFLASH_ERASE_SECTOR_SIZE * dblk.erase_pointer)
                 dblk.erase_pointer += 1
 
                 if next_address >= SFLASH_PRG_START + SFLASH_PRG_SIZE * (blk_num + 1):
@@ -272,7 +250,7 @@ def tick():
                     )
                     _set_block_status(dblk, BLOCK_STATUS_EMPTY, 0, 0, 0, 0, 0, 0)
                     _write_status_to_fram()
-                    print(f"erase done")
+                    print("erase done")
                     return
 
                 print(f"erase {next_address:#x}")
@@ -307,10 +285,10 @@ def erase_oldest_version_program_space():
     will only erase if all spaces are full
     no need to call this - tick will do it automatically if no other operations in progress
     """
-    if _find_empty_block() != None:  # there is already an open space
+    if _find_empty_block() is not None:  # there is already an open space
         return False
     oldest, _ = _find_oldest_version_program_block()
-    if oldest != None:
+    if oldest is not None:
         dblk = _get_block_status(data, oldest)
         _set_block_status(dblk, BLOCK_STATUS_ERASING, 0, 0, 0, 0, 0, 0)
         _write_status_to_fram()
@@ -327,9 +305,7 @@ def report_all_version_numbers():
         if dblk:
             # description = bytes(filter(lambda x: 32 <= x <= 126, dblk.description)).decode('utf-8').split('\0', 1)[0].split('\n', 1)[0]
 
-            description = (
-                dblk.description.split(b"\0", 1)[0].split(b"\n", 1)[0].decode("utf-8")
-            )
+            description = dblk.description.split(b"\0", 1)[0].split(b"\n", 1)[0].decode("utf-8")
 
             version_str = f"{dblk.version_major}.{dblk.version_middle}.{dblk.version_minor} - {description}"
             versions.append(version_str)
@@ -378,7 +354,7 @@ def read_generator(chunk_size_bytes=1000, block_number=-1):
 
         repeat calls until end,
     ]"""
-    if is_busy_erasing() == True:
+    if is_busy_erasing():
         return None
 
     if block_number == -1:
@@ -458,9 +434,7 @@ def write_consumer(version):
     chunk = yield
 
     while chunk is not None:
-        SPI_Store.sflash_write(
-            SFLASH_PRG_START + (SFLASH_PRG_SIZE * blk_num) + dblk.write_pointer, chunk
-        )
+        SPI_Store.sflash_write(SFLASH_PRG_START + (SFLASH_PRG_SIZE * blk_num) + dblk.write_pointer, chunk)
         dblk.write_pointer += len(chunk)
 
         # Wait for the *next* chunk
@@ -490,9 +464,7 @@ def initialize():
         dblk = _get_block_status(data, i)
 
         # invalid state or power off during fill or erase?
-        if (dblk.state not in BLOCK_STATUS_VALID) or (
-            dblk.state in [BLOCK_STATUS_ERASING, BLOCK_STATUS_FILLING]
-        ):
+        if (dblk.state not in BLOCK_STATUS_VALID) or (dblk.state in [BLOCK_STATUS_ERASING, BLOCK_STATUS_FILLING]):
             _set_block_status(dblk, BLOCK_STATUS_ERASING, 0, 0, 0, 0, 0, 0)
             _write_status_to_fram()
 

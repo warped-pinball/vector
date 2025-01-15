@@ -14,6 +14,7 @@ import GameStatus
 import SPI_Store as fram
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
+from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
 
@@ -47,7 +48,7 @@ def urldecode(text):
             result += text[token_caret:]
             break
         result += text[token_caret:start]
-        code = int(text[start + 1 : start + 3], 16)
+        code = int(text[start + 1 : start + 3], 16)  # noqa
         result += chr(code)
         token_caret = start + 3
     return result
@@ -74,7 +75,7 @@ class Request:
         self.query = {}
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
         self.path = uri[:query_string_start]
-        self.query_string = uri[query_string_start + 1 :]
+        self.query_string = uri[query_string_start + 1 :]  # noqa
         if self.query_string:
             self.query = _parse_query_string(self.query_string)
 
@@ -204,7 +205,7 @@ async def _parse_form_data(reader, headers):
 
     boundary = headers["content-type"].split("boundary=")[1]
     # discard first boundary line
-    dummy = await reader.readline()
+    _ = await reader.readline()
 
     form = {}
     while True:
@@ -297,9 +298,7 @@ async def _handle_request(reader, writer):
             raw_body, parsed_data = await _parse_json_body(reader, request.headers)
             request.raw_data = raw_body
             request.data = parsed_data
-        if request.headers["content-type"].startswith(
-            "application/x-www-form-urlencoded"
-        ):
+        if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
             form_data = await reader.read(int(request.headers["content-length"]))
             request.form = _parse_query_string(form_data.decode())
 
@@ -370,9 +369,7 @@ async def _handle_request(reader, writer):
     await writer.wait_closed()
 
     processing_time = time.ticks_ms() - request_start_time
-    logging.info(
-        f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]"
-    )
+    logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
 
 
 # adds a new route to the routing table
@@ -440,87 +437,118 @@ MemIndex = 0
 poll_counter = 0
 
 
-async def FRAMTimer():
-    global MemIndex, poll_counter
+async def copy_to_fram():
+    global MemIndex
+
+    fram.write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
+    MemIndex = MemIndex + 16
+
+    if MemIndex >= SRAM_DATA_LENGTH:
+        MemIndex = 0
+        print("MEM in SERVER: FRAM cycle complete")
+        led_board.toggle()
+
+
+_scheduled_tasks = []
+_clock_start = 0
+
+
+def restart_schedule():
+    global _clock_start
+    _clock_start = time.ticks_ms()
+
+
+def schedule(func, phase_ms, frequency_ms=None, log=None):
+    _scheduled_tasks.append(
+        {
+            "func": func,
+            "freq": frequency_ms,
+            "phase": phase_ms,
+            "next_run": phase_ms,
+            "log": log,
+        }
+    )
+
+
+async def run_scheduled():
     while True:
-        fram.write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
-        MemIndex = MemIndex + 16
-        # fram.write_16_fram(SRAM_DATA_BASE+MemIndex, MemIndex)
-        # MemIndex = MemIndex + 16
-        # print("MEM in SEVER: ",MemIndex)
+        current_ms = time.ticks_diff(time.ticks_ms(), _clock_start)
+        due_tasks = []
+        next_wake = None
 
-        poll_counter += 1
-        if poll_counter > 1:
-            GameStatus.poll_fast()
-            poll_counter = 0
+        for t in _scheduled_tasks:
+            if current_ms >= t["next_run"]:
+                due_tasks.append(t)
+            else:
+                if next_wake is None or t["next_run"] < next_wake:
+                    next_wake = t["next_run"]
 
-        await uasyncio.sleep(0.1)
-        if MemIndex >= SRAM_DATA_LENGTH:
-            MemIndex = 0
-            print("MEM in SERVER: FRAM cycle complete")
-            led_board.toggle()
+        for t in due_tasks:
+            t["func"]()
+            if t["log"] is not None:
+                print(t["log"])  # TODO should we actually log this?
+            if t["freq"] is not None:
+                t["next_run"] += t["freq"]
+            else:
+                _scheduled_tasks.remove(t)
+
+        if next_wake is None and not due_tasks:
+            await uasyncio.sleep(1)
+        else:
+            if next_wake is not None:
+                delay = next_wake - current_ms
+                if delay > 0:
+                    await uasyncio.sleep_ms(delay)
 
 
-scCount = [0]
-enableScoreChecks = [0]
+def create_schedule():
+    #
+    # one time tasks
+    #
+    # set the display message 30 seconds after boot
+    schedule(displayMessage.refresh, 30000, log="Server: Refresh display message")
 
+    # initialize the time and date 5 seconds after boot
+    schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
 
-def reset_bootup_counters():
-    scCount[0] = 0
-    enableScoreChecks[0] = 0
+    # initialize the leader board 10 seconds after boot
+    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
+    # print out memory usage 45 seconds after boot
+    schedule(resource.go, 45000)
+    #
+    # reoccuring tasks
+    #
+    # update the game status every 0.25 second
+    schedule(GameStatus.poll_fast, 0, 250)
 
-# TODO add sflash tick function somewhere in here
+    # start checking scores every 5 seconds 15 seconds after boot
+    schedule(CheckForNewScores, 15000, 5000)
 
+    # only if there are no hardware faults
+    if not faults.fault_is_raised(faults.ALL_HDWR):
+        # copy ram values to fram every 0.1 seconds
+        schedule(copy_to_fram, 0, 100)
 
-async def ScoreCheck():  # scCount=[0],enableScoreChecks=[0]):
-    global scCount, enableScoreChecks
-    while True:
-        if enableScoreChecks[0] == 1:
-            CheckForNewScores()
+    # call serial flash tick every 1 second for ongoing erase operations
+    schedule(sflash_tick, 0, 1000)
 
-        # power up init - each count is 5 seconds
-        # runs 0->10 and ends
-        if scCount[0] < 10:
-            scCount[0] = scCount[0] + 1
-
-        if scCount[0] == 1:
-            print("Server: Initialize time /date")
-            initialize_timedate()
-
-        if scCount[0] == 2:
-            print("Server: Initialize Leader Board")
-            initialize_leaderboard()
-
-        if scCount[0] == 3:
-            print("Server: init ball in play state machine")
-            enableScoreChecks[0] = 1
-
-        if scCount[0] == 6:
-            print("Server: Refresh display message")
-            displayMessage.refresh()
-
-        if scCount[0] == 9:
-            print("\n")
-            resource.go()
-            print("\n")
-
-        await uasyncio.sleep(5)
+    restart_schedule()
 
 
 def run(host="0.0.0.0", port=80):
     logging.info("> starting web server on port {}".format(port))
-    loop.create_task(uasyncio.start_server(_handle_request, host, port))
+    loop.create_task(
+        # TODO backlog is number of connections that can be queued experiment with larger numbers
+        uasyncio.start_server(_handle_request, host, port, backlog=5)
+    )
 
-    # perodic tasks specific to Warped Pinball SYS11
-    if not faults.fault_is_raised(faults.ALL_HDWR):
-        loop.create_task(FRAMTimer())  # store ram values in non-volatile Fram
-
-    loop.create_task(ScoreCheck())  # Check For new scores
+    create_schedule()
+    loop.create_task(run_scheduled())
 
     print("Server: Loop Forever")
     loop.run_forever()
-    print("Server: run forever return fault")
+    faults.raise_fault(faults.SFTW02)
 
 
 def stop():

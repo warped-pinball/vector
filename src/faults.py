@@ -3,13 +3,14 @@ HDWR00 = "HDWR00: Unknown Hardware Error"
 HDWR01 = "HDWR01: Early Bus Activity"
 HDWR02 = "HDWR02: No Bus Activity"
 
-ALL_HDWR = [HDWR00, HDWR01]
+ALL_HDWR = [HDWR00, HDWR01, HDWR02]
 
 # Software Faults
 SFWR00 = "SFWR00: Unknown Software Error"
 SFTW01 = "SFTW01: Drop Through"
+SFTW02 = "SFTW02: async loop interrupted"
 
-ALL_SFWR = [SFWR00, SFTW01]
+ALL_SFWR = [SFWR00, SFTW01, SFTW02]
 
 # Configuration Faults
 CONF00 = "CONF00: Unknown Configuration Error"
