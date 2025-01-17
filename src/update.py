@@ -321,13 +321,14 @@ def download_update(url):
     # if sflash is on board, store it in sflash
     from json import loads as json_loads
 
-    from SPI_Store import sflash_init, sflash_is_on_board
+    from SPI_Store import sflash_is_on_board
     from SPI_UpdateStore import write_consumer
 
-    sflash_init()
-    if sflash_is_on_board:
+    # TODO sflash-based update dormant for now
+    if False and sflash_is_on_board:
         # get first line
         first_lines = response.read(1024).split(b"\n")
+        print(type(first_lines))
         line_1 = first_lines[0]
         print(f"First line: {line_1}")
 
@@ -336,13 +337,15 @@ def download_update(url):
 
         # get incoming software version
         version = Version.from_str(meta_data.get("version", ""))
+        print(f"Version: {version}")
 
         wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
         next(wc)
-        wc.send("\n".join(first_lines))
+        data = bytearray().join(first_lines)
+        wc.send(data)
         bytes_so_far = 1024
         while chunk := response.read(1024):
-            wc.send(chunk)
+            wc.send(bytearray(chunk, "utf-8"))
             bytes_so_far += len(chunk)
             yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
 

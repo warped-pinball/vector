@@ -487,7 +487,7 @@ async def run_scheduled():
         for t in due_tasks:
             t["func"]()
             if t["log"] is not None:
-                print(t["log"])  # TODO should we actually log this?
+                print(t["log"])  # TODO should we actually log this or is print enough?
             if t["freq"] is not None:
                 t["next_run"] += t["freq"]
             else:
@@ -498,6 +498,7 @@ async def run_scheduled():
         else:
             if next_wake is not None:
                 delay = next_wake - current_ms
+                print("ms to next wake:", delay)
                 if delay > 0:
                     await uasyncio.sleep_ms(delay)
 
@@ -519,7 +520,7 @@ def create_schedule():
     schedule(resource.go, 45000)
 
     # initialize the fram
-    schedule(fram.initialize, 200)
+    schedule(fram.initialize, 200)  # TODO might already be taken care of above or by
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
@@ -539,7 +540,7 @@ def create_schedule():
         schedule(copy_to_fram, 0, 100)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 1000)
+    schedule(sflash_tick, 1000, 10000)  # TODO temporarilly set to 10 seconds
 
     restart_schedule()
 

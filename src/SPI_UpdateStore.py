@@ -579,7 +579,7 @@ def test():
     print_data_structure(data)
 
     # tick auto-erase test if all blocks are full
-    if False:
+    if True:
         for x in range(890):
             tick()
             print(".", end="")

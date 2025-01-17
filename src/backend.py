@@ -653,6 +653,7 @@ def app_apply_update(request):
     from logger import logger_instance as Log
     from update import apply_update
 
+    yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
     try:
         for response in apply_update(data["url"]):
