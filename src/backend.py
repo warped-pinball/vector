@@ -28,8 +28,7 @@ ram_access = bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 12
 AP_NAME = "Warped Pinball"
 # Authentication variables
-current_challenge = None
-challenge_timestamp = None
+challenges = {}
 CHALLENGE_EXPIRATION_SECONDS = 60
 
 
@@ -247,31 +246,34 @@ def require_auth(handler):
     """Decorator to require authentication using HMAC-SHA256"""
 
     def auth_wrapper(request, *args, **kwargs):
-        global current_challenge, challenge_timestamp
+        global challenges
 
-        if not current_challenge or not challenge_timestamp:
-            msg = json_dumps({"error": "Challenge not set"}), 401, "application/json"
+        def deny_access(reason):
+            msg = json_dumps({"error": "reason"}), 401, "application/json"
             print(msg)
-            return msg
-
-        if (time() - challenge_timestamp) > CHALLENGE_EXPIRATION_SECONDS:
-            msg = json_dumps({"error": "Challenge expired"}), 401, "application/json"
-            print(msg)
+            print(request.headers)
             return msg
 
         # Get the HMAC from the request headers
         client_hmac = request.headers.get("x-auth-hmac")
         if not client_hmac:
-            msg = (
-                json_dumps({"error": "Missing authentication HMAC"}),
-                401,
-                "application/json",
-            )
-            print(msg)
-            print(request.headers)
-            return msg
+            return deny_access("Missing authentication HMAC")
 
-        # Retrieve stored password (the key)
+        # Get the challenge from the request headers
+        client_challenge = request.headers.get("x-auth-challenge")
+        if not client_challenge:
+            return deny_access("Missing authentication challenge")
+
+        # confirm that the challenge is valid
+        if client_challenge not in challenges:
+            return deny_access("Invalid challenge")
+
+        # confirm that the challenge has not expired
+        if (time() - challenges[client_challenge]) > CHALLENGE_EXPIRATION_SECONDS:
+            del challenges[client_challenge]
+            return deny_access("Challenge expired")
+
+        # Retrieve stored password
         credentials = ds_read_record("configuration", 0)
         stored_password = credentials["Gpassword"].encode("utf-8")
 
@@ -279,17 +281,17 @@ def require_auth(handler):
         path = request.path
         query_string = request.query_string or ""
         body_str = request.raw_data or ""
-        message_str = current_challenge + path + query_string + body_str
+        message_str = client_challenge + path + query_string + body_str
         message_bytes = message_str.encode("utf-8")
 
         # Compute expected HMAC
         expected_digest = hmac_sha256(stored_password, message_bytes)
         expected_hmac = hexlify(expected_digest).decode()
 
+        # If authentication is successful
         if client_hmac == expected_hmac:
-            # Authentication successful
-            current_challenge = None
-            challenge_timestamp = None
+            # remove the challenge from the challenges dict
+            del challenges[client_challenge]
             return handler(request, *args, **kwargs)
         else:
             # Authentication failed
@@ -297,19 +299,33 @@ def require_auth(handler):
             print(f"Expected HMAC: {expected_hmac}")
             print(f"Client HMAC: {client_hmac}")
             print(message_bytes)
-            return json_dumps({"error": "Authentication failed"}), 401, "application/json"
+            return json_dumps({"error": "Authentication failed"}), 401
 
     return auth_wrapper
 
 
 @add_route("/api/auth/challenge")
 def get_challenge(request):
-    global current_challenge, challenge_timestamp
+    global challenges
+
+    # remove expired challenges
+    for challenge, timestamp in list(challenges.items()):
+        if (time() - timestamp) > CHALLENGE_EXPIRATION_SECONDS:
+            del challenges[challenge]
+
+    # make sure there are no more than 10 challenges
+    if len(challenges) > 10:
+        return json_dumps({"error": "Too many challenges"}), 429
+
     # Generate a random nonce (challenge)
-    current_challenge = random_hex(64)
+    new_challenge = random_hex(64)
     challenge_timestamp = time()
+
+    # add the challenge to the challenges dict
+    challenges[new_challenge] = challenge_timestamp
+
     # Return the nonce to the client
-    return json_dumps({"challenge": current_challenge}), 200
+    return json_dumps({"challenge": new_challenge}), 200
 
 
 @add_route("api/auth/password_check", method="POST", auth=True)
