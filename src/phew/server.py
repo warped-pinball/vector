@@ -505,7 +505,6 @@ async def run_scheduled():
                 next_wake = t["next_run"]
 
         delay = time.ticks_diff(next_wake, time.ticks_ms())
-        print(time.ticks_ms(), next_wake, delay)
         if delay > 0:  # only sleep if we have time to sleep
             await uasyncio.sleep_ms(delay)
 
