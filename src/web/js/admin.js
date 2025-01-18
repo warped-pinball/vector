@@ -80,6 +80,52 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 
+// adjutstment profiles
+async function populateProfiles(){
+	const response = await window.smartFetch('/api/adjustments/names', null, false);
+	// array of profile names ['name1', 'name2', ...]
+	const data = await response.json();
+
+	// set placeholder text and clear value
+	for (let i = 0; i < 4; i++) {
+		if (data[i] && data[i].trim() !== "") {
+			const input = document.getElementById(`profile-${i + 1}-name`);
+			input.placeholder = data[i];
+			input.value = "";
+		}
+	}
+
+	// add event listeners to the names to set the profile name when changed and clicked away from
+	for (let i = 0; i < 4; i++) {
+		const input = document.getElementById(`profile-${i + 1}-name`);
+		input.addEventListener('blur', () => {
+			setProfileName(i + 1);
+		});
+	}
+}
+
+populateProfiles();
+
+async function setProfileName(profileNum) {
+	console.log(`profile-${profileNum}-name`)
+	const input = document.getElementById(`profile-${profileNum}-name`);
+	const name = input.value;
+
+	// check if name is still the placeholder
+	if (name === input.placeholder) {
+		return;
+	}
+
+	const data = { 'index': profileNum - 1, 'name': name };
+	await window.smartFetch('/api/adjustments/name', data, true);
+	input.value = "";
+
+	// repopulate the profiles
+	await populateProfiles();
+}
+
+window.setProfileName = setProfileName;
+
 //
 // Actions
 //
