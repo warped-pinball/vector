@@ -3,9 +3,9 @@ import SPI_Store as fram
 import gc
 
 # FRAM configuration
-AddressStart = 4096
-AddressEnd = 4096 + 8192 - 16
-AddressPointer = 4096 + 8192 - 6
+AddressStart = 0x2400     #was  4096
+AddressEnd = AddressStart + 8192 - 16
+AddressPointer = AddressStart + 8192 - 6
 NextWriteAddress = 0
 LogEndMarker = "\n" #"<END>"
 
