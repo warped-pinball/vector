@@ -57,7 +57,7 @@ def route_wrapper(func):
             if isinstance(response, str):
                 response = response, 200
 
-            if isinstance(response, dict):
+            if isinstance(response, dict) or isinstance(response, list):
                 response = json_dumps(response), 200
 
             if isinstance(response, tuple):
@@ -500,6 +500,42 @@ def app_resetIndScores(request):
 
     index = int(request.args.get("id"))
     blankIndPlayerScores(index)
+
+
+#
+# Adjustments
+#
+@add_route("/api/adjustments/names")
+def app_getAdjustmentNames(request):
+    from Adjustments import get_names
+
+    return get_names()
+
+
+@add_route("/api/adjustments/name", method="POST", auth=True)
+def app_setAdjustmentName(request):
+    from Adjustments import set_name
+
+    data = request.data
+    index = int(data["index"])
+    name = data["name"]
+    set_name(index, name)
+
+
+@add_route("/api/adjustments/capture", method="POST", auth=True)
+def app_captureAdjustments(request):
+    from Adjustments import store_adjustments
+
+    index = int(request["index"])
+    store_adjustments(index)
+
+
+@add_route("/api/adjustments/apply", method="POST", auth=True)
+def app_restoreAdjustments(request):
+    from Adjustments import restore_adjustments
+
+    index = int(request["index"])
+    restore_adjustments(index)
 
 
 #

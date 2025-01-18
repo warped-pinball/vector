@@ -5,21 +5,13 @@ four save indexes
 16 character name for each
 
 """
-import SPI_Store as fram
-from logger import logger_instance
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-    writeCountRam,
-)
-
-Log = logger_instance
 import machine
 
 import displayMessage
 import SharedState as S
+import SPI_Store as fram
+from logger import logger_instance as Log
+from Shadow_Ram_Definitions import shadowRam
 
 ADJ_FRAM_START = 0x2100  # to 0x2340
 ADJ_FRAM_RECORD_SIZE = 0x80
@@ -40,17 +32,13 @@ def blank_all():
 
 def get_names():
     """read out all four names"""
-    return [
-        fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH)
-        .decode("ascii")
-        .rstrip("\x00")
-        for i in range(4)
-    ]
+    return [fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH).decode("ascii").rstrip("\x00") for i in range(4)]
 
 
 def set_name(index, name):
     """set name for index"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
+        # TODO raise exception
         return "Fault: index"
 
     name = name[:16]
