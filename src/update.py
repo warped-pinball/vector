@@ -69,19 +69,26 @@ def fetch_github_releases():
     Generator that yields *one release dict* at a time from GitHub's releases API,
     paginating so we never load all releases at once.
     """
-    import urequests
+    from gc import collect as gc_collect
 
-    base_url = "https://api.github.com/repos/warped-pinball/vector/releases"
+    from urequests import get as urequests_get
+
+    url = "https://api.github.com/repos/warped-pinball/vector/releasesurl?per_page=1&page="
     headers = {
         "User-Agent": "MicroPython-Device",
-        "Accept": "application/vnd.github.v3+json",
+        "Accept": "application/vnd.github+json",
     }
     page = 1
-    per_page = 1
+    releases = []
 
     while True:
-        url = f"{base_url}?per_page={per_page}&page={page}"
-        resp = urequests.get(url, headers=headers)
+        resp = urequests_get(url + str(page), headers=headers)
+        page += 1  # increment right away so if we break, we don't try again
+
+        if resp.status_code == 404:
+            # we've gone past the last page probably
+            resp.close()
+            break
 
         if resp.status_code != 200:
             # In case of error, we raise an exception or break
@@ -90,22 +97,42 @@ def fetch_github_releases():
 
         data = resp.json()
         resp.close()
+        gc_collect()
 
         # If this page is empty, we are done
-        if not data:
+        if not data or not isinstance(data, list) or len(data) == 0:
             break
 
-        # yield each release in this page
-        for release in data:
-            yield release
+        for release_data in data:
+            tag_name = release_data.get("tag_name", "")
+            try:
+                ver = Version.from_str(tag_name)
+            except Exception as e:
+                # If it doesn't parse, just skip
+                print("Skipping release '{}': {}".format(tag_name, e))
+                continue
 
-        page += 1
+            # Gather the relevant info
+            release_info = {
+                "name": release_data.get("name", "No name provided"),
+                "tag": ver,
+                "prerelease": release_data.get("prerelease", False),
+                "update-url": None,
+                "release-url": release_data.get("html_url"),
+            }
 
-        # If the page was smaller than per_page, we've likely reached the last page
-        if len(data) < per_page:
-            break
+            # Find the update.json asset
+            assets = release_data.get("assets", [])
+            for asset in assets:
+                if asset.get("name") == "update.json":
+                    release_info["update-url"] = asset["browser_download_url"]
+                    break
 
-        # TODO how do we handle when it's exactly 5 releases Do we know it's the end somehow?
+            releases.append(release_info)
+
+        gc_collect()
+
+    return releases
 
 
 def check_for_updates():
@@ -121,35 +148,7 @@ def check_for_updates():
     }
 
     # We'll collect all releases that parse successfully
-    parsed_releases = []
-
-    # Iterate over each release (page by page)
-    for release_data in fetch_github_releases():
-        tag_name = release_data.get("tag_name", "")
-        try:
-            ver = Version.from_str(tag_name)
-        except Exception as e:
-            # If it doesn't parse, just skip
-            print("Skipping release '{}': {}".format(tag_name, e))
-            continue
-
-        # Gather the relevant info
-        release_info = {
-            "name": release_data.get("name", "No name provided"),
-            "tag": ver,
-            "prerelease": release_data.get("prerelease", False),
-            "update-url": None,
-            "release-url": release_data.get("html_url"),
-        }
-
-        # Find the update.json asset
-        assets = release_data.get("assets", [])
-        for asset in assets:
-            if asset.get("name") == "update.json":
-                release_info["update-url"] = asset["browser_download_url"]
-                break
-
-        parsed_releases.append(release_info)
+    parsed_releases = fetch_github_releases()
 
     # Now that we have them all, sort by version descending
     parsed_releases.sort(key=lambda x: x["tag"], reverse=True)
