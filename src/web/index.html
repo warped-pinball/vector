@@ -116,7 +116,7 @@
                 <!-- stay logged in option -->
                 <fieldset>
                     <label>
-                        <input id="stay-logged-in" type="checkbox" role="switch" id="stay_logged_in" aria-label="Stay Logged In" checked>
+                        <input id="stay-logged-in" type="checkbox" role="switch" id="stay_logged_in" aria-label="Stay Logged In">
                         Stay Logged In
                     </label>
                 </fieldset>
@@ -227,6 +227,7 @@
                 const msg = challenge + urlObj.pathname + urlObj.search + data_str;
                 const hmacHex = sha256.hmac(password, msg);
                 headers["X-Auth-HMAC"] = hmacHex;
+                headers["X-Auth-challenge"] = challenge;
             }
 
             const method = data ? "POST" : "GET";
