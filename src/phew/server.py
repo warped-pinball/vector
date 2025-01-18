@@ -527,7 +527,7 @@ def create_schedule():
     schedule(resource.go, 45000)
 
     # initialize the fram
-    schedule(fram.initialize, 200)  # TODO might already be taken care of above or by
+    schedule(fram.initialize, 200)  # TODO might already be taken care of above
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
@@ -535,7 +535,7 @@ def create_schedule():
     #
     # reoccuring tasks
     #
-    # update the game status every 0.25 second
+    # update the game status every 0.5 second
     schedule(GameStatus.poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
@@ -547,7 +547,7 @@ def create_schedule():
         schedule(copy_to_fram, 0, 100)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 10000)  # TODO temporarilly set to 10 seconds
+    schedule(sflash_tick, 1000, 1000)
 
     restart_schedule()
 
