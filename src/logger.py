@@ -4,9 +4,10 @@ import sys
 import SPI_Store as fram
 
 # FRAM configuration
-AddressStart = 0x2400     #was  4096
-AddressEnd = AddressStart + 8192 - 16
-AddressPointer = AddressStart + 8192 - 6
+AddressStart = 0x2400    
+LoggerLength = 0x1FFF
+AddressEnd = AddressStart + LoggerLength - 16
+AddressPointer = AddressStart + LoggerLength - 6
 NextWriteAddress = 0
 LogEndMarker = "\n"  # "<END>"
 
