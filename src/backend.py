@@ -294,12 +294,7 @@ def require_auth(handler):
             del challenges[client_challenge]
             return handler(request, *args, **kwargs)
         else:
-            # Authentication failed
-            print("Authentication failed")
-            print(f"Expected HMAC: {expected_hmac}")
-            print(f"Client HMAC: {client_hmac}")
-            print(message_bytes)
-            return json_dumps({"error": "Authentication failed"}), 401
+            return deny_access("Bad Credentials")
 
     return auth_wrapper
 

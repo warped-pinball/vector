@@ -80,6 +80,17 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 
+// setup listeners for adjustment profiles
+async function setupAdjustmentListeners() {
+	// add event listeners to the names to set the profile name when changed and clicked away from
+	for (let i = 0; i < 4; i++) {
+		const input = document.getElementById(`profile-${i + 1}-name`);
+		input.addEventListener('blur', () => {
+			setProfileName(i + 1);
+		});
+	}
+}
+
 // adjutstment profiles
 async function populateProfiles(){
 	const response = await window.smartFetch('/api/adjustments/names', null, false);
@@ -94,37 +105,28 @@ async function populateProfiles(){
 			input.value = "";
 		}
 	}
-
-	// add event listeners to the names to set the profile name when changed and clicked away from
-	for (let i = 0; i < 4; i++) {
-		const input = document.getElementById(`profile-${i + 1}-name`);
-		input.addEventListener('blur', () => {
-			setProfileName(i + 1);
-		});
-	}
 }
 
 populateProfiles();
+setupAdjustmentListeners();
 
 async function setProfileName(profileNum) {
-	console.log(`profile-${profileNum}-name`)
 	const input = document.getElementById(`profile-${profileNum}-name`);
 	const name = input.value;
 
 	// check if name is still the placeholder
-	if (name === input.placeholder) {
+	if (name === input.placeholder || name === "") {
 		return;
 	}
 
 	const data = { 'index': profileNum - 1, 'name': name };
 	await window.smartFetch('/api/adjustments/name', data, true);
-	input.value = "";
 
 	// repopulate the profiles
 	await populateProfiles();
 }
 
-window.setProfileName = setProfileName;
+setProfileName;
 
 //
 // Actions
@@ -261,9 +263,10 @@ window.downloadScores = async function () {
 
 async function checkForUpdates() {
 
-	// wait 3 seconds before checking for updates
+	// wait 3/4 of a second before checking for updates
 	// this lets us prioritize loading the page and settings
-	await new Promise(resolve => setTimeout(resolve, 3000));
+	// which mostly wrap up in about 1/2 a second
+	await new Promise(resolve => setTimeout(resolve, 750));
 
 	const response = await window.smartFetch('/api/update/check', null, false);
 	const data = await response.json();

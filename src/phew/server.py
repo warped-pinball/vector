@@ -514,6 +514,10 @@ def create_schedule():
     #
     # one time tasks
     #
+    from update import check_for_updates
+
+    schedule(check_for_updates, 1000, log="Server: Check for updates")
+
     # set the display message 30 seconds after boot
     schedule(displayMessage.refresh, 30000, log="Server: Refresh display message")
 

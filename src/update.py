@@ -73,7 +73,7 @@ def fetch_github_releases():
 
     from urequests import get as urequests_get
 
-    url = "https://api.github.com/repos/warped-pinball/vector/releasesurl?per_page=1&page="
+    url = "https://api.github.com/repos/warped-pinball/vector/releases?per_page=1&page="
     headers = {
         "User-Agent": "MicroPython-Device",
         "Accept": "application/vnd.github+json",
@@ -84,11 +84,6 @@ def fetch_github_releases():
     while True:
         resp = urequests_get(url + str(page), headers=headers)
         page += 1  # increment right away so if we break, we don't try again
-
-        if resp.status_code == 404:
-            # we've gone past the last page probably
-            resp.close()
-            break
 
         if resp.status_code != 200:
             # In case of error, we raise an exception or break
@@ -135,7 +130,23 @@ def fetch_github_releases():
     return releases
 
 
+last_update_check_time = 0
+last_update_check_result = None
+
+
 def check_for_updates():
+    global last_update_check_time, last_update_check_result
+
+    # if we checked for updates in the last day, return the cached result
+    from time import time
+
+    if abs(time() - last_update_check_time) < 3600 * 24 and last_update_check_result:
+        return last_update_check_result
+
+    # set the cache time now, so additional parallel requests will not recheck
+    # They will get None until the first run completes
+    last_update_check_time = time()
+
     from SharedState import WarpedVersion
 
     # Current device's version as a Version object
@@ -153,21 +164,25 @@ def check_for_updates():
     # Now that we have them all, sort by version descending
     parsed_releases.sort(key=lambda x: x["tag"], reverse=True)
 
-    # Build the 'releases' sub-dict
-    for r in parsed_releases:
-        tag_str = str(r["tag"])
-        output["releases"][tag_str] = {
-            "name": r["name"],
-            "prerelease": r["prerelease"],
-            "update-url": r["update-url"],
-            "release-url": r["release-url"],
-        }
-
     # Choose recommended: first stable release (not prerelease) with update.json
+    reccomended_version_obj = None
     for r in parsed_releases:
+        # if the release is not a prerelease and has an update.json
         if not r["prerelease"] and r["update-url"]:
-            output["reccomended"] = str(r["tag"])
+            reccomended_version_obj = r["tag"]
+            output["reccomended"] = str(reccomended_version_obj)
             break
+
+    for r in parsed_releases:
+        # only add the current version and the recommended version to the output
+        if r["tag"] in [current_version_obj, reccomended_version_obj]:
+            output["releases"][str(r["tag"])] = {
+                "name": r["name"],
+                "update-url": r["update-url"],
+                "release-url": r["release-url"],
+            }
+
+    last_update_check_result = output
 
     return output
 
