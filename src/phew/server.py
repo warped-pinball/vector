@@ -455,17 +455,28 @@ _clock_start = 0
 
 
 def restart_schedule():
-    global _clock_start
-    _clock_start = time.ticks_ms()
+    for t in _scheduled_tasks:
+        t["next_run"] = time.ticks_add(time.ticks_ms(), t["phase"])
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
+    def make_async(func):
+        if hasattr(func, "__await__"):
+            return func
+
+        async def _wrap_async():
+            func()
+
+        return _wrap_async
+
     _scheduled_tasks.append(
         {
-            "func": func,
+            "func": make_async(func),
             "freq": frequency_ms,
+            # we need to use time.ticks_add to handle rollover
+            "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
+            # we need to store the phase so we can restart the schedule
             "phase": phase_ms,
-            "next_run": phase_ms,
             "log": log,
         }
     )
@@ -473,34 +484,30 @@ def schedule(func, phase_ms, frequency_ms=None, log=None):
 
 async def run_scheduled():
     while True:
-        current_ms = time.ticks_diff(time.ticks_ms(), _clock_start)
-        due_tasks = []
-        next_wake = None
-
+        # default to 1 second in the future
+        next_wake = time.ticks_add(time.ticks_ms(), 1000)
         for t in _scheduled_tasks:
-            if current_ms >= t["next_run"]:
-                due_tasks.append(t)
-            else:
-                if next_wake is None or t["next_run"] < next_wake:
-                    next_wake = t["next_run"]
+            if time.ticks_diff(time.ticks_ms(), t["next_run"]) >= 0:
+                if t["log"] is not None:
+                    print(t["log"])  # TODO should we actually log this or is print enough?
 
-        for t in due_tasks:
-            t["func"]()
-            if t["log"] is not None:
-                print(t["log"])  # TODO should we actually log this or is print enough?
-            if t["freq"] is not None:
-                t["next_run"] += t["freq"]
-            else:
-                _scheduled_tasks.remove(t)
+                # run the task
+                t["func"]()
 
-        if next_wake is None and not due_tasks:
-            await uasyncio.sleep(1)
-        else:
-            if next_wake is not None:
-                delay = next_wake - current_ms
-                print("ms to next wake:", delay)
-                if delay > 0:
-                    await uasyncio.sleep_ms(delay)
+                # reschedule or remove tasks
+                if t["freq"] is None:
+                    _scheduled_tasks.remove(t)
+                else:
+                    t["next_run"] = time.ticks_add(t["next_run"], t["freq"])
+
+            # track next wake up time
+            if time.ticks_diff(next_wake, t["next_run"]) > 0:
+                next_wake = t["next_run"]
+
+        delay = time.ticks_diff(next_wake, time.ticks_ms())
+        print(time.ticks_ms(), next_wake, delay)
+        if delay > 0:  # only sleep if we have time to sleep
+            await uasyncio.sleep_ms(delay)
 
 
 def create_schedule():
