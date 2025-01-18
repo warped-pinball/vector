@@ -1,0 +1,214 @@
+<style>
+    input[type="date"] {
+        width: auto;
+        /* max-width: 10rem;
+        text-align: center; */
+    }
+
+    button.danger {
+        background-color: #e73434;
+        color: white;
+        border: none;
+    }
+
+    button.danger:hover {
+        background-color: #c53d3d;
+    }
+
+    /* Adjustments Profiles Styling */
+    .profile-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem; /* Space between elements */
+        margin-bottom: 0.5rem; /* Space between rows */
+    }
+
+    .profile-row input {
+        margin: 0; /* Remove any default margin */
+    }
+
+    .profile-row input[type="radio"] {
+        flex-shrink: 0; /* Prevents shrinking of the radio button */
+    }
+
+    .profile-row input[type="text"] {
+        flex-grow: 1; /* Allows the text field to expand and take available space */
+        max-width: 200px; /* Optional: Limit the width of the text field */
+    }
+
+    .profile-row button {
+        flex-shrink: 0; /* Keeps the button size consistent */
+    }
+
+    #update-progress-log::-webkit-scrollbar {
+        display: none;
+    }
+
+</style>
+
+<div style="text-align: left;">
+    <h2>Settings</h2>
+    <hr>
+    <section>
+        <h3>Tournament Mode</h3>
+        <fieldset id="score-boards">
+            <label>
+                <input id="tournament-mode-toggle" type="checkbox" role="switch" name="tournament-mode" checked disabled>
+                <b>Tournament Mode:</b> save scores to tournament board instead of standard leaderboard
+            </label>
+        </fieldset>
+    </section>
+    <section>
+        <h3>Score Claim Methods</h3>
+        <fieldset id="score-claim-methods">
+            <label>
+                <input id="on-machine-toggle" type="checkbox" role="switch" name="on-machine" disabled/>
+                <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where players can enter initials)
+            </label>
+            <label>
+                <input type="checkbox" role="switch" name="web" disabled/>
+                <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
+            </label>
+            <label>
+                <input type="checkbox" role="switch" name="scanner" disabled/>
+                <b>Zoom QR Scanner Add-on:</b> games started by a QR code scan, automatically claim score <a href="https://www.warpedpinball.com">Learn More</a>
+            </label>
+        </fieldset>
+    </section>
+    <section>
+        <h3>Adjustments Profiles (Coming Soon!)</h3>
+        <div class="grid">
+            <fieldset>
+                <div class="profile-row">
+                    <input name="profile" id="profile-1" type="radio">
+                    <input name="profile-1-name" type="text" placeholder="Name profile 1">
+                    <button onclick="saveProfile(1)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-2" type="radio">
+                    <input name="profile-2-name" type="text" placeholder="Name profile 2">
+                    <button onclick="saveProfile(2)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-3" type="radio">
+                    <input name="profile-3-name" type="text" placeholder="Name profile 3">
+                    <button onclick="saveProfile(3)">Update Profile</button>
+                </div>
+                <div class="profile-row">
+                    <input name="profile" id="profile-4" type="radio">
+                    <input name="profile-4-name" type="text" placeholder="Name profile 4">
+                    <button onclick="saveProfile(4)">Update Profile</button>
+                </div>
+            </fieldset>
+            <div>
+                <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
+                <p>Setup new profiles by configuring adjustments on the machine normally. Then optionally name the profile and press the "Update Profile" button.</p>
+                <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
+            </div>
+        </div>
+    </section>
+
+    <h2>Actions</h2>
+    <hr>
+    <section>
+        <h3>Updates</h3>
+        <div class="grid">
+            <div>
+                <button id="update-button" disabled>Checking for Updates</button>
+            </div>
+            <div>
+                <p>Apply the latest update to your Vector</p>
+                <a id="release-notes" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="grid">
+            <div>
+                <button id="update-button" onclick="window.customUpdate()">Upload Developer Build</button>
+            </div>
+            <div>
+                <p>This feature is intended for developers, and advanced users. Use at your own risk.</p>
+            </div>
+        </div>
+    </section>
+    <section>
+        <h3>Export Data</h3>
+        <div class="grid">
+            <div>
+                <button onclick="window.downloadScores()">Export Scores</button>
+            </div>
+            <div>
+                <p>Export all scores from the Leaderboard and Tournament Board as an update file</p>
+            </div>
+        </div>
+    </section>
+    <section>
+        <h3>Reset</h3>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')">Reset Leaderboard</button>
+            </div>
+            <div>
+                <p>Reset all scores on the Leaderboard, Tournament scores will not be effected</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')">Reset Tournament Board</button>
+            </div>
+            <div>
+                <p>Reset all scores on the Tournament Board, Leaderboard scores will not be effected</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball Machine</button>
+            </div>
+            <div>
+                <p>Power Cycle the Pinball Machine. This does not check for and will erase currently running games</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button onclick="localStorage.clear(); window.location.reload();">Clear Browser Storage</button>
+            </div>
+            <div>
+                <p>Clears stored data from browser, use this if you are getting weird behaviour that refreshing does not clear. This will log you out.</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div>
+                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset Vector</button>
+            </div>
+            <div>
+                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
+            </div>
+        </div>
+    </section>
+    <section>
+        <h3>Debug</h3>
+        <button class="secondary" onclick="downloadMemorySnapshot()">Download Memory Snapshot</button>
+        <button class="secondary" onclick="downloadLogs()">Download Logs</button>
+    </section>
+    <section>
+        <h2>Help</h2>
+        <hr>
+        <h5>How to reset the admin password</h5>
+        <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
+    </section>
+</div>
+<dialog id="update-progress-modal">
+    <article>
+        <header>
+            <h2>Updating - Please wait</h2>
+        </header>
+
+        <p>
+            <b>Do not close this window or disconnect from network while update is in progress.</b>
+            Updates typically take less than 2 minutes to complete.
+        </p>
+        <code id="update-progress-log" style="width:100%; height: 250px; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; text-align: left; padding-bottom: 1em; white-space: pre-wrap;"></code>
+        <progress id="update-progress-bar" value="0" max="100"/>
+    </article>
+</dialog>
