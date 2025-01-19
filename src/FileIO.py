@@ -4,9 +4,6 @@ V12/9/2024 support for software download
 """
 import gc
 import json
-import os
-
-import ubinascii
 
 import SharedState as S
 import SPI_DataStore as DataStore
@@ -194,7 +191,7 @@ def process_incoming_file(request):
             imported_module = __import__(module_name)
             try:
                 result = imported_module.go()  # Call the main function
-                download_results += f" RM "
+                download_results += " RM "
                 if result is not None:
                     Log.log(f"FIO: RunMe returned {result}")
                     S.update_load_result = result
@@ -247,7 +244,7 @@ def set_file_size(path, num_bytes, preserve_to_byte=0):
                 file_size = num_bytes
 
     # catch ENOENT exception
-    except OSError as e:
+    except OSError:
         # if the file does not exist, create it with the correct size
         with open(path, "w") as f:
             print(f"Creating file {path} with {num_bytes} null bytes")

@@ -6,7 +6,6 @@
 """
 
 import machine
-import utime
 
 pico_onboard_led = machine.Pin("LED", machine.Pin.OUT)
 timer = machine.Timer()

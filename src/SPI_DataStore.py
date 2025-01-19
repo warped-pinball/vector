@@ -134,7 +134,7 @@ def deserialize(data, structure_name):
                 "initials": initials.decode().strip("\0"),
                 "full_name": name.decode().strip("\0"),
             }
-        except:
+        except Exception:
             return {"intials": " ", "full_name": " "}
     elif structure_name == "leaders":
         try:
@@ -145,7 +145,7 @@ def deserialize(data, structure_name):
                 "date": date.decode().strip("\0"),
                 "score": score,
             }
-        except:
+        except Exception:
             return None
     elif structure_name == "tournament":
         try:
@@ -156,13 +156,13 @@ def deserialize(data, structure_name):
                 "game": game,
                 "index": index,
             }
-        except:
+        except Exception:
             return None
     elif structure_name == "individual":
         try:
             score, date = struct.unpack("<I10s", data)
             return {"score": score, "date": date.decode().strip("\0")}
-        except:
+        except Exception:
             return {"score": 1, "date": "9"}
     elif structure_name == "MapVersion":
         ver = struct.unpack("<16s", data)
@@ -187,7 +187,7 @@ def deserialize(data, structure_name):
                 "lastIP": lastIP.decode().strip("\0"),
                 "message": message.decode().strip("\0"),
             }
-        except:
+        except Exception:
             print("fault 3452")
             return {"enable": "true", "other": "1", "lastIP": "none", "message": "none"}
     else:
@@ -205,7 +205,6 @@ def blankStruct(structure_name):
         "enable": 1,
         "lastIP": "none",
         "message": "ok",
-        "other": 1,
         "ssid": "",
         "password": "",
         "Gpassword": " ",
