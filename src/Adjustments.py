@@ -140,7 +140,6 @@ def get_active_adjustment():
     """ 
     index_match=None
 
-    #will return 0,0 if none found
     cpyStart,cpyEnd = _get_range_from_gamedef()
     end_address = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
     if cpyStart == 0 or cpyEnd == 0 or end_address == 0:
@@ -148,25 +147,22 @@ def get_active_adjustment():
     
     #try to do this 16 bytes at a time for speed - (one SPI read cycle)
     for i in range(4):
-        print("loop ",i)
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * i
         active_data = shadowRam[cpyStart:end_address]
         match = True
         for offset in range(0, end_address - cpyStart, 16):
-            print("r",offset,end=" ")
             len = min(16, end_address - cpyStart - offset)
             stored_data = fram.read(fram_adr + offset, len)
-            print(stored_data)
             if stored_data != active_data[offset:offset + 16]:
-                match = False   
-                print("no match")
+                match = False                   
                 break
-        if match:
-            print("match found ",i)
+        if match:            
             index_match = i
             break
     
     return index_match
+
+
 
 
 
@@ -205,11 +201,13 @@ if __name__ == "__main__":
     restore_adjustments(3, reset=False)
     print("A3",shadowRam[1920:1940])
 
-    restore_adjustments(2, reset=False)
-    print("A2",shadowRam[1920:1940])
-    #fill_shadow_ram_with_pattern([1,6,3,4])
+    import time
+
+    start_time = time.ticks_ms()
+
+    i = get_active_adjustment()
+    #print("ACTIVE= ", get_active_adjustment())
     
-    print("ACTIVE= ",get_active_adjustment())
-
-
-
+    end_time = time.ticks_ms()
+    execution_time_ms = time.ticks_diff(end_time, start_time)
+    print(f"Execution time: {execution_time_ms} ms")
