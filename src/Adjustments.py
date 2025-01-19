@@ -30,6 +30,24 @@ def blank_all():
         fram.write(fram_adr, data)
 
 
+def _get_range_from_gamedef():
+    # for ranges check game data:
+    #       1) check Adjustment.cpyStart / cpyEnd
+    #       2) then if ChecksumStartAdr / ChecksumResultAdr
+    #       2) then if Adjustments.Type ==1 assume 780-7ff
+    #       3) then : fault - no ranges
+    cpyStart = S.gdata["Adjustments"].get("cpyStart", 0)
+    cpyEnd = S.gdata["Adjustments"].get("cpyEnd", 0)
+    if cpyStart == 0 or cpyEnd == 0:
+        cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
+        cpyEnd = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
+    if cpyStart == 0 or cpyEnd == 0:
+        if S.gdata["Adjustments"].get("Type", 0) == 1:
+            cpyStart = 0x780
+            cpyEnd = 0x800
+    return cpyStart, cpyEnd
+
+
 def get_names():
     """read out all four names"""
     return [fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH).decode("ascii").rstrip("\x00") for i in range(4)]
@@ -72,15 +90,9 @@ def restore_adjustments(index, reset=True):
         Log.log("ADJS: Fault - Data is empty")
         return "Fault: empty"
 
-    # game file can have special range
-    cpyStart = S.gdata["Adjustments"].get("cpyStart", -1)
-    cpyEnd = S.gdata["Adjustments"].get("cpyEnd", -1)
-    # or load standard based on adjustment types in game file
-    if cpyStart < 0 or cpyEnd < 0:
-        if S.gdata["Adjustments"].get("Type", 0) == 1:
-            cpyStart = 0x780
-            cpyEnd = 0x800
-
+    #will return 0,0 if none found
+    cpyStart,cpyEnd = _get_range_from_gamedef()
+   
     # copy
     if cpyStart > 0 and cpyEnd > 0 and (cpyEnd - cpyStart) <= len(data):
         shadowRam[cpyStart:cpyEnd] = data[: cpyEnd - cpyStart]
@@ -102,16 +114,8 @@ def store_adjustments(index):
     if index < 0 or index >= ADJ_NUM_SLOTS:
         return "Fault: Invalid Index"
 
-    # for ranges check game data:
-    #       1) check Adjustment.cpyStart / cpyEnd
-    #       2) then if Adjustments.Type ==1 assume 780-7ff
-    #       3) fault - no ranges
-    cpyStart = S.gdata["Adjustments"].get("cpyStart", -1)
-    cpyEnd = S.gdata["Adjustments"].get("cpyEnd", -1)
-    if cpyStart < 0 or cpyEnd < 0:
-        if S.gdata["Adjustments"].get("Type", 0) == 1:
-            cpyStart = 0x780
-            cpyEnd = 0x800
+    #will return 0,0 if none found
+    cpyStart,cpyEnd = _get_range_from_gamedef()
 
     # if valid ranges do the copy
     if cpyStart > 0 and cpyEnd > 0:
@@ -121,21 +125,91 @@ def store_adjustments(index):
         data = shadowRam[cpyStart:cpyEnd]
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
         fram.write(fram_adr, data)
-
         # hex_data = " ".join(f"{byte:02X}" for byte in data)
         # print(f"ADR: {fram_adr:04X} DAT: {hex_data}")
 
     else:
-        Log.log("ADJS: No Ranges")
+        Log.log("ADJS: No Gamedef Ranges")
 
 
 def get_active_adjustment():
-    # TODO fill me in
+    """look for acive adjustment profile
+       Do not use built in checksum, it is simple and duplicates are common
+       (System 9 does not have checksum)
+       return None iff no match, 0-3 if found
+    """ 
+    index_match=None
 
-    # return a random number between 0 and 4
-    import random
-
-    n = random.randint(0, 4)
-    if n == 4:
+    #will return 0,0 if none found
+    cpyStart,cpyEnd = _get_range_from_gamedef()
+    end_address = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
+    if cpyStart == 0 or cpyEnd == 0 or end_address == 0:
         return None
-    return n
+    
+    #try to do this 16 bytes at a time for speed - (one SPI read cycle)
+    for i in range(4):
+        print("loop ",i)
+        fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * i
+        active_data = shadowRam[cpyStart:end_address]
+        match = True
+        for offset in range(0, end_address - cpyStart, 16):
+            print("r",offset,end=" ")
+            len = min(16, end_address - cpyStart - offset)
+            stored_data = fram.read(fram_adr + offset, len)
+            print(stored_data)
+            if stored_data != active_data[offset:offset + 16]:
+                match = False   
+                print("no match")
+                break
+        if match:
+            print("match found ",i)
+            index_match = i
+            break
+    
+    return index_match
+
+
+
+
+if __name__ == "__main__":
+    def fill_shadow_ram_with_pattern(pattern):
+        """Fill shadowRam from cpyStart to cpyEnd with a given pattern."""
+        cpyStart, cpyEnd = 1920 , 2020        #  (2020-1920)/16 = 6.25
+        pattern_length = len(pattern)
+        for i in range(cpyStart, cpyEnd):
+            shadowRam[i] = pattern[i % pattern_length]
+
+    import GameDefsLoad
+    GameDefsLoad.go(True)
+
+    fill_shadow_ram_with_pattern([1,2,3,4])
+    store_adjustments(0)
+    print("store 0 done")
+    fill_shadow_ram_with_pattern([11,22,33])
+    store_adjustments(1)
+    print("store 1 done")
+    fill_shadow_ram_with_pattern([100,200,300,400])
+    store_adjustments(2)
+    print("store 2 done")
+    fill_shadow_ram_with_pattern([8,7,6,5])
+    store_adjustments(3)
+    print("store 3 done")
+
+
+    restore_adjustments(0, reset=False)
+    print("A0",shadowRam[1920:1940])
+    restore_adjustments(1, reset=False)
+    print("A1",shadowRam[1920:1940])
+    restore_adjustments(2, reset=False)
+    print("A2",shadowRam[1920:1940])
+    restore_adjustments(3, reset=False)
+    print("A3",shadowRam[1920:1940])
+
+    restore_adjustments(2, reset=False)
+    print("A2",shadowRam[1920:1940])
+    #fill_shadow_ram_with_pattern([1,6,3,4])
+    
+    print("ACTIVE= ",get_active_adjustment())
+
+
+
