@@ -27,7 +27,7 @@ import os
 from rsa import common, core, transform
 
 try:
-    from typing import Iterator, Optional, Union
+    from typing import Iterator, Union
 
     from rsa.key import PublicKey
 
@@ -35,11 +35,6 @@ try:
         from typing import Protocol
     except ImportError:
         from typing_extensions import Protocol
-
-    try:
-        from typing import Literal
-    except ImportError:
-        from typing_extensions import Literal
 
     class _FileLikeObject(Protocol):
         """A file like object that implements the :meth:`read` method"""

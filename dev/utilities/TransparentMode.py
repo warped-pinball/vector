@@ -1,12 +1,7 @@
 # import dma_reg as dma_d
 import time
-from time import sleep
 
 import machine
-import micropython
-import rp2
-import uctypes
-import utime
 from machine import Pin
 
 # import pio_reg as pio_d

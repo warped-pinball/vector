@@ -246,6 +246,9 @@ def download_update(url):
             pass
 
     else:
+        # TODO modify this to use a buffer so we aren't recreating a buffer every loop
+        # https://docs.micropython.org/en/latest/reference/constrained.html
+        # look for buffers
         with open("update.json", "wb") as f:
             while chunk := response.read(1024):
                 f.write(chunk)
