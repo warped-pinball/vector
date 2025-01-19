@@ -287,7 +287,6 @@ async def _handle_request(reader, writer):
     try:
         method, uri, protocol = request_line.decode().split()
     except Exception as e:
-        # TODO this is sometimes being triggered by a blank request, why I do not know
         logging.error(e)
         return
 
