@@ -1,12 +1,3 @@
----
-name: Pull Request
-about: Submit a pull request to improve the project
-title: ''
-labels: ''
-assignees: ''
-projects: 'Triage'
----
-
 ## Description
 <!--- Describe your changes in detail -->
 
