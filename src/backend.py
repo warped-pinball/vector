@@ -690,9 +690,16 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check")
 def app_updates_available(request):
-    from update import check_for_updates
+    from urequests import get as urequests_get
 
-    return check_for_updates()
+    url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
+    headers = {
+        "User-Agent": "MicroPython-Device",
+        "Accept": "application/vnd.github+json",
+    }
+
+    resp = urequests_get(url, headers=headers)
+    return resp.text, resp.status_code
 
 
 @add_route("/api/update/apply", method="POST", auth=True)
