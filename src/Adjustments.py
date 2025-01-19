@@ -38,8 +38,7 @@ def get_names():
 def set_name(index, name):
     """set name for index"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
-        # TODO raise exception
-        return "Fault: index"
+        raise ValueError("Invalid Index")
 
     name = name[:16]
     name_bytes = bytearray(name.encode("ascii") + b"\x00" * (16 - len(name)))
