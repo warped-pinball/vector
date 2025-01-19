@@ -5,17 +5,8 @@
 display message handling (custom message shown on the pinball machine display)
 """
 
-import json
-
-import uctypes
-
 import SharedState as S
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-)
+from Shadow_Ram_Definitions import shadowRam
 
 localCopyIp = 0
 
@@ -132,7 +123,7 @@ def set(ipAddress):
             msg[4] = msg[2]
             msg[5] = msg[3]
             set_mem(msg)
-        except:
+        except Exception:
             print("MSG: Failure in set ip")
 
     elif S.gdata["DisplayMessage"]["Type"] == 2:  # 2 display modules

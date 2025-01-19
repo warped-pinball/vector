@@ -21,7 +21,7 @@ def fetch(synch_with_rtc=True, timeout=10):
         local_epoch = 2208988800  # selected by Chris - blame him. :-D
         timestamp = struct.unpack("!I", data[40:44])[0] - local_epoch
         timestamp = time.gmtime(timestamp)
-    except Exception as e:
+    except Exception:
         return None
 
     # if requested set the machines RTC to the fetched timestamp
