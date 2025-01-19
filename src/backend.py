@@ -13,7 +13,6 @@ import Pico_Led
 from ls import ls
 from Memory_Main import blank_ram, save_ram
 from phew import server
-from random_bytes import random_hex
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -210,6 +209,15 @@ def redirect(request):
 #
 # Authentication
 #
+def random_hex(n):
+    from urandom import getrandbits
+
+    output = getrandbits(8).to_bytes(1, "big")
+    for i in range(n - 1):
+        output += getrandbits(8).to_bytes(1, "big")
+    return hexlify(output).decode()
+
+
 def hmac_sha256(key, message):
     """
     Compute HMAC-SHA256 using the given key and message.
