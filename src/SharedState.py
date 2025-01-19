@@ -1,4 +1,4 @@
-WarpedVersion = "0.3.0"
+WarpedVersion = "0.4.0"
 WarpedCodeBase = "SYSTEM11"
 
 # true false - tournament mode
