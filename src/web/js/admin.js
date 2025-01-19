@@ -257,23 +257,17 @@ async function checkForUpdates() {
 
 	// wait 1/10 of a second before checking for updates
 	// this lets us prioritize loading the page and settings
-	await new Promise(resolve => setTimeout(resolve, 100));
+	await new Promise(resolve => setTimeout(resolve, 200));
 
-	const response = await window.smartFetch('/api/update/check', null, false);
-	const data = await response.json();
-	const updateButton = document.getElementById('update-button');
+	try {
+		const response = await window.smartFetch('/api/update/check', null, false);
+		const data = await response.json();
+		const updateButton = document.getElementById('update-button');
 
-	// get the current version from the page
-	const current = document.getElementById('version').textContent.split(' ')[1];
+		// get the current version from the page
+		const current = document.getElementById('version').textContent.split(' ')[1];
 
-	// if the latest is equal to the current version we are up to date
-	if (data['tag_name'] === current) {
-		updateButton.style.backgroundColor = '#8e8e8e';
-		updateButton.style.borderColor = '#8e8e8e';
-		updateButton.textContent = 'Already up to date';
-		updateButton.disabled = true;
-
-		// try to link to current release notes data['html_url']
+		// link to release notes in text
 		const releaseNotes = document.getElementById('release-notes');
 		try {
 			releaseNotes.href = data['html_url'];
@@ -281,70 +275,36 @@ async function checkForUpdates() {
 		} catch (e) {
 			releaseNotes.classList.add('hide');
 		}
-		return;
-	} else {
-		updateButton.disabled = false;
-		updateButton.style.backgroundColor = '#e8b85a';
-		updateButton.style.borderColor = '#e8b85a';
-		updateButton.textContent = `Update to ${data['tag_name']}`;
 
-		// link to release notes in text
-		const releaseNotes = document.getElementById('release-notes');
-		releaseNotes.href = data['html_url'];
-		releaseNotes.textContent = 'Release Notes for ' + data['tag_name'];
-
-		updateButton.addEventListener('click', async () => {
-			const url = data['assets'][0]['browser_download_url'];
-			await confirmAction("update to " + data['tag_name'], applyUpdate(url));
-		});
-	}
-
-
-	try {
-		// If the current version is the latest
-		if (data['current'] === data['reccomended']) {
-
-			// no update available
+		// if the latest is equal to the current version we are up to date
+		if (data['tag_name'] === current) {
 			updateButton.style.backgroundColor = '#8e8e8e';
 			updateButton.style.borderColor = '#8e8e8e';
 			updateButton.textContent = 'Already up to date';
 			updateButton.disabled = true;
-
-			// try to link to current release notes data[data['current']]['release-url']
-			const releaseNotes = document.getElementById('release-notes');
-			try {
-				releaseNotes.href = data['releases'][data['current']]['release-url'];
-				releaseNotes.textContent = 'Release Notes for ' + data['current'];
-			} catch (e) {
-				releaseNotes.classList.add('hide');
-			}
-
-		// if there is a new update but there's no update.json asset
 		} else if (!data["assets"].find(asset => asset.name === 'update.json')) {
-				console.error('No update.json asset found for latest version');
-				updateButton.textContent = 'Could not get updates';
-				updateButton.disabled = true;
-				return;
+			console.error('No update.json asset found for latest version');
+			updateButton.textContent = 'Could not get updates';
+			updateButton.disabled = true;
+		} else { // there is an update with an update.json asset
 
-		// there is an update with an update.json asset
-		} else {
 			// update available
 			updateButton.disabled = false;
 			updateButton.style.backgroundColor = '#e8b85a';
 			updateButton.style.borderColor = '#e8b85a';
-			updateButton.textContent = `Update to ${data['reccomended']}`;
+			updateButton.textContent = `Update to ${data['tag_name']}`;
 
-			// link to release notes in text
-			const releaseNotes = document.getElementById('release-notes');
-			releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
-			releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
-
+			// get the url for the update.json asset and add an event listener to the button
 			update_url = data["assets"].find(asset => asset.name === 'update.json').browser_download_url;
 
-			updateButton.addEventListener('click', async () => {
-				await confirmAction("update to " + data['reccomended'], applyUpdate(update_url));
-			});
+			// define the call back function to apply the update
+			const callback = async () => {
+				await applyUpdate(update_url);
+			};
 
+			updateButton.addEventListener('click', async () => {
+				await confirmAction("update to version: " + data['tag_name'], callback);
+			});
 		}
 	} catch (e) {
 		console.error('Failed to check for updates:', e);
