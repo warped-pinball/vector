@@ -6,8 +6,8 @@ DmaRam = uctypes.bytearray_at(DMA_BASE, DMA_LENGTH + 32)
 
 
 def printdma():
-    for l in range(0, DMA_LENGTH - 16, 16):
-        for i in range(l, l + 16, 1):
+    for line in range(0, DMA_LENGTH - 16, 16):
+        for i in range(line, line + 16, 1):
             print(" ", hex(DmaRam[i]), end="")
         print(" ")
     print(" ")
