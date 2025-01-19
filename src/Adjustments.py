@@ -128,3 +128,15 @@ def store_adjustments(index):
 
     else:
         Log.log("ADJS: No Ranges")
+
+
+def get_active_adjustment():
+    # TODO fill me in
+
+    # return a random number between 0 and 4
+    import random
+
+    n = random.randint(0, 4)
+    if n == 4:
+        return None
+    return n

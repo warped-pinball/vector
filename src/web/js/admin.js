@@ -136,9 +136,44 @@ async function captureProfile(profileNum) {
 	};
 	// confirm action
 	await confirmAction("overwrite \"" + profileName + "\" with the currently active adjustments", callback);
+
+	// get active profile (presumably the one we just captured)
+	await getActiveProfile();
 }
 
 window.captureProfile = captureProfile;
+
+// restore profile
+async function restoreProfile(profileNum) {
+	const data = { 'index': profileNum - 1 };
+	const profileName = document.getElementById(`profile-${profileNum}-name`).placeholder;
+	// build callback function
+	const callback = async () => {
+		const response = await window.smartFetch('/api/adjustments/restore', data, true);
+	};
+	// confirm action
+	await confirmAction("restore \"" + profileName + "\" adjustments (This will fail if there is an active game and will reboot the game)", callback);
+
+	// get active profile
+	await getActiveProfile();
+}
+
+window.restoreProfile = restoreProfile;
+
+// get active adjustments profile
+async function getActiveProfile() {
+	const response = await window.smartFetch('/api/adjustments/active', null, false);
+	const data = await response.json();
+	activeProfile = data['index'];
+	console.log("Active Profile index: ", activeProfile);
+	// iterate over restore-profile-1 and set checked if it is the active profile
+	for (let i = 0; i < 4; i++) {
+		const input = document.getElementById(`restore-profile-${i + 1}`);
+		input.checked = i === activeProfile;
+	}
+}
+
+getActiveProfile();
 
 //
 // Actions

@@ -540,12 +540,18 @@ def app_captureAdjustments(request):
     store_adjustments(int(request.data["index"]))
 
 
-@add_route("/api/adjustments/apply", method="POST", auth=True)
+@add_route("/api/adjustments/restore", method="POST", auth=True)
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 
-    index = int(request["index"])
-    restore_adjustments(index)
+    restore_adjustments(int(request.data["index"]))
+
+
+@add_route("/api/adjustments/active")
+def app_getActiveAdjustment(request):
+    from Adjustments import get_active_adjustment
+
+    return {"index": get_active_adjustment()}
 
 
 #
