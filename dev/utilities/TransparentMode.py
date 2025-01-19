@@ -4,10 +4,6 @@ import time
 import machine
 from machine import Pin
 
-# import pio_reg as pio_d
-# import pio_prg as pio_prg
-from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
-
 # RESET_OUT pin initializtion
 reset_out = Pin(0, Pin.OUT)
 reset_out.value(1)  # hold main board in reset

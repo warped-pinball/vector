@@ -1,3 +1,10 @@
+import json
+import os
+import zlib
+
+import deflate
+
+
 # compression step from sync.py
 def compress_to_gzip(input_filepath, output_filepath=None, window_bits=9, compress_level=9):
     """
@@ -31,11 +38,6 @@ def compress_to_gzip(input_filepath, output_filepath=None, window_bits=9, compre
     os.remove(input_filepath)
 
     # decomresstion on pico
-
-
-import json
-
-import deflate
 
 
 def load_json_from_gzip(file_path, window_bits=6):

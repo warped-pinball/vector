@@ -1,9 +1,9 @@
 from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
 
 # fmt: off
-DMA_BASE        = 0x50000000
-DMA_CHAN_WIDTH  = 0x40
-DMA_CHAN_COUNT  = 12
+DMA_BASE = 0x50000000
+DMA_CHAN_WIDTH = 0x40
+DMA_CHAN_COUNT = 12
 
 DMA_CTRL_TRIG_FIELDS = {
     "AHB_ERROR":   31 << BF_POS | 1 << BF_LEN | BFUINT32,
@@ -28,9 +28,9 @@ DMA_CHAN_REGS = {
     "READ_ADDR_REG":         0x00 | UINT32,
     "WRITE_ADDR_REG":        0x04 | UINT32,
     "TRANS_COUNT_REG":       0x08 | UINT32,
-    "TRANS_COUNT_REG_TRIG":  0x1C | UINT32,          # will trigger!
-    "CTRL_REG_TRIG":         0x0c | UINT32,          # will trigger!
-    "CTRL_REG":          (0x10,DMA_CTRL_TRIG_FIELDS) # 0x0C would cause trigger also. move to 0x10 to prebvent trigger at setup
+    "TRANS_COUNT_REG_TRIG":  0x1C | UINT32,            # will trigger!
+    "CTRL_REG_TRIG":         0x0c | UINT32,            # will trigger!
+    "CTRL_REG":          (0x10, DMA_CTRL_TRIG_FIELDS)  # 0x0C would cause trigger also. move to 0x10 to prebvent trigger at setup
 }
 
 DMA_REGS = {
