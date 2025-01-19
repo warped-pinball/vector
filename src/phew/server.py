@@ -555,7 +555,7 @@ def create_schedule():
 def run(host="0.0.0.0", port=80):
     logging.info("> starting web server on port {}".format(port))
     loop.create_task(
-        # TODO backlog is number of connections that can be queued experiment with larger numbers
+        # TODO backlog is number of connections that can be queued. experiment with larger numbers
         uasyncio.start_server(_handle_request, host, port, backlog=5)
     )
 
