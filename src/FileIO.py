@@ -21,20 +21,14 @@ def download_scores():
     data.append(
         {
             "FileType": "leaders",
-            "contents": [
-                DataStore.read_record("leaders", i)
-                for i in range(DataStore.memory_map["leaders"]["count"])
-            ],
+            "contents": [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])],
         }
     )
 
     data.append(
         {
             "FileType": "tournament",
-            "contents": [
-                DataStore.read_record("tournament", i)
-                for i in range(DataStore.memory_map["tournament"]["count"])
-            ],
+            "contents": [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])],
         }
     )
 
@@ -47,10 +41,7 @@ def download_names(request):
     print("download names - - - ")
     try:
         # Collect player names data
-        names_data = [
-            DataStore.read_record("names", i)
-            for i in range(DataStore.memory_map["names"]["count"])
-        ]
+        names_data = [DataStore.read_record("names", i) for i in range(DataStore.memory_map["names"]["count"])]
 
         response_body = [{"FileType": "names", "contents": names_data}]
         # Prepare the final response
@@ -69,9 +60,7 @@ def download_names(request):
         return json.dumps(
             {
                 "headers": {"Content-Type": "application/json", "Connection": "close"},
-                "body": json.dumps(
-                    {"error": "An error occurred while generating the download."}
-                ),
+                "body": json.dumps({"error": "An error occurred while generating the download."}),
             }
         )
 
@@ -164,9 +153,7 @@ def process_incoming_file(request):
             download_results += f" {file_type}"
             return "Upload complete"  # **************************************
 
-        Log.log(
-            f"FIO: Load file: {file_type}, I{index} A{append}{' B' if is_binary else ''}"
-        )
+        Log.log(f"FIO: Load file: {file_type}, I{index} A{append}{' B' if is_binary else ''}")
 
         if is_binary:
             contents = base64_decode(contents)
@@ -179,9 +166,7 @@ def process_incoming_file(request):
         calculated_checksum = f"{calculated_checksum}".lower()
 
         if calculated_checksum != received_checksum:
-            Log.log(
-                f"FIO: Checksum fail. Expected {received_checksum}, got {calculated_checksum}"
-            )
+            Log.log(f"FIO: Checksum fail. Expected {received_checksum}, got {calculated_checksum}")
         else:
             print("FIO: Checksum good:", f"{calculated_checksum}")
 

@@ -267,9 +267,7 @@ def _sflash_block_erase(block_address, wait=False):
     if sflash_is_ready() is False:
         return "ready fault"
     _sflash_write_enable()
-    address_bytes = bytearray(
-        [(block_address >> 24) & 0xFF, (block_address >> 16) & 0xFF, 0x00, 0x00]  # MSByte
-    )
+    address_bytes = bytearray([(block_address >> 24) & 0xFF, (block_address >> 16) & 0xFF, 0x00, 0x00])  # MSByte
 
     _sflash_cmd_dat(spi, cs, SFLASH_BE4B, address_bytes)
     print(f"erase {address_bytes.hex()}")
@@ -467,9 +465,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
     for block_num in range(1, 511):
         block_address = block_num * block_size
         # print(f"block # {block_num} st={start_address:#x} end={end_address:#x} prot= {protect}")
-        if block_address < (start_address & 0xFFFF0000) or block_address >= (
-            end_address & 0xFFFF0000
-        ):
+        if block_address < (start_address & 0xFFFF0000) or block_address >= (end_address & 0xFFFF0000):
             continue
 
         # print ("block # ",block_num," prot= ",protect)
@@ -490,9 +486,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
         block_address = block_num * block_size
         for sector_offset in range(0, block_size, sector_size):
             sector_address = block_address + sector_offset
-            if sector_address < (start_address & 0xFFFFF000) or sector_address >= (
-                end_address & 0xFFFFF000
-            ):
+            if sector_address < (start_address & 0xFFFFF000) or sector_address >= (end_address & 0xFFFFF000):
                 continue
 
             print("4k sector # ", sector_offset, " prot= ", protect)
@@ -594,9 +588,7 @@ def test():
             print("Test failed: Data mismatch.")
             for i in range(len(test_data)):
                 if test_data[i] != read_data[i]:
-                    print(
-                        f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}"
-                    )
+                    print(f"Mismatch at byte {i}: wrote {test_data[i]}, read {read_data[i]}")
                     pass
 
 

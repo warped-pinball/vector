@@ -1,5 +1,6 @@
-from uctypes import BF_POS, BF_LEN, UINT32, BFUINT32, struct
+from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
 
+# fmt: off
 DMA_BASE        = 0x50000000
 DMA_CHAN_WIDTH  = 0x40
 DMA_CHAN_COUNT  = 12
@@ -27,8 +28,8 @@ DMA_CHAN_REGS = {
     "READ_ADDR_REG":       0x00|UINT32,
     "WRITE_ADDR_REG":      0x04|UINT32,
     "TRANS_COUNT_REG":     0x08|UINT32,
-    "TRANS_COUNT_REG_TRIG":  0x1C|UINT32,      #will trigger! 
-    "CTRL_REG_TRIG":       0x0c|UINT32,        #will trigger! 
+    "TRANS_COUNT_REG_TRIG":  0x1C|UINT32,      #will trigger!
+    "CTRL_REG_TRIG":       0x0c|UINT32,        #will trigger!
     "CTRL_REG":          (0x10,DMA_CTRL_TRIG_FIELDS)         #0x0C would cause trigger also. move to 0x10 to prebvent trigger at setup
 }
 
@@ -55,14 +56,13 @@ DMA_REGS = {
     "CH1_DBG_TCR":        0x844|UINT32
 }
 
+# fmt: on
 DREQ_PIO0_TX0, DREQ_PIO0_TX1, DREQ_PIO0_TX2, DREQ_PIO0_TX3 = 0, 1, 2, 3
 DREQ_PIO0_RX0, DREQ_PIO0_RX1, DREQ_PIO0_RX2, DREQ_PIO0_RX3 = 4, 5, 6, 7
 
-DREQ_PIO1_TX0, DREQ_PIO1_TX1, DREQ_PIO1_TX2, DREQ_PIO1_TX3 = 8, 9,10,11
-DREQ_PIO1_RX0, DREQ_PIO1_RX1, DREQ_PIO1_RX2, DREQ_PIO1_RX3 = 12,13,14,15
+DREQ_PIO1_TX0, DREQ_PIO1_TX1, DREQ_PIO1_TX2, DREQ_PIO1_TX3 = 8, 9, 10, 11
+DREQ_PIO1_RX0, DREQ_PIO1_RX1, DREQ_PIO1_RX2, DREQ_PIO1_RX3 = 12, 13, 14, 15
 
 
-DMA_CHANS = [struct(DMA_BASE + n*DMA_CHAN_WIDTH, DMA_CHAN_REGS) for n in range(0,DMA_CHAN_COUNT)]
+DMA_CHANS = [struct(DMA_BASE + n * DMA_CHAN_WIDTH, DMA_CHAN_REGS) for n in range(0, DMA_CHAN_COUNT)]
 DMA_DEVICE = struct(DMA_BASE, DMA_REGS)
-
-

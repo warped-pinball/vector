@@ -158,14 +158,7 @@ class Builder:
                 if file.endswith(".svg"):
                     file_path = os.path.join(root, file)
                     temp_file_path = file_path + ".tmp"
-                    cmd = (
-                        f"scour -i {file_path} "
-                        "--enable-viewboxing "
-                        "--enable-id-stripping "
-                        "--enable-comment-stripping "
-                        "--shorten-ids --indent=none "
-                        f"-o {temp_file_path}"
-                    )
+                    cmd = f"scour -i {file_path} " "--enable-viewboxing " "--enable-id-stripping " "--enable-comment-stripping " "--shorten-ids --indent=none " f"-o {temp_file_path}"
                     result = subprocess.run(cmd, shell=True)
                     if result.returncode == 0:
                         os.remove(file_path)
@@ -190,9 +183,7 @@ class Builder:
                         with open(file_path, "r") as f:
                             data = json.load(f)
                         file_name = os.path.splitext(file)[0]
-                        outfile.write(
-                            f"{file_name}{json.dumps(data, separators=(',',':'))}\n"
-                        )
+                        outfile.write(f"{file_name}{json.dumps(data, separators=(',',':'))}\n")
                         os.remove(file_path)
 
     @step_report
@@ -239,18 +230,10 @@ class Builder:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Build the project into a specified build directory."
-    )
-    parser.add_argument(
-        "--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory"
-    )
-    parser.add_argument(
-        "--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory"
-    )
-    parser.add_argument(
-        "--env", default="dev", help="Build environment (dev, test, prod, etc.)"
-    )
+    parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
+    parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
+    parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
+    parser.add_argument("--env", default="dev", help="Build environment (dev, test, prod, etc.)")
     args = parser.parse_args()
 
     builder = Builder(args.build_dir, args.source_dir, args.env)

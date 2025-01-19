@@ -56,9 +56,7 @@ def report(request):
                 # Calculate game time only for a single player
                 if number_of_players == 1 and time_game_start is not None:
                     if game_active:
-                        report_data["GameTime"] = (
-                            time.ticks_ms() - time_game_start
-                        ) / 1000
+                        report_data["GameTime"] = (time.ticks_ms() - time_game_start) / 1000
                     elif time_game_end > time_game_start:
                         report_data["GameTime"] = (time_game_end - time_game_start) / 1000
                     else:
@@ -111,9 +109,7 @@ def poll_fast():
             poll_state = 1
 
     elif poll_state == 1:
-        if shadowRam[0xA9] == 0x01 or (
-            shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]
-        ):
+        if shadowRam[0xA9] == 0x01 or (shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]):
             time_game_end = time.ticks_ms()
             print("------------end game ", time_game_end)
             game_active = False

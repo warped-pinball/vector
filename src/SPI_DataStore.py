@@ -30,25 +30,12 @@ memory_map = {
         "sets": numberOfPlayers,
     },  # count(scores) of 20, and 30 players
     "configuration": {
-        "start": top_mem
-        - 16
-        - (20 * 30)
-        - (35 * 20)
-        - (12 * 100)
-        - (14 * 20 * 30)
-        - (96 * 1),
+        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1),
         "size": 96,
         "count": 1,
     },
     "extras": {
-        "start": top_mem
-        - 16
-        - (20 * 30)
-        - (35 * 20)
-        - (12 * 100)
-        - (14 * 20 * 30)
-        - (96 * 1)
-        - (48 * 1),
+        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1) - (48 * 1),
         "size": 48,
         "count": 1,
     },
@@ -58,45 +45,25 @@ memory_map = {
 def show_mem_map():
     # Calculate the actual start addresses
     memory_map["MapVersion"]["start"] = top_mem - memory_map["MapVersion"]["size"]
-    memory_map["names"]["start"] = memory_map["MapVersion"]["start"] - (
-        memory_map["names"]["size"] * memory_map["names"]["count"]
-    )
-    memory_map["leaders"]["start"] = memory_map["names"]["start"] - (
-        memory_map["leaders"]["size"] * memory_map["leaders"]["count"]
-    )
-    memory_map["tournament"]["start"] = memory_map["leaders"]["start"] - (
-        memory_map["tournament"]["size"] * memory_map["tournament"]["count"]
-    )
-    memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (
-        memory_map["individual"]["size"]
-        * memory_map["individual"]["count"]
-        * memory_map["individual"]["sets"]
-    )
-    memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (
-        memory_map["configuration"]["size"] * memory_map["configuration"]["count"]
-    )
-    memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (
-        memory_map["extras"]["size"] * memory_map["extras"]["count"]
-    )
+    memory_map["names"]["start"] = memory_map["MapVersion"]["start"] - (memory_map["names"]["size"] * memory_map["names"]["count"])
+    memory_map["leaders"]["start"] = memory_map["names"]["start"] - (memory_map["leaders"]["size"] * memory_map["leaders"]["count"])
+    memory_map["tournament"]["start"] = memory_map["leaders"]["start"] - (memory_map["tournament"]["size"] * memory_map["tournament"]["count"])
+    memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
+    memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
+    memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
     # Print the final memory map
     for key, value in memory_map.items():
-        print(
-            f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}"
-        )
+        print(f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}")
 
 
 def write_record(structure_name, record, index=0, set=0):
     try:
         # print("write ",structure_name,record,index,set)
         structure = memory_map[structure_name]
-        start_address = (
-            structure["start"]
-            + index * structure["size"]
-            + structure["size"] * structure["count"] * set
-        )
+        start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
@@ -108,9 +75,7 @@ def write_record(structure_name, record, index=0, set=0):
 
 def serialize(record, structure_name):
     if structure_name == "names":
-        return struct.pack(
-            "<3s16s", record["initials"].encode(), record["full_name"].encode()
-        )
+        return struct.pack("<3s16s", record["initials"].encode(), record["full_name"].encode())
     elif structure_name == "leaders":
         return struct.pack(
             "<3s16s10sI",
@@ -154,11 +119,7 @@ def serialize(record, structure_name):
 def read_record(structure_name, index=0, set=0):
     structure = memory_map[structure_name]
     if "sets" in structure:
-        start_address = (
-            structure["start"]
-            + index * structure["size"]
-            + set * structure["size"] * structure["count"]
-        )
+        start_address = structure["start"] + index * structure["size"] + set * structure["size"] * structure["count"]
     else:
         start_address = structure["start"] + index * structure["size"]
     data = fram.read(start_address, structure["size"])

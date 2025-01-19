@@ -141,18 +141,14 @@ def go(safe_mode=False):
             all_configs = list_game_configs()
 
             if config_filename not in all_configs.keys():
-                faults.raise_fault(
-                    faults.CONF01, f"Game config {config_filename} not found"
-                )
+                faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
                 data = safe_defaults
             else:
                 config_data = find_config_in_file(config_filename)
                 if config_data:
                     data = config_data
                 else:
-                    faults.raise_fault(
-                        faults.CONF01, f"Error loading game config {config_filename}"
-                    )
+                    faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
                     data = safe_defaults
 
         except Exception as e:
