@@ -1,4 +1,4 @@
-[![GitHub Release](https://img.shields.io/github/v/release/warped-pinball/vector)](https://github.com/warped-pinball/vector/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/warped-pinball/vector?color=blue)](https://github.com/warped-pinball/vector/releases/latest)
 
 
 # Vector
