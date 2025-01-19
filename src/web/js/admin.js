@@ -126,7 +126,19 @@ async function setProfileName(profileNum) {
 	await populateProfiles();
 }
 
-setProfileName;
+// capture profile
+async function captureProfile(profileNum) {
+	const data = { 'index': profileNum - 1 };
+	const profileName = document.getElementById(`profile-${profileNum}-name`).placeholder;
+	// build callback function
+	const callback = async () => {
+		const response = await window.smartFetch('/api/adjustments/capture', data, true);
+	};
+	// confirm action
+	await confirmAction("overwrite \"" + profileName + "\" with the currently active adjustments", callback);
+}
+
+window.captureProfile = captureProfile;
 
 //
 // Actions

@@ -537,8 +537,7 @@ def app_setAdjustmentName(request):
 def app_captureAdjustments(request):
     from Adjustments import store_adjustments
 
-    index = int(request["index"])
-    store_adjustments(index)
+    store_adjustments(int(request.data["index"]))
 
 
 @add_route("/api/adjustments/apply", method="POST", auth=True)
