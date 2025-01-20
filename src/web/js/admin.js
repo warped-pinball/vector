@@ -12,26 +12,28 @@ async function confirm_auth_get(url, purpose) {
 	});
 }
 
-function confirmAction(message, callback) {
+function confirmAction(message, callback, cancelCallback=null) {
 	const modal = document.getElementById('confirm-modal');
 	const modalMessage = document.getElementById('modal-message');
 	const confirmButton = document.getElementById('modal-confirm-button');
+	const cancelButton = document.getElementById('modal-cancel-button');
 
 	modalMessage.textContent = `Are you sure you want to ${message}?`;
 
 	confirmButton.onclick = () => {
+		modal.close();
 		callback();
-		closeModal();
 	};
+
+	if (cancelCallback) {
+		cancelButton.onclick = () => {
+			modal.close();
+			cancelCallback();
+		};
+	}
 
 	modal.showModal();
 }
-
-function closeModal() {
-	const modal = document.getElementById('confirm-modal');
-	modal.close();
-}
-
 
 //
 // Settings
@@ -40,9 +42,6 @@ function closeModal() {
 // Tournament Mode
 async function tournamentModeToggle() {
 	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
-
-	// disable the checkbox until we have the current setting
-	tournamentModeToggle.disabled = true;
 
 	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
 	const data = await response.json();
@@ -61,9 +60,6 @@ async function tournamentModeToggle() {
 async function getScoreClaimMethods() {
 	const onMachineToggle = document.getElementById('on-machine-toggle');
 
-	// disable the checkbox until we have the current setting
-	onMachineToggle.disabled = true;
-
 	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
 	const data = await response.json();
 
@@ -80,38 +76,54 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 
-// setup listeners for adjustment profiles
-async function setupAdjustmentListeners() {
-	// add event listeners to the names to set the profile name when changed and clicked away from
-	for (let i = 0; i < 4; i++) {
-		const input = document.getElementById(`profile-${i + 1}-name`);
-		input.addEventListener('blur', () => {
-			setProfileName(i + 1);
-		});
-	}
-}
+//
+// Adjustment Profiles
+//
 
-// adjutstment profiles
-async function populateProfiles(){
-	const response = await window.smartFetch('/api/adjustments/names', null, false);
-	// array of profile names ['name1', 'name2', ...]
+async function populateAdjustmentProfiles() {
+	const response = await window.smartFetch('/api/adjustments/status', null, false);
 	const data = await response.json();
 
-	// set placeholder text and clear value
-	for (let i = 0; i < 4; i++) {
-		if (data[i] && data[i].trim() !== "") {
-			const input = document.getElementById(`profile-${i + 1}-name`);
-			input.placeholder = data[i];
-			input.value = "";
+	console.log("Adjustment Profiles: ", data);
+
+	// iterate through list of (name, active, captured) and set the values
+	for (let i = 0; i < data.length; i++) {
+		const profileName = document.getElementById(`name-profile-${i}`);
+		const profileRestore = document.getElementById(`restore-profile-${i}`);
+		const profileCapture = document.getElementById(`capture-profile-${i}`);
+
+		if (data[i][0] != "" ) {
+			profileName.placeholder = data[i][0];
+			profileName.value = "";
 		}
+
+		profileRestore.checked = data[i][1];
+		profileRestore.disabled = !data[i][2];
+
+		// add event listener to capture button
+		profileCapture.addEventListener('click', async () => {
+			await captureProfile(i);
+		});
+
+		// add event listener to restore button
+		profileRestore.addEventListener('click', async () => {
+			await restoreProfile(i);
+		});
+
+		// add event listener to name input
+		profileName.addEventListener('blur', async () => {
+			await setProfileName(i);
+		});
+
 	}
 }
 
-populateProfiles();
-setupAdjustmentListeners();
+populateAdjustmentProfiles();
 
-async function setProfileName(profileNum) {
-	const input = document.getElementById(`profile-${profileNum}-name`);
+
+
+async function setProfileName(index) {
+	const input = document.getElementById(`name-profile-${index}`);
 	const name = input.value;
 
 	// check if name is still the placeholder
@@ -119,61 +131,49 @@ async function setProfileName(profileNum) {
 		return;
 	}
 
-	const data = { 'index': profileNum - 1, 'name': name };
+	const data = { 'index': index, 'name': name };
 	await window.smartFetch('/api/adjustments/name', data, true);
 
 	// repopulate the profiles
-	await populateProfiles();
+	populateAdjustmentProfiles();
 }
 
 // capture profile
-async function captureProfile(profileNum) {
-	const data = { 'index': profileNum - 1 };
-	const profileName = document.getElementById(`profile-${profileNum}-name`).placeholder;
+async function captureProfile(index) {
+	const data = { 'index': index };
+	const profileName = document.getElementById(`name-profile-${index}`).placeholder;
 	// build callback function
 	const callback = async () => {
 		const response = await window.smartFetch('/api/adjustments/capture', data, true);
+		populateAdjustmentProfiles();
 	};
 	// confirm action
-	await confirmAction("overwrite \"" + profileName + "\" with the currently active adjustments", callback);
+	await confirmAction(
+		"overwrite \"" + profileName + "\" with the currently active adjustments",
+		callback
+	);
 
-	// get active profile (presumably the one we just captured)
-	await getActiveProfile();
+
 }
 
-window.captureProfile = captureProfile;
-
 // restore profile
-async function restoreProfile(profileNum) {
-	const data = { 'index': profileNum - 1 };
-	const profileName = document.getElementById(`profile-${profileNum}-name`).placeholder;
+async function restoreProfile(index) {
+	const data = { 'index': index };
+	const profileName = document.getElementById(`name-profile-${index}`).placeholder;
 	// build callback function
 	const callback = async () => {
 		const response = await window.smartFetch('/api/adjustments/restore', data, true);
+		populateAdjustmentProfiles();
 	};
 	// confirm action
-	await confirmAction("restore \"" + profileName + "\" adjustments (This will fail if there is an active game and will reboot the game)", callback);
-
-	// get active profile
-	await getActiveProfile();
+	await confirmAction(
+		"restore \"" + profileName + "\" adjustments (This will fail if there is an active game and will reboot the game)",
+		callback,
+		populateAdjustmentProfiles // if we cancel we need to reset the selected / active profile
+	);
 }
 
-window.restoreProfile = restoreProfile;
 
-// get active adjustments profile
-async function getActiveProfile() {
-	const response = await window.smartFetch('/api/adjustments/active', null, false);
-	const data = await response.json();
-	activeProfile = data['index'];
-	console.log("Active Profile index: ", activeProfile);
-	// iterate over restore-profile-1 and set checked if it is the active profile
-	for (let i = 0; i < 4; i++) {
-		const input = document.getElementById(`restore-profile-${i + 1}`);
-		input.checked = i === activeProfile;
-	}
-}
-
-getActiveProfile();
 
 //
 // Actions
@@ -302,9 +302,9 @@ window.downloadScores = async function () {
 
 async function checkForUpdates() {
 
-	// wait 1/10 of a second before checking for updates
+	// wait 1 second before checking for updates
 	// this lets us prioritize loading the page and settings
-	await new Promise(resolve => setTimeout(resolve, 200));
+	await new Promise(resolve => setTimeout(resolve, 1000));
 
 	try {
 		const response = await window.smartFetch('/api/update/check', null, false);
