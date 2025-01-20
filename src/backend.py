@@ -178,7 +178,7 @@ def cool_down(cool_down_seconds=0, single_instance=False):
                 return "Already running", 409
 
             if (time() - last_call) < cool_down_seconds:
-                return "Cooling down", 429
+                return {"msg": "cooling down"}, 429
 
             running = True
             last_call = time()
@@ -524,11 +524,16 @@ def app_resetIndScores(request):
 #
 # Adjustments
 #
-@add_route("/api/adjustments/names")
-def app_getAdjustmentNames(request):
-    from Adjustments import get_names
+@add_route("/api/adjustments/status")
+def app_getAdjustmentStatus(request):
+    """
+    Get the status of the adjustments as a list of tuples (name, active, populated)
+    """
+    from Adjustments import get_adjustments_status
 
-    return get_names()
+    status = get_adjustments_status()
+    print(status)
+    return status
 
 
 @add_route("/api/adjustments/name", method="POST", auth=True)
@@ -552,14 +557,8 @@ def app_captureAdjustments(request):
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 
+    print("Restoring adjustments", int(request.data["index"]))
     restore_adjustments(int(request.data["index"]))
-
-
-@add_route("/api/adjustments/active")
-def app_getActiveAdjustment(request):
-    from Adjustments import get_active_adjustment
-
-    return {"index": get_active_adjustment()}
 
 
 #
@@ -701,7 +700,7 @@ def app_getLogs(request):
 #
 # Updates
 #
-@add_route("/api/update/check")
+@add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
     from urequests import get as urequests_get
 
