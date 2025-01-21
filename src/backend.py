@@ -571,7 +571,6 @@ def app_captureAdjustments(request):
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 
-    print("Restoring adjustments", int(request.data["index"]))
     restore_adjustments(int(request.data["index"]))
 
 
