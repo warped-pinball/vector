@@ -381,6 +381,22 @@ def app_game_configs_list(request):
     return json_dumps(list_game_configs()), 200
 
 
+@add_route("/api/game/status")
+def app_game_status(request):
+    from Shadow_Ram_Definitions import shadowRam
+    from SharedState import gdata
+
+    game_in_progress = shadowRam[gdata["BallInPlay"]["Address"]] in [
+        gdata["BallInPlay"]["Ball1"],
+        gdata["BallInPlay"]["Ball2"],
+        gdata["BallInPlay"]["Ball3"],
+        gdata["BallInPlay"]["Ball4"],
+        gdata["BallInPlay"]["Ball5"],
+    ]
+
+    return json_dumps({"game_in_progress": game_in_progress}), 200
+
+
 #
 # Memory
 #
@@ -531,9 +547,7 @@ def app_getAdjustmentStatus(request):
     """
     from Adjustments import get_adjustments_status
 
-    status = get_adjustments_status()
-    print(status)
-    return status
+    return get_adjustments_status()
 
 
 @add_route("/api/adjustments/name", method="POST", auth=True)
@@ -553,11 +567,10 @@ def app_captureAdjustments(request):
     store_adjustments(int(request.data["index"]))
 
 
-@add_route("/api/adjustments/restore", method="POST", auth=True)
+@add_route("/api/adjustments/restore", method="POST", auth=True, cool_down_seconds=5)
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 
-    print("Restoring adjustments", int(request.data["index"]))
     restore_adjustments(int(request.data["index"]))
 
 
