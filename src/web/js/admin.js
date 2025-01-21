@@ -132,7 +132,11 @@ async function setProfileName(index) {
 	}
 
 	const data = { 'index': index, 'name': name };
-	await window.smartFetch('/api/adjustments/name', data, true);
+	try {
+		await window.smartFetch('/api/adjustments/name', data, true);
+	} catch (e) {
+		input.value = input.placeholder;
+	}
 
 	// repopulate the profiles
 	populateAdjustmentProfiles();
@@ -160,19 +164,30 @@ async function captureProfile(index) {
 async function restoreProfile(index) {
 	const data = { 'index': index };
 	const profileName = document.getElementById(`name-profile-${index}`).placeholder;
+
 	// build callback function
 	const callback = async () => {
+		// get the current game status
+		const gameStatusResponse = await window.smartFetch('/api/game/status', null, false);
+		const gameStatus = await gameStatusResponse.json();
+
+		// if the game is active we can't restore the profile
+		if (gameStatus['game_in_progress']) {
+			alert('Cannot restore adjustments while a game is in progress, please try again after the game has ended.');
+			populateAdjustmentProfiles();
+			return;
+		}
+
 		const response = await window.smartFetch('/api/adjustments/restore', data, true);
 		populateAdjustmentProfiles();
 	};
 	// confirm action
 	await confirmAction(
-		"restore \"" + profileName + "\" adjustments (This will fail if there is an active game and will reboot the game)",
+		"restore adjustment profile: \"" + profileName + "\" and reboot the game",
 		callback,
 		populateAdjustmentProfiles // if we cancel we need to reset the selected / active profile
 	);
 }
-
 
 
 //

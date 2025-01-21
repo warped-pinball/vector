@@ -87,8 +87,7 @@ def restore_adjustments(index, reset=True):
 
     # Check the data is not empty
     if not is_populated(index):
-        Log.log("ADJS: Fault - Data is empty")
-        return "Fault: empty"  # TODO raise exception
+        raise ValueError(f"No data in the adjustment profile {index}")
 
     # will return 0,0 if none found
     cpyStart, cpyEnd = _get_range_from_gamedef()
@@ -112,7 +111,6 @@ def restore_adjustments(index, reset=True):
 
         # restart the pinball machine
         reset_control.release()
-
         sleep(2)  # TODO should this be longer/else where/ is it nessisary?
 
         # restart the server schedule
