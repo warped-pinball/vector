@@ -24,9 +24,7 @@ localCopyIp = 0
 # fix adjustments checksum
 #
 def fixAdjustmentChecksum():
-    if (
-        S.gdata["Adjustments"]["Type"] == 0 or S.gdata["Adjustments"]["Type"] == 1
-    ):  # 0 will at least test and report the checksum, no changes
+    if S.gdata["Adjustments"]["Type"] == 0 or S.gdata["Adjustments"]["Type"] == 1:  # 0 will at least test and report the checksum, no changes
         start = S.gdata["Adjustments"]["ChecksumStartAdr"]
         end = S.gdata["Adjustments"]["ChecksumEndAdr"]
         resultLoc = S.gdata["Adjustments"]["ChecksumResultAdr"]

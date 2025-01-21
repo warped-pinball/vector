@@ -27,9 +27,7 @@ def autodetect_pico_port():
             if output:
                 # first line, first token
                 return output.split("\n")[0].split()[0]
-        print(
-            "Unable to detect Pico port using mpremote. Please specify the correct port manually."
-        )
+        print("Unable to detect Pico port using mpremote. Please specify the correct port manually.")
     except Exception as e:
         print(f"Error detecting Pico port: {e}")
     sys.exit(1)
@@ -77,9 +75,7 @@ def copy_files_to_pico(build_dir, pico_port):
 
 def restart_pico(pico_port):
     print("Restarting the Pico...")
-    cmd = (
-        f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
-    )
+    cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error restarting the Pico.")
@@ -144,10 +140,7 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
     test_data_script = "\n".join(
         # set player names
         ["import SPI_DataStore as datastore"]
-        + [
-            f'datastore.write_record("names", {json.dumps(record)}, {index})'
-            for index, record in enumerate(test_data["names"])
-        ]
+        + [f'datastore.write_record("names", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["names"])]
         # set leaderboard data
         + [
             "from ScoreTrack import update_leaderboard",
@@ -155,10 +148,7 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
         + [f"update_leaderboard({json.dumps(record)})" for record in test_data["leaders"]]
         # turn on tournament mode
         + ["import SharedState", "SharedState.tournamentModeOn = 1"]
-        + [
-            f"update_leaderboard({json.dumps(record)})"
-            for record in test_data["tournament"]
-        ]
+        + [f"update_leaderboard({json.dumps(record)})" for record in test_data["tournament"]]
         # turn off tournament mode
         + ["SharedState.tournamentModeOn = 0"]
         # set score capture
@@ -183,25 +173,19 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Flash an already-built project directory to the Pico."
-    )
+    parser = argparse.ArgumentParser(description="Flash an already-built project directory to the Pico.")
     parser.add_argument(
         "build_dir",
         default=BUILD_DIR_DEFAULT,
         nargs="?",
         help="Path to the build directory.",
     )
-    parser.add_argument(
-        "--env", default="dev", help="Deployment environment (dev, test, prod, etc.)"
-    )
+    parser.add_argument("--env", default="dev", help="Deployment environment (dev, test, prod, etc.)")
     parser.add_argument(
         "--port",
         help="Specify the Pico port manually. If not provided, autodetect is attempted.",
     )
-    parser.add_argument(
-        "--wipe", action="store_true", help="Wipe Pico filesystem before copying files."
-    )
+    parser.add_argument("--wipe", action="store_true", help="Wipe Pico filesystem before copying files.")
     parser.add_argument(
         "--wipe-config",
         action="store_true",
@@ -217,9 +201,7 @@ def main():
         action="store_true",
         help="Write test data from test_data.json to Pico.",
     )
-    parser.add_argument(
-        "--restart", action="store_true", help="Restart Pico after flashing."
-    )
+    parser.add_argument("--restart", action="store_true", help="Restart Pico after flashing.")
     args = parser.parse_args()
 
     pico_port = args.port if args.port else autodetect_pico_port()

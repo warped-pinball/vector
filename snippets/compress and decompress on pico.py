@@ -1,7 +1,5 @@
 # compression step from sync.py
-def compress_to_gzip(
-    input_filepath, output_filepath=None, window_bits=9, compress_level=9
-):
+def compress_to_gzip(input_filepath, output_filepath=None, window_bits=9, compress_level=9):
     """
     Compress a file into GZIP format using zlib with a specified window size and compression level.
 
@@ -22,9 +20,7 @@ def compress_to_gzip(
     with open(input_filepath, "rb") as f_in:
         data_bytes = f_in.read()
 
-    compressor = zlib.compressobj(
-        level=compress_level, method=zlib.DEFLATED, wbits=16 + window_bits
-    )
+    compressor = zlib.compressobj(level=compress_level, method=zlib.DEFLATED, wbits=16 + window_bits)
 
     compressed_data = compressor.compress(data_bytes) + compressor.flush()
 
@@ -59,9 +55,7 @@ def load_json_from_gzip(file_path, window_bits=6):
         # Open the compressed JSON file in binary read mode
         with open(file_path, "rb") as compressed_file:
             # Create a DeflateIO stream in GZIP mode with the specified window_bits
-            with deflate.DeflateIO(
-                compressed_file, deflate.GZIP, window_bits
-            ) as decompressor:
+            with deflate.DeflateIO(compressed_file, deflate.GZIP, window_bits) as decompressor:
                 # Load the decompressed data directly as JSON
                 data = json.load(decompressor)
         return data

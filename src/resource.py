@@ -32,9 +32,7 @@ def go():
     flash_usage_percent = get_flash_usage()
 
     # Print the result as a single line output
-    print(
-        f"RESOURCE: RAM= {ram_usage_percent:.2f}% full, Flash: {flash_usage_percent:.2f}% full"
-    )
+    print(f"RESOURCE: RAM= {ram_usage_percent:.2f}% full, Flash: {flash_usage_percent:.2f}% full")
 
 
 if __name__ == "__main__":

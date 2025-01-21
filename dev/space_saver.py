@@ -79,9 +79,7 @@ def format_size(size):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Find files that are inefficiently using disk space due to filesystem block size constraints."
-    )
+    parser = argparse.ArgumentParser(description="Find files that are inefficiently using disk space due to filesystem block size constraints.")
     parser.add_argument("directory", help="The path to the directory to analyze")
     parser.add_argument(
         "-b",
@@ -105,9 +103,7 @@ def main():
     )
     args = parser.parse_args()
 
-    small_files, inefficient_files = find_worst_offenders(
-        args.directory, block_size=args.block_size
-    )
+    small_files, inefficient_files = find_worst_offenders(args.directory, block_size=args.block_size)
 
     if not args.no_format:
         # Format sizes into human-readable units
@@ -149,22 +145,16 @@ def main():
         )
 
         # Print header
-        print(
-            f"{headers_small_files[0]:<{size_width}} {headers_small_files[1]:<{loss_width}} {headers_small_files[2]:<{percent_width}} {headers_small_files[3]}"
-        )
+        print(f"{headers_small_files[0]:<{size_width}} {headers_small_files[1]:<{loss_width}} {headers_small_files[2]:<{percent_width}} {headers_small_files[3]}")
         # Print separator
-        print(
-            f"{'-'*size_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_small_files[3])}"
-        )
+        print(f"{'-'*size_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_small_files[3])}")
 
         # Print each file
         for f in files_list[: args.limit]:
             size_str = f["size_str"]
             loss_str = f["wasted_space_str"]
             percent_str = f"{f['wasted_percentage']:.2f}%"
-            print(
-                f"{size_str:<{size_width}} {loss_str:<{loss_width}} {percent_str:<{percent_width}} {f['path']}"
-            )
+            print(f"{size_str:<{size_width}} {loss_str:<{loss_width}} {percent_str:<{percent_width}} {f['path']}")
 
     def print_inefficient_files(files_list):
         # Calculate column widths
@@ -190,9 +180,7 @@ def main():
             f"{headers_inefficient_files[0]:<{size_width}} {headers_inefficient_files[1]:<{over_block_width}} {headers_inefficient_files[2]:<{loss_width}} {headers_inefficient_files[3]:<{percent_width}} {headers_inefficient_files[4]}"
         )
         # Print separator
-        print(
-            f"{'-'*size_width} {'-'*over_block_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_inefficient_files[4])}"
-        )
+        print(f"{'-'*size_width} {'-'*over_block_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_inefficient_files[4])}")
 
         # Print each file
         for f in files_list[: args.limit]:
@@ -200,9 +188,7 @@ def main():
             over_block_str = f["bytes_over_block_str"]
             loss_str = f["wasted_space_str"]
             percent_str = f"{f['wasted_percentage']:.2f}%"
-            print(
-                f"{size_str:<{size_width}} {over_block_str:<{over_block_width}} {loss_str:<{loss_width}} {percent_str:<{percent_width}} {f['path']}"
-            )
+            print(f"{size_str:<{size_width}} {over_block_str:<{over_block_width}} {loss_str:<{loss_width}} {percent_str:<{percent_width}} {f['path']}")
 
     print("\n===== Small Files (< 1 Block) =====")
     if small_files:

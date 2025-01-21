@@ -36,9 +36,7 @@ class NotRelativePrimeError(ValueError):
     """Raises if provided a and b not relatively prime."""
 
     def __init__(self, a: int, b: int, d: int, msg: Optional[str] = None):
-        super().__init__(
-            msg or "%d and %d are not relatively prime, divider=%i" % (a, b, d)
-        )
+        super().__init__(msg or "%d and %d are not relatively prime, divider=%i" % (a, b, d))
         self.a = a
         self.b = b
         self.d = d
@@ -69,9 +67,7 @@ def bit_size(num: int) -> int:
     try:
         return bit_length(num)
     except AttributeError as err:
-        raise TypeError(
-            "bit_size(num) only supports integers, not %r" % type(num)
-        ) from err
+        raise TypeError("bit_size(num) only supports integers, not %r" % type(num)) from err
 
 
 def byte_size(number: int) -> int:

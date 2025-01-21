@@ -46,9 +46,7 @@ def readMachineScore(index):
         initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
         initials = bytes(initials_bytes).decode("ascii")
     elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
-        processed_initials = bytearray(
-            [0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes]
-        )
+        processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
         try:
             initials = processed_initials.decode("ascii")
         except:
@@ -57,9 +55,7 @@ def readMachineScore(index):
         initials = ""
 
     # Read score (BCD to integer conversion)
-    score_bytes = shadowRam[
-        score_start : score_start + S.gdata["HighScores"]["BytesInScore"]
-    ]
+    score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
     score = 0
     for byte in score_bytes:
         high_digit = byte >> 4
@@ -117,15 +113,9 @@ def placeMachineScores():
                     shadowRam[initial_start + 1] = ord(top_scores[index]["initials"][1])
                     shadowRam[initial_start + 2] = ord(top_scores[index]["initials"][2])
                 elif S.gdata["HighScores"]["Type"] == 3:
-                    shadowRam[initial_start] = ascii_to_type3(
-                        ord(top_scores[index]["initials"][0])
-                    )
-                    shadowRam[initial_start + 1] = ascii_to_type3(
-                        ord(top_scores[index]["initials"][1])
-                    )
-                    shadowRam[initial_start + 2] = ascii_to_type3(
-                        ord(top_scores[index]["initials"][2])
-                    )
+                    shadowRam[initial_start] = ascii_to_type3(ord(top_scores[index]["initials"][0]))
+                    shadowRam[initial_start + 1] = ascii_to_type3(ord(top_scores[index]["initials"][1]))
+                    shadowRam[initial_start + 2] = ascii_to_type3(ord(top_scores[index]["initials"][2]))
 
             except:
                 print("place machine scores eception")
@@ -267,10 +257,7 @@ def update_leaderboard(new_entry):
 
     # Check if the new_entry already exists in the top_scores
     for entry in top_scores:
-        if (
-            entry["initials"] == new_entry["initials"]
-            and entry["score"] == new_entry["score"]
-        ):
+        if entry["initials"] == new_entry["initials"] and entry["score"] == new_entry["score"]:
             return False  # Entry already exists, do not add it
 
     # Check if the new score is higher than the lowest in the list or if the list is not full

@@ -4,7 +4,7 @@ import sys
 import SPI_Store as fram
 
 # FRAM configuration
-AddressStart = 0x2400    
+AddressStart = 0x2400
 LoggerLength = 0x1FFF
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6
@@ -43,9 +43,7 @@ class Logger:
         print(message)
         message += LogEndMarker  # Append the end marker
         for char in message:
-            fram.write(
-                NextWriteAddress, char.encode("utf-8")
-            )  # Write each character as a byte
+            fram.write(NextWriteAddress, char.encode("utf-8"))  # Write each character as a byte
             NextWriteAddress += 1
             if NextWriteAddress > AddressEnd:
                 NextWriteAddress = AddressStart  # Wrap around if end is reached

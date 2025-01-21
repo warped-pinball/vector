@@ -23,9 +23,7 @@ def measure_fragmentation():
     num_free_blocks = free_blocks
     avg_free_block_size = free_space / num_free_blocks if num_free_blocks > 0 else 0
 
-    fragmentation_index = (
-        (num_free_blocks * avg_free_block_size) / free_space if free_space > 0 else 0
-    )
+    fragmentation_index = (num_free_blocks * avg_free_block_size) / free_space if free_space > 0 else 0
 
     print(f"Total space: {total_space / 1024} KB")
     print(f"Used space: {used_space / 1024} KB")

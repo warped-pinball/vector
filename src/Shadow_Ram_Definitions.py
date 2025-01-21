@@ -12,9 +12,7 @@ import uctypes
 
 # large array for the 'shadow' ram
 SRAM_DATA_BASE = 0x2003F000  # 0x20040000-0x20042000  (8k available)
-SRAM_DATA_BASE_21 = (
-    SRAM_DATA_BASE >> 11
-)  # 21 MSBits to be preloaded in pio for address generation
+SRAM_DATA_BASE_21 = SRAM_DATA_BASE >> 11  # 21 MSBits to be preloaded in pio for address generation
 
 # SRAM_DATA_LENGTH = 0x00002000  #8k byte total
 SRAM_DATA_LENGTH = 0x00000800  # 2k byte total
