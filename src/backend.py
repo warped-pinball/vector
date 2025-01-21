@@ -567,7 +567,7 @@ def app_captureAdjustments(request):
     store_adjustments(int(request.data["index"]))
 
 
-@add_route("/api/adjustments/restore", method="POST", auth=True)
+@add_route("/api/adjustments/restore", method="POST", auth=True, cool_down_seconds=5)
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 

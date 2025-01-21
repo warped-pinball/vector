@@ -93,33 +93,32 @@ def restore_adjustments(index, reset=True):
     cpyStart, cpyEnd = _get_range_from_gamedef()
 
     # copy
-    if cpyStart > 0 and cpyEnd > 0 and (cpyEnd - cpyStart) <= len(data):
-        # shut down the pinball machine
-        import reset_control
+    if (cpyStart == 0 and cpyEnd == 0) or (cpyEnd - cpyStart) > len(data):
+        raise ValueError("No valid range found in game data")
 
-        reset_control.reset()
+    # shut down the pinball machine
+    import reset_control
 
-        from time import sleep
+    reset_control.reset()
 
-        sleep(2)
+    from time import sleep
 
-        shadowRam[cpyStart:cpyEnd] = data[: cpyEnd - cpyStart]
-        Log.log(f"ADJS: Adjustments restored {index}")
+    sleep(2)
 
-        displayMessage.fixAdjustmentChecksum()
-        fram.write_all_fram_now()
+    shadowRam[cpyStart:cpyEnd] = data[: cpyEnd - cpyStart]
+    Log.log(f"ADJS: Adjustments restored {index}")
 
-        # restart the pinball machine
-        reset_control.release()
-        sleep(2)  # TODO should this be longer/else where/ is it nessisary?
+    displayMessage.fixAdjustmentChecksum()
+    fram.write_all_fram_now()
 
-        # restart the server schedule
-        from phew.server import restart_schedule
+    # restart the pinball machine
+    reset_control.release()
+    sleep(2)  # TODO should this be longer/else where/ is it nessisary?
 
-        restart_schedule()
+    # restart the server schedule
+    from phew.server import restart_schedule
 
-    else:
-        Log.log("ADJS: range fault")
+    restart_schedule()
 
 
 def store_adjustments(index):
@@ -183,12 +182,14 @@ def is_populated(index):
 
 def get_adjustments_status():
     """return list of tuples with names and active index, and if the profile is populated"""
+    start, end = _get_range_from_gamedef()
+    adjustments_support = start > 0 and end > 0
     names = get_names()
     active_index = get_active_adjustment()
-    status = []
+    profile_status = []
     for i in range(ADJ_NUM_SLOTS):
-        status.append((names[i], i == active_index, is_populated(i)))
-    return status
+        profile_status.append((names[i], i == active_index, is_populated(i)))
+    return {"adjustments_support": adjustments_support, "profiles": profile_status}
 
 
 if __name__ == "__main__":

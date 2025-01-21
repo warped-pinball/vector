@@ -41,10 +41,10 @@ function confirmAction(message, callback, cancelCallback=null) {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
-
 	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
 	const data = await response.json();
+
+	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
 
 	tournamentModeToggle.checked = data['tournament_mode'];
 	tournamentModeToggle.disabled = false;
@@ -58,10 +58,10 @@ async function tournamentModeToggle() {
 
 // score Claim methods
 async function getScoreClaimMethods() {
-	const onMachineToggle = document.getElementById('on-machine-toggle');
-
 	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
 	const data = await response.json();
+
+	const onMachineToggle = document.getElementById('on-machine-toggle');
 
 	onMachineToggle.checked = data['on-machine'];
 	onMachineToggle.disabled = false;
@@ -86,19 +86,31 @@ async function populateAdjustmentProfiles() {
 
 	console.log("Adjustment Profiles: ", data);
 
+	if (data.adjustments_support === false) {
+		console.log("Adjustments not supported");
+		// add note to the page that adjustments are not supported for this title yet
+		document.getElementById('adjustments-not-supported').classList.remove('hide');
+		return;
+	}
+
 	// iterate through list of (name, active, captured) and set the values
-	for (let i = 0; i < data.length; i++) {
+	const profiles = data.profiles;
+	for (let i = 0; i < profiles.length; i++) {
+		console.log("Profile: ", profiles[i]);
 		const profileName = document.getElementById(`name-profile-${i}`);
 		const profileRestore = document.getElementById(`restore-profile-${i}`);
 		const profileCapture = document.getElementById(`capture-profile-${i}`);
 
-		if (data[i][0] != "" ) {
-			profileName.placeholder = data[i][0];
+		profileRestore.checked = profiles[i][1];
+		profileRestore.disabled = !profiles[i][2];
+
+		profileName.disabled = false;
+		if (profiles[i][0] != "" ) {
+			profileName.placeholder = profiles[i][0];
 			profileName.value = "";
 		}
 
-		profileRestore.checked = data[i][1];
-		profileRestore.disabled = !data[i][2];
+		profileCapture.disabled = false;
 
 		// add event listener to capture button
 		profileCapture.addEventListener('click', async () => {
