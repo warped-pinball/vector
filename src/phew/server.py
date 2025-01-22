@@ -502,7 +502,7 @@ async def run_scheduled():
 def create_schedule():
     from resource import go as resource_go
 
-    from discovery import announce, listen
+    from discovery import DEVICE_TIMEOUT, announce, listen
     from discovery import setup as discovery_setup
     from displayMessage import refresh
     from GameStatus import poll_fast
@@ -549,11 +549,11 @@ def create_schedule():
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 1000)
 
-    # every 30 seconds broadcast IP and device info
-    schedule(announce, 10000, 30000)
+    # every 1/2 of DEVICE_TIMEOUT announce our presence
+    schedule(announce, 10000, DEVICE_TIMEOUT // 2)
 
-    # once every 5 seconds check if any new devices have been discovered
-    schedule(listen, 11000, 10000)
+    # every 1/10 of DEVICE_TIMEOUT listen for others
+    schedule(listen, 11000, DEVICE_TIMEOUT // 10)
 
     restart_schedule()
 

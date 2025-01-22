@@ -5,7 +5,7 @@ import ujson
 
 # The UDP port we will send/receive on
 DISCOVERY_PORT = 37020
-DEVICE_TIMEOUT = 30
+DEVICE_TIMEOUT = 60  # Will announce at 1/2 this interval
 
 known_devices = {}
 recv_sock = None
@@ -30,18 +30,20 @@ def announce():
     """Broadcast this device’s info to the local network."""
     from SharedState import WarpedVersion, ipAddress
 
-    global send_sock
-
     if not ipAddress:
         return
 
-    message = {
-        "version": WarpedVersion,
-        "ip": ipAddress,
-    }
-    data = ujson.dumps(message)
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
-    send_sock.sendto(data.encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
+    global send_sock
+    send_sock.sendto(
+        ujson.dumps(
+            {
+                "version": WarpedVersion,
+                "ip": ipAddress,
+            }
+        ).encode("utf-8"),
+        ("255.255.255.255", DISCOVERY_PORT),
+    )
 
 
 def listen():
@@ -49,12 +51,13 @@ def listen():
     Check for any incoming broadcast announcements from other boards and update known devices.
     Non-blocking: if no data, returns immediately.
     """
+    global recv_sock, known_devices
     while True:
         try:
             data, addr = recv_sock.recvfrom(1024)
         except OSError:
             # No data available
-            break
+            return
 
         try:
             msg = ujson.loads(data.decode("utf-8"))
@@ -62,21 +65,15 @@ def listen():
             # If it's not valid JSON, ignore it
             continue
 
-        if "ip" in msg and "type" in msg and "version" in msg:
+        if "ip" in msg and "version" in msg:
             ip_str = msg["ip"]
-            device_type = msg["type"]
             version = msg["version"]
 
             # Update our known devices dictionary
-            known_devices[ip_str] = {"device_type": device_type, "version": version, "last_seen": time.time()}
+            known_devices[ip_str] = {"version": version, "last_seen": time.time()}
 
-    def prune_old_devices(self):
-        """Remove devices not heard from in a while."""
-        now = time.time()
-        to_remove = []
-        for ip_str, info in self.known_devices.items():
-            if (now - info["last_seen"]) > DEVICE_TIMEOUT:
-                to_remove.append(ip_str)
+            # Prune devices that haven't been seen in a while
+            now = time.time()
+            known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
 
-        for ip_str in to_remove:
-            del self.known_devices[ip_str]
+            print("Known devices:", known_devices)

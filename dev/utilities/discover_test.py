@@ -75,13 +75,12 @@ class DesktopDiscovery:
                 continue
 
             # Expecting: { "ip": str, "type": str, "version": str }
-            if "ip" in msg and "type" in msg and "version" in msg:
+            if "ip" in msg and "version" in msg:
                 ip_str = msg["ip"]
-                device_type = msg["type"]
                 version = msg["version"]
 
                 now = time.time()
-                self.known_devices[ip_str] = {"device_type": device_type, "version": version, "last_seen": now}
+                self.known_devices[ip_str] = {"version": version, "last_seen": now}
 
     def prune_old_devices(self):
         now = time.time()
