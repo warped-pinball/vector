@@ -1,6 +1,5 @@
 import gc
 import os
-import resource
 import time
 
 import machine
@@ -8,7 +7,6 @@ import ntptime
 import uasyncio
 from machine import RTC
 
-import displayMessage
 import faults
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
@@ -507,7 +505,9 @@ def create_schedule():
     #
     # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
-    schedule(displayMessage.refresh, 30000, log="Server: Refresh display message")
+    from displayMessage import refresh
+
+    schedule(refresh, 30000, log="Server: Refresh display message")
 
     # initialize the time and date 5 seconds after boot
     schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
@@ -516,7 +516,9 @@ def create_schedule():
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource.go, 4000, 4000, log="Server: Memory Usage")
+    from resource import go as resource_go
+
+    schedule(resource_go, 4000, 4000, log="Server: Memory Usage")
 
     # initialize the fram
     schedule(initialize, 200)  # TODO might already be taken care of above
