@@ -8,8 +8,6 @@ display message handling (custom message shown on the pinball machine display)
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
-localCopyIp = 0
-
 
 #
 # fix adjustments checksum
@@ -160,22 +158,20 @@ def set(ipAddress):
 # set up display for ipaddress - get ip copied to local
 #
 def init(ipAddress):
-    global localCopyIp
-    localCopyIp = ipAddress
-    set(localCopyIp)
+    S.ipAddress = ipAddress
+    set(ipAddress)
     return
 
 
 def refresh():
-    global localCopyIp
     if S.gdata["HSRewards"]["Type"] == 1:
         # temp patch in here - set high score rewards to 0
         shadowRam[S.gdata["HSRewards"]["HS1"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
-    init(localCopyIp)
-    print("display message refreshed ", localCopyIp)
+    init(S.ipAddress)
+    print("display message refreshed ", S.ipAddress)
     return
 
 

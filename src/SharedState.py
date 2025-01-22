@@ -18,3 +18,6 @@ faults = []
 
 # game data  (speicifc title data)
 gdata = {}
+
+# ip address
+ipAddress = 0
