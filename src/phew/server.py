@@ -10,10 +10,9 @@ from machine import RTC
 
 import displayMessage
 import faults
-import GameStatus
-import SPI_Store as fram
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
+from SPI_Store import initialize, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
 
@@ -438,10 +437,11 @@ MemIndex = 0
 poll_counter = 0
 
 
+# TODO this should live in SPI_Store
 async def copy_to_fram():
     global MemIndex
 
-    fram.write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
+    write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
     MemIndex = MemIndex + 16
 
     if MemIndex >= SRAM_DATA_LENGTH:
@@ -519,7 +519,7 @@ def create_schedule():
     schedule(resource.go, 4000, 4000, log="Server: Memory Usage")
 
     # initialize the fram
-    schedule(fram.initialize, 200)  # TODO might already be taken care of above
+    schedule(initialize, 200)  # TODO might already be taken care of above
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
@@ -528,7 +528,9 @@ def create_schedule():
     # reoccuring tasks
     #
     # update the game status every 0.5 second
-    schedule(GameStatus.poll_fast, 0, 250)
+    from GameStatus import poll_fast
+
+    schedule(poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
@@ -540,6 +542,14 @@ def create_schedule():
 
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 1000)
+
+    # every 30 seconds broadcast IP and device info
+    from discovery import announce, listen
+
+    schedule(announce, 10000, 30000)
+
+    # once every 5 seconds check if any new devices have been discovered
+    schedule(listen, 11000, 10000)
 
     restart_schedule()
 
