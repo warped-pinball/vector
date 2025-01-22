@@ -500,13 +500,18 @@ async def run_scheduled():
 
 
 def create_schedule():
+    from resource import go as resource_go
+
+    from discovery import announce, listen
+    from discovery import setup as discovery_setup
+    from displayMessage import refresh
+    from GameStatus import poll_fast
+
     #
     # one time tasks
     #
     # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
-    from displayMessage import refresh
-
     schedule(refresh, 30000, log="Server: Refresh display message")
 
     # initialize the time and date 5 seconds after boot
@@ -516,8 +521,6 @@ def create_schedule():
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    from resource import go as resource_go
-
     schedule(resource_go, 4000, 4000, log="Server: Memory Usage")
 
     # initialize the fram
@@ -526,12 +529,13 @@ def create_schedule():
     # initialize the sflash
     schedule(sflash_initialize, 700)
 
+    # initialize the discovery service
+    schedule(discovery_setup, 2000)
+
     #
     # reoccuring tasks
     #
     # update the game status every 0.5 second
-    from GameStatus import poll_fast
-
     schedule(poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
@@ -546,8 +550,6 @@ def create_schedule():
     schedule(sflash_tick, 1000, 1000)
 
     # every 30 seconds broadcast IP and device info
-    from discovery import announce, listen
-
     schedule(announce, 10000, 30000)
 
     # once every 5 seconds check if any new devices have been discovered
