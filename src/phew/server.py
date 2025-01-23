@@ -276,98 +276,102 @@ status_message_map = {
 
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
-    response = None
-
-    request_start_time = time.ticks_ms()
-
-    request_line = await reader.readline()
     try:
-        method, uri, protocol = request_line.decode().split()
-    except Exception as e:
-        logging.error(e)
-        return
+        response = None
 
-    request = Request(method, uri, protocol)
-    request.headers = await _parse_headers(reader)
-    if "content-length" in request.headers and "content-type" in request.headers:
-        if request.headers["content-type"].startswith("multipart/form-data"):
-            request.form = await _parse_form_data(reader, request.headers)
-        if request.headers["content-type"].startswith("application/json"):
-            raw_body, parsed_data = await _parse_json_body(reader, request.headers)
-            request.raw_data = raw_body
-            request.data = parsed_data
-        if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
-            form_data = await reader.read(int(request.headers["content-length"]))
-            request.form = _parse_query_string(form_data.decode())
+        request_start_time = time.ticks_ms()
 
-    route = _match_route(request)
-    if route:
-        response = route.call_handler(request)
-    elif catchall_handler:
-        response = catchall_handler(request)
+        request_line = await reader.readline()
+        try:
+            method, uri, protocol = request_line.decode().split()
+        except Exception as e:
+            logging.error(e)
+            return
 
-    # if shorthand body generator only notation used then convert to tuple
-    if type(response).__name__ == "generator":
-        response = (response,)
+        request = Request(method, uri, protocol)
+        request.headers = await _parse_headers(reader)
+        if "content-length" in request.headers and "content-type" in request.headers:
+            if request.headers["content-type"].startswith("multipart/form-data"):
+                request.form = await _parse_form_data(reader, request.headers)
+            if request.headers["content-type"].startswith("application/json"):
+                raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+                request.raw_data = raw_body
+                request.data = parsed_data
+            if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
+                form_data = await reader.read(int(request.headers["content-length"]))
+                request.form = _parse_query_string(form_data.decode())
 
-    # if shorthand body text only notation used then convert to tuple
-    if isinstance(response, str):
-        response = (response,)
+        route = _match_route(request)
+        if route:
+            response = route.call_handler(request)
+        elif catchall_handler:
+            response = catchall_handler(request)
 
-    # if shorthand tuple notation used then build full response object
-    if isinstance(response, tuple):
-        body = response[0]
-        status = response[1] if len(response) >= 2 else 200
-        headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+        # if shorthand body generator only notation used then convert to tuple
+        if type(response).__name__ == "generator":
+            response = (response,)
 
-        # Handle legacy single content type as a string
-        if isinstance(headers, str):
-            headers = {"Content-Type": headers}
+        # if shorthand body text only notation used then convert to tuple
+        if isinstance(response, str):
+            response = (response,)
 
-        response = Response(body, status=status)
+        # if shorthand tuple notation used then build full response object
+        if isinstance(response, tuple):
+            body = response[0]
+            status = response[1] if len(response) >= 2 else 200
+            headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
 
-        # Add all headers
-        for key, value in headers.items():
-            response.add_header(key, value)
+            # Handle legacy single content type as a string
+            if isinstance(headers, str):
+                headers = {"Content-Type": headers}
 
-        if hasattr(body, "__len__"):
-            response.add_header("Content-Length", len(body))
+            response = Response(body, status=status)
 
-    # write status line
-    status_message = status_message_map.get(response.status, "Unknown")
-    writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
+            # Add all headers
+            for key, value in headers.items():
+                response.add_header(key, value)
 
-    # write headers
-    for key, value in response.headers.items():
-        writer.write(f"{key}: {value}\r\n".encode("ascii"))
+            if hasattr(body, "__len__"):
+                response.add_header("Content-Length", len(body))
 
-    # blank line to denote end of headers
-    writer.write("\r\n".encode("ascii"))
+        # write status line
+        status_message = status_message_map.get(response.status, "Unknown")
+        writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
 
-    if isinstance(response, FileResponse):
-        # file
-        with open(response.file, "rb") as f:
-            while True:
-                chunk = f.read(1024)
-                if not chunk:
-                    break
+        # write headers
+        for key, value in response.headers.items():
+            writer.write(f"{key}: {value}\r\n".encode("ascii"))
+
+        # blank line to denote end of headers
+        writer.write("\r\n".encode("ascii"))
+
+        if isinstance(response, FileResponse):
+            # file
+            with open(response.file, "rb") as f:
+                while True:
+                    chunk = f.read(1024)
+                    if not chunk:
+                        break
+                    writer.write(chunk)
+                    await writer.drain()
+        elif type(response.body).__name__ == "generator":
+            # generator
+            for chunk in response.body:
                 writer.write(chunk)
                 await writer.drain()
-    elif type(response.body).__name__ == "generator":
-        # generator
-        for chunk in response.body:
-            writer.write(chunk)
+        else:
+            # string/bytes
+            writer.write(response.body)
             await writer.drain()
-    else:
-        # string/bytes
-        writer.write(response.body)
-        await writer.drain()
 
-    writer.close()
-    await writer.wait_closed()
+        writer.close()
+        await writer.wait_closed()
 
-    processing_time = time.ticks_ms() - request_start_time
-    logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
+        processing_time = time.ticks_ms() - request_start_time
+        logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
+    except Exception as e:
+        # last line of defense to keep server from crashing
+        logging.error(f"Error handling request: {e}")
 
 
 # adds a new route to the routing table
@@ -521,7 +525,7 @@ def create_schedule():
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource_go, 4000, 4000, log="Server: Memory Usage")
+    schedule(resource_go, 5000, 10000, log="Server: Memory Usage")
 
     # initialize the fram
     schedule(initialize, 200)  # TODO might already be taken care of above
@@ -550,10 +554,10 @@ def create_schedule():
     schedule(sflash_tick, 1000, 1000)
 
     # every 1/2 of DEVICE_TIMEOUT announce our presence
-    schedule(announce, 10000, DEVICE_TIMEOUT // 2)
+    schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
 
     # every 1/10 of DEVICE_TIMEOUT listen for others
-    schedule(listen, 11000, DEVICE_TIMEOUT // 10)
+    schedule(listen, 11000, DEVICE_TIMEOUT * 1000 // 10)
 
     restart_schedule()
 
