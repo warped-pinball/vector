@@ -529,15 +529,30 @@ window.get_peers = get_peers;
 async function set_peer_dropdown() {
     const peers = await get_peers();
     console.log(peers);
-    // {192.166.1.1}
-    if (peers.length > 0) {
-        console.log("Peers found, creating dropdown...");
-        const peerDropDown = await createDropDownElement("peer_select", "Game Name", peers, null, true);
-        console.log(peerDropDown);
-        document.getElementById("game_name").replaceWith(peerDropDown);
-        console.log("Dropdown created.");
-    }
+    // data will look like:
+    // {"192.168.2.127": {"last_seen": 1737604200, "name": "DesktopTester", "version": "v1.0.0"}}
+
+    // make a dropdown of peers with the name displayed and the ip as the value
+    const dropDownElement = await createDropDownElement("peer_dropdown", "Select Peer", peers, null, true);
+    const gameNameElement = document.getElementById("game_name");
+    gameNameElement.replaceWith(dropDownElement);
+    console.log("Peer dropdown set");
+
+    // add event listener to the dropdown to change the peer
+    const dropDown = document.getElementById("peer_dropdown");
+    dropDown.addEventListener('change', async (event) => {
+        // navigate to the new peer at the same page
+        const newPeer = getDropDownValue("peer_dropdown");
+        console.log("New Peer:", newPeer);
+        const currentPage = getCurrentPage();
+        const url = newPeer + `/?page=${currentPage}`;
+        window.location.href = url;
+    });
+
 }
 
 window.set_peer_dropdown = set_peer_dropdown;
 set_peer_dropdown();
+
+// refresh the peer dropdown every minute
+setInterval(set_peer_dropdown, 60000);

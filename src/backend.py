@@ -178,7 +178,7 @@ def cool_down(cool_down_seconds=0, single_instance=False):
                 return "Already running", 409
 
             if (time() - last_call) < cool_down_seconds:
-                return {"msg": "cooling down"}, 429
+                return json_dumps({"msg": "cooling down"}), 429
 
             running = True
             last_call = time()
@@ -658,7 +658,7 @@ def app_getAvailableSSIDs(request):
 def app_getPeers(request):
     from discovery import known_devices
 
-    return list(known_devices.keys())
+    return known_devices
 
 
 #

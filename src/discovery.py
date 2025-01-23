@@ -31,28 +31,28 @@ def announce():
     """Broadcast this device’s info to the local network."""
     from time import time
 
-    from SharedState import WarpedVersion, ipAddress
+    from SharedState import WarpedVersion, gdata, ipAddress
 
+    print("Announcing on", ipAddress)
     if not ipAddress:
         return
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
     send_sock.sendto(
-        ujson.dumps(
-            {
-                "version": WarpedVersion,
-                "ip": ipAddress,
-            }
-        ).encode("utf-8"),
+        ujson.dumps({"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}).encode("utf-8"),
         ("255.255.255.255", DISCOVERY_PORT),
     )
+
+    print("Sent broadcast")
 
     # Prune devices that haven't been seen in a while
     # technically we could do this in the listen() function
     # but it makes more sense to do it here because the announce frequency is closer to the timeout
     now = time()
     known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
+
+    print("Known devices after pruning:", known_devices)
 
 
 def listen():
@@ -74,12 +74,13 @@ def listen():
             # If it's not valid JSON, ignore it
             continue
 
-        if "ip" in msg and "version" in msg:
-            ip_str = msg["ip"]
+        if "name" in msg and "version" in msg:
+            ip_str = addr[0]
             version = msg["version"]
+            name = msg["name"]
 
             # Update our known devices dictionary
-            known_devices[ip_str] = {"version": version, "last_seen": time.time()}
+            known_devices[ip_str] = {"version": version, "last_seen": time.time(), "name": name}
 
             # if there are more than MAXIMUM_KNOWN_DEVICES, remove the ip address that's most different from own
             if len(known_devices) > MAXIMUM_KNOWN_DEVICES:

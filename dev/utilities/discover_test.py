@@ -51,7 +51,7 @@ class DesktopDiscovery:
 
     def broadcast_announce(self):
         """Send a JSON broadcast with our IP, device type, and version."""
-        message = {"ip": self.local_ip, "type": self.device_type, "version": self.version}
+        message = {"version": self.version, "name": "DesktopTester"}
         data = json.dumps(message).encode("utf-8")
         # Broadcast to the "all 1s" address on the given port
         self.send_sock.sendto(data, ("255.255.255.255", DISCOVERY_PORT))
@@ -75,12 +75,12 @@ class DesktopDiscovery:
                 continue
 
             # Expecting: { "ip": str, "type": str, "version": str }
-            if "ip" in msg and "version" in msg:
-                ip_str = msg["ip"]
+            if "name" in msg and "version" in msg:
+                name = msg["name"]
                 version = msg["version"]
 
                 now = time.time()
-                self.known_devices[ip_str] = {"version": version, "last_seen": now}
+                self.known_devices[addr[0]] = {"version": version, "last_seen": now, "name": name}
 
     def prune_old_devices(self):
         now = time.time()
