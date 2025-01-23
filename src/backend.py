@@ -654,6 +654,13 @@ def app_getAvailableSSIDs(request):
     return json_dumps(available_networks), 200
 
 
+@add_route("/api/network/peers")
+def app_getPeers(request):
+    from discovery import known_devices
+
+    return known_devices
+
+
 #
 # Time
 #

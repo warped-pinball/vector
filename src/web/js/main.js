@@ -512,3 +512,15 @@ async function set_version() {
 }
 
 set_version();
+
+
+// get the list of known peers
+async function get_peers() {
+    const response = await window.smartFetch('/api/network/peers', data=null, auth=false)
+    const peers = await response.json();
+    console.log(response);
+    console.log("Peers:", peers);
+    return peers;
+}
+
+window.get_peers = get_peers;
