@@ -658,7 +658,7 @@ def app_getAvailableSSIDs(request):
 def app_getPeers(request):
     from discovery import known_devices
 
-    return known_devices
+    return list(known_devices.keys())
 
 
 #

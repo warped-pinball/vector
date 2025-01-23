@@ -524,3 +524,20 @@ async function get_peers() {
 }
 
 window.get_peers = get_peers;
+
+// repalce element with id game_name with a drop down of known peers if there are any
+async function set_peer_dropdown() {
+    const peers = await get_peers();
+    console.log(peers);
+    // {192.166.1.1}
+    if (peers.length > 0) {
+        console.log("Peers found, creating dropdown...");
+        const peerDropDown = await createDropDownElement("peer_select", "Game Name", peers, null, true);
+        console.log(peerDropDown);
+        document.getElementById("game_name").replaceWith(peerDropDown);
+        console.log("Dropdown created.");
+    }
+}
+
+window.set_peer_dropdown = set_peer_dropdown;
+set_peer_dropdown();
