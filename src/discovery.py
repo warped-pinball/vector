@@ -29,13 +29,15 @@ def setup():
 
 def announce():
     """Broadcast this device’s info to the local network."""
+    from time import time
+
     from SharedState import WarpedVersion, ipAddress
 
     if not ipAddress:
         return
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
-    global send_sock
+    global send_sock, known_devices
     send_sock.sendto(
         ujson.dumps(
             {
@@ -45,6 +47,12 @@ def announce():
         ).encode("utf-8"),
         ("255.255.255.255", DISCOVERY_PORT),
     )
+
+    # Prune devices that haven't been seen in a while
+    # technically we could do this in the listen() function
+    # but it makes more sense to do it here because the announce frequency is closer to the timeout
+    now = time()
+    known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
 
 
 def listen():
@@ -73,12 +81,6 @@ def listen():
             # Update our known devices dictionary
             known_devices[ip_str] = {"version": version, "last_seen": time.time()}
 
-            # Prune devices that haven't been seen in a while
-            now = time.time()
-            known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
-
-            print("Known devices:", known_devices)
-
             # if there are more than MAXIMUM_KNOWN_DEVICES, remove the ip address that's most different from own
             if len(known_devices) > MAXIMUM_KNOWN_DEVICES:
                 from SharedState import ipAddress
@@ -97,3 +99,5 @@ def listen():
                         worst_diff = diff
                 del known_devices[worst_ip]
                 print("Removed", worst_ip, "from known devices")
+
+            print("Known devices:", known_devices)
