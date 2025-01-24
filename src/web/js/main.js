@@ -409,7 +409,7 @@ window.logout = logout;
 //
 
 // Create a dropdown option dynamically
-async function createDropDownOption(value, text) {
+async function createDropDownOption(value, text, callback=null) {
     const listItem = document.createElement('li');
     const anchorElement = document.createElement('a');
 
@@ -422,6 +422,9 @@ async function createDropDownOption(value, text) {
         event.preventDefault(); // Prevent default navigation
         const dropDownElement = anchorElement.closest('details');
         setDropDownValue(dropDownElement, value, text);
+        if (typeof callback === 'function') {
+            callback(value, text);
+        }
     });
 
     listItem.appendChild(anchorElement);
@@ -463,7 +466,12 @@ function setDropDownValue(dropDownElement, value, text) {
 }
 
 // Create a dropdown element from a key-value mapping
-async function createDropDownElement(id, summaryText, options, defaultValue = null, sortOptions = false) {
+async function createDropDownElement(id, summaryText, options, defaultValue = null, sortOptions = false, optionsCallback=null) {
+    // options should be an object or an array of values
+    // example:
+    // { "value1": "text1", "value2": "text2" }
+    // or
+    // ["value1", "value2"]
     const dropDownElement = document.createElement('details');
     dropDownElement.id = id;
     dropDownElement.className = "dropdown";
@@ -484,7 +492,7 @@ async function createDropDownElement(id, summaryText, options, defaultValue = nu
 
     // Add options to the dropdown
     for (const [value, text] of entries) {
-        const listItem = await createDropDownOption(value, text);
+        const listItem = await createDropDownOption(value, text, optionsCallback);
         ulElement.appendChild(listItem);
         // Pre-select the default value if it matches
         if (defaultValue === value) {
@@ -527,28 +535,46 @@ window.get_peers = get_peers;
 
 // repalce element with id game_name with a drop down of known peers if there are any
 async function set_peer_dropdown() {
-    const peers = await get_peers();
-    console.log(peers);
+    const raw_peers = await get_peers();
+    console.log(raw_peers);
+
+    // if there is only one peer (self), don't show the dropdown
+    if (Object.keys(raw_peers).length <= 1) {
+        console.log("No peers to show dropdown for");
+        return;
+    }
+
     // data will look like:
     // {"192.168.2.127": {"last_seen": 1737604200, "name": "DesktopTester", "version": "v1.0.0"}}
 
+    // remap the data to a simple mapping of ip to name
+    const peers = {};
+    for (const [ip, peer] of Object.entries(raw_peers)) {
+        peers[ip] = peer.name;
+    }
+    console.log(peers);
+
+    // call back function to navigate to the selected peer
+    const navigateToPeer = async (ip, name) => {
+        const currentPage = getCurrentPage();
+        const url = ip + `/?page=${currentPage}`;
+        alert(`Navigating to ${name} at ${ip}`);
+        window.location.href = url;
+        window.location.reload();
+    };
+
     // make a dropdown of peers with the name displayed and the ip as the value
-    const dropDownElement = await createDropDownElement("peer_dropdown", "Select Peer", peers, null, true);
+    const dropDownElement = await createDropDownElement("game_name", "Select Peer", peers, null, true, navigateToPeer);
     const gameNameElement = document.getElementById("game_name");
     gameNameElement.replaceWith(dropDownElement);
-    console.log("Peer dropdown set");
 
-    // add event listener to the dropdown to change the peer
-    const dropDown = document.getElementById("peer_dropdown");
-    dropDown.addEventListener('change', async (event) => {
-        // navigate to the new peer at the same page
-        const newPeer = getDropDownValue("peer_dropdown");
-        console.log("New Peer:", newPeer);
-        const currentPage = getCurrentPage();
-        const url = newPeer + `/?page=${currentPage}`;
-        window.location.href = url;
-    });
+    // find the ip that has self:true set
+    const self = Object.keys(raw_peers).find(ip => raw_peers[ip].self);
 
+    // set drop down default value to self if it exists
+    if (self) {
+        setDropDownValue(dropDownElement, self, peers[self]);
+    }
 }
 
 window.set_peer_dropdown = set_peer_dropdown;

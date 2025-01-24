@@ -14,7 +14,7 @@ send_sock = None
 
 
 def setup():
-    global recv_sock, send_sock
+    global recv_sock, send_sock, known_devices
 
     # Prepare a socket for receiving broadcast from others
     recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -26,6 +26,12 @@ def setup():
     send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
+    # add self to known devices
+    from SharedState import WarpedVersion, gdata, ipAddress
+
+    if ipAddress:
+        known_devices[ipAddress] = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"], "self": True}
+
 
 def announce():
     """Broadcast this device’s info to the local network."""
@@ -33,7 +39,6 @@ def announce():
 
     from SharedState import WarpedVersion, gdata, ipAddress
 
-    print("Announcing on", ipAddress)
     if not ipAddress:
         return
 
@@ -44,15 +49,11 @@ def announce():
         ("255.255.255.255", DISCOVERY_PORT),
     )
 
-    print("Sent broadcast")
-
     # Prune devices that haven't been seen in a while
     # technically we could do this in the listen() function
     # but it makes more sense to do it here because the announce frequency is closer to the timeout
     now = time()
-    known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
-
-    print("Known devices after pruning:", known_devices)
+    known_devices = {ip_str: info for ip_str, info in known_devices.items() if info.get("self", False) or (now - info["last_seen"]) <= DEVICE_TIMEOUT}
 
 
 def listen():
@@ -74,6 +75,8 @@ def listen():
             # If it's not valid JSON, ignore it
             continue
 
+        # TODO authenticate the message
+
         if "name" in msg and "version" in msg:
             ip_str = addr[0]
             version = msg["version"]
@@ -93,6 +96,10 @@ def listen():
                 worst_ip = None
                 worst_diff = 0
                 for ip_str in known_devices:
+                    # Don't remove self
+                    if known_devices[ip_str].get("self", False):
+                        continue
+
                     other_ip_parts = [int(part) for part in ip_str.split(".")]
                     diff = sum(abs(own - other) for own, other in zip(own_ip_parts, other_ip_parts))
                     if worst_ip is None or diff > worst_diff:
