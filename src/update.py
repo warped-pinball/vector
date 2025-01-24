@@ -451,6 +451,9 @@ def write_files():
             except OSError:
                 pass
 
+            # TODO create a buffer to write to the file
+            # TODO make sure folder is created
+
             with open(path, "wb") as out_f:
                 while True:
                     chunk = f.readline(1024)
