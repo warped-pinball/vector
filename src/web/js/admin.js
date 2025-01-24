@@ -382,6 +382,7 @@ async function checkForUpdates() {
 		}
 	} catch (e) {
 		console.error('Failed to check for updates:', e);
+		const updateButton = document.getElementById('update-button');
 		updateButton.textContent = 'Could not get updates';
 		updateButton.disabled = true;
 	}
