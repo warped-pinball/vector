@@ -594,6 +594,8 @@ async function set_game_name() {
 
     // make a dropdown of peers with the name displayed and the ip as the value
     const dropDownElement = await createDropDownElement("game_name", "Select Peer", peers, null, true, navigateToPeer);
+    // set margin to 0
+    dropDownElement.style.margin = 0;
     const gameNameElement = document.getElementById("game_name");
     gameNameElement.replaceWith(dropDownElement);
 
