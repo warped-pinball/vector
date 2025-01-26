@@ -8,25 +8,23 @@
 <!--- Explain why this change is required and what problem it solves -->
 
 ## Testing
-<!--- Describe the steps you followed to test your changes thoroughly. Include details on test environments, cases, and any relevant configuration -->
+<!--- Describe your testing steps, environments, and any relevant details -->
 
 ## Screenshots (if applicable)
-<!--- Add screenshots to illustrate the changes, if appropriate -->
+<!--- Add screenshots if appropriate -->
 
 ## Types of Changes
-<!--- Select all that apply to categorize this pull request -->
 - [ ] Bug fix (non-breaking change to resolve an issue)
 - [ ] New feature (non-breaking change to add functionality)
-- [ ] Breaking change (alters existing functionality or dependencies)
+- [ ] Breaking change (alters existing functionality)
 - [ ] Documentation update required
 
 ## Checklist
-<!--- Ensure the following items are completed before submitting -->
-- [ ] My code follows the project’s coding style and guidelines.
-- [ ] I have reviewed and updated documentation as needed.
-- [ ] I have read the **CONTRIBUTING.md** document.
-- [ ] I have added or updated tests to cover my changes.
+- [ ] My code follows the project’s style guidelines.
+- [ ] I have updated documentation as needed.
+- [ ] I have read the CONTRIBUTING.md document.
+- [ ] I have added or updated tests.
 - [ ] All new and existing tests pass.
 
 ## Additional Notes
-<!--- Add any extra information or considerations here -->
+<!--- Add any extra information here -->
