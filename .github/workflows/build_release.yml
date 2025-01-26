@@ -40,7 +40,7 @@ jobs:
             VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "push" ]; then
             ENV="beta"
-            SUFFIX="-beta-${{ github.run_number }}"
+            SUFFIX="-beta${{ github.run_number }}"
             VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "release" ]; then
             ENV="prod"
@@ -88,7 +88,7 @@ jobs:
 
       # Create (or update) a single pre-release for PRs, using the dev version as the tag_name.
       - name: Create or Update Pre-Release for Pull Request
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
