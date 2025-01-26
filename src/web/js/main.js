@@ -83,7 +83,8 @@ async function handleNavigation(pageKey, replace = false, updateHistory = true) 
             return;
         }
 
-        await set_title(); // Await title setting
+        set_game_name();
+
 
         if (updateHistory) {
             const url = `/?page=${pageKey}`;
@@ -105,34 +106,34 @@ async function handleNavigation(pageKey, replace = false, updateHistory = true) 
     }
 }
 
-async function set_title() {
-    console.log('Setting title...');
-    const pageKey = getCurrentPage();
-    const config = pageConfig[pageKey];
-    if (!config) {
-        console.warn(`No config found for page: ${pageKey}`);
-        return;
-    }
-    document.title = config.title;
+// async function set_title() {
+//     console.log('Setting title...');
+//     const pageKey = getCurrentPage();
+//     const config = pageConfig[pageKey];
+//     if (!config) {
+//         console.warn(`No config found for page: ${pageKey}`);
+//         return;
+//     }
+//     document.title = config.title;
 
-    try {
-        const response = await fetch('/api/game/name');
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const gameName = await response.text();
-        const gameNameElem = document.getElementById('game_name');
-        if (gameNameElem) {
-            gameNameElem.textContent = gameName;
-            console.log(`Game name set to: ${gameName}`);
-        } else {
-            console.warn('Element with ID "game_name" not found.');
-        }
-        document.title = `${gameName} | ${config.title}`;
-    } catch (error) {
-        console.error('Failed to load game name:', error);
-    }
-}
+//     try {
+//         const response = await fetch('/api/game/name');
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! Status: ${response.status}`);
+//         }
+//         const gameName = await response.text();
+//         const gameNameElem = document.getElementById('game_name');
+//         if (gameNameElem) {
+//             // gameNameElem.innerText = gameName;
+//             console.log(`Game name set to: ${gameName}`);
+//         } else {
+//             console.warn('Element with ID "game_name" not found.');
+//         }
+//         document.title = `${gameName} | ${config.title}`;
+//     } catch (error) {
+//         console.error('Failed to load game name:', error);
+//     }
+// }
 
 function clearResource(targetId) {
     console.log(`Clearing resource: ${targetId}`);
@@ -229,7 +230,7 @@ if (document.readyState === 'loading') {
 // Expose functions to window for debugging
 window.loadPageResources = loadPageResources;
 window.handleNavigation = handleNavigation;
-window.set_title = set_title;
+// window.set_title = set_title;
 window.clearResource = clearResource;
 window.clearPreviousResources = clearPreviousResources;
 window.initializeNavigation = initializeNavigation;
@@ -438,25 +439,28 @@ function getDropDownValue(dropDownElementID) {
 }
 
 // Set the dropdown value when an option is clicked
-function setDropDownValue(dropDownElement, value, text) {
+function setDropDownValue(dropDownElement, value, text, validate=true) {
     // if dropDownElement is a string, get the element
     if (typeof dropDownElement === 'string') {
         dropDownElement = document.getElementById(dropDownElement);
     }
 
-    // check that value is one of the options
-    const optionElements = dropDownElement.querySelectorAll('a');
-    let found = false;
-    for (const optionElement of optionElements) {
-        if (optionElement.dataset.value === value) {
-            found = true;
-            break;
+    // if validate is true, check that value is not empty
+    if (validate) {
+        // check that value is one of the options
+        const optionElements = dropDownElement.querySelectorAll('a');
+        let found = false;
+        for (const optionElement of optionElements) {
+            if (optionElement.dataset.value === value) {
+                found = true;
+                break;
+            }
         }
-    }
 
-    if (!found) {
-        console.error(`Value ${value} not found in dropdown options.`);
-        return;
+        if (!found) {
+            console.error(`Value ${value} not found in dropdown options.`);
+            return;
+        }
     }
 
     const summaryElement = dropDownElement.querySelector('summary');
@@ -534,31 +538,56 @@ async function get_peers() {
 window.get_peers = get_peers;
 
 // repalce element with id game_name with a drop down of known peers if there are any
-async function set_peer_dropdown() {
+async function set_game_name() {
     const raw_peers = await get_peers();
     console.log(raw_peers);
 
-    // if there is only one peer (self), don't show the dropdown
-    if (Object.keys(raw_peers).length <= 1) {
-        console.log("No peers to show dropdown for");
-        return;
-    }
+
 
     // data will look like:
     // {"192.168.2.127": {"last_seen": 1737604200, "name": "DesktopTester", "version": "v1.0.0"}}
 
-    // remap the data to a simple mapping of ip to name
+    // remap the data to a simple mapping of ip to name and split out self from peers
     const peers = {};
+    let own_name = null;
     for (const [ip, peer] of Object.entries(raw_peers)) {
-        peers[ip] = peer.name;
+        if (!peer.self) {
+            peers[ip] = peer.name;
+        } else {
+            own_name = peer.name;
+        }
     }
-    console.log(peers);
+
+    // set the page title to the name of the current peer
+    const pageKey = getCurrentPage();
+    const config = pageConfig[pageKey];
+    document.title = `${own_name} | ${config.title}`;
+
+    // if there is only one peer (self), don't show the dropdown
+    if (Object.keys(raw_peers).length <= 1) {
+        if (Object.keys(raw_peers).length === 1) {
+            document.getElementById('game_name');
+
+            // create strong element with the name of the only peer
+            const game_name = document.createElement('strong');
+            game_name.innerText = Object.values(raw_peers)[0].name;
+            const game_name_element = document.getElementById('game_name');
+            game_name_element.replaceWith(game_name);
+            // make it's id game_name
+            game_name.id = "game_name";
+
+
+            return
+        }
+
+        console.log("No peers to show dropdown for");
+        return;
+    }
 
     // call back function to navigate to the selected peer
     const navigateToPeer = async (ip, name) => {
         const currentPage = getCurrentPage();
         const url = ip + `/?page=${currentPage}`;
-        alert(`Navigating to ${name} at ${ip}`);
         window.location.href = url;
         window.location.reload();
     };
@@ -568,17 +597,14 @@ async function set_peer_dropdown() {
     const gameNameElement = document.getElementById("game_name");
     gameNameElement.replaceWith(dropDownElement);
 
-    // find the ip that has self:true set
-    const self = Object.keys(raw_peers).find(ip => raw_peers[ip].self);
-
     // set drop down default value to self if it exists
-    if (self) {
-        setDropDownValue(dropDownElement, self, peers[self]);
+    if (own_name) {
+        setDropDownValue(dropDownElement, own_name, own_name, false);
     }
 }
 
-window.set_peer_dropdown = set_peer_dropdown;
-set_peer_dropdown();
+window.set_game_name = set_game_name;
+// set_game_name();
 
 // refresh the peer dropdown every minute
-setInterval(set_peer_dropdown, 60000);
+setInterval(set_game_name, 60000);

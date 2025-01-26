@@ -556,8 +556,8 @@ def create_schedule():
     # every 1/2 of DEVICE_TIMEOUT announce our presence
     schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
 
-    # every 1/10 of DEVICE_TIMEOUT listen for others
-    schedule(listen, 11000, DEVICE_TIMEOUT * 1000 // 10)
+    # every 1/20 of DEVICE_TIMEOUT listen for others
+    schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
 
     restart_schedule()
 
