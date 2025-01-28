@@ -26,7 +26,7 @@ fi
 
 # --- 2. Flash the board ---
 echo "Flashing the Pico ..."
-# We'll pass the same environment if needed, but flash.py might not need it 
+# We'll pass the same environment if needed, but flash.py might not need it
 # for the basic steps. Adjust if your flash.py script has extra flags.
 python dev/flash.py "$BUILD_DIR"
 if [ $? -ne 0 ]; then

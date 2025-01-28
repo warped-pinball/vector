@@ -99,11 +99,11 @@ function sortTable(table, columnIndex, ascending = true) {
 
 //     const link = document.createElement('a');
 //     link.href = url;
-    
+
 //     // template string for filename:
 //     // game name, date, table caption(if any), .csv
 //     // fill spaces with underscores
-    
+
 //     let filename = document.getElementById('game_name').innerText;
 //     if (tcaption) {
 //         filename += '_' + tcaption.innerText;

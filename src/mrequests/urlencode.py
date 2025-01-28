@@ -5,11 +5,8 @@
 
 from collections import defaultdict
 
-# XXX: Consider replacing with functools.lru_cache
 _safe_quoters = {}
-_ALWAYS_SAFE = frozenset(
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" b"abcdefghijklmnopqrstuvwxyz" b"0123456789" b"_.-"
-)
+_ALWAYS_SAFE = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" b"abcdefghijklmnopqrstuvwxyz" b"0123456789" b"_.-")
 _ALWAYS_SAFE_BYTES = bytes(_ALWAYS_SAFE)
 
 
@@ -95,9 +92,7 @@ def quote_plus(string, safe="", encoding=None, errors=None):
     """
     # Check if ' ' in string, where string may either be a str or bytes.  If
     # there are no spaces, the regular quote will produce the right answer.
-    if (isinstance(string, str) and " " not in string) or (
-        isinstance(string, bytes) and b" " not in string
-    ):
+    if (isinstance(string, str) and " " not in string) or (isinstance(string, bytes) and b" " not in string):
         return quote(string, safe, encoding, errors)
 
     if isinstance(safe, str):
@@ -168,9 +163,7 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None):
             # preserved for consistency
         except TypeError:
             # ty, va, tb = sys.exc_info()
-            raise TypeError(
-                "not a valid non-string sequence " "or mapping object"
-            )  # .with_traceback(tb)
+            raise TypeError("not a valid non-string sequence " "or mapping object")  # .with_traceback(tb)
 
     l = []
     if not doseq:

@@ -44,6 +44,11 @@
         display: none;
     }
 
+    /* make disabled radio button inputs opacity 0 */
+    input[type="radio"]:disabled {
+        opacity: 0;
+    }
+
 </style>
 
 <div style="text-align: left;">
@@ -53,7 +58,7 @@
         <h3>Tournament Mode</h3>
         <fieldset id="score-boards">
             <label>
-                <input type="checkbox" role="switch" name="tournament-mode" checked>
+                <input id="tournament-mode-toggle" type="checkbox" role="switch" name="tournament-mode" checked disabled>
                 <b>Tournament Mode:</b> save scores to tournament board instead of standard leaderboard
             </label>
         </fieldset>
@@ -62,7 +67,7 @@
         <h3>Score Claim Methods</h3>
         <fieldset id="score-claim-methods">
             <label>
-                <input type="checkbox" role="switch" name="on-machine"/>
+                <input id="on-machine-toggle" type="checkbox" role="switch" name="on-machine" disabled/>
                 <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where players can enter initials)
             </label>
             <label>
@@ -71,43 +76,49 @@
             </label>
             <label>
                 <input type="checkbox" role="switch" name="scanner" disabled/>
+                <!-- TODO update this link to a product page or something similar -->
                 <b>Zoom QR Scanner Add-on:</b> games started by a QR code scan, automatically claim score <a href="https://www.warpedpinball.com">Learn More</a>
             </label>
         </fieldset>
     </section>
     <section>
-        <h3>Adjustments Profiles (Coming Soon!)</h3>
+        <h3>Adjustments Profiles</h3>
+        <div id="adjustments-not-supported" class="hide">
+            Adjustment profiles are not yet supported for this game or rom. If you would like, you can
+            <a href="https://github.com/warped-pinball/vector/issues/new/choose">open an issue on our github</a>
+            and we'll priorotize adding it.
+        </div>
         <div class="grid">
             <fieldset>
                 <div class="profile-row">
-                    <input name="profile" id="profile-1" type="radio">
-                    <input name="profile-1-name" type="text" placeholder="Name profile 1">
-                    <button onclick="saveProfile(1)">Update Profile</button>
+                    <input id="restore-profile-0" name="profile" type="radio" disabled>
+                    <input id="name-profile-0" type="text" placeholder="Name profile 1" disabled>
+                    <button id="capture-profile-0" disabled>Capture Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-2" type="radio">
-                    <input name="profile-2-name" type="text" placeholder="Name profile 2">
-                    <button onclick="saveProfile(2)">Update Profile</button>
+                    <input id="restore-profile-1" name="profile" type="radio" disabled>
+                    <input id="name-profile-1" type="text" placeholder="Name profile 2" disabled>
+                    <button id="capture-profile-1" disabled>Capture Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-3" type="radio">
-                    <input name="profile-3-name" type="text" placeholder="Name profile 3">
-                    <button onclick="saveProfile(3)">Update Profile</button>
+                    <input id="restore-profile-2" name="profile" type="radio" disabled>
+                    <input id="name-profile-2" type="text" placeholder="Name profile 3" disabled>
+                    <button id="capture-profile-2" disabled>Capture Profile</button>
                 </div>
                 <div class="profile-row">
-                    <input name="profile" id="profile-4" type="radio">
-                    <input name="profile-4-name" type="text" placeholder="Name profile 4">
-                    <button onclick="saveProfile(4)">Update Profile</button>
+                    <input id="restore-profile-3" name="profile" type="radio" disabled>
+                    <input id="name-profile-3" type="text" placeholder="Name profile 4" disabled>
+                    <button id="capture-profile-3" disabled>Capture Profile</button>
                 </div>
             </fieldset>
             <div>
-                <p>Save your current adjustments as a profile so you can quickly and easilly switch between them</p>
-                <p>Setup new profiles by configuring adjustments on the machine normally. Then optionally name the profile and press the "Update Profile" button.</p>
-                <p>To change which profile is currently active; select the corresponding radio button and click "Save Settings"</p>
+                <p>Save your games adjustments in a profile to easilly switch between setups. For example "Free to play" and "Tournament"</p>
+                <p>Configure profiles by setting adjustments on the machine normally. Then click the "Capture Profile" button.</p>
+                <p>To restore your game to the adjustments saved in a profile; select the corresponding radio button and confirm your selection. Your game will reboot with the adjustments applied</p>
             </div>
         </div>
     </section>
-    
+
     <h2>Actions</h2>
     <hr>
     <section>
@@ -130,7 +141,7 @@
             <div>
                 <p>This feature is intended for developers, and advanced users. Use at your own risk.</p>
             </div>
-        </div>  
+        </div>
     </section>
     <section>
         <h3>Export Data</h3>
@@ -142,7 +153,7 @@
                 <p>Export all scores from the Leaderboard and Tournament Board as an update file</p>
             </div>
         </div>
-    </section>  
+    </section>
     <section>
         <h3>Reset</h3>
         <div class="grid">
@@ -151,7 +162,7 @@
             </div>
             <div>
                 <p>Reset all scores on the Leaderboard, Tournament scores will not be effected</p>
-            </div>  
+            </div>
         </div>
         <div class="grid">
             <div>
@@ -212,5 +223,3 @@
         <progress id="update-progress-bar" value="0" max="100"/>
     </article>
 </dialog>
-
-

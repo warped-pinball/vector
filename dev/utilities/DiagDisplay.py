@@ -33,17 +33,16 @@ segment_map = {
     "I": 0b00000110,
     "J": 0b00011110,
     "L": 0b00111000,
-    "M": 0b01001111,
     "N": 0b01010100,
     "O": 0b01011100,
     "P": 0b01110011,
-    "Q": 0b01100111,
+    "q": 0b01100111,
     "R": 0b01010000,
     "S": 0b01101101,
     "T": 0b01111000,
+    # TODO which is the correct U?
     "U": 0b00111110,
-    "X": 0b01110110,
-    "V": 0b00111110,
+    "U": 0b00011100,
     "Y": 0b01101110,
     ".": 0b10000000,
     " ": 0b00000000,
@@ -81,12 +80,7 @@ def write_char(c):
         print(c, " :Character not in lookup table")
 
 
-def main():
+if __name__ == "__main__":
     initialize()
 
-    while True:
-        display_string(" ".join([c for c in "Merry christmas   "]))
-
-
-if __name__ == "__main__":
-    main()
+    display_string(" 192.168.12.12444 Abcdefghijklmnopqrstuvwxyz ")

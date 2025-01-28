@@ -1,5 +1,6 @@
 import gc
 
+
 def find_max_alloc():
     gc.collect()  # Clean up memory
     max_size = 0
@@ -11,6 +12,7 @@ def find_max_alloc():
         except MemoryError:
             break
     return max_size
+
 
 max_block = find_max_alloc()
 print(f"Maximum allocatable block: {max_block} bytes")

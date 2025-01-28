@@ -14,11 +14,11 @@ From bytes to a number, number to bytes, etc.
 
 # from __future__ import absolute_import
 
-from struct import pack
 import binascii as binascii
+from struct import pack
 
-from rsa._compat import byte, is_integer
 from rsa import common, machine_size
+from rsa._compat import byte, is_integer
 
 try:
     from typing import Optional
@@ -72,9 +72,7 @@ def _int2bytes(number: int, block_size: Optional[int] = None) -> bytes:
 
     # Type checking
     if not is_integer(number):
-        raise TypeError(
-            "You must pass an integer for 'number', not %s" % number.__class__
-        )
+        raise TypeError("You must pass an integer for 'number', not %s" % number.__class__)
 
     if number < 0:
         raise ValueError("Negative numbers cannot be used: %i" % number)
@@ -90,10 +88,7 @@ def _int2bytes(number: int, block_size: Optional[int] = None) -> bytes:
     # You cannot compare None > 0 in Python 3x. It will fail with a TypeError.
     if block_size and block_size > 0:
         if needed_bytes > block_size:
-            raise OverflowError(
-                "Needed %i bytes for number, but block size "
-                "is %i" % (needed_bytes, block_size)
-            )
+            raise OverflowError("Needed %i bytes for number, but block size " "is %i" % (needed_bytes, block_size))
 
     # Convert the number to bytes.
     while number > 0:
@@ -202,9 +197,7 @@ def int2bytes(
     length = len(raw_bytes)
     if fill_size and fill_size > 0:
         if not overflow and length > fill_size:
-            raise OverflowError(
-                "Need %d bytes for number, but fill size is %d" % (length, fill_size)
-            )
+            raise OverflowError("Need %d bytes for number, but fill size is %d" % (length, fill_size))
         raw_bytes = (b"\x00" * (fill_size - len(raw_bytes))) + raw_bytes
     elif chunk_size and chunk_size > 0:
         remainder = length % chunk_size

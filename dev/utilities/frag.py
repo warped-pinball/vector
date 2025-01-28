@@ -3,12 +3,13 @@
 
 import os
 
+
 def measure_fragmentation():
     # Get filesystem stats
-    fs_stat = os.statvfs('/')
+    fs_stat = os.statvfs("/")
     total_blocks = fs_stat[2]  # f_blocks
-    block_size = fs_stat[0]    # f_frsize
-    free_blocks = fs_stat[3]   # f_bfree
+    block_size = fs_stat[0]  # f_frsize
+    free_blocks = fs_stat[3]  # f_bfree
     avail_blocks = fs_stat[4]  # f_bavail
 
     used_blocks = total_blocks - free_blocks
@@ -24,11 +25,12 @@ def measure_fragmentation():
 
     fragmentation_index = (num_free_blocks * avg_free_block_size) / free_space if free_space > 0 else 0
 
-    print(f'Total space: {total_space / 1024} KB')
-    print(f'Used space: {used_space / 1024} KB')
-    print(f'Free space: {free_space / 1024} KB')
-    print(f'Number of free blocks: {num_free_blocks}')
-    print(f'Average free block size: {avg_free_block_size / 1024} KB')
-    print(f'Fragmentation index: {fragmentation_index}')
+    print(f"Total space: {total_space / 1024} KB")
+    print(f"Used space: {used_space / 1024} KB")
+    print(f"Free space: {free_space / 1024} KB")
+    print(f"Number of free blocks: {num_free_blocks}")
+    print(f"Average free block size: {avg_free_block_size / 1024} KB")
+    print(f"Fragmentation index: {fragmentation_index}")
+
 
 measure_fragmentation()

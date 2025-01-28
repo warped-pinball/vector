@@ -47,7 +47,7 @@ function addPlayerRow(form, index, initials, name) {
         savePlayer(index, initialsInput.value, nameInput.value);
     });
     fieldset.appendChild(saveButton);
-    
+
     // Only show the delete button if the player has initials or a name
     if (initials.trim() !== '' || name.trim() !== '') {
         const deleteButton = document.createElement('input');
@@ -87,12 +87,12 @@ async function savePlayer(index, initials, name) {
     const data = {
         "id": index,
         "initials": initials,
-        "full_name": name        
+        "full_name": name
     };
 
     try {
         const response = await window.smartFetch('/api/player/update', data, true);
-        
+
         if (response.status !== 200) {
             console.error('Failed to save player:', response.status);
             return;

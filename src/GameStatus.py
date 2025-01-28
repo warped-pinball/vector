@@ -1,16 +1,24 @@
-#game status
+# game status
 
-import SharedState as S
-from Shadow_Ram_Definitions import shadowRam,writeCountRam,SRAM_DATA_LENGTH,SRAM_DATA_BASE,SRAM_COUNT_BASE
 import json
 import time
 
-game_active=False
-number_of_players=0
+import SharedState as S
+from Shadow_Ram_Definitions import (
+    SRAM_COUNT_BASE,
+    SRAM_DATA_BASE,
+    SRAM_DATA_LENGTH,
+    shadowRam,
+    writeCountRam,
+)
+
+game_active = False
+number_of_players = 0
 time_game_start = None
 time_game_end = None
 
-#BCD two digits per byte
+
+# BCD two digits per byte
 def BCD_to_Int(number_BCD):
     number_int = 0
     for byte in number_BCD:
@@ -20,21 +28,19 @@ def BCD_to_Int(number_BCD):
     return number_int
 
 
-
 def report(request):
     global game_active, number_of_players, time_game_start, time_game_end
     report_data = {}
 
     try:
         # Check if game-specific information is valid
-        if S.gdata.get("GameInfo", {}).get("GameName") == "Pinbot":           
-
+        if S.gdata.get("GameInfo", {}).get("GameName") == "Pinbot":
             try:
                 # Game-specific data collection
                 report_data["Warnings"] = shadowRam[0xB3]
                 report_data["PlayerUp"] = shadowRam[0xAD] + 1
-                report_data["SolarValue"] = 100 * BCD_to_Int(shadowRam[0x620:0x622 + 1])
-                report_data["EnergyValue"] = 100 * BCD_to_Int(shadowRam[0xDB:0xDC + 1])
+                report_data["SolarValue"] = 100 * BCD_to_Int(shadowRam[0x620 : 0x622 + 1])
+                report_data["EnergyValue"] = 100 * BCD_to_Int(shadowRam[0xDB : 0xDC + 1])
                 report_data["Message"] = " "
                 report_data["BallInPlay"] = shadowRam[0x38] & 0x0F
 
@@ -42,8 +48,8 @@ def report(request):
                 player_score = []
                 for i in range(4):
                     base_idx = 0x200 + (i * 4)
-                    score = BCD_to_Int(shadowRam[base_idx:base_idx + 4])
-                    player_score.append(score)                    
+                    score = BCD_to_Int(shadowRam[base_idx : base_idx + 4])
+                    player_score.append(score)
 
                 report_data["PlayerScore"] = player_score
 
@@ -70,7 +76,7 @@ def report(request):
 
             # Return the collected report data as JSON
             return json.dumps(report_data)
-        
+
         else:
             # If game is not Pinbot, return "none"
             return "none"
@@ -81,41 +87,39 @@ def report(request):
         return json.dumps({"error": "Unexpected error"})
 
 
-
- 
 def initialize():
     global game_active, number_of_players
-    game_active=False
-    number_of_players=0
+    game_active = False
+    number_of_players = 0
 
 
-poll_state=0
+poll_state = 0
+
+
 def poll_fast():
-    global game_active,number_of_players,time_game_start,time_game_end,poll_state
+    global game_active, number_of_players, time_game_start, time_game_end, poll_state
 
-    if poll_state==0:    
-        #watch for ball in play for game start
-        game_active=False
-        if shadowRam[0x38] in [0xF1,0xF2,0xF3,0xF4,0xF5]:
-            time_game_start=time.ticks_ms()            
-            game_active=True
-            print("-----------------start game ",time_game_start)
-            poll_state=1
-            
-    elif poll_state==1:        
-        if shadowRam[0xA9] == 0x01  or (shadowRam[0x38] not in [0xF1,0xF2,0xF3,0xF4,0xF5]):
-            time_game_end=time.ticks_ms()
-            print("------------end game ",time_game_end)
-            game_active=False  
-            poll_state=2
+    if poll_state == 0:
+        # watch for ball in play for game start
+        game_active = False
+        if shadowRam[0x38] in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]:
+            time_game_start = time.ticks_ms()
+            game_active = True
+            print("-----------------start game ", time_game_start)
+            poll_state = 1
+
+    elif poll_state == 1:
+        if shadowRam[0xA9] == 0x01 or (shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]):
+            time_game_end = time.ticks_ms()
+            print("------------end game ", time_game_end)
+            game_active = False
+            poll_state = 2
 
     else:
-        if shadowRam[0x38] not in [0xF1,0xF2,0xF3,0xF4,0xF5]:
-            poll_state=0
+        if shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]:
+            poll_state = 0
             print("----------reset")
 
 
 if __name__ == "__main__":
     print(report("ok"))
-
-

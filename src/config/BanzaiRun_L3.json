@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Banzai Run",
         "System": "11B",
-        "FileVer": 1         
+        "FileVer": 1
     },
 
     "Memory" : {
@@ -14,7 +14,7 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": 56, 
+        "Address": 56,
         "Ball1": "0xF1",
         "Ball2": "0xF2",
         "Ball3": "0xF3",

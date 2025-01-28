@@ -1,22 +1,24 @@
 #! /usr/bin/env python3
 
+import argparse
+import gzip
+import json
+import math
 import os
-import sys
 import shutil
 import subprocess
-import argparse
-import json
+import sys
 import time
-import math
-import gzip
+
 from bs4 import BeautifulSoup
-from jsmin import jsmin
 from csscompressor import compress
 from htmlmin import minify as minify_html
+from jsmin import jsmin
 
 BUILD_DIR_DEFAULT = "build"
 SOURCE_DIR_DEFAULT = "src"
 MPY_CROSS = "mpy-cross"
+
 
 def get_directory_size(path: str) -> tuple[int, int]:
     total_size = 0
@@ -36,6 +38,7 @@ def get_directory_size(path: str) -> tuple[int, int]:
 
 def step_report(func):
     """Decorator that prints timing and size info for each step."""
+
     def wrapper(*args, **kwargs):
         print(f"\nRunning step: {func.__name__}")
         original_size, _ = get_directory_size(args[0].build_dir)
@@ -53,6 +56,7 @@ def step_report(func):
             perc = (diff / original_size) * 100
             print(f"Size difference: {diff / 1024:.2f} KB ({perc:.2f}%)")
         print("-" * 40)
+
     return wrapper
 
 
@@ -154,12 +158,7 @@ class Builder:
                 if file.endswith(".svg"):
                     file_path = os.path.join(root, file)
                     temp_file_path = file_path + ".tmp"
-                    cmd = (
-                        f"scour -i {file_path} "
-                        "--enable-viewboxing --enable-id-stripping --enable-comment-stripping "
-                        "--shorten-ids --indent=none "
-                        f"-o {temp_file_path}"
-                    )
+                    cmd = f"scour -i {file_path} " "--enable-viewboxing " "--enable-id-stripping " "--enable-comment-stripping " "--shorten-ids --indent=none " f"-o {temp_file_path}"
                     result = subprocess.run(cmd, shell=True)
                     if result.returncode == 0:
                         os.remove(file_path)
@@ -213,11 +212,12 @@ class Builder:
                 gz_path = file_path + ".gz"
 
                 # Replicate the "-n" effect from the CLI by setting a fixed timestamp
-                # This is required to ensure the gzip files are byte-for-byte identical to get matching checksums
+                # This is required to ensure the gzip files are
+                # byte-for-byte identical to get matching checksums
                 zipper = gzip.GzipFile(gz_path, "wb", compresslevel=9, mtime=0)
                 zipper.write(content)
                 zipper.close()
-                
+
                 os.remove(file_path)
 
     def read_file(self, filepath):
@@ -228,17 +228,16 @@ class Builder:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Build the project into a specified build directory."
-    )
+    parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
     parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
     parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
     parser.add_argument("--env", default="dev", help="Build environment (dev, test, prod, etc.)")
     args = parser.parse_args()
 
     builder = Builder(args.build_dir, args.source_dir, args.env)
-    
+
     # Run build steps in sequence
     builder.copy_files_to_build()
     builder.compile_py_files()
@@ -251,6 +250,7 @@ def main():
     # e.g., shutil.make_archive("my_build_artifact", "zip", args.build_dir)
 
     print("Build complete.")
+
 
 if __name__ == "__main__":
     main()

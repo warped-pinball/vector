@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Roller Games",
         "System": "11c",
-        "FileVer": 2     
+        "FileVer": 2
     },
 
     "Memory" : {
@@ -63,5 +63,5 @@
         "Type": 0
     }
 
-    
+
 }

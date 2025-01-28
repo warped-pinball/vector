@@ -1,6 +1,6 @@
-// 
+//
 // Generic / Utility functions
-// 
+//
 
 async function confirm_auth_get(url, purpose) {
 	confirmAction(purpose, async () => {
@@ -12,67 +12,63 @@ async function confirm_auth_get(url, purpose) {
 	});
 }
 
-function confirmAction(message, callback) {
+function confirmAction(message, callback, cancelCallback=null) {
 	const modal = document.getElementById('confirm-modal');
 	const modalMessage = document.getElementById('modal-message');
 	const confirmButton = document.getElementById('modal-confirm-button');
+	const cancelButton = document.getElementById('modal-cancel-button');
 
 	modalMessage.textContent = `Are you sure you want to ${message}?`;
 
 	confirmButton.onclick = () => {
+		modal.close();
 		callback();
-		closeModal();
 	};
+
+	if (cancelCallback) {
+		cancelButton.onclick = () => {
+			modal.close();
+			cancelCallback();
+		};
+	}
 
 	modal.showModal();
 }
 
-function closeModal() {
-	const modal = document.getElementById('confirm-modal');
-	modal.close();
-}
-
-
-// 
+//
 // Settings
-// 
+//
 
 // Tournament Mode
 async function tournamentModeToggle() {
-	const tournamentModeCheckbox = document.querySelector('input[name="tournament-mode"]');
-
-	// disable the checkbox until we have the current setting
-	tournamentModeCheckbox.disabled = true;
-
 	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
 	const data = await response.json();
 
-	tournamentModeCheckbox.checked = data['tournament_mode'];
-	tournamentModeCheckbox.disabled = false;
+	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
+
+	tournamentModeToggle.checked = data['tournament_mode'];
+	tournamentModeToggle.disabled = false;
 
 	// add event listener to update the setting when the checkbox is changed
-	tournamentModeCheckbox.addEventListener('change', async () => {
-		const data = { 'tournament_mode': tournamentModeCheckbox.checked ? 1 : 0 };
+	tournamentModeToggle.addEventListener('change', async () => {
+		const data = { 'tournament_mode': tournamentModeToggle.checked ? 1 : 0 };
 		await window.smartFetch('/api/settings/tournament_mode', data, true);
 	});
 }
 
 // score Claim methods
 async function getScoreClaimMethods() {
-	const onMachineCheckbox = document.querySelector('input[name="on-machine"]');
-
-	// disable the checkbox until we have the current setting
-	onMachineCheckbox.disabled = true;
-
 	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
 	const data = await response.json();
 
-	onMachineCheckbox.checked = data['on-machine'];
-	onMachineCheckbox.disabled = false;
+	const onMachineToggle = document.getElementById('on-machine-toggle');
+
+	onMachineToggle.checked = data['on-machine'];
+	onMachineToggle.disabled = false;
 
 	// add event listener to update the setting when the checkbox is changed
-	onMachineCheckbox.addEventListener('change', async () => {
-		const data = { 'on-machine': onMachineCheckbox.checked ? 1 : 0 };
+	onMachineToggle.addEventListener('change', async () => {
+		const data = { 'on-machine': onMachineToggle.checked ? 1 : 0 };
 		await window.smartFetch('/api/settings/score_claim_methods', data, true);
 	});
 }
@@ -80,9 +76,135 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 
-// 
+//
+// Adjustment Profiles
+//
+
+async function populateAdjustmentProfiles() {
+	const response = await window.smartFetch('/api/adjustments/status', null, false);
+	const data = await response.json();
+
+	console.log("Adjustment Profiles: ", data);
+
+	if (data.adjustments_support === false) {
+		console.log("Adjustments not supported");
+		// add note to the page that adjustments are not supported for this title yet
+		document.getElementById('adjustments-not-supported').classList.remove('hide');
+		return;
+	}
+
+	// iterate through list of (name, active, captured) and set the values
+	const profiles = data.profiles;
+	for (let i = 0; i < profiles.length; i++) {
+		console.log("Profile: ", profiles[i]);
+		const profileName = document.getElementById(`name-profile-${i}`);
+		const profileRestore = document.getElementById(`restore-profile-${i}`);
+		const profileCapture = document.getElementById(`capture-profile-${i}`);
+
+		profileRestore.checked = profiles[i][1];
+		profileRestore.disabled = !profiles[i][2];
+
+		profileName.disabled = false;
+		if (profiles[i][0] != "" ) {
+			profileName.placeholder = profiles[i][0];
+			profileName.value = "";
+		}
+
+		profileCapture.disabled = false;
+
+		// add event listener to capture button
+		profileCapture.addEventListener('click', async () => {
+			await captureProfile(i);
+		});
+
+		// add event listener to restore button
+		profileRestore.addEventListener('click', async () => {
+			await restoreProfile(i);
+		});
+
+		// add event listener to name input
+		profileName.addEventListener('blur', async () => {
+			await setProfileName(i);
+		});
+
+	}
+}
+
+populateAdjustmentProfiles();
+
+
+
+async function setProfileName(index) {
+	const input = document.getElementById(`name-profile-${index}`);
+	const name = input.value;
+
+	// check if name is still the placeholder
+	if (name === input.placeholder || name === "") {
+		return;
+	}
+
+	const data = { 'index': index, 'name': name };
+	try {
+		await window.smartFetch('/api/adjustments/name', data, true);
+	} catch (e) {
+		input.value = input.placeholder;
+	}
+
+	// repopulate the profiles
+	populateAdjustmentProfiles();
+}
+
+// capture profile
+async function captureProfile(index) {
+	const data = { 'index': index };
+	const profileName = document.getElementById(`name-profile-${index}`).placeholder;
+	// build callback function
+	const callback = async () => {
+		const response = await window.smartFetch('/api/adjustments/capture', data, true);
+		populateAdjustmentProfiles();
+	};
+	// confirm action
+	await confirmAction(
+		"overwrite \"" + profileName + "\" with the currently active adjustments",
+		callback
+	);
+
+
+}
+
+// restore profile
+async function restoreProfile(index) {
+	const data = { 'index': index };
+	const profileName = document.getElementById(`name-profile-${index}`).placeholder;
+
+	// build callback function
+	const callback = async () => {
+		// get the current game status
+		const gameStatusResponse = await window.smartFetch('/api/game/status', null, false);
+		const gameStatus = await gameStatusResponse.json();
+
+		// if the game is active we can't restore the profile
+		if (gameStatus['game_in_progress']) {
+			alert('Cannot restore adjustments while a game is in progress, please try again after the game has ended.');
+			populateAdjustmentProfiles();
+			return;
+		}
+
+		const response = await window.smartFetch('/api/adjustments/restore', data, true);
+		populateAdjustmentProfiles();
+	};
+	// confirm action
+	await confirmAction(
+		"restore adjustment profile: \"" + profileName + "\" and reboot the game",
+		callback,
+		populateAdjustmentProfiles // if we cancel we need to reset the selected / active profile
+	);
+}
+
+
+//
 // Actions
-// 
+//
 
 // Download Logs
 window.downloadLogs = async function () {
@@ -201,61 +323,61 @@ window.downloadScores = async function () {
 }
 
 
-
-
-
-
-
-
-
-
-// 
+//
 // Updates
-// 
+//
 
 async function checkForUpdates() {
-	
-	// wait 3 seconds before checking for updates
+
+	// wait 1 second before checking for updates
 	// this lets us prioritize loading the page and settings
-	await new Promise(resolve => setTimeout(resolve, 3000));
-	
-	const response = await window.smartFetch('/api/update/check', null, false);
-	const data = await response.json();
-	const updateButton = document.getElementById('update-button');
-	
+	await new Promise(resolve => setTimeout(resolve, 1000));
+
 	try {
-		if (data['current'] === data['reccomended']) {
-						
-			// no update available	
+		const response = await window.smartFetch('/api/update/check', null, false);
+		const data = await response.json();
+		const updateButton = document.getElementById('update-button');
+
+		// get the current version from the page
+		const current = document.getElementById('version').textContent.split(' ')[1];
+
+		// link to release notes in text
+		const releaseNotes = document.getElementById('release-notes');
+		try {
+			releaseNotes.href = data['html_url'];
+			releaseNotes.textContent = 'Release Notes for ' + data['tag_name'];
+		} catch (e) {
+			releaseNotes.classList.add('hide');
+		}
+
+		// if the latest is equal to the current version we are up to date
+		if (data['tag_name'] === current) {
 			updateButton.style.backgroundColor = '#8e8e8e';
 			updateButton.style.borderColor = '#8e8e8e';
 			updateButton.textContent = 'Already up to date';
 			updateButton.disabled = true;
+		} else if (!data["assets"].find(asset => asset.name === 'update.json')) {
+			console.error('No update.json asset found for latest version');
+			updateButton.textContent = 'Could not get updates';
+			updateButton.disabled = true;
+		} else { // there is an update with an update.json asset
 
-			// try to link to current release notes data[data['current']]['release-url']
-			const releaseNotes = document.getElementById('release-notes');
-			try {
-				releaseNotes.href = data['releases'][data['current']]['release-url'];
-				releaseNotes.textContent = 'Release Notes for ' + data['current'];
-			} catch (e) {
-				releaseNotes.classList.add('hide');
-			}
-			
-		} else {
 			// update available
 			updateButton.disabled = false;
 			updateButton.style.backgroundColor = '#e8b85a';
 			updateButton.style.borderColor = '#e8b85a';
-			updateButton.textContent = `Update to ${data['reccomended']}`;
+			updateButton.textContent = `Update to ${data['tag_name']}`;
 
-			// link to release notes in text
-			const releaseNotes = document.getElementById('release-notes');
-			releaseNotes.href = data['releases'][data['reccomended']]['release-url'];
-			releaseNotes.textContent = 'Release Notes for ' + data['reccomended'];
+			// get the url for the update.json asset and add an event listener to the button
+			update_url = data["assets"].find(asset => asset.name === 'update.json').browser_download_url;
+
+			// define the call back function to apply the update
+			const callback = async () => {
+				await applyUpdate(update_url);
+			};
 
 			updateButton.addEventListener('click', async () => {
-				const url = data['releases'][data['reccomended']]['update-url']
-				await confirmAction("update to " + data['reccomended'], applyUpdate(url));
+				await confirmAction("update to version: " + data['tag_name'], callback);
 			});
 		}
 	} catch (e) {
@@ -285,7 +407,7 @@ async function applyUpdate(url) {
 			const { value, done } = await reader.read();
 			if (done) break;
 			let msg = decoder.decode(value, { stream: true });
-			
+
 			msg = msg.split('}{');
 			for (let i = 0; i < msg.length; i++) {
 				if (i !== 0) {
@@ -298,7 +420,7 @@ async function applyUpdate(url) {
 
 			for (let i = 0; i < msg.length; i++) {
 				const msg_obj = JSON.parse(msg[i]);
-				
+
 				if (msg_obj.log) {
 					updateProgressLog.textContent += msg_obj.log + '\n';
 				}
@@ -315,7 +437,7 @@ async function applyUpdate(url) {
 		if (progressBar.value === 100) {
 			// refresh the page
 			window.location.reload();
-		} else {		
+		} else {
 			updateProgressLog.textContent += 'Connection lost.\n';
 			updateProgressLog.textContent += 'Refresh the page and Try again.\n';
 			progressBar.value = 0;

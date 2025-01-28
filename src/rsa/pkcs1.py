@@ -21,12 +21,14 @@ deduce where in the process the failure occurred. DO NOT PASS SUCH INFORMATION
 to your users.
 """
 
-import os
 import hashlib as hashlib
-from rsa import common, transform, core
+import os
+
+from rsa import common, core, transform
 
 try:
-    from typing import Optional, Iterator, Union
+    from typing import Iterator, Optional, Union
+
     from rsa.key import PublicKey
 
     try:
@@ -44,7 +46,6 @@ try:
 
         def read(self, blocksize: int) -> Union[bytes, str]:
             """A method that reads a given number of bytes or chracters"""
-
 
 except ImportError:
     pass
@@ -69,11 +70,7 @@ hash_methods_to_check = {
     "SHA-512": "sha512",
 }
 
-HASH_METHODS = {
-    method: getattr(hashlib, attr)
-    for method, attr in hash_methods_to_check.items()
-    if hasattr(hashlib, attr)
-}
+HASH_METHODS = {method: getattr(hashlib, attr) for method, attr in hash_methods_to_check.items() if hasattr(hashlib, attr)}
 
 
 class CryptoError(Exception):
@@ -110,10 +107,7 @@ def _pad_for_encryption(message: bytes, target_length: int) -> bytes:
     msglength = len(message)
 
     if msglength > max_msglength:
-        raise OverflowError(
-            "%i bytes needed for message, but there is only"
-            " space for %i" % (msglength, max_msglength)
-        )
+        raise OverflowError("%i bytes needed for message, but there is only" " space for %i" % (msglength, max_msglength))
 
     # Get random padding
     padding = b""
@@ -162,10 +156,7 @@ def _pad_for_signing(message: bytes, target_length: int) -> bytes:
     msglength = len(message)
 
     if msglength > max_msglength:
-        raise OverflowError(
-            "%i bytes needed for message, but there is only"
-            " space for %i" % (msglength, max_msglength)
-        )
+        raise OverflowError("%i bytes needed for message, but there is only" " space for %i" % (msglength, max_msglength))
 
     padding_length = target_length - msglength - 3
 
@@ -203,9 +194,7 @@ def encrypt(message: bytes, pub_key: PublicKey) -> bytes:
     return block
 
 
-def verify(
-    message: Union[bytes, _FileLikeObject], signature: bytes, pub_key: PublicKey
-) -> str:
+def verify(message: Union[bytes, _FileLikeObject], signature: bytes, pub_key: PublicKey) -> str:
     """Verifies that the signature matches the message.
 
     The hash method is detected automatically from the signature.
@@ -262,9 +251,7 @@ def find_signature_hash(signature: bytes, pub_key: PublicKey) -> str:
     return _find_method_hash(clearsig)
 
 
-def yield_fixedblocks(
-    infile: _FileLikeObject, blocksize: int
-) -> Iterator[Union[bytes, str]]:
+def yield_fixedblocks(infile: _FileLikeObject, blocksize: int) -> Iterator[Union[bytes, str]]:
     """Generator, yields each block of ``blocksize`` bytes in the input file.
 
     :param TextIOWrapper infile: file to read and separate in blocks.
@@ -285,9 +272,7 @@ def yield_fixedblocks(
             break
 
 
-def compute_hash(
-    message: Union[bytes, str, _FileLikeObject], method_name: str
-) -> bytes:
+def compute_hash(message: Union[bytes, str, _FileLikeObject], method_name: str) -> bytes:
     """Returns the message digest.
 
     :param message: the signed message. Can be an 8-bit string or a file-like
@@ -322,7 +307,7 @@ def _find_method_hash(clearsig: bytes) -> str:
     :raise VerificationFailed: when the hash method cannot be found
     """
 
-    for (hashname, asn1code) in HASH_ASN1.items():
+    for hashname, asn1code in HASH_ASN1.items():
         if asn1code in clearsig:
             return hashname
 

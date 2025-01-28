@@ -9,7 +9,7 @@ async function build_game_config_select(){
     }
 
     const data = await response.json(); // object {filename: {"name": "Game Name", "rom": "L2"}}
-    
+
     // create mapping of key to "Game Name (rom)"
     const filename_to_name = {}
     for (const filename in data) {
@@ -27,10 +27,10 @@ async function build_game_config_select(){
             console.error(`Error parsing ${filename}: ${error}`)
         }
     }
-    
+
     const game_config_select = await window.createDropDownElement(
-        'game_config_select', 
-        'Select a game configuration', 
+        'game_config_select',
+        'Select a game configuration',
         filename_to_name,
         defaultValue=null,
         sortOptions=true
@@ -146,7 +146,7 @@ async function set_vector_config() {
         vector_password: vector_password,
         game_config_filename: game_config
     }
-    
+
     // send a POST with the selected configuration
     // auth is not required because this route is only available in AP mode
     const response = await window.smartFetch('/api/settings/set_vector_config', data = data, auth=false);
@@ -162,7 +162,7 @@ async function save_configuration() {
         alert('Error saving vector configuration; Try again');
         return;
     }
-    
+
     response_vector = null;
 
     alert('Configuration saved. Power cycle your Pinball Machine to apply the changes');

@@ -54,7 +54,7 @@ def parse_url(url):
     # but it's not supported on the esp8266 port
     delim = url.find("//")
     if delim >= 0:
-        scheme, loc = url[:delim].rstrip(':'), url[delim+2:]
+        scheme, loc = url[:delim].rstrip(":"), url[delim + 2 :]
     else:
         loc = url
         scheme = ""
@@ -151,7 +151,7 @@ class Response:
                 l = sf.readline().strip()
 
                 if not l:
-                    return b''
+                    return b""
 
                 # ignore chunk extensions
                 l = l.split(b";", 1)[0]
@@ -195,8 +195,7 @@ class Response:
             if self.chunked:
                 raise NotImplementedError("Cannot use a buffer when saving a chunked response.")
             if chunk_size and not MICROPY:
-                raise NotImplementedError("Cannot set chunk_size when using a buffer with CPython."
-                    " Use a buffer or memoryview of appropriate size instead.")
+                raise NotImplementedError("Cannot set chunk_size when using a buffer with CPython." " Use a buffer or memoryview of appropriate size instead.")
 
         remain = self._content_size
 
@@ -211,8 +210,7 @@ class Response:
                 fobj.write(buf[:num_read_chunk])
             else:
                 # Read a chunk of data
-                chunk = self.read(size=None if self.chunked
-                                  else min(chunk_size or MAX_READ_SIZE, remain))
+                chunk = self.read(size=None if self.chunked else min(chunk_size or MAX_READ_SIZE, remain))
                 num_read_total += len(chunk)
 
                 if not chunk:
@@ -287,7 +285,7 @@ def request(
     save_headers=False,
     max_redirects=1,
     timeout=None,
-    ssl_context=None
+    ssl_context=None,
 ):
     if auth:
         headers.update(auth if callable(auth) else encode_basic_auth(auth[0], auth[1]))
@@ -326,7 +324,6 @@ def request(
                         import ssl
                     except ImportError:
                         import ussl as ssl
-
 
                 # print("Wrapping socket with TLS")
                 if ssl_context is None:

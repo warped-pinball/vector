@@ -57,7 +57,7 @@
                 </ul>
             </nav>
         </div>
-        
+
     </header>
 
     <main class="container" aria-busy="true" style="text-align: center; text-wrap: auto;">
@@ -72,20 +72,20 @@
                 <h3>WiFi Settings</h3>
                 <details id="ssid_select_placeholder" class="dropdown"><summary>Scanning for WiFi networks</summary></details>
                 <input type="password" name="wifi_password" placeholder="WiFi password" aria-label="WiFi Password">
-        
+
                 <h3>Game Settings</h3>
                 <details id="game_config_select_placeholder" class="dropdown"><summary>Building list of games</summary></details>
                 <input type="password" name="vector_password" placeholder="Admin Password" aria-label="Pinball Admin Password">
-        
+
                 <p>
                     Please <mark>double check your game and ROM version</mark> If you are unsure, do not guess.
                     If you have a ROM that is not listed we may be able to add it for you.
                 </p>
-        
+
                 <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
-                
+
                 <p>Once you have saved, please power cycle your pinball machine and connect to your selected WiFi network.</p>
-        
+
                 <footer style="position: relative;">
                     <small style="position: absolute; display: block; top: 50%; transform: translateY(-50%); bottom: auto;">Previous IP: <a id="previous-ip" href="#"></a></small>
                     <button onclick="window.save_configuration()">💾 Save</button>
@@ -97,7 +97,7 @@
                 <h2>Warning: Issues Detected</h2>
                 <p>
                     Warped Pinball features may not work correctly until the issue(s) below are resolved.
-                    For guidence on how to resolve these issues, please read our guide: 
+                    For guidence on how to resolve these issues, please read our guide:
                 </p>
                 <a href="https://warpedpinball.com/warped-pinball-user-support/">https://warpedpinball.com/warped-pinball-user-support/</a>
                 <p>
@@ -116,7 +116,7 @@
                 <!-- stay logged in option -->
                 <fieldset>
                     <label>
-                        <input id="stay-logged-in" type="checkbox" role="switch" id="stay_logged_in" aria-label="Stay Logged In" checked>
+                        <input id="stay-logged-in" type="checkbox" role="switch" id="stay_logged_in" aria-label="Stay Logged In">
                         Stay Logged In
                     </label>
                 </fieldset>
@@ -133,7 +133,7 @@
                 </header>
                 <p id="modal-message"></p>
                 <footer>
-                    <button class="secondary" onclick="closeModal()">Cancel</button>
+                    <button id="modal-cancel-button" class="secondary">Cancel</button>
                     <button id="modal-confirm-button">Confirm</button>
                 </footer>
             </article>
@@ -208,10 +208,10 @@
         // === Utility: Authenticated Fetch ===
         async function smartFetch(url, data=false, auth=true) {
             console.log({ url, data, auth });
-            const headers = { 
-                "Content-Type": "application/json" 
+            const headers = {
+                "Content-Type": "application/json"
             };
-            
+
             if (auth) {
                 const password = await window.get_password();
 
@@ -220,19 +220,20 @@
                 const { challenge } = await cRes.json();
 
                 const urlObj = new URL(url, window.location.origin);
-                
+
                 // stringify data if present and unescape characters
                 const data_str = data ? JSON.stringify(data): '';
 
                 const msg = challenge + urlObj.pathname + urlObj.search + data_str;
                 const hmacHex = sha256.hmac(password, msg);
                 headers["X-Auth-HMAC"] = hmacHex;
+                headers["X-Auth-challenge"] = challenge;
             }
 
             const method = data ? "POST" : "GET";
-            const response = await fetch(url, { 
-                method, 
-                headers, 
+            const response = await fetch(url, {
+                method,
+                headers,
                 body: data ? JSON.stringify(data) : undefined
             });
             if (auth && response.status === 401) {

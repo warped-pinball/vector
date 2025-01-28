@@ -40,7 +40,7 @@ jobs:
             VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "push" ]; then
             ENV="beta"
-            SUFFIX="-beta-${{ github.run_number }}"
+            SUFFIX="-beta${{ github.run_number }}"
             VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "release" ]; then
             ENV="prod"

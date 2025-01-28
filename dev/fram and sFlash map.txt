@@ -1,0 +1,44 @@
+
+
+FRAM - 32K Byte
+	(0x000 - 0x7FFF)
+
+	SPI data Store (at top of space):
+		top memory = 32767  (0x7FFF)
+		fill from top down..
+		Version 1 fills down to:  21707  (0x54CB)
+		Reserve 1/2 of FRAM (16k)  - (0x4000 - 0x7FFF)
+
+	Unused and unreserved space:
+		(7.75K) from 0x2100-0x3FFF)
+
+	Status storage for UpdateStore (serial flash)
+		256 bytes (0x2000-0x20FF)
+
+	Game adjustments storage (4 sets),
+		128 bytes plus 16 cahracter name
+		Total space, (128+16)*4 = 576 bytes
+		0x2000 - 0x2240
+
+	Shadow ram storage:
+		using 2k now, 0-0x07FF
+		but plan on up to 8k,  0-0x1FFF
+		Reserve 1/4 (8k for use)
+
+
+
+
+
+
+Serial Flash - 32 M Bytes
+			(0x000 0000 - 0x1FF FFFF)
+
+			First 64k Byte and Last 64KByte are protecable in 4k chunks
+			In the middle - protection in 64K byte chunks
+
+			Erases to all 0xFF - 64K chunks at a time
+
+	Software Update Store, three slots of 6M bytes each
+		slot 1:  0x001 0000 - 0x061 0000
+		slot 2:  0x061 0000 - 0x0C1 0000
+		slot 3:  0x0C1 0000 - 0x121 0000

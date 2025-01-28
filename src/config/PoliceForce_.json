@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Police Force",
         "System": "11B",
-        "FileVer": 1    
+        "FileVer": 1
     },
 
     "Memory" : {
@@ -63,4 +63,3 @@
         "Type": 0
     }
 }
-

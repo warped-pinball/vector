@@ -6,4 +6,4 @@ scour
 htmlmin2
 beautifulsoup4
 cryptography
-#TODO pre-commit
+pre-commit
