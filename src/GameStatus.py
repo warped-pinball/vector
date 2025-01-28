@@ -4,13 +4,7 @@ import json
 import time
 
 import SharedState as S
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-    writeCountRam,
-)
+from Shadow_Ram_Definitions import shadowRam
 
 game_active = False
 number_of_players = 0

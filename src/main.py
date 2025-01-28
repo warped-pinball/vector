@@ -6,30 +6,21 @@
     fault check updated for early sys11 game compatability
 """
 
-import resource
 import time
-from time import sleep
 
 import machine
-from machine import Pin
-from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
 
-import displayMessage
 import faults
 import GameDefsLoad
 import Memory_Main as MemoryMain
 import reset_control
 import SharedState as S
 from logger import logger_instance
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-)
+from Shadow_Ram_Definitions import shadowRam
+from SPI_Store import initialize as initialize_spi_store
 
 Log = logger_instance
-from SPI_Store import initialize as initialize_spi_store
+
 
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -132,26 +123,26 @@ initialize_spi_store()
 
 ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check()
-if bus_activity_fault == True:
+if bus_activity_fault:
     set_error_led()
     faults.raise_fault(faults.HDWR01)
     print("Main: Bus Activity fault detected !!")
     Log.log("Main: Reset Circuit fault detected !!")
 
 # load up Game Definitions
-if bus_activity_fault == False and ap_mode == False:
+if not bus_activity_fault and not ap_mode:
     GameDefsLoad.go()
 else:
     GameDefsLoad.go(safe_mode=True)
 
-if bus_activity_fault == False:
+if not bus_activity_fault:
     MemoryMain.go()
 
 time.sleep(0.5)
 reset_control.release(True)
 time.sleep(4)
 
-if bus_activity_fault == False:
+if not bus_activity_fault:
     if not adr_activity_ok():
         reset_control.reset()
         time.sleep(2)
@@ -159,7 +150,7 @@ if bus_activity_fault == False:
 
 
 # launch wifi, and server. Should not return
-from backend import go
+from backend import go  # noqa
 
 Log.log("MAIN: Launching Wifi")
 go(ap_mode)

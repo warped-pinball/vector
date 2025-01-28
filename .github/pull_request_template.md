@@ -1,11 +1,3 @@
----
-name: "Pull Request"
-description: "Submit a pull request to improve the project"
-title: ""
-labels: ""
-assignees: ""
----
-
 ## Description
 <!--- Describe your changes in detail -->
 

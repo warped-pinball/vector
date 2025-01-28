@@ -31,21 +31,21 @@ class PublicKey:
         self.n = n
         self.e = e
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str):
         return getattr(self, key)
 
     def __repr__(self) -> str:
         return "PublicKey(%i, %i)" % (self.n, self.e)
 
-    def __getstate__(self) -> Tuple[int, int]:
+    def __getstate__(self):
         """Returns the key as tuple for pickling."""
         return self.n, self.e
 
-    def __setstate__(self, state: Tuple[int, int]) -> None:
+    def __setstate__(self, state) -> None:
         """Sets the key from tuple."""
         self.n, self.e = state
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other) -> bool:
         if other is None:
             return False
 
@@ -54,7 +54,7 @@ class PublicKey:
 
         return self.n == other.n and self.e == other.e
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other) -> bool:
         return not self == other
 
     def __hash__(self) -> int:

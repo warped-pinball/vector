@@ -431,7 +431,7 @@ def update_time(retry=1):
 def initialize_timedate():
     update_time(1)
     year, month, day, _, _, _, _, _ = rtc.datetime()
-    print("   Current UTC Date (Y/M/D): ", year, month, day)
+    return f"   Current UTC Date (Y/M/D): {year}/{month}/{day}"
 
 
 MemIndex = 0
@@ -460,18 +460,10 @@ def restart_schedule():
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
-    def make_async(func):
-        if hasattr(func, "__await__"):
-            return func
-
-        async def _wrap_async():
-            func()
-
-        return _wrap_async
-
+    # Note: async function will not print to console
     _scheduled_tasks.append(
         {
-            "func": make_async(func),
+            "func": func,
             "freq": frequency_ms,
             # we need to use time.ticks_add to handle rollover
             "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
@@ -513,6 +505,7 @@ def create_schedule():
     #
     # one time tasks
     #
+    # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
     schedule(displayMessage.refresh, 30000, log="Server: Refresh display message")
 
@@ -523,7 +516,7 @@ def create_schedule():
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource.go, 45000)
+    schedule(resource.go, 4000, 4000, log="Server: Memory Usage")
 
     # initialize the fram
     schedule(fram.initialize, 200)  # TODO might already be taken care of above

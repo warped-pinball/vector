@@ -1,17 +1,8 @@
 # import dma_reg as dma_d
 import time
-from time import sleep
 
 import machine
-import micropython
-import rp2
-import uctypes
-import utime
 from machine import Pin
-
-# import pio_reg as pio_d
-# import pio_prg as pio_prg
-from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
 
 # RESET_OUT pin initializtion
 reset_out = Pin(0, Pin.OUT)

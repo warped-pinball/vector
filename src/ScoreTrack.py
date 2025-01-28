@@ -6,23 +6,13 @@ Score Track
     V0.2 9/7/2024  period after initials handling
     V0.3 11/25/2024 game over fix for high speed
 """
-
-import json
-import os
-
 from machine import RTC
 
 import SharedState
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-    writeCountRam,
-)
+from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
 
@@ -49,7 +39,7 @@ def readMachineScore(index):
         processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
         try:
             initials = processed_initials.decode("ascii")
-        except:
+        except Exception:
             initials = ""
     else:
         initials = ""
@@ -100,7 +90,7 @@ def placeMachineScores():
             initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
             try:
                 scoreBCD = int_to_bcd(top_scores[index]["score"])
-            except:
+            except Exception:
                 print("score convert problem")
                 scoreBCD = int_to_bcd(100)
 
@@ -117,7 +107,7 @@ def placeMachineScores():
                     shadowRam[initial_start + 1] = ascii_to_type3(ord(top_scores[index]["initials"][1]))
                     shadowRam[initial_start + 2] = ascii_to_type3(ord(top_scores[index]["initials"][2]))
 
-            except:
+            except Exception:
                 print("place machine scores eception")
                 shadowRam[initial_start] = 64
                 shadowRam[initial_start + 1] = 64
@@ -322,7 +312,7 @@ def initialize_leaderboard():
 
 def CheckForNewScores(nState=[0]):
     enscorecap = DataStore.read_record("extras", 0)["other"]
-    if bool(enscorecap) != True or S.gdata["HighScores"]["Type"] == 0:
+    if not bool(enscorecap) or S.gdata["HighScores"]["Type"] == 0:
         return
 
     if S.gdata["BallInPlay"]["Type"] in [0, 1]:

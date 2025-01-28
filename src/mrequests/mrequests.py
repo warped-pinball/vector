@@ -148,14 +148,14 @@ class Response:
 
         if self.chunked:
             if self._chunk_size == 0:
-                l = sf.readline().strip()
+                line = sf.readline().strip()
 
-                if not l:
+                if not line:
                     return b""
 
                 # ignore chunk extensions
-                l = l.split(b";", 1)[0]
-                self._chunk_size = max(0, int(l, 16))
+                line = line.split(b";", 1)[0]
+                self._chunk_size = max(0, int(line, 16))
 
                 if self._chunk_size == 0:
                     # End of message
@@ -370,36 +370,36 @@ def request(
                 sf.flush()
 
             resp = response_class(sock, sf, save_headers=save_headers)
-            l = b""
+            line = b""
             while True:
-                l += sf.read(1)
+                line += sf.read(1)
 
-                if l.endswith(b"\r\n") or len(l) > MAX_READ_SIZE:
+                if line.endswith(b"\r\n") or len(line) > MAX_READ_SIZE:
                     break
 
             # print("Response: %s" % l.decode("ascii"))
-            l = l.split(None, 2)
-            resp.status_code = int(l[1])
+            line = line.split(None, 2)
+            resp.status_code = int(line[1])
 
-            if len(l) > 2:
-                resp.reason = l[2].rstrip()
+            if len(line) > 2:
+                resp.reason = line[2].rstrip()
 
             while True:
-                l = sf.readline()
-                if not l or l == b"\r\n":
+                line = sf.readline()
+                if not line or line == b"\r\n":
                     break
 
-                if l.startswith(b"Location:"):
-                    ctx.set_location(resp.status_code, l[9:].strip().decode("ascii"))
+                if line.startswith(b"Location:"):
+                    ctx.set_location(resp.status_code, line[9:].strip().decode("ascii"))
 
                 # print("Header: %r" % l)
-                resp.add_header(l)
+                resp.add_header(line)
         except OSError:
             if not MICROPY:
                 try:
                     sf.close()
                     del sf
-                except:
+                except Exception:
                     pass
             sock.close()
             del sock
@@ -411,7 +411,7 @@ def request(
                 try:
                     sf.close()
                     del sf
-                except:
+                except Exception:
                     pass
             sock.close()
             del sock

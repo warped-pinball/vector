@@ -246,6 +246,9 @@ def download_update(url):
             pass
 
     else:
+        # TODO modify this to use a buffer so we aren't recreating a buffer every loop
+        # https://docs.micropython.org/en/latest/reference/constrained.html
+        # look for buffers
         with open("update.json", "wb") as f:
             while chunk := response.read(1024):
                 f.write(chunk)
@@ -306,17 +309,21 @@ def validate_compatibility():
 
 
 def apply_update(url):
+    from gc import collect as gc_collect
     from time import sleep
 
     yield {"log": f"Downloading update from {url}", "percent": 2}
     # will yield percent updates as it downloads
     yield from download_update(url)
+    gc_collect()
 
     yield {"log": "Validating signature", "percent": 30}
     validate_signature()
+    gc_collect()
 
     yield {"log": "Validating compatibility", "percent": 35}
     validate_compatibility()
+    gc_collect()
 
     yield {"log": "Writing files to board", "percent": 40}
     try:
@@ -333,6 +340,7 @@ def apply_update(url):
                 "percent": 40,
             }
             return
+    gc_collect()
 
     yield {"log": "Update complete, Device will now reboot", "percent": 98}
     yield {

@@ -1,4 +1,3 @@
-import uctypes
 import uos
 
 # from machine import SPI, Pin
