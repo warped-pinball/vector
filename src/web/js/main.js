@@ -587,9 +587,8 @@ async function set_game_name() {
     // call back function to navigate to the selected peer
     const navigateToPeer = async (ip, name) => {
         const currentPage = getCurrentPage();
-        const url = ip + `/?page=${currentPage}`;
+        const url = 'http://' + ip + '/?page=' + currentPage;
         window.location.href = url;
-        window.location.reload();
     };
 
     // make a dropdown of peers with the name displayed and the ip as the value
