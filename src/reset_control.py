@@ -1,4 +1,6 @@
 # reset pin control
+import time
+
 import machine
 from machine import Pin
 

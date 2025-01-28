@@ -15,7 +15,6 @@ BUILD_DIR = "build"
 SOURCE_DIR = "src"
 OUTPUT_FILE = "update.json"
 
-
 # TODO increase reverse compatibility by adding executeable file that downloads a compatible update file,
 # we will need to alert the user somehow that they will need to apply the update again on boot
 

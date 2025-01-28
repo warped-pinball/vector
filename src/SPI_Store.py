@@ -8,7 +8,6 @@
     SYS11Wifi Project
     Dec 2024
 """
-
 import time
 
 import machine

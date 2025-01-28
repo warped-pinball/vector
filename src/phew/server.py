@@ -50,6 +50,20 @@ def urldecode(text):
         result += chr(code)
         token_caret = start + 3
     return result
+    text = text.replace("+", " ")
+    result = ""
+    token_caret = 0
+    # decode any % encoded characters
+    while True:
+        start = text.find("%", token_caret)
+        if start == -1:
+            result += text[token_caret:]
+            break
+        result += text[token_caret:start]
+        code = int(text[start + 1 : start + 3], 16)  # noqa
+        result += chr(code)
+        token_caret = start + 3
+    return result
 
 
 def _parse_query_string(query_string):
@@ -78,11 +92,7 @@ class Request:
             self.query = _parse_query_string(self.query_string)
 
     def __str__(self):
-        return f"""\
-request: {self.method} {self.path} {self.protocol}
-headers: {self.headers}
-form: {self.form}
-data: {self.data}"""
+        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"form: {self.form}", f"data: {self.data}"])
 
 
 class Response:
@@ -132,7 +142,7 @@ class FileResponse(Response):
                 if extension in content_type_map:
                     headers["Content-Type"] = content_type_map[extension]
 
-                headers["Content-Length"] = os.stat(self.file)[6]
+            headers["Content-Length"] = os.stat(self.file)[6]
         except OSError:
             return False
 
@@ -432,7 +442,7 @@ def update_time(retry=1):
 def initialize_timedate():
     update_time(1)
     year, month, day, _, _, _, _, _ = rtc.datetime()
-    return f"   Current UTC Date (Y/M/D): {year}/{month}/{day}"
+    print("   Current UTC Date (Y/M/D): ", year, month, day)
 
 
 MemIndex = 0

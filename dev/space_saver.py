@@ -183,6 +183,7 @@ def main():
 
         # Print header
         print(f"{header_0} {header_1} {header_2} {header_3} {header_4}")
+
         # Print separator
         print(f"{'-'*size_width} {'-'*over_block_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_inefficient_files[4])}")
 

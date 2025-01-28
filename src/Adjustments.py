@@ -11,11 +11,12 @@ import SPI_Store as fram
 from logger import logger_instance as Log
 from Shadow_Ram_Definitions import shadowRam
 
-ADJ_FRAM_START = 0x2100  # to 0x2340
+ADJ_FRAM_START = 0x2100  # to 0x2340 +4
 ADJ_FRAM_RECORD_SIZE = 0x80
 ADJ_NUM_SLOTS = 4
 ADJ_NAMES_START = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
 ADJ_NAMES_LENGTH = 16
+ADJ_LAST_LOADED_ADR = 0x2344
 
 
 def blank_all():
@@ -92,6 +93,9 @@ def restore_adjustments(index, reset=True):
     # will return 0,0 if none found
     cpyStart, cpyEnd = _get_range_from_gamedef()
 
+    # store this one as the last laoded
+    fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
+
     # copy
     if (cpyStart == 0 and cpyEnd == 0) or (cpyEnd - cpyStart) > len(data):
         raise ValueError("No valid range found in game data")
@@ -113,6 +117,7 @@ def restore_adjustments(index, reset=True):
 
     # restart the pinball machine
     reset_control.release()
+
     sleep(4)
 
     # restart the server schedule
@@ -137,6 +142,10 @@ def store_adjustments(index):
         data = shadowRam[cpyStart:cpyEnd]
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
         fram.write(fram_adr, data)
+
+        # store this one as the last 'loaded'
+        fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
+
         # hex_data = " ".join(f"{byte:02X}" for byte in data)
         # print(f"ADR: {fram_adr:04X} DAT: {hex_data}")
 
@@ -148,31 +157,41 @@ def get_active_adjustment():
     """look for acive adjustment profile
     Do not use built in checksum, it is simple and duplicates are common
     (System 9 does not have checksum)
-    return None iff no match, 0-3 if found
+    return None if no match, 0-3 if found
+    in case of two matches use last_loaded number from fram
     """
-    index_match = None
 
     cpyStart, cpyEnd = _get_range_from_gamedef()
     end_address = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
     if cpyStart == 0 or cpyEnd == 0 or end_address == 0:
         return None
 
+    matches = []
     # try to do this 16 bytes at a time for speed - (one SPI read cycle)
     for i in range(4):
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * i
         active_data = shadowRam[cpyStart:end_address]
         match = True
         for offset in range(0, end_address - cpyStart, 16):
-            len = min(16, end_address - cpyStart - offset)
-            stored_data = fram.read(fram_adr + offset, len)
+            length = min(16, end_address - cpyStart - offset)
+            stored_data = fram.read(fram_adr + offset, length)
+
             if stored_data != active_data[offset : offset + 16]:
                 match = False
                 break
         if match:
-            index_match = i
-            break
+            matches.append(i)
 
-    return index_match
+    if not matches:
+        return None
+
+    # If there are multiple matches, use the last loaded index
+    last_loaded_index = fram.read(ADJ_LAST_LOADED_ADR, 1)[0]
+
+    if last_loaded_index in matches:
+        return last_loaded_index
+
+    return matches[0]  # Return the first match if last loaded index is not in matches
 
 
 def is_populated(index):

@@ -10,7 +10,6 @@ def measure_fragmentation():
     total_blocks = fs_stat[2]  # f_blocks
     block_size = fs_stat[0]  # f_frsize
     free_blocks = fs_stat[3]  # f_bfree
-    # avail_blocks = fs_stat[4]  # f_bavail
 
     used_blocks = total_blocks - free_blocks
     total_space = total_blocks * block_size

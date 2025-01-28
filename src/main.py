@@ -6,6 +6,7 @@
     fault check updated for early sys11 game compatability
 """
 
+
 import time
 
 import machine
@@ -20,7 +21,6 @@ from Shadow_Ram_Definitions import shadowRam
 from SPI_Store import sflash_driver_init
 
 Log = logger_instance
-
 
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -130,6 +130,7 @@ if bus_activity_fault:
     Log.log("Main: Reset Circuit fault detected !!")
 
 # load up Game Definitions
+
 if not bus_activity_fault and not ap_mode:
     GameDefsLoad.go()
 else:
