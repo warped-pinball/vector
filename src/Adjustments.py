@@ -84,7 +84,7 @@ def restore_adjustments(index, reset=True):
         return "Fault: Game in Progress"
 
     fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
-    data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)    
+    data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)
 
     # Check the data is not empty
     if not is_populated(index):
@@ -93,7 +93,7 @@ def restore_adjustments(index, reset=True):
     # will return 0,0 if none found
     cpyStart, cpyEnd = _get_range_from_gamedef()
 
-    #store this one as the last laoded
+    # store this one as the last laoded
     fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
 
     # copy
@@ -117,7 +117,8 @@ def restore_adjustments(index, reset=True):
 
     # restart the pinball machine
     reset_control.release()
-    sleep(2)  # TODO should this be longer/else where/ is it nessisary?
+
+    sleep(4)
 
     # restart the server schedule
     from phew.server import restart_schedule
@@ -142,7 +143,7 @@ def store_adjustments(index):
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
         fram.write(fram_adr, data)
 
-        #store this one as the last 'loaded'
+        # store this one as the last 'loaded'
         fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
 
         # hex_data = " ".join(f"{byte:02X}" for byte in data)
@@ -159,7 +160,6 @@ def get_active_adjustment():
     return None if no match, 0-3 if found
     in case of two matches use last_loaded number from fram
     """
-    index_match = None
 
     cpyStart, cpyEnd = _get_range_from_gamedef()
     end_address = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
@@ -175,6 +175,7 @@ def get_active_adjustment():
         for offset in range(0, end_address - cpyStart, 16):
             length = min(16, end_address - cpyStart - offset)
             stored_data = fram.read(fram_adr + offset, length)
+
             if stored_data != active_data[offset : offset + 16]:
                 match = False
                 break
@@ -186,7 +187,7 @@ def get_active_adjustment():
 
     # If there are multiple matches, use the last loaded index
     last_loaded_index = fram.read(ADJ_LAST_LOADED_ADR, 1)[0]
-    
+
     if last_loaded_index in matches:
         return last_loaded_index
 

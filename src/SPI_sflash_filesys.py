@@ -1,4 +1,3 @@
-import uctypes
 import uos
 
 # from machine import SPI, Pin
@@ -13,7 +12,7 @@ try for vfs compatibility with micropython -
 
 import SPI_Store
 
-SPI_Store.initialize()
+SPI_Store.sflash_driver_init()
 
 
 class SerialFlashVFS:

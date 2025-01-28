@@ -6,19 +6,18 @@ __version__ = "0.0.2"
 import gc
 import os
 
-import machine
+# phew! the Pico (or Python) HTTP Endpoint Wrangler
+from . import logging
 
 gc.threshold(50000)
 
-# phew! the Pico (or Python) HTTP Endpoint Wrangler
-from . import logging
 
 # determine if remotely mounted or not, changes some behaviours like
 # logging truncation
 remote_mount = False
 try:
     os.statvfs(".")  # causes exception if remotely mounted (mpremote/pyboard.py)
-except:
+except Exception:
     remote_mount = True
 
 
@@ -27,13 +26,11 @@ def get_ip_address():
 
     try:
         return network.WLAN(network.STA_IF).ifconfig()[0]
-    except:
+    except Exception:
         return None
 
 
 def is_connected_to_wifi():
-    import time
-
     import network
 
     wlan = network.WLAN(network.STA_IF)

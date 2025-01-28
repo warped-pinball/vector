@@ -10,7 +10,6 @@ def measure_fragmentation():
     total_blocks = fs_stat[2]  # f_blocks
     block_size = fs_stat[0]  # f_frsize
     free_blocks = fs_stat[3]  # f_bfree
-    avail_blocks = fs_stat[4]  # f_bavail
 
     used_blocks = total_blocks - free_blocks
     total_space = total_blocks * block_size
@@ -19,7 +18,6 @@ def measure_fragmentation():
 
     # Create a mock of free block sizes, assuming all free space is fragmented into minimum size blocks
     # This is a simplification, as actually determining free block sizes would require direct access to the filesystem
-    min_block_size = block_size  # Assume the minimum block size
     num_free_blocks = free_blocks
     avg_free_block_size = free_space / num_free_blocks if num_free_blocks > 0 else 0
 

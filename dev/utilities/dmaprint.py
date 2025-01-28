@@ -1,17 +1,4 @@
-import _thread
-import json
-import os
-
-import dmaprint
-import machine
-import network
 import uctypes
-import utime
-from uctypes import BF_LEN, BF_POS, BFUINT32, UINT32, struct
-
-import Dma_Registers
-import Memory_Main as MemoryMain
-from phew import access_point, connect_to_wifi, dns, is_connected_to_wifi, server
 
 DMA_BASE = 0x50000000
 DMA_LENGTH = 256  # 0x0AC8
@@ -19,8 +6,8 @@ DmaRam = uctypes.bytearray_at(DMA_BASE, DMA_LENGTH + 32)
 
 
 def printdma():
-    for l in range(0, DMA_LENGTH - 16, 16):
-        for i in range(l, l + 16, 1):
+    for line in range(0, DMA_LENGTH - 16, 16):
+        for i in range(line, line + 16, 1):
             print(" ", hex(DmaRam[i]), end="")
         print(" ")
     print(" ")
@@ -29,9 +16,6 @@ def printdma():
 
 
 def hex_dump_memory(ptr, num):
-    # import ctypes
-
-    s = ""
     n = 0
     lines = []
     data = list((num * uctypes.c_byte).from_address(ptr))

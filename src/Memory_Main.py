@@ -16,13 +16,7 @@ import uctypes
 import SPI_Store as fram
 from displayMessage import fixAdjustmentChecksum
 from logger import logger_instance
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-    writeCountRam,
-)
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
 
 Log = logger_instance
 
@@ -44,7 +38,7 @@ def go():
     print("MEM: SRAM Restored")
 
     print("MEM: checksum")
-    if False == fixAdjustmentChecksum():
+    if not fixAdjustmentChecksum():
         Log.log("MEM: Checksum correction")
 
     # Boot up PIO/DMA Ram Intercept system
@@ -78,7 +72,7 @@ def restore_ram():
             Log.log("MEM: Data restored from file successfully")
         else:
             Log.log("MEM: Restore from file size problem")
-    except Exception as e:
+    except Exception:
         Log.log("MEM: Failed to restore data from file: ")
 
 

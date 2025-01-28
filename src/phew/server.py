@@ -1,6 +1,5 @@
 import gc
 import os
-import resource
 import time
 
 import machine
@@ -8,12 +7,10 @@ import ntptime
 import uasyncio
 from machine import RTC
 
-import displayMessage
 import faults
-import GameStatus
-import SPI_Store as fram
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
+from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
 
@@ -39,6 +36,20 @@ def file_exists(filename):
 
 
 def urldecode(text):
+    text = text.replace("+", " ")
+    result = ""
+    token_caret = 0
+    # decode any % encoded characters
+    while True:
+        start = text.find("%", token_caret)
+        if start == -1:
+            result += text[token_caret:]
+            break
+        result += text[token_caret:start]
+        code = int(text[start + 1 : start + 3], 16)  # noqa
+        result += chr(code)
+        token_caret = start + 3
+    return result
     text = text.replace("+", " ")
     result = ""
     token_caret = 0
@@ -81,11 +92,7 @@ class Request:
             self.query = _parse_query_string(self.query_string)
 
     def __str__(self):
-        return f"""\
-request: {self.method} {self.path} {self.protocol}
-headers: {self.headers}
-form: {self.form}
-data: {self.data}"""
+        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"form: {self.form}", f"data: {self.data}"])
 
 
 class Response:
@@ -135,7 +142,7 @@ class FileResponse(Response):
                 if extension in content_type_map:
                     headers["Content-Type"] = content_type_map[extension]
 
-                headers["Content-Length"] = os.stat(self.file)[6]
+            headers["Content-Length"] = os.stat(self.file)[6]
         except OSError:
             return False
 
@@ -279,98 +286,102 @@ status_message_map = {
 
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
-    response = None
-
-    request_start_time = time.ticks_ms()
-
-    request_line = await reader.readline()
     try:
-        method, uri, protocol = request_line.decode().split()
-    except Exception as e:
-        logging.error(e)
-        return
+        response = None
 
-    request = Request(method, uri, protocol)
-    request.headers = await _parse_headers(reader)
-    if "content-length" in request.headers and "content-type" in request.headers:
-        if request.headers["content-type"].startswith("multipart/form-data"):
-            request.form = await _parse_form_data(reader, request.headers)
-        if request.headers["content-type"].startswith("application/json"):
-            raw_body, parsed_data = await _parse_json_body(reader, request.headers)
-            request.raw_data = raw_body
-            request.data = parsed_data
-        if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
-            form_data = await reader.read(int(request.headers["content-length"]))
-            request.form = _parse_query_string(form_data.decode())
+        request_start_time = time.ticks_ms()
 
-    route = _match_route(request)
-    if route:
-        response = route.call_handler(request)
-    elif catchall_handler:
-        response = catchall_handler(request)
+        request_line = await reader.readline()
+        try:
+            method, uri, protocol = request_line.decode().split()
+        except Exception as e:
+            logging.error(e)
+            return
 
-    # if shorthand body generator only notation used then convert to tuple
-    if type(response).__name__ == "generator":
-        response = (response,)
+        request = Request(method, uri, protocol)
+        request.headers = await _parse_headers(reader)
+        if "content-length" in request.headers and "content-type" in request.headers:
+            if request.headers["content-type"].startswith("multipart/form-data"):
+                request.form = await _parse_form_data(reader, request.headers)
+            if request.headers["content-type"].startswith("application/json"):
+                raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+                request.raw_data = raw_body
+                request.data = parsed_data
+            if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
+                form_data = await reader.read(int(request.headers["content-length"]))
+                request.form = _parse_query_string(form_data.decode())
 
-    # if shorthand body text only notation used then convert to tuple
-    if isinstance(response, str):
-        response = (response,)
+        route = _match_route(request)
+        if route:
+            response = route.call_handler(request)
+        elif catchall_handler:
+            response = catchall_handler(request)
 
-    # if shorthand tuple notation used then build full response object
-    if isinstance(response, tuple):
-        body = response[0]
-        status = response[1] if len(response) >= 2 else 200
-        headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+        # if shorthand body generator only notation used then convert to tuple
+        if type(response).__name__ == "generator":
+            response = (response,)
 
-        # Handle legacy single content type as a string
-        if isinstance(headers, str):
-            headers = {"Content-Type": headers}
+        # if shorthand body text only notation used then convert to tuple
+        if isinstance(response, str):
+            response = (response,)
 
-        response = Response(body, status=status)
+        # if shorthand tuple notation used then build full response object
+        if isinstance(response, tuple):
+            body = response[0]
+            status = response[1] if len(response) >= 2 else 200
+            headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
 
-        # Add all headers
-        for key, value in headers.items():
-            response.add_header(key, value)
+            # Handle legacy single content type as a string
+            if isinstance(headers, str):
+                headers = {"Content-Type": headers}
 
-        if hasattr(body, "__len__"):
-            response.add_header("Content-Length", len(body))
+            response = Response(body, status=status)
 
-    # write status line
-    status_message = status_message_map.get(response.status, "Unknown")
-    writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
+            # Add all headers
+            for key, value in headers.items():
+                response.add_header(key, value)
 
-    # write headers
-    for key, value in response.headers.items():
-        writer.write(f"{key}: {value}\r\n".encode("ascii"))
+            if hasattr(body, "__len__"):
+                response.add_header("Content-Length", len(body))
 
-    # blank line to denote end of headers
-    writer.write("\r\n".encode("ascii"))
+        # write status line
+        status_message = status_message_map.get(response.status, "Unknown")
+        writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
 
-    if isinstance(response, FileResponse):
-        # file
-        with open(response.file, "rb") as f:
-            while True:
-                chunk = f.read(1024)
-                if not chunk:
-                    break
+        # write headers
+        for key, value in response.headers.items():
+            writer.write(f"{key}: {value}\r\n".encode("ascii"))
+
+        # blank line to denote end of headers
+        writer.write("\r\n".encode("ascii"))
+
+        if isinstance(response, FileResponse):
+            # file
+            with open(response.file, "rb") as f:
+                while True:
+                    chunk = f.read(1024)
+                    if not chunk:
+                        break
+                    writer.write(chunk)
+                    await writer.drain()
+        elif type(response.body).__name__ == "generator":
+            # generator
+            for chunk in response.body:
                 writer.write(chunk)
                 await writer.drain()
-    elif type(response.body).__name__ == "generator":
-        # generator
-        for chunk in response.body:
-            writer.write(chunk)
+        else:
+            # string/bytes
+            writer.write(response.body)
             await writer.drain()
-    else:
-        # string/bytes
-        writer.write(response.body)
-        await writer.drain()
 
-    writer.close()
-    await writer.wait_closed()
+        writer.close()
+        await writer.wait_closed()
 
-    processing_time = time.ticks_ms() - request_start_time
-    logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
+        processing_time = time.ticks_ms() - request_start_time
+        logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
+    except Exception as e:
+        # last line of defense to keep server from crashing
+        logging.error(f"Error handling request: {e}")
 
 
 # adds a new route to the routing table
@@ -438,10 +449,11 @@ MemIndex = 0
 poll_counter = 0
 
 
+# TODO this should live in SPI_Store
 async def copy_to_fram():
     global MemIndex
 
-    fram.write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
+    write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
     MemIndex = MemIndex + 16
 
     if MemIndex >= SRAM_DATA_LENGTH:
@@ -460,18 +472,10 @@ def restart_schedule():
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
-    def make_async(func):
-        if hasattr(func, "__await__"):
-            return func
-
-        async def _wrap_async():
-            func()
-
-        return _wrap_async
-
+    # Note: async function will not print to console
     _scheduled_tasks.append(
         {
-            "func": make_async(func),
+            "func": func,
             "freq": frequency_ms,
             # we need to use time.ticks_add to handle rollover
             "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
@@ -510,11 +514,19 @@ async def run_scheduled():
 
 
 def create_schedule():
+    from resource import go as resource_go
+
+    from discovery import DEVICE_TIMEOUT, announce, listen
+    from discovery import setup as discovery_setup
+    from displayMessage import refresh
+    from GameStatus import poll_fast
+
     #
     # one time tasks
     #
+    # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
-    schedule(displayMessage.refresh, 30000, log="Server: Refresh display message")
+    schedule(refresh, 30000, log="Server: Refresh display message")
 
     # initialize the time and date 5 seconds after boot
     schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
@@ -523,19 +535,22 @@ def create_schedule():
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource.go, 45000)
+    schedule(resource_go, 5000, 10000, log="Server: Memory Usage")
 
     # initialize the fram
-    schedule(fram.initialize, 200)  # TODO might already be taken care of above
+    schedule(sflash_driver_init, 200)
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
 
+    # initialize the discovery service
+    schedule(discovery_setup, 2000)
+
     #
     # reoccuring tasks
     #
-    # update the game status every 0.5 second
-    schedule(GameStatus.poll_fast, 0, 250)
+    # update the game status every 0.25 second
+    schedule(poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
@@ -547,6 +562,12 @@ def create_schedule():
 
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 1000)
+
+    # every 1/2 of DEVICE_TIMEOUT announce our presence
+    schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
+
+    # every 1/20 of DEVICE_TIMEOUT listen for others
+    schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
 
     restart_schedule()
 

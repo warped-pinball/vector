@@ -175,10 +175,15 @@ def main():
             max((len(f"{f['wasted_percentage']:.2f}%") for f in files_list), default=0),
         )
 
+        header_0 = f"{headers_inefficient_files[0]:<{size_width}}"
+        header_1 = f"{headers_inefficient_files[1]:<{over_block_width}}"
+        header_2 = f"{headers_inefficient_files[2]:<{loss_width}}"
+        header_3 = f"{headers_inefficient_files[3]:<{percent_width}}"
+        header_4 = headers_inefficient_files[4]
+
         # Print header
-        print(
-            f"{headers_inefficient_files[0]:<{size_width}} {headers_inefficient_files[1]:<{over_block_width}} {headers_inefficient_files[2]:<{loss_width}} {headers_inefficient_files[3]:<{percent_width}} {headers_inefficient_files[4]}"
-        )
+        print(f"{header_0} {header_1} {header_2} {header_3} {header_4}")
+
         # Print separator
         print(f"{'-'*size_width} {'-'*over_block_width} {'-'*loss_width} {'-'*percent_width} {'-'*len(headers_inefficient_files[4])}")
 

@@ -7,7 +7,7 @@ def find_max_alloc():
     step = 1024  # Start with 1 KB steps
     while True:
         try:
-            test_block = bytearray(max_size + step)
+            _ = bytearray(max_size + step)
             max_size += step
         except MemoryError:
             break

@@ -5,17 +5,8 @@
 display message handling (custom message shown on the pinball machine display)
 """
 
-import json
-
-import uctypes
-
 import SharedState as S
-from Shadow_Ram_Definitions import (
-    SRAM_COUNT_BASE,
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-)
+from Shadow_Ram_Definitions import shadowRam
 
 localCopyIp = 0
 
@@ -132,7 +123,7 @@ def set(ipAddress):
             msg[4] = msg[2]
             msg[5] = msg[3]
             set_mem(msg)
-        except:
+        except Exception:
             print("MSG: Failure in set ip")
 
     elif S.gdata["DisplayMessage"]["Type"] == 2:  # 2 display modules
@@ -169,22 +160,22 @@ def set(ipAddress):
 # set up display for ipaddress - get ip copied to local
 #
 def init(ipAddress):
-    global localCopyIp
-    localCopyIp = ipAddress
-    set(localCopyIp)
+    S.ipAddress = ipAddress
+    set(ipAddress)
+
     return
 
 
 def refresh():
-    global localCopyIp
     if S.gdata["HSRewards"]["Type"] == 1:
         # temp patch in here - set high score rewards to 0
         shadowRam[S.gdata["HSRewards"]["HS1"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
-    init(localCopyIp)
-    print("display message refreshed ", localCopyIp)
+
+    init(S.ipAddress)
+    print("display message refreshed ", S.ipAddress)
     return
 
 

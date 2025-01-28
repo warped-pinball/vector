@@ -8,20 +8,13 @@
     SYS11Wifi Project
     Dec 2024
 """
-import sys
 import time
 
 import machine
 import uctypes
-import ustruct
 from machine import SPI
 
-from Shadow_Ram_Definitions import (
-    SRAM_DATA_BASE,
-    SRAM_DATA_LENGTH,
-    shadowRam,
-    writeCountRam,
-)
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 # from logger import logger_instance  <<the logger uses this driver, cant really be imported here
 # Log = logger_instance
@@ -361,21 +354,21 @@ def _sflash_mem_write(spi, cs, address, data):
 
 def sflash_read(address, nbytes=16):
     global sflash_is_on_board
-    if sflash_is_on_board == False:
+    if not sflash_is_on_board:
         return bytearray(0)
     return _sflash_mem_read(spi, cs, address, nbytes)
 
 
 def sflash_write(address, data, wait=False):
     global sflash_is_on_board
-    if sflash_is_on_board == False:
+    if not sflash_is_on_board:
         return
     return _sflash_mem_write(spi, cs, address, data)
 
 
 def sflash_sector_erase(sector_address):
     global sflash_is_on_board
-    if sflash_is_on_board == False:
+    if not sflash_is_on_board:
         return
     if sflash_is_ready() is False:
         return "ready fault"
@@ -405,7 +398,7 @@ def sflash_sector_erase(sector_address):
 # one block can slecet no wait
 def sflash_erase(start_block_address, end_block_address=0, wait=False):
     global sflash_is_on_board
-    if sflash_is_on_board == False:
+    if not sflash_is_on_board:
         return
 
     start_block_address &= 0xFFFF0000
@@ -426,7 +419,7 @@ def sflash_erase(start_block_address, end_block_address=0, wait=False):
 # check for ready status
 def sflash_is_ready():
     global sflash_is_on_board
-    if sflash_is_on_board == False:
+    if not sflash_is_on_board:
         return True
 
     sr = _sflash_reg_read(spi, cs, SFLASH_RDSR)
@@ -449,8 +442,10 @@ def sflash_wait_for_ready(timeout=120):
 def sflash_protect_sectors(start_address, end_address, protect="on"):
     block_size = 0x10000  # 64K blocks
     sector_size = 0x1000  # 4K sectors
-    first_block_address = 0x0000000
-    last_block_address = 0x1FF0000
+
+    # these were unused so I commented them out
+    # first_block_address = 0x0000000
+    # last_block_address = 0x1FF0000
 
     if protect == "on":
         data_byte = 0xFF
@@ -505,7 +500,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
 
 
 # init flash chip
-def sflash_init():
+def sflash_driver_init():
     global sflash_is_on_board
 
     # Confirm chip id
@@ -535,16 +530,6 @@ def sflash_init():
 
 
 #
-# Initialize Sysytem!   - Enable and prep spi fram and serial flash
-#
-def initialize():
-    # init flash chip if it is there
-    sflash_init()
-
-    # check fram?, version?
-
-
-#
 # get system versions
 #         (module version:fram type:serial flash type)
 def version():
@@ -557,7 +542,7 @@ def version():
 
 
 def test():
-    initialize()
+    sflash_driver_init()
     print("ready?", sflash_is_ready())
     print("V", version())
 
