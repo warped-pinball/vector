@@ -298,9 +298,9 @@ def validate_compatibility():
     except Exception:
         pass
 
-    from SPI_Store import sflash_init, sflash_is_on_board
+    from SPI_Store import sflash_driver_init, sflash_is_on_board
 
-    sflash_init()
+    sflash_driver_init()
     if sflash_is_on_board:
         hardware = "vector_v5"
 

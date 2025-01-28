@@ -533,7 +533,7 @@ def test():
         print("\nOldest Verrsion number in storage now (index,version):")
         print(_find_oldest_version_program_block())
 
-    SPI_Store.initialize()
+    SPI_Store.sflash_driver_init()
     initialize()
     print_all_status()
 

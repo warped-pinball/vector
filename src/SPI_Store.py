@@ -501,7 +501,7 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
 
 
 # init flash chip
-def sflash_init():
+def sflash_driver_init():
     global sflash_is_on_board
 
     # Confirm chip id
@@ -531,16 +531,6 @@ def sflash_init():
 
 
 #
-# Initialize Sysytem!   - Enable and prep spi fram and serial flash
-#
-def initialize():
-    # init flash chip if it is there
-    sflash_init()
-
-    # check fram?, version?
-
-
-#
 # get system versions
 #         (module version:fram type:serial flash type)
 def version():
@@ -553,7 +543,7 @@ def version():
 
 
 def test():
-    initialize()
+    sflash_driver_init()
     print("ready?", sflash_is_ready())
     print("V", version())
 

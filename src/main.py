@@ -17,7 +17,7 @@ import reset_control
 import SharedState as S
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
-from SPI_Store import initialize as initialize_spi_store
+from SPI_Store import sflash_driver_init
 
 Log = logger_instance
 
@@ -119,7 +119,7 @@ This work is licensed under CC BY-NC 4.0
 """
 )
 
-initialize_spi_store()
+sflash_driver_init()
 
 ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check()

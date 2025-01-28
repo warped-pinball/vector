@@ -10,7 +10,7 @@ from machine import RTC
 import faults
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-from SPI_Store import initialize, write_16_fram
+from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
 
@@ -528,7 +528,7 @@ def create_schedule():
     schedule(resource_go, 5000, 10000, log="Server: Memory Usage")
 
     # initialize the fram
-    schedule(initialize, 200)  # TODO might already be taken care of above
+    schedule(sflash_driver_init, 200)
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
@@ -539,7 +539,7 @@ def create_schedule():
     #
     # reoccuring tasks
     #
-    # update the game status every 0.5 second
+    # update the game status every 0.25 second
     schedule(poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
