@@ -113,7 +113,7 @@ def restore_adjustments(index, reset=True):
 
     # restart the pinball machine
     reset_control.release()
-    sleep(2)  # TODO should this be longer/else where/ is it nessisary?
+    sleep(4)
 
     # restart the server schedule
     from phew.server import restart_schedule
