@@ -344,6 +344,10 @@ async function checkForUpdates() {
 		// link to release notes in text
 		const releaseNotes = document.getElementById('release-notes');
 		try {
+			// check that the release notes are available
+			if (!data['html_url'] || !data['tag_name']) {
+				throw new Error('No release notes available');
+			}
 			releaseNotes.href = data['html_url'];
 			releaseNotes.textContent = 'Release Notes for ' + data['tag_name'];
 		} catch (e) {
