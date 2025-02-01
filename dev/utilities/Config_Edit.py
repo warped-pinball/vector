@@ -10,7 +10,7 @@ def read_configuration():
 def edit_configuration(config):
     print("Current Configuration:")
     for key, value in reversed(list(config.items())):
-        print(f"{key}: {value}")
+        print(f"{key}: ({value})")
 
     print("\nEnter new values (type '-' to keep current value):")
     for key in reversed(list(config.keys())):

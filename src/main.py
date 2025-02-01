@@ -119,7 +119,6 @@ This work is licensed under CC BY-NC 4.0
 """
 )
 
-sflash_driver_init()
 
 ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check()
@@ -149,6 +148,7 @@ if not bus_activity_fault:
         time.sleep(2)
         reset_control.release(True)
 
+sflash_driver_init()
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa
