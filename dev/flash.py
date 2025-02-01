@@ -180,6 +180,7 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
 
 
 def main():
+    # TODO hook up these arguments
     parser = argparse.ArgumentParser(description="Flash an already-built project directory to the Pico.")
     parser.add_argument(
         "build_dir",
