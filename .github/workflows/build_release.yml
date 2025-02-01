@@ -114,7 +114,7 @@ jobs:
 
       # Always upload update.json as an artifact for debugging or future reference.
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pico-update
           path: update.json
