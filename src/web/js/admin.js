@@ -25,12 +25,12 @@ function confirmAction(message, callback, cancelCallback=null) {
 		callback();
 	};
 
-	if (cancelCallback) {
-		cancelButton.onclick = () => {
-			modal.close();
+	cancelButton.onclick = () => {
+		modal.close();
+		if (cancelCallback) {
 			cancelCallback();
-		};
-	}
+		}
+	};
 
 	modal.showModal();
 }
