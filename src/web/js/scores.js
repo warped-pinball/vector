@@ -1,247 +1,319 @@
-// Observe the html[data-theme] attribute and update the top row theme accordingly
-function observeThemeChanges(tableId) {
-    const htmlElement = document.documentElement;
-    const observer = new MutationObserver(() => {
-        updateTopRowTheme(tableId);
-    });
-    observer.observe(htmlElement, { attributes: true, attributeFilter: ['data-theme'] });
-}
+/* scores.js */
 
-// Update the theme of the top row based on the opposite of the current html theme
-function updateTopRowTheme(tableId) {
-    const htmlTheme = document.documentElement.getAttribute("data-theme") || "light";
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    const tbody = table.getElementsByTagName('tbody')[0];
-    if (!tbody) return;
+// Global variable for the current auto-refresh interval
+window.currentRefreshIntervalId = null;
 
-    // Clear any theme attributes first
-    Array.from(tbody.rows).forEach(row => row.removeAttribute("data-theme"));
-
-    // Apply opposite theme to the first row if it exists
-    const firstRow = tbody.rows[0];
-    if (firstRow) {
-        const oppositeTheme = (htmlTheme === "dark") ? "light" : "dark";
-        firstRow.setAttribute("data-theme", oppositeTheme);
-    }
-}
-
-// Render the table with given data, columns, sorting, etc.
-function renderTable(tableId, data, columns, sortColumnIndex, sortDirection, minRows = 4) {
-    const table = document.getElementById(tableId);
-    if (!table) {
-        console.error("Table not found:", tableId);
-        return;
-    }
-    const tableBody = table.getElementsByTagName('tbody')[0];
-    tableBody.innerHTML = '';
-
-    // Sort the data if requested
-    // Determine the key to sort by
-    const sortKey = columns[sortColumnIndex]?.key;
+/*
+ * Function: renderArticleList
+ * Renders an array of data items as <article> rows into a given container.
+ * Each article gets child <div> cells with class names matching the column keys.
+ */
+window.renderArticleList = function(containerId, data, columns, sortColumnIndex, sortDirection) {
+    var sortKey = columns[sortColumnIndex] ? columns[sortColumnIndex].key : null;
     if (sortKey) {
-        data.sort((a, b) => {
-            const aVal = a[sortKey];
-            const bVal = b[sortKey];
-
-            // Decide on sort behavior: if numeric, compare as number; else compare as string
-            const aNum = parseFloat(aVal);
-            const bNum = parseFloat(bVal);
-            let comparison = 0;
-
+        data.sort(function(a, b) {
+            var aVal = a[sortKey];
+            var bVal = b[sortKey];
+            var aNum = parseFloat(aVal);
+            var bNum = parseFloat(bVal);
+            var comparison = 0;
             if (!isNaN(aNum) && !isNaN(bNum)) {
                 comparison = aNum - bNum;
             } else {
-                const aStr = (aVal || '').toString();
-                const bStr = (bVal || '').toString();
-                comparison = aStr.localeCompare(bStr, undefined, {numeric: true, sensitivity: 'base'});
+                var aStr = (aVal || '').toString();
+                var bStr = (bVal || '').toString();
+                comparison = aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: 'base' });
             }
-
             return sortDirection === 'asc' ? comparison : -comparison;
         });
     }
 
-    // Create rows for the actual data
-    data.forEach((item, index) => {
-        const row = tableBody.insertRow();
-        columns.forEach(col => {
-            let cellValue = item[col.key] !== undefined ? item[col.key] : "";
+    var container = document.getElementById(containerId);
+    if (!container) {
+        return;
+    }
+    container.innerHTML = '';
+    data.forEach(function(item) {
+        var articleRow = document.createElement('article');
+        articleRow.classList.add('score-row');
+        columns.forEach(function(col) {
+            var cellValue = item[col.key] !== undefined ? item[col.key] : "";
             if (typeof cellValue === 'number' && cellValue.toLocaleString) {
                 cellValue = cellValue.toLocaleString();
             }
-            const cell = row.insertCell();
-            cell.innerText = cellValue;
+            var cellDiv = document.createElement('div');
+            cellDiv.classList.add(col.key);
+            cellDiv.innerText = cellValue;
+            articleRow.appendChild(cellDiv);
         });
+        container.appendChild(articleRow);
     });
+};
 
-    // Update the top row theme after rendering
-    updateTopRowTheme(tableId);
-}
-
-// This function updates the table given pre-fetched data
-function updateTableWithData(tableId, data, columns, sortColumnIndex = 0, sortDirection = 'asc', minRows = 4) {
-    renderTable(tableId, data, columns, sortColumnIndex, sortDirection, minRows);
-}
-
-// This function fetches data from the endpoint and then updates the table
-async function fetchDataAndUpdateTable(tableId, endpoint, columns, sortColumnIndex = 0, sortDirection = 'asc', minRows = 4) {
-    // Try using cached data first
-    const cachedData = JSON.parse(localStorage.getItem(endpoint));
-    if (cachedData) {
-        updateTableWithData(tableId, cachedData, columns, sortColumnIndex, sortDirection, minRows);
-    }
-
-    // Fetch fresh data
-    try {
-        const response = await fetch(endpoint);
-        if (!response.ok) {
-            console.warn(`Failed to fetch data from ${endpoint}: ${response.statusText}`);
-            return;
-        }
-        const data = await response.json();
-        localStorage.setItem(endpoint, JSON.stringify(data));
-        updateTableWithData(tableId, data, columns, sortColumnIndex, sortDirection, minRows);
-    } catch (error) {
-        console.error(`Failed to load data for ${tableId} from ${endpoint}:`, error);
-    }
-}
-
-// Example usage functions
-function updateLeaderboard() {
-    const leaderboardColumns = [
+/*
+ * Function: updateLeaderboardArticles
+ * Fetches leaderboard data from the API and renders it as articles.
+ */
+window.updateLeaderboardArticles = function() {
+    var leaderboardColumns = [
         { header: "Rank", key: "rank" },
         { header: "Score", key: "score" },
         { header: "Initials", key: "initials" },
-        { header: "Full Name", key: "full_name" },
+        { header: "Full Name", key: "name" },
         { header: "Date", key: "date" }
     ];
-    fetchDataAndUpdateTable('leaderboardTable', '/api/leaders', leaderboardColumns, 1, 'desc', 4);
-}
 
-function updateTournament() {
-    const tournamentColumns = [
+    var container = document.getElementById("leaderboardArticles");
+    if (!container) {
+        if (window.currentRefreshIntervalId) {
+            clearInterval(window.currentRefreshIntervalId);
+            window.currentRefreshIntervalId = null;
+        }
+        return;
+    }
+
+    fetch('/api/leaders')
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error("Network response was not ok: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            localStorage.setItem('/api/leaders', JSON.stringify(data));
+            window.renderArticleList("leaderboardArticles", data, leaderboardColumns, 1, 'desc');
+        })
+        .catch(function(error) {
+            console.error("Error fetching leaderboard data:", error);
+        });
+};
+
+/*
+ * Function: updateTournamentArticles
+ * Fetches tournament data from the API and renders it as articles.
+ */
+window.updateTournamentArticles = function() {
+    var tournamentColumns = [
         { header: "Game #", key: "game" },
         { header: "Rank", key: "rank" },
         { header: "Score", key: "score" },
-        { header: "Initials", key: "initials" },
+        { header: "Initials", key: "initials" }
     ];
-    fetchDataAndUpdateTable('tournamentTable', '/api/tournament', tournamentColumns, 1, 'desc', 4);
-}
 
-function updatePersonal() {
-    const player_id = document.getElementById('players').value;
+    var container = document.getElementById("tournamentArticles");
+    if (!container) {
+        if (window.currentRefreshIntervalId) {
+            clearInterval(window.currentRefreshIntervalId);
+            window.currentRefreshIntervalId = null;
+        }
+        return;
+    }
+
+    fetch('/api/tournament')
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error("Network response was not ok: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            localStorage.setItem('/api/tournament', JSON.stringify(data));
+            window.renderArticleList("tournamentArticles", data, tournamentColumns, 1, 'desc');
+        })
+        .catch(function(error) {
+            console.error("Error fetching tournament data:", error);
+        });
+};
+
+/*
+ * Function: updatePersonalArticles
+ * Fetches personal score data for the selected player and renders it as articles.
+ */
+window.updatePersonalArticles = function() {
+    var playerSelect = document.getElementById('players');
+    if (!playerSelect) {
+        if (window.currentRefreshIntervalId) {
+            clearInterval(window.currentRefreshIntervalId);
+            window.currentRefreshIntervalId = null;
+        }
+        return;
+    }
+    var player_id = playerSelect.value;
     if (!player_id) return;
 
-    const personalColumns = [
+    var personalColumns = [
         { header: "Score", key: "score" },
         { header: "Date", key: "date" }
     ];
 
-    fetchDataAndUpdateTable('personalTable', `/api/player/scores?id=${player_id}`, personalColumns, 0, 'desc', 4);
-    const player_name = document.getElementById('players').selectedOptions[0].text;
-    document.getElementById('personal_scoreboard_caption').innerText = `personal_${player_name}`;
-}
-
-// Load players for dropdown
-async function loadPlayers(data) {
-    const players = Object.entries(data)
-        .filter(([ , player]) => player.name.trim() !== '' || player.initials.trim() !== '')
-        .sort(([, a], [, b]) => a.name.localeCompare(b.name));
-
-    const playersSelect = document.getElementById('players');
-    playersSelect.innerHTML = '';
-    players.forEach(player => {
-        const option = document.createElement('option');
-        option.value = player[0];
-        option.text = player[1].name + " " + (player[1].initials ? `(${player[1].initials})` : '');
-        playersSelect.appendChild(option);
-    });
-
-    if (players.length > 0) {
-        playersSelect.value = players[0][0];
-        updatePersonal()
+    var container = document.getElementById("personalArticles");
+    if (!container) {
+        if (window.currentRefreshIntervalId) {
+            clearInterval(window.currentRefreshIntervalId);
+            window.currentRefreshIntervalId = null;
+        }
+        return;
     }
 
-    playersSelect.addEventListener('change', async function () {
-        updatePersonal()
-    });
-}
-
-// Initial fetch to populate the player form
-fetch('/api/players')
-    .then(response => response.json())
-    .then(data => loadPlayers(data))
-    .catch(error => console.error('Error fetching player data:', error));
-
-// Auto-refresh intervals
-try {
-    const leaderboardIntervalId = setInterval(updateLeaderboard, 60000); // Update every minute
-    const tournamentIntervalId = setInterval(updateTournament, 60000); // Update every minute
-    const personalIntervalId = setInterval(updatePersonal, 60000); // Update every minute
-
-    // Store interval IDs globally so we can clear them later if needed
-    window.leaderboardIntervalId = leaderboardIntervalId;
-    window.tournamentIntervalId = tournamentIntervalId;
-    window.personalIntervalId = personalIntervalId;
-} catch (error) {
-    console.log('intervals already defined');
-}
-updateLeaderboard();
-updateTournament();
-updatePersonal();
-
-// Cleanup function to clear intervals when needed
-window.cleanupTables = function() {
-    clearInterval(window.leaderboardIntervalId);
-    clearInterval(window.tournamentIntervalId);
-    clearInterval(window.personalIntervalId);
+    fetch('/api/player/scores?id=' + player_id)
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error("Network response was not ok: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
+            window.renderArticleList("personalArticles", data, personalColumns, 0, 'desc');
+        })
+        .catch(function(error) {
+            console.error("Error fetching personal scores:", error);
+        });
 };
 
-// Toggle table visibility
-function toggleTable(tableId) {
-    document.getElementById('leaderboardContainer').style.display = 'none';
-    document.getElementById('tournamentContainer').style.display = 'none';
-    document.getElementById('personalContainer').style.display = 'none';
-
-    const selectedContainer = document.getElementById(tableId + 'Container');
-    if (selectedContainer) {
-        selectedContainer.style.display = 'block';
-        if (tableId === 'leaderboardTable') updateLeaderboard();
-        else if (tableId === 'tournamentTable') updateTournament();
-        else if (tableId === 'personalTable') updatePersonal();
-    } else {
-        console.error("Container not found for tableId:", tableId);
+/*
+ * Function: loadPlayers
+ * Loads player data into the personal board dropdown and sets up a change listener.
+ */
+window.loadPlayers = function(data) {
+    var players = Object.entries(data)
+        .filter(function(entry) {
+            var player = entry[1];
+            return player.name.trim() !== '' || player.initials.trim() !== '';
+        })
+        .sort(function(a, b) {
+            return a[1].name.localeCompare(b[1].name);
+        });
+    var playersSelect = document.getElementById('players');
+    if (!playersSelect) {
+        return;
     }
-
-    const buttons = document.querySelectorAll('#score-board-nav button');
-    buttons.forEach(button => button.classList.remove('contrast'));
-    const activeButton = document.querySelector(`button[onclick="toggleTable('${tableId}')"]`);
-    if (activeButton) {
-        activeButton.classList.add('contrast');
-    } else {
-        console.error("Button not found for tableId:", tableId);
+    playersSelect.innerHTML = '';
+    players.forEach(function(entry) {
+        var id = entry[0];
+        var player = entry[1];
+        var option = document.createElement('option');
+        option.value = id;
+        option.text = player.name + (player.initials ? " (" + player.initials + ")" : "");
+        playersSelect.appendChild(option);
+    });
+    if (players.length > 0) {
+        playersSelect.value = players[0][0];
+        window.updatePersonalArticles();
     }
-}
+    playersSelect.addEventListener('change', function() {
+        window.updatePersonalArticles();
+    });
+};
 
-window.toggleTable = toggleTable;
+/*
+ * Auto-Refresh Mechanism:
+ * Only the currently visible board is auto-refreshed every 60 seconds.
+ */
+var refreshFunctions = {
+    "leader-board": window.updateLeaderboardArticles,
+    "tournament-board": window.updateTournamentArticles,
+    "personal-board": window.updatePersonalArticles
+};
 
-// Show tab
-function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
+window.startAutoRefreshForTab = function(tabId) {
+    if (window.currentRefreshIntervalId) {
+        clearInterval(window.currentRefreshIntervalId);
+        window.currentRefreshIntervalId = null;
+    }
+    var containerId = "";
+    if (tabId === "leader-board") containerId = "leaderboardArticles";
+    else if (tabId === "tournament-board") containerId = "tournamentArticles";
+    else if (tabId === "personal-board") containerId = "personalArticles";
+
+    var container = document.getElementById(containerId);
+    if (!container) {
+        return;
+    }
+    var refreshFn = refreshFunctions[tabId];
+    window.currentRefreshIntervalId = setInterval(function() {
+        var currentContainer = document.getElementById(containerId);
+        if (currentContainer) {
+            refreshFn();
+        } else {
+            clearInterval(window.currentRefreshIntervalId);
+            window.currentRefreshIntervalId = null;
+        }
+    }, 60000);
+};
+
+/*
+ * Function: showTab
+ * Hides all tabs, shows the selected tab, updates active button styling,
+ * immediately updates the tab’s data, and starts auto-refresh for it.
+ */
+window.showTab = function(tabId) {
+    // Hide all tab contents
+    var tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(function(tab) {
         tab.classList.remove('active');
     });
+    // Show the selected tab
+    var selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    // Update active button styling
+    var buttons = document.querySelectorAll('#score-board-nav button');
+    buttons.forEach(function(button) {
+        button.classList.remove('contrast');
+    });
+    var activeButton = document.querySelector('button[onclick="window.showTab(\'' + tabId + '\')"]');
+    if (activeButton) {
+        activeButton.classList.add('contrast');
+    }
+    // Immediately update the visible tab’s data
+    if (tabId === "leader-board") {
+        window.updateLeaderboardArticles();
+    } else if (tabId === "tournament-board") {
+        window.updateTournamentArticles();
+    } else if (tabId === "personal-board") {
+        window.updatePersonalArticles();
+    }
+    // Start auto-refresh for the visible tab
+    window.startAutoRefreshForTab(tabId);
+};
 
-    document.getElementById(tabId).classList.add('active');
+/*
+ * Function: cleanupRefreshes
+ * Clears any active auto-refresh interval.
+ */
+window.cleanupRefreshes = function() {
+    if (window.currentRefreshIntervalId) {
+        clearInterval(window.currentRefreshIntervalId);
+        window.currentRefreshIntervalId = null;
+    }
+};
 
-    document.querySelectorAll('#score-board-nav button').forEach(
-        button => button.classList.remove('contrast')
-    );
-    const activeButton = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
-    if (activeButton) activeButton.classList.add('contrast');
-}
-
-// Begin observing theme changes for tables that need it
-// Add any table IDs here that should re-check their first row theme upon theme changes
-observeThemeChanges('leaderboardTable');
-observeThemeChanges('tournamentTable');
-observeThemeChanges('personalTable');
+/*
+ * Polling for Elements:
+ * Since the DOM load events aren’t reliably detected in your setup,
+ * we poll until the main leaderboard element becomes available.
+ * Once it is, we immediately pull the leaderboard (the default),
+ * start auto-refresh, and load the players.
+ */
+(function pollForElements() {
+    if (document.getElementById("leaderboardArticles") && document.getElementById("score-board-nav")) {
+        // Default to the leaderboard
+        window.updateLeaderboardArticles();
+        window.startAutoRefreshForTab("leader-board");
+        // Load the players for the personal board dropdown
+        fetch('/api/players')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                window.loadPlayers(data);
+            })
+            .catch(function(error) {
+                console.error("Error fetching players:", error);
+            });
+    } else {
+        setTimeout(pollForElements, 100);
+    }
+})();
