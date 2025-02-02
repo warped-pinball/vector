@@ -1,7 +1,7 @@
 from micropython import const
 
 # TODO use const else where
-WarpedVersion = const("0.4.2")
+WarpedVersion = const("0.4.3")
 WarpedCodeBase = const("SYSTEM11")
 
 # true false - tournament mode
