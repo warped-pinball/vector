@@ -59,7 +59,7 @@ window.updateLeaderboardArticles = function() {
         { header: "Rank", key: "rank" },
         { header: "Score", key: "score" },
         { header: "Initials", key: "initials" },
-        { header: "Full Name", key: "name" },
+        { header: "Full Name", key: "full_name" },
         { header: "Date", key: "date" }
     ];
 
@@ -142,8 +142,11 @@ window.updatePersonalArticles = function() {
     if (!player_id) return;
 
     var personalColumns = [
+        { header: "Rank", key: "rank" },
         { header: "Score", key: "score" },
-        { header: "Date", key: "date" }
+        { header: "Date", key: "date" },
+        { header: "Initials", key: "initials" },
+        { header: "Name", key: "full_name" }
     ];
 
     var container = document.getElementById("personalArticles");
@@ -164,7 +167,7 @@ window.updatePersonalArticles = function() {
         })
         .then(function(data) {
             localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
-            window.renderArticleList("personalArticles", data, personalColumns, 0, 'desc');
+            window.renderArticleList("personalArticles", data, personalColumns, 1, 'desc');
         })
         .catch(function(error) {
             console.error("Error fetching personal scores:", error);
