@@ -513,7 +513,7 @@ async def run_scheduled():
             await uasyncio.sleep_ms(delay)
 
 
-def create_schedule():
+def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from discovery import DEVICE_TIMEOUT, announce, listen
@@ -528,9 +528,6 @@ def create_schedule():
     # set the display message 30 seconds after boot
     schedule(refresh, 30000, log="Server: Refresh display message")
 
-    # initialize the time and date 5 seconds after boot
-    schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
-
     # initialize the leader board 10 seconds after boot
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
@@ -542,9 +539,6 @@ def create_schedule():
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
-
-    # initialize the discovery service
-    schedule(discovery_setup, 2000)
 
     #
     # reoccuring tasks
@@ -563,23 +557,31 @@ def create_schedule():
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 1000)
 
-    # every 1/2 of DEVICE_TIMEOUT announce our presence
-    schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
+    # non AP mode only tasks
+    if not ap_mode:
+        # initialize the discovery service
+        schedule(discovery_setup, 2000)
 
-    # every 1/20 of DEVICE_TIMEOUT listen for others
-    schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
+        # every 1/2 of DEVICE_TIMEOUT announce our presence
+        schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
+
+        # every 1/20 of DEVICE_TIMEOUT listen for others
+        schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
+
+        # initialize the time and date 5 seconds after boot
+        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
 
     restart_schedule()
 
 
-def run(host="0.0.0.0", port=80):
+def run(ap_mode: bool, host="0.0.0.0", port=80):
     logging.info("> starting web server on port {}".format(port))
     loop.create_task(
         # TODO backlog is number of connections that can be queued. experiment with larger numbers
         uasyncio.start_server(_handle_request, host, port, backlog=5)
     )
 
-    create_schedule()
+    create_schedule(ap_mode)
     loop.create_task(run_scheduled())
 
     print("Server: Loop Forever")
