@@ -1,3 +1,6 @@
+# TODO support version ranges
+
+
 class Version:
     def __init__(self, major: int, minor: int, patch: int, candidate=None):
         self.major = major
