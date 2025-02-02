@@ -518,6 +518,10 @@ def app_updatePlayer(request):
 @add_route("/api/player/scores")
 def app_getScores(request):
     player_id = int(request.query.get("id"))
+
+    # get player initials and name
+    player_record = ds_read_record("names", player_id)
+
     scores = []
     numberOfScores = ds_memory_map["individual"]["count"]
     for i in range(numberOfScores):
@@ -526,6 +530,14 @@ def app_getScores(request):
         date = record["date"].strip().replace("\x00", " ")
         if score > 0:
             scores.append({"score": score, "date": date})
+
+    # sort the scores by score and add the rank, initials and name
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    for i, score in enumerate(scores):
+        score["rank"] = i + 1
+        score["initials"] = player_record["initials"]
+        score["full_name"] = player_record["full_name"]
+
     return json_dumps(scores), 200
 
 
