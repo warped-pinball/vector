@@ -142,11 +142,14 @@ time.sleep(0.5)
 reset_control.release(True)
 time.sleep(4)
 
+""""
+this check does not always work
 if not bus_activity_fault:
     if not adr_activity_ok():
         reset_control.reset()
         time.sleep(2)
         reset_control.release(True)
+"""
 
 sflash_driver_init()
 
