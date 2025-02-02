@@ -881,4 +881,4 @@ def go(ap_mode):
     print("-" * 10)
     print("Starting server")
     print("-" * 10)
-    server.run()
+    server.run(ap_mode)
