@@ -159,10 +159,12 @@
 
     <div id="main_js" style="display: none;"></div>
     <div id="page_js" style="display: none;"></div>
-    <div id="extra_js" style="display: none;"></div>
+    <!-- <div id="extra_js" style="display: none;"></div> -->
     <div id="js-sha256" style="display: none;"></div>
     <div id="install_warning_js" style="display: none;"></div>
     <div id="configure_js" style="display: none;"></div>
+    <div id="grid_js" style="display: none;"></div>
+    <div id="mermaid_css" style="display: none;"></div>
 
     <script>
         // === Configuration ===
@@ -356,6 +358,8 @@
         fetchDecompressAndApply('/js/main.js.gz', 'main_js');
         fetchDecompressAndApply('/js/install_warning.js.gz', 'install_warning_js');
         fetchDecompressAndApply('/js/configure.js.gz', 'configure_js');
+        fetchDecompressAndApply('/js/grid.js.gz', 'grid_js');
+        fetchDecompressAndApply('/css/mermaid.min.css.gz', 'mermaid_css');
         fetchDecompressAndApply('/js/js-sha256.min.js.gz', 'js-sha256');
     </script>
 </body>

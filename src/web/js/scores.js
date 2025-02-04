@@ -1,107 +1,68 @@
 /* scores.js */
 
-// Global variable for the current auto-refresh interval
+// Global variables for Grid.js instances and auto-refresh interval
+window.leaderboardGrid = null;
+window.tournamentGrid = null;
+window.personalGrid = null;
 window.currentRefreshIntervalId = null;
 
 /*
- * Function: renderHeaderRow
- * Renders a header row (with column labels) into the specified container.
- * The extra class (colClass) determines the grid layout (e.g. "four-col" or "three-col").
- */
-window.renderHeaderRow = function(containerId, columns, colClass) {
-  var container = document.getElementById(containerId);
-  if (!container) return;
-  var headerArticle = document.createElement('article');
-  headerArticle.classList.add('header-row', colClass);
-  // Render one cell per column
-  columns.forEach(function(col) {
-    var cellDiv = document.createElement('div');
-    cellDiv.classList.add(col.key);
-    cellDiv.innerText = col.header;
-    headerArticle.appendChild(cellDiv);
-  });
-  container.insertBefore(headerArticle, container.firstChild);
-};
-
-/*
- * Function: renderDataRow
- * Renders one data row as an article with one cell per column.
- * For the "player" column, it combines "initials" and "full_name" (if available).
- * If prefixRank is true, a '#' is added before the rank value.
- */
-window.renderDataRow = function(item, columns, colClass, prefixRank) {
-  var articleRow = document.createElement('article');
-  articleRow.classList.add('score-row', colClass);
-  columns.forEach(function(col) {
-    var cellDiv = document.createElement('div');
-    cellDiv.classList.add(col.key);
-    var value = "";
-    if (col.key === "player") {
-      // Combine initials and full_name (if available)
-      var initials = item["initials"] || "";
-      var fullName = item["full_name"] || "";
-      value = initials;
-      if (fullName.trim() !== "") {
-        value += " (" + fullName + ")";
-      }
-    } else {
-      value = item[col.key] !== undefined ? item[col.key] : "";
-      if (col.key === "rank" && prefixRank) {
-        value = "#" + value;
-      }
-    }
-    cellDiv.innerText = value;
-    articleRow.appendChild(cellDiv);
-  });
-  return articleRow;
-};
-
-/*
- * Function: renderFullArticleList
- * Clears the container and renders a header row followed by all data rows.
- */
-window.renderFullArticleList = function(containerId, data, columns, colClass, prefixRank) {
-  var container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = ''; // Clear previous content.
-  window.renderHeaderRow(containerId, columns, colClass);
-  data.forEach(function(item) {
-    var row = window.renderDataRow(item, columns, colClass, prefixRank);
-    container.appendChild(row);
-  });
-};
-
-/*
- * Function: updateLeaderboardArticles
- * Fetches leaderboard data from the API and renders it using a 4-column board:
+ * Function: updateLeaderboard
+ * Fetches leaderboard data and renders/updates a Grid.js table.
  * Columns: Rank, Score, Player, Date.
  */
-window.updateLeaderboardArticles = function() {
-  var columns = [
-    { header: "Rank", key: "rank" },
-    { header: "Score", key: "score" },
-    { header: "Player", key: "player" },
-    { header: "Date", key: "date" }
-  ];
-  var container = document.getElementById("leaderboardArticles");
-  if (!container) {
-    if (window.currentRefreshIntervalId) {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
-    return;
-  }
+window.updateLeaderboard = function() {
   fetch('/api/leaders')
     .then(function(response) {
-      if (!response.ok) {
-        throw new Error("Network response was not ok: " + response.statusText);
-      }
+      if (!response.ok) throw new Error(response.statusText);
       return response.json();
     })
     .then(function(data) {
       localStorage.setItem('/api/leaders', JSON.stringify(data));
-      // Use "four-col" for 4-column boards; prefix rank with '#'
-      window.renderFullArticleList("leaderboardArticles", data, columns, "four-col", true);
+      // Process data to ensure proper values (and combine initials/full_name)
+      const processedData = data.map(row => ({
+        rank: row.rank,
+        score: row.score,
+        player: row.initials + (row.full_name ? " (" + row.full_name + ")" : ""),
+        date: row.date
+      }));
+
+      if (window.leaderboardGrid) {
+        window.leaderboardGrid.updateConfig({ data: processedData }).forceRender();
+      } else {
+        window.leaderboardGrid = new gridjs.Grid({
+          columns: [
+            {
+              name: "Rank",
+              data: (row) => "#" + row.rank,
+              formatter: (cell) => gridjs.html(`<div data-label="Rank">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Score",
+              data: (row) => row.score || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Score">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Player",
+              data: (row) => row.player,
+              formatter: (cell) => gridjs.html(`<div data-label="Player">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Date",
+              data: (row) => row.date || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Date">${cell}</div>`),
+              sort: true
+            }
+          ],
+          data: processedData,
+          sort: true,
+          pagination: { limit: 10 },
+          style: { table: { width: "100%" } }
+        }).render(document.getElementById("leaderboardArticles"));
+      }
     })
     .catch(function(error) {
       console.error("Error fetching leaderboard data:", error);
@@ -109,35 +70,61 @@ window.updateLeaderboardArticles = function() {
 };
 
 /*
- * Function: updateTournamentArticles
- * Fetches tournament data from the API and renders it as a 4-column board:
+ * Function: updateTournament
+ * Fetches tournament data and renders/updates a Grid.js table.
  * Columns: Game #, Rank, Score, Initials.
  */
-window.updateTournamentArticles = function() {
-  var columns = [
-    { header: "Game #", key: "game" },
-    { header: "Rank", key: "rank" },
-    { header: "Score", key: "score" },
-    { header: "Initials", key: "initials" }
-  ];
-  var container = document.getElementById("tournamentArticles");
-  if (!container) {
-    if (window.currentRefreshIntervalId) {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
-    return;
-  }
+window.updateTournament = function() {
   fetch('/api/tournament')
     .then(function(response) {
-      if (!response.ok) {
-        throw new Error("Network response was not ok: " + response.statusText);
-      }
+      if (!response.ok) throw new Error(response.statusText);
       return response.json();
     })
     .then(function(data) {
       localStorage.setItem('/api/tournament', JSON.stringify(data));
-      window.renderFullArticleList("tournamentArticles", data, columns, "four-col", true);
+      const processedData = data.map(row => ({
+        game: row.game,
+        rank: row.rank,
+        score: row.score,
+        initials: row.initials
+      }));
+
+      if (window.tournamentGrid) {
+        window.tournamentGrid.updateConfig({ data: processedData }).forceRender();
+      } else {
+        window.tournamentGrid = new gridjs.Grid({
+          columns: [
+            {
+              name: "Game #",
+              data: (row) => row.game || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Game #">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Rank",
+              data: (row) => "#" + row.rank,
+              formatter: (cell) => gridjs.html(`<div data-label="Rank">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Score",
+              data: (row) => row.score || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Score">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Initials",
+              data: (row) => row.initials || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Initials">${cell}</div>`),
+              sort: true
+            }
+          ],
+          data: processedData,
+          sort: true,
+          pagination: { limit: 10 },
+          style: { table: { width: "100%" } }
+        }).render(document.getElementById("tournamentArticles"));
+      }
     })
     .catch(function(error) {
       console.error("Error fetching tournament data:", error);
@@ -145,45 +132,59 @@ window.updateTournamentArticles = function() {
 };
 
 /*
- * Function: updatePersonalArticles
- * Fetches personal score data for the selected player and renders it as a 3-column board:
+ * Function: updatePersonal
+ * Fetches personal scores for the selected player and renders/updates a Grid.js table.
  * Columns: Rank, Score, Date. (Player column is omitted.)
  */
-window.updatePersonalArticles = function() {
-  var playerSelect = document.getElementById('players');
-  if (!playerSelect) {
-    if (window.currentRefreshIntervalId) {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
-    return;
-  }
+window.updatePersonal = function() {
+  var playerSelect = document.getElementById("players");
+  if (!playerSelect) return;
   var player_id = playerSelect.value;
   if (!player_id) return;
-  var columns = [
-    { header: "Rank", key: "rank" },
-    { header: "Score", key: "score" },
-    { header: "Date", key: "date" }
-  ];
-  var container = document.getElementById("personalArticles");
-  if (!container) {
-    if (window.currentRefreshIntervalId) {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
-    return;
-  }
   fetch('/api/player/scores?id=' + player_id)
     .then(function(response) {
-      if (!response.ok) {
-        throw new Error("Network response was not ok: " + response.statusText);
-      }
+      if (!response.ok) throw new Error(response.statusText);
       return response.json();
     })
     .then(function(data) {
       localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
-      // Use "three-col" for personal scores; prefix rank with '#'
-      window.renderFullArticleList("personalArticles", data, columns, "three-col", true);
+      const processedData = data.map(row => ({
+        rank: row.rank,
+        score: row.score,
+        date: row.date
+      }));
+
+      if (window.personalGrid) {
+        window.personalGrid.updateConfig({ data: processedData }).forceRender();
+      } else {
+        window.personalGrid = new gridjs.Grid({
+          columns: [
+            {
+              name: "Rank",
+              data: (row) => "#" + row.rank,
+              formatter: (cell) => gridjs.html(`<div data-label="Rank">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Score",
+              data: (row) => row.score || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Score">${cell}</div>`),
+              sort: true
+            },
+            {
+              name: "Date",
+              data: (row) => row.date || "",
+              formatter: (cell) => gridjs.html(`<div data-label="Date">${cell}</div>`),
+              sort: true
+            }
+          ],
+          data: processedData,
+          sort: true,
+          pagination: { limit: 10 },
+          className: { table: "personal-grid" },
+          style: { table: { width: "100%" } }
+        }).render(document.getElementById("personalArticles"));
+      }
     })
     .catch(function(error) {
       console.error("Error fetching personal scores:", error);
@@ -198,97 +199,80 @@ window.loadPlayers = function(data) {
   var players = Object.entries(data)
     .filter(function(entry) {
       var player = entry[1];
-      return player.name.trim() !== '' || player.initials.trim() !== '';
+      return player.name.trim() !== "" || player.initials.trim() !== "";
     })
     .sort(function(a, b) {
       return a[1].name.localeCompare(b[1].name);
     });
-  var playersSelect = document.getElementById('players');
+  var playersSelect = document.getElementById("players");
   if (!playersSelect) return;
-  playersSelect.innerHTML = '';
+  playersSelect.innerHTML = "";
   players.forEach(function(entry) {
-    var id = entry[0];
-    var player = entry[1];
-    var option = document.createElement('option');
+    var id = entry[0],
+      player = entry[1];
+    var option = document.createElement("option");
     option.value = id;
     option.text = player.name + (player.initials ? " (" + player.initials + ")" : "");
     playersSelect.appendChild(option);
   });
   if (players.length > 0) {
     playersSelect.value = players[0][0];
-    window.updatePersonalArticles();
+    window.updatePersonal();
   }
-  playersSelect.addEventListener('change', function() {
-    window.updatePersonalArticles();
+  playersSelect.addEventListener("change", function () {
+    window.updatePersonal();
   });
 };
 
 /*
- * Auto-Refresh Mechanism:
- * Only the currently visible board is auto-refreshed every 60 seconds.
+ * Auto-Refresh: Only the visible board auto-refreshes every 60 seconds.
  */
 var refreshFunctions = {
-  "leader-board": window.updateLeaderboardArticles,
-  "tournament-board": window.updateTournamentArticles,
-  "personal-board": window.updatePersonalArticles
+  "leader-board": window.updateLeaderboard,
+  "tournament-board": window.updateTournament,
+  "personal-board": window.updatePersonal
 };
 
-window.startAutoRefreshForTab = function(tabId) {
+window.startAutoRefreshForTab = function (tabId) {
   if (window.currentRefreshIntervalId) {
     clearInterval(window.currentRefreshIntervalId);
     window.currentRefreshIntervalId = null;
   }
-  var containerId = "";
-  if (tabId === "leader-board") containerId = "leaderboardArticles";
-  else if (tabId === "tournament-board") containerId = "tournamentArticles";
-  else if (tabId === "personal-board") containerId = "personalArticles";
-  var container = document.getElementById(containerId);
-  if (!container) return;
   var refreshFn = refreshFunctions[tabId];
-  window.currentRefreshIntervalId = setInterval(function() {
-    var currentContainer = document.getElementById(containerId);
-    if (currentContainer) {
-      refreshFn();
-    } else {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
+  window.currentRefreshIntervalId = setInterval(function () {
+    refreshFn();
   }, 60000);
 };
 
 /*
  * Function: showTab
  * Switches visible tabs, updates active button styling, refreshes data immediately,
- * and starts auto-refresh for the visible tab.
+ * and starts auto-refresh for the visible board.
  */
-window.showTab = function(tabId) {
-  var tabs = document.querySelectorAll('.tab-content');
-  tabs.forEach(function(tab) {
-    tab.classList.remove('active');
+window.showTab = function (tabId) {
+  document.querySelectorAll(".tab-content").forEach(function (tab) {
+    tab.classList.remove("active");
   });
   var selectedTab = document.getElementById(tabId);
-  if (selectedTab) {
-    selectedTab.classList.add('active');
-  }
-  var buttons = document.querySelectorAll('#score-board-nav button');
-  buttons.forEach(function(button) {
-    button.classList.remove('contrast');
+  if (selectedTab) selectedTab.classList.add("active");
+
+  document.querySelectorAll("#score-board-nav button").forEach(function (button) {
+    button.classList.remove("contrast");
   });
   var activeButton = document.querySelector('button[onclick="window.showTab(\'' + tabId + '\')"]');
-  if (activeButton) {
-    activeButton.classList.add('contrast');
-  }
+  if (activeButton) activeButton.classList.add("contrast");
+
   if (tabId === "leader-board") {
-    window.updateLeaderboardArticles();
+    window.updateLeaderboard();
   } else if (tabId === "tournament-board") {
-    window.updateTournamentArticles();
+    window.updateTournament();
   } else if (tabId === "personal-board") {
-    window.updatePersonalArticles();
+    window.updatePersonal();
   }
   window.startAutoRefreshForTab(tabId);
 };
 
-window.cleanupRefreshes = function() {
+window.cleanupRefreshes = function () {
   if (window.currentRefreshIntervalId) {
     clearInterval(window.currentRefreshIntervalId);
     window.currentRefreshIntervalId = null;
@@ -296,18 +280,18 @@ window.cleanupRefreshes = function() {
 };
 
 /*
- * Poll for elements (since DOM load events aren’t reliably detected).
- * Once the main container and navigation are available, load the default leaderboard,
- * start auto-refresh, and load the player list.
+ * Poll for essential elements (since DOM load events aren’t reliably detected).
+ * Once available, load the default leaderboard, start auto-refresh,
+ * and load the player list.
  */
 (function pollForElements() {
   if (document.getElementById("leaderboardArticles") && document.getElementById("score-board-nav")) {
-    window.updateLeaderboardArticles();
+    window.updateLeaderboard();
     window.startAutoRefreshForTab("leader-board");
-    fetch('/api/players')
-      .then(function(response) { return response.json(); })
-      .then(function(data) { window.loadPlayers(data); })
-      .catch(function(error) { console.error("Error fetching players:", error); });
+    fetch("/api/players")
+      .then(function (response) { return response.json(); })
+      .then(function (data) { window.loadPlayers(data); })
+      .catch(function (error) { console.error("Error fetching players:", error); });
   } else {
     setTimeout(pollForElements, 100);
   }
