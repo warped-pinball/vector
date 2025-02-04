@@ -1,115 +1,169 @@
 <style>
-    /* Ensure Grid.js elements use transparent backgrounds so dark mode applies */
-    .gridjs-table,
-    .gridjs-table th,
-    .gridjs-table td {
-      background-color: transparent !important;
-    }
-
-    /* Only the active tab is displayed */
+    /* Only show the active tab */
     .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Desktop view for four-col boards (Leaderboard & Tournament) */
-    .score-board-list article.four-col {
-      display: grid;
-      gap: 0.25rem;
-      padding: 0.25rem;
-      /* Rank column is half as wide as the others */
-      grid-template-columns: 0.5fr 1fr 1fr 1fr;
-      align-items: center;
-    }
-    /* Desktop view for three-col boards (Personal) */
-    .score-board-list article.three-col {
-      display: grid;
-      gap: 0.25rem;
-      padding: 0.25rem;
-      grid-template-columns: 0.5fr 1fr 1fr;
-      align-items: center;
-    }
-    /* Header row styling (desktop only) */
-    .score-board-list article.header-row {
-      font-weight: bold;
-    }
-
-    /* Mobile view: hide header and reflow data rows */
-    @media (max-width: 768px) {
-      .score-board-list .header-row {
         display: none;
-      }
-      /* For four-col boards (Leaderboard, Tournament):
-         Top row: Rank & Score; Bottom row: Player & Date */
-      .score-board-list article.four-col {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto;
-        grid-template-areas:
-          "rank score"
-          "player date";
-      }
-      .score-board-list article.four-col div.rank   { grid-area: rank; display: flex; align-items: center; justify-content: center; }
-      .score-board-list article.four-col div.score  { grid-area: score; display: flex; align-items: center; justify-content: center; }
-      .score-board-list article.four-col div.player { grid-area: player; display: flex; align-items: center; justify-content: center; }
-      .score-board-list article.four-col div.date   { grid-area: date; display: flex; align-items: center; justify-content: center; }
-
-      /* For three-col boards (Personal):
-         Top row: Rank & Score; Bottom row: Date spanning both columns */
-      .score-board-list article.three-col {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto;
-        grid-template-areas:
-          "rank score"
-          "date date";
-      }
-      .score-board-list article.three-col div.rank  { grid-area: rank; display: flex; align-items: center; justify-content: center; }
-      .score-board-list article.three-col div.score { grid-area: score; display: flex; align-items: center; justify-content: center; }
-      .score-board-list article.three-col div.date  { grid-area: date; display: flex; align-items: center; justify-content: center; }
-
-      /* Optionally adjust nav button padding on mobile */
-      #score-board-nav button {
-        padding: var(--pico-form-element-spacing-vertical)
-          calc(var(--pico-form-element-spacing-horizontal) - 15px);
-      }
     }
 
-    /* Minimal spacing */
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Common styling for any scoreboard item (header or data) */
     .score-board-list article {
-      margin-bottom: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: grid;
+        /* Base display */
+        gap: 0.25rem;
+        padding: 0.25rem;
+        align-items: center;
     }
-  </style>
 
+    /* Header row on desktop; we hide it on mobile */
+    .score-board-list article.header-row {
+        font-weight: bold;
+    }
 
+    /* Desktop for four-col boards (leader/tournament):
+       Rank column is half width, others are equal. */
+    .score-board-list article.four-col {
+        grid-template-columns: 0.5fr 1fr 1fr 1fr;
+    }
+
+    /* Desktop for three-col boards (personal) */
+    .score-board-list article.three-col {
+        grid-template-columns: 0.5fr 1fr 1fr;
+    }
+
+    /* Hide header row and reflow items on mobile */
+    @media (max-width: 768px) {
+
+        /* Hide header row entirely */
+        .score-board-list .header-row {
+            display: none;
+        }
+
+        /* Four-col boards reflow: top row rank+score, bottom row player+date */
+        .score-board-list article.four-col {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            grid-template-areas:
+                "rank  score"
+                "player date";
+        }
+
+        .score-board-list article.four-col div.rank {
+            grid-area: rank;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-board-list article.four-col div.score {
+            grid-area: score;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-board-list article.four-col div.player {
+            grid-area: player;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-board-list article.four-col div.date {
+            grid-area: date;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Three-col boards (personal) reflow: top row rank+score, bottom row date */
+        .score-board-list article.three-col {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            grid-template-areas:
+                "rank  score"
+                "date  date";
+        }
+
+        .score-board-list article.three-col div.rank {
+            grid-area: rank;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-board-list article.three-col div.score {
+            grid-area: score;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-board-list article.three-col div.date {
+            grid-area: date;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
+</style>
 <div class="score-board">
     <div id="score-board-nav" role="group">
-      <button onclick="window.showTab('leader-board')" class="secondary contrast" id="leader-board-btn">Leader</button>
-      <button onclick="window.showTab('tournament-board')" class="secondary" id="tournament-board-btn">Tournament</button>
-      <button onclick="window.showTab('personal-board')" class="secondary" id="personal-board-btn">Personal</button>
+        <!-- We’ll rely on window.showTab(...) to exist -->
+        <button onclick="window.showTab('leader-board')" class="secondary contrast"
+            id="leader-board-btn">Leader</button>
+        <button onclick="window.showTab('tournament-board')" class="secondary"
+            id="tournament-board-btn">Tournament</button>
+        <button onclick="window.showTab('personal-board')" class="secondary" id="personal-board-btn">Personal</button>
     </div>
 
+    <!-- Leaderboard Section -->
     <section id="leader-board" class="tab-content active">
-      <h2 class="hide">Leader Board</h2>
-      <!-- Grid.js will render the Leaderboard here -->
-      <div id="leaderboardArticles" class="score-board-list"></div>
+        <h2 class="hide">Leader Board</h2>
+        <div id="leaderboardList" class="list">
+            <!-- Desktop header row -->
+            <article class="header-row four-col">
+                <div class="rank" data-sort="rank">Rank</div>
+                <div class="score" data-sort="score">Score</div>
+                <div class="player" data-sort="player">Player</div>
+                <div class="date" data-sort="date">Date</div>
+            </article>
+            <!-- .items is where List.js will put <div class="item ..."> -->
+            <div class="items"></div>
+        </div>
     </section>
 
+    <!-- Tournament Section -->
     <section id="tournament-board" class="tab-content">
-      <h2 class="hide">Tournament Board</h2>
-      <!-- Grid.js will render the Tournament board here -->
-      <div id="tournamentArticles" class="score-board-list"></div>
+        <h2 class="hide">Tournament Board</h2>
+        <div id="tournamentList" class="list">
+            <article class="header-row four-col">
+                <div class="game" data-sort="game">Game #</div>
+                <div class="rank" data-sort="rank">Rank</div>
+                <div class="score" data-sort="score">Score</div>
+                <div class="initials" data-sort="initials">Initials</div>
+            </article>
+            <div class="items"></div>
+        </div>
     </section>
 
+    <!-- Personal Section -->
     <section id="personal-board" class="tab-content">
-      <div class="grid" style="align-items: center">
-        <h2>Select Player</h2>
-        <select id="players" name="select" aria-label="Select" required>
-          <!-- Options generated by JS -->
-        </select>
-      </div>
-      <h2 class="hide">Personal Score Board</h2>
-      <!-- Grid.js will render the Personal board here -->
-      <div id="personalArticles" class="score-board-list"></div>
+        <div class="grid" style="align-items: center">
+            <h2>Select Player</h2>
+            <select id="players" name="select" aria-label="Select" required></select>
+        </div>
+        <h2 class="hide">Personal Score Board</h2>
+        <div id="personalList" class="list">
+            <article class="header-row three-col">
+                <div class="rank" data-sort="rank">Rank</div>
+                <div class="score" data-sort="score">Score</div>
+                <div class="date" data-sort="date">Date</div>
+            </article>
+            <div class="items"></div>
+        </div>
     </section>
-  </div>
+</div>
