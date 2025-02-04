@@ -121,6 +121,7 @@ def restore_adjustments(index, reset=True):
     sleep(4)
     # restart the server schedule
     from phew.server import restart_schedule
+
     restart_schedule()
 
 
