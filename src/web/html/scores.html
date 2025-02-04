@@ -1,71 +1,118 @@
-<style>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scoreboard</title>
+  <style>
+    /* Only the active tab is displayed */
     .tab-content {
-        display: none;
+      display: none;
     }
     .tab-content.active {
-        display: block;
+      display: block;
     }
 
-    .score-board-list article.score-row {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        align-items: center;
-        padding: 0.5rem;
+    /* Desktop view for four-col boards (e.g. Leaderboard, Tournament) */
+    .score-board-list article.four-col {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      /* Rank column is half as wide as the others */
+      grid-template-columns: 0.5fr 1fr 1fr 1fr;
+      align-items: center;
+    }
+    /* Desktop view for three-col boards (Personal scoreboard) */
+    .score-board-list article.three-col {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      grid-template-columns: 0.5fr 1fr 1fr;
+      align-items: center;
+    }
+    /* Header row styling (desktop only) */
+    .score-board-list article.header-row {
+      font-weight: bold;
     }
 
+    /* Mobile view: hide header row and reflow data rows */
     @media (max-width: 768px) {
-        .score-board-list article.score-row {
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto auto;
-            grid-template-areas:
-                "rank score"
-                "initials name"
-                "date date";
-        }
-        .score-board-list article.score-row .rank {
-            grid-area: rank;
-        }
-        .score-board-list article.score-row .score {
-            grid-area: score;
-        }
-        .score-board-list article.score-row .initials {
-            grid-area: initials;
-        }
-        .score-board-list article.score-row .name {
-            grid-area: name;
-        }
-        .score-board-list article.score-row .date {
-            grid-area: date;
-        }
+      .score-board-list .header-row {
+        display: none;
+      }
 
-        /* buttons withing the score board nav element */
-        #score-board-nav button {
-            padding: var(--pico-form-element-spacing-vertical) calc(var(--pico-form-element-spacing-horizontal) - 15px);
-        }
+      /* For four-col boards (leaderboard, tournament):
+         - Top row: rank & score (each 1fr)
+         - Bottom row: player & date (each 1fr) */
+      .score-board-list article.four-col {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "rank score"
+          "player date";
+      }
+      .score-board-list article.four-col div.rank   { grid-area: rank; display: flex; align-items: center; justify-content: center; }
+      .score-board-list article.four-col div.score  { grid-area: score; display: flex; align-items: center; justify-content: center; }
+      .score-board-list article.four-col div.player { grid-area: player; display: flex; align-items: center; justify-content: center; }
+      .score-board-list article.four-col div.date   { grid-area: date; display: flex; align-items: center; justify-content: center; }
+
+      /* For three-col boards (personal):
+         - Top row: rank & score
+         - Bottom row: date spanning both columns */
+      .score-board-list article.three-col {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "rank score"
+          "date date";
+      }
+      .score-board-list article.three-col div.rank  { grid-area: rank; display: flex; align-items: center; justify-content: center; }
+      .score-board-list article.three-col div.score { grid-area: score; display: flex; align-items: center; justify-content: center; }
+      .score-board-list article.three-col div.date  { grid-area: date; display: flex; align-items: center; justify-content: center; }
+
+      /* Optionally adjust nav button padding */
+      #score-board-nav button {
+        padding: var(--pico-form-element-spacing-vertical)
+          calc(var(--pico-form-element-spacing-horizontal) - 15px);
+      }
     }
-</style>
-<div class="score-board">
+
+    /* Minimal spacing */
+    .score-board-list article {
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="score-board">
     <div id="score-board-nav" role="group">
-        <button onclick="window.showTab('leader-board')" class="secondary contrast" id="leader-board-btn">Leader</button>
-        <button onclick="window.showTab('tournament-board')" class="secondary" id="tournament-board-btn">Tournament</button>
-        <button onclick="window.showTab('personal-board')" class="secondary" id="personal-board-btn">Personal</button>
+      <button onclick="window.showTab('leader-board')" class="secondary contrast" id="leader-board-btn">Leader</button>
+      <button onclick="window.showTab('tournament-board')" class="secondary" id="tournament-board-btn">Tournament</button>
+      <button onclick="window.showTab('personal-board')" class="secondary" id="personal-board-btn">Personal</button>
     </div>
+
     <section id="leader-board" class="tab-content active">
-        <h2 class="hide">Leader Board</h2>
-        <div id="leaderboardArticles" class="score-board-list"></div>
+      <h2 class="hide">Leader Board</h2>
+      <div id="leaderboardArticles" class="score-board-list"></div>
     </section>
+
     <section id="tournament-board" class="tab-content">
-        <h2 class="hide">Tournament Board</h2>
-        <div id="tournamentArticles" class="score-board-list"></div>
+      <h2 class="hide">Tournament Board</h2>
+      <div id="tournamentArticles" class="score-board-list"></div>
     </section>
+
     <section id="personal-board" class="tab-content">
-        <div class="grid" style="align-items: center">
-            <h2>Personal Scoreboard for:</h2>
-            <select id="players" name="select" aria-label="Select" required>
-            </select>
-        </div>
-        <h2 class="hide">Personal Score Board</h2>
-        <div id="personalArticles" class="score-board-list"></div>
+      <div class="grid" style="align-items: center">
+        <h2>Select Player</h2>
+        <select id="players" name="select" aria-label="Select" required>
+          <!-- Options will be generated by JavaScript -->
+        </select>
+      </div>
+      <h2 class="hide">Personal Score Board</h2>
+      <div id="personalArticles" class="score-board-list"></div>
     </section>
-</div>
+  </div>
+
+  <script src="scores.js"></script>
+</body>
+</html>
