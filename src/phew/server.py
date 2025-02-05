@@ -450,7 +450,7 @@ poll_counter = 0
 
 
 # TODO this should live in SPI_Store
-async def copy_to_fram():
+def copy_to_fram():
     global MemIndex
 
     write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)

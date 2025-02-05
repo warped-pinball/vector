@@ -116,10 +116,9 @@ def restore_adjustments(index, reset=True):
     fram.write_all_fram_now()
 
     # restart the pinball machine
-    reset_control.release()
+    reset_control.release(True)
 
     sleep(4)
-
     # restart the server schedule
     from phew.server import restart_schedule
 
