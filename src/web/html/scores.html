@@ -30,7 +30,8 @@
     /* Four-column equally-sized (tournament) */
     .score-board-list article.four-col-tournament {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr; /* All columns same width */
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        /* All columns same width */
         gap: 0.25rem;
         padding: 0.25rem;
     }
@@ -71,20 +72,25 @@
     /* Hide date column for the *leaderboard* only when <= 500px,
        but keep personal scoreboard always showing date. */
     @media (max-width: 500px) {
+
         /* Only hide .date in "five-col" containers (leaderboard) */
         .score-board-list article.five-col div.date {
             display: none;
         }
+
         .score-board-list article.five-col {
-            grid-template-columns: 0.25fr 3fr 7fr 1fr; /* drop the date col at narrow widths */
+            grid-template-columns: 0.25fr 3fr 7fr 1fr;
+            /* drop the date col at narrow widths */
         }
     }
 </style>
 
 <div class="score-board">
     <div id="score-board-nav" role="group">
-        <button onclick="window.showTab('leader-board')" class="secondary contrast" id="leader-board-btn">Leader</button>
-        <button onclick="window.showTab('tournament-board')" class="secondary" id="tournament-board-btn">Tournament</button>
+        <button onclick="window.showTab('leader-board')" class="secondary contrast"
+            id="leader-board-btn">Leader</button>
+        <button onclick="window.showTab('tournament-board')" class="secondary"
+            id="tournament-board-btn">Tournament</button>
         <button onclick="window.showTab('personal-board')" class="secondary" id="personal-board-btn">Personal</button>
     </div>
 
