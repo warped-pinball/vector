@@ -6,7 +6,6 @@ window.currentRefreshIntervalId = null;
 /*
  * Function: renderHeaderRow
  * Renders a header row (with column labels) into the specified container.
- * The extra class (colClass) determines the grid layout (e.g., "five-col", "four-col-personal", etc.).
  */
 window.renderHeaderRow = function(containerId, columns, colClass) {
   var container = document.getElementById(containerId);
@@ -18,7 +17,6 @@ window.renderHeaderRow = function(containerId, columns, colClass) {
   columns.forEach(function(col) {
     var cellDiv = document.createElement('div');
     cellDiv.classList.add(col.key);
-    // Use col.header for display text in the header row
     cellDiv.innerText = col.header;
     headerArticle.appendChild(cellDiv);
   });
@@ -49,7 +47,7 @@ window.renderDataRow = function(item, columns, colClass) {
         value += " (" + fullName + ")";
       }
     } else {
-      // For the rank column, we no longer prepend "#"
+      // For the rank column, we do not prepend "#"
       value = (item[col.key] !== undefined ? item[col.key] : "");
     }
 
@@ -81,12 +79,9 @@ window.renderFullArticleList = function(containerId, data, columns, colClass) {
 };
 
 /*
- * Function: updateLeaderboardArticles
- * Fetches leaderboard data and renders it with 5 columns:
- * (#, Score, Player, Ago, Date)
+ * updateLeaderboardArticles: 5 columns => #, Score, Player, Ago, Date
  */
 window.updateLeaderboardArticles = function() {
-  // Insert the new "ago" column next to "date"
   var columns = [
     { header: "#",      key: "rank"   },
     { header: "Score",  key: "score"  },
@@ -121,53 +116,18 @@ window.updateLeaderboardArticles = function() {
 };
 
 /*
- * Function: updateTournamentArticles
- * Fetches tournament data and renders it with 4 columns:
- *    Game, #, Initials, Score
+ * updateTournamentArticles: 4 equally wide columns => Game, Rank, Initials, Score
  */
 window.updateTournamentArticles = function() {
-    // Reordered so it's Game, # (rank), Initials, then Score
-    var columns = [
-      { header: "Game",     key: "game"     },
-      { header: "Rank",        key: "rank"     },
-      { header: "Initials", key: "initials" },
-      { header: "Score",    key: "score"    }
-    ];
+  var columns = [
+    { header: "Game",     key: "game"     },
+    { header: "Rank",     key: "rank"     },
+    { header: "Initials", key: "initials" },
+    { header: "Score",    key: "score"    }
+  ];
 
-    var container = document.getElementById("tournamentArticles");
-    if (!container) {
-      if (window.currentRefreshIntervalId) {
-        clearInterval(window.currentRefreshIntervalId);
-        window.currentRefreshIntervalId = null;
-      }
-      return;
-    }
-
-    fetch('/api/tournament')
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error("Network response was not ok: " + response.statusText);
-        }
-        return response.json();
-      })
-      .then(function(data) {
-        localStorage.setItem('/api/tournament', JSON.stringify(data));
-        // Render with our new "four-col-tournament" class
-        window.renderFullArticleList("tournamentArticles", data, columns, "four-col-tournament");
-      })
-      .catch(function(error) {
-        console.error("Error fetching tournament data:", error);
-      });
-  };
-
-/*
- * Function: updatePersonalArticles
- * Fetches personal score data for the selected player,
- * and now renders 4 columns: (#, Score, Date, Ago)
- */
-window.updatePersonalArticles = function() {
-  var playerSelect = document.getElementById('players');
-  if (!playerSelect) {
+  var container = document.getElementById("tournamentArticles");
+  if (!container) {
     if (window.currentRefreshIntervalId) {
       clearInterval(window.currentRefreshIntervalId);
       window.currentRefreshIntervalId = null;
@@ -175,16 +135,27 @@ window.updatePersonalArticles = function() {
     return;
   }
 
-  var player_id = playerSelect.value;
-  if (!player_id) return;
+  fetch('/api/tournament')
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error("Network response was not ok: " + response.statusText);
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      localStorage.setItem('/api/tournament', JSON.stringify(data));
+      window.renderFullArticleList("tournamentArticles", data, columns, "four-col-tournament");
+    })
+    .catch(function(error) {
+      console.error("Error fetching tournament data:", error);
+    });
+};
 
-  var columns = [
-    { header: "#",     key: "rank"  },
-    { header: "Score", key: "score" },
-    { header: "Date",  key: "date"  },
-    { header: "Ago",   key: "ago"   }
-  ];
-
+/*
+ * updatePersonalArticles: 4 columns => #, Score, Ago, Date
+ * Do nothing if no player is selected in our custom dropdown.
+ */
+window.updatePersonalArticles = function() {
   var container = document.getElementById("personalArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -193,6 +164,22 @@ window.updatePersonalArticles = function() {
     }
     return;
   }
+
+  // Read selected player ID from our custom dropdown
+  var player_id = window.getDropDownValue("playerDropdown");
+  // If user hasn't selected anything or default is empty => do nothing
+  if (!player_id || player_id === "null") {
+    console.log("No player selected, skipping personal scoreboard update.");
+    container.innerHTML = '';
+    return;
+  }
+
+  var columns = [
+    { header: "#",      key: "rank" },
+    { header: "Score",  key: "score" },
+    { header: "Ago",    key: "ago"   },
+    { header: "Date",   key: "date"  }
+  ];
 
   fetch('/api/player/scores?id=' + player_id)
     .then(function(response) {
@@ -211,39 +198,49 @@ window.updatePersonalArticles = function() {
 };
 
 /*
- * loadPlayers: Load player data into the dropdown, set up a change listener.
+ * loadPlayers: build the new custom dropdown in #playerDropdownContainer.
+ * DO NOT auto-load personal scoreboard. Wait until a player is chosen.
  */
-window.loadPlayers = function(data) {
-  var players = Object.entries(data)
-    .filter(function(entry) {
-      var player = entry[1];
-      return player.name.trim() !== '' || player.initials.trim() !== '';
-    })
-    .sort(function(a, b) {
-      return a[1].name.localeCompare(b[1].name);
-    });
+window.loadPlayers = async function(data) {
+  // "data" is presumably an object of ID -> { name, initials, ... }
+  var playerDropdownContainer = document.getElementById('playerDropdownContainer');
+  if (!playerDropdownContainer) return;
 
-  var playersSelect = document.getElementById('players');
-  if (!playersSelect) return;
-
-  playersSelect.innerHTML = '';
-  players.forEach(function(entry) {
-    var id = entry[0];
-    var player = entry[1];
-    var option = document.createElement('option');
-    option.value = id;
-    option.text = player.name + (player.initials ? " (" + player.initials + ")" : "");
-    playersSelect.appendChild(option);
+  // Build a { id: "PlayerName (INI)" } object for the dropdown
+  var dropdownOptions = {};
+  Object.entries(data).forEach(function([id, player]) {
+    var displayName = player.name.trim();
+    if (player.initials.trim()) {
+      displayName += " (" + player.initials.trim() + ")";
+    }
+    if (displayName) {
+      dropdownOptions[id] = displayName;
+    }
   });
 
-  if (players.length > 0) {
-    playersSelect.value = players[0][0];
-    window.updatePersonalArticles();
-  }
+  // Create the dropdown.
+  // - ID: "playerDropdown"
+  // - Default summary text: "Select Player"
+  // - We pass `dropdownOptions` for the list
+  // - No defaultValue => user must manually select
+  // - Sort options by name
+  // - Callback => once a user picks a player, we refresh personal scoreboard
+  var dropDownElement = await window.createDropDownElement(
+    "playerDropdown",
+    "Select Player",
+    dropdownOptions,
+    null,    // no default value
+    true,    // sort the options
+    function(value, text) {
+      console.log("Player selected => " + value + ": " + text);
+      // Now that a player is selected, load personal scoreboard
+      window.updatePersonalArticles();
+    }
+  );
 
-  playersSelect.addEventListener('change', function() {
-    window.updatePersonalArticles();
-  });
+  // Clear container, place the new dropdown
+  playerDropdownContainer.innerHTML = '';
+  playerDropdownContainer.appendChild(dropDownElement);
 };
 
 /*
@@ -308,7 +305,7 @@ window.showTab = function(tabId) {
     activeButton.classList.add('contrast');
   }
 
-  // Immediately fetch new data
+  // Immediately fetch new data (but personal board will only show data if a player is selected)
   if (tabId === "leader-board") {
     window.updateLeaderboardArticles();
   } else if (tabId === "tournament-board") {
@@ -333,18 +330,26 @@ window.cleanupRefreshes = function() {
 
 /*
  * pollForElements: “poor man’s” DOM-ready. Once the scoreboard container
- * and nav are in the DOM, load the default leaderboard and players.
+ * and nav are in the DOM, load the default leaderboard and THEN load players.
+ * We do NOT auto-update personal board until user selects from dropdown.
  */
 (function pollForElements() {
   if (document.getElementById("leaderboardArticles") && document.getElementById("score-board-nav")) {
     window.updateLeaderboardArticles();
     window.startAutoRefreshForTab("leader-board");
 
-    // Load the players for the personal board select box
+    // Load the players for the personal board dropdown
     fetch('/api/players')
-      .then(function(response) { return response.json(); })
-      .then(function(data) { window.loadPlayers(data); })
-      .catch(function(error) { console.error("Error fetching players:", error); });
+      .then(function(response) {
+        if (!response.ok) throw new Error("Network response was not ok: " + response.statusText);
+        return response.json();
+      })
+      .then(function(data) {
+        window.loadPlayers(data);
+      })
+      .catch(function(error) {
+        console.error("Error fetching players:", error);
+      });
   } else {
     setTimeout(pollForElements, 100);
   }

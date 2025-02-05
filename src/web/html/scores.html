@@ -16,26 +16,29 @@
         padding: 0.25rem;
     }
 
-    /* Four-column boards (personal scoreboard) */
+    /* Personal scoreboard: 4 columns => #, Score, Ago, Date
+       "Rank" (#) is a small column, Score is bigger, Ago moderate, Date bigger.
+       Example: 0.6fr 2fr 1fr 2fr  (Adjust as desired.)
+    */
     .score-board-list article.four-col-personal {
         display: grid;
-        grid-template-columns: 1fr 2fr 2fr 1fr;
+        grid-template-columns: 0.6fr 2fr 1fr 2fr;
         gap: 0.25rem;
         padding: 0.25rem;
     }
 
-    /* Three-column boards (if you still need these for some reason) */
-    .score-board-list article.three-col {
-        display: grid;
-        grid-template-columns: 1fr 2fr 2fr;
-        gap: 0.25rem;
-        padding: 0.25rem;
-    }
-
-    /* NEW: Four-column equally-sized (tournament) */
+    /* Four-column equally-sized (tournament) */
     .score-board-list article.four-col-tournament {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr 1fr; /* All columns same width */
+        gap: 0.25rem;
+        padding: 0.25rem;
+    }
+
+    /* Minimal older classes you might still need */
+    .score-board-list article.three-col {
+        display: grid;
+        grid-template-columns: 1fr 2fr 2fr;
         gap: 0.25rem;
         padding: 0.25rem;
     }
@@ -47,6 +50,7 @@
         text-overflow: ellipsis;
     }
 
+    /* Right-align certain columns */
     .score-board-list article div.rank,
     .score-board-list article div.score,
     .score-board-list article div.game {
@@ -64,19 +68,15 @@
         padding-right: 12px;
     }
 
-    /*
-     * Hide the date column entirely when screen is <= 500px,
-     * adjusting the grid template so no blank space remains.
-     */
+    /* Hide date column for the *leaderboard* only when <= 500px,
+       but keep personal scoreboard always showing date. */
     @media (max-width: 500px) {
-        .score-board-list article div.date {
+        /* Only hide .date in "five-col" containers (leaderboard) */
+        .score-board-list article.five-col div.date {
             display: none;
         }
         .score-board-list article.five-col {
-            grid-template-columns: .25fr 3fr 6fr 1fr;
-        }
-        .score-board-list article.four-col-personal {
-            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-columns: 0.25fr 3fr 7fr 1fr; /* drop the date col at narrow widths */
         }
     }
 </style>
@@ -99,12 +99,9 @@
     </section>
 
     <section id="personal-board" class="tab-content">
-        <div class="grid" style="align-items: center">
-            <h2>Select Player</h2>
-            <select id="players" name="select" aria-label="Select" required>
-                <!-- Options are injected by the JS -->
-            </select>
-        </div>
+        <!-- Instead of a <select>, we place a placeholder for the dynamic dropdown: -->
+        <div id="playerDropdownContainer"></div>
+
         <h2 class="hide">Personal Score Board</h2>
         <div id="personalArticles" class="score-board-list"></div>
     </section>
