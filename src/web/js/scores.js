@@ -6,7 +6,7 @@ window.currentRefreshIntervalId = null;
 /*
  * Function: renderHeaderRow
  * Renders a header row (with column labels) into the specified container.
- * The extra class (colClass) determines the grid layout ("four-col" or "three-col").
+ * The extra class (colClass) determines the grid layout (e.g., "five-col", "four-col-personal", etc.).
  */
 window.renderHeaderRow = function(containerId, columns, colClass) {
   var container = document.getElementById(containerId);
@@ -82,15 +82,16 @@ window.renderFullArticleList = function(containerId, data, columns, colClass) {
 
 /*
  * Function: updateLeaderboardArticles
- * Fetches leaderboard data and renders it with 4 columns.
- * The first column is "#", but the API data key is still "rank".
+ * Fetches leaderboard data and renders it with 5 columns:
+ * (#, Score, Player, Ago, Date)
  */
 window.updateLeaderboardArticles = function() {
-  // "rank" is still the data key from the API, but the header shows "#".
+  // Insert the new "ago" column next to "date"
   var columns = [
     { header: "#",      key: "rank"   },
     { header: "Score",  key: "score"  },
     { header: "Player", key: "player" },
+    { header: "Ago",    key: "ago"    },
     { header: "Date",   key: "date"   }
   ];
 
@@ -112,7 +113,7 @@ window.updateLeaderboardArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/leaders', JSON.stringify(data));
-      window.renderFullArticleList("leaderboardArticles", data, columns, "four-col");
+      window.renderFullArticleList("leaderboardArticles", data, columns, "five-col");
     })
     .catch(function(error) {
       console.error("Error fetching leaderboard data:", error);
@@ -123,12 +124,13 @@ window.updateLeaderboardArticles = function() {
  * Function: updateTournamentArticles
  * Fetches tournament data and renders it as 4 columns.
  * The first column is "Game #", second is "#", etc.
+ * (No "ago" column requested here, so this remains a three-col layout.)
  */
 window.updateTournamentArticles = function() {
   var columns = [
-    { header: "Game #", key: "game"     },
-    { header: "#",      key: "rank"     },
-    { header: "Score",  key: "score"    },
+    { header: "Game #",   key: "game"     },
+    { header: "#",        key: "rank"     },
+    { header: "Score",    key: "score"    },
     { header: "Initials", key: "initials" }
   ];
 
@@ -150,7 +152,9 @@ window.updateTournamentArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/tournament', JSON.stringify(data));
-      window.renderFullArticleList("tournamentArticles", data, columns, "four-col");
+      // Use the existing "four-col" or "three-col" class:
+      // We'll keep it three-col to match the old code (since date wasn't used).
+      window.renderFullArticleList("tournamentArticles", data, columns, "three-col");
     })
     .catch(function(error) {
       console.error("Error fetching tournament data:", error);
@@ -160,7 +164,7 @@ window.updateTournamentArticles = function() {
 /*
  * Function: updatePersonalArticles
  * Fetches personal score data for the selected player,
- * and renders it as 3 columns: "#", Score, Date.
+ * and now renders 4 columns: (#, Score, Date, Ago)
  */
 window.updatePersonalArticles = function() {
   var playerSelect = document.getElementById('players');
@@ -178,7 +182,8 @@ window.updatePersonalArticles = function() {
   var columns = [
     { header: "#",     key: "rank"  },
     { header: "Score", key: "score" },
-    { header: "Date",  key: "date"  }
+    { header: "Date",  key: "date"  },
+    { header: "Ago",   key: "ago"   }
   ];
 
   var container = document.getElementById("personalArticles");
@@ -199,7 +204,7 @@ window.updatePersonalArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
-      window.renderFullArticleList("personalArticles", data, columns, "three-col");
+      window.renderFullArticleList("personalArticles", data, columns, "four-col-personal");
     })
     .catch(function(error) {
       console.error("Error fetching personal scores:", error);
