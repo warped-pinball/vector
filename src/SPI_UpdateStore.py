@@ -466,6 +466,10 @@ def initialize():
     call at power up
     re-launches erase processes that were stopped mid way
     """
+    _, _, sflash_ver = SPI_Store.version()
+    if sflash_ver != 1:
+        return
+
     # TODO do we need to check the sflash exists? maybe by calling SPI_Store.sflash_init()?
     _read_status_from_fram()
     # look for any block in the middle of erase and restart it

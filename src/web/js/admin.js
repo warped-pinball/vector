@@ -211,7 +211,7 @@ window.downloadLogs = async function () {
 	console.log("Downloading logs...");
 
 	// Perform the fetch (no auth needed if your endpoint doesn't require it)
-	const response = await window.smartFetch('/api/logs', null, false);
+	const response = await window.smartFetch('/api/logs', null, true);
 
 	if (!response.ok) {
 		console.error("Failed to download logs:", response.status, response.statusText);
