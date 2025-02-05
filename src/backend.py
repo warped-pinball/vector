@@ -609,14 +609,22 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
-    from machine import reset
 
+    print("RESET RESET    RESET")
+
+    from machine import reset
     import reset_control
-    from SPI_DataStore import blankAll
+    from SPI_DataStore import blankAll as D_blank
+    from Adjustments import blank_all as A_blank
+    from logger import logger_instance
+    
+    Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
-    blankAll()
-    reset()
+    Log.delete_log()
+    D_blank()
+    A_blank()
+    reset()     #reset PICO
 
 
 @add_route("/api/settings/reboot", auth=True)

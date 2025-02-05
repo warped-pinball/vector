@@ -207,10 +207,9 @@ def blankStruct(structure_name):
         "message": "ok",
         "ssid": "",
         "password": "",
-        "Gpassword": " ",
+        "Gpassword": "",
         "gamename": "GenericSystem11",
-        "enable": 1,
-        "other": 0,
+        "other": 1
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
