@@ -8,10 +8,7 @@
         display: block;
     }
 
-    /* Five-column boards (leaderboard):
-       1st col (#) => 0.25fr, 2nd col (Score) => 3fr, 3rd col (Player) => 7fr,
-       4th col (Ago) => 1fr, 5th col (Date) => 3fr
-    */
+    /* Five-column boards (leaderboard) */
     .score-board-list article.five-col {
         display: grid;
         grid-template-columns: 0.25fr 3fr 7fr 1fr 3fr;
@@ -19,10 +16,7 @@
         padding: 0.25rem;
     }
 
-    /* Four-column boards (personal scoreboard):
-       1st col (#) => 1fr, 2nd col (Score) => 2fr, 3rd col (Date) => 2fr,
-       4th col (Ago) => 1fr
-    */
+    /* Four-column boards (personal scoreboard) */
     .score-board-list article.four-col-personal {
         display: grid;
         grid-template-columns: 1fr 2fr 2fr 1fr;
@@ -30,9 +24,7 @@
         padding: 0.25rem;
     }
 
-    /* Three-column boards (tournament board remains unchanged):
-       1st col (#) => 1fr, 2nd col (Score) => 2fr, 3rd col (Date) => 2fr
-    */
+    /* Three-column boards (if you still need these for some reason) */
     .score-board-list article.three-col {
         display: grid;
         grid-template-columns: 1fr 2fr 2fr;
@@ -40,9 +32,12 @@
         padding: 0.25rem;
     }
 
-    /* Header row styling */
-    .score-board-list article.header-row {
-        font-weight: bold;
+    /* NEW: Four-column equally-sized (tournament) */
+    .score-board-list article.four-col-tournament {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr; /* All columns same width */
+        gap: 0.25rem;
+        padding: 0.25rem;
     }
 
     /* Prevent wrapping & show ellipsis if truncated */
@@ -52,11 +47,7 @@
         text-overflow: ellipsis;
     }
 
-    .score-board-list article div.rank {
-        font-weight: bold;
-        text-align: right;
-    }
-
+    .score-board-list article div.rank,
     .score-board-list article div.score,
     .score-board-list article div.game {
         text-align: right;
@@ -74,18 +65,16 @@
     }
 
     /*
-     * Hide the date column entirely when screen is 400px wide or smaller,
-     * and adjust the grid-template-columns to remove the empty space.
+     * Hide the date column entirely when screen is <= 500px,
+     * adjusting the grid template so no blank space remains.
      */
     @media (max-width: 500px) {
         .score-board-list article div.date {
             display: none;
         }
-        /* Leaderboard (5 col => hide date => becomes 4 col) */
         .score-board-list article.five-col {
             grid-template-columns: .25fr 3fr 6fr 1fr;
         }
-        /* Personal board (4 col => hide date => becomes 3 col) */
         .score-board-list article.four-col-personal {
             grid-template-columns: 1fr 2fr 1fr;
         }

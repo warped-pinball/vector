@@ -122,44 +122,43 @@ window.updateLeaderboardArticles = function() {
 
 /*
  * Function: updateTournamentArticles
- * Fetches tournament data and renders it as 4 columns.
- * The first column is "Game #", second is "#", etc.
- * (No "ago" column requested here, so this remains a three-col layout.)
+ * Fetches tournament data and renders it with 4 columns:
+ *    Game, #, Initials, Score
  */
 window.updateTournamentArticles = function() {
-  var columns = [
-    { header: "Game #",   key: "game"     },
-    { header: "#",        key: "rank"     },
-    { header: "Score",    key: "score"    },
-    { header: "Initials", key: "initials" }
-  ];
+    // Reordered so it's Game, # (rank), Initials, then Score
+    var columns = [
+      { header: "Game",     key: "game"     },
+      { header: "Rank",        key: "rank"     },
+      { header: "Initials", key: "initials" },
+      { header: "Score",    key: "score"    }
+    ];
 
-  var container = document.getElementById("tournamentArticles");
-  if (!container) {
-    if (window.currentRefreshIntervalId) {
-      clearInterval(window.currentRefreshIntervalId);
-      window.currentRefreshIntervalId = null;
-    }
-    return;
-  }
-
-  fetch('/api/tournament')
-    .then(function(response) {
-      if (!response.ok) {
-        throw new Error("Network response was not ok: " + response.statusText);
+    var container = document.getElementById("tournamentArticles");
+    if (!container) {
+      if (window.currentRefreshIntervalId) {
+        clearInterval(window.currentRefreshIntervalId);
+        window.currentRefreshIntervalId = null;
       }
-      return response.json();
-    })
-    .then(function(data) {
-      localStorage.setItem('/api/tournament', JSON.stringify(data));
-      // Use the existing "four-col" or "three-col" class:
-      // We'll keep it three-col to match the old code (since date wasn't used).
-      window.renderFullArticleList("tournamentArticles", data, columns, "three-col");
-    })
-    .catch(function(error) {
-      console.error("Error fetching tournament data:", error);
-    });
-};
+      return;
+    }
+
+    fetch('/api/tournament')
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error("Network response was not ok: " + response.statusText);
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        localStorage.setItem('/api/tournament', JSON.stringify(data));
+        // Render with our new "four-col-tournament" class
+        window.renderFullArticleList("tournamentArticles", data, columns, "four-col-tournament");
+      })
+      .catch(function(error) {
+        console.error("Error fetching tournament data:", error);
+      });
+  };
 
 /*
  * Function: updatePersonalArticles
