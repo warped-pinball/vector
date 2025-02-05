@@ -6,35 +6,39 @@ window.currentRefreshIntervalId = null;
 /*
  * Function: renderHeaderRow
  * Renders a header row (with column labels) into the specified container.
- * The extra class (colClass) determines the grid layout (e.g. "four-col" or "three-col").
+ * The extra class (colClass) determines the grid layout ("four-col" or "three-col").
  */
 window.renderHeaderRow = function(containerId, columns, colClass) {
   var container = document.getElementById(containerId);
   if (!container) return;
   var headerArticle = document.createElement('article');
   headerArticle.classList.add('header-row', colClass);
+
   // Render one cell per column
   columns.forEach(function(col) {
     var cellDiv = document.createElement('div');
     cellDiv.classList.add(col.key);
+    // Use col.header for display text in the header row
     cellDiv.innerText = col.header;
     headerArticle.appendChild(cellDiv);
   });
+
   container.insertBefore(headerArticle, container.firstChild);
 };
 
 /*
  * Function: renderDataRow
  * Renders one data row as an article with one cell per column.
- * For the "player" column, it combines "initials" and "full_name" (if available).
- * If prefixRank is true, a '#' is added before the rank value.
+ * For the "player" column, it combines "initials" and "full_name" if available.
  */
-window.renderDataRow = function(item, columns, colClass, prefixRank) {
+window.renderDataRow = function(item, columns, colClass) {
   var articleRow = document.createElement('article');
   articleRow.classList.add('score-row', colClass);
+
   columns.forEach(function(col) {
     var cellDiv = document.createElement('div');
     cellDiv.classList.add(col.key);
+
     var value = "";
     if (col.key === "player") {
       // Combine initials and full_name (if available)
@@ -45,14 +49,17 @@ window.renderDataRow = function(item, columns, colClass, prefixRank) {
         value += " (" + fullName + ")";
       }
     } else {
-      value = item[col.key] !== undefined ? item[col.key] : "";
-      if (col.key === "rank" && prefixRank) {
-        value = "#" + value;
-      }
+      // For the rank column, we no longer prepend "#"
+      value = (item[col.key] !== undefined ? item[col.key] : "");
     }
+
+    // Set text and a tooltip (title) so user sees full text on hover/long press
     cellDiv.innerText = value;
+    cellDiv.setAttribute("title", value);
+
     articleRow.appendChild(cellDiv);
   });
+
   return articleRow;
 };
 
@@ -60,29 +67,33 @@ window.renderDataRow = function(item, columns, colClass, prefixRank) {
  * Function: renderFullArticleList
  * Clears the container and renders a header row followed by all data rows.
  */
-window.renderFullArticleList = function(containerId, data, columns, colClass, prefixRank) {
+window.renderFullArticleList = function(containerId, data, columns, colClass) {
   var container = document.getElementById(containerId);
   if (!container) return;
-  container.innerHTML = ''; // Clear previous content.
+  container.innerHTML = ''; // Clear previous content
+
   window.renderHeaderRow(containerId, columns, colClass);
+
   data.forEach(function(item) {
-    var row = window.renderDataRow(item, columns, colClass, prefixRank);
+    var row = window.renderDataRow(item, columns, colClass);
     container.appendChild(row);
   });
 };
 
 /*
  * Function: updateLeaderboardArticles
- * Fetches leaderboard data from the API and renders it using a 4-column board:
- * Columns: Rank, Score, Player, Date.
+ * Fetches leaderboard data and renders it with 4 columns.
+ * The first column is "#", but the API data key is still "rank".
  */
 window.updateLeaderboardArticles = function() {
+  // "rank" is still the data key from the API, but the header shows "#".
   var columns = [
-    { header: "Rank", key: "rank" },
-    { header: "Score", key: "score" },
+    { header: "#",      key: "rank"   },
+    { header: "Score",  key: "score"  },
     { header: "Player", key: "player" },
-    { header: "Date", key: "date" }
+    { header: "Date",   key: "date"   }
   ];
+
   var container = document.getElementById("leaderboardArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -91,6 +102,7 @@ window.updateLeaderboardArticles = function() {
     }
     return;
   }
+
   fetch('/api/leaders')
     .then(function(response) {
       if (!response.ok) {
@@ -100,8 +112,7 @@ window.updateLeaderboardArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/leaders', JSON.stringify(data));
-      // Use "four-col" for 4-column boards; prefix rank with '#'
-      window.renderFullArticleList("leaderboardArticles", data, columns, "four-col", true);
+      window.renderFullArticleList("leaderboardArticles", data, columns, "four-col");
     })
     .catch(function(error) {
       console.error("Error fetching leaderboard data:", error);
@@ -110,16 +121,17 @@ window.updateLeaderboardArticles = function() {
 
 /*
  * Function: updateTournamentArticles
- * Fetches tournament data from the API and renders it as a 4-column board:
- * Columns: Game #, Rank, Score, Initials.
+ * Fetches tournament data and renders it as 4 columns.
+ * The first column is "Game #", second is "#", etc.
  */
 window.updateTournamentArticles = function() {
   var columns = [
-    { header: "Game #", key: "game" },
-    { header: "Rank", key: "rank" },
-    { header: "Score", key: "score" },
+    { header: "Game #", key: "game"     },
+    { header: "#",      key: "rank"     },
+    { header: "Score",  key: "score"    },
     { header: "Initials", key: "initials" }
   ];
+
   var container = document.getElementById("tournamentArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -128,6 +140,7 @@ window.updateTournamentArticles = function() {
     }
     return;
   }
+
   fetch('/api/tournament')
     .then(function(response) {
       if (!response.ok) {
@@ -137,7 +150,7 @@ window.updateTournamentArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/tournament', JSON.stringify(data));
-      window.renderFullArticleList("tournamentArticles", data, columns, "four-col", true);
+      window.renderFullArticleList("tournamentArticles", data, columns, "four-col");
     })
     .catch(function(error) {
       console.error("Error fetching tournament data:", error);
@@ -146,8 +159,8 @@ window.updateTournamentArticles = function() {
 
 /*
  * Function: updatePersonalArticles
- * Fetches personal score data for the selected player and renders it as a 3-column board:
- * Columns: Rank, Score, Date. (Player column is omitted.)
+ * Fetches personal score data for the selected player,
+ * and renders it as 3 columns: "#", Score, Date.
  */
 window.updatePersonalArticles = function() {
   var playerSelect = document.getElementById('players');
@@ -158,13 +171,16 @@ window.updatePersonalArticles = function() {
     }
     return;
   }
+
   var player_id = playerSelect.value;
   if (!player_id) return;
+
   var columns = [
-    { header: "Rank", key: "rank" },
+    { header: "#",     key: "rank"  },
     { header: "Score", key: "score" },
-    { header: "Date", key: "date" }
+    { header: "Date",  key: "date"  }
   ];
+
   var container = document.getElementById("personalArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -173,6 +189,7 @@ window.updatePersonalArticles = function() {
     }
     return;
   }
+
   fetch('/api/player/scores?id=' + player_id)
     .then(function(response) {
       if (!response.ok) {
@@ -182,8 +199,7 @@ window.updatePersonalArticles = function() {
     })
     .then(function(data) {
       localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
-      // Use "three-col" for personal scores; prefix rank with '#'
-      window.renderFullArticleList("personalArticles", data, columns, "three-col", true);
+      window.renderFullArticleList("personalArticles", data, columns, "three-col");
     })
     .catch(function(error) {
       console.error("Error fetching personal scores:", error);
@@ -191,8 +207,7 @@ window.updatePersonalArticles = function() {
 };
 
 /*
- * Function: loadPlayers
- * Loads player data into the dropdown and sets up a change listener.
+ * loadPlayers: Load player data into the dropdown, set up a change listener.
  */
 window.loadPlayers = function(data) {
   var players = Object.entries(data)
@@ -203,8 +218,10 @@ window.loadPlayers = function(data) {
     .sort(function(a, b) {
       return a[1].name.localeCompare(b[1].name);
     });
+
   var playersSelect = document.getElementById('players');
   if (!playersSelect) return;
+
   playersSelect.innerHTML = '';
   players.forEach(function(entry) {
     var id = entry[0];
@@ -214,18 +231,19 @@ window.loadPlayers = function(data) {
     option.text = player.name + (player.initials ? " (" + player.initials + ")" : "");
     playersSelect.appendChild(option);
   });
+
   if (players.length > 0) {
     playersSelect.value = players[0][0];
     window.updatePersonalArticles();
   }
+
   playersSelect.addEventListener('change', function() {
     window.updatePersonalArticles();
   });
 };
 
 /*
- * Auto-Refresh Mechanism:
- * Only the currently visible board is auto-refreshed every 60 seconds.
+ * Auto-Refresh: only refresh the active board every 60 seconds.
  */
 var refreshFunctions = {
   "leader-board": window.updateLeaderboardArticles,
@@ -238,12 +256,15 @@ window.startAutoRefreshForTab = function(tabId) {
     clearInterval(window.currentRefreshIntervalId);
     window.currentRefreshIntervalId = null;
   }
+
   var containerId = "";
-  if (tabId === "leader-board") containerId = "leaderboardArticles";
+  if (tabId === "leader-board")         containerId = "leaderboardArticles";
   else if (tabId === "tournament-board") containerId = "tournamentArticles";
-  else if (tabId === "personal-board") containerId = "personalArticles";
+  else if (tabId === "personal-board")   containerId = "personalArticles";
+
   var container = document.getElementById(containerId);
   if (!container) return;
+
   var refreshFn = refreshFunctions[tabId];
   window.currentRefreshIntervalId = setInterval(function() {
     var currentContainer = document.getElementById(containerId);
@@ -257,27 +278,33 @@ window.startAutoRefreshForTab = function(tabId) {
 };
 
 /*
- * Function: showTab
- * Switches visible tabs, updates active button styling, refreshes data immediately,
- * and starts auto-refresh for the visible tab.
+ * showTab: Switch between tabs, refresh data, start auto-refresh on new tab.
  */
 window.showTab = function(tabId) {
+  // Hide all tab-content sections
   var tabs = document.querySelectorAll('.tab-content');
   tabs.forEach(function(tab) {
     tab.classList.remove('active');
   });
+
+  // Show the selected tab
   var selectedTab = document.getElementById(tabId);
   if (selectedTab) {
     selectedTab.classList.add('active');
   }
+
+  // Update button highlight
   var buttons = document.querySelectorAll('#score-board-nav button');
   buttons.forEach(function(button) {
     button.classList.remove('contrast');
   });
+
   var activeButton = document.querySelector('button[onclick="window.showTab(\'' + tabId + '\')"]');
   if (activeButton) {
     activeButton.classList.add('contrast');
   }
+
+  // Immediately fetch new data
   if (tabId === "leader-board") {
     window.updateLeaderboardArticles();
   } else if (tabId === "tournament-board") {
@@ -285,9 +312,14 @@ window.showTab = function(tabId) {
   } else if (tabId === "personal-board") {
     window.updatePersonalArticles();
   }
+
+  // Start auto-refresh
   window.startAutoRefreshForTab(tabId);
 };
 
+/*
+ * cleanupRefreshes: in case we want to clear intervals on unload, for example
+ */
 window.cleanupRefreshes = function() {
   if (window.currentRefreshIntervalId) {
     clearInterval(window.currentRefreshIntervalId);
@@ -296,14 +328,15 @@ window.cleanupRefreshes = function() {
 };
 
 /*
- * Poll for elements (since DOM load events aren’t reliably detected).
- * Once the main container and navigation are available, load the default leaderboard,
- * start auto-refresh, and load the player list.
+ * pollForElements: “poor man’s” DOM-ready. Once the scoreboard container
+ * and nav are in the DOM, load the default leaderboard and players.
  */
 (function pollForElements() {
   if (document.getElementById("leaderboardArticles") && document.getElementById("score-board-nav")) {
     window.updateLeaderboardArticles();
     window.startAutoRefreshForTab("leader-board");
+
+    // Load the players for the personal board select box
     fetch('/api/players')
       .then(function(response) { return response.json(); })
       .then(function(data) { window.loadPlayers(data); })

@@ -36,6 +36,18 @@
             width: 0;
             margin: 0;
         }
+
+         /* on screens under 500px wide */
+        @media (max-width: 500px) {
+            body {
+                padding: 2px !important;
+            }
+
+            /* Elements at the top level within body should have no padding */
+            .container {
+                padding: 0px !important;
+            }
+        }
     </style>
 </head>
 <body class="container-fluid">
