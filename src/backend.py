@@ -593,18 +593,19 @@ def app_setScoreCap(request):
 
 
 @add_route("/api/settings/tournament_mode")
-def app_getTournamentMode(request):
-    import SharedState
-
-    return json_dumps({"tournament_mode": SharedState.tournamentModeOn}), 200
+def app_getTournamentMode(request):    
+    tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
+    return json_dumps({"tournament_mode": tournament_mode}), 200
 
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):
-    import SharedState
-
-    SharedState.tournamentModeOn = int(request.data["tournament_mode"])
-
+    json_data = request.data
+    if "tournament_mode" in json_data:
+        info = ds_read_record("extras", 0)
+        info["tournament_mode"] = bool(json_data["tournament_mode"])
+        ds_write_record("extras", info, 0)
+        
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
