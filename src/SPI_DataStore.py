@@ -61,7 +61,6 @@ def show_mem_map():
 
 def write_record(structure_name, record, index=0, set=0):
     try:
-        # print("write ",structure_name,record,index,set)
         structure = memory_map[structure_name]
         start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
         data = serialize(record, structure_name)
@@ -105,13 +104,23 @@ def serialize(record, structure_name):
             record["Gpassword"].encode(),
         )
     elif structure_name == "extras":
-        return struct.pack(
-            "<II20s20s",
-            record["enable"],
-            record["other"],
-            record["lastIP"].encode(),
-            record["message"].encode(),
-        )
+        if record.get("enable") is None:           
+            enable = 0
+            if record.get("enter_intials_on_game", True):
+                enable |= 0x01
+            if record.get("claim_scores", True):
+                enable |= 0x02
+            if record.get("show_ip_address", True):
+                enable |= 0x04
+            if record.get("tournament_mode", True):
+                enable |= 0x08
+            if record.get("flag5", True):
+                enable |= 0x10
+            if record.get("flag6", True):
+                enable |= 0x20                
+        else:
+            enable = record["enable"]           
+        return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
     else:
         raise ValueError("Unknown structure name")
 
@@ -182,14 +191,20 @@ def deserialize(data, structure_name):
         try:
             enable, other, lastIP, message = struct.unpack("<II20s20s", data)
             return {
-                "enable": enable,
+                #"enable": enable,
                 "other": other,
                 "lastIP": lastIP.decode().strip("\0"),
                 "message": message.decode().strip("\0"),
+                "enter_intials_on_game": bool(enable & 0x01),
+                "claim_scores": bool(enable & 0x02),
+                "show_ip_address": bool(enable & 0x04),
+                "tournament_mode": bool(enable & 0x08),  
+                "flag5": bool(enable & 0x10),
+                "flag6": bool(enable & 0x20)
             }
         except Exception:
-            print("fault 3452")
-            return {"enable": "true", "other": "1", "lastIP": "none", "message": "none"}
+            Log.log("DATSTORE: fault extras")
+            return {"enable": 5, "other": 1, "lastIP": "none", "message": "none", "enter_intials_on_game": True, "claim_scores": False, "show_ip_address": True, "tournament_mode": False, "flag5": False, "flag6": False}
     else:
         raise ValueError("Unknown structure name")
 
@@ -213,7 +228,7 @@ def blankStruct(structure_name):
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
-        print("   +sets")
+        #print("   +sets")
         for x in range(structure["sets"]):
             for i in range(structure["count"]):
                 write_record(structure_name, fake_entry, i, x)
