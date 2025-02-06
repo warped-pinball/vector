@@ -595,7 +595,7 @@ def app_setScoreCap(request):
 @add_route("/api/settings/tournament_mode")
 def app_getTournamentMode(request):    
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
-    return json_dumps({"tournament_mode": tournament_mode}), 200
+    return {"tournament_mode": tournament_mode}
 
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)

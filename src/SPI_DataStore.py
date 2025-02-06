@@ -228,7 +228,6 @@ def blankStruct(structure_name):
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
-        #print("   +sets")
         for x in range(structure["sets"]):
             for i in range(structure["count"]):
                 write_record(structure_name, fake_entry, i, x)
