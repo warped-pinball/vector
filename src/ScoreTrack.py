@@ -421,7 +421,7 @@ def place_game_in_claim_list(game):
     recent_scores[3] = recent_scores[2]  
     recent_scores[2] = recent_scores[1]  
     recent_scores[1] = recent_scores[0]  
-    recent_scores[0]=game  #[SharedState.gameCounter,readMachineScore(0),readMachineScore(1),readMachineScore(2),readMachineScore(3)]
+    recent_scores[0]=game 
     print(recent_scores)
 
 nGameIdleCounter = 0
@@ -494,5 +494,5 @@ def CheckForNewScores(nState=[0]):
                 #put ip address back up on displays
                 displayMessage.refresh_9()
 
-                
+
 
