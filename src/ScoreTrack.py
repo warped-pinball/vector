@@ -227,7 +227,7 @@ def update_leaderboard(new_entry):
     print("SCORE: Update Leader Board: ", new_entry)
 
     # if tournamnet mode do only tournamnet save - - -
-    if SharedState.tournamentModeOn == 1:
+    if DataStore.read_record("extras", 0)["enter_intials_on_game"]:
         print("SCORE: Tournament Mode")
         update_tournamentboard(new_entry)
         return
