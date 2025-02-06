@@ -57,7 +57,7 @@ def claim_scores(input_data):
                         #print("i=",i,i[1],score_and_init[1])
                         if int(i[1]) == int(score_and_init[1]):   #score match
                             if not i[0]:
-                                print ("ok new score",score_and_init,recent_game_index,score_index)
+                                print ("SCORE: new score:",score_and_init,recent_game_index,score_index)
                                 recent_scores[recent_game_index][1 + score_index] = (
                                     score_and_init[0].upper(),  # New initials
                                     i[1],  # Existing score
@@ -258,7 +258,7 @@ def Update_individualScore(new_entry):
     # Load existing scores
     scores=[]
     num_scores=DataStore.memory_map["individual"]["count"]
-    print(" num sores = ",num_scores,playernum)
+    print("SCORE: num sores = ",num_scores,playernum)
     for i in range(num_scores): 
         scores.append(DataStore.read_record("individual", i, playernum))     
 
@@ -335,7 +335,7 @@ def initialize_leaderboard():
             game_value = DataStore.read_record("tournament", i)["game"]
             n = max(game_value, n)
         except (KeyError, TypeError):
-            print(f"Error reading game value at index {i}")
+            log.log(f"SCORE: Error reading game value at index {i}")
             continue
     S.gameCounter = n
 
@@ -422,7 +422,7 @@ def place_game_in_claim_list(game):
     recent_scores[2] = recent_scores[1]  
     recent_scores[1] = recent_scores[0]  
     recent_scores[0]=game 
-    print(recent_scores)
+    print("SCORE: add to claims list: ", recent_scores)
 
 nGameIdleCounter = 0
 
@@ -463,7 +463,7 @@ def CheckForNewScores(nState=[0]):
                 nGameIdleCounter=0
                 print("SCORE: game list 10 minute expire")
 
-            print("SERV: game start check ",nGameIdleCounter)
+            print("SCORE: game start check ",nGameIdleCounter)
             if shadowRam[BallInPlayAdr] in (Ball1Value,Ball2Value,Ball3Value,Ball4Value,Ball5Value):
                 nGameIdleCounter=0
                 #game has started 
@@ -476,8 +476,8 @@ def CheckForNewScores(nState=[0]):
                 SharedState.gameCounter = (SharedState.gameCounter +1) % 100
                 nState[0]=1
             
-        elif nState[0]==1:
-            print("SERV: game end check")            
+        elif nState[0]==1: #waiting for game to end
+            print("SCORE: game end check")            
             if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
                 #game over, get new scores
                 nState[0]=0                
