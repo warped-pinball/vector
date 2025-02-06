@@ -102,7 +102,7 @@ def serialize(record, structure_name):
             record["password"].encode(),
             record["gamename"].encode(),
             record["Gpassword"].encode(),
-        )
+        )        
     elif structure_name == "extras":
         if record.get("enable") is None:           
             enable = 0
@@ -190,8 +190,7 @@ def deserialize(data, structure_name):
         # print (data,"length= ",len(data))  #,"s-> ",data.strip('\00'))
         try:
             enable, other, lastIP, message = struct.unpack("<II20s20s", data)
-            return {
-                #"enable": enable,
+            return {                
                 "other": other,
                 "lastIP": lastIP.decode().strip("\0"),
                 "message": message.decode().strip("\0"),
@@ -235,22 +234,6 @@ def blankStruct(structure_name):
         for i in range(structure["count"]):
             write_record(structure_name, fake_entry, i)
     Log.log(f"DATST: blank {structure_name}")
-
-
-"""
-def blankConfig(structure_name):
-    if structure_name=="configuration":
-        fake_entry = {
-            "ssid": "",
-            "password": "",
-            "Gpassword": " ",
-            "gamename": "GenericSystem11_",
-            "enable": 1,
-            "other": 0
-        }
-        write_record("configuration", fake_entry, 0, 0)
-        Log.log(f"DATST: blank {structure_name}")
-"""
 
 
 def blankIndPlayerScores(playernum):
