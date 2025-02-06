@@ -4,9 +4,6 @@ from micropython import const
 WarpedVersion = const("1.0.0")
 WarpedCodeBase = const("SYSTEM11")
 
-# true false - tournament mode
-tournamentModeOn = 0
-
 # counts game start cycles
 gameCounter = 0
 

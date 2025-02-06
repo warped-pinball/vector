@@ -579,8 +579,7 @@ def app_restoreAdjustments(request):
 #
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
-    raw_data = ds_read_record("extras", 0)["other"]
-    score_cap = bool(raw_data)
+    score_cap = ds_read_record("extras", 0)["enter_intials_on_game"]
     return json_dumps({"on-machine": score_cap}), 200
 
 
@@ -589,34 +588,42 @@ def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
         info = ds_read_record("extras", 0)
-        info["other"] = json_data["on-machine"]
+        info["enter_intials_on_game"] = bool(json_data["on-machine"])        
         ds_write_record("extras", info, 0)
 
 
 @add_route("/api/settings/tournament_mode")
-def app_getTournamentMode(request):
-    import SharedState
-
-    return json_dumps({"tournament_mode": SharedState.tournamentModeOn}), 200
+def app_getTournamentMode(request):    
+    tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
+    return {"tournament_mode": tournament_mode}
 
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):
-    import SharedState
-
-    SharedState.tournamentModeOn = int(request.data["tournament_mode"])
-
+    json_data = request.data
+    if "tournament_mode" in json_data:
+        info = ds_read_record("extras", 0)
+        info["tournament_mode"] = bool(json_data["tournament_mode"])
+        ds_write_record("extras", info, 0)
+        
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
+    
     from machine import reset
-
     import reset_control
-    from SPI_DataStore import blankAll
+    from SPI_DataStore import blankAll as D_blank
+    from Adjustments import blank_all as A_blank
+    from logger import logger_instance
+    
+    Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
-    blankAll()
-    reset()
+    Log.delete_log()
+    D_blank()
+    A_blank()
+    Log.log("BKD: Factory Reset")
+    reset()     #reset PICO
 
 
 @add_route("/api/settings/reboot", auth=True)
@@ -745,11 +752,11 @@ def app_apply_update(request):
         for response in apply_update(data["url"]):
             log = response.get("log", None)
             if log:
-                Log.log(log)
+                Log.log(f"BKD: {log}")
             yield json_dumps(response)
             gc_collect()
     except Exception as e:
-        Log.log(f"Error applying update: {e}")
+        Log.log(f"BKD: Error applying update: {e}")
         yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
         yield json_dumps({"log": "Try again in a moment", "percent": 100})
 
