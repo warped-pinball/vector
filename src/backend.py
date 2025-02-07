@@ -595,7 +595,7 @@ def app_setScoreCap(request):
 @add_route("/api/settings/tournament_mode")
 def app_getTournamentMode(request):    
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
-    return json_dumps({"tournament_mode": tournament_mode}), 200
+    return {"tournament_mode": tournament_mode}
 
 
 @add_route("/api/settings/tournament_mode", method="POST", auth=True)
@@ -609,9 +609,7 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
-
-    print("RESET RESET    RESET")
-
+    
     from machine import reset
     import reset_control
     from SPI_DataStore import blankAll as D_blank
@@ -624,6 +622,7 @@ def app_factoryReset(request):
     Log.delete_log()
     D_blank()
     A_blank()
+    Log.log("BKD: Factory Reset")
     reset()     #reset PICO
 
 
@@ -753,11 +752,11 @@ def app_apply_update(request):
         for response in apply_update(data["url"]):
             log = response.get("log", None)
             if log:
-                Log.log(log)
+                Log.log(f"BKD: {log}")
             yield json_dumps(response)
             gc_collect()
     except Exception as e:
-        Log.log(f"Error applying update: {e}")
+        Log.log(f"BKD: Error applying update: {e}")
         yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
         yield json_dumps({"log": "Try again in a moment", "percent": 100})
 

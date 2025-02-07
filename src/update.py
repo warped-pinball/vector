@@ -271,13 +271,6 @@ def validate_compatibility():
     if incoming_update_file_format not in supported_update_file_formats:
         raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
 
-    from SharedState import WarpedVersion
-
-    current_version_obj = Version.from_str(WarpedVersion)
-    supported_versions = [Version.from_str(v) for v in metadata.get("supported_software_versions", [])]
-    if not any(current_version_obj == sv for sv in supported_versions):
-        raise Exception(f"Version {current_version_obj} not in supported versions: {[str(v) for v in supported_versions]}")
-
     from sys import implementation
 
     mp_version_obj = Version(
