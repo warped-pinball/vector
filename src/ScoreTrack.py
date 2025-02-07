@@ -434,11 +434,11 @@ def CheckForNewScores(nState=[0]):
         call rate is every ~5 seconds
 
     system 11:  
-        if enter_intials_on_game is on, remove high scores during game to force all player to enter intiials
+        if enter_initials_on_game is on, remove high scores during game to force all player to enter intiials
 
     system 9:
         if display ip address is on, do not place high scores in machine memeory (same display)
-        enter_intials_on_game is not supported for system 9
+        enter_initials_on_game is not supported for system 9
 
     """
     global nGameIdleCounter

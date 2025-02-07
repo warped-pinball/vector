@@ -579,7 +579,7 @@ def app_restoreAdjustments(request):
 #
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
-    score_cap = ds_read_record("extras", 0)["enter_intials_on_game"]
+    score_cap = ds_read_record("extras", 0)["enter_initials_on_game"]
     return json_dumps({"on-machine": score_cap}), 200
 
 
@@ -588,7 +588,7 @@ def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
         info = ds_read_record("extras", 0)
-        info["enter_intials_on_game"] = bool(json_data["on-machine"])        
+        info["enter_initials_on_game"] = bool(json_data["on-machine"])        
         ds_write_record("extras", info, 0)
 
 
