@@ -436,15 +436,14 @@ def CheckForNewScores(nState=[0]):
     system 11:  
         if enter_intials_on_game is on, remove high scores during game to force all player to enter intiials
 
-
     system 9:
         if display ip address is on, do not place high scores in machine memeory (same display)
         enter_intials_on_game is not supported for system 9
 
     """
     global nGameIdleCounter
-    enscorecap = DataStore.read_record("extras", 0)["enter_initials_on_game"]
-   
+
+    enscorecap = DataStore.read_record("extras", 0)["enter_initials_on_game"]   
 
     if S.gdata["BallInPlay"]["Type"] == 1:
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"] 
