@@ -70,8 +70,7 @@ def display_string(s):
 def write_char(c):
     c = c.upper()
     if c in segment_map:
-        value = segment_map[c]
-        print(value)
+        value = segment_map[c]        
         for i in range(8):
             pins[i].value((value >> i) & 0x01)
     else:

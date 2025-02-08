@@ -519,7 +519,16 @@ def create_schedule(ap_mode: bool = False):
     from discovery import DEVICE_TIMEOUT, announce, listen
     from discovery import setup as discovery_setup
     from displayMessage import refresh
-    from GameStatus import poll_fast
+    #from GameStatus import poll_fast
+
+    # simulator - only if it exists in stand alone py file
+    if file_exists("Simulator.py"):
+        print("SIMULATOR: Loading")
+        from Simulator import simulator_input
+        schedule(simulator_input, 1000, 100)
+    else:
+        print("SIMULATOR: Not Found")
+
 
     #
     # one time tasks
@@ -544,7 +553,7 @@ def create_schedule(ap_mode: bool = False):
     # reoccuring tasks
     #
     # update the game status every 0.25 second
-    schedule(poll_fast, 0, 250)
+    #schedule(poll_fast, 0, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
