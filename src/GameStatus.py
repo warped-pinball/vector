@@ -1,6 +1,6 @@
 # live game status updates
 import SharedState as S
-from Shadow_Ram_Definitions import shadowRam, SRAM_DATA_LENGTH, SRAM_DATA_BASE, SRAM_COUNT_BASE
+from Shadow_Ram_Definitions import shadowRam
 import json
 import time
 
@@ -13,7 +13,7 @@ class GameStatus:
         self.poll_state = 0
 
 
-    def BCD_to_Int(self, number_BCD):
+    def _BCD_to_Int(self, number_BCD):
         """ convert BDC number from machine to regular int"""
         number_int = 0
         for byte in number_BCD:
@@ -27,14 +27,14 @@ class GameStatus:
         return number_int
 
 
-    def get_machine_score(self, index):
-        """ read live score from machine memory (0=player1, 3=player4) """
+    def _get_machine_score(self, player):
+        """ read single live score from machine memory (0=player1, 3=player4) """
         try:
             score = 0
             if S.gdata.get("InPlayScores", {}).get("Type", 0) != 0:
-                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * S.gdata["InPlayScores"]["BytesInScore"]
+                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + player * S.gdata["InPlayScores"]["BytesInScore"]
                 score_bytes = shadowRam[score_start:score_start + S.gdata["InPlayScores"]["BytesInScore"]]
-                score = self.BCD_to_Int(score_bytes)
+                score = self._BCD_to_Int(score_bytes)
             else:
                 print("GSTAT: InPlayScores not defined")
             return score
@@ -44,8 +44,8 @@ class GameStatus:
 
 
 
-    def get_ball_in_play(self):
-        """ get Ball in play number, 0=game over """
+    def _get_ball_in_play(self):
+        """ get Ball in play number,  also:0=game over """
         try:
             ball_in_play = S.gdata["BallInPlay"]
             if ball_in_play["Type"] == 1:
@@ -69,11 +69,11 @@ class GameStatus:
         report_data = {}
 
         try:
-            report_data["BallInPlay"] = self.get_ball_in_play()
-            report_data["Player1Score"] = self.get_machine_score(0)
-            report_data["Player2Score"] = self.get_machine_score(1)
-            report_data["Player3Score"] = self.get_machine_score(2)
-            report_data["Player4Score"] = self.get_machine_score(3)
+            report_data["BallInPlay"] = self._get_ball_in_play()
+            report_data["Player1Score"] = self._get_machine_score(0)
+            report_data["Player2Score"] = self._get_machine_score(1)
+            report_data["Player3Score"] = self._get_machine_score(2)
+            report_data["Player4Score"] = self._get_machine_score(3)
 
             # game time
             if self.time_game_start is not None:
@@ -101,13 +101,13 @@ class GameStatus:
         if self.poll_state == 0:
             # watch for ball in play for game start
             self.game_active = False
-            if self.get_ball_in_play() != 0:
+            if self._get_ball_in_play() != 0:
                 self.time_game_start = time.ticks_ms()
                 self.game_active = True
                 print("GSTAT: start game @ time=", self.time_game_start)
                 self.poll_state = 1
         elif self.poll_state == 1:
-            if self.get_ball_in_play() == 0:
+            if self._get_ball_in_play() == 0:
                 self.time_game_end = time.ticks_ms()
                 print("GSTAT: end game @ time=", self.time_game_end)
                 self.game_active = False
