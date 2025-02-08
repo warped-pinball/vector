@@ -92,7 +92,6 @@ class GameStatus:
             print(f"GSTAT: Error in report generation: {e}")
 
         # Return the collected report data as JSON
-        print("GSTAT: Report Data:", json.dumps(report_data))
         return json.dumps(report_data)
 
   
@@ -120,6 +119,7 @@ class GameStatus:
 if __name__ == "__main__":
     import GameDefsLoad
     GameDefsLoad.go()
+    #print (S.gdata)
     game_status = GameStatus()
     print(game_status.report("ok"))
     game_status.poll_fast()

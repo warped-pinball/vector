@@ -5,7 +5,7 @@
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"
     },
-    "micropico.syncFolder": "",
+    "micropico.syncFolder": "build",
     "micropico.openOnStart": true,
     "python.analysis.typeshedPaths": [
         "~/.micropico-stubs/included"
@@ -13,5 +13,20 @@
     "python.analysis.extraPaths": [
         "~/.micropico-stubs/included"
     ],
-    "python.terminal.activateEnvironment": false
+    "python.terminal.activateEnvironment": false,
+    "micropico.syncFileTypes": [
+        "py",
+        "txt",
+        "log",
+        "json",
+        "xml",
+        "html",
+        "js",
+        "css",
+        "mpy",
+        "jsonl",
+        "svg",
+        "gz",
+        "png"
+    ]
 }
