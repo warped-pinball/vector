@@ -458,7 +458,7 @@ def copy_to_fram():
 
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
-        print("MEM in SERVER: FRAM cycle complete")
+        print("FRAM: cycle complete")
         led_board.toggle()
 
 
@@ -526,13 +526,13 @@ def create_schedule(ap_mode: bool = False):
     #
     # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
-    schedule(refresh, 30000, log="Server: Refresh display message")
+    schedule(refresh, 30000)
 
     # initialize the leader board 10 seconds after boot
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource_go, 5000, 10000, log="Server: Memory Usage")
+    schedule(resource_go, 5000, 10000 )
 
     # initialize the fram
     schedule(sflash_driver_init, 200)

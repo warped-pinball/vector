@@ -55,7 +55,7 @@ def int_to_bcd(number):
     return bcd_bytes
 
 
-def set_mem(msg):
+def set_mem(msgText):
     """
     Put the message in the shadow ram
     
@@ -84,7 +84,7 @@ def set_mem(msg):
                 shadowRam[address_offset + k] = msgText[2][k]
             shadowRam[S.gdata["DisplayMessage"]["EnableByteAddress"]]=0
         except Exception as e:
-            print(f"Unexpected error 56744 : {e}")
+            print(f"MSG Fault 87: {e}")
 
     #system 9
     elif S.gdata["DisplayMessage"]["Type"] == 9:
@@ -233,7 +233,7 @@ def refresh():
         shadowRam[S.gdata["HSRewards"]["HS3"]]=S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS4"]]=S.gdata["HSRewards"]["DisableByte"]              
     init(localCopyIp)
-    print("display message refreshed ",localCopyIp)
+    print("MSG: refreshed ",localCopyIp)
     return
 
   
@@ -247,7 +247,7 @@ def refresh_9():
         if True == DataStore.read_record("extras", 0)["show_ip_address"]:
             global localCopyIp      
             init(localCopyIp)
-            print("display message refreshed ",localCopyIp)
+            print("MSG: refreshed ",localCopyIp)
             return
     
 

@@ -456,7 +456,7 @@ def CheckForNewScores(nState=[0]):
         if nState[0]==0:  #waiting for a game to start
             
             nGameIdleCounter += 1  #claim score list expiration timer
-            if nGameIdleCounter > (3*60/5):  # 3 min, push empty onto list so old games expire
+            if nGameIdleCounter > (3*60/5):  # 3 min, push empty onto list so old games expire    
                 game=[SharedState.gameCounter,["",0],["",0],["",0],["",0]]              
                 place_game_in_claim_list(game)
                 nGameIdleCounter=0

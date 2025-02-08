@@ -6,11 +6,8 @@
     fault check updated for early sys11 game compatability
 """
 
-
 import time
-
 import machine
-
 import faults
 import GameDefsLoad
 import Memory_Main as MemoryMain
@@ -18,7 +15,6 @@ import reset_control
 import SharedState as S
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
-from SPI_Store import sflash_driver_init
 
 Log = logger_instance
 
@@ -151,7 +147,7 @@ if not bus_activity_fault:
         reset_control.release(True)
 """
 
-sflash_driver_init()
+
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa
