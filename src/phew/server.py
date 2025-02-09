@@ -517,7 +517,6 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from discovery import DEVICE_TIMEOUT, announce, listen
-    from discovery import setup as discovery_setup
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -532,7 +531,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource_go, 5000, 10000 )
+    schedule(resource_go, 5000, 10000)
 
     # initialize the fram
     schedule(sflash_driver_init, 200)
@@ -559,9 +558,6 @@ def create_schedule(ap_mode: bool = False):
 
     # non AP mode only tasks
     if not ap_mode:
-        # initialize the discovery service
-        schedule(discovery_setup, 2000)
-
         # every 1/2 of DEVICE_TIMEOUT announce our presence
         schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
 

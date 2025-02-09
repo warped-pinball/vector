@@ -17,7 +17,6 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
-from SPI_DataStore import writeIP
 
 #
 # Constants
@@ -807,8 +806,11 @@ def add_ap_mode_routes():
 
 
 def connect_to_wifi():
+    from discovery import setup as discovery_setup
+    from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
     from phew import is_connected_to_wifi as phew_is_connected
+    from SPI_DataStore import writeIP
 
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
@@ -821,12 +823,10 @@ def connect_to_wifi():
     for i in range(WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
         if phew_is_connected():
-            print(f"Connected to wifi with IP address: {ip_address}")
             writeIP(ip_address)
-            from displayMessage import init
-
-            init(ip_address)
-
+            init_display(ip_address)
+            discovery_setup(ip_address)
+            print(f"Connected to wifi with IP address: {ip_address}")
             return True
 
     # If there's signal that means the credentials are wrong
