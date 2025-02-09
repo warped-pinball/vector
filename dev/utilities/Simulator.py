@@ -88,7 +88,7 @@ def _process_input():
         buffer = incoming_data.pop(0)  # pops a string from the list
 
         search_strs = {
-            "LED: ": lambda data: disp.display_string(data),
+            "LED: ": lambda data: _led(data),
             "WRITE: ": lambda data: _write(data),
             "READ: ": lambda data: _read(data)
         }
@@ -100,6 +100,13 @@ def _process_input():
                 action(data_to_send)
                 break  # Exit the loop after the first match
 
+
+def _led(input_data):
+    """set the 7 segment display, support char and string"""
+    if len(input_data) == 1:
+        disp.write_char(input_data)
+    elif len(input_data) > 0:
+        disp.display_string(input_data)
 
 
 def _read(input_data):

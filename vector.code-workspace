@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "Mpy Remote Workspace",
+			"uri": "pico:"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance",
+		"micropico.syncFolder": "build",
+		"micropico.syncFileTypes": [
+			"py",
+			"txt",
+			"log",
+			"json",
+			"xml",
+			"html",
+			"js",
+			"css",
+			"mpy",
+			"jsonl",
+			"gz"
+		]
+	}
+}
