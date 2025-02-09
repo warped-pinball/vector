@@ -18,3 +18,6 @@ gdata = {}
 
 # ip address
 ipAddress = 0
+
+
+tournamentModeOn = 0

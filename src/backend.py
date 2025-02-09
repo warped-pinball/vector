@@ -454,7 +454,7 @@ def get_scoreboard(key):
         if "date" in row:
             row["ago"] = time_ago(row["date"], now_seconds)
 
-    return json_dumps(rows), 200
+    return rows
 
 
 @add_route("/api/leaders")
