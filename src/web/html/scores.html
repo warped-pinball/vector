@@ -153,8 +153,10 @@
         <div>
             <p>Player <b>#<span id="player-number"></span></b></p>
             <p>Score: <b><span id="score-to-claim"></span></b></p>
-            <label for="initials-input">Initials:</label>
-            <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required title="Enter exactly 3 letters" />
+            <div class="grid">
+                <label for="initials-input">Initials:</label>
+                <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required title="Enter exactly 3 letters" />
+            </div>
             <footer>
                 <button class="secondary" onclick="document.getElementById('score-claim-modal').close()">Cancel</button>
                 <button id="submit-claim-btn">Submit</button>
