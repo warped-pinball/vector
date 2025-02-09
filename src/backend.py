@@ -483,7 +483,7 @@ def app_claimScore(request):
     from ScoreTrack import claim_score
 
     data = request.data
-    claim_score(data["initials"], score=data["score"])
+    claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
 
 
 #
