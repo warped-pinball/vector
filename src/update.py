@@ -6,6 +6,8 @@ class Version:
         self.major = major
         self.minor = minor
         self.patch = patch
+        if candidate is not None and candidate == "":
+            candidate = None
         self.candidate = candidate
 
     def __str__(self):
@@ -45,7 +47,10 @@ class Version:
         return not self.__gt__(other) and self != other
 
     def __eq__(self, other):
-        return self.major == other.major and self.minor == other.minor and self.patch == other.patch and self.candidate == other.candidate
+        def eq_none(a, b):
+            return (a is None and b is None) or (a == b)
+
+        return eq_none(self.major, other.major) and eq_none(self.minor, other.minor) and eq_none(self.patch, other.patch) and eq_none(self.candidate, other.candidate)
 
     @staticmethod
     def from_str(version_str):
