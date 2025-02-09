@@ -147,3 +147,18 @@
     </section>
 </div>
 <div id="claimable-scores" class="hide score-claim"></div>
+<dialog id="score-claim-modal">
+    <article>
+        <h2>Claim Your Score</h2>
+        <div>
+            <p>Player <b>#<span id="player-number"></span></b></p>
+            <p>Score: <b><span id="score-to-claim"></span></b></p>
+            <label for="initials-input">Initials:</label>
+            <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required title="Enter exactly 3 letters" />
+            <footer>
+                <button class="secondary" onclick="document.getElementById('score-claim-modal').close()">Cancel</button>
+                <button id="submit-claim-btn">Submit</button>
+            </footer>
+        </div>
+    </article>
+</dialog>

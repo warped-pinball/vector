@@ -417,6 +417,44 @@ window.getClaimableScores = async function () {
             // if the initials are present, use them, otherwise replace with a "claim" button
             if (player[0] === '') {
                 const claimButton = document.createElement('button')
+                claimButton.addEventListener('click', async () => {
+                    const modal = document.getElementById('score-claim-modal')
+
+                    // set modal score
+                    const modalScore = document.getElementById('score-to-claim')
+                    modalScore.innerText = player[1]
+
+                    // set player number
+                    const playerNumber = document.getElementById('player-number')
+                    playerNumber.innerText = element.indexOf(player) + 1
+
+                    // replace the submit button with a new one
+                    const submit = document.getElementById('submit-claim-btn')
+                    const newSubmit = submit.cloneNode(true)
+                    submit.parentNode.replaceChild(newSubmit, submit)
+                    newSubmit.id = 'submit-claim-btn'
+
+                    // make submit callback
+                    newSubmit.addEventListener('click', async () => {
+                        const initials = document.getElementById('initials-input').value
+                        const response = await window.smartFetch(
+                            '/api/scores/claim',
+                            { score: player[1], initials: initials, player_index: element.indexOf(player)},
+                            false
+                        )
+
+                        // get response status
+                        const status = await response.status
+                        if (status === 200) {
+                            window.getClaimableScores()
+                        }
+                        modal.close()
+                    })
+
+                    // show modal
+                    modal.showModal();
+                })
+
                 claimButton.innerText = 'Claim'
                 claimButton.classList.add('claim-button')
                 initialsDiv.appendChild(claimButton)

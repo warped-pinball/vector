@@ -93,9 +93,9 @@ def claim_score(initials, player_index, score):
     initials = initials.upper()
 
     for game_index, game in enumerate(recent_scores):
-        if game[player_index + 1][1] == score:
+        if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
             print("SCORE: new score:", initials, score, game_index, player_index)
-            recent_scores[game_index][player_index] = (initials, score)
+            recent_scores[game_index][player_index + 1] = (initials, score)
             year, month, day, _, _, _, _, _ = rtc.datetime()
             new_score = {"initials": initials, "full_name": None, "score": score, "date": f"{month:02d}/{day:02d}/{year}"}
             update_leaderboard(new_score)
