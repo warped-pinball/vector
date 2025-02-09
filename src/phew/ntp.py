@@ -40,3 +40,35 @@ def fetch(synch_with_rtc=True, timeout=10):
         )
 
     return timestamp
+
+
+def time_ago(date_str, now_seconds):
+    """
+    Convert a string date in 'MM/DD/YYYY' format into a string like '1d', '2w', '6m', '3y'.
+    'now_seconds' is the current time in seconds since epoch (so we only fetch once).
+    """
+    # Parse input string
+    month, day, year = map(int, date_str.split("/"))
+
+    # Convert to seconds since epoch
+    date_seconds = time.mktime((year, month, day, 0, 0, 0, -1, -1))
+
+    # Calculate difference in days
+    diff_seconds = now_seconds - date_seconds
+    diff_days = int(diff_seconds // 86400)  # 86400 seconds in a day
+
+    # If the date is in the future, we'll clamp to 0
+    if diff_days < 0:
+        diff_days = 0
+
+    # Convert to weeks/months/years as needed
+    if diff_days < 7:
+        return f"{diff_days}d"
+    diff_weeks = diff_days // 7
+    if diff_weeks < 4:
+        return f"{diff_weeks}w"
+    diff_months = diff_days // 30
+    if diff_months < 12:
+        return f"{diff_months}m"
+    diff_years = diff_days // 365
+    return f"{diff_years}y"
