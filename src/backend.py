@@ -471,6 +471,21 @@ def app_tournamentClear(request):
     SharedState.gameCounter = 0
 
 
+@add_route("/api/scores/claimable")
+def app_getClaimableScores(request):
+    from ScoreTrack import get_claim_score_list
+
+    return get_claim_score_list()
+
+
+@add_route("/api/scores/claim", method="POST")
+def app_claimScore(request):
+    from ScoreTrack import claim_score
+
+    data = request.data
+    claim_score(data["initials"], score=data["score"])
+
+
 #
 # Players
 #

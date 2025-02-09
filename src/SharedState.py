@@ -2,6 +2,8 @@ from micropython import const
 
 # TODO use const else where
 WarpedVersion = const("1.0.0")
+
+# TODO isn't used anywhere and should probably be "VECTOR" anyway with system 9
 WarpedCodeBase = const("SYSTEM11")
 
 # counts game start cycles
