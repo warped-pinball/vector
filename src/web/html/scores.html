@@ -69,8 +69,38 @@
         padding-right: 12px;
     }
 
-    /* Hide date column for the *leaderboard* only when <= 500px,
-       but keep personal scoreboard always showing date. */
+    .game{
+        padding: 4px;
+        display: grid;
+        grid-template-columns: 25% 25% 25% 25%;
+        margin-bottom: 0.25rem;
+    }
+
+    .play{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        column-gap: 5px;
+    }
+
+    .claim-button{
+        padding: 4px 9px;
+    }
+
+    @media (max-width: 770px) {
+        .game{
+            grid-template-columns: 1fr;
+        }
+
+        .play{
+            margin: 0.25rem;
+        }
+
+        .claim-header-row{
+            display: none;
+        }
+    }
+
     @media (max-width: 500px) {
 
         /* Only hide .date in "five-col" containers (leaderboard) */
@@ -83,6 +113,10 @@
             /* drop the date col at narrow widths */
         }
     }
+
+
+
+
 </style>
 
 <div class="score-board">
@@ -112,3 +146,4 @@
         <div id="personalArticles" class="score-board-list"></div>
     </section>
 </div>
+<div id="claimable-scores" class="hide score-claim"></div>

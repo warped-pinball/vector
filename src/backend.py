@@ -481,6 +481,8 @@ def app_tournamentClear(request):
 
 @add_route("/api/scores/claimable")
 def app_getClaimableScores(request):
+    # TODO only if web ui score claim is enabled
+
     from ScoreTrack import get_claim_score_list
 
     return get_claim_score_list()

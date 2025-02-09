@@ -26,10 +26,10 @@ top_scores = None
 # first number is game counter (game ID), then 4 scores plus intiials
 recent_scores = [
     # TODO put back to all zeros after testing
-    [0, ("", 1), ("", 0), ("", 0), ("", 0)],
-    [1, ("", 1), ("", 2), ("", 0), ("", 0)],
-    [2, ("", 1), ("", 2), ("", 3), ("", 0)],
-    [3, ("", 1), ("", 2), ("", 3), ("", 4)],
+    [0, ("", 11287984), ("", 0), ("", 0), ("", 0)],
+    [1, ("MSM", 546341), ("", 267822), ("", 0), ("", 0)],
+    [2, ("", 1234), ("PSM", 245562), ("", 3), ("", 0)],
+    [3, ("", 252351), ("", 2333352), ("", 12345678900), ("", 445733)],
     [4, ("", 5), ("", 0), ("", 0), ("", 0)],
     [5, ("", 0), ("", 6), ("", 0), ("", 0)],
 ]
@@ -41,7 +41,7 @@ def get_claim_score_list():
         # if there are any unclaimed non zero scores, add them to the list
         if any(score[0] == "" and score[1] != 0 for score in game[1:]):
             # add the game to the list, with all zero scores removed
-            result.append([score[1] for score in game[1:] if score[1] != 0])
+            result.append([score for score in game[1:] if score[1] != 0])
     return result
 
 
@@ -97,14 +97,7 @@ def claim_score(initials, player_index, score):
             print("SCORE: new score:", initials, score, game_index, player_index)
             recent_scores[game_index][player_index] = (initials, score)
             year, month, day, _, _, _, _, _ = rtc.datetime()
-            new_score = {
-                "initials": initials,
-                "full_name": None,
-                "score": score,
-                "date": f"{month:02d}/{day:02d}/{year}"
-                # TODO game count does not appear to be used
-                # "game_count": SharedState.gameCounter
-            }
+            new_score = {"initials": initials, "full_name": None, "score": score, "date": f"{month:02d}/{day:02d}/{year}"}
             update_leaderboard(new_score)
             return
 
