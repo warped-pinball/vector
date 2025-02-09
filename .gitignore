@@ -163,3 +163,4 @@ cython_debug/
 src/vector.code-workspace
 dev/config.json
 update.json
+.vscode/settings.json

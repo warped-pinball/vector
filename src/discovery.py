@@ -26,11 +26,10 @@ def setup():
     send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    # add self to known devices
-    from SharedState import WarpedVersion, gdata, ipAddress
+    from SharedState import gdata, ipAddress
 
-    if ipAddress:
-        known_devices[ipAddress] = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"], "self": True}
+    if ipAddress and ipAddress not in known_devices:
+        known_devices[ipAddress] = {"name": gdata["GameInfo"]["GameName"], "self": True}
 
 
 def announce():
@@ -42,10 +41,12 @@ def announce():
     if not ipAddress:
         return
 
+    msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}
+
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
     send_sock.sendto(
-        ujson.dumps({"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}).encode("utf-8"),
+        ujson.dumps(msg).encode("utf-8"),
         ("255.255.255.255", DISCOVERY_PORT),
     )
 
@@ -53,7 +54,10 @@ def announce():
     # technically we could do this in the listen() function
     # but it makes more sense to do it here because the announce frequency is closer to the timeout
     now = time()
-    known_devices = {ip_str: info for ip_str, info in known_devices.items() if info.get("self", False) or (now - info["last_seen"]) <= DEVICE_TIMEOUT}
+    msg["last_seen"] = now
+    msg["self"] = True
+    known_devices[ipAddress] = msg
+    known_devices = {ip_str: info for ip_str, info in known_devices.items() if (now - info["last_seen"]) <= DEVICE_TIMEOUT}
 
 
 def listen():

@@ -1,7 +1,7 @@
 {
     "python.linting.enabled": true,
     "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.typeCheckingMode": "standard",
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"
     },
@@ -28,5 +28,6 @@
         "svg",
         "gz",
         "png"
-    ]
+    ],
+    "python.analysis.autoImportCompletions": true
 }

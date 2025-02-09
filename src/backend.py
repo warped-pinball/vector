@@ -588,12 +588,12 @@ def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
         info = ds_read_record("extras", 0)
-        info["enter_initials_on_game"] = bool(json_data["on-machine"])        
+        info["enter_initials_on_game"] = bool(json_data["on-machine"])
         ds_write_record("extras", info, 0)
 
 
 @add_route("/api/settings/tournament_mode")
-def app_getTournamentMode(request):    
+def app_getTournamentMode(request):
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
     return {"tournament_mode": tournament_mode}
 
@@ -605,17 +605,17 @@ def app_setTournamentMode(request):
         info = ds_read_record("extras", 0)
         info["tournament_mode"] = bool(json_data["tournament_mode"])
         ds_write_record("extras", info, 0)
-        
+
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
-    
     from machine import reset
+
     import reset_control
-    from SPI_DataStore import blankAll as D_blank
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
-    
+    from SPI_DataStore import blankAll as D_blank
+
     Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
@@ -623,7 +623,7 @@ def app_factoryReset(request):
     D_blank()
     A_blank()
     Log.log("BKD: Factory Reset")
-    reset()     #reset PICO
+    reset()  # reset PICO
 
 
 @add_route("/api/settings/reboot", auth=True)
@@ -826,6 +826,7 @@ def connect_to_wifi():
             from displayMessage import init
 
             init(ip_address)
+
             return True
 
     # If there's signal that means the credentials are wrong
