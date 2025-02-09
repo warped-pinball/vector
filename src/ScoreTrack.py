@@ -86,28 +86,27 @@ def get_claim_score_list():
 #     return "ok"
 
 
-def claim_score(initials, score):
+def claim_score(initials, player_index, score):
     # claim a score
     global recent_scores
 
     initials = initials.upper()
 
     for game_index, game in enumerate(recent_scores):
-        for player_index, player in enumerate(game[1:], start=1):
-            if player[0] == "" and player[1] == score:
-                print("SCORE: new score:", initials, score, game_index, player_index)
-                recent_scores[game_index][player_index] = (initials, score)
-                year, month, day, _, _, _, _, _ = rtc.datetime()
-                new_score = {
-                    "initials": initials,
-                    "full_name": None,
-                    "score": score,
-                    "date": f"{month:02d}/{day:02d}/{year}"
-                    # TODO game count does not appear to be used
-                    # "game_count": SharedState.gameCounter
-                }
-                update_leaderboard(new_score)
-                return
+        if game[player_index + 1][1] == score:
+            print("SCORE: new score:", initials, score, game_index, player_index)
+            recent_scores[game_index][player_index] = (initials, score)
+            year, month, day, _, _, _, _, _ = rtc.datetime()
+            new_score = {
+                "initials": initials,
+                "full_name": None,
+                "score": score,
+                "date": f"{month:02d}/{day:02d}/{year}"
+                # TODO game count does not appear to be used
+                # "game_count": SharedState.gameCounter
+            }
+            update_leaderboard(new_score)
+            return
 
     raise ValueError("SCORE: Score not found in claim list")
 
