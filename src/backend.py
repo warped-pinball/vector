@@ -442,11 +442,19 @@ def get_scoreboard(key):
     # sort the rows by score
     rows.sort(key=lambda x: x["score"], reverse=True)
 
+    from time import time
+
+    from phew.ntp import time_ago
+
+    now_seconds = time()
+
     # add the rank to each row
     for i, row in enumerate(rows):
         row["rank"] = i + 1
+        if "date" in row:
+            row["ago"] = time_ago(row["date"], now_seconds)
 
-    return json_dumps(rows), 200
+    return rows
 
 
 @add_route("/api/leaders")
@@ -517,7 +525,17 @@ def app_updatePlayer(request):
 
 @add_route("/api/player/scores")
 def app_getScores(request):
+    from time import time
+
+    from phew.ntp import time_ago
+
+    now_seconds = time()
+
     player_id = int(request.query.get("id"))
+
+    # get player initials and name
+    player_record = ds_read_record("names", player_id)
+
     scores = []
     numberOfScores = ds_memory_map["individual"]["count"]
     for i in range(numberOfScores):
@@ -526,6 +544,15 @@ def app_getScores(request):
         date = record["date"].strip().replace("\x00", " ")
         if score > 0:
             scores.append({"score": score, "date": date})
+
+    # sort the scores by score and add the rank, initials and name
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    for i, score in enumerate(scores):
+        score["rank"] = i + 1
+        score["initials"] = player_record["initials"]
+        score["full_name"] = player_record["full_name"]
+        score["ago"] = time_ago(score["date"], now_seconds)
+
     return json_dumps(scores), 200
 
 
@@ -588,12 +615,12 @@ def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
         info = ds_read_record("extras", 0)
-        info["enter_intials_on_game"] = bool(json_data["on-machine"])        
+        info["enter_intials_on_game"] = bool(json_data["on-machine"])
         ds_write_record("extras", info, 0)
 
 
 @add_route("/api/settings/tournament_mode")
-def app_getTournamentMode(request):    
+def app_getTournamentMode(request):
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
     return {"tournament_mode": tournament_mode}
 
@@ -605,17 +632,17 @@ def app_setTournamentMode(request):
         info = ds_read_record("extras", 0)
         info["tournament_mode"] = bool(json_data["tournament_mode"])
         ds_write_record("extras", info, 0)
-        
+
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
-    
     from machine import reset
+
     import reset_control
-    from SPI_DataStore import blankAll as D_blank
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
-    
+    from SPI_DataStore import blankAll as D_blank
+
     Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
@@ -623,7 +650,7 @@ def app_factoryReset(request):
     D_blank()
     A_blank()
     Log.log("BKD: Factory Reset")
-    reset()     #reset PICO
+    reset()  # reset PICO
 
 
 @add_route("/api/settings/reboot", auth=True)

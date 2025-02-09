@@ -1,7 +1,7 @@
 from micropython import const
 
 # TODO use const else where
-WarpedVersion = const("1.0.0")
+WarpedVersion = const("1.1.0")
 WarpedCodeBase = const("SYSTEM11")
 
 # counts game start cycles
@@ -18,3 +18,6 @@ gdata = {}
 
 # ip address
 ipAddress = 0
+
+
+tournamentModeOn = 0
