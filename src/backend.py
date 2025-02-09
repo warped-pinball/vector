@@ -367,17 +367,14 @@ def app_game_name(request):
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
-    return (
-        json_dumps({"active_config": ds_read_record("configuration", 0)["gamename"]}),
-        200,
-    )
+    return {"active_config": ds_read_record("configuration", 0)["gamename"]}
 
 
 @add_route("/api/game/configs_list")
 def app_game_configs_list(request):
     from GameDefsLoad import list_game_configs
 
-    return json_dumps(list_game_configs()), 200
+    return list_game_configs()
 
 
 @add_route("/api/game/status")
@@ -393,7 +390,7 @@ def app_game_status(request):
         gdata["BallInPlay"]["Ball5"],
     ]
 
-    return json_dumps({"game_in_progress": game_in_progress}), 200
+    return {"game_in_progress": game_in_progress}
 
 
 #
@@ -445,7 +442,7 @@ def get_scoreboard(key):
     for i, row in enumerate(rows):
         row["rank"] = i + 1
 
-    return json_dumps(rows), 200
+    return rows
 
 
 @add_route("/api/leaders")
@@ -488,7 +485,7 @@ def app_getPlayers(request):
         full_name = record["full_name"].replace("\x00", " ").strip("\0")
         if initials or full_name:  # ensure that at least one field is not empty
             players[str(i)] = {"initials": initials, "name": full_name}
-    return json_dumps(players), 200
+    return players
 
 
 @add_route("/api/player/update", method="POST", auth=True)
@@ -525,7 +522,7 @@ def app_getScores(request):
         date = record["date"].strip().replace("\x00", " ")
         if score > 0:
             scores.append({"score": score, "date": date})
-    return json_dumps(scores), 200
+    return scores
 
 
 @add_route("/api/player/scores/reset", auth=True)
@@ -579,7 +576,7 @@ def app_restoreAdjustments(request):
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
     score_cap = ds_read_record("extras", 0)["enter_initials_on_game"]
-    return json_dumps({"on-machine": score_cap}), 200
+    return {"on-machine": score_cap}
 
 
 @add_route("/api/settings/score_claim_methods", method="POST", auth=True)
@@ -642,7 +639,7 @@ def app_reboot(request):
 @add_route("/api/last_ip")
 def app_getLastIP(request):
     ip_address = ds_read_record("extras", 0)["lastIP"]
-    return json_dumps({"ip": ip_address}), 200
+    return {"ip": ip_address}
 
 
 @add_route("/api/available_ssids")
@@ -657,7 +654,7 @@ def app_getAvailableSSIDs(request):
             network["configured"] = True
             break
 
-    return json_dumps(available_networks), 200
+    return available_networks
 
 
 @add_route("/api/network/peers")
@@ -691,14 +688,14 @@ def app_getDateTime(request):
 def app_version(request):
     import SharedState
 
-    return json_dumps({"version": SharedState.WarpedVersion}), 200
+    return {"version": SharedState.WarpedVersion}
 
 
 @add_route("/api/fault")
 def app_install_fault(request):
     import SharedState
 
-    return json_dumps(SharedState.faults), 200
+    return SharedState.faults
 
 
 #
@@ -768,7 +765,7 @@ def add_app_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json_dumps({"in_ap_mode": False}), 200
+        return {"in_ap_mode": False}
 
 
 #
@@ -779,7 +776,7 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json_dumps({"in_ap_mode": True}), 200
+        return {"in_ap_mode": True}
 
     @add_route("/api/settings/set_vector_config", method="POST")
     def app_setWifi(request):
