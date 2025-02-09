@@ -521,13 +521,14 @@ def create_schedule(ap_mode: bool = False):
     from displayMessage import refresh
     #from GameStatus import poll_fast
 
-    # simulator - only if it exists in stand alone py file
-    if file_exists("Simulator.py"):
-        print("SIMULATOR: Loading")
+    # simulator - only if it exists
+    try:
+        import Simulator
         from Simulator import simulator_input
+        logging.error("SIMULATOR: Loading")
         schedule(simulator_input, 1000, 100)
-    else:
-        print("SIMULATOR: Not Found")
+    except ImportError:
+        pass
 
 
     #

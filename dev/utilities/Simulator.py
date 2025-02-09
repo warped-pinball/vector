@@ -44,12 +44,13 @@ def file_exists(filename):
         return False
 
 # load up 7 segement diagnostic LED display if it is here
-if file_exists("DiagDisplay.py"):
-    print("SIMULATOR: Load Diagnostic single digit display")
+try:
     import DiagDisplay as disp
     disp.initialize()
-else:
+    print("SIMULATOR: Load Diagnostic single digit display")
+except:
     print("SIMULATOR: No Display")
+
 
 if 'disp' in globals():
     disp.write_char("A")
