@@ -141,13 +141,17 @@ def _read(input_data):
 
 def _write(input_data):
     """write data to the shadow ram"""
-    print("WRTIE",input_data)
+    print("WRITE~ ",input_data)
 
     try:
         input_json = json.loads(input_data)
-        address = int(input_json["address"], 16)
-        data = bytearray(input_json["data"])
-        
+        address = int(input_json["address"])
+        data = input_json["data"]
+        if isinstance(data, int):
+            data = bytearray([data])
+        else:
+            data = bytearray(data)
+     
         print(f"Write to address: {address}, data: {data}")
         
         # Write data to shadow RAM
@@ -175,6 +179,7 @@ def _write(input_data):
 if __name__ == "__main__":
     incoming_data.append("LED: C")
     incoming_data.append("WRITE: {\"address\": \"0x00\", \"data\": [11, 2, 332, 4, 5]}")
+    incoming_data.append("WRITE: {\"address\": 0, \"data\": 2}")
     incoming_data.append("READ: {\"address\": \"0x00\", \"num_bytes\": 5}")
     _process_input()
     _process_input()
