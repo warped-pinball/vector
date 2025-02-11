@@ -241,7 +241,7 @@ def removeMachineScores():
         log.log("SCORE: Remove machine scores 9")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]
-            shadowRam[score_start : score_start + 4] = [0xF9, 0x99, 0x99, 0x99]
+            shadowRam[score_start : score_start + 4] = bytearray([0xF9, 0x99, 0x99, 0x99])        
 
 
 def find_player_by_initials(new_entry):
