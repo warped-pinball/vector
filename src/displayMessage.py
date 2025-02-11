@@ -90,7 +90,7 @@ def set_mem(msgText):
     elif S.gdata["DisplayMessage"]["Type"] == 9:
         for i in range(4):                              
             address_offset = S.gdata["DisplayMessage"]["Address"] + i * 4
-            n=int_to_bcd(msg[i])
+            n=int_to_bcd(msgText[i])
             for offset in range(4):
                 shadowRam[address_offset+offset]=n[offset]
                 #print(" set ",address_offset+offset, " to",n[offset])
@@ -190,17 +190,17 @@ def set(ipAddress):
         fixAdjustmentChecksum()
 
     elif S.gdata["DisplayMessage"]["Type"] == 9:  
-        msg=[0,0,0,0]      
+        msg_nums=[0,0,0,0]      
         try:
             first_dot = ipAddress.find('.')
             second_dot = ipAddress.find('.', first_dot + 1)
             third_dot = ipAddress.find('.', second_dot + 1)
 
-            msg[0] = int(ipAddress[:first_dot])
-            msg[1] = int(ipAddress[first_dot + 1:second_dot])
-            msg[2] = int(ipAddress[second_dot + 1:third_dot])
-            msg[3] = int(ipAddress[third_dot + 1:])        
-            set_mem(msg)                  
+            msg_nums[0] = int(ipAddress[:first_dot])
+            msg_nums[1] = int(ipAddress[first_dot + 1:second_dot])
+            msg_nums[2] = int(ipAddress[second_dot + 1:third_dot])
+            msg_nums[3] = int(ipAddress[third_dot + 1:])        
+            set_mem(msg_nums)                  
         except:
             print("MSG: Failure in set ip") 
 
