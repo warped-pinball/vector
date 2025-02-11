@@ -243,15 +243,11 @@ def refresh_9():
     called from score track
       refresh ip address in highscore display for system 9 
     """
-    if S.gdata["DisplayMessage"]["Type"] == 9:  
-        if True == DataStore.read_record("extras", 0)["show_ip_address"]:
-            global localCopyIp      
-            init(localCopyIp)
-            print("MSG: refreshed ",localCopyIp)
-            return
-    
-
-
+    if S.gdata["DisplayMessage"]["Type"] == 9:          
+        global localCopyIp      
+        init(localCopyIp)
+        print("MSG: refreshed ",localCopyIp)
+        
 
 """
 Game Def font types:

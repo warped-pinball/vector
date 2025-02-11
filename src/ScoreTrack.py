@@ -492,5 +492,7 @@ def CheckForNewScores(nState=[0]):
                 else:
                     place_game_in_claim_list(game)
 
-                # put ip address back up on displays
-                displayMessage.refresh_9()
+                #put ip address back up on displays
+                if True == DataStore.read_record("extras", 0)["show_ip_address"]:
+                    displayMessage.refresh_9()
+                    
