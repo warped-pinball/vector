@@ -379,11 +379,15 @@ def place_game_in_claim_list(game):
 
 
 def CheckForNewScores(nState=[0]):
-    """
-    called by scheduler every 5 seconds
-        
-    """
+    """   called by scheduler every 5 seconds  """
     global nGameIdleCounter
+
+    if nState[0] == 0:   #power up init
+        if True == DataStore.read_record("extras", 0)["show_ip_address"]:
+            displayMessage.refresh_9()
+        else:
+            place_machine_scores()
+        nState[0] = 1
 
     if S.gdata["BallInPlay"]["Type"] == 1:
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
@@ -393,7 +397,7 @@ def CheckForNewScores(nState=[0]):
         Ball4Value = S.gdata["BallInPlay"]["Ball4"]
         Ball5Value = S.gdata["BallInPlay"]["Ball5"]
 
-        if nState[0] == 0:  # waiting for a game to start
+        if nState[0] == 1:  # waiting for a game to start
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
                 game = [SharedState.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -407,13 +411,13 @@ def CheckForNewScores(nState=[0]):
                 nGameIdleCounter = 0                           
                 remove_machine_scores()               
                 SharedState.gameCounter = (SharedState.gameCounter + 1) % 100
-                nState[0] = 1
+                nState[0] = 2
 
-        elif nState[0] == 1:  # waiting for game to end
+        elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
             if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
                 # game over, get new scores
-                nState[0] = 0
+                nState[0] = 1
                 game = [SharedState.gameCounter, read_machine_score(0), read_machine_score(1), read_machine_score(2), read_machine_score(3)]
                 
                 if DataStore.read_record("extras", 0)["tournament_mode"]:
