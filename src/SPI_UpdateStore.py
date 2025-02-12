@@ -224,6 +224,10 @@ def tick():
     set to automatically erase oldest block when all blocks are full
     """
     global start_erase_count
+
+    if False==SPI_Store.sflash_is_installed():
+        return
+
     # loop through blocks, find the first one in erase state
     for blk_num in range(SFLASH_NUM_PGMS):
         dblk = _get_block_status(data, blk_num)

@@ -535,6 +535,10 @@ def version():
     return SPI_store_version, 1, sflash_ver
 
 
+def sflash_is_installed():
+    return sflash_is_on_board
+
+
 def test():
     sflash_driver_init()
     print("ready?", sflash_is_ready())
