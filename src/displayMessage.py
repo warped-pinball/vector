@@ -181,7 +181,7 @@ def set(ipAddress):
         first_part = ipAddress[:second_dot]
         second_part = ipAddress[second_dot + 1:]
 
-        print("first part:",first_part," second part:",second_part)
+        #print("first part:",first_part," second part:",second_part)
 
         msg[1] = typ3_DecimalandPad(first_part,8)
         msg[1].extend(typ3_DecimalandPad(second_part,8))   
@@ -207,11 +207,10 @@ def set(ipAddress):
 
 #
 # set up display for ipaddress - get ip copied to local
-#
+#  grab the address - do not display yet!
 def init(ipAddress):
     global localCopyIp
     localCopyIp = ipAddress
-    set(localCopyIp)    
     return
 
 
@@ -232,7 +231,8 @@ def refresh():
         shadowRam[S.gdata["HSRewards"]["HS2"]]=S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS3"]]=S.gdata["HSRewards"]["DisableByte"]
         shadowRam[S.gdata["HSRewards"]["HS4"]]=S.gdata["HSRewards"]["DisableByte"]              
-    init(localCopyIp)
+    #init(localCopyIp)
+    set(localCopyIp)
     print("MSG: refreshed ",localCopyIp)
     return
 
@@ -245,7 +245,7 @@ def refresh_9():
     """
     if S.gdata["DisplayMessage"]["Type"] == 9:          
         global localCopyIp      
-        init(localCopyIp)
+        set(localCopyIp)
         print("MSG: refreshed ",localCopyIp)
         
 
