@@ -343,11 +343,10 @@ def initialize_leaderboard():
     #check for high scores in machine that we dont have yet
     for i in range(4):
         initials, score = _read_machine_score(i,True)
-        #if any(0x40 < ord(initial) <= 0x5A for initial in initials[:3]):     #confirm initals - not blanked out
-        year, month, day, _, _, _, _, _ = rtc.datetime()
-        new_score = {"initials": initials, "full_name": "", "score": score, "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
-        update_leaderboard(new_score)
-
+        if score > 1000:  #could be left over ip address digits in system 9
+            year, month, day, _, _, _, _, _ = rtc.datetime()
+            new_score = {"initials": initials, "full_name": "", "score": score, "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
+            update_leaderboard(new_score)
 
 
 def _place_game_in_tournament(game):
