@@ -6,11 +6,10 @@ Score Track
     V0.2 9/7/2024  period after initials handling
     V0.3 11/25/2024 game over fix for high speed
     V0.4 2/5/2024  add support for system 9
+    V0.5 2/12/2025  combined support for 9/11, option switches
 """
 from machine import RTC
-
 import displayMessage
-import SharedState
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -45,11 +44,10 @@ def get_claim_score_list():
 
 
 def claim_score(initials, player_index, score):
-    # claim a score
+    # claim a score from the recent scores list
     global recent_scores
 
     initials = initials.upper()
-
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
             print("SCORE: new score:", initials, score, game_index, player_index)
@@ -57,42 +55,68 @@ def claim_score(initials, player_index, score):
             new_score = {"initials": initials, "full_name": None, "score": score} 
             update_leaderboard(new_score)
             return
-
     raise ValueError("SCORE: Score not found in claim list")
 
+def _place_game_in_claim_list(game):    
+    """ place game up to four players in claim list """   
+    recent_scores.insert(0, game)
+    recent_scores.pop()
+    print("SCORE: add to claims list: ", recent_scores)
 
-# read machine score
-def read_machine_score(index):
-    # system 11 (high scores)
-    if "11" in S.gdata["GameInfo"]["System"]:
-        score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-        initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-        score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
 
-        # Read initials
-        initials_bytes = shadowRam[initial_start : initial_start + 3]
-        if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
-            initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
-            initials = bytes(initials_bytes).decode("ascii")
-        elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
-            processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
-            try:
-                initials = processed_initials.decode("ascii")
-            except Exception:
-                initials = ""
+def _read_machine_score(index,HighScores=True):
+    """ read machine scores and intials if available"""
+    initials = ""
+
+    if HighScores:
+        #score
+        if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
+            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4            
+            score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
         else:
-            initials = ""
+            score_bytes = [0]
 
-    # System9 (in play scores)
-    if "9" in S.gdata["GameInfo"]["System"]:
-        initials = ""
-        try:
-            score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4
-        except KeyError:
-            return initials, 0
-        score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
+        #initials  
+        if "InitialAdr" in S.gdata["HighScores"]:
+            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
+            initials_bytes = shadowRam[initial_start : initial_start + 3]
 
-    # game system (BCD to integer conversion) - 0xF is = to zero
+            if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
+                initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
+                initials = bytes(initials_bytes).decode("ascii")
+            elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
+                try:
+                    processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
+                    initials = processed_initials.decode("ascii")                    
+                except Exception:
+                    initials = None
+
+            if initials in ["???","",None]:  #no player
+                initials = ""
+                score_bytes = [0]         
+            elif initials == "   ":   #no initials, allow claim
+                initials = ""
+            
+                    
+          
+    else:  #in-play scores
+        if "InPlayScores" in S.gdata:          
+            try:
+                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4
+                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
+            except:
+                score_bytes=[0]
+
+    #acore conversion
+    score = _bcd_to_int(score_bytes)
+    return initials, score
+
+
+
+def _bcd_to_int(score_bytes):
+    """ game system (BCD to integer conversion) 
+                0xF is = to zero
+    """
     score = 0
     for byte in score_bytes:
         high_digit = byte >> 4
@@ -102,83 +126,75 @@ def read_machine_score(index):
         if high_digit > 9:
             high_digit = 0
         score = score * 100 + high_digit * 10 + low_digit
-    return initials, score
+    return score
 
 
-# convert integer to 8 digit BCD number like stored in game for high scores
-def int_to_bcd(number):
-    # Ensure the number is within the acceptable range
+def _int_to_bcd(number):
+    """ int back to BCD coded for the game """
     if not (0 <= number <= 99999999):
         raise ValueError("SCORE: Number out of range")
 
-    # pad with zeros to ensure it has 7 digits
+    # pad with zeros to ensure it has 8 digits
     num_str = f"{number:08d}"
     bcd_bytes = bytearray(4)
-
     # Fill byte array
-    bcd_bytes[0] = (int(num_str[0]) << 4) + int(num_str[1])  # Millions
-    bcd_bytes[1] = (int(num_str[2]) << 4) + int(num_str[3])  # Hundred-th & ten-th
-    bcd_bytes[2] = (int(num_str[4]) << 4) + int(num_str[5])  # Thousands & hundreds
-    bcd_bytes[3] = (int(num_str[6]) << 4) + int(num_str[7])  # Tens & ones
+    for i in range(4):
+        bcd_bytes[i] = (int(num_str[2 * i]) << 4) + int(num_str[2 * i + 1])
     return bcd_bytes
 
 
-def ascii_to_type3(c):
+def _ascii_to_type3(c):
     """ convert ascii character to machine type 3 display character """
     if c == 0x20 or c < 0x0B or c > 0x90:
         return 0
     return c - 0x36  # char
 
 
-# write four highest scores from storage to machine memory
+
 def place_machine_scores():
+    """ write four highest scores & initials from storage to machine memory """
     global top_scores
-    
-    if "11" in S.gdata["GameInfo"]["System"]:
+              
+    if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
         print("SCORE: Place system 11 machine scores")
-        # system 11  
-        if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
-            for index in range(4):
-                score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
+        for index in range(4):
+            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4          
+            try:
+                scoreBCD = _int_to_bcd(top_scores[index]["score"])
+            except Exception:
+                print("SCORE: score convert problem")
+                scoreBCD = _int_to_bcd(100)
+
+            shadowRam[score_start:score_start + S.gdata["HighScores"]["BytesInScore"]] = scoreBCD
+            print("  top scores: ", top_scores[index])
+
+            try:                
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-                try:
-                    scoreBCD = int_to_bcd(top_scores[index]["score"])
-                except Exception:
-                    print("SCORE: score convert problem")
-                    scoreBCD = int_to_bcd(100)
+                initials = top_scores[index]["initials"]
+                for i in range(3):
+                    if S.gdata["HighScores"]["Type"] == 1:
+                        shadowRam[initial_start + i] = ord(initials[i])
+                    elif S.gdata["HighScores"]["Type"] == 3:
+                        shadowRam[initial_start + i] = _ascii_to_type3(ord(initials[i]))
 
-                for i in range(S.gdata["HighScores"]["BytesInScore"]):
-                    shadowRam[score_start + i] = scoreBCD[i]
-                try:
-                    print("  top scores: ", top_scores[index])
-                    initials = top_scores[index]["initials"]
-                    for i in range(3):
-                        if S.gdata["HighScores"]["Type"] == 1:
-                            shadowRam[initial_start + i] = ord(initials[i])
-                        elif S.gdata["HighScores"]["Type"] == 3:
-                            shadowRam[initial_start + i] = ascii_to_type3(ord(initials[i]))
+            except Exception:
+                print("SCORE: place machine scores exception")
+                shadowRam[initial_start] = 64
+                shadowRam[initial_start + 1] = 64
+                shadowRam[initial_start + 2] = 64
 
-                except Exception:
-                    print("SCORE: place machine scores exception")
-                    shadowRam[initial_start] = 64
-                    shadowRam[initial_start + 1] = 64
-                    shadowRam[initial_start + 2] = 64
-
-    elif "9" in S.gdata["GameInfo"]["System"]:   
-        #system 9, needed when show ip address gets turned off
-        print("SCORE: Replace system 9 high scores")
+    elif S.gdata["HighScores"]["Type"] is 9:
+        #system 9, copy in scores, no intiials 
+        print("SCORE: Place system 9 machine high scores")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]
-            shadowRam[score_start : score_start + 4] = int_to_bcd(top_scores[index]["score"])
+            shadowRam[score_start : score_start + 4] = _int_to_bcd(top_scores[index]["score"])
 
         
-
-
-
-def remove_machine_scores():
+def _remove_machine_scores():
     """remove machine scores"""
     if S.gdata["HighScores"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:   # system 11 type 1
-        log.log("SCORE: Remove machine scores 1")
+        log.log("SCORE: Remove machine scores type 1")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
             initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
@@ -189,7 +205,7 @@ def remove_machine_scores():
             shadowRam[score_start + 2] = 5 - index
 
     elif S.gdata["HighScores"]["Type"] == 3 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:  # system 11, type 3
-        log.log("SCORE: Remove machine scores 3")
+        log.log("SCORE: Remove machine scores type 3")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
             initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
@@ -206,10 +222,10 @@ def remove_machine_scores():
 
 
 def find_player_by_initials(new_entry):
-    """
-    find players name from list of intials with names from storage
-    """
+    """ find players name from list of intials with names from storage   """
     findInitials = new_entry["initials"]
+    if findInitials == "" or findInitials == None:
+        return ("", -1)
     count = DataStore.memory_map["names"]["count"]
     for index in range(count):
         rec = DataStore.read_record("names", index)
@@ -217,14 +233,11 @@ def find_player_by_initials(new_entry):
             if rec["initials"] == findInitials:
                 player_name = rec["full_name"].strip("\x00")
                 return (player_name, index)
-    return (" ", -1)
+    return ("", -1)
 
 
 def update_individual_score(new_entry):
-    """
-    upadate a players individual score board
-
-    """
+    """  upadate a players individual score board  """
     initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
@@ -327,23 +340,36 @@ def initialize_leaderboard():
         fake_entry = {"initials": "ZZZ", "full_name": " ", "score": 100, "date": "04/17/2024"}
         top_scores.append(fake_entry)
 
-    # for system 11 only, check for high scores in machine that we dont have yet-
-    if "11" in S.gdata["GameInfo"]["System"]:
-        for i in range(4):
-            initials, score = read_machine_score(i)
-            if any(0x40 < ord(initial) <= 0x5A for initial in initials[:3]):  #confirm initals - not blanked out
-                year, month, day, _, _, _, _, _ = rtc.datetime()
-                new_score = {"initials": initials, "full_name": "    ", "score": score, "date": f"{month:02d}/{day:02d}/{year}", "game_count": SharedState.gameCounter}
-                update_leaderboard(new_score)
+    #check for high scores in machine that we dont have yet
+    for i in range(4):
+        initials, score = _read_machine_score(i,True)
+        #if any(0x40 < ord(initial) <= 0x5A for initial in initials[:3]):     #confirm initals - not blanked out
+        year, month, day, _, _, _, _, _ = rtc.datetime()
+        new_score = {"initials": initials, "full_name": "", "score": score, "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
+        update_leaderboard(new_score)
 
 
-def update_tournamentboard(new_entry):
-    """    place a new score in the tournament board fram    """
+
+def _place_game_in_tournament(game):
+    """ place game (all four scores) in tournament board
+        game: gamecounter, score 0, 1, 2, 3
+    """
+    year, month, day, _, _, _, _, _ = rtc.datetime()
+    new_score = {"initials": " ", "full_name": " ", "score": 0, "date": f"{month:02d}/{day:02d}/{year}", "game": game[0]}
+
+    for i in range(4):
+        if int(game[i + 1][1]) > 0:
+            new_score["score"] = int(game[i + 1][1])
+            _update_tournamentboard(new_score)
+
+
+def _update_tournamentboard(new_entry):
+    """    place a single new score in the tournament board fram    """
     count = DataStore.memory_map["tournament"]["count"]
     rec = DataStore.read_record("tournament", 0)
     nextIndex = rec["index"]
 
-    new_entry["game"] = SharedState.gameCounter
+    new_entry["game"] = S.gameCounter
     new_entry["index"] = nextIndex
     DataStore.write_record("tournament", new_entry, nextIndex)
     print("SCORE: tournament new score ", new_entry)
@@ -356,25 +382,6 @@ def update_tournamentboard(new_entry):
     DataStore.write_record("tournament", rec, 0)
     return
 
-
-def place_game_in_tournament(game):
-    """
-    place game (all four scores) in tournament board
-        game: gamecounter, score 0, 1, 2, 3
-    """
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    new_score = {"initials": " ", "full_name": " ", "score": 0, "date": f"{month:02d}/{day:02d}/{year}", "game": game[0]}
-
-    for i in range(4):
-        if int(game[i + 1][1]) > 0:
-            new_score["score"] = int(game[i + 1][1])
-            update_tournamentboard(new_score)
-
-
-def place_game_in_claim_list(game):
-    recent_scores.insert(0, game)
-    recent_scores.pop()
-    print("SCORE: add to claims list: ", recent_scores)
 
 
 
@@ -389,7 +396,7 @@ def CheckForNewScores(nState=[0]):
             place_machine_scores()
         nState[0] = 1
 
-    if S.gdata["BallInPlay"]["Type"] == 1:
+    if S.gdata["BallInPlay"]["Type"] == 1:  #0 disables score tracking
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
         Ball1Value = S.gdata["BallInPlay"]["Ball1"]
         Ball2Value = S.gdata["BallInPlay"]["Ball2"]
@@ -400,32 +407,37 @@ def CheckForNewScores(nState=[0]):
         if nState[0] == 1:  # waiting for a game to start
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
-                game = [SharedState.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
-                place_game_in_claim_list(game)
+                game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
+                _place_game_in_claim_list(game)
                 nGameIdleCounter = 0
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[BallInPlayAdr] in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
-                #Game Staarted!
-                nGameIdleCounter = 0                           
-                remove_machine_scores()               
-                SharedState.gameCounter = (SharedState.gameCounter + 1) % 100
                 nState[0] = 2
-
+                #Game Started!
+                nGameIdleCounter = 0                           
+                _remove_machine_scores()               
+                S.gameCounter = (S.gameCounter + 1) % 100
+               
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
             if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
                 # game over, get new scores
                 nState[0] = 1
-                game = [SharedState.gameCounter, read_machine_score(0), read_machine_score(1), read_machine_score(2), read_machine_score(3)]
-                
+                if  (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):        
+                    #in play scores
+                    game = [S.gameCounter, _read_machine_score(0,False), _read_machine_score(1,False), _read_machine_score(2,False), _read_machine_score(3,False)]
+                else:             
+                    #high scores
+                    game = [S.gameCounter, _read_machine_score(0,True), _read_machine_score(1,True), _read_machine_score(2,True), _read_machine_score(3,True)]
+                  
                 if DataStore.read_record("extras", 0)["tournament_mode"]:
-                    place_game_in_tournament(game)
+                    _place_game_in_tournament(game)
                 else:                    
                     for i in range(1, 5):                     
                         update_leaderboard({"initials": game[i][0], "score": game[i][1]})                   
-                    place_game_in_claim_list(game)
+                    _place_game_in_claim_list(game)
 
                 # put high scores back in machine memory
                 place_machine_scores()
