@@ -23,12 +23,11 @@ nGameIdleCounter = 0
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
 recent_scores = [
-    # TODO put back to all zeros after testing
-    [0, ("", 11287984), ("", 0), ("", 0), ("", 0)],
-    [1, ("MSM", 546341), ("", 267822), ("", 0), ("", 0)],
-    [2, ("", 1234), ("PSM", 245562), ("", 3), ("", 0)],
-    [3, ("", 252351), ("", 2333352), ("", 12345678900), ("", 445733)],
-    [4, ("", 5), ("", 0), ("", 0), ("", 0)],
+    [0, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [1, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [2, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [3, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [4, ("", 0), ("", 0), ("", 0), ("", 0)],
     [5, ("", 0), ("", 6), ("", 0), ("", 0)],
 ]
 
@@ -56,6 +55,7 @@ def claim_score(initials, player_index, score):
             update_leaderboard(new_score)
             return
     raise ValueError("SCORE: Score not found in claim list")
+
 
 def _place_game_in_claim_list(game):    
     """ place game up to four players in claim list """   
@@ -96,16 +96,14 @@ def _read_machine_score(index,HighScores=True):
                 score_bytes = [0]         
             elif initials == "   ":   #no initials, allow claim
                 initials = ""
-            
-                    
-          
-    else:  #in-play scores
-        if "InPlayScores" in S.gdata:          
-            try:
-                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4
-                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
-            except:
-                score_bytes=[0]
+                                          
+    else:  #in-play scores (not high scores)
+        #if "InPlayScores" in S.gdata:          
+        try:
+            score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4
+            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
+        except:
+            score_bytes=[0]
 
     #acore conversion
     score = _bcd_to_int(score_bytes)
@@ -144,12 +142,8 @@ def _int_to_bcd(number):
 
 
 def _ascii_to_type3(c):
-    """ convert ascii character to machine type 3 display character """
-    if c == 0x20 or c < 0x0B or c > 0x90:
-        return 0
-    return c - 0x36  # char
-
-
+        """ convert ascii character to machine type 3 display character """
+        return 0 if c == 0x20 or c < 0x0B or c > 0x90 else c - 0x36
 
 def place_machine_scores():
     """ write four highest scores & initials from storage to machine memory """
@@ -216,7 +210,8 @@ def _remove_machine_scores():
             for i in range(3):
                 shadowRam[initial_start + i] = 0x00
 
-    elif S.gdata["HighScores"]["Type"] == 9:        
+    elif S.gdata["HighScores"]["Type"] == 9:      
+        log.log("SCORE: Remove machine scores system 9")  
         place_machine_scores() 
       
 
@@ -274,7 +269,7 @@ def update_leaderboard(new_entry):
     """  called by check for new scores,    one call for each valid new score entry   """
     global top_scores
 
-    if new_entry["initials"] == "@@@" or new_entry["initials"] == "   ":   #check for corruption
+    if new_entry["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
         return False
     
     year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -389,11 +384,18 @@ def CheckForNewScores(nState=[0]):
     global nGameIdleCounter
 
     if nState[0] == 0:   #power up init
-        if True == DataStore.read_record("extras", 0)["show_ip_address"]:
-            displayMessage.refresh_9()
-        else:
+        displayMessage.refresh_9()
+        if DataStore.read_record("extras", 0)["show_ip_address"] is False or S.gdata["HighScores"]["Type"] in [1, 2, 3]:
             place_machine_scores()
         nState[0] = 1
+
+        #if enter initials on game set high score rewards to zero
+        if S.gdata["HSRewards"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
+            shadowRam[S.gdata["HSRewards"]["HS1"]]=S.gdata["HSRewards"]["DisableByte"]
+            shadowRam[S.gdata["HSRewards"]["HS2"]]=S.gdata["HSRewards"]["DisableByte"]
+            shadowRam[S.gdata["HSRewards"]["HS3"]]=S.gdata["HSRewards"]["DisableByte"]
+            shadowRam[S.gdata["HSRewards"]["HS4"]]=S.gdata["HSRewards"]["DisableByte"]        
+
 
     if S.gdata["BallInPlay"]["Type"] == 1:  #0 disables score tracking
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
@@ -442,5 +444,4 @@ def CheckForNewScores(nState=[0]):
                 place_machine_scores()
 
                 #put ip address back up on system 9 displays
-                if True == DataStore.read_record("extras", 0)["show_ip_address"]:
-                    displayMessage.refresh_9()
+                displayMessage.refresh_9()
