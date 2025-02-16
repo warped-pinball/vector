@@ -51,6 +51,14 @@
         "BytesInScore": 4
     },
 
+    "InPlayInfo": {
+        "Type": 1,
+        "PlayersInGame": "0xAC",
+        "PlayerUP": "0xAD",
+        "ExtraBalls": "0xB0",
+        "Warnings": "0xB3"
+    },
+
     "HSRewards": {
         "Type": 1,
         "HS1": 1937,

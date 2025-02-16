@@ -64,50 +64,62 @@ def _place_game_in_claim_list(game):
     print("SCORE: add to claims list: ", recent_scores)
 
 
-def _read_machine_score(index,HighScores=True):
-    """ read machine scores and intials if available"""
-    initials = ""
+def _read_machine_score(HighScores):
+    """ read machine scores
+        and if HighScores is True try to get intials from highscore area
+    """    
+    high_scores = [["", 0], ["", 0], ["", 0], ["", 0]] 
+    in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
 
-    if HighScores:
-        #score
+    # Build a set of all four in-play scores, index=0,1,2,3 (player number)    
+    try:
+        if S.gdata["InPlayScores"]["Type"] == 1:
+            for idx in range(4):
+                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + idx * 4
+                in_play_score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
+                in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes)
+    except Exception:
+        pass
+
+    # grab four high scores (in order of high->low score, not player number!)
+    if HighScores:      
         if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4            
-            score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
-        else:
-            score_bytes = [0]
-
+            for idx in range(4):
+                score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4            
+                score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
+                high_scores[idx][1] = _bcd_to_int(score_bytes)
+                if high_scores[idx][1] <1000:
+                    high_scores[idx][1]=0
+     
         #initials  
         if "InitialAdr" in S.gdata["HighScores"]:
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-            initials_bytes = shadowRam[initial_start : initial_start + 3]
+            for idx in range(4):
+                initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * 3
+                initials_bytes = shadowRam[initial_start : initial_start + 3]
 
-            if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
-                initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
-                initials = bytes(initials_bytes).decode("ascii")
-            elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
-                try:
-                    processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
-                    initials = processed_initials.decode("ascii")                    
-                except Exception:
-                    initials = None
+                if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
+                    initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
+                    high_scores[idx][0] = bytes(initials_bytes).decode("ascii")
+                elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
+                    try:
+                        processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
+                        high_scores[idx][0] = processed_initials.decode("ascii")                    
+                    except Exception:
+                        high_scores[idx][0]  = None
 
-            if initials in ["???","",None]:  #no player
-                initials = ""
-                score_bytes = [0]         
-            elif initials == "   ":   #no initials, allow claim
-                initials = ""
-                                          
-    else:  #in-play scores (not high scores)
-        #if "InPlayScores" in S.gdata:          
-        try:
-            score_start = S.gdata["InPlayScores"]["ScoreAdr"] + index * 4
-            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
-        except:
-            score_bytes=[0]
+                if high_scores[idx][0]  in ["???","",None,"   "]:  #no player, allow claim
+                    high_scores[idx][0] = ""                        
 
-    #acore conversion
-    score = _bcd_to_int(score_bytes)
-    return initials, score
+        #if we have high scores, intials AND in-play socres, put initials to the in play scores
+        for in_play_score in in_play_scores:
+            for high_score in high_scores:
+                if in_play_score[1] == high_score[1]:
+                    in_play_score[0] = high_score[0] #copy initals over
+
+    if all(score[1] == 0 for score in in_play_scores):      
+        return high_scores
+    else:
+        return in_play_scores
 
 
 
@@ -336,11 +348,11 @@ def initialize_leaderboard():
         top_scores.append(fake_entry)
 
     #check for high scores in machine that we dont have yet
-    for i in range(4):
-        initials, score = _read_machine_score(i,True)
-        if score > 1000:  #could be left over ip address digits in system 9
-            year, month, day, _, _, _, _, _ = rtc.datetime()
-            new_score = {"initials": initials, "full_name": "", "score": score, "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
+    scores = _read_machine_score(True)
+    year, month, day, _, _, _, _, _ = rtc.datetime()
+    for idx in range(4):
+        if scores[idx][1] > 1000:  #could be left over ip address digits in system 9                
+            new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
             update_leaderboard(new_score)
 
 
@@ -428,10 +440,12 @@ def CheckForNewScores(nState=[0]):
                 nState[0] = 1
                 if  (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):        
                     #in play scores
-                    game = [S.gameCounter, _read_machine_score(0,False), _read_machine_score(1,False), _read_machine_score(2,False), _read_machine_score(3,False)]
+                    scores= _read_machine_score(False)
+                    game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3] ]
                 else:             
                     #high scores
-                    game = [S.gameCounter, _read_machine_score(0,True), _read_machine_score(1,True), _read_machine_score(2,True), _read_machine_score(3,True)]
+                    scores= _read_machine_score(True)
+                    game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3] ]
                   
                 if DataStore.read_record("extras", 0)["tournament_mode"]:
                     _place_game_in_tournament(game)
