@@ -44,6 +44,21 @@
         "BytesInScore": 4
     },
 
+    
+    "InPlayScores": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "ZeroNibble": 0,
+        "BytesInScore": 4
+    },
+
+    "InPlayInfo": {
+        "Type": 1,
+        "PlayersInGame": "0xB2",
+        "PlayerUP": "0xB3"
+    },
+
+
     "HSRewards": {
         "Type": 0,
         "HS1": 1937,

@@ -49,7 +49,7 @@ def _get_ball_in_play():
     return 0
 
 
-def report(request):
+def game_report():
     """Generate a report of the current game status, return JSON."""
     data = {}
     try:
@@ -71,7 +71,7 @@ def report(request):
 
         data["GameActive"] = S.game_status["game_active"]
     except Exception as e:
-        print(f"GSTAT: Error in report generation: {e}")
+        print(f"GSTAT: Error in report generation: {e}")   
     return json.dumps(data)
 
 
