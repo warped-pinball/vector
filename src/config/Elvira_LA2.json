@@ -5,10 +5,6 @@
         "FileVer": 1
     },
 
-    "Definition": {
-        "version": 1
-    },
-
     "Memory" : {
         "Start": 0,
         "Length": 2048,
@@ -46,6 +42,20 @@
         "ScoreAdr": "0x6FB",
         "InitialAdr": "0x70B",
         "BytesInScore": 4
+    },
+
+    "InPlayScores": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "ZeroNibble": 0,
+        "BytesInScore": 4
+    },
+
+    "InPlayInfo": {
+        "Type": 1,
+        "PlayersInGame": "0xB2",
+        "PlayerUP": "0xB3",        
+        "Warnings": "0xB9"
     },
 
     "HSRewards": {
