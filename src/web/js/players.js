@@ -119,8 +119,10 @@ async function populateForm() {
             addPlayerRow(form, index, player.initials, player.name);
         });
 
-        const extraRowIndex = getAvailableIndex(allIndices, 20);
-        addPlayerRow(form, extraRowIndex, '', '');
+        if (players.length < 30) {
+            const extraRowIndex = getAvailableIndex(allIndices, 30); // Adjusted to 30
+            addPlayerRow(form, extraRowIndex, '', '');
+        }
     } catch (error) {
         console.error('Error fetching player data:', error);
     }

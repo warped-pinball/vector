@@ -43,7 +43,6 @@
         "InitialAdr": "0x6FD",
         "BytesInScore": 4
     },
-
     
     "InPlayScores": {
         "Type": 1,
@@ -57,7 +56,6 @@
         "PlayersInGame": "0xB2",
         "PlayerUP": "0xB3"
     },
-
 
     "HSRewards": {
         "Type": 0,
