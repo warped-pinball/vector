@@ -900,6 +900,8 @@ def go(ap_mode):
         from phew import access_point, dns
 
         print("Starting in AP mode")
+        from displayMessage import init as init_display
+        init_display("000.000.000.000")
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()
         # send clients to the configure page
