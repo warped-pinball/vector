@@ -545,10 +545,6 @@ def create_schedule(ap_mode: bool = False):
     # reoccuring tasks
     #
 
-
-    #TODO: remove - for test only
-    schedule(game_report, 0, 20250)
-
     # update the game status every 0.25 second
     schedule(poll_fast, 0, 250)
 

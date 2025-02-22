@@ -44,15 +44,9 @@
         "BytesInScore": 4
     },
 
-    "InPlayScores": {
+    "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
-        "ZeroNibble": 0,
-        "BytesInScore": 4
-    },
-
-    "InPlayInfo": {
-        "Type": 1,
         "PlayersInGame": "0xAC",
         "PlayerUP": "0xAD",
         "ExtraBalls": "0xB0",

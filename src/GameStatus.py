@@ -1,6 +1,5 @@
 import json
 import time
-
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
@@ -25,12 +24,12 @@ def _BCD_to_Int(number_BCD):
 def _get_machine_score(player):
     """Read a single live score from machine memory (0=player1, 3=player4)."""
     try:
-        if S.gdata.get("InPlayScores", {}).get("Type", 0) != 0:
-            start = S.gdata["InPlayScores"]["ScoreAdr"] + player * S.gdata["InPlayScores"]["BytesInScore"]
-            score_bytes = shadowRam[start : start + S.gdata["InPlayScores"]["BytesInScore"]]
+        if S.gdata.get("InPlay", {}).get("Type", 0) != 0:
+            start = S.gdata["InPlay"]["ScoreAdr"] + player * 4
+            score_bytes = shadowRam[start : start + 4]
             return _BCD_to_Int(score_bytes)
         else:
-            print("GSTAT: InPlayScores not defined")
+            print("GSTAT: InPlay not defined")
     except Exception as e:
         print(f"GSTAT: error in get_machine_score: {e}")
     return 0
@@ -97,7 +96,6 @@ def poll_fast():
 
 if __name__ == "__main__":
     import GameDefsLoad
-
     GameDefsLoad.go()
-    print(report("ok"))
+    print(game_report())
     poll_fast()

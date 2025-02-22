@@ -3,10 +3,8 @@
 # This work is licensed under CC BY-NC 4.0
 """
 Score Track
-    V0.2 9/7/2024  period after initials handling
-    V0.3 11/25/2024 game over fix for high speed
-    V0.4 2/5/2024  add support for system 9
-    V0.5 2/12/2025  combined support for 9/11, option switches
+    This module is responsible for tracking scores and updating the leaderboard.
+    Must account for highscores and in play score avilability
 """
 from machine import RTC
 import displayMessage
@@ -73,10 +71,10 @@ def _read_machine_score(HighScores):
 
     # Build a set of all four in-play scores, index=0,1,2,3 (player number)    
     try:
-        if S.gdata["InPlayScores"]["Type"] == 1:
+        if S.gdata["InPlay"]["Type"] == 1:        
             for idx in range(4):
-                score_start = S.gdata["InPlayScores"]["ScoreAdr"] + idx * 4
-                in_play_score_bytes = shadowRam[score_start : score_start + S.gdata["InPlayScores"]["BytesInScore"]]
+                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
+                in_play_score_bytes = shadowRam[score_start : score_start + 4]
                 in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes)
     except Exception:
         pass
@@ -282,6 +280,7 @@ def update_leaderboard(new_entry):
     global top_scores
 
     if new_entry["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
+        print("SCORE: Bad Initials")
         return False
     
     year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -360,6 +359,7 @@ def _place_game_in_tournament(game):
     """ place game (all four scores) in tournament board
         game: gamecounter, score 0, 1, 2, 3
     """
+    log.log("SCORE: add to tournament")
     year, month, day, _, _, _, _, _ = rtc.datetime()
     new_score = {"initials": " ", "full_name": " ", "score": 0, "date": f"{month:02d}/{day:02d}/{year}", "game": game[0]}
 
@@ -429,6 +429,7 @@ def CheckForNewScores(nState=[0]):
             if shadowRam[BallInPlayAdr] in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
                 nState[0] = 2
                 #Game Started!
+                log.log("SCORE: Game Started")
                 nGameIdleCounter = 0                           
                 _remove_machine_scores()               
                 S.gameCounter = (S.gameCounter + 1) % 100
@@ -440,10 +441,12 @@ def CheckForNewScores(nState=[0]):
                 nState[0] = 1
                 if  (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):        
                     #in play scores
+                    log.log("SCORE: end, use in-play scores")                    
                     scores= _read_machine_score(False)
                     game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3] ]
                 else:             
                     #high scores
+                    log.log("SCORE: end, use high scores")
                     scores= _read_machine_score(True)
                     game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3] ]
                   
