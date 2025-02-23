@@ -197,7 +197,6 @@ def download_update(url):
             "User-Agent": "MicroPython-Device",
             "Accept": "application/octet-stream",
         },
-        save_headers=True,
     )
 
     if response.status_code != 200:
@@ -205,53 +204,45 @@ def download_update(url):
 
     start_percent = 2
     end_percent = 30
-
     total_length = 200000
-    try:
-        for header in response.headers:
-            header_str = header.decode("utf-8")
-            if "Content-Length" in header_str:
-                # split on :
-                total_length = int(header_str.split(":")[1].strip())
-    except Exception:
-        pass  # if we can't get the content length, we'll just use a default value
-
     percent_per_byte = (end_percent - start_percent) / total_length
+
     # if sflash is on board, store it in sflash
-    from json import loads as json_loads
-
-    from SPI_Store import sflash_is_on_board
-    from SPI_UpdateStore import write_consumer
-
     # TODO sflash-based update dormant for now
-    if False and sflash_is_on_board:
-        # get first line
-        first_lines = response.read(1024).split(b"\n")
-        print(type(first_lines))
-        line_1 = first_lines[0]
-        print(f"First line: {line_1}")
+    if False:
+        from json import loads as json_loads
 
-        # parse as json
-        meta_data = json_loads(line_1)
+        from SPI_Store import sflash_is_on_board
+        from SPI_UpdateStore import write_consumer
 
-        # get incoming software version
-        version = Version.from_str(meta_data.get("version", ""))
-        print(f"Version: {version}")
+        if sflash_is_on_board:
+            # get first line
+            first_lines = response.read(1024).split(b"\n")
+            print(type(first_lines))
+            line_1 = first_lines[0]
+            print(f"First line: {line_1}")
 
-        wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
-        next(wc)
-        data = bytearray().join(first_lines)
-        wc.send(data)
-        bytes_so_far = 1024
-        while chunk := response.read(1024):
-            wc.send(bytearray(chunk, "utf-8"))
-            bytes_so_far += len(chunk)
-            yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
+            # parse as json
+            meta_data = json_loads(line_1)
 
-        try:
-            wc.send(None)
-        except StopIteration:
-            pass
+            # get incoming software version
+            version = Version.from_str(meta_data.get("version", ""))
+            print(f"Version: {version}")
+
+            wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
+            next(wc)
+            data = bytearray().join(first_lines)
+            wc.send(data)
+            bytes_so_far = 1024
+            while chunk := response.read(1024):
+                wc.send(bytearray(chunk, "utf-8"))
+                bytes_so_far += len(chunk)
+                yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
+
+            try:
+                wc.send(None)
+            except StopIteration:
+                pass
 
     else:
         # TODO modify this to use a buffer so we aren't recreating a buffer every loop
