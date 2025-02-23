@@ -769,7 +769,9 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
-    from urequests import get as urequests_get
+    from mrequests.mrequests import get
+
+    # from urequests import get as urequests_get
 
     url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
     headers = {
@@ -777,8 +779,10 @@ def app_updates_available(request):
         "Accept": "application/vnd.github+json",
     }
 
-    resp = urequests_get(url, headers=headers)
-    return resp.text, resp.status_code
+    resp = get(url, headers=headers)
+    chunk = bytearray(200)
+    while chunk := resp.read(200):
+        yield chunk
 
 
 @add_route("/api/update/apply", method="POST", auth=True)
@@ -901,6 +905,7 @@ def go(ap_mode):
 
         print("Starting in AP mode")
         from displayMessage import init as init_display
+
         init_display("000.000.000.000")
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()
