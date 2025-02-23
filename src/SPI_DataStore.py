@@ -216,7 +216,7 @@ def blankStruct(structure_name):
         "date": "",
         "game": 0,
         "index": 0,
-        "enable": 1,
+        "enable": 7,
         "lastIP": "none",
         "message": "ok",
         "ssid": "",
