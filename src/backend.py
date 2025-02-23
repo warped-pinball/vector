@@ -134,8 +134,12 @@ def create_file_handler(file_path):
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                hasher.update(chunk)
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                hasher.update(buff)
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
@@ -144,8 +148,12 @@ def create_file_handler(file_path):
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                yield chunk
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                yield buff
         gc_collect()
 
     def file_handler(request):
@@ -780,9 +788,12 @@ def app_updates_available(request):
     }
 
     resp = get(url, headers=headers)
-    chunk = bytearray(200)
-    while chunk := resp.read(200):
-        yield chunk
+    buff = bytearray(1024)
+    while True:
+        buff[0:] = resp.read(1024)
+        if not buff:
+            break
+        yield buff
 
 
 @add_route("/api/update/apply", method="POST", auth=True)
