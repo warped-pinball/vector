@@ -222,7 +222,7 @@ def blankStruct(structure_name):
         "ssid": "",
         "password": "",
         "Gpassword": "",
-        "gamename": "GenericSystem11",
+        "gamename": "GenericSystem11_",
         "other": 1
     }
     structure = memory_map[structure_name]
