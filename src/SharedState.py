@@ -1,7 +1,4 @@
-from micropython import const
-
-# TODO use const else where
-WarpedVersion = const("1.1.0")
+WarpedVersion = "1.0.0"
 
 # counts game start cycles
 gameCounter = 0

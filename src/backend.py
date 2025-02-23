@@ -134,8 +134,12 @@ def create_file_handler(file_path):
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                hasher.update(chunk)
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                hasher.update(buff)
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
@@ -144,8 +148,12 @@ def create_file_handler(file_path):
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                yield chunk
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                yield buff
         gc_collect()
 
     def file_handler(request):
@@ -769,7 +777,9 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
-    from urequests import get as urequests_get
+    from mrequests.mrequests import get
+
+    # from urequests import get as urequests_get
 
     url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
     headers = {
@@ -777,8 +787,13 @@ def app_updates_available(request):
         "Accept": "application/vnd.github+json",
     }
 
-    resp = urequests_get(url, headers=headers)
-    return resp.text, resp.status_code
+    resp = get(url, headers=headers)
+    buff = bytearray(1024)
+    while True:
+        buff[0:] = resp.read(1024)
+        if not buff:
+            break
+        yield buff
 
 
 @add_route("/api/update/apply", method="POST", auth=True)
@@ -901,6 +916,7 @@ def go(ap_mode):
 
         print("Starting in AP mode")
         from displayMessage import init as init_display
+
         init_display("000.000.000.000")
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()

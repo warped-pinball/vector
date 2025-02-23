@@ -1,6 +1,3 @@
-# TODO support version ranges
-
-
 class Version:
     def __init__(self, major: int, minor: int, patch: int, candidate=None):
         self.major = major
@@ -197,7 +194,6 @@ def download_update(url):
             "User-Agent": "MicroPython-Device",
             "Accept": "application/octet-stream",
         },
-        save_headers=True,
     )
 
     if response.status_code != 200:
@@ -205,62 +201,61 @@ def download_update(url):
 
     start_percent = 2
     end_percent = 30
+    total_length = 400000
+    percent_per_chunk = 1024 * (end_percent - start_percent) / total_length
 
-    total_length = 200000
-    try:
-        for header in response.headers:
-            header_str = header.decode("utf-8")
-            if "Content-Length" in header_str:
-                # split on :
-                total_length = int(header_str.split(":")[1].strip())
-    except Exception:
-        pass  # if we can't get the content length, we'll just use a default value
-
-    percent_per_byte = (end_percent - start_percent) / total_length
     # if sflash is on board, store it in sflash
-    from json import loads as json_loads
-
-    from SPI_Store import sflash_is_on_board
-    from SPI_UpdateStore import write_consumer
-
     # TODO sflash-based update dormant for now
-    if False and sflash_is_on_board:
-        # get first line
-        first_lines = response.read(1024).split(b"\n")
-        print(type(first_lines))
-        line_1 = first_lines[0]
-        print(f"First line: {line_1}")
+    if False:
+        from json import loads as json_loads
 
-        # parse as json
-        meta_data = json_loads(line_1)
+        from SPI_Store import sflash_is_on_board
+        from SPI_UpdateStore import write_consumer
 
-        # get incoming software version
-        version = Version.from_str(meta_data.get("version", ""))
-        print(f"Version: {version}")
+        if sflash_is_on_board:
+            # get first line
+            first_lines = response.read(1024).split(b"\n")
+            print(type(first_lines))
+            line_1 = first_lines[0]
+            print(f"First line: {line_1}")
 
-        wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
-        next(wc)
-        data = bytearray().join(first_lines)
-        wc.send(data)
-        bytes_so_far = 1024
-        while chunk := response.read(1024):
-            wc.send(bytearray(chunk, "utf-8"))
-            bytes_so_far += len(chunk)
-            yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
+            # parse as json
+            meta_data = json_loads(line_1)
 
-        try:
-            wc.send(None)
-        except StopIteration:
-            pass
+            # get incoming software version
+            version = Version.from_str(meta_data.get("version", ""))
+            print(f"Version: {version}")
+
+            wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
+            next(wc)
+            data = bytearray().join(first_lines)
+            wc.send(data)
+            bytes_so_far = 1024
+            while chunk := response.read(1024):
+                wc.send(bytearray(chunk, "utf-8"))
+                bytes_so_far += len(chunk)
+                yield {"percent": start_percent + (bytes_so_far * percent_per_chunk)}
+
+            try:
+                wc.send(None)
+            except StopIteration:
+                pass
 
     else:
         # TODO modify this to use a buffer so we aren't recreating a buffer every loop
         # https://docs.micropython.org/en/latest/reference/constrained.html
         # look for buffers
+
+        percent = start_percent
+        buff = bytearray(1024)
         with open("update.json", "wb") as f:
-            while chunk := response.read(1024):
-                f.write(chunk)
-                yield {"percent": start_percent + (f.tell() * percent_per_byte)}
+            while True:
+                buff[0:] = response.read(1024)
+                f.write(buff)
+                percent += percent_per_chunk * ((end_percent - percent) / percent)
+                if len(buff) < 1024:
+                    break
+                yield {"percent": percent}
 
     response.close()
 
@@ -395,7 +390,7 @@ def write_files():
 
     start_percent = 40
     end_percent = 98
-    percent_per_byte = end_percent - start_percent / end_of_content
+    percent_per_byte = (end_percent - start_percent) / end_of_content
 
     # remove_extra_files.py{"checksum":"04D9","bytes":1827,"log":"Removing extra files","execute":true}aW1wb3J0IG9zCgpr
     with open("update.json", "r") as f:
@@ -404,10 +399,6 @@ def write_files():
 
         # loop until we reach the end of the files section
         while f.tell() < end_of_content:
-            # yield a percent update
-            percent = f.tell() * percent_per_byte + start_percent
-            yield {"percent": percent}
-
             # read character by character to the first { to get the path
             path = ""
             while c := f.read(1):
@@ -419,6 +410,22 @@ def write_files():
             if not path.startswith("/"):
                 path = "/" + path
 
+            # create the folder structure if it doesn't exist
+            from os import mkdir
+
+            parts = path.strip("/").split("/")[:-1]
+            current = ""
+            for part in parts:
+                current += "/" + part
+                try:
+                    mkdir(current)
+                except OSError:
+                    pass
+
+            # yield a percent update
+            percent = f.tell() * percent_per_byte + start_percent
+            yield {"log": f"Writing {path}", "percent": percent}
+
             # read in json until the end of the object
             json_str = c
             while c := f.read(1):
@@ -427,39 +434,20 @@ def write_files():
                     break
             metadata = json_loads(json_str)
 
-            # file start checkpoint
-            file_data_start = f.tell()
-
-            try:
-                # get the check
-                current_crc16 = crc16_of_file(path)
-                if current_crc16 == metadata.get("checksum", ""):
-                    print(f"Skipping {path} - checksums match")
-                    # skip in f until the next newline which will be the start of the next file
-                    while True:
-                        c = f.readline(1024)
-                        if c[-1] == "\n":
-                            break
-                    break
-            except Exception:
-                # we want to skip if we can
-                # but if there are any errors, we should just copy the file normally
-                f.seek(file_data_start)  # jump back to the start of the file data
-
             # delete the original file if it exists
             try:
                 remove(path)
             except OSError:
                 pass
 
-            # TODO create a buffer to write to the file
-            # TODO make sure folder is created
-
+            # write the file
             with open(path, "wb") as out_f:
                 while True:
+                    # I tried using a buufer here, but it's very tricky
                     chunk = f.readline(1024)
-                    # if the last character is a newline, we're done
-                    if chunk[-1] == "\n":
+                    if not chunk:
+                        break
+                    if chunk.endswith("\n"):
                         out_f.write(a2b_base64(chunk[:-1]))
                         break
                     else:
