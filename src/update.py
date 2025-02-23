@@ -202,7 +202,7 @@ def download_update(url):
     start_percent = 2
     end_percent = 30
     total_length = 400000
-    percent_per_byte = (end_percent - start_percent) / total_length
+    percent_per_chunk = 1024 * (end_percent - start_percent) / total_length
 
     # if sflash is on board, store it in sflash
     # TODO sflash-based update dormant for now
@@ -234,7 +234,7 @@ def download_update(url):
             while chunk := response.read(1024):
                 wc.send(bytearray(chunk, "utf-8"))
                 bytes_so_far += len(chunk)
-                yield {"percent": start_percent + (bytes_so_far * percent_per_byte)}
+                yield {"percent": start_percent + (bytes_so_far * percent_per_chunk)}
 
             try:
                 wc.send(None)
@@ -247,10 +247,14 @@ def download_update(url):
         # look for buffers
 
         percent = start_percent
+        buff = bytearray(1024)
         with open("update.json", "wb") as f:
-            while chunk := response.read(1024):
-                f.write(chunk)
-                percent += len(chunk) * percent_per_byte * ((end_percent - percent) / percent)
+            while True:
+                buff[0:] = response.read(1024)
+                f.write(buff)
+                percent += percent_per_chunk * ((end_percent - percent) / percent)
+                if len(buff) < 1024:
+                    break
                 yield {"percent": percent}
 
     response.close()
@@ -436,12 +440,14 @@ def write_files():
             except OSError:
                 pass
 
-            # TODO create a buffer to write to the file
+            # write the file
             with open(path, "wb") as out_f:
                 while True:
+                    # I tried using a buufer here, but it's very tricky
                     chunk = f.readline(1024)
-                    # if the last character is a newline, we're done
-                    if chunk[-1] == "\n":
+                    if not chunk:
+                        break
+                    if chunk.endswith("\n"):
                         out_f.write(a2b_base64(chunk[:-1]))
                         break
                     else:
