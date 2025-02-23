@@ -1,119 +1,101 @@
-# game status
-
 import json
 import time
-
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
-game_active = False
-number_of_players = 0
-time_game_start = None
-time_game_end = None
+# Initialize the game status in SharedState
+S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
 
 
-# BCD two digits per byte
-def BCD_to_Int(number_BCD):
+def _BCD_to_Int(number_BCD):
+    """Convert BCD number from machine to regular int."""
     number_int = 0
     for byte in number_BCD:
         high_digit = byte >> 4
         low_digit = byte & 0x0F
+        if low_digit > 9:
+            low_digit = 0
+        if high_digit > 9:
+            high_digit = 0
         number_int = number_int * 100 + high_digit * 10 + low_digit
     return number_int
 
 
-def report(request):
-    global game_active, number_of_players, time_game_start, time_game_end
-    report_data = {}
-
+def _get_machine_score(player):
+    """Read a single live score from machine memory (0=player1, 3=player4)."""
     try:
-        # Check if game-specific information is valid
-        if S.gdata.get("GameInfo", {}).get("GameName") == "Pinbot":
-            try:
-                # Game-specific data collection
-                report_data["Warnings"] = shadowRam[0xB3]
-                report_data["PlayerUp"] = shadowRam[0xAD] + 1
-                report_data["SolarValue"] = 100 * BCD_to_Int(shadowRam[0x620 : 0x622 + 1])
-                report_data["EnergyValue"] = 100 * BCD_to_Int(shadowRam[0xDB : 0xDC + 1])
-                report_data["Message"] = " "
-                report_data["BallInPlay"] = shadowRam[0x38] & 0x0F
-
-                # Gather player scores
-                player_score = []
-                for i in range(4):
-                    base_idx = 0x200 + (i * 4)
-                    score = BCD_to_Int(shadowRam[base_idx : base_idx + 4])
-                    player_score.append(score)
-
-                report_data["PlayerScore"] = player_score
-
-                # Calculate game time only for a single player
-                if number_of_players == 1 and time_game_start is not None:
-                    if game_active:
-                        report_data["GameTime"] = (time.ticks_ms() - time_game_start) / 1000
-                    elif time_game_end > time_game_start:
-                        report_data["GameTime"] = (time_game_end - time_game_start) / 1000
-                    else:
-                        report_data["GameTime"] = 0
-                else:
-                    report_data["GameTime"] = 0
-
-                report_data["GameActive"] = game_active
-
-                # Update player count based on shadowRam value
-                number_of_players = shadowRam[0xAC] + 1
-                report_data["Players"] = number_of_players
-
-            except (IndexError, TypeError) as e:
-                print(f"Data processing error: {e}")
-                return json.dumps({"error": "Data processing error"})
-
-            # Return the collected report data as JSON
-            return json.dumps(report_data)
-
+        if S.gdata.get("InPlay", {}).get("Type", 0) != 0:
+            start = S.gdata["InPlay"]["ScoreAdr"] + player * 4
+            score_bytes = shadowRam[start : start + 4]
+            return _BCD_to_Int(score_bytes)
         else:
-            # If game is not Pinbot, return "none"
-            return "none"
-
+            print("GSTAT: InPlay not defined")
     except Exception as e:
-        # Handle any unexpected exceptions and prevent the function from locking up
-        print(f"Unexpected error: {e}")
-        return json.dumps({"error": "Unexpected error"})
+        print(f"GSTAT: error in get_machine_score: {e}")
+    return 0
 
 
-def initialize():
-    global game_active, number_of_players
-    game_active = False
-    number_of_players = 0
+def _get_ball_in_play():
+    """Get the ball in play number. 0 if game over."""
+    try:
+        ball_in_play = S.gdata["BallInPlay"]
+        if ball_in_play["Type"] == 1:
+            token = shadowRam[ball_in_play["Address"]]
+            mapping = {ball_in_play["Ball1"]: 1, ball_in_play["Ball2"]: 2, ball_in_play["Ball3"]: 3, ball_in_play["Ball4"]: 4, ball_in_play["Ball5"]: 5}
+            return mapping.get(token, 0)
+    except Exception as e:
+        print(f"GSTAT: error in get_ball_in_play: {e}")
+    return 0
 
 
-poll_state = 0
+def game_report():
+    """Generate a report of the current game status, return JSON."""
+    data = {}
+    try:
+        data["BallInPlay"] = _get_ball_in_play()
+        data["Player1Score"] = _get_machine_score(0)
+        data["Player2Score"] = _get_machine_score(1)
+        data["Player3Score"] = _get_machine_score(2)
+        data["Player4Score"] = _get_machine_score(3)
+
+        if S.game_status["time_game_start"] is not None:
+            if S.game_status["game_active"]:
+                data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
+            elif S.game_status["time_game_end"] is not None and S.game_status["time_game_end"] > S.game_status["time_game_start"]:
+                data["GameTime"] = (S.game_status["time_game_end"] - S.game_status["time_game_start"]) / 1000
+            else:
+                data["GameTime"] = 0
+        else:
+            data["GameTime"] = 0
+
+        data["GameActive"] = S.game_status["game_active"]
+    except Exception as e:
+        print(f"GSTAT: Error in report generation: {e}")   
+    return json.dumps(data)
 
 
 def poll_fast():
-    global game_active, number_of_players, time_game_start, time_game_end, poll_state
-
-    if poll_state == 0:
-        # watch for ball in play for game start
-        game_active = False
-        if shadowRam[0x38] in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]:
-            time_game_start = time.ticks_ms()
-            game_active = True
-            print("-----------------start game ", time_game_start)
-            poll_state = 1
-
-    elif poll_state == 1:
-        if shadowRam[0xA9] == 0x01 or (shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]):
-            time_game_end = time.ticks_ms()
-            print("------------end game ", time_game_end)
-            game_active = False
-            poll_state = 2
-
+    """Poll for game start and end time."""
+    ps = S.game_status["poll_state"]
+    if ps == 0:
+        S.game_status["game_active"] = False
+        if _get_ball_in_play() != 0:
+            S.game_status["time_game_start"] = time.ticks_ms()
+            S.game_status["game_active"] = True
+            print("GSTAT: start game @ time=", S.game_status["time_game_start"])
+            S.game_status["poll_state"] = 1
+    elif ps == 1:
+        if _get_ball_in_play() == 0:
+            S.game_status["time_game_end"] = time.ticks_ms()
+            print("GSTAT: end game @ time=", S.game_status["time_game_end"])
+            S.game_status["game_active"] = False
+            S.game_status["poll_state"] = 2
     else:
-        if shadowRam[0x38] not in [0xF1, 0xF2, 0xF3, 0xF4, 0xF5]:
-            poll_state = 0
-            print("----------reset")
+        S.game_status["poll_state"] = 0
 
 
 if __name__ == "__main__":
-    print(report("ok"))
+    import GameDefsLoad
+    GameDefsLoad.go()
+    print(game_report())
+    poll_fast()

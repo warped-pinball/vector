@@ -13,7 +13,7 @@ recv_sock = None
 send_sock = None
 
 
-def setup():
+def setup(ip_address):
     global recv_sock, send_sock, known_devices
 
     # Prepare a socket for receiving broadcast from others
@@ -26,26 +26,23 @@ def setup():
     send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    # add self to known devices
-    from SharedState import WarpedVersion, gdata, ipAddress
+    from SharedState import WarpedVersion, gdata
 
-    if ipAddress:
-        known_devices[ipAddress] = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"], "self": True}
+    known_devices[ip_address] = {"name": gdata["GameInfo"]["GameName"], "version": WarpedVersion, "self": True}
 
 
 def announce():
     """Broadcast this device’s info to the local network."""
     from time import time
 
-    from SharedState import WarpedVersion, gdata, ipAddress
+    from SharedState import WarpedVersion, gdata
 
-    if not ipAddress:
-        return
+    msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
     send_sock.sendto(
-        ujson.dumps({"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}).encode("utf-8"),
+        ujson.dumps(msg).encode("utf-8"),
         ("255.255.255.255", DISCOVERY_PORT),
     )
 
@@ -85,27 +82,41 @@ def listen():
             # Update our known devices dictionary
             known_devices[ip_str] = {"version": version, "last_seen": time.time(), "name": name}
 
-            # if there are more than MAXIMUM_KNOWN_DEVICES, remove the ip address that's most different from own
+            def bisect_left(arr, x):
+                left, right = 0, len(arr)
+                while left < right:
+                    mid = (left + right) // 2
+                    if arr[mid] < x:
+                        left = mid + 1
+                    else:
+                        right = mid
+                return left
+
             if len(known_devices) > MAXIMUM_KNOWN_DEVICES:
-                from SharedState import ipAddress
+                devices = [(info["name"], ip_str, info.get("self", False)) for ip_str, info in known_devices.items()]
+                local_device = next((d for d in devices if d[2]), None)
+                if not local_device:
+                    return
+                local_name, local_ip, _ = local_device
+                others = sorted([d for d in devices if not d[2]], key=lambda x: x[0])
+                index = bisect_left([d[0] for d in others], local_name)
+                selected = [local_device]
+                up = index
+                down = index - 1
 
-                # Find the IP address that's most different from our own
-                # ideally this will make for a semi-stable set of known devices which will
-                # make it more logical when switching between them
-                own_ip_parts = [int(part) for part in ipAddress.split(".")]
-                worst_ip = None
-                worst_diff = 0
-                for ip_str in known_devices:
-                    # Don't remove self
-                    if known_devices[ip_str].get("self", False):
-                        continue
+                while len(selected) < MAXIMUM_KNOWN_DEVICES and (up < len(others) or down >= 0):
+                    if up < len(others):
+                        selected.append(others[up])
+                        up += 1
+                        if len(selected) == MAXIMUM_KNOWN_DEVICES:
+                            break
+                    if down >= 0 and len(selected) < MAXIMUM_KNOWN_DEVICES:
+                        selected.append(others[down])
+                        down -= 1
 
-                    other_ip_parts = [int(part) for part in ip_str.split(".")]
-                    diff = sum(abs(own - other) for own, other in zip(own_ip_parts, other_ip_parts))
-                    if worst_ip is None or diff > worst_diff:
-                        worst_ip = ip_str
-                        worst_diff = diff
-                del known_devices[worst_ip]
-                print("Removed", worst_ip, "from known devices")
+                new_known = {}
+                for name, ip_str, is_self in selected:
+                    new_known[ip_str] = known_devices[ip_str]
+                known_devices = new_known
 
             print("Known devices:", known_devices)

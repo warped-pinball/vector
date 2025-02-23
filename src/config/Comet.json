@@ -1,8 +1,8 @@
 {
     "GameInfo": {
-        "GameName": "Black Knight 2000",
-        "System": "11B",
-        "FileVer": 1
+        "GameName": "Comet",
+        "System": "9",
+        "FileVer": 1      
     },
 
     "Definition": {
@@ -18,7 +18,7 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": "0x38",
+        "Address": "0x58",
         "Ball1": "0xF1",
         "Ball2": "0xF2",
         "Ball3": "0xF3",
@@ -27,41 +27,30 @@
     },
 
     "DisplayMessage": {
-        "Type": 2,
-        "Address": "0x7B4",
-        "Length": 16,
-        "Number": 3,
-        "EnableByteAddress": "0x7B0"
+        "Type": 9,
+        "Address": "0x734"
     },
 
     "Adjustments" :{
-        "Type": 1,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7EC"
+        "Type": 0,
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
     },
 
     "HighScores": {
-        "Type": 1,
-        "ScoreAdr": "0x6FB",
-        "InitialAdr": "0x70B",
+        "Type": 9,
+        "ScoreAdr": "0x734",
         "BytesInScore": 4
     },
-	
+
     "InPlay": {
         "Type": 1,
-        "ScoreAdr": "0x200",
-        "PlayersInGame": "0xB2",
-        "PlayerUP": "0xB3"
+        "ScoreAdr": "0x38"
     },
 
     "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0
+        "Type": 0
     },
 
     "Switches": {
@@ -69,8 +58,9 @@
         "Address": 56,
         "Length": 23
     },
-
+    
     "CoinDrop": {
         "Type": 0
     }
 }
+

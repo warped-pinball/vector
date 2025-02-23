@@ -42,8 +42,12 @@ def go():
         Log.log("MEM: Checksum correction")
 
     # Boot up PIO/DMA Ram Intercept system
-    RamInt.configure()
-
+    r=RamInt.configure()
+    if r is "fault":
+        Log.log("MEM: Ram Intercept Fault - cycle power")
+        while True:
+            pass
+        
     # stuff memory values? - doing this forces factory reset at game boot up
     # for i in range(SRAM_DATA_LENGTH):
     #    ram_access[i]= 20+ i%50

@@ -1,8 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Roller Games",
-        "System": "11c",
-        "FileVer": 2
+        "GameName": "Diner",
+        "System": "11c"        
     },
 
     "Memory" : {
@@ -13,17 +12,17 @@
     },
 
     "BallInPlay": {
-        "Type": 1,
+        "Type": 0,
         "Address": 56,
-        "Ball1": "0xF1",
-        "Ball2": "0xF2",
-        "Ball3": "0xF3",
-        "Ball4": "0xF4",
-        "Ball5": "0xF5"
+        "Ball1": "0x01",
+        "Ball2": "0x02",
+        "Ball3": "0x03",
+        "Ball4": "0x04",
+        "Ball5": "0x05"
     },
 
     "DisplayMessage": {
-        "Type": 2,
+        "Type": 3,
         "Address": "0x7B4",
         "Length": 16,
         "Number": 3,
@@ -34,21 +33,22 @@
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7EC"
+        "ChecksumResultAdr": "0x7E6"
     },
 
     "HighScores": {
-        "Type": 1,
-        "ScoreAdr": "0x6ED",
-        "InitialAdr": "0x6FD",
+        "Type": 3,
+        "ScoreAdr": "0x70E",
+        "InitialAdr": "0x71E",
         "BytesInScore": 4
     },
     
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
-        "PlayersInGame": "0xB2",
-        "PlayerUP": "0xB3"
+        "PlayersInGame": "0xA9",
+        "PlayerUP": "0xAA",        
+        "Warnings": "0xB0"
     },
 
     "HSRewards": {
@@ -70,5 +70,5 @@
         "Type": 0
     }
 
-
+    
 }

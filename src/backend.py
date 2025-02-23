@@ -17,7 +17,6 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
-from SPI_DataStore import writeIP
 
 #
 # Constants
@@ -368,17 +367,14 @@ def app_game_name(request):
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
-    return (
-        json_dumps({"active_config": ds_read_record("configuration", 0)["gamename"]}),
-        200,
-    )
+    return {"active_config": ds_read_record("configuration", 0)["gamename"]}
 
 
 @add_route("/api/game/configs_list")
 def app_game_configs_list(request):
     from GameDefsLoad import list_game_configs
 
-    return json_dumps(list_game_configs()), 200
+    return list_game_configs()
 
 
 @add_route("/api/game/status")
@@ -394,7 +390,7 @@ def app_game_status(request):
         gdata["BallInPlay"]["Ball5"],
     ]
 
-    return json_dumps({"game_in_progress": game_in_progress}), 200
+    return {"game_in_progress": game_in_progress}
 
 
 #
@@ -483,6 +479,23 @@ def app_tournamentClear(request):
     SharedState.gameCounter = 0
 
 
+@add_route("/api/scores/claimable")
+def app_getClaimableScores(request):
+    # TODO only if web ui score claim is enabled
+
+    from ScoreTrack import get_claim_score_list
+
+    return get_claim_score_list()
+
+
+@add_route("/api/scores/claim", method="POST")
+def app_claimScore(request):
+    from ScoreTrack import claim_score
+
+    data = request.data
+    claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
+
+
 #
 # Players
 #
@@ -497,7 +510,7 @@ def app_getPlayers(request):
         full_name = record["full_name"].replace("\x00", " ").strip("\0")
         if initials or full_name:  # ensure that at least one field is not empty
             players[str(i)] = {"initials": initials, "name": full_name}
-    return json_dumps(players), 200
+    return players
 
 
 @add_route("/api/player/update", method="POST", auth=True)
@@ -606,8 +619,8 @@ def app_restoreAdjustments(request):
 #
 @add_route("/api/settings/score_claim_methods")
 def app_getScoreCap(request):
-    score_cap = ds_read_record("extras", 0)["enter_intials_on_game"]
-    return json_dumps({"on-machine": score_cap}), 200
+    score_cap = ds_read_record("extras", 0)["enter_initials_on_game"]
+    return {"on-machine": score_cap}
 
 
 @add_route("/api/settings/score_claim_methods", method="POST", auth=True)
@@ -615,7 +628,7 @@ def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
         info = ds_read_record("extras", 0)
-        info["enter_intials_on_game"] = bool(json_data["on-machine"])
+        info["enter_initials_on_game"] = bool(json_data["on-machine"])
         ds_write_record("extras", info, 0)
 
 
@@ -670,7 +683,7 @@ def app_reboot(request):
 @add_route("/api/last_ip")
 def app_getLastIP(request):
     ip_address = ds_read_record("extras", 0)["lastIP"]
-    return json_dumps({"ip": ip_address}), 200
+    return {"ip": ip_address}
 
 
 @add_route("/api/available_ssids")
@@ -685,7 +698,7 @@ def app_getAvailableSSIDs(request):
             network["configured"] = True
             break
 
-    return json_dumps(available_networks), 200
+    return available_networks
 
 
 @add_route("/api/network/peers")
@@ -719,14 +732,14 @@ def app_getDateTime(request):
 def app_version(request):
     import SharedState
 
-    return json_dumps({"version": SharedState.WarpedVersion}), 200
+    return {"version": SharedState.WarpedVersion}
 
 
 @add_route("/api/fault")
 def app_install_fault(request):
     import SharedState
 
-    return json_dumps(SharedState.faults), 200
+    return SharedState.faults
 
 
 #
@@ -796,7 +809,7 @@ def add_app_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json_dumps({"in_ap_mode": False}), 200
+        return {"in_ap_mode": False}
 
 
 #
@@ -807,7 +820,7 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        return json_dumps({"in_ap_mode": True}), 200
+        return {"in_ap_mode": True}
 
     @add_route("/api/settings/set_vector_config", method="POST")
     def app_setWifi(request):
@@ -834,8 +847,11 @@ def add_ap_mode_routes():
 
 
 def connect_to_wifi():
+    from discovery import setup as discovery_setup
+    from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
     from phew import is_connected_to_wifi as phew_is_connected
+    from SPI_DataStore import writeIP
 
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
@@ -848,11 +864,10 @@ def connect_to_wifi():
     for i in range(WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
         if phew_is_connected():
-            print(f"Connected to wifi with IP address: {ip_address}")
             writeIP(ip_address)
-            from displayMessage import init
-
-            init(ip_address)
+            init_display(ip_address)
+            discovery_setup(ip_address)
+            print(f"Connected to wifi with IP address: {ip_address}")
             return True
 
     # If there's signal that means the credentials are wrong
@@ -885,6 +900,8 @@ def go(ap_mode):
         from phew import access_point, dns
 
         print("Starting in AP mode")
+        from displayMessage import init as init_display
+        init_display("000.000.000.000")
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()
         # send clients to the configure page

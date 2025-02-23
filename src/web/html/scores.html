@@ -69,8 +69,38 @@
         padding-right: 12px;
     }
 
-    /* Hide date column for the *leaderboard* only when <= 500px,
-       but keep personal scoreboard always showing date. */
+    .game{
+        padding: 4px;
+        display: grid;
+        grid-template-columns: 25% 25% 25% 25%;
+        margin-bottom: 0.25rem;
+    }
+
+    .play{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        column-gap: 5px;
+    }
+
+    .claim-button{
+        padding: 4px 9px;
+    }
+
+    @media (max-width: 770px) {
+        .game{
+            grid-template-columns: 1fr;
+        }
+
+        .play{
+            margin: 0.25rem;
+        }
+
+        .claim-header-row{
+            display: none;
+        }
+    }
+
     @media (max-width: 500px) {
 
         /* Only hide .date in "five-col" containers (leaderboard) */
@@ -83,6 +113,7 @@
             /* drop the date col at narrow widths */
         }
     }
+
 </style>
 
 <div class="score-board">
@@ -112,3 +143,21 @@
         <div id="personalArticles" class="score-board-list"></div>
     </section>
 </div>
+<div id="claimable-scores" class="hide score-claim"></div>
+<dialog id="score-claim-modal">
+    <article>
+        <h2>Claim Your Score</h2>
+        <div>
+            <p>Player <b>#<span id="player-number"></span></b></p>
+            <p>Score: <b><span id="score-to-claim"></span></b></p>
+            <div class="grid">
+                <label for="initials-input">Initials:</label>
+                <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required title="Enter exactly 3 letters" />
+            </div>
+            <footer>
+                <button class="secondary" onclick="document.getElementById('score-claim-modal').close()">Cancel</button>
+                <button id="submit-claim-btn">Submit</button>
+            </footer>
+        </div>
+    </article>
+</dialog>

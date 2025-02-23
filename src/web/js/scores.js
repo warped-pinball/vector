@@ -354,3 +354,119 @@ window.cleanupRefreshes = function () {
         setTimeout(pollForElements, 100);
     }
 })();
+
+// get claimable scores
+window.getClaimableScores = async function () {
+    const response = await window.smartFetch('/api/scores/claimable', null, false)
+    const data = await response.json()
+
+    console.log(data)
+    // eample data with 2 games, one with 2 players and one with 1 player
+    // [
+    //  [['', 1123980]]
+    //  [['MSM',11264], ['',9307882]]
+    // ]
+
+    const claimableScores = document.getElementById('claimable-scores')
+
+    // if the length of the data is 0, hide the claimable scores
+    if (data.length === 0) {
+        claimableScores.classList.add('hide')
+        return
+    }
+
+    // clear the claimable scores
+    claimableScores.innerHTML = ''
+
+    // add header
+    const header = document.createElement('h4')
+    header.innerText = 'Claimable Scores'
+    claimableScores.appendChild(header)
+
+    const playerNumberHeader = document.createElement('article')
+    playerNumberHeader.classList.add('game')
+    playerNumberHeader.classList.add('claim-header-row')
+    playerNumberHeader.innerHTML = '<div>Player 1</div><div>Player 2</div><div>Player 3</div><div>Player 4</div>'
+    claimableScores.appendChild(playerNumberHeader)
+
+    // for element in data create a new "game" element
+    data.forEach((element) => {
+        const game = document.createElement('article')
+        game.classList.add('game')
+
+        // add a game record for each player in the game
+        element.forEach((player) => {
+            // make a play element
+            const playDiv = document.createElement('div')
+            playDiv.classList.add('play')
+
+            // make a player and a score div
+            const initialsDiv = document.createElement('div')
+            const scoreDiv = document.createElement('div')
+
+            // add the player and score divs to the game div
+            playDiv.appendChild(initialsDiv)
+            playDiv.appendChild(scoreDiv)
+
+            // add the play div to the game div
+            game.appendChild(playDiv)
+
+            // add the score to the score div
+            scoreDiv.innerText = player[1]
+
+            // if the initials are present, use them, otherwise replace with a "claim" button
+            if (player[0] === '') {
+                const claimButton = document.createElement('button')
+                claimButton.addEventListener('click', async () => {
+                    const modal = document.getElementById('score-claim-modal')
+
+                    // set modal score
+                    const modalScore = document.getElementById('score-to-claim')
+                    modalScore.innerText = player[1]
+
+                    // set player number
+                    const playerNumber = document.getElementById('player-number')
+                    playerNumber.innerText = element.indexOf(player) + 1
+
+                    // replace the submit button with a new one
+                    const submit = document.getElementById('submit-claim-btn')
+                    const newSubmit = submit.cloneNode(true)
+                    submit.parentNode.replaceChild(newSubmit, submit)
+                    newSubmit.id = 'submit-claim-btn'
+
+                    // make submit callback
+                    newSubmit.addEventListener('click', async () => {
+                        const initials = document.getElementById('initials-input').value
+                        const response = await window.smartFetch(
+                            '/api/scores/claim',
+                            { score: player[1], initials: initials, player_index: element.indexOf(player)},
+                            false
+                        )
+
+                        // get response status
+                        const status = await response.status
+                        if (status === 200) {
+                            window.getClaimableScores()
+                        }
+                        modal.close()
+                    })
+
+                    // show modal
+                    modal.showModal();
+                })
+
+                claimButton.innerText = 'Claim'
+                claimButton.classList.add('claim-button')
+                initialsDiv.appendChild(claimButton)
+            } else {
+                initialsDiv.innerText = player[0]
+            }
+        })
+        claimableScores.appendChild(game)
+    })
+
+    // unhides the claimable scores
+    claimableScores.classList.remove('hide')
+};
+
+window.getClaimableScores();

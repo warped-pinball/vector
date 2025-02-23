@@ -16,6 +16,8 @@ from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
 
+from GameStatus import game_report
+
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
 
@@ -458,7 +460,7 @@ def copy_to_fram():
 
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
-        print("MEM in SERVER: FRAM cycle complete")
+        print("FRAM: cycle complete")
         led_board.toggle()
 
 
@@ -517,7 +519,6 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from discovery import DEVICE_TIMEOUT, announce, listen
-    from discovery import setup as discovery_setup
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -526,13 +527,13 @@ def create_schedule(ap_mode: bool = False):
     #
     # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message 30 seconds after boot
-    schedule(refresh, 30000, log="Server: Refresh display message")
+    schedule(refresh, 30000)
 
     # initialize the leader board 10 seconds after boot
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
     # print out memory usage 45 seconds after boot
-    schedule(resource_go, 5000, 10000, log="Server: Memory Usage")
+    schedule(resource_go, 5000, 10000)
 
     # initialize the fram
     schedule(sflash_driver_init, 200)
@@ -543,6 +544,7 @@ def create_schedule(ap_mode: bool = False):
     #
     # reoccuring tasks
     #
+
     # update the game status every 0.25 second
     schedule(poll_fast, 0, 250)
 
@@ -559,9 +561,6 @@ def create_schedule(ap_mode: bool = False):
 
     # non AP mode only tasks
     if not ap_mode:
-        # initialize the discovery service
-        schedule(discovery_setup, 2000)
-
         # every 1/2 of DEVICE_TIMEOUT announce our presence
         schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
 

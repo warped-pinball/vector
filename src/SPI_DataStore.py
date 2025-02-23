@@ -106,7 +106,7 @@ def serialize(record, structure_name):
     elif structure_name == "extras":
         if record.get("enable") is None:           
             enable = 0
-            if record.get("enter_intials_on_game", True):
+            if record.get("enter_initials_on_game", True):
                 enable |= 0x01
             if record.get("claim_scores", True):
                 enable |= 0x02
@@ -194,7 +194,7 @@ def deserialize(data, structure_name):
                 "other": other,
                 "lastIP": lastIP.decode().strip("\0"),
                 "message": message.decode().strip("\0"),
-                "enter_intials_on_game": bool(enable & 0x01),
+                "enter_initials_on_game": bool(enable & 0x01),
                 "claim_scores": bool(enable & 0x02),
                 "show_ip_address": bool(enable & 0x04),
                 "tournament_mode": bool(enable & 0x08),  
@@ -203,7 +203,7 @@ def deserialize(data, structure_name):
             }
         except Exception:
             Log.log("DATSTORE: fault extras")
-            return {"enable": 5, "other": 1, "lastIP": "none", "message": "none", "enter_intials_on_game": True, "claim_scores": False, "show_ip_address": True, "tournament_mode": False, "flag5": False, "flag6": False}
+            return {"enable": 5, "other": 1, "lastIP": "none", "message": "none", "enter_initials_on_game": True, "claim_scores": False, "show_ip_address": True, "tournament_mode": False, "flag5": False, "flag6": False}
     else:
         raise ValueError("Unknown structure name")
 

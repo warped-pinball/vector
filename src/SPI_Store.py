@@ -179,6 +179,8 @@ def write_all_fram_now():
             return
 
 
+
+
 """
 Serial Flash
     256M-Bit
@@ -269,7 +271,7 @@ def _sflash_block_erase(block_address, wait=False):
         loop = 0
         while not sflash_is_ready():
             if loop >= 60:
-                print("timeout")
+                print("SFLASH: timeout erase")
                 return "timeout"
             time.sleep_ms(50)
             loop += 1
@@ -383,12 +385,12 @@ def sflash_sector_erase(sector_address):
     )
 
     _sflash_cmd_dat(spi, cs, SFLASH_SE, address_bytes)
-    print(f"erase {address_bytes.hex()}")
+    print(f"SFLASH: erase {address_bytes.hex()}")
 
     loop = 0
     while not sflash_is_ready():
         if loop >= 100:
-            print("timeout")
+            print("SFLASH: timeout sector")
             return "timeout"
         time.sleep_ms(10)
         loop += 1
@@ -443,18 +445,10 @@ def sflash_protect_sectors(start_address, end_address, protect="on"):
     block_size = 0x10000  # 64K blocks
     sector_size = 0x1000  # 4K sectors
 
-    # these were unused so I commented them out
-    # first_block_address = 0x0000000
-    # last_block_address = 0x1FF0000
-
     if protect == "on":
         data_byte = 0xFF
     else:
         data_byte = 0
-        # print("all protection off  ")
-        # _sflash_write_enable()
-        # _sflash_cmd_dat(spi, cs, SFLASH_GBULK)
-        # return
 
     # 64K blocks from 1 to 510
     for block_num in range(1, 511):
@@ -518,7 +512,7 @@ def sflash_driver_init():
     # read config, check bit 5 for 4 byte mode
     config_reg = _sflash_reg_read(spi, cs, SFLASH_RDCR)
     if config_reg is None or len(config_reg) == 0 or (config_reg[0] & 0x20) == 0:
-        print("SFLASH: Fault, cannot confirm config register")
+        print("SFLASH: chip not installed")
         sflash_is_on_board = False
         return
 
@@ -539,6 +533,10 @@ def version():
     if sflash_is_on_board:
         sflash_ver = 1
     return SPI_store_version, 1, sflash_ver
+
+
+def sflash_is_installed():
+    return sflash_is_on_board
 
 
 def test():

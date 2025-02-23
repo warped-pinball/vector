@@ -150,15 +150,11 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
         + [f'datastore.write_record("names", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["names"])]
         # set leaderboard data
         + [
-            "from ScoreTrack import update_leaderboard",
+            "from ScoreTrack import update_leaderboard, _update_tournamentboard",
         ]
+        # add leaderboard and tournament data
         + [f"update_leaderboard({json.dumps(record)})" for record in test_data["leaders"]]
-        # turn on tournament mode
-        + ["import SharedState", "SharedState.tournamentModeOn = 1"]
-        + [f"update_leaderboard({json.dumps(record)})" for record in test_data["tournament"]]
-        # turn off tournament mode
-        + ["SharedState.tournamentModeOn = 0"]
-        # set score capture
+        + [f"_update_tournamentboard({json.dumps(record)})" for record in test_data["tournament"]]
         + [
             'extras = datastore.read_record("extras", 0)',
             f'extras["other"] = {test_data["settings"]["score_capture"]}',

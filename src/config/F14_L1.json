@@ -42,6 +42,13 @@
         "InitialAdr": "0x737",
         "BytesInScore": 4
     },
+    
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "PlayersInGame": "0xA8",
+        "PlayerUP": "0xA9"
+    },
 
     "HSRewards": {
         "Type": 0,
