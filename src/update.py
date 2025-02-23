@@ -1,6 +1,3 @@
-# TODO support version ranges
-
-
 class Version:
     def __init__(self, major: int, minor: int, patch: int, candidate=None):
         self.major = major
@@ -204,7 +201,7 @@ def download_update(url):
 
     start_percent = 2
     end_percent = 30
-    total_length = 200000
+    total_length = 400000
     percent_per_byte = (end_percent - start_percent) / total_length
 
     # if sflash is on board, store it in sflash
@@ -248,10 +245,13 @@ def download_update(url):
         # TODO modify this to use a buffer so we aren't recreating a buffer every loop
         # https://docs.micropython.org/en/latest/reference/constrained.html
         # look for buffers
+
+        percent = start_percent
         with open("update.json", "wb") as f:
             while chunk := response.read(1024):
                 f.write(chunk)
-                yield {"percent": start_percent + (f.tell() * percent_per_byte)}
+                percent += len(chunk) * percent_per_byte * ((end_percent - percent) / percent)
+                yield {"percent": percent}
 
     response.close()
 
@@ -386,7 +386,7 @@ def write_files():
 
     start_percent = 40
     end_percent = 98
-    percent_per_byte = end_percent - start_percent / end_of_content
+    percent_per_byte = (end_percent - start_percent) / end_of_content
 
     # remove_extra_files.py{"checksum":"04D9","bytes":1827,"log":"Removing extra files","execute":true}aW1wb3J0IG9zCgpr
     with open("update.json", "r") as f:
@@ -395,10 +395,6 @@ def write_files():
 
         # loop until we reach the end of the files section
         while f.tell() < end_of_content:
-            # yield a percent update
-            percent = f.tell() * percent_per_byte + start_percent
-            yield {"percent": percent}
-
             # read character by character to the first { to get the path
             path = ""
             while c := f.read(1):
@@ -410,6 +406,22 @@ def write_files():
             if not path.startswith("/"):
                 path = "/" + path
 
+            # create the folder structure if it doesn't exist
+            from os import mkdir
+
+            parts = path.strip("/").split("/")[:-1]
+            current = ""
+            for part in parts:
+                current += "/" + part
+                try:
+                    mkdir(current)
+                except OSError:
+                    pass
+
+            # yield a percent update
+            percent = f.tell() * percent_per_byte + start_percent
+            yield {"log": f"Writing {path}", "percent": percent}
+
             # read in json until the end of the object
             json_str = c
             while c := f.read(1):
@@ -418,25 +430,6 @@ def write_files():
                     break
             metadata = json_loads(json_str)
 
-            # file start checkpoint
-            file_data_start = f.tell()
-
-            try:
-                # get the check
-                current_crc16 = crc16_of_file(path)
-                if current_crc16 == metadata.get("checksum", ""):
-                    print(f"Skipping {path} - checksums match")
-                    # skip in f until the next newline which will be the start of the next file
-                    while True:
-                        c = f.readline(1024)
-                        if c[-1] == "\n":
-                            break
-                    break
-            except Exception:
-                # we want to skip if we can
-                # but if there are any errors, we should just copy the file normally
-                f.seek(file_data_start)  # jump back to the start of the file data
-
             # delete the original file if it exists
             try:
                 remove(path)
@@ -444,8 +437,6 @@ def write_files():
                 pass
 
             # TODO create a buffer to write to the file
-            # TODO make sure folder is created
-
             with open(path, "wb") as out_f:
                 while True:
                     chunk = f.readline(1024)
