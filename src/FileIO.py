@@ -107,6 +107,7 @@ def base64_decode(data):
     return ubinascii.a2b_base64(data)
 
 
+# TODO this is unused, we should probably remove it
 def set_file_size(path, num_bytes, preserve_to_byte=0):
     # makes a file of a certain size with minimal edits
     # used in updating files
