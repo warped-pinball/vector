@@ -71,9 +71,10 @@ async def _parse_headers(reader):
 # returns the route matching the supplied path or None if no match
 def _match_route(request):
     """Find a matching route and return its handler, or None if no match."""
+    is_post = request.method == "POST"
     for route in _routes:
         path, method, handler = route
-        if path == request.path and method == request.method:
+        if path == request.path and method == is_post:
             return handler
     return None
 
@@ -228,43 +229,38 @@ _scheduled_tasks = []
 
 
 def restart_schedule():
-    for t in _scheduled_tasks:
-        t["next_run"] = time.ticks_add(time.ticks_ms(), t["phase"])
+    for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
+        # t[2] is next_run, t[3] is phase
+        _scheduled_tasks[i] = (t[0], t[1], time.ticks_add(time.ticks_ms(), t[3]), t[3], t[4])
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
-    _scheduled_tasks.append(
-        {
-            "func": func,
-            "freq": frequency_ms,
-            "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
-            "phase": phase_ms,
-            "log": log,
-        }
-    )
+    # Tuple order: (func, freq, next_run, phase, log)
+    _scheduled_tasks.append((func, frequency_ms, time.ticks_add(time.ticks_ms(), phase_ms), phase_ms, log))
 
 
 async def run_scheduled():
     while True:
         # default to 1 second in the future
         next_wake = time.ticks_add(time.ticks_ms(), 1000)
-        for t in _scheduled_tasks:
-            if time.ticks_diff(time.ticks_ms(), t["next_run"]) >= 0:
-                if t["log"] is not None:
-                    print(t["log"])  # TODO should we actually log this or is print enough?
+        for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
+            if time.ticks_diff(time.ticks_ms(), t[2]) >= 0:  # t[2] is next_run
+                if t[4] is not None:  # t[4] is log
+                    print(t[4])  # TODO should we actually log this or is print enough?
 
                 # run the task
-                t["func"]()
+                t[0]()  # t[0] is func
 
                 # reschedule or remove tasks
-                if t["freq"] is None:
+                if t[1] is None:  # t[1] is freq
                     _scheduled_tasks.remove(t)
                 else:
-                    t["next_run"] = time.ticks_add(t["next_run"], t["freq"])
+                    # Replace tuple with updated next_run (t[2])
+                    _scheduled_tasks[i] = (t[0], t[1], time.ticks_add(t[2], t[1]), t[3], t[4])
 
             # track next wake up time
-            if time.ticks_diff(next_wake, t["next_run"]) > 0:
-                next_wake = t["next_run"]
+            if time.ticks_diff(next_wake, t[2]) > 0:  # t[2] is next_run
+                next_wake = t[2]
 
         delay = time.ticks_diff(next_wake, time.ticks_ms())
         if delay > 0:  # only sleep if we have time to sleep
