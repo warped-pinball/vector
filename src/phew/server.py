@@ -61,12 +61,13 @@ body: {self.body}"""
 class Route:
     def __init__(self, path, handler, method="GET"):
         self.path = path
-        self.method = method
+        self.is_post = method == "POST"
+        # self.method = method
         self.handler = handler
 
     # returns True if the supplied request matches this route
     def matches(self, request):
-        if request.method != self.method:
+        if self.is_post != (request.method == "POST"):
             return False
         return request.path == self.path
 
