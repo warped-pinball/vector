@@ -95,9 +95,10 @@ async def _parse_headers(reader):
 def _match_route(request):
     for idx, route in enumerate(_routes):
         if route.matches(request):
-            print(f"Matched route at index {idx}")
+            # passively sort the list by frequency of use
+            if idx > 0:
+                _routes[idx], _routes[idx - 1] = _routes[idx - 1], _routes[idx]
             return route
-    return None
 
 
 # if the content type is application/json then parse the body
