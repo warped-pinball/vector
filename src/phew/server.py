@@ -20,7 +20,7 @@ rtc = RTC()
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
-_routes = []
+_routes = []  # List initially, converted to tuple in run()
 catchall_handler = None
 loop = uasyncio.get_event_loop()
 monitor_count = 0
@@ -41,7 +41,6 @@ class Request:
 
 class Response:
     def __init__(self, body, status=200, headers=None):
-        # we can't use {} as default value for headers as it is mutable and would be shared between instances
         if headers is None:
             headers = {}
         self.status = status
@@ -58,29 +57,6 @@ headers: {self.headers}
 body: {self.body}"""
 
 
-class Route:
-    def __init__(self, path, handler, method="GET"):
-        # TODO path could be smaller by using clever encoding
-        self.path = path
-        self.is_post = method == "POST"
-        self.handler = handler
-
-    # returns True if the supplied request matches this route
-    def matches(self, request):
-        if self.is_post != (request.method == "POST"):
-            return False
-        return request.path == self.path
-
-    # call the route handler passing any named parameters in the path
-    def call_handler(self, request):
-        return self.handler(request)
-
-    def __repr__(self):
-        return f"<Route object {self.path} ({', '.join(self.methods)})>"
-
-
-# parses the headers for a http request (or the headers attached to
-# each field in a multipart/form-data)
 async def _parse_headers(reader):
     headers = {}
     while True:
@@ -92,14 +68,14 @@ async def _parse_headers(reader):
     return headers
 
 
-# returns the route matching the supplied path or None
+# returns the route matching the supplied path or None if no match
 def _match_route(request):
-    for idx, route in enumerate(_routes):
-        if route.matches(request):
-            # passively sort the list by frequency of use
-            if idx > 0:
-                _routes[idx], _routes[idx - 1] = _routes[idx - 1], _routes[idx]
-            return route
+    """Find a matching route and return its handler, or None if no match."""
+    for route in _routes:
+        path, method, handler = route
+        if path == request.path and method == request.method:
+            return handler
+    return None
 
 
 # if the content type is application/json then parse the body
@@ -134,9 +110,9 @@ async def _handle_request(reader, writer):
                 request.raw_data = raw_body
                 request.data = parsed_data
 
-        route = _match_route(request)
-        if route:
-            response = route.call_handler(request)
+        handler = _match_route(request)
+        if handler:
+            response = handler(request)
         elif catchall_handler:
             response = catchall_handler(request)
 
@@ -200,10 +176,7 @@ async def _handle_request(reader, writer):
 # adds a new route to the routing table
 def add_route(path, handler, method="GET"):
     global _routes
-    _routes.append(Route(path, handler, method))
-    # descending complexity order so most complex routes matched first
-    # TODO maybe we should dynamically sort this list by call frequency
-    _routes = sorted(_routes, key=lambda route: len(route.path), reverse=True)
+    _routes.append((path, method.upper() == "POST", handler))
 
 
 def set_callback(handler):
@@ -226,7 +199,7 @@ def update_time(retry=1):
             return
         except Exception as e:
             print("   Failed to update date:", e)
-            attempt = attempt + 1
+            attempt += 1
             time.sleep(0.2)
     print("   Failed to update date after several attempts.")
 
@@ -241,13 +214,10 @@ MemIndex = 0
 poll_counter = 0
 
 
-# TODO this should live in SPI_Store
 def copy_to_fram():
     global MemIndex
-
     write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
-    MemIndex = MemIndex + 16
-
+    MemIndex += 16
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
@@ -263,14 +233,11 @@ def restart_schedule():
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
-    # Note: async function will not print to console
     _scheduled_tasks.append(
         {
             "func": func,
             "freq": frequency_ms,
-            # we need to use time.ticks_add to handle rollover
             "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
-            # we need to store the phase so we can restart the schedule
             "phase": phase_ms,
             "log": log,
         }
@@ -363,12 +330,10 @@ def create_schedule(ap_mode: bool = False):
 
 
 def run(ap_mode: bool, host="0.0.0.0", port=80):
+    global _routes
+    _routes = tuple(_routes)  # Convert to tuple once all routes are added
     logging.info("> starting web server on port {}".format(port))
-    loop.create_task(
-        # TODO backlog is number of connections that can be queued. experiment with larger numbers
-        uasyncio.start_server(_handle_request, host, port, backlog=5)
-    )
-
+    loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)
     loop.create_task(run_scheduled())
 
