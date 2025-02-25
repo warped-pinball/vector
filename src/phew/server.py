@@ -60,9 +60,9 @@ body: {self.body}"""
 
 class Route:
     def __init__(self, path, handler, method="GET"):
+        # TODO path could be smaller by using clever encoding
         self.path = path
         self.is_post = method == "POST"
-        # self.method = method
         self.handler = handler
 
     # returns True if the supplied request matches this route
