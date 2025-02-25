@@ -292,9 +292,8 @@ def require_auth(handler):
 
         # Construct the message string
         path = request.path
-        query_string = request.query_string or ""  # TODO no more query string
         body_str = request.raw_data or ""
-        message_str = client_challenge + path + query_string + body_str
+        message_str = client_challenge + path + body_str
         message_bytes = message_str.encode("utf-8")
 
         # Compute expected HMAC
@@ -544,15 +543,15 @@ def app_updatePlayer(request):
     ds_write_record("names", {"initials": initials, "full_name": name}, index)
 
 
-@add_route("/api/player/scores")
+@add_route("/api/player/scores", method="POST")
 def app_getScores(request):
     from time import time
 
     from phew.ntp import time_ago
 
     now_seconds = time()
-
-    player_id = int(request.query.get("id"))  # TODO move this to json body
+    data = request.data
+    player_id = int(data["id"])
 
     # get player initials and name
     player_record = ds_read_record("names", player_id)
@@ -566,7 +565,7 @@ def app_getScores(request):
         if score > 0:
             scores.append({"score": score, "date": date})
 
-    # sort the scores by score and add the rank, initials and name
+    # sort the scores by score and add the rank, initials, and name
     scores.sort(key=lambda x: x["score"], reverse=True)
     for i, score in enumerate(scores):
         score["rank"] = i + 1

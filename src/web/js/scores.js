@@ -181,20 +181,24 @@ window.updatePersonalArticles = function () {
         { header: "Date", key: "date" }
     ];
 
-    fetch('/api/player/scores?id=' + player_id)
-        .then(function (response) {
-            if (!response.ok) {
-                throw new Error("Network response was not ok: " + response.statusText);
-            }
-            return response.json();
-        })
-        .then(function (data) {
-            localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
-            window.renderFullArticleList("personalArticles", data, columns, "four-col-personal");
-        })
-        .catch(function (error) {
-            console.error("Error fetching personal scores:", error);
-        });
+    fetch('/api/player/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: player_id })
+    })
+    .then(function (response) {
+        if (!response.ok) {
+            throw new Error("Network response was not ok: " + response.statusText);
+        }
+        return response.json();
+    })
+    .then(function (data) {
+        localStorage.setItem('/api/player/scores?id=' + player_id, JSON.stringify(data));
+        window.renderFullArticleList("personalArticles", data, columns, "four-col-personal");
+    })
+    .catch(function (error) {
+        console.error("Error fetching personal scores:", error);
+    });
 };
 
 /*
