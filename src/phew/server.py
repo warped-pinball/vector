@@ -29,17 +29,14 @@ monitor_count = 0
 class Request:
     def __init__(self, method, uri, protocol):
         self.method = method
-        self.uri = uri
         self.protocol = protocol
-        self.form = {}
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
-        self.query = {}
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
         self.path = uri[:query_string_start]
 
     def __str__(self):
-        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"form: {self.form}", f"data: {self.data}"])
+        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"data: {self.data}"])
 
 
 class Response:
