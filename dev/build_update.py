@@ -141,7 +141,7 @@ def build_update_file(
     meta_data = {
         "update_file_format": "1.0",
         "supported_hardware": ["vector_v4", "vector_v5"],
-        "micropython_versions": ["1.24.1"],
+        "micropython_versions": ["1.24.1", "1.23.0-preview"],
         "downgradable_to": ["1.0.0"],
         "version": version,
     }

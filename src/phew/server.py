@@ -1,5 +1,3 @@
-import gc
-import os
 import time
 
 import machine
@@ -16,90 +14,33 @@ from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
 
-from GameStatus import game_report
-
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
 
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
-_routes = []
+_routes = []  # List initially, converted to tuple in run()
 catchall_handler = None
 loop = uasyncio.get_event_loop()
 monitor_count = 0
 
 
-def file_exists(filename):
-    try:
-        return (os.stat(filename)[0] & 0x4000) == 0
-    except OSError:
-        return False
-
-
-def urldecode(text):
-    text = text.replace("+", " ")
-    result = ""
-    token_caret = 0
-    # decode any % encoded characters
-    while True:
-        start = text.find("%", token_caret)
-        if start == -1:
-            result += text[token_caret:]
-            break
-        result += text[token_caret:start]
-        code = int(text[start + 1 : start + 3], 16)  # noqa
-        result += chr(code)
-        token_caret = start + 3
-    return result
-    text = text.replace("+", " ")
-    result = ""
-    token_caret = 0
-    # decode any % encoded characters
-    while True:
-        start = text.find("%", token_caret)
-        if start == -1:
-            result += text[token_caret:]
-            break
-        result += text[token_caret:start]
-        code = int(text[start + 1 : start + 3], 16)  # noqa
-        result += chr(code)
-        token_caret = start + 3
-    return result
-
-
-def _parse_query_string(query_string):
-    result = {}
-    for parameter in query_string.split("&"):
-        key, value = parameter.split("=", 1)
-        key = urldecode(key)
-        value = urldecode(value)
-        result[key] = value
-    return result
-
-
 class Request:
     def __init__(self, method, uri, protocol):
         self.method = method
-        self.uri = uri
         self.protocol = protocol
-        self.form = {}
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
-        self.query = {}
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
         self.path = uri[:query_string_start]
-        self.query_string = uri[query_string_start + 1 :]  # noqa
-        if self.query_string:
-            self.query = _parse_query_string(self.query_string)
 
     def __str__(self):
-        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"form: {self.form}", f"data: {self.data}"])
+        return "\n".join([f"request: {self.method} {self.path} {self.protocol}", f"headers: {self.headers}", f"data: {self.data}"])
 
 
 class Response:
     def __init__(self, body, status=200, headers=None):
-        # we can't use {} as default value for headers as it is mutable and would be shared between instances
         if headers is None:
             headers = {}
         self.status = status
@@ -116,80 +57,6 @@ headers: {self.headers}
 body: {self.body}"""
 
 
-content_type_map = {
-    "html": "text/html",
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-    "svg": "image/svg+xml",
-    "json": "application/json",
-    "png": "image/png",
-    "css": "text/css",
-    "js": "text/javascript",
-    "csv": "text/csv",
-}
-
-
-class FileResponse(Response):
-    def __init__(self, file, status=200, headers={}):
-        self.status = 404
-        self.headers = headers
-        self.file = file
-
-        try:
-            if (os.stat(self.file)[0] & 0x4000) == 0:
-                self.status = 200
-
-                # auto set content type
-                extension = self.file.split(".")[-1].lower()
-                if extension in content_type_map:
-                    headers["Content-Type"] = content_type_map[extension]
-
-            headers["Content-Length"] = os.stat(self.file)[6]
-        except OSError:
-            return False
-
-
-class Route:
-    def __init__(self, path, handler, methods=["GET"]):
-        self.path = path
-        self.methods = methods
-        self.handler = handler
-        self.path_parts = path.split("/")
-
-    # returns True if the supplied request matches this route
-    def matches(self, request):
-        if request.method not in self.methods:
-            return False
-        compare_parts = request.path.split("/")
-        if len(compare_parts) != len(self.path_parts):
-            return False
-        for part, compare in zip(self.path_parts, compare_parts):
-            if not part.startswith("<") and part != compare:
-                return False
-        return True
-
-    # call the route handler passing any named parameters in the path
-    def call_handler(self, request):
-        parameters = {}
-        for part, compare in zip(self.path_parts, request.path.split("/")):
-            if part.startswith("<"):
-                name = part[1:-1]
-                parameters[name] = compare
-
-        return self.handler(request, **parameters)
-
-    def __str__(self):
-        return f"""\
-path: {self.path}
-methods: {self.methods}
-"""
-
-    def __repr__(self):
-        return f"<Route object {self.path} ({', '.join(self.methods)})>"
-
-
-# parses the headers for a http request (or the headers attached to
-# each field in a multipart/form-data)
 async def _parse_headers(reader):
     headers = {}
     while True:
@@ -201,43 +68,14 @@ async def _parse_headers(reader):
     return headers
 
 
-# returns the route matching the supplied path or None
+# returns the route matching the supplied path or None if no match
 def _match_route(request):
+    """Find a matching route and return its handler, or None if no match."""
+    is_post = request.method == "POST"
     for route in _routes:
-        if route.matches(request):
-            return route
-    return None
-
-
-# if the content type is multipart/form-data then parse the fields
-async def _parse_form_data(reader, headers):
-    gc.collect()
-
-    boundary = headers["content-type"].split("boundary=")[1]
-    # discard first boundary line
-    _ = await reader.readline()
-
-    form = {}
-    while True:
-        # get the field name
-        field_headers = await _parse_headers(reader)
-        if len(field_headers) == 0:
-            break
-        name = field_headers["content-disposition"].split('name="')[1][:-1]
-        # get the field value
-        value = ""
-        while True:
-            line = await reader.readline()
-            line = line.decode().strip()
-            # if we hit a boundary then save the value and move to next field
-            if line == "--" + boundary:
-                form[name] = value
-                break
-            # if we hit end of form data boundary then save value and return
-            if line == "--" + boundary + "--":
-                form[name] = value
-                return form
-            value += line
+        path, method, handler = route
+        if path == request.path and method == is_post:
+            return handler
     return None
 
 
@@ -249,41 +87,6 @@ async def _parse_json_body(reader, headers):
     body = await reader.readexactly(content_length_bytes)
     body_str = body.decode()
     return body_str, json.loads(body_str)
-
-
-status_message_map = {
-    200: "OK",
-    201: "Created",
-    202: "Accepted",
-    203: "Non-Authoritative Information",
-    204: "No Content",
-    205: "Reset Content",
-    206: "Partial Content",
-    300: "Multiple Choices",
-    301: "Moved Permanently",
-    302: "Found",
-    303: "See Other",
-    304: "Not Modified",
-    305: "Use Proxy",
-    306: "Switch Proxy",
-    307: "Temporary Redirect",
-    308: "Permanent Redirect",
-    400: "Bad Request",
-    401: "Unauthorized",
-    403: "Forbidden",
-    404: "Not Found",
-    405: "Method Not Allowed",
-    406: "Not Acceptable",
-    408: "Request Timeout",
-    409: "Conflict",
-    410: "Gone",
-    414: "URI Too Long",
-    415: "Unsupported Media Type",
-    416: "Range Not Satisfiable",
-    418: "I'm a teapot",
-    500: "Internal Server Error",
-    501: "Not Implemented",
-}
 
 
 # handle an incoming request to the web server
@@ -303,19 +106,14 @@ async def _handle_request(reader, writer):
         request = Request(method, uri, protocol)
         request.headers = await _parse_headers(reader)
         if "content-length" in request.headers and "content-type" in request.headers:
-            if request.headers["content-type"].startswith("multipart/form-data"):
-                request.form = await _parse_form_data(reader, request.headers)
             if request.headers["content-type"].startswith("application/json"):
                 raw_body, parsed_data = await _parse_json_body(reader, request.headers)
                 request.raw_data = raw_body
                 request.data = parsed_data
-            if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
-                form_data = await reader.read(int(request.headers["content-length"]))
-                request.form = _parse_query_string(form_data.decode())
 
-        route = _match_route(request)
-        if route:
-            response = route.call_handler(request)
+        handler = _match_route(request)
+        if handler:
+            response = handler(request)
         elif catchall_handler:
             response = catchall_handler(request)
 
@@ -347,8 +145,7 @@ async def _handle_request(reader, writer):
                 response.add_header("Content-Length", len(body))
 
         # write status line
-        status_message = status_message_map.get(response.status, "Unknown")
-        writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
+        writer.write(f"HTTP/1.1 {response.status} {response.status}\r\n".encode("ascii"))
 
         # write headers
         for key, value in response.headers.items():
@@ -357,16 +154,7 @@ async def _handle_request(reader, writer):
         # blank line to denote end of headers
         writer.write("\r\n".encode("ascii"))
 
-        if isinstance(response, FileResponse):
-            # file
-            with open(response.file, "rb") as f:
-                while True:
-                    chunk = f.read(1024)
-                    if not chunk:
-                        break
-                    writer.write(chunk)
-                    await writer.drain()
-        elif type(response.body).__name__ == "generator":
+        if type(response.body).__name__ == "generator":
             # generator
             for chunk in response.body:
                 writer.write(chunk)
@@ -380,18 +168,16 @@ async def _handle_request(reader, writer):
         await writer.wait_closed()
 
         processing_time = time.ticks_ms() - request_start_time
-        logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
+        logging.info(f"> {request.method} {request.path} ({response.status}) [{processing_time}ms]")
     except Exception as e:
         # last line of defense to keep server from crashing
         logging.error(f"Error handling request: {e}")
 
 
 # adds a new route to the routing table
-def add_route(path, handler, methods=["GET"]):
+def add_route(path, handler, method="GET"):
     global _routes
-    _routes.append(Route(path, handler, methods))
-    # descending complexity order so most complex routes matched first
-    _routes = sorted(_routes, key=lambda route: len(route.path_parts), reverse=True)
+    _routes.append((path, method.upper() == "POST", handler))
 
 
 def set_callback(handler):
@@ -399,30 +185,8 @@ def set_callback(handler):
     catchall_handler = handler
 
 
-# decorator shorthand for adding a route
-def route(path, methods=["GET"]):
-    def _route(f):
-        add_route(path, f, methods=methods)
-        return f
-
-    return _route
-
-
-# decorator for adding catchall route
-def catchall():
-    def _catchall(f):
-        set_callback(f)
-        return f
-
-    return _catchall
-
-
 def redirect(url, status=301):
     return Response("", status, {"Location": url})
-
-
-def serve_file(file):
-    return FileResponse(file)
 
 
 # Function to update time from NTP server with retry mechanism
@@ -436,7 +200,7 @@ def update_time(retry=1):
             return
         except Exception as e:
             print("   Failed to update date:", e)
-            attempt = attempt + 1
+            attempt += 1
             time.sleep(0.2)
     print("   Failed to update date after several attempts.")
 
@@ -451,13 +215,10 @@ MemIndex = 0
 poll_counter = 0
 
 
-# TODO this should live in SPI_Store
 def copy_to_fram():
     global MemIndex
-
     write_16_fram(SRAM_DATA_BASE + MemIndex, MemIndex)
-    MemIndex = MemIndex + 16
-
+    MemIndex += 16
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
@@ -465,50 +226,41 @@ def copy_to_fram():
 
 
 _scheduled_tasks = []
-_clock_start = 0
 
 
 def restart_schedule():
-    for t in _scheduled_tasks:
-        t["next_run"] = time.ticks_add(time.ticks_ms(), t["phase"])
+    for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
+        # t[2] is next_run, t[3] is phase
+        _scheduled_tasks[i] = (t[0], t[1], time.ticks_add(time.ticks_ms(), t[3]), t[3], t[4])
 
 
 def schedule(func, phase_ms, frequency_ms=None, log=None):
-    # Note: async function will not print to console
-    _scheduled_tasks.append(
-        {
-            "func": func,
-            "freq": frequency_ms,
-            # we need to use time.ticks_add to handle rollover
-            "next_run": time.ticks_add(time.ticks_ms(), phase_ms),
-            # we need to store the phase so we can restart the schedule
-            "phase": phase_ms,
-            "log": log,
-        }
-    )
+    # Tuple order: (func, freq, next_run, phase, log)
+    _scheduled_tasks.append((func, frequency_ms, time.ticks_add(time.ticks_ms(), phase_ms), phase_ms, log))
 
 
 async def run_scheduled():
     while True:
         # default to 1 second in the future
         next_wake = time.ticks_add(time.ticks_ms(), 1000)
-        for t in _scheduled_tasks:
-            if time.ticks_diff(time.ticks_ms(), t["next_run"]) >= 0:
-                if t["log"] is not None:
-                    print(t["log"])  # TODO should we actually log this or is print enough?
+        for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
+            if time.ticks_diff(time.ticks_ms(), t[2]) >= 0:  # t[2] is next_run
+                if t[4] is not None:  # t[4] is log
+                    print(t[4])  # TODO should we actually log this or is print enough?
 
                 # run the task
-                t["func"]()
+                t[0]()  # t[0] is func
 
                 # reschedule or remove tasks
-                if t["freq"] is None:
+                if t[1] is None:  # t[1] is freq
                     _scheduled_tasks.remove(t)
                 else:
-                    t["next_run"] = time.ticks_add(t["next_run"], t["freq"])
+                    # Replace tuple with updated next_run (t[2])
+                    _scheduled_tasks[i] = (t[0], t[1], time.ticks_add(t[2], t[1]), t[3], t[4])
 
             # track next wake up time
-            if time.ticks_diff(next_wake, t["next_run"]) > 0:
-                next_wake = t["next_run"]
+            if time.ticks_diff(next_wake, t[2]) > 0:  # t[2] is next_run
+                next_wake = t[2]
 
         delay = time.ticks_diff(next_wake, time.ticks_ms())
         if delay > 0:  # only sleep if we have time to sleep
@@ -574,12 +326,10 @@ def create_schedule(ap_mode: bool = False):
 
 
 def run(ap_mode: bool, host="0.0.0.0", port=80):
+    global _routes
+    _routes = tuple(_routes)  # Convert to tuple once all routes are added
     logging.info("> starting web server on port {}".format(port))
-    loop.create_task(
-        # TODO backlog is number of connections that can be queued. experiment with larger numbers
-        uasyncio.start_server(_handle_request, host, port, backlog=5)
-    )
-
+    loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)
     loop.create_task(run_scheduled())
 

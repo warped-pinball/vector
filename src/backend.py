@@ -12,7 +12,7 @@ import faults
 import Pico_Led
 from ls import ls
 from Memory_Main import blank_ram, save_ram
-from phew import server
+from phew.server import add_route as phew_add_route
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -79,7 +79,6 @@ def route_wrapper(func):
             msg = f"Error in {func.__name__}: {e}"
             print(msg)
             print(request)
-            print(request.query)
             return msg, 500
 
         finally:
@@ -103,11 +102,11 @@ def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instan
 
         wrapped = route_wrapper(func)
 
-        @server.route(path, methods=[method])
-        def route(request):
-            return wrapped(request)
+        from phew.server import add_route as phew_add_route
 
-        return route
+        phew_add_route(path, wrapped, method)
+
+        # return route
 
     return decorator
 
@@ -134,8 +133,12 @@ def create_file_handler(file_path):
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                hasher.update(chunk)
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                hasher.update(buff)
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
@@ -144,8 +147,12 @@ def create_file_handler(file_path):
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
-            while chunk := f.read(1024):  # Read in 1KB chunks
-                yield chunk
+            buff = bytearray(1024)
+            while True:
+                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                if not buff:
+                    break
+                yield buff
         gc_collect()
 
     def file_handler(request):
@@ -194,7 +201,6 @@ def cool_down(cool_down_seconds=0, single_instance=False):
 def four_oh_four(request):
     print("--- 404 ---")
     print(request)
-    print(request.query)
     print()
     return "Not found", 404
 
@@ -286,9 +292,8 @@ def require_auth(handler):
 
         # Construct the message string
         path = request.path
-        query_string = request.query_string or ""
         body_str = request.raw_data or ""
-        message_str = client_challenge + path + query_string + body_str
+        message_str = client_challenge + path + body_str
         message_bytes = message_str.encode("utf-8")
 
         # Compute expected HMAC
@@ -340,9 +345,9 @@ def check_password(request):
 #
 for file_path in ls("web"):
     route = file_path[3:]  # This should give '/index.html' for 'web/index.html'
-    server.add_route(route, create_file_handler(file_path), methods=["GET"])
+    phew_add_route(route, create_file_handler(file_path), method="GET")
     if route == "/index.html":
-        server.add_route("/", create_file_handler(file_path), methods=["GET"])
+        phew_add_route("/", create_file_handler(file_path), method="GET")
 
 
 #
@@ -351,11 +356,12 @@ for file_path in ls("web"):
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
     import reset_control
+    from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
     sleep(2)
     reset_control.release(True)
-    server.restart_schedule()
+    phew_restart_schedule()
 
 
 @add_route("/api/game/name")
@@ -399,13 +405,14 @@ def app_game_status(request):
 @add_route("/api/memory/reset", auth=True)
 def app_reset_memory(request):
     import reset_control
+    from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
     sleep(2)
     blank_ram()
     sleep(1)
     reset_control.release(True)
-    server.restart_schedule()
+    phew_restart_schedule()
 
 
 @add_route("/api/memory-snapshot")
@@ -536,15 +543,15 @@ def app_updatePlayer(request):
     ds_write_record("names", {"initials": initials, "full_name": name}, index)
 
 
-@add_route("/api/player/scores")
+@add_route("/api/player/scores", method="POST")
 def app_getScores(request):
     from time import time
 
     from phew.ntp import time_ago
 
     now_seconds = time()
-
-    player_id = int(request.query.get("id"))
+    data = request.data
+    player_id = int(data["id"])
 
     # get player initials and name
     player_record = ds_read_record("names", player_id)
@@ -558,7 +565,7 @@ def app_getScores(request):
         if score > 0:
             scores.append({"score": score, "date": date})
 
-    # sort the scores by score and add the rank, initials and name
+    # sort the scores by score and add the rank, initials, and name
     scores.sort(key=lambda x: x["score"], reverse=True)
     for i, score in enumerate(scores):
         score["rank"] = i + 1
@@ -769,7 +776,9 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
-    from urequests import get as urequests_get
+    from mrequests.mrequests import get
+
+    # from urequests import get as urequests_get
 
     url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
     headers = {
@@ -777,8 +786,13 @@ def app_updates_available(request):
         "Accept": "application/vnd.github+json",
     }
 
-    resp = urequests_get(url, headers=headers)
-    return resp.text, resp.status_code
+    resp = get(url, headers=headers)
+    buff = bytearray(1024)
+    while True:
+        buff[0:] = resp.read(1024)
+        if not buff:
+            break
+        yield buff
 
 
 @add_route("/api/update/apply", method="POST", auth=True)
@@ -898,14 +912,16 @@ def go(ap_mode):
 
     if ap_mode:
         from phew import access_point, dns
+        from phew.server import set_callback
 
         print("Starting in AP mode")
         from displayMessage import init as init_display
+
         init_display("000.000.000.000")
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()
         # send clients to the configure page
-        server.set_callback(redirect)
+        set_callback(redirect)
         ap = access_point(AP_NAME)
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
@@ -915,9 +931,13 @@ def go(ap_mode):
             sleep(2)
         Pico_Led.on()
         add_app_mode_routes()
-        server.set_callback(four_oh_four)
+        from phew.server import set_callback
+
+        set_callback(four_oh_four)
 
     print("-" * 10)
     print("Starting server")
     print("-" * 10)
-    server.run(ap_mode)
+    from phew.server import run
+
+    run(ap_mode)
