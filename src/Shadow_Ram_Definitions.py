@@ -10,22 +10,9 @@ Definitions for the location and length of internal RP2040
 """
 import uctypes
 
-# large array for the 'shadow' ram
-SRAM_DATA_BASE = 0x2003F000  # 0x20040000-0x20042000  (8k available)
+# system 9 and 11 need 2k array for the 'shadow' ram
+SRAM_DATA_BASE = 0x20040000  # 0x20040000-0x20040800 (2k)
 SRAM_DATA_BASE_21 = SRAM_DATA_BASE >> 11  # 21 MSBits to be preloaded in pio for address generation
-
-# SRAM_DATA_LENGTH = 0x00002000  #8k byte total
 SRAM_DATA_LENGTH = 0x00000800  # 2k byte total
 
-# write access counter location
-SRAM_COUNT_BASE = 0x2003F800
-SRAM_COUNT_BASE_21 = SRAM_COUNT_BASE >> 11
-
-SRAM_COUNT_LENGTH = SRAM_DATA_LENGTH
-
 shadowRam = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
-
-# large array for the number of writes to ram
-SRAM_COUNT_BASE = 0x20041000
-SRAM_COUNT_BASE_21 = SRAM_COUNT_BASE >> 11
-writeCountRam = uctypes.bytearray_at(SRAM_COUNT_BASE, SRAM_DATA_LENGTH)
