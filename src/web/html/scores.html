@@ -69,34 +69,34 @@
         padding-right: 12px;
     }
 
-    .game{
+    .game {
         padding: 4px;
         display: grid;
         grid-template-columns: 25% 25% 25% 25%;
         margin-bottom: 0.25rem;
     }
 
-    .play{
+    .play {
         display: grid;
         grid-template-columns: 1fr 1fr;
         align-items: center;
         column-gap: 5px;
     }
 
-    .claim-button{
+    .claim-button {
         padding: 4px 9px;
     }
 
     @media (max-width: 770px) {
-        .game{
+        .game {
             grid-template-columns: 1fr;
         }
 
-        .play{
+        .play {
             margin: 0.25rem;
         }
 
-        .claim-header-row{
+        .claim-header-row {
             display: none;
         }
     }
@@ -113,8 +113,62 @@
             /* drop the date col at narrow widths */
         }
     }
-
 </style>
+
+<style>
+    .live-player {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem;
+    }
+
+    .active-player-dark {
+        background-color: #fff;
+        color: #000;
+    }
+
+    .active-player-light {
+        background-color: rgb(1, 114, 173);
+        color: #FFF;
+    }
+
+    .live-scores {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .live-scores article {
+        margin-bottom: 0.25rem;
+    }
+
+    @media (max-width: 770px) {
+        .live-scores {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<h3>Live Scores</h3>
+<h5>Playing Ball #3</h5>
+<div class="live-scores">
+    <article class="live-player">
+        <div>Player #1</div>
+        <div>123456789</div>
+    </article>
+    <article class="live-player active-player-dark">
+        <div>Player #2</div>
+        <div>123456789</div>
+    </article>
+    <article class="live-player active-player-light">
+        <div>Player #3</div>
+        <div>123456789</div>
+    </article>
+    <article class="live-player">
+        <div>Player #4</div>
+        <div>123456789</div>
+    </article>
+</div>
 
 <div class="score-board">
     <div id="score-board-nav" role="group">
@@ -152,7 +206,8 @@
             <p>Score: <b><span id="score-to-claim"></span></b></p>
             <div class="grid">
                 <label for="initials-input">Initials:</label>
-                <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required title="Enter exactly 3 letters" />
+                <input type="text" id="initials-input" pattern="[A-Za-z]{3}" maxlength="3" required
+                    title="Enter exactly 3 letters" />
             </div>
             <footer>
                 <button class="secondary" onclick="document.getElementById('score-claim-modal').close()">Cancel</button>
