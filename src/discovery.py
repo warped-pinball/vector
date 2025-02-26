@@ -32,7 +32,7 @@ def setup(ip_address):
 
 
 def announce():
-    """Broadcast this device’s info to the local network."""
+    """Broadcast this device's info to the local network."""
     from time import time
 
     from SharedState import WarpedVersion, gdata
@@ -41,10 +41,13 @@ def announce():
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
-    send_sock.sendto(
-        ujson.dumps(msg).encode("utf-8"),
-        ("255.255.255.255", DISCOVERY_PORT),
-    )
+    try:
+        send_sock.sendto(
+            ujson.dumps(msg).encode("utf-8"),
+            ("255.255.255.255", DISCOVERY_PORT),
+        )
+    except Exception as e:
+        print("Failed to broadcast announcement:", e)
 
     # Prune devices that haven't been seen in a while
     # technically we could do this in the listen() function

@@ -37,6 +37,19 @@ def is_connected_to_wifi():
     return wlan.isconnected()
 
 
+def reconnect_to_wifi():
+    if is_connected_to_wifi():
+        return
+    import network
+
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+        wlan.connect()
+    except Exception as e:
+        logging.error(f"Failed to reconnect to wifi: {e}")
+
+
 # helper method to quickly get connected to wifi
 def connect_to_wifi(ssid, password, timeout_seconds=30):
     import time
