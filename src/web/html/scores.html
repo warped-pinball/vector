@@ -149,25 +149,26 @@
         }
     }
 </style>
-<h3>Live Scores</h3>
-<h5>Playing Ball #3</h5>
-<div class="live-scores">
-    <article class="live-player">
-        <div>Player #1</div>
-        <div>123456789</div>
-    </article>
-    <article class="live-player active-player-dark">
-        <div>Player #2</div>
-        <div>123456789</div>
-    </article>
-    <article class="live-player active-player-light">
-        <div>Player #3</div>
-        <div>123456789</div>
-    </article>
-    <article class="live-player">
-        <div>Player #4</div>
-        <div>123456789</div>
-    </article>
+<div id="game-status" class="hide">
+    <h5 id="live-ball-in-play" class="hide"></h5>
+    <div id="live-players" class="live-scores">
+        <article id="live-player-1" class="live-player hide">
+            <div>Player 1</div>
+            <div id="live-player-1-score"></div>
+        </article>
+        <article id="live-player-2" class="live-player hide">
+            <div>Player 2</div>
+            <div id="live-player-2-score"></div>
+        </article>
+        <article id="live-player-3" class="live-player hide">
+            <div>Player 3</div>
+            <div id="live-player-3-score"></div>
+        </article>
+        <article id="live-player-4" class="live-player hide">
+            <div>Player 4</div>
+            <div id="live-player-4-score"></div>
+        </article>
+    </div>
 </div>
 
 <div class="score-board">

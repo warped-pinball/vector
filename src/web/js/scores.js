@@ -474,3 +474,52 @@ window.getClaimableScores = async function () {
 };
 
 window.getClaimableScores();
+
+window.getGameStatus = async function () {
+    const response = await window.smartFetch('/api/game/status', null, false)
+    const data = await response.json()
+
+    const gameStatus = document.getElementById('game-status')
+
+    // if the game is not in progress, hide the game status
+    if (data.GameActive !== true) {
+        gameStatus.classList.add('hide')
+        return
+    }
+
+    // populate the players with their scores
+    const players = document.getElementById('live-players')
+
+    // iterate over each tag in the live-players div
+    for (const tag of players.children) {
+        // get the player id
+        const playerId = tag.id.split('-')[2]
+
+        // if the player is not in the game or has a score of 0, hide the tag
+        if (data.Scores[playerId-1] === undefined || data.Scores[playerId-1] === 0) {
+            tag.classList.add('hide')
+            continue
+
+        } else {
+            document.getElementById(`live-player-${playerId}-score`).innerText = data.Scores[playerId-1]
+            tag.classList.remove('hide')
+        }
+    }
+
+
+    const ballInPlay = document.getElementById('live-ball-in-play')
+    if (data.BallInPlay > 0){
+        ballInPlay.innerText = `Ball in Play: ${data.BallInPlay}`;
+        ballInPlay.classList.remove('hide')
+    } else {
+        ballInPlay.classList.add('hide')
+    }
+
+    // show the game status
+    gameStatus.classList.remove('hide')
+}
+
+window.getGameStatus();
+
+// call the getGameStatus function every 5 seconds
+setInterval(window.getGameStatus, 500)

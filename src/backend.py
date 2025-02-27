@@ -383,20 +383,37 @@ def app_game_configs_list(request):
     return list_game_configs()
 
 
+game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "GameTime": 213}
+
+
 @add_route("/api/game/status")
 def app_game_status(request):
-    from Shadow_Ram_Definitions import shadowRam
-    from SharedState import gdata
+    # TODO cache me
+    # from GameStatus import game_report
 
-    game_in_progress = shadowRam[gdata["BallInPlay"]["Address"]] in [
-        gdata["BallInPlay"]["Ball1"],
-        gdata["BallInPlay"]["Ball2"],
-        gdata["BallInPlay"]["Ball3"],
-        gdata["BallInPlay"]["Ball4"],
-        gdata["BallInPlay"]["Ball5"],
-    ]
+    global game_status
+    # randomize game_status for testing
 
-    return {"game_in_progress": game_in_progress}
+    from random import randint
+
+    current_player = randint(0, 4)
+
+    if current_player == 4:
+        if randint(0, 3) == 0:
+            game_status["BallInPlay"] += 1
+        else:
+            current_player = randint(0, 3)
+    else:
+        game_status["Scores"][current_player] += randint(0, 1000)
+
+    if game_status["BallInPlay"] > 5:
+        game_status["BallInPlay"] = 1
+        game_status["Scores"] = [0, 0, 0, 0]
+
+    return game_status
+
+    # TODO put back after testing
+    # return game_report()
 
 
 #
