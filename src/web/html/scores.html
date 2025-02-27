@@ -148,6 +148,77 @@
             grid-template-columns: 1fr;
         }
     }
+
+
+    /* --- score-animations.css --- */
+
+    /* Register our integer custom property so it can animate. */
+    @property --num {
+        syntax: "<integer>";
+        initial-value: 0;
+        inherits: false;
+    }
+
+    /* Optional custom property to scale the number on big jumps. */
+    @property --jumpScale {
+        syntax: "<number>";
+        initial-value: 1;
+        inherits: false;
+    }
+
+    /* A base class to enable the counter/variable trick. */
+    .css-score-anim {
+        /* The actual integer transitions over 1s (adjust as desired). */
+        transition: --num 2s;
+
+        /* For older browsers that don't support @property,
+     the property just won't animate. The fallback is immediate changes. */
+
+        /* We'll use a CSS counter, which we reset to var(--num). */
+        counter-reset: animatedValue var(--num);
+
+        /* If you want a default font size or style, set it here. */
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: black;
+
+        /* Make sure transitions and transforms are visible if we do "big jump" scaling. */
+        display: inline-block;
+    }
+
+    /* The actual displayed text is in the ::after content. */
+    .css-score-anim::after {
+        /* Use the counter to display the integer as text. */
+        content: counter(animatedValue);
+    }
+
+    /* The "big jump" effect (grow and color shift).
+   We'll drive the scale via --jumpScale, which we set from JavaScript. */
+    .big-jump {
+        animation: bigJumpScale 0.75s ease-in-out forwards;
+        /* you can tweak timing */
+        color: red !important;
+        /* or some attention-grabbing color */
+    }
+
+    /* The keyframes animate from scale(1) to scale(var(--jumpScale)) and back down. */
+    @keyframes bigJumpScale {
+        0% {
+            transform: scale(1);
+        }
+
+        30% {
+            transform: scale(var(--jumpScale));
+        }
+
+        70% {
+            transform: scale(var(--jumpScale));
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
 </style>
 <div id="game-status" class="hide">
     <h5 id="live-ball-in-play" class="hide"></h5>

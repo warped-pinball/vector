@@ -476,50 +476,84 @@ window.getClaimableScores = async function () {
 window.getClaimableScores();
 
 window.getGameStatus = async function () {
-    const response = await window.smartFetch('/api/game/status', null, false)
-    const data = await response.json()
+    const response = await window.smartFetch('/api/game/status', null, false);
+    const data = await response.json();
 
-    const gameStatus = document.getElementById('game-status')
+    const gameStatus = document.getElementById('game-status');
 
     // if the game is not in progress, hide the game status
     if (data.GameActive !== true) {
-        gameStatus.classList.add('hide')
-        return
+        gameStatus.classList.add('hide');
+        return;
     }
 
-    // populate the players with their scores
-    const players = document.getElementById('live-players')
+    // If the game is active, show the container
+    gameStatus.classList.remove('hide');
 
-    // iterate over each tag in the live-players div
+    // Populate the players with their scores
+    const players = document.getElementById('live-players');
+
     for (const tag of players.children) {
         // get the player id
-        const playerId = tag.id.split('-')[2]
+        const playerId = tag.id.split('-')[2];
 
         // if the player is not in the game or has a score of 0, hide the tag
-        if (data.Scores[playerId-1] === undefined || data.Scores[playerId-1] === 0) {
-            tag.classList.add('hide')
-            continue
+        const scoreElement = document.getElementById(`live-player-${playerId}-score`);
+        const newScore = data.Scores[playerId - 1];
 
+        if (newScore === undefined || newScore === 0) {
+            tag.classList.add('hide');
+            continue;
         } else {
-            document.getElementById(`live-player-${playerId}-score`).innerText = data.Scores[playerId-1]
-            tag.classList.remove('hide')
+            tag.classList.remove('hide');
+
+            // Make sure .css-score-anim is on this score element:
+            scoreElement.classList.add('css-score-anim');
+
+            // Get the old score from the current CSS variable (fallback to 0 if not set)
+            // We'll read the computed style to parse out the integer value of --num.
+            const style = window.getComputedStyle(scoreElement);
+            const oldScore = parseInt(style.getPropertyValue('--num') || '0', 10);
+
+            // If newScore is different from oldScore, update the CSS variable to animate
+            if (newScore !== oldScore) {
+                scoreElement.style.setProperty('--num', newScore);
+
+                // Detect big jump (arbitrary threshold). Example: diff >= 10
+                const diff = Math.abs(newScore - oldScore);
+                if (diff >= 10) {
+                    // We'll set a scale factor that correlates with how large the jump is.
+                    // For example, if diff is huge, cap the scale at 2.5 or 3 to avoid going too large
+                    const jumpScale = Math.min(1 + diff / 20, 3);
+                    scoreElement.style.setProperty('--jumpScale', jumpScale.toFixed(2));
+
+                    // Trigger the big jump effect
+                    scoreElement.classList.add('big-jump');
+
+                    // Remove big jump effect after the animation completes
+                    // (0.75s matches the .bigJumpScale keyframes duration)
+                    setTimeout(() => {
+                        scoreElement.classList.remove('big-jump');
+                        // Reset jumpScale if desired
+                        scoreElement.style.removeProperty('--jumpScale');
+                    }, 800);
+                }
+            }
         }
     }
 
-
-    const ballInPlay = document.getElementById('live-ball-in-play')
-    if (data.BallInPlay > 0){
+    // Ball in play
+    const ballInPlay = document.getElementById('live-ball-in-play');
+    if (data.BallInPlay > 0) {
         ballInPlay.innerText = `Ball in Play: ${data.BallInPlay}`;
-        ballInPlay.classList.remove('hide')
+        ballInPlay.classList.remove('hide');
     } else {
-        ballInPlay.classList.add('hide')
+        ballInPlay.classList.add('hide');
     }
+};
 
-    // show the game status
-    gameStatus.classList.remove('hide')
-}
-
+// Initial call
 window.getGameStatus();
 
-// call the getGameStatus function every 5 seconds
-setInterval(window.getGameStatus, 500)
+// call getGameStatus function every 0.5 seconds
+setInterval(window.getGameStatus, 1000);
