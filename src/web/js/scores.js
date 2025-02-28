@@ -490,6 +490,16 @@ window.getGameStatus = async function () {
     // If the game is active, show the container
     gameStatus.classList.remove('hide');
 
+    // Initialize score history if not exists
+    if (!window.scoreHistory) {
+        window.scoreHistory = {
+            1: { changes: [], lastScore: 0, initialized: false },
+            2: { changes: [], lastScore: 0, initialized: false },
+            3: { changes: [], lastScore: 0, initialized: false },
+            4: { changes: [], lastScore: 0, initialized: false }
+        };
+    }
+
     // Populate the players with their scores
     const players = document.getElementById('live-players');
 
@@ -510,35 +520,97 @@ window.getGameStatus = async function () {
             // Make sure .css-score-anim is on this score element:
             scoreElement.classList.add('css-score-anim');
 
+            // Track if this is the first score we're seeing for this player
+            const playerHistory = window.scoreHistory[playerId];
+            const isInitialScore = !playerHistory.initialized;
+
             // Get the old score from the current CSS variable (fallback to 0 if not set)
-            // We'll read the computed style to parse out the integer value of --num.
             const style = window.getComputedStyle(scoreElement);
             const oldScore = parseInt(style.getPropertyValue('--num') || '0', 10);
+
+            // Mark this player as initialized
+            playerHistory.initialized = true;
+
+            // Calculate score change and update history
+            if (oldScore > 0 && newScore !== oldScore) {
+                const change = newScore - oldScore;
+
+                // Only track positive changes for average calculation
+                if (change > 0) {
+                    playerHistory.changes.push(change);
+
+                    // Keep only last 10 changes to calculate rolling average
+                    if (playerHistory.changes.length > 10) {
+                        playerHistory.changes.shift();
+                    }
+                }
+            }
 
             // If newScore is different from oldScore, update the CSS variable to animate
             if (newScore !== oldScore) {
                 scoreElement.style.setProperty('--num', newScore);
 
-                // Detect big jump (arbitrary threshold). Example: diff >= 10
-                const diff = Math.abs(newScore - oldScore);
-                if (diff >= 10) {
-                    // We'll set a scale factor that correlates with how large the jump is.
-                    // For example, if diff is huge, cap the scale at 2.5 or 3 to avoid going too large
-                    const jumpScale = Math.min(1 + diff / 20, 3);
-                    scoreElement.style.setProperty('--jumpScale', jumpScale.toFixed(2));
+                // Only handle positive score changes for animations
+                // AND only if this isn't the initial score load
+                if (newScore > oldScore && !isInitialScore) {
+                    const change = newScore - oldScore;
 
-                    // Trigger the big jump effect
-                    scoreElement.classList.add('big-jump');
+                    // Calculate average change for this player
+                    const avgChange = playerHistory.changes.length > 0
+                        ? playerHistory.changes.reduce((sum, val) => sum + val, 0) / playerHistory.changes.length
+                        : change; // If no history, use current change as average
 
-                    // Remove big jump effect after the animation completes
-                    // (0.75s matches the .bigJumpScale keyframes duration)
+                    // Calculate how significant this change is compared to average
+                    const significance = change / (avgChange || 1); // Avoid division by zero
+
+                    // Remove any existing animation classes
+                    scoreElement.classList.remove('small-jump', 'medium-jump', 'big-jump', 'epic-jump');
+
+                    // Determine animation type and scale based on significance
+                    let jumpClass = 'small-jump';
+                    let scale = 1.5;
+                    let duration = 800;
+
+                    if (significance >= 4) {
+                        // Epic change (4+ times average)
+                        jumpClass = 'epic-jump';
+                        scale = 3.0;
+                        duration = 2500;
+                    } else if (significance >= 2) {
+                        // Large change (2-4 times average)
+                        jumpClass = 'big-jump';
+                        scale = 2.5;
+                        duration = 1500;
+                    } else if (significance >= 1) {
+                        // Medium change (average to 2x average)
+                        jumpClass = 'medium-jump';
+                        scale = 1.8;
+                        duration = 1000;
+                    } else {
+                        // Below average change
+                        jumpClass = 'small-jump';
+                        scale = 1.5;
+                        duration = 800;
+                    }
+
+                    // Set animation properties
+                    scoreElement.style.setProperty('--jumpScale', scale.toFixed(2));
+                    scoreElement.style.setProperty('--animDuration', `${duration}ms`);
+
+                    // Apply the animation class
+                    scoreElement.classList.add(jumpClass);
+
+                    // Remove animation class after it completes
                     setTimeout(() => {
-                        scoreElement.classList.remove('big-jump');
-                        // Reset jumpScale if desired
-                        scoreElement.style.removeProperty('--jumpScale');
-                    }, 800);
+                        scoreElement.classList.remove(jumpClass);
+                    }, duration);
+
+                    console.log(`Player ${playerId}: Change: ${change}, Avg: ${avgChange.toFixed(0)}, Significance: ${significance.toFixed(2)}`);
                 }
             }
+
+            // Update last score
+            playerHistory.lastScore = newScore;
         }
     }
 

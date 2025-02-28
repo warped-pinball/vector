@@ -116,109 +116,133 @@
 </style>
 
 <style>
-    .live-player {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.25rem;
-    }
+/* --- Improved score-animations.css --- */
 
-    .active-player-dark {
-        background-color: #fff;
-        color: #000;
-    }
+/* Register our integer custom property so it can animate */
+@property --num {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
 
-    .active-player-light {
-        background-color: rgb(1, 114, 173);
-        color: #FFF;
-    }
+/* Custom properties for animation control */
+@property --jumpScale {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: false;
+}
 
-    .live-scores {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.25rem;
-        margin-bottom: 2rem;
-    }
+/* Base class for counter animations */
+.css-score-anim {
+  /* Longer transition time for smoother counting */
+  transition: --num 2s cubic-bezier(0.1, 0.7, 0.1, 1);
+  counter-reset: animatedValue var(--num);
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: white;
+  display: inline-block;
+  position: relative; /* For positioning glow effects */
+}
 
-    .live-scores article {
-        margin-bottom: 0.25rem;
-    }
+.css-score-anim::after {
+  content: counter(animatedValue);
+}
 
-    @media (max-width: 770px) {
-        .live-scores {
-            grid-template-columns: 1fr;
-        }
-    }
+/* --- Small jump: subtle scale --- */
+.small-jump {
+  animation-name: smallJumpScale;
+  animation-duration: var(--animDuration, 800ms);
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: forwards;
+  color: #e8b85a !important;
+}
 
+@keyframes smallJumpScale {
+  0% { transform: scale(1); }
+  30% { transform: scale(var(--jumpScale, 1.5)); }
+  70% { transform: scale(var(--jumpScale, 1.5)); }
+  100% { transform: scale(1); }
+}
 
-    /* --- score-animations.css --- */
+/* --- Medium jump: scale + wobble --- */
+.medium-jump {
+  animation-name: mediumJumpScale;
+  animation-duration: var(--animDuration, 1000ms);
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: forwards;
+  color: #e8b85a !important;
+}
 
-    /* Register our integer custom property so it can animate. */
-    @property --num {
-        syntax: "<integer>";
-        initial-value: 0;
-        inherits: false;
-    }
+@keyframes mediumJumpScale {
+  0% { transform: scale(1) rotate(0deg); }
+  10% { transform: scale(var(--jumpScale, 1.8)) rotate(-3deg); }
+  20% { transform: scale(var(--jumpScale, 1.8)) rotate(3deg); }
+  30% { transform: scale(var(--jumpScale, 1.8)) rotate(-2deg); }
+  40% { transform: scale(var(--jumpScale, 1.8)) rotate(2deg); }
+  50% { transform: scale(var(--jumpScale, 1.8)) rotate(0deg); }
+  70% { transform: scale(var(--jumpScale, 1.8)) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
 
-    /* Optional custom property to scale the number on big jumps. */
-    @property --jumpScale {
-        syntax: "<number>";
-        initial-value: 1;
-        inherits: false;
-    }
+/* --- Big jump: scale + stronger wobble + color pulse --- */
+.big-jump {
+  animation-name: bigJumpScale;
+  animation-duration: var(--animDuration, 1500ms);
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: forwards;
+}
 
-    /* A base class to enable the counter/variable trick. */
-    .css-score-anim {
-        /* The actual integer transitions over 1s (adjust as desired). */
-        transition: --num 2s;
+@keyframes bigJumpScale {
+  0% { transform: scale(1) rotate(0deg); color: white; }
+  10% { transform: scale(var(--jumpScale, 2.5)) rotate(-5deg); color: #ffcc00; }
+  20% { transform: scale(var(--jumpScale, 2.5)) rotate(5deg); color: #ffdd44; }
+  30% { transform: scale(var(--jumpScale, 2.5)) rotate(-3deg); color: #ffcc00; }
+  40% { transform: scale(var(--jumpScale, 2.5)) rotate(3deg); color: #ffdd44; }
+  50% { transform: scale(var(--jumpScale, 2.5)) rotate(0deg); color: #ffcc00; }
+  70% { transform: scale(var(--jumpScale, 2.5)) rotate(0deg); color: #e8b85a; }
+  100% { transform: scale(1) rotate(0deg); color: white; }
+}
 
-        /* For older browsers that don't support @property,
-     the property just won't animate. The fallback is immediate changes. */
+/* --- Epic jump: scale + glow + color pulse --- */
+.epic-jump {
+  animation-name: epicJumpScale;
+  animation-duration: var(--animDuration, 2500ms);
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: forwards;
+}
 
-        /* We'll use a CSS counter, which we reset to var(--num). */
-        counter-reset: animatedValue var(--num);
+.epic-jump::before {
+  content: '';
+  position: absolute;
+  top: -15%;
+  left: -15%;
+  width: 130%;
+  height: 130%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,215,0,0) 70%);
+  z-index: -1;
+  opacity: 0;
+  animation: glowPulse var(--animDuration, 2500ms) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 
-        /* If you want a default font size or style, set it here. */
-        font-size: 1.25rem;
-        font-weight: bold;
-        color: black;
+@keyframes epicJumpScale {
+  0% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
+  10% { transform: scale(var(--jumpScale, 3.0)) rotate(-5deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
+  20% { transform: scale(var(--jumpScale, 3.0)) rotate(5deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
+  30% { transform: scale(var(--jumpScale, 3.0)) rotate(-3deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
+  40% { transform: scale(var(--jumpScale, 3.0)) rotate(3deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
+  50% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
+  70% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
+  85% { transform: scale(1.3) rotate(0deg); color: #e8b85a; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+  100% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
+}
 
-        /* Make sure transitions and transforms are visible if we do "big jump" scaling. */
-        display: inline-block;
-    }
-
-    /* The actual displayed text is in the ::after content. */
-    .css-score-anim::after {
-        /* Use the counter to display the integer as text. */
-        content: counter(animatedValue);
-    }
-
-    /* The "big jump" effect (grow and color shift).
-   We'll drive the scale via --jumpScale, which we set from JavaScript. */
-    .big-jump {
-        animation: bigJumpScale 0.75s ease-in-out forwards;
-        /* you can tweak timing */
-        color: red !important;
-        /* or some attention-grabbing color */
-    }
-
-    /* The keyframes animate from scale(1) to scale(var(--jumpScale)) and back down. */
-    @keyframes bigJumpScale {
-        0% {
-            transform: scale(1);
-        }
-
-        30% {
-            transform: scale(var(--jumpScale));
-        }
-
-        70% {
-            transform: scale(var(--jumpScale));
-        }
-
-        100% {
-            transform: scale(1);
-        }
-    }
+@keyframes glowPulse {
+  0% { opacity: 0; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
 </style>
 <div id="game-status" class="hide">
     <h5 id="live-ball-in-play" class="hide"></h5>
