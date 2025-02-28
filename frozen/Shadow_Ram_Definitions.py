@@ -11,7 +11,9 @@ Definitions for the location and length of internal RP2040
 import uctypes
 
 # system 9 and 11 need 2k array for the 'shadow' ram
-SRAM_DATA_BASE = 0x20040000  # 0x20040000-0x20040800 (2k)
+#SRAM_DATA_BASE = 0x20040000  # 0x20040000-0x20040800 (2k)
+SRAM_DATA_BASE = 0x20041800   #very end of ram - 2k
+
 SRAM_DATA_BASE_21 = SRAM_DATA_BASE >> 11  # 21 MSBits to be preloaded in pio for address generation
 SRAM_DATA_LENGTH = 0x00000800  # 2k byte total
 

@@ -6,7 +6,7 @@ from logger import logger_instance
 Log = logger_instance
 
 def get_ram_usage(details):
-    gc.collect()
+    #gc.collect()
     free_ram = gc.mem_free()
     total_ram = free_ram + gc.mem_alloc()
     if details:
@@ -28,11 +28,12 @@ def get_flash_usage(details):
     return flash_usage_percent
 
 def go(details=False):   
+    stack_usage = micropython.stack_use()   
+    print("stack use", stack_usage)
+    stack_percent = (stack_usage / 6144) * 100  
+
     ram_usage_percent = get_ram_usage(details)
     flash_usage_percent = get_flash_usage(details)
-
-    stack_usage = micropython.stack_use()   
-    stack_percent = (stack_usage / 6144) * 100  
 
     if (ram_usage_percent > 85  or flash_usage_percent > 85 or stack_percent > 85):
         Log.log(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")    
