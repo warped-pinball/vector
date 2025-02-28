@@ -407,7 +407,7 @@ def app_game_status(request):
         else:
             current_player = randint(0, 3)
     else:
-        game_status["Scores"][current_player] += randint(0, 100000)
+        game_status["Scores"][current_player] += randint(0, 1000) ** 2
 
     if game_status["BallInPlay"] > 5:
         game_status["BallInPlay"] = 1

@@ -203,45 +203,120 @@
   100% { transform: scale(1) rotate(0deg); color: white; }
 }
 
-/* --- Epic jump: scale + glow + color pulse --- */
+/* --- Epic jump: scale + particle explosion + color pulse --- */
 .epic-jump {
-  animation-name: epicJumpScale;
-  animation-duration: var(--animDuration, 2500ms);
-  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation-fill-mode: forwards;
+    animation-name: epicJumpScale;
+    animation-duration: var(--animDuration, 2500ms);
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation-fill-mode: forwards;
+    position: relative;
+    z-index: 2; /* Increased z-index to ensure text stays on top */
 }
 
+/* Create particle containers that won't inherit the text rotation */
+.epic-jump::before, .epic-jump::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    z-index: -1; /* Behind the text */
+    opacity: 0;
+    /* Remove any inheritance of parent transforms */
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+}
+
+/* First set of particles */
 .epic-jump::before {
-  content: '';
-  position: absolute;
-  top: -15%;
-  left: -15%;
-  width: 130%;
-  height: 130%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,215,0,0) 70%);
-  z-index: -1;
-  opacity: 0;
-  animation: glowPulse var(--animDuration, 2500ms) cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation: particleExplode1 1.5s ease-out forwards;
+    animation-delay: 0.05s; /* Start slightly after the text animation begins */
+    box-shadow:
+        -20px -20px 0 0 gold,
+        20px -30px 0 0 #ffcc00,
+        30px 25px 0 0 orange,
+        -25px 30px 0 0 #ffdd44,
+        -30px 0px 0 0 yellow,
+        35px -10px 0 0 #ffaa00,
+        0px 35px 0 0 #ffbb33,
+        -15px -35px 0 0 #ffcc00;
+}
+
+/* Second set of particles with different timing */
+.epic-jump::after {
+    animation: particleExplode2 1.8s ease-out forwards;
+    animation-delay: 0.15s;
+    box-shadow:
+        25px -15px 0 0 #ffdd44,
+        -30px -10px 0 0 #ffaa00,
+        15px 30px 0 0 gold,
+        -10px 25px 0 0 orange,
+        0px -30px 0 0 yellow,
+        30px 10px 0 0 #ffbb33,
+        -25px -20px 0 0 #ffcc00,
+        10px -25px 0 0 #ffdd44;
+}
+
+@keyframes particleExplode1 {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    5% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2.5);
+        box-shadow:
+            -80px -90px 0 0 transparent,
+            80px -100px 0 0 transparent,
+            100px 75px 0 0 transparent,
+            -85px 90px 0 0 transparent,
+            -110px 0px 0 0 transparent,
+            120px -30px 0 0 transparent,
+            0px 120px 0 0 transparent,
+            -65px -110px 0 0 transparent;
+    }
+}
+
+@keyframes particleExplode2 {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    5% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2);
+        box-shadow:
+            90px -70px 0 0 transparent,
+            -110px -55px 0 0 transparent,
+            65px 100px 0 0 transparent,
+            -55px 90px 0 0 transparent,
+            0px -110px 0 0 transparent,
+            110px 40px 0 0 transparent,
+            -100px -80px 0 0 transparent,
+            75px -105px 0 0 transparent;
+    }
 }
 
 @keyframes epicJumpScale {
-  0% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
-  10% { transform: scale(var(--jumpScale, 3.0)) rotate(-5deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
-  20% { transform: scale(var(--jumpScale, 3.0)) rotate(5deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
-  30% { transform: scale(var(--jumpScale, 3.0)) rotate(-3deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
-  40% { transform: scale(var(--jumpScale, 3.0)) rotate(3deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
-  50% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
-  70% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
-  85% { transform: scale(1.3) rotate(0deg); color: #e8b85a; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
-  100% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
-}
-
-@keyframes glowPulse {
-  0% { opacity: 0; transform: scale(0.8); }
-  30% { opacity: 1; transform: scale(1); }
-  70% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.2); }
+    0% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
+    10% { transform: scale(var(--jumpScale, 3.0)) rotate(-5deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
+    20% { transform: scale(var(--jumpScale, 3.0)) rotate(5deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
+    30% { transform: scale(var(--jumpScale, 3.0)) rotate(-3deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
+    40% { transform: scale(var(--jumpScale, 3.0)) rotate(3deg); color: #ffdd44; text-shadow: 0 0 15px rgba(255,215,0,0.8); }
+    50% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
+    70% { transform: scale(var(--jumpScale, 3.0)) rotate(0deg); color: #ffcc00; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
+    85% { transform: scale(1.3) rotate(0deg); color: #e8b85a; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+    100% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
 }
 
 #live-players {

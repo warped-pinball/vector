@@ -475,146 +475,155 @@ window.getClaimableScores = async function () {
 
 window.getClaimableScores();
 
-window.getGameStatus = async function () {
+/**
+ * Game Status and Score Animation Module
+ * Manages live game status and animates score changes
+ */
+
+// Store score history for animation calculations
+window.scoreHistory = {
+    1: { changes: [], lastScore: 0, initialized: false },
+    2: { changes: [], lastScore: 0, initialized: false },
+    3: { changes: [], lastScore: 0, initialized: false },
+    4: { changes: [], lastScore: 0, initialized: false }
+};
+
+/**
+ * Fetch current game status from API
+ * @returns {Promise<Object>} Game status data
+ */
+window.fetchGameStatus = async function() {
     const response = await window.smartFetch('/api/game/status', null, false);
-    const data = await response.json();
+    return response.json();
+};
 
-    const gameStatus = document.getElementById('game-status');
+/**
+ * Calculate animation parameters based on score change
+ * @param {number} change - Current score change
+ * @param {number} avgChange - Average of recent changes
+ * @returns {Object} Animation parameters
+ */
+window.calculateAnimationParams = function(change, avgChange) {
+    // Calculate how significant this change is compared to average
+    const significance = change / (avgChange || 1);
 
-    // if the game is not in progress, hide the game status
-    if (data.GameActive !== true) {
-        gameStatus.classList.add('hide');
-        return;
-    }
+    // Default (small changes)
+    let params = {
+        jumpClass: 'small-jump',
+        scale: 1.5,
+        duration: 800
+    };
 
-    // If the game is active, show the container
-    gameStatus.classList.remove('hide');
-
-    // Initialize score history if not exists
-    if (!window.scoreHistory) {
-        window.scoreHistory = {
-            1: { changes: [], lastScore: 0, initialized: false },
-            2: { changes: [], lastScore: 0, initialized: false },
-            3: { changes: [], lastScore: 0, initialized: false },
-            4: { changes: [], lastScore: 0, initialized: false }
+    if (significance >= 3) {
+        // Epic change (3+ times average)
+        params = {
+            jumpClass: 'epic-jump',
+            scale: 3.0,
+            duration: 2500
+        };
+    } else if (significance >= 2) {
+        // Large change (2-3 times average)
+        params = {
+            jumpClass: 'big-jump',
+            scale: 2.5,
+            duration: 1500
+        };
+    } else if (significance >= 1) {
+        // Medium change (average to 2x average)
+        params = {
+            jumpClass: 'medium-jump',
+            scale: 1.8,
+            duration: 1000
         };
     }
 
-    // Populate the players with their scores
-    const players = document.getElementById('live-players');
+    return params;
+};
 
-    for (const tag of players.children) {
-        // get the player id
-        const playerId = tag.id.split('-')[2];
+/**
+ * Apply score animation to an element
+ * @param {HTMLElement} element - Score element to animate
+ * @param {Object} params - Animation parameters
+ */
+window.applyScoreAnimation = function(element, params) {
+    // Remove any existing animation classes
+    element.classList.remove('small-jump', 'medium-jump', 'big-jump', 'epic-jump');
 
-        // if the player is not in the game or has a score of 0, hide the tag
-        const scoreElement = document.getElementById(`live-player-${playerId}-score`);
-        const newScore = data.Scores[playerId - 1];
+    // Set animation properties
+    element.style.setProperty('--jumpScale', params.scale.toFixed(2));
+    element.style.setProperty('--animDuration', `${params.duration}ms`);
 
-        if (newScore === undefined || newScore === 0) {
-            tag.classList.add('hide');
-            continue;
-        } else {
-            tag.classList.remove('hide');
+    // Apply the animation class
+    element.classList.add(params.jumpClass);
 
-            // Make sure .css-score-anim is on this score element:
-            scoreElement.classList.add('css-score-anim');
+    // Remove animation class after it completes
+    setTimeout(() => {
+        element.classList.remove(params.jumpClass);
+    }, params.duration);
+};
 
-            // Track if this is the first score we're seeing for this player
-            const playerHistory = window.scoreHistory[playerId];
-            const isInitialScore = !playerHistory.initialized;
+/**
+ * Process score changes and trigger animations
+ * @param {HTMLElement} scoreElement - DOM element containing the score
+ * @param {number} playerId - Player ID (1-4)
+ * @param {number} newScore - New score to display
+ */
+window.processScoreChange = function(scoreElement, playerId, newScore) {
+    const playerHistory = window.scoreHistory[playerId];
+    const isInitialScore = !playerHistory.initialized;
 
-            // Get the old score from the current CSS variable (fallback to 0 if not set)
-            const style = window.getComputedStyle(scoreElement);
-            const oldScore = parseInt(style.getPropertyValue('--num') || '0', 10);
+    // Get current displayed score
+    const style = window.getComputedStyle(scoreElement);
+    const oldScore = parseInt(style.getPropertyValue('--num') || '0', 10);
 
-            // Mark this player as initialized
-            playerHistory.initialized = true;
+    // Mark this player as initialized
+    playerHistory.initialized = true;
 
-            // Calculate score change and update history
-            if (oldScore > 0 && newScore !== oldScore) {
-                const change = newScore - oldScore;
+    // Update score and calculate change
+    if (oldScore > 0 && newScore !== oldScore) {
+        const change = newScore - oldScore;
 
-                // Only track positive changes for average calculation
-                if (change > 0) {
-                    playerHistory.changes.push(change);
+        // Track positive changes for average calculation
+        if (change > 0) {
+            playerHistory.changes.push(change);
 
-                    // Keep only last 10 changes to calculate rolling average
-                    if (playerHistory.changes.length > 10) {
-                        playerHistory.changes.shift();
-                    }
-                }
+            // Keep only last 10 changes
+            if (playerHistory.changes.length > 10) {
+                playerHistory.changes.shift();
             }
-
-            // If newScore is different from oldScore, update the CSS variable to animate
-            if (newScore !== oldScore) {
-                scoreElement.style.setProperty('--num', newScore);
-
-                // Only handle positive score changes for animations
-                // AND only if this isn't the initial score load
-                if (newScore > oldScore && !isInitialScore) {
-                    const change = newScore - oldScore;
-
-                    // Calculate average change for this player
-                    const avgChange = playerHistory.changes.length > 0
-                        ? playerHistory.changes.reduce((sum, val) => sum + val, 0) / playerHistory.changes.length
-                        : change; // If no history, use current change as average
-
-                    // Calculate how significant this change is compared to average
-                    const significance = change / (avgChange || 1); // Avoid division by zero
-
-                    // Remove any existing animation classes
-                    scoreElement.classList.remove('small-jump', 'medium-jump', 'big-jump', 'epic-jump');
-
-                    // Determine animation type and scale based on significance
-                    let jumpClass = 'small-jump';
-                    let scale = 1.5;
-                    let duration = 800;
-
-                    if (significance >= 4) {
-                        // Epic change (4+ times average)
-                        jumpClass = 'epic-jump';
-                        scale = 3.0;
-                        duration = 2500;
-                    } else if (significance >= 2) {
-                        // Large change (2-4 times average)
-                        jumpClass = 'big-jump';
-                        scale = 2.5;
-                        duration = 1500;
-                    } else if (significance >= 1) {
-                        // Medium change (average to 2x average)
-                        jumpClass = 'medium-jump';
-                        scale = 1.8;
-                        duration = 1000;
-                    } else {
-                        // Below average change
-                        jumpClass = 'small-jump';
-                        scale = 1.5;
-                        duration = 800;
-                    }
-
-                    // Set animation properties
-                    scoreElement.style.setProperty('--jumpScale', scale.toFixed(2));
-                    scoreElement.style.setProperty('--animDuration', `${duration}ms`);
-
-                    // Apply the animation class
-                    scoreElement.classList.add(jumpClass);
-
-                    // Remove animation class after it completes
-                    setTimeout(() => {
-                        scoreElement.classList.remove(jumpClass);
-                    }, duration);
-
-                    console.log(`Player ${playerId}: Change: ${change}, Avg: ${avgChange.toFixed(0)}, Significance: ${significance.toFixed(2)}`);
-                }
-            }
-
-            // Update last score
-            playerHistory.lastScore = newScore;
         }
     }
 
-    // Ball in play
+    // If score changed, update the CSS variable to animate
+    if (newScore !== oldScore) {
+        scoreElement.style.setProperty('--num', newScore);
+
+        // Only animate positive changes after initial load
+        if (newScore > oldScore && !isInitialScore) {
+            const change = newScore - oldScore;
+
+            // Calculate average change for this player
+            const avgChange = playerHistory.changes.length > 0
+                ? playerHistory.changes.reduce((sum, val) => sum + val, 0) / playerHistory.changes.length
+                : change;
+
+            // Calculate and apply animation
+            const animParams = window.calculateAnimationParams(change, avgChange);
+            window.applyScoreAnimation(scoreElement, animParams);
+
+            console.log(`Player ${playerId}: Change: ${change}, Avg: ${avgChange.toFixed(0)}, Significance: ${(change/avgChange).toFixed(2)}`);
+        }
+    }
+
+    // Update last score
+    playerHistory.lastScore = newScore;
+};
+
+/**
+ * Update ball in play status
+ * @param {Object} data - Game status data
+ */
+window.updateBallInPlay = function(data) {
     const ballInPlay = document.getElementById('live-ball-in-play');
     if (data.BallInPlay > 0) {
         ballInPlay.innerText = `Ball in Play: ${data.BallInPlay}`;
@@ -624,8 +633,48 @@ window.getGameStatus = async function () {
     }
 };
 
+/**
+ * Main function to get and display game status
+ */
+window.getGameStatus = async function() {
+    // Fetch data from API
+    const data = await window.fetchGameStatus();
+    const gameStatus = document.getElementById('game-status');
+
+    // If game not active, hide status and exit
+    if (data.GameActive !== true) {
+        gameStatus.classList.add('hide');
+        return;
+    }
+
+    // Game is active, show the container
+    gameStatus.classList.remove('hide');
+
+    // Process player scores
+    const players = document.getElementById('live-players');
+    for (const tag of players.children) {
+        const playerId = tag.id.split('-')[2];
+        const scoreElement = document.getElementById(`live-player-${playerId}-score`);
+        const newScore = data.Scores[playerId - 1];
+
+        // Hide players with no score
+        if (newScore === undefined || newScore === 0) {
+            tag.classList.add('hide');
+            continue;
+        }
+
+        // Show player and update score
+        tag.classList.remove('hide');
+        scoreElement.classList.add('css-score-anim');
+        window.processScoreChange(scoreElement, playerId, newScore);
+    }
+
+    // Update ball in play display
+    window.updateBallInPlay(data);
+};
+
 // Initial call
 window.getGameStatus();
 
-// call getGameStatus function every 0.5 seconds
+// Poll for updates every second
 setInterval(window.getGameStatus, 1000);
