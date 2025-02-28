@@ -243,10 +243,29 @@
   70% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.2); }
 }
+
+#live-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+}
+
+.live-player {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+@media (max-width: 500px) {
+  .live-player {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 <div id="game-status" class="hide">
     <h5 id="live-ball-in-play" class="hide"></h5>
-    <div id="live-players" class="live-scores">
+    <div id="live-players">
         <article id="live-player-1" class="live-player hide">
             <div>Player 1</div>
             <div id="live-player-1-score"></div>
