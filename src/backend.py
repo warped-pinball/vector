@@ -390,34 +390,9 @@ game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "Gam
 @add_route("/api/game/status")
 def app_game_status(request):
     # TODO cache me
-    # from GameStatus import game_report
+    from GameStatus import game_report
 
-    global game_status
-    # randomize game_status for testing
-
-    from random import randint
-
-    if randint(0, 3) != 0:
-        return game_status
-
-    current_player = randint(0, 4)
-
-    if current_player == 4:
-        if randint(0, 3) == 0:
-            game_status["BallInPlay"] += 1
-        else:
-            current_player = randint(0, 3)
-    else:
-        game_status["Scores"][current_player] += randint(0, 1000) ** 2
-
-    if game_status["BallInPlay"] > 5:
-        game_status["BallInPlay"] = 1
-        game_status["Scores"] = [0, 0, 0, 0]
-
-    return game_status
-
-    # TODO put back after testing
-    # return game_report()
+    return game_report()
 
 
 #
