@@ -216,13 +216,13 @@ def blankStruct(structure_name):
         "date": "",
         "game": 0,
         "index": 0,
-        "enable": 1,
+        "enable": 7,
         "lastIP": "none",
         "message": "ok",
         "ssid": "",
         "password": "",
         "Gpassword": "",
-        "gamename": "GenericSystem11",
+        "gamename": "GenericSystem11_",
         "other": 1
     }
     structure = memory_map[structure_name]
