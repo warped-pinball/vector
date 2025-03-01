@@ -68,15 +68,6 @@ async def _parse_headers(reader):
     return headers
 
 
-# returns the route matching the supplied path or None if no match
-def _match_route(request):
-    """Find a matching route and return its handler, or None if no match."""
-    try:
-        return _routes[request.path]
-    except KeyError:
-        return None
-
-
 # if the content type is application/json then parse the body
 async def _parse_json_body(reader, headers):
     import json
