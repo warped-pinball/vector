@@ -39,42 +39,21 @@ safe_defaults = {
     "Definition": {"version": 1},
     "Memory": {"Start": 0, "Length": 2048, "NvStart": 0, "NvLength": 2048},
     "BallInPlay": {
-        "Type": 0,
-        "Address": 56,
-        "Ball1": "0xF1",
-        "Ball2": "0xF2",
-        "Ball3": "0xF3",
-        "Ball4": "0xF4",
-        "Ball5": "0xF5",
+        "Type": 0       
     },
     "DisplayMessage": {
-        "Type": 0,
-        "Address": "0x7B4",
-        "Length": 7,
-        "Number": 6,
-        "EnableByteAddress": "0x7B0",
+        "Type": 0
     },
     "Adjustments": {
-        "Type": 0,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7ED",
+        "Type": 0
     },
     "HighScores": {
-        "Type": 0,
-        "ScoreAdr": "0x727",
-        "InitialAdr": "0x737",
-        "BytesInScore": 4,
+        "Type": 0
     },
     "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0,
+        "Type": 0
     },
-    "Switches": {"Type": 0, "Address": 56, "Length": 23},
+    "Switches": {"Type": 0},
     "CoinDrop": {"Type": 0},
 }
 
