@@ -488,6 +488,20 @@ window.scoreHistory = {
     4: { changes: [], lastScore: 0, initialized: false }
 };
 
+// Firework effect settings
+window.fireworkSettings = {
+    particleCount: 70,
+    minDistance: 50,
+    maxDistance: 120,
+    minDuration: 1.2,
+    maxDuration: 2,
+    baseColor: [255, 200, 100], // Warm golden hue
+    colorVariance: 40, // Variance in RGB values
+    gravity: 30, // Pixels per second squared
+    flickerMin: 3, // Min flickers per particle
+    flickerMax: 7  // Max flickers per particle
+};
+
 /**
  * Fetch current game status from API
  * @returns {Promise<Object>} Game status data
@@ -541,6 +555,91 @@ window.calculateAnimationParams = function(change, avgChange) {
 };
 
 /**
+ * Create firework effect around a score element
+ * @param {HTMLElement} scoreElement - DOM element containing the score
+ */
+window.createFireworkEffect = function(scoreElement) {
+    const container = document.getElementById("firework-container");
+    if (!container) return;
+
+    const rect = scoreElement.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    for (let i = 0; i < window.fireworkSettings.particleCount; i++) {
+        const particle = document.createElement("div");
+        particle.classList.add("particle");
+        container.appendChild(particle);
+
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * (window.fireworkSettings.maxDistance - window.fireworkSettings.minDistance) + window.fireworkSettings.minDistance;
+        const duration = Math.random() * (window.fireworkSettings.maxDuration - window.fireworkSettings.minDuration) + window.fireworkSettings.minDuration;
+
+        // Initial velocity components
+        const speed = distance / (duration * 0.6);
+        const vx = Math.cos(angle) * speed * (0.9 + Math.random() * 0.2);
+        const vy = Math.sin(angle) * speed * (0.9 + Math.random() * 0.2);
+
+        // Particle color
+        const colorVariance = Math.random() * window.fireworkSettings.colorVariance - window.fireworkSettings.colorVariance / 2;
+        const r = Math.min(255, window.fireworkSettings.baseColor[0] + colorVariance);
+        const g = Math.min(255, window.fireworkSettings.baseColor[1] + colorVariance);
+        const b = Math.min(255, window.fireworkSettings.baseColor[2] + colorVariance);
+        const color = `rgb(${r}, ${g}, ${b})`;
+
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.backgroundColor = color;
+        particle.style.color = color; // For glow
+
+        // Generate random flicker moments
+        const flickerCount = Math.floor(Math.random() *
+            (window.fireworkSettings.flickerMax - window.fireworkSettings.flickerMin + 1)) +
+            window.fireworkSettings.flickerMin;
+        const flickerTimes = Array(flickerCount).fill().map(() => Math.random());
+
+        // Create keyframes for animation
+        const keyframes = [];
+        const steps = 30;
+
+        for (let step = 0; step <= steps; step++) {
+            const progress = step / steps;
+            const time = progress * duration;
+
+            // Physics-based movement with gravity
+            const xPos = vx * time;
+            const yPos = vy * time + 0.5 * window.fireworkSettings.gravity * time * time;
+
+            // Base opacity curve
+            let opacity = 1 - Math.pow(progress, 0.8);
+
+            // Check for flicker
+            const isNearFlicker = flickerTimes.some(flickerTime =>
+                Math.abs(progress - flickerTime) < 0.05
+            );
+
+            if (isNearFlicker) {
+                opacity = Math.min(1.5, opacity + 0.5 + Math.random() * 0.5);
+            }
+
+            keyframes.push({
+                transform: `translate(${xPos}px, ${yPos}px)`,
+                opacity: Math.max(0, opacity),
+                boxShadow: `0 0 ${4 + opacity * 3}px ${opacity}px currentColor`
+            });
+        }
+
+        particle.animate(keyframes, {
+            duration: duration * 1000,
+            easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+            fill: "forwards"
+        });
+
+        setTimeout(() => particle.remove(), duration * 1000);
+    }
+};
+
+/**
  * Apply score animation to an element
  * @param {HTMLElement} element - Score element to animate
  * @param {Object} params - Animation parameters
@@ -555,6 +654,11 @@ window.applyScoreAnimation = function(element, params) {
 
     // Apply the animation class
     element.classList.add(params.jumpClass);
+
+    // If this is an epic jump, create the firework effect
+    if (params.jumpClass === 'epic-jump') {
+        window.createFireworkEffect(element);
+    }
 
     // Remove animation class after it completes
     setTimeout(() => {
