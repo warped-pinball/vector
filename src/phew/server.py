@@ -4,10 +4,10 @@ import machine
 import ntptime
 import uasyncio
 from machine import RTC
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 import faults
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -20,7 +20,7 @@ rtc = RTC()
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
-_routes = []  # List initially, converted to tuple in run()
+_routes = {}
 catchall_handler = None
 loop = uasyncio.get_event_loop()
 monitor_count = 0
@@ -71,12 +71,10 @@ async def _parse_headers(reader):
 # returns the route matching the supplied path or None if no match
 def _match_route(request):
     """Find a matching route and return its handler, or None if no match."""
-    is_post = request.method == "POST"
-    for route in _routes:
-        path, method, handler = route
-        if path == request.path and method == is_post:
-            return handler
-    return None
+    try:
+        return _routes[request.path]
+    except KeyError:
+        return None
 
 
 # if the content type is application/json then parse the body
@@ -111,11 +109,13 @@ async def _handle_request(reader, writer):
                 request.raw_data = raw_body
                 request.data = parsed_data
 
-        handler = _match_route(request)
-        if handler:
-            response = handler(request)
-        elif catchall_handler:
-            response = catchall_handler(request)
+        handler = catchall_handler
+        try:
+            handler = _routes[request.path]
+        except KeyError:
+            logging.info(f"Route not found: {request.path}")
+
+        response = handler(request)
 
         # if shorthand body generator only notation used then convert to tuple
         if type(response).__name__ == "generator":
@@ -175,9 +175,9 @@ async def _handle_request(reader, writer):
 
 
 # adds a new route to the routing table
-def add_route(path, handler, method="GET"):
+def add_route(path, handler):
     global _routes
-    _routes.append((path, method.upper() == "POST", handler))
+    _routes[path] = handler
 
 
 def set_callback(handler):
@@ -332,8 +332,6 @@ def create_schedule(ap_mode: bool = False):
 
 
 def run(ap_mode: bool, host="0.0.0.0", port=80):
-    global _routes
-    _routes = tuple(_routes)  # Convert to tuple once all routes are added
     logging.info("> starting web server on port {}".format(port))
     loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)

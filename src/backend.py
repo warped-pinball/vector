@@ -87,7 +87,7 @@ def route_wrapper(func):
     return wrapped_route
 
 
-def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instance=False):
+def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
     """Decorator to add a route to the server with gc_collect() and error handling"""
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
@@ -104,7 +104,7 @@ def add_route(path, method="GET", auth=False, cool_down_seconds=0, single_instan
 
         from phew.server import add_route as phew_add_route
 
-        phew_add_route(path, wrapped, method)
+        phew_add_route(path, wrapped)
 
         # return route
 
@@ -335,7 +335,7 @@ def get_challenge(request):
     return json_dumps({"challenge": new_challenge}), 200
 
 
-@add_route("api/auth/password_check", method="POST", auth=True)
+@add_route("api/auth/password_check", auth=True)
 def check_password(request):
     return "ok", 200
 
@@ -345,9 +345,9 @@ def check_password(request):
 #
 for file_path in ls("web"):
     route = file_path[3:]  # This should give '/index.html' for 'web/index.html'
-    phew_add_route(route, create_file_handler(file_path), method="GET")
+    phew_add_route(route, create_file_handler(file_path))
     if route == "/index.html":
-        phew_add_route("/", create_file_handler(file_path), method="GET")
+        phew_add_route("/", create_file_handler(file_path))
 
 
 #
@@ -498,7 +498,7 @@ def app_getClaimableScores(request):
     return get_claim_score_list()
 
 
-@add_route("/api/scores/claim", method="POST")
+@add_route("/api/scores/claim")
 def app_claimScore(request):
     from ScoreTrack import claim_score
 
@@ -523,7 +523,7 @@ def app_getPlayers(request):
     return players
 
 
-@add_route("/api/player/update", method="POST", auth=True)
+@add_route("/api/player/update", auth=True)
 def app_updatePlayer(request):
     body = request.data
 
@@ -546,7 +546,7 @@ def app_updatePlayer(request):
     ds_write_record("names", {"initials": initials, "full_name": name}, index)
 
 
-@add_route("/api/player/scores", method="POST")
+@add_route("/api/player/scores")
 def app_getScores(request):
     from time import time
 
@@ -600,7 +600,7 @@ def app_getAdjustmentStatus(request):
     return get_adjustments_status()
 
 
-@add_route("/api/adjustments/name", method="POST", auth=True)
+@add_route("/api/adjustments/name", auth=True)
 def app_setAdjustmentName(request):
     from Adjustments import set_name
 
@@ -610,14 +610,14 @@ def app_setAdjustmentName(request):
     set_name(index, name)
 
 
-@add_route("/api/adjustments/capture", method="POST", auth=True)
+@add_route("/api/adjustments/capture", auth=True)
 def app_captureAdjustments(request):
     from Adjustments import store_adjustments
 
     store_adjustments(int(request.data["index"]))
 
 
-@add_route("/api/adjustments/restore", method="POST", auth=True, cool_down_seconds=5)
+@add_route("/api/adjustments/restore", auth=True, cool_down_seconds=5)
 def app_restoreAdjustments(request):
     from Adjustments import restore_adjustments
 
@@ -633,7 +633,7 @@ def app_getScoreCap(request):
     return {"on-machine": score_cap}
 
 
-@add_route("/api/settings/set_claim_methods", method="POST", auth=True)
+@add_route("/api/settings/set_claim_methods", auth=True)
 def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
@@ -648,7 +648,7 @@ def app_getTournamentMode(request):
     return {"tournament_mode": tournament_mode}
 
 
-@add_route("/api/settings/set_tournament_mode", method="POST", auth=True)
+@add_route("/api/settings/set_tournament_mode", auth=True)
 def app_setTournamentMode(request):
     json_data = request.data
     if "tournament_mode" in json_data:
@@ -720,7 +720,7 @@ def app_getPeers(request):
 #
 # Time
 #
-@add_route("/api/date_time", method="POST", auth=True)
+@add_route("/api/date_time", auth=True)
 def app_setDateTime(request):
     """Set the date and time on the device"""
     date = [int(e) for e in request.json["date"]]
@@ -797,7 +797,7 @@ def app_updates_available(request):
         yield buff
 
 
-@add_route("/api/update/apply", method="POST", auth=True)
+@add_route("/api/update/apply", auth=True)
 def app_apply_update(request):
     from logger import logger_instance as Log
     from update import apply_update
@@ -838,7 +838,7 @@ def add_ap_mode_routes():
     def app_inAPMode(request):
         return {"in_ap_mode": True}
 
-    @add_route("/api/settings/set_vector_config", method="POST")
+    @add_route("/api/settings/set_vector_config")
     def app_setWifi(request):
         """Set the wifi SSID and password"""
         from GameDefsLoad import list_game_configs
