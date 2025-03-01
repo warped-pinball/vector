@@ -132,7 +132,7 @@
   inherits: false;
 }
 
-/* Base class for counter animations */
+/* Allow animations to overflow their containers without affecting layout */
 .css-score-anim {
   /* Longer transition time for smoother counting */
   transition: --num 2s cubic-bezier(0.1, 0.7, 0.1, 1);
@@ -142,13 +142,15 @@
   color: white;
   display: inline-block;
   position: relative; /* For positioning glow effects */
+  transform-origin: center; /* Center the scaling */
+  will-change: transform; /* Optimize for animations */
 }
 
 .css-score-anim::after {
   content: counter(animatedValue);
 }
 
-/* Firework particle styling */
+/* Firework container should allow overflow without scrollbars */
 .firework-container {
   position: fixed;
   top: 0;
@@ -157,6 +159,7 @@
   height: 100%;
   pointer-events: none;
   z-index: 1;
+  overflow: hidden;
 }
 
 .particle {
@@ -246,10 +249,12 @@
   100% { transform: scale(1) rotate(0deg); color: white; text-shadow: none; }
 }
 
+/* Container for live players - prevent overflow */
 #live-players {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.25rem;
+  overflow: hidden;
 }
 
 .live-player {
@@ -258,9 +263,11 @@
   gap: 0.25rem;
   padding: 0.25rem;
 }
-
 @media (max-width: 500px) {
   .live-player {
+    grid-template-columns: 1fr;
+  }
+  #live-players {
     grid-template-columns: 1fr;
   }
 }

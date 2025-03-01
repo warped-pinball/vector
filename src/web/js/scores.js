@@ -528,15 +528,15 @@ window.calculateAnimationParams = function(change, avgChange) {
         duration: 800
     };
 
-    if (significance >= 3) {
-        // Epic change (3+ times average)
+    if (significance >= 4) {
+        // Epic change (4+ times average)
         params = {
             jumpClass: 'epic-jump',
             scale: 3.0,
             duration: 2500
         };
     } else if (significance >= 2) {
-        // Large change (2-3 times average)
+        // Large change (2-4 times average)
         params = {
             jumpClass: 'big-jump',
             scale: 2.5,
@@ -702,8 +702,8 @@ window.processScoreChange = function(scoreElement, playerId, newScore) {
     if (newScore !== oldScore) {
         scoreElement.style.setProperty('--num', newScore);
 
-        // Only animate positive changes after initial load
-        if (newScore > oldScore && !isInitialScore) {
+        // Only animate positive changes after initial load AND initial game setup
+        if (newScore > oldScore && !isInitialScore && playerHistory.changes.length >= 3) {
             const change = newScore - oldScore;
 
             // Calculate average change for this player
@@ -780,5 +780,5 @@ window.getGameStatus = async function() {
 // Initial call
 window.getGameStatus();
 
-// Poll for updates every second
-setInterval(window.getGameStatus, 1000);
+// Poll for updates
+setInterval(window.getGameStatus, 1500);
