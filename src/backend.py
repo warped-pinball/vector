@@ -4,16 +4,16 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
+import Pico_Led
+from ls import ls
 from machine import RTC
+from Memory_Main import blank_ram, save_ram
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
 
 import faults
-import Pico_Led
-from ls import ls
-from Memory_Main import blank_ram, save_ram
 from phew.server import add_route as phew_add_route
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
@@ -356,6 +356,7 @@ for file_path in ls("web"):
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -386,6 +387,7 @@ def app_game_configs_list(request):
 @add_route("/api/game/status")
 def app_game_status(request):
     from Shadow_Ram_Definitions import shadowRam
+
     from SharedState import gdata
 
     game_in_progress = shadowRam[gdata["BallInPlay"]["Address"]] in [
@@ -405,6 +407,7 @@ def app_game_status(request):
 @add_route("/api/memory/reset", auth=True)
 def app_reset_memory(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -624,13 +627,13 @@ def app_restoreAdjustments(request):
 #
 # Settings
 #
-@add_route("/api/settings/score_claim_methods")
+@add_route("/api/settings/get_claim_methods")
 def app_getScoreCap(request):
     score_cap = ds_read_record("extras", 0)["enter_initials_on_game"]
     return {"on-machine": score_cap}
 
 
-@add_route("/api/settings/score_claim_methods", method="POST", auth=True)
+@add_route("/api/settings/set_claim_methods", method="POST", auth=True)
 def app_setScoreCap(request):
     json_data = request.data
     if "on-machine" in json_data:
@@ -639,13 +642,13 @@ def app_setScoreCap(request):
         ds_write_record("extras", info, 0)
 
 
-@add_route("/api/settings/tournament_mode")
+@add_route("/api/settings/get_tournament_mode")
 def app_getTournamentMode(request):
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
     return {"tournament_mode": tournament_mode}
 
 
-@add_route("/api/settings/tournament_mode", method="POST", auth=True)
+@add_route("/api/settings/set_tournament_mode", method="POST", auth=True)
 def app_setTournamentMode(request):
     json_data = request.data
     if "tournament_mode" in json_data:
@@ -656,9 +659,9 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
+    import reset_control
     from machine import reset
 
-    import reset_control
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
     from SPI_DataStore import blankAll as D_blank
@@ -675,9 +678,8 @@ def app_factoryReset(request):
 
 @add_route("/api/settings/reboot", auth=True)
 def app_reboot(request):
-    from machine import reset
-
     import reset_control
+    from machine import reset
 
     reset_control.reset()
     sleep(2)
