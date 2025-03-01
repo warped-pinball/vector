@@ -32,11 +32,12 @@ recent_scores = [
 
 def get_claim_score_list():
     result = []
-    for game in recent_scores[:4]:
-        # if there are any unclaimed non zero scores, add them to the list
-        if any(score[0] == "" and score[1] != 0 for score in game[1:]):
-            # add the game to the list, with all zero scores removed
-            result.append([score for score in game[1:] if score[1] != 0])
+    if DataStore.read_record("extras", 0)["claim_scores"] is True: 
+        for game in recent_scores[:4]:
+            # if there are any unclaimed non zero scores, add them to the list
+            if any(score[0] == "" and score[1] != 0 for score in game[1:]):
+                # add the game to the list, with all zero scores removed
+                result.append([score for score in game[1:] if score[1] != 0])
     return result
 
 

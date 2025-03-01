@@ -249,7 +249,10 @@ async def run_scheduled():
                     print(t[4])  # TODO should we actually log this or is print enough?
 
                 # run the task
-                t[0]()  # t[0] is func
+                try:
+                    t[0]()  # t[0] is func
+                except Exception as e:
+                    logging.error(f"Error running scheduled task: {e}")
 
                 # reschedule or remove tasks
                 if t[1] is None:  # t[1] is freq
@@ -270,6 +273,7 @@ async def run_scheduled():
 def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
+    from backend import connect_to_wifi
     from discovery import DEVICE_TIMEOUT, announce, listen
     from displayMessage import refresh
     from GameStatus import poll_fast
@@ -278,13 +282,13 @@ def create_schedule(ap_mode: bool = False):
     # one time tasks
     #
     # TODO confirm all print statments instead return a string since prints will not show up
-    # set the display message 30 seconds after boot
+    # set the display message
     schedule(refresh, 30000)
 
     # initialize the leader board 10 seconds after boot
     schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
 
-    # print out memory usage 45 seconds after boot
+    # print out memory usage
     schedule(resource_go, 5000, 10000)
 
     # initialize the fram
@@ -303,13 +307,13 @@ def create_schedule(ap_mode: bool = False):
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
 
+    # call serial flash tick every 1 second for ongoing erase operations
+    schedule(sflash_tick, 1000, 1000)
+
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
         # copy ram values to fram every 0.1 seconds
         schedule(copy_to_fram, 0, 100)
-
-    # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 1000)
 
     # non AP mode only tasks
     if not ap_mode:
@@ -322,6 +326,8 @@ def create_schedule(ap_mode: bool = False):
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
 
+        # reconnect to wifi occasionally
+        schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
     restart_schedule()
 
 

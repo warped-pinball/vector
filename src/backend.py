@@ -4,16 +4,16 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
+import Pico_Led
+from ls import ls
 from machine import RTC
+from Memory_Main import blank_ram, save_ram
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
 
 import faults
-import Pico_Led
-from ls import ls
-from Memory_Main import blank_ram, save_ram
 from phew.server import add_route as phew_add_route
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
@@ -23,7 +23,7 @@ from SPI_DataStore import write_record as ds_write_record
 #
 rtc = RTC()
 ram_access = bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
-WIFI_MAX_ATTEMPTS = 12
+WIFI_MAX_ATTEMPTS = 2
 AP_NAME = "Warped Pinball"
 # Authentication variables
 challenges = {}
@@ -356,6 +356,7 @@ for file_path in ls("web"):
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -425,6 +426,7 @@ def app_game_status(request):
 @add_route("/api/memory/reset", auth=True)
 def app_reset_memory(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -676,9 +678,9 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
+    import reset_control
     from machine import reset
 
-    import reset_control
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
     from SPI_DataStore import blankAll as D_blank
@@ -695,9 +697,8 @@ def app_factoryReset(request):
 
 @add_route("/api/settings/reboot", auth=True)
 def app_reboot(request):
-    from machine import reset
-
     import reset_control
+    from machine import reset
 
     reset_control.reset()
     sleep(2)
@@ -881,10 +882,14 @@ def add_ap_mode_routes():
 
 
 def connect_to_wifi():
+    from phew import is_connected_to_wifi as phew_is_connected
+
+    if phew_is_connected():
+        return True
+
     from discovery import setup as discovery_setup
     from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
-    from phew import is_connected_to_wifi as phew_is_connected
     from SPI_DataStore import writeIP
 
     wifi_credentials = ds_read_record("configuration", 0)
@@ -902,6 +907,11 @@ def connect_to_wifi():
             init_display(ip_address)
             discovery_setup(ip_address)
             print(f"Connected to wifi with IP address: {ip_address}")
+
+            # clear any wifi related faults
+            if faults.fault_is_raised(faults.ALL_WIFI):
+                faults.clear_fault(faults.ALL_WIFI)
+
             return True
 
     # If there's signal that means the credentials are wrong
@@ -947,8 +957,8 @@ def go(ap_mode):
         dns.run_catchall(ip)
     else:
         while not connect_to_wifi():
-            print("Failed to connect to wifi, retrying in 2 seconds")
-            sleep(2)
+            print("retrying wifi")
+            sleep(1)
         Pico_Led.on()
         add_app_mode_routes()
         from phew.server import set_callback
