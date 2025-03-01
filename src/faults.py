@@ -63,3 +63,22 @@ def fault_is_raised(fault):
         if fault_code in [x.split(":")[0] for x in S.faults]:
             return True
     return False
+
+
+def clear_fault(fault):
+    import SharedState as S
+
+    if isinstance(fault, str):
+        faults = [fault]
+    elif isinstance(fault, list):
+        faults = fault
+    else:
+        raise ValueError("fault must be a string or a list of strings")
+
+    for f in faults:
+        fault_code = f.split(":")[0]
+        S.faults = [x for x in S.faults if x.split(":")[0] != fault_code]
+
+    from logger import logger_instance as Log
+
+    Log.log(f"Fault cleared: {fault}")

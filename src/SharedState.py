@@ -1,4 +1,4 @@
-WarpedVersion = "1.0.0"
+WarpedVersion = "1.1.0"
 
 # counts game start cycles
 gameCounter = 0
