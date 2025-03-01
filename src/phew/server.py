@@ -93,18 +93,20 @@ async def _handle_request(reader, writer):
             return
 
         request = Request(method, uri, protocol)
-        request.headers = await _parse_headers(reader)
-        if "content-length" in request.headers and "content-type" in request.headers:
-            if request.headers["content-type"].startswith("application/json"):
-                raw_body, parsed_data = await _parse_json_body(reader, request.headers)
-                request.raw_data = raw_body
-                request.data = parsed_data
 
         handler = catchall_handler
         try:
             handler = _routes[request.path]
         except KeyError:
             logging.info(f"Route not found: {request.path}")
+
+        # TODO make parsing json and headers lazy
+        request.headers = await _parse_headers(reader)
+        if "content-length" in request.headers and "content-type" in request.headers:
+            if request.headers["content-type"].startswith("application/json"):
+                raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+                request.raw_data = raw_body
+                request.data = parsed_data
 
         response = handler(request)
 
@@ -218,6 +220,9 @@ def copy_to_fram():
 
 _scheduled_tasks = []
 
+# Use this to stop the schedule temporarily
+_halt_schedule = False
+
 
 def restart_schedule():
     for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
@@ -231,6 +236,7 @@ def schedule(func, phase_ms, frequency_ms=None, log=None):
 
 
 async def run_scheduled():
+    global _halt_schedule
     while True:
         # default to 1 second in the future
         next_wake = time.ticks_add(time.ticks_ms(), 1000)
@@ -260,7 +266,11 @@ async def run_scheduled():
         if delay > 0:  # only sleep if we have time to sleep
             await uasyncio.sleep_ms(delay)
 
+        while _halt_schedule:
+            await uasyncio.sleep_ms(1000)
 
+
+# TODO option to resume/start without boot up tasks
 def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
