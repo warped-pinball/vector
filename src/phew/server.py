@@ -4,10 +4,10 @@ import machine
 import ntptime
 import uasyncio
 from machine import RTC
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 import faults
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -281,7 +281,6 @@ def create_schedule(ap_mode: bool = False):
     #
     # one time tasks
     #
-    # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message
     schedule(refresh, 30000)
 
