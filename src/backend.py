@@ -418,22 +418,6 @@ def app_reset_memory(request):
     phew_restart_schedule()
 
 
-@add_route("/api/memory-snapshot")
-def download_memory(request):
-    # Stream memory values directly to the response to save RAM
-    def memory_values_generator():
-        for value in ram_access:
-            yield f"{value}\n".encode("utf-8")
-
-    headers = {
-        "Content-Type": "text/plain",
-        "Content-Disposition": "attachment; filename=memory.txt",
-        "Connection": "close",
-    }
-
-    return memory_values_generator(), 200, headers
-
-
 #
 # Leaderboard
 #
@@ -720,7 +704,7 @@ def app_getPeers(request):
 #
 # Time
 #
-@add_route("/api/date_time", auth=True)
+@add_route("/api/set_date", auth=True)
 def app_setDateTime(request):
     """Set the date and time on the device"""
     date = [int(e) for e in request.json["date"]]
@@ -729,7 +713,7 @@ def app_setDateTime(request):
     rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
 
 
-@add_route("/api/date_time")
+@add_route("/api/get_date")
 def app_getDateTime(request):
     return rtc.datetime(), 200
 
