@@ -4,10 +4,10 @@ import machine
 import ntptime
 import uasyncio
 from machine import RTC
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 import faults
 from ScoreTrack import CheckForNewScores, initialize_leaderboard
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -20,7 +20,7 @@ rtc = RTC()
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
-_routes = []  # List initially, converted to tuple in run()
+_routes = {}
 catchall_handler = None
 loop = uasyncio.get_event_loop()
 monitor_count = 0
@@ -68,17 +68,6 @@ async def _parse_headers(reader):
     return headers
 
 
-# returns the route matching the supplied path or None if no match
-def _match_route(request):
-    """Find a matching route and return its handler, or None if no match."""
-    is_post = request.method == "POST"
-    for route in _routes:
-        path, method, handler = route
-        if path == request.path and method == is_post:
-            return handler
-    return None
-
-
 # if the content type is application/json then parse the body
 async def _parse_json_body(reader, headers):
     import json
@@ -104,6 +93,14 @@ async def _handle_request(reader, writer):
             return
 
         request = Request(method, uri, protocol)
+
+        handler = catchall_handler
+        try:
+            handler = _routes[request.path]
+        except KeyError:
+            logging.info(f"Route not found: {request.path}")
+
+        # TODO make parsing json and headers lazy
         request.headers = await _parse_headers(reader)
         if "content-length" in request.headers and "content-type" in request.headers:
             if request.headers["content-type"].startswith("application/json"):
@@ -111,11 +108,7 @@ async def _handle_request(reader, writer):
                 request.raw_data = raw_body
                 request.data = parsed_data
 
-        handler = _match_route(request)
-        if handler:
-            response = handler(request)
-        elif catchall_handler:
-            response = catchall_handler(request)
+        response = handler(request)
 
         # if shorthand body generator only notation used then convert to tuple
         if type(response).__name__ == "generator":
@@ -175,9 +168,11 @@ async def _handle_request(reader, writer):
 
 
 # adds a new route to the routing table
-def add_route(path, handler, method="GET"):
+def add_route(path, handler):
     global _routes
-    _routes.append((path, method.upper() == "POST", handler))
+    if path in _routes:
+        raise ValueError(f"Route already exists: {path}")
+    _routes[path] = handler
 
 
 def set_callback(handler):
@@ -227,6 +222,9 @@ def copy_to_fram():
 
 _scheduled_tasks = []
 
+# Use this to stop the schedule temporarily
+_halt_schedule = False
+
 
 def restart_schedule():
     for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
@@ -240,6 +238,7 @@ def schedule(func, phase_ms, frequency_ms=None, log=None):
 
 
 async def run_scheduled():
+    global _halt_schedule
     while True:
         # default to 1 second in the future
         next_wake = time.ticks_add(time.ticks_ms(), 1000)
@@ -269,7 +268,11 @@ async def run_scheduled():
         if delay > 0:  # only sleep if we have time to sleep
             await uasyncio.sleep_ms(delay)
 
+        while _halt_schedule:
+            await uasyncio.sleep_ms(1000)
 
+
+# TODO option to resume/start without boot up tasks
 def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
@@ -281,7 +284,6 @@ def create_schedule(ap_mode: bool = False):
     #
     # one time tasks
     #
-    # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message
     schedule(refresh, 30000)
 
@@ -332,8 +334,6 @@ def create_schedule(ap_mode: bool = False):
 
 
 def run(ap_mode: bool, host="0.0.0.0", port=80):
-    global _routes
-    _routes = tuple(_routes)  # Convert to tuple once all routes are added
     logging.info("> starting web server on port {}".format(port))
     loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)
