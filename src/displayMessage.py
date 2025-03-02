@@ -22,9 +22,13 @@ def fixAdjustmentChecksum():
     """
     if "11" in S.gdata["GameInfo"]["System"]:
         if S.gdata["Adjustments"]["Type"] is 1:  
-            start = S.gdata["Adjustments"]["ChecksumStartAdr"]
-            end = S.gdata["Adjustments"]["ChecksumEndAdr"]
-            resultLoc = S.gdata["Adjustments"]["ChecksumResultAdr"]
+            start = S.gdata["Adjustments"].get("ChecksumStartAdr", None)
+            end = S.gdata["Adjustments"].get("ChecksumEndAdr", None)
+            resultLoc = S.gdata["Adjustments"].get("ChecksumResultAdr", None)
+            if start is None or end is None or resultLoc is None:
+                print("DISP: Checksum addresses not found in adjustments")
+                return False
+            
             origCS = shadowRam[resultLoc]
             cs=0
             for i in range(start, end + 1):
