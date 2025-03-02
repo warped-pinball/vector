@@ -284,7 +284,6 @@ def create_schedule(ap_mode: bool = False):
     #
     # one time tasks
     #
-    # TODO confirm all print statments instead return a string since prints will not show up
     # set the display message
     schedule(refresh, 30000)
 
