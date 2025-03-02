@@ -56,7 +56,7 @@ async function tournamentModeToggle() {
 	});
 }
 
-// score Claim methods
+// Score claim methods
 async function getScoreClaimMethods() {
 	const response = await window.smartFetch('/api/settings/get_claim_methods', null, false);
 	const data = await response.json();
@@ -70,15 +70,20 @@ async function getScoreClaimMethods() {
 	webUIToggle.checked = data['web-ui'];
 	webUIToggle.disabled = false;
 
-	// add event listener to update the setting when the checkbox is changed
-	onMachineToggle.addEventListener('change', async () => {
-		const data = {
-			'on-machine': onMachineToggle.checked ? 1 : 0,
-			'web-ui': webUIToggle.checked ? 1 : 0
-		};
-		await window.smartFetch('/api/settings/set_claim_methods', data, true);
+	// Helper function to add event listener to claim method toggle
+	function addClaimMethodToggleListener(toggle) {
+		toggle.addEventListener('change', async () => {
+			const data = {
+				'on-machine': onMachineToggle.checked ? 1 : 0,
+				'web-ui': webUIToggle.checked ? 1 : 0
+			};
+			await window.smartFetch('/api/settings/set_claim_methods', data, true);
+		});
+	}
 
-	});
+	// Apply listener to both toggles
+	addClaimMethodToggleListener(onMachineToggle);
+	addClaimMethodToggleListener(webUIToggle);
 }
 
 tournamentModeToggle();
