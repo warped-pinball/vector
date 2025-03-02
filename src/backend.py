@@ -607,17 +607,22 @@ def app_restoreAdjustments(request):
 #
 @add_route("/api/settings/get_claim_methods")
 def app_getScoreCap(request):
-    score_cap = ds_read_record("extras", 0)["enter_initials_on_game"]
-    return {"on-machine": score_cap}
+    record = ds_read_record("extras", 0)
+    return {
+        "on-machine": record["enter_initials_on_game"],
+        "web-ui": record["claim_scores"],
+    }
 
 
 @add_route("/api/settings/set_claim_methods", auth=True)
 def app_setScoreCap(request):
     json_data = request.data
+    record = ds_read_record("extras", 0)
     if "on-machine" in json_data:
-        info = ds_read_record("extras", 0)
-        info["enter_initials_on_game"] = bool(json_data["on-machine"])
-        ds_write_record("extras", info, 0)
+        record["enter_initials_on_game"] = bool(json_data["on-machine"])
+    if "web-ui" in json_data:
+        record["claim_scores"] = bool(json_data["web-ui"])
+    ds_write_record("extras", record, 0)
 
 
 @add_route("/api/settings/get_tournament_mode")
