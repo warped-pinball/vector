@@ -21,7 +21,7 @@ def fixAdjustmentChecksum():
         system 11 with type 0 will only report check sum, not fix it
     """
     if "11" in S.gdata["GameInfo"]["System"]:
-        if S.gdata["Adjustments"]["Type"] is 1:  
+        if S.gdata["Adjustments"]["Type"] == 1:  
             start = S.gdata["Adjustments"].get("ChecksumStartAdr", None)
             end = S.gdata["Adjustments"].get("ChecksumEndAdr", None)
             resultLoc = S.gdata["Adjustments"].get("ChecksumResultAdr", None)
