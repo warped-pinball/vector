@@ -1,7 +1,8 @@
 import time
 
-import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
+
+import SharedState as S
 
 # Initialize the game status in SharedState
 S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}

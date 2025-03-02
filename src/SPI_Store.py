@@ -13,7 +13,6 @@ import time
 import machine
 import uctypes
 from machine import SPI
-
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 # from logger import logger_instance  <<the logger uses this driver, cant really be imported here
@@ -177,8 +176,6 @@ def write_all_fram_now():
         if MemIndex >= SRAM_DATA_LENGTH:
             print("FRAM: complete store done")
             return
-
-
 
 
 """

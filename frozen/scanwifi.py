@@ -1,6 +1,7 @@
 # This file is part of the Warped Pinball SYS11Wifi Project.
 import network as networkSc
 
+
 def scan_wifi2():
     wlan = networkSc.WLAN(networkSc.STA_IF)
     wlan.active(True)
@@ -19,4 +20,3 @@ def scan_wifi2():
     wlan.active(False)  # Deactivate the interface
 
     return sorted(list(output.values()), key=lambda x: x["rssi"], reverse=True)
-

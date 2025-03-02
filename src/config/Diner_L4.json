@@ -1,7 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Diner",
-        "System": "11c"        
+        "System": "11c"
     },
 
     "Memory" : {
@@ -42,12 +42,12 @@
         "InitialAdr": "0x71E",
         "BytesInScore": 4
     },
-    
+
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
         "PlayersInGame": "0xA9",
-        "PlayerUP": "0xAA",        
+        "PlayerUP": "0xAA",
         "Warnings": "0xB0"
     },
 
@@ -70,5 +70,5 @@
         "Type": 0
     }
 
-    
+
 }

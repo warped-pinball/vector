@@ -349,7 +349,6 @@ def apply_update(url):
     }
 
     from machine import reset as machine_reset
-
     from reset_control import reset as reset_control
 
     reset_control()
