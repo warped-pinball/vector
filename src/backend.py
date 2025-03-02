@@ -645,7 +645,7 @@ def app_getShowIP(request):
     return {"show_ip": ds_read_record("extras", 0)["show_ip_address"]}
 
 
-@add_route("/api/settings/set_show_ip", method="POST", auth=True)
+@add_route("/api/settings/set_show_ip", auth=True)
 def app_setShowIP(request):
     data = request.data
     info = ds_read_record("extras", 0)
