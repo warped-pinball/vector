@@ -2,7 +2,7 @@
     "GameInfo": {
         "GameName": "Space Shuttle",
         "System": "9",
-        "FileVer": 1      
+        "FileVer": 1
     },
 
     "Definition": {
@@ -60,9 +60,8 @@
         "Address": 56,
         "Length": 23
     },
-    
+
     "CoinDrop": {
         "Type": 0
     }
 }
-

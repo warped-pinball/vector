@@ -48,7 +48,7 @@
         "Type": 1,
         "ScoreAdr": "0x200",
         "PlayersInGame": "0xB2",
-        "PlayerUP": "0xB3",        
+        "PlayerUP": "0xB3",
         "Warnings": "0xB9"
     },
 

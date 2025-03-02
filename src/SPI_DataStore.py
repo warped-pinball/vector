@@ -102,9 +102,9 @@ def serialize(record, structure_name):
             record["password"].encode(),
             record["gamename"].encode(),
             record["Gpassword"].encode(),
-        )        
+        )
     elif structure_name == "extras":
-        if record.get("enable") is None:           
+        if record.get("enable") is None:
             enable = 0
             if record.get("enter_initials_on_game", True):
                 enable |= 0x01
@@ -117,9 +117,9 @@ def serialize(record, structure_name):
             if record.get("flag5", True):
                 enable |= 0x10
             if record.get("flag6", True):
-                enable |= 0x20                
+                enable |= 0x20
         else:
-            enable = record["enable"]           
+            enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
     else:
         raise ValueError("Unknown structure name")
@@ -190,20 +190,31 @@ def deserialize(data, structure_name):
         # print (data,"length= ",len(data))  #,"s-> ",data.strip('\00'))
         try:
             enable, other, lastIP, message = struct.unpack("<II20s20s", data)
-            return {                
+            return {
                 "other": other,
                 "lastIP": lastIP.decode().strip("\0"),
                 "message": message.decode().strip("\0"),
                 "enter_initials_on_game": bool(enable & 0x01),
                 "claim_scores": bool(enable & 0x02),
                 "show_ip_address": bool(enable & 0x04),
-                "tournament_mode": bool(enable & 0x08),  
+                "tournament_mode": bool(enable & 0x08),
                 "flag5": bool(enable & 0x10),
-                "flag6": bool(enable & 0x20)
+                "flag6": bool(enable & 0x20),
             }
         except Exception:
             Log.log("DATSTORE: fault extras")
-            return {"enable": 5, "other": 1, "lastIP": "none", "message": "none", "enter_initials_on_game": True, "claim_scores": False, "show_ip_address": True, "tournament_mode": False, "flag5": False, "flag6": False}
+            return {
+                "enable": 5,
+                "other": 1,
+                "lastIP": "none",
+                "message": "none",
+                "enter_initials_on_game": True,
+                "claim_scores": False,
+                "show_ip_address": True,
+                "tournament_mode": False,
+                "flag5": False,
+                "flag6": False,
+            }
     else:
         raise ValueError("Unknown structure name")
 
@@ -223,7 +234,7 @@ def blankStruct(structure_name):
         "password": "",
         "Gpassword": "",
         "gamename": "GenericSystem11_",
-        "other": 1
+        "other": 1,
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
