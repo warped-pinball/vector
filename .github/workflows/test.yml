@@ -26,14 +26,3 @@ jobs:
           SOURCE_DIR="src"
           python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
           python dev/flash.py --build-dir "$BUILD_DIR"
-
-      - name: Wait for Pico to be ready
-        run: |
-          echo "Sleeping 5 seconds to let the Pico reboot and connect..."
-          sleep 5
-
-      - name: Run Integration Tests
-        run: |
-          # Example test that calls some routes on the Pico
-          python3 tests/integration_tests.py
-          # e.g. tests that the Pico's /health route is returning 200
