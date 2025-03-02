@@ -18,7 +18,7 @@ SOURCE_DIR="src"            # adjust as necessary
 
 # --- 1. Build the project ---
 echo "Building project with environment=${ENVIRONMENT} ..."
-python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR" --env "$ENVIRONMENT"
+python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
 if [ $? -ne 0 ]; then
   echo "Build failed. Aborting."
   exit 1

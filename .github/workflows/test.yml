@@ -1,0 +1,39 @@
+name: Hardware Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  test-on-real-hardware:
+    runs-on: [self-hosted, pizero, hardware]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install -r ./dev/requirements.txt
+
+      - name: Flash Pico
+        run: |
+          BUILD_DIR="build"
+          SOURCE_DIR="src"
+          python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
+          python dev/flash.py --build-dir "$BUILD_DIR"
+
+      - name: Wait for Pico to be ready
+        run: |
+          echo "Sleeping 5 seconds to let the Pico reboot and connect..."
+          sleep 5
+
+      - name: Run Integration Tests
+        run: |
+          # Example test that calls some routes on the Pico
+          python3 tests/integration_tests.py
+          # e.g. tests that the Pico's /health route is returning 200
