@@ -170,6 +170,8 @@ async def _handle_request(reader, writer):
 # adds a new route to the routing table
 def add_route(path, handler):
     global _routes
+    if path in _routes:
+        raise ValueError(f"Route already exists: {path}")
     _routes[path] = handler
 
 
