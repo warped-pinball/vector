@@ -41,7 +41,7 @@ function confirmAction(message, callback, cancelCallback=null) {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-	const response = await window.smartFetch('/api/settings/tournament_mode', null, false);
+	const response = await window.smartFetch('/api/settings/get_tournament_mode', null, false);
 	const data = await response.json();
 
 	const tournamentModeToggle = document.getElementById('tournament-mode-toggle');
@@ -52,13 +52,13 @@ async function tournamentModeToggle() {
 	// add event listener to update the setting when the checkbox is changed
 	tournamentModeToggle.addEventListener('change', async () => {
 		const data = { 'tournament_mode': tournamentModeToggle.checked ? 1 : 0 };
-		await window.smartFetch('/api/settings/tournament_mode', data, true);
+		await window.smartFetch('/api/settings/set_tournament_mode', data, true);
 	});
 }
 
 // score Claim methods
 async function getScoreClaimMethods() {
-	const response = await window.smartFetch('/api/settings/score_claim_methods', null, false);
+	const response = await window.smartFetch('/api/settings/get_claim_methods', null, false);
 	const data = await response.json();
 
 	const onMachineToggle = document.getElementById('on-machine-toggle');
@@ -69,7 +69,7 @@ async function getScoreClaimMethods() {
 	// add event listener to update the setting when the checkbox is changed
 	onMachineToggle.addEventListener('change', async () => {
 		const data = { 'on-machine': onMachineToggle.checked ? 1 : 0 };
-		await window.smartFetch('/api/settings/score_claim_methods', data, true);
+		await window.smartFetch('/api/settings/set_claim_methods', data, true);
 	});
 }
 
