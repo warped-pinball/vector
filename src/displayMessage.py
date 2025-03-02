@@ -21,7 +21,7 @@ def fixAdjustmentChecksum():
         system 11 with type 0 will only report check sum, not fix it
     """
     if "11" in S.gdata["GameInfo"]["System"]:
-        if S.gdata["Adjustments"]["Type"]==0  or  S.gdata["Adjustments"]["Type"]==1:  
+        if S.gdata["Adjustments"]["Type"] is 1:  
             start = S.gdata["Adjustments"]["ChecksumStartAdr"]
             end = S.gdata["Adjustments"]["ChecksumEndAdr"]
             resultLoc = S.gdata["Adjustments"]["ChecksumResultAdr"]
@@ -30,13 +30,10 @@ def fixAdjustmentChecksum():
             for i in range(start, end + 1):
                 cs = (cs + shadowRam[i]) % 256 
             cs = 255 - cs        
+         
+            print("DISP: adjustments checksum: ",cs)
+            shadowRam[resultLoc]=cs
 
-            if S.gdata["Adjustments"]["Type"] == 0:
-                print("DISP: checksum TEST: ",cs)
-                print("DISP: checksum value in memory: ",shadowRam[resultLoc])
-            else:
-                print("DISP: adjustments checksum: ",cs)
-                shadowRam[resultLoc]=cs
             if cs == origCS: return True  #checksum was a match
             else: return False  #was not a match, corrected
 
