@@ -384,21 +384,15 @@ def app_game_configs_list(request):
     return list_game_configs()
 
 
+game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "GameTime": 213}
+
+
 @add_route("/api/game/status")
 def app_game_status(request):
-    from Shadow_Ram_Definitions import shadowRam
+    # TODO cache me
+    from GameStatus import game_report
 
-    from SharedState import gdata
-
-    game_in_progress = shadowRam[gdata["BallInPlay"]["Address"]] in [
-        gdata["BallInPlay"]["Ball1"],
-        gdata["BallInPlay"]["Ball2"],
-        gdata["BallInPlay"]["Ball3"],
-        gdata["BallInPlay"]["Ball4"],
-        gdata["BallInPlay"]["Ball5"],
-    ]
-
-    return {"game_in_progress": game_in_progress}
+    return game_report()
 
 
 #

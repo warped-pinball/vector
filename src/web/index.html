@@ -332,7 +332,7 @@
         }
 
         // === Main Orchestration: Fetch, Decompress, and Apply ===
-        async function fetchDecompressAndApply(url, targetId, useCache=true, timeout=5000, auth=false) {
+        async function fetchDecompressAndApply(url, targetId, useCache=true, timeout=30000, auth=false) {
             try {
                 const data = await fetchDecompress(url, useCache, timeout, auth);
                 applyResourceToDOM(data, url, targetId);
