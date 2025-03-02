@@ -73,8 +73,26 @@ async function getScoreClaimMethods() {
 	});
 }
 
+
+async function getShowIP() {
+	const response = await window.smartFetch('/api/settings/get_show_ip', null, false);
+	const data = await response.json();
+
+	const showIPToggle = document.getElementById('show-ip-toggle');
+
+	showIPToggle.checked = data['show_ip'];
+	showIPToggle.disabled = false;
+
+	// add event listener to update the setting when the checkbox is changed
+	showIPToggle.addEventListener('change', async () => {
+		const data = { 'show_ip': showIPToggle.checked ? 1 : 0 };
+		await window.smartFetch('/api/settings/set_show_ip', data, true);
+	});
+}
+
 tournamentModeToggle();
 getScoreClaimMethods();
+getShowIP();
 
 //
 // Adjustment Profiles
