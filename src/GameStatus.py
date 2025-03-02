@@ -1,5 +1,5 @@
-import json
 import time
+
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
@@ -49,14 +49,21 @@ def _get_ball_in_play():
 
 
 def game_report():
-    """Generate a report of the current game status, return JSON."""
+    """Generate a report of the current game status, return dict"""
     data = {}
     try:
+        data["GameActive"] = S.game_status["game_active"]
+        if not data["GameActive"]:
+            return data
+
         data["BallInPlay"] = _get_ball_in_play()
-        data["Player1Score"] = _get_machine_score(0)
-        data["Player2Score"] = _get_machine_score(1)
-        data["Player3Score"] = _get_machine_score(2)
-        data["Player4Score"] = _get_machine_score(3)
+
+        data["Scores"] = [
+            _get_machine_score(0),
+            _get_machine_score(1),
+            _get_machine_score(2),
+            _get_machine_score(3),
+        ]
 
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
@@ -67,11 +74,9 @@ def game_report():
                 data["GameTime"] = 0
         else:
             data["GameTime"] = 0
-
-        data["GameActive"] = S.game_status["game_active"]
     except Exception as e:
-        print(f"GSTAT: Error in report generation: {e}")   
-    return json.dumps(data)
+        print(f"GSTAT: Error in report generation: {e}")
+    return data
 
 
 def poll_fast():
@@ -95,7 +100,10 @@ def poll_fast():
 
 
 if __name__ == "__main__":
+    import json
+
     import GameDefsLoad
+
     GameDefsLoad.go()
-    print(game_report())
+    print(json.dumps(game_report()))
     poll_fast()

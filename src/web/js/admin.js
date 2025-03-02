@@ -191,7 +191,7 @@ async function restoreProfile(index) {
 		const gameStatus = await gameStatusResponse.json();
 
 		// if the game is active we can't restore the profile
-		if (gameStatus['game_in_progress']) {
+		if (gameStatus['GameActive']) {
 			alert('Cannot restore adjustments while a game is in progress, please try again after the game has ended.');
 			populateAdjustmentProfiles();
 			return;
