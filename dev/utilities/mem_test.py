@@ -1,12 +1,9 @@
 import uctypes
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, shadowRam
 
-import SPI_Store as fram
-from displayMessage import fixAdjustmentChecksum
 from logger import logger_instance
 
 Log = logger_instance
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
-
 # high_ram = uctypes.bytearray_at(SRAM_DATA_BASE+2048, 1500)
 
 high_ram = uctypes.bytearray_at(SRAM_DATA_BASE + 2048, 1024 * 4)

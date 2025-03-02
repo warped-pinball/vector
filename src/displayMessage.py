@@ -161,7 +161,7 @@ def _set(ipAddress):
             msg[5] = msg[3]
             _set_mem(msg)
             fixAdjustmentChecksum()
-        except:
+        except Exception:
             print("MSG: Failure in set ip")
 
     elif S.gdata["DisplayMessage"]["Type"] == 2:  # 2 display modules
@@ -205,7 +205,7 @@ def _set(ipAddress):
             msg_nums[2] = int(ipAddress[second_dot + 1 : third_dot])
             msg_nums[3] = int(ipAddress[third_dot + 1 :])
             _set_mem(msg_nums)
-        except:
+        except Exception:
             print("MSG: Failure in set ip")
 
 
@@ -225,7 +225,7 @@ def refresh():
     """
     global localCopyIp, show_ip_last_state
 
-    if show_ip_last_state is True and DataStore.read_record("extras", 0)["show_ip_address"] is False:
+    if show_ip_last_state and DataStore.read_record("extras", 0)["show_ip_address"]:
         if S.gdata["HighScores"]["Type"] in [1, 2, 3]:
             # turn off custom message
             shadowRam[S.gdata["DisplayMessage"]["EnableByteAddress"]] = 1
@@ -233,7 +233,7 @@ def refresh():
 
     show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]
 
-    if S.gdata["HighScores"]["Type"] in [1, 2, 3] and DataStore.read_record("extras", 0)["show_ip_address"] is True:
+    if S.gdata["HighScores"]["Type"] in [1, 2, 3] and DataStore.read_record("extras", 0)["show_ip_address"]:
         _set(localCopyIp)
         print("MSG: refreshed ", localCopyIp)
         return
@@ -246,7 +246,7 @@ def refresh_9():
     """called from score track
     refresh ip address in highscore display for system 9
     """
-    if (S.gdata["DisplayMessage"]["Type"] is 9) and (DataStore.read_record("extras", 0)["show_ip_address"] is True):
+    if (S.gdata["DisplayMessage"]["Type"] == 9) and (DataStore.read_record("extras", 0)["show_ip_address"]):
         global localCopyIp
         _set(localCopyIp)
         print("MSG: 9 refreshed ", localCopyIp)

@@ -225,7 +225,7 @@ def tick():
     """
     global start_erase_count
 
-    if False == SPI_Store.sflash_is_installed():
+    if not SPI_Store.sflash_is_installed():
         return
 
     # loop through blocks, find the first one in erase state

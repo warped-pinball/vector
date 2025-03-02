@@ -190,7 +190,7 @@ def place_machine_scores():
                 shadowRam[initial_start + 1] = 64
                 shadowRam[initial_start + 2] = 64
 
-    elif S.gdata["HighScores"]["Type"] is 9:
+    elif S.gdata["HighScores"]["Type"] == 9:
         # system 9, copy in scores, no intiials
         print("SCORE: Place system 9 machine high scores")
         for index in range(4):
@@ -231,7 +231,7 @@ def _remove_machine_scores():
 def find_player_by_initials(new_entry):
     """find players name from list of intials with names from storage"""
     findInitials = new_entry["initials"]
-    if findInitials == "" or findInitials == None:
+    if findInitials == "" or findInitials is None:
         return ("", -1)
     count = DataStore.memory_map["names"]["count"]
     for index in range(count):

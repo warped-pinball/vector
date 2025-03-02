@@ -11,14 +11,13 @@ import json
 import machine
 import Ram_Intercept as RamInt
 import uctypes
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
 
 import SPI_Store as fram
 from displayMessage import fixAdjustmentChecksum
 from logger import logger_instance
 
 Log = logger_instance
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
-
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 
 
@@ -40,7 +39,7 @@ def go():
 
     # Boot up PIO/DMA Ram Intercept system
     r = RamInt.configure()
-    if r is "fault":
+    if r == "fault":
         Log.log("MEM: Ram Intercept Fault - cycle power")
         while True:
             pass
