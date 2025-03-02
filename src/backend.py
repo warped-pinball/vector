@@ -862,9 +862,10 @@ def connect_to_wifi():
     for i in range(WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
         if phew_is_connected():
+            # TODO remove ip address args and move to scheduler
             writeIP(ip_address)
             init_display(ip_address)
-            discovery_setup(ip_address)
+            discovery_setup()
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults
