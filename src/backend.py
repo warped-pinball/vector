@@ -4,16 +4,16 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
+import Pico_Led
+from ls import ls
 from machine import RTC
+from Memory_Main import blank_ram, save_ram
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
 
 import faults
-import Pico_Led
-from ls import ls
-from Memory_Main import blank_ram, save_ram
 from phew.server import add_route as phew_add_route
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
@@ -356,6 +356,7 @@ for file_path in ls("web"):
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -383,20 +384,15 @@ def app_game_configs_list(request):
     return list_game_configs()
 
 
+game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "GameTime": 213}
+
+
 @add_route("/api/game/status")
 def app_game_status(request):
-    from Shadow_Ram_Definitions import shadowRam
-    from SharedState import gdata
+    # TODO cache me
+    from GameStatus import game_report
 
-    game_in_progress = shadowRam[gdata["BallInPlay"]["Address"]] in [
-        gdata["BallInPlay"]["Ball1"],
-        gdata["BallInPlay"]["Ball2"],
-        gdata["BallInPlay"]["Ball3"],
-        gdata["BallInPlay"]["Ball4"],
-        gdata["BallInPlay"]["Ball5"],
-    ]
-
-    return {"game_in_progress": game_in_progress}
+    return game_report()
 
 
 #
@@ -405,6 +401,7 @@ def app_game_status(request):
 @add_route("/api/memory/reset", auth=True)
 def app_reset_memory(request):
     import reset_control
+
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -656,9 +653,9 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
+    import reset_control
     from machine import reset
 
-    import reset_control
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
     from SPI_DataStore import blankAll as D_blank
@@ -675,9 +672,8 @@ def app_factoryReset(request):
 
 @add_route("/api/settings/reboot", auth=True)
 def app_reboot(request):
-    from machine import reset
-
     import reset_control
+    from machine import reset
 
     reset_control.reset()
     sleep(2)
