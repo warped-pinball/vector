@@ -640,6 +640,19 @@ def app_setTournamentMode(request):
         ds_write_record("extras", info, 0)
 
 
+@add_route("/api/settings/get_show_ip")
+def app_getShowIP(request):
+    return {"show_ip": ds_read_record("extras", 0)["show_ip_address"]}
+
+
+@add_route("/api/settings/set_show_ip", method="POST", auth=True)
+def app_setShowIP(request):
+    data = request.data
+    info = ds_read_record("extras", 0)
+    info["show_ip_address"] = bool(data["show_ip"])
+    ds_write_record("extras", info, 0)
+
+
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     import reset_control

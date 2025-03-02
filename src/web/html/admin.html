@@ -19,25 +19,32 @@
     .profile-row {
         display: flex;
         align-items: center;
-        gap: 0.5rem; /* Space between elements */
-        margin-bottom: 0.5rem; /* Space between rows */
+        gap: 0.5rem;
+        /* Space between elements */
+        margin-bottom: 0.5rem;
+        /* Space between rows */
     }
 
     .profile-row input {
-        margin: 0; /* Remove any default margin */
+        margin: 0;
+        /* Remove any default margin */
     }
 
     .profile-row input[type="radio"] {
-        flex-shrink: 0; /* Prevents shrinking of the radio button */
+        flex-shrink: 0;
+        /* Prevents shrinking of the radio button */
     }
 
     .profile-row input[type="text"] {
-        flex-grow: 1; /* Allows the text field to expand and take available space */
-        max-width: 200px; /* Optional: Limit the width of the text field */
+        flex-grow: 1;
+        /* Allows the text field to expand and take available space */
+        max-width: 200px;
+        /* Optional: Limit the width of the text field */
     }
 
     .profile-row button {
-        flex-shrink: 0; /* Keeps the button size consistent */
+        flex-shrink: 0;
+        /* Keeps the button size consistent */
     }
 
     #update-progress-log::-webkit-scrollbar {
@@ -48,7 +55,6 @@
     input[type="radio"]:disabled {
         opacity: 0;
     }
-
 </style>
 
 <div style="text-align: left;">
@@ -58,7 +64,8 @@
         <h3>Tournament Mode</h3>
         <fieldset id="score-boards">
             <label>
-                <input id="tournament-mode-toggle" type="checkbox" role="switch" name="tournament-mode" checked disabled>
+                <input id="tournament-mode-toggle" type="checkbox" role="switch" name="tournament-mode" checked
+                    disabled>
                 <b>Tournament Mode:</b> save scores to tournament board instead of standard leaderboard
             </label>
         </fieldset>
@@ -67,17 +74,19 @@
         <h3>Score Claim Methods</h3>
         <fieldset id="score-claim-methods">
             <label>
-                <input id="on-machine-toggle" type="checkbox" role="switch" name="on-machine" disabled/>
-                <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where players can enter initials)
+                <input id="on-machine-toggle" type="checkbox" role="switch" name="on-machine" disabled />
+                <b>On-Machine:</b> triggers high score every game to collect players initials (Only for machines where
+                players can enter initials)
             </label>
             <label>
                 <input id="web-ui-toggle" type="checkbox" role="switch" name="web" disabled/>
                 <b>Web Interface:</b> for a short time after playing; players may claim scores via web interface
             </label>
             <label>
-                <input type="checkbox" role="switch" name="scanner" disabled/>
+                <input type="checkbox" role="switch" name="scanner" disabled />
                 <!-- TODO update this link to a product page or something similar -->
-                <b>Zoom QR Scanner Add-on:</b> games started by a QR code scan, automatically claim score <a href="https://www.warpedpinball.com">Learn More</a>
+                <b>Zoom QR Scanner Add-on:</b> games started by a QR code scan, automatically claim score <a
+                    href="https://www.warpedpinball.com">Learn More</a>
             </label>
         </fieldset>
     </section>
@@ -112,11 +121,26 @@
                 </div>
             </fieldset>
             <div>
-                <p>Save your games adjustments in a profile to easilly switch between setups. For example "Free to play" and "Tournament"</p>
-                <p>Configure profiles by setting adjustments on the machine normally. Then click the "Capture Profile" button.</p>
-                <p>To restore your game to the adjustments saved in a profile; select the corresponding radio button and confirm your selection. Your game will reboot with the adjustments applied</p>
+                <p>Save your games adjustments in a profile to easilly switch between setups. For example "Free to play"
+                    and "Tournament"</p>
+                <p>Configure profiles by setting adjustments on the machine normally. Then click the "Capture Profile"
+                    button.</p>
+                <p>To restore your game to the adjustments saved in a profile; select the corresponding radio button and
+                    confirm your selection. Your game will reboot with the adjustments applied</p>
             </div>
         </div>
+    </section>
+    <section>
+        <h3>Miscellaneous</h3>
+        <fieldset>
+            <label>
+                <input id="show-ip-toggle" type="checkbox" role="switch" name="show-ip" disabled />
+                <b>Show IP on machine</b> When enabled, vector will display its IP address on the game display
+                occasionally.
+                <i>If your IP address changes, you can view it in AP mode by rebooting while holding the small button
+                    <u>not</u> labeled BOOTSEL</i>
+            </label>
+        </fieldset>
     </section>
 
     <h2>Actions</h2>
@@ -158,7 +182,8 @@
         <h3>Reset</h3>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')">Reset Leaderboard</button>
+                <button class="danger" onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')">Reset
+                    Leaderboard</button>
             </div>
             <div>
                 <p>Reset all scores on the Leaderboard, Tournament scores will not be effected</p>
@@ -166,7 +191,9 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')">Reset Tournament Board</button>
+                <button class="danger"
+                    onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')">Reset Tournament
+                    Board</button>
             </div>
             <div>
                 <p>Reset all scores on the Tournament Board, Leaderboard scores will not be effected</p>
@@ -174,7 +201,9 @@
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball Machine</button>
+                <button class="danger"
+                    onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')">Reboot Pinball
+                    Machine</button>
             </div>
             <div>
                 <p>Power Cycle the Pinball Machine. This does not check for and will erase currently running games</p>
@@ -185,15 +214,19 @@
                 <button onclick="localStorage.clear(); window.location.reload();">Clear Browser Storage</button>
             </div>
             <div>
-                <p>Clears stored data from browser, use this if you are getting weird behaviour that refreshing does not clear. This will log you out.</p>
+                <p>Clears stored data from browser, use this if you are getting weird behaviour that refreshing does not
+                    clear. This will log you out.</p>
             </div>
         </div>
         <div class="grid">
             <div>
-                <button class="danger" onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset Vector</button>
+                <button class="danger"
+                    onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')">Factory Reset
+                    Vector</button>
             </div>
             <div>
-                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
+                <p>Resets all settings and scores to factory defaults. Machine will reboot immedaitely and Vector will
+                    return to setup. <b>Required before installing vector in a new Pinball Machine</b></p>
             </div>
         </div>
     </section>
@@ -205,8 +238,59 @@
     <section>
         <h2>Help</h2>
         <hr>
-        <h5>How to reset the admin password</h5>
-        <p>Turn your pinball machine off and wait for the LEDs on your vector baord to turn off. Then while holding the AP mode button (not the white "BOOTSEL" button) restore power. The board will start a WiFi access point where you can set a new admin password.</p>
+        <h5>Accessing AP / Configure Mode</h5>
+        <ul>
+            <li>Power off your pinball machine</li>
+            <li>Wait until the LEDs on your Vector board completely turn off</li>
+            <li>Locate and hold the small button that is <u>not</u> labeled "BOOTSEL"</li>
+            <li>While continuing to hold the button, power on your pinball machine</li>
+            <li>Release the button once the LED next to it begins flashing</li>
+            <li>On your device, look for and connect to the WiFi network named "Warped Pinball" (it may take a moment to
+                appear)</li>
+            <li>Your browser should automatically open the configuration page</li>
+        </ul>
+
+        <h5>Connecting to Your Vector</h5>
+        Use the following methods to connect to your Vector (They are listed roughly in order of convenience):
+        <ol>
+            <li>
+                <b>Network Discovery</b> If you're currently viewing a Vector interface, you can easily connect
+                to other units on the same network. Click the game name at the top of the page to view all available
+                Vector
+                devices. The current Vector's IP address is visible in your browser's URL bar. If the game is not
+                visible, try refreshing the page after ~30 seconds.
+            </li>
+            <li>
+                <b>Display Identification</b> With "Show IP on machine" enabled, your Vector displays its IP
+                address on the game screen approximately every 30 seconds during idle time. On System 9 machines, watch
+                for
+                the player scores to temporarily display the IP address. Simply enter this IP in your browser to
+                connect.
+            </li>
+            <li>
+                <b>AP Mode Reference</b> You can boot into AP mode (using the instructions above) to view the
+                last known IP address of your Vector. This address typically remains valid when you restart in normal
+                mode.
+            </li>
+            <li>
+                <b>Router Management</b> For the most consistent connection, check your WiFi router's connected
+                devices list to identify your Vector's IP address. Consider assigning a static IP address in your router
+                settings to maintain the same address between restarts.
+            </li>
+        </ol>
+
+        <h5>Resetting Your Admin Password</h5>
+        <p>
+            To reset your admin password, boot into AP mode using the instructions above and enter your new password in
+            the configuration page.
+        </p>
+
+        <h5>Report a bug or request a feature</h5>
+        <p>
+            <a href="https://github.com/warped-pinball/vector/issues/new/choose">
+                github.com/warped-pinball/vector/issues/new/choose
+            </a>
+        </p>
     </section>
 </div>
 <dialog id="update-progress-modal">
@@ -219,7 +303,8 @@
             <b>Do not close this window or disconnect from network while update is in progress.</b>
             Updates typically take less than 2 minutes to complete.
         </p>
-        <code id="update-progress-log" style="width:100%; height: 250px; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; text-align: left; padding-bottom: 1em; white-space: pre-wrap;"></code>
-        <progress id="update-progress-bar" value="0" max="100"/>
+        <code id="update-progress-log"
+            style="width:100%; height: 250px; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; text-align: left; padding-bottom: 1em; white-space: pre-wrap;"></code>
+        <progress id="update-progress-bar" value="0" max="100" />
     </article>
 </dialog>
