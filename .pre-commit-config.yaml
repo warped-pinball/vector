@@ -30,3 +30,13 @@ repos:
         args:
           - --max-line-length=200
           - --ignore=E203,W503,E242,E231,E241
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.48.0  # Use the latest stable version
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.48.0
+          - eslint-config-standard@17.1.0

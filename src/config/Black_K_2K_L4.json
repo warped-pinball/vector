@@ -47,7 +47,7 @@
         "InitialAdr": "0x70B",
         "BytesInScore": 4
     },
-	
+
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",

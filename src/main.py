@@ -6,16 +6,18 @@
     fault check updated for early sys11 game compatability
 """
 
+import resource
 import time
+
 import machine
-import faults
-import GameDefsLoad
 import Memory_Main as MemoryMain
 import reset_control
-import SharedState as S
-import resource
-from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
+
+import faults
+import GameDefsLoad
+import SharedState as S
+from logger import logger_instance
 
 Log = logger_instance
 
