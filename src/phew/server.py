@@ -304,7 +304,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     # update the game status every 0.25 second
-    schedule(poll_fast, 0, 250)
+    schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
