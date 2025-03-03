@@ -32,6 +32,4 @@ jobs:
           BUILD_DIR="build"
           SOURCE_DIR="src"
           python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
-          python dev/flash.py --build-dir "$BUILD_DIR"
-          python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
-          python dev/flash.py --build-dir "$BUILD_DIR"
+          python dev/flash.py "$BUILD_DIR"
