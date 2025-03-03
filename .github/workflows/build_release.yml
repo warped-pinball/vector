@@ -43,15 +43,12 @@ jobs:
             SUFFIX="-beta${{ github.run_number }}"
             VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "release" ]; then
-            ENV="prod"
             VERSION="$BASE_VERSION"
           else
-            ENV="dev"
             SUFFIX="-dev"
             VERSION="$BASE_VERSION$SUFFIX"
           fi
 
-          echo "ENV=$ENV" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Update SharedState.py Version
@@ -61,7 +58,7 @@ jobs:
 
       - name: Build project
         run: |
-          python dev/build.py --build-dir build --env ${{ env.ENV }}
+          python dev/build.py --build-dir build
 
       - name: Create key files (if provided)
         run: |
