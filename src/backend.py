@@ -861,10 +861,6 @@ def add_ap_mode_routes():
 def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
 
-    #if phew_is_connected():
-    #    print("Already connected to wifi")
-    #    return True
-
     from discovery import setup as discovery_setup
     from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
