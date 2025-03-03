@@ -17,12 +17,15 @@ jobs:
       - name: Set up environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install -r ./dev/requirements.txt
-
+          sudo apt-get install -y python3-pip python3-full python3-venv
+          python3 -m venv .venv
+          source .venv/bin/activate
       - name: Flash Pico
         run: |
+          source .venv/bin/activate
           BUILD_DIR="build"
           SOURCE_DIR="src"
+          python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
+          python dev/flash.py --build-dir "$BUILD_DIR"
           python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR"
           python dev/flash.py --build-dir "$BUILD_DIR"
