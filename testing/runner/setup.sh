@@ -119,6 +119,21 @@ install_runner() {
         RUNNER_USER="pi"  # Default to pi if no suitable user found
     fi
 
+    # Set appropriate ownership
+    chown -R "$RUNNER_USER:$RUNNER_USER" "$RUNNER_DIR"
+
+    # Configure the runner
+    echo "Registering runner with GitHub..."
+    cd "$RUNNER_DIR"
+    sudo -u "$RUNNER_USER" ./config.sh --unattended \
+        --url "$URL" \
+        --token "$TOKEN" \
+        --labels "$LABELS" \
+        --name "$(hostname)" \
+        --work "_work"
+
+    echo "Runner configured successfully!"
+
     # Create systemd service
     cat > /etc/systemd/system/actions-runner.service << EOF
 [Unit]
