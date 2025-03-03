@@ -10,6 +10,32 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Function to check for existing config
+check_existing_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "Existing configuration found:"
+
+        # Display existing config (masking sensitive data)
+        GITHUB_URL=$(jq -r '.github.url // "Not set"' "$CONFIG_FILE")
+        GITHUB_LABELS=$(jq -r '.github.labels // "Not set"' "$CONFIG_FILE")
+        WIFI_SSID=$(jq -r '.wifi.ssid // "Not set"' "$CONFIG_FILE")
+
+        echo "GitHub URL: $GITHUB_URL"
+        echo "GitHub Labels: $GITHUB_LABELS"
+        echo "WiFi SSID: $WIFI_SSID"
+        echo "Token and passwords are stored but not displayed"
+
+        echo
+        read -p "Do you want to use this existing configuration? (y/n): " use_existing
+
+        if [[ "$use_existing" =~ ^[Yy] ]]; then
+            return 0  # Use existing config
+        fi
+    fi
+
+    return 1  # Need to collect new config
+}
+
 # Function to collect configuration
 collect_config() {
     echo "GitHub Actions Runner Setup"
@@ -50,6 +76,18 @@ EOF
     echo "Configuration saved to $CONFIG_FILE"
 }
 
+# Function to verify WiFi config is saved (but not apply it)
+verify_wifi_config() {
+    echo "Verifying WiFi configuration..."
+
+    # Get WiFi details from config
+    WIFI_SSID=$(jq -r '.wifi.ssid' "$CONFIG_FILE")
+    WIFI_PASS=$(jq -r '.wifi.password' "$CONFIG_FILE")
+
+    echo "WiFi SSID '$WIFI_SSID' saved in config (not applied to system)"
+    echo "WiFi password saved in config (not applied to system)"
+}
+
 # Function to install the GitHub runner
 install_runner() {
     echo "Installing GitHub Actions runner..."
@@ -72,8 +110,14 @@ install_runner() {
     URL=$(jq -r '.github.url' "$CONFIG_FILE")
     LABELS=$(jq -r '.github.labels' "$CONFIG_FILE")
 
-    # Configure the runner
-    ./config.sh --unattended --url "$URL" --token "$TOKEN" --labels "$LABELS"
+    # Determine which user to use
+    if id -u pi &>/dev/null; then
+        RUNNER_USER="pi"
+    elif [ -n "$SUDO_USER" ]; then
+        RUNNER_USER="$SUDO_USER"
+    else
+        RUNNER_USER="pi"  # Default to pi if no suitable user found
+    fi
 
     # Create systemd service
     cat > /etc/systemd/system/actions-runner.service << EOF
@@ -83,7 +127,7 @@ After=network.target
 
 [Service]
 ExecStart=$RUNNER_DIR/run.sh
-User=pi
+User=$RUNNER_USER
 WorkingDirectory=$RUNNER_DIR
 KillMode=process
 KillSignal=SIGTERM
@@ -104,8 +148,11 @@ EOF
 }
 
 # Main execution
-collect_config
-setup_wifi
+if ! check_existing_config; then
+    collect_config
+fi
+
+verify_wifi_config
 install_runner
 
 echo "Setup complete! The GitHub Actions runner will start automatically on boot."
