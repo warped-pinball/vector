@@ -858,8 +858,11 @@ def add_ap_mode_routes():
         Pico_Led.off()
 
 
-def connect_to_wifi():
+def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
+
+    if phew_is_connected() and initialize==False:
+        return True
 
     from discovery import setup as discovery_setup
     from displayMessage import init as init_display
@@ -931,6 +934,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        connect_to_wifi(True)
         while not connect_to_wifi():
             print("retrying wifi")
             sleep(1)
