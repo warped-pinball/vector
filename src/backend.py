@@ -441,14 +441,17 @@ def get_scoreboard(key):
     return rows
 
 
-@add_route("/api/leaders")
-def app_leaderBoardRead(request):
-    return get_scoreboard("leaders")
+@add_route("/api/scores_page_data")
+def app_getScoresPageData(request):
+    from ScoreTrack import get_claim_score_list, top_scores
 
+    data = {
+        "leaders": top_scores(),
+        "tournament": get_scoreboard("tournament"),
+        "claimable": get_claim_score_list(),
+    }
 
-@add_route("/api/tournament")
-def app_tournamentRead(request):
-    return get_scoreboard("tournament")
+    return data
 
 
 @add_route("/api/leaders/reset", auth=True)
@@ -465,15 +468,6 @@ def app_tournamentClear(request):
 
     blankStruct("tournament")
     SharedState.gameCounter = 0
-
-
-@add_route("/api/scores/claimable")
-def app_getClaimableScores(request):
-    # TODO only if web ui score claim is enabled
-
-    from ScoreTrack import get_claim_score_list
-
-    return get_claim_score_list()
 
 
 @add_route("/api/scores/claim")
