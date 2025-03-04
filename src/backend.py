@@ -28,6 +28,8 @@ AP_NAME = "Warped Pinball"
 # Authentication variables
 challenges = {}
 CHALLENGE_EXPIRATION_SECONDS = 60
+# route etag cache
+route_cache = {}
 
 
 #
@@ -39,17 +41,17 @@ def route_wrapper(func):
         try:
             response = func(request)
 
-            default_headers = {
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-                "Pragma": "no-cache",
-            }
-
             if response is None:
                 response = "ok", 200
 
             if type(response).__name__ == "generator":
                 return response
+
+            default_headers = {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+            }
 
             if isinstance(response, str):
                 response = response, 200
@@ -87,7 +89,48 @@ def route_wrapper(func):
     return wrapped_route
 
 
-def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
+def invalidate_cache(path):
+    # Aproximately a 1 in 4.2 billion chance of a collision
+    # Probably closer to 1 2^16 in practice because we don't have a good source of entropy
+    route_cache[path] = random_hex(4)
+
+
+def add_cache(path):
+    # we should only need to initialize the cache once
+    if path in route_cache:
+        raise ValueError(f"Route {path} already has a cache entry")
+
+    # "invalidating" is really just making a new random tag
+    invalidate_cache(path)
+
+    def decorator(func):
+        def cached_route(request):
+            # we trust that there is an entry since we initialized it at boot
+            etag = route_cache[path]
+
+            # Return 304 if client has current version
+            if request.headers.get("if-none-match") == etag:
+                print(f"Cache hit for {path}")
+                return "", 304, {"ETag": etag}
+
+            print(f"Cache miss for {path}")
+            print(request.headers)
+
+            # Add ETag to response headers
+            # This will fail for generators, but we want that since we can't cache them
+            body, status, headers = func(request)
+            headers["Cache-Control"] = "no-cache, must-revalidate"
+            headers["Pragma"] = "no-cache"
+            headers["ETag"] = etag
+            print(headers)
+            return body, status, headers
+
+        return cached_route
+
+    return decorator
+
+
+def add_route(path, auth=False, cool_down_seconds=0, single_instance=False, cache=False):
     """Decorator to add a route to the server with gc_collect() and error handling"""
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
@@ -97,16 +140,19 @@ def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
         if cool_down_seconds > 0 or single_instance:
             func = cool_down(cool_down_seconds, single_instance)(func)
 
+        func = route_wrapper(func)
+
+        # TODO maybe we could put the cache around the auth decorator
+        # But we would need to be careful about how the headers were handled
+        if cache:
+            func = add_cache(path)(func)
+
         if auth:
             func = require_auth(func)
 
-        wrapped = route_wrapper(func)
-
         from phew.server import add_route as phew_add_route
 
-        phew_add_route(path, wrapped)
-
-        # return route
+        phew_add_route(path, func)
 
     return decorator
 
@@ -441,15 +487,11 @@ def get_scoreboard(key):
     return rows
 
 
-@add_route("/api/scores_page_data")
+@add_route("/api/scores_page_data", cache=True)
 def app_getScoresPageData(request):
     from ScoreTrack import get_claim_score_list, top_scores
 
-    data = {
-        "leaders": top_scores(),
-        "tournament": get_scoreboard("tournament"),
-        "claimable": get_claim_score_list(),
-    }
+    data = {"leaders": top_scores, "tournament": get_scoreboard("tournament"), "claimable": get_claim_score_list()}
 
     return data
 
