@@ -10,6 +10,10 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Make sure jq is installed first since we use it throughout the script
+echo "Installing dependencies..."
+apt-get update && apt-get install -y jq curl tar
+
 # Function to check for existing config
 check_existing_config() {
     if [ -f "$CONFIG_FILE" ]; then
@@ -84,16 +88,12 @@ verify_wifi_config() {
     WIFI_SSID=$(jq -r '.wifi.ssid' "$CONFIG_FILE")
     WIFI_PASS=$(jq -r '.wifi.password' "$CONFIG_FILE")
 
-    echo "WiFi SSID '$WIFI_SSID' saved in config (not applied to system)"
-    echo "WiFi password saved in config (not applied to system)"
 }
 
 # Function to install the GitHub runner
 install_runner() {
     echo "Installing GitHub Actions runner..."
 
-    # Make sure jq is installed
-    apt-get update && apt-get install -y jq
 
     # Create runner directory
     mkdir -p "$RUNNER_DIR"
@@ -169,11 +169,11 @@ fi
 
 verify_wifi_config
 install_runner
-
 echo "Setup complete! The GitHub Actions runner will start automatically on boot."
 echo "You can check its status with: sudo systemctl status actions-runner"
 
-# Reboot to apply changes
-echo "Rebooting in 10 seconds..."
-sleep 10
+# Prompt before reboot
+read -p "Press Enter to reboot the system, or Ctrl+C to cancel..." confirm
+
+echo "Rebooting now..."
 reboot
