@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Run this script on a Raspberry Pi Zero W to set up a GitHub Actions runner
+# This seems to work on the seconrd try but not the first
+
+
 # Directory for the GitHub Actions runner
 RUNNER_DIR="/home/pi/actions-runner"
 CONFIG_FILE="/home/pi/runner-config.json"
