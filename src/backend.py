@@ -110,11 +110,7 @@ def add_cache(path):
 
             # Return 304 if client has current version
             if request.headers.get("if-none-match") == etag:
-                print(f"Cache hit for {path}")
                 return "", 304, {"ETag": etag}
-
-            print(f"Cache miss for {path}")
-            print(request.headers)
 
             # Add ETag to response headers
             # This will fail for generators, but we want that since we can't cache them
@@ -122,7 +118,6 @@ def add_cache(path):
             headers["Cache-Control"] = "no-cache, must-revalidate"
             headers["Pragma"] = "no-cache"
             headers["ETag"] = etag
-            print(headers)
             return body, status, headers
 
         return cached_route
@@ -489,11 +484,11 @@ def get_scoreboard(key):
 
 @add_route("/api/scores_page_data", cache=True)
 def app_getScoresPageData(request):
-    from ScoreTrack import get_claim_score_list, top_scores
+    from ScoreTrack import get_claim_score_list
 
-    data = {"leaders": top_scores, "tournament": get_scoreboard("tournament"), "claimable": get_claim_score_list()}
-
-    return data
+    # TODO ScoreTrack.top_scores is empty?
+    # TODO make sure to invalidate cache when any of these are updated
+    return {"leaders": get_scoreboard("tournament"), "tournament": get_scoreboard("tournament"), "claimable": get_claim_score_list()}
 
 
 @add_route("/api/leaders/reset", auth=True)
