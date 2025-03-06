@@ -1,37 +1,48 @@
 <header class="container">
-    <div class="grid">
-        <div style="align-self: center; justify-self: center">
-            <strong id="game_name"></strong>
-        </div>
-        <nav style="justify-self: end">
-            <ul>
-                <li><a href="#scores">Scores</a></li>
-                <li><a href="#players">Players</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#admin">Admin</a></li>
-                <li>
-                    <button id="dark-mode-button" onclick="window.toggleTheme()" data-tooltip="Dark Mode Toggle"
-                        data-placement="bottom">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <title>brightness-6</title>
-                            <path
-                                d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z" />
-                        </svg>
-                    </button>
-                </li>
-                <li>
-                    <button class="hide" id="logout-button" onclick="window.logout()" data-tooltip="Logout"
-                        data-placement="bottom">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <title>logout</title>
-                            <path
-                                d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" />
-                        </svg>
-                    </button>
-                </li>
-            </ul>
-        </nav>
+  <div class="grid">
+    <div style="align-self: center; justify-self: center">
+      <strong id="game_name"></strong>
     </div>
+    <nav style="justify-self: end">
+      <ul>
+        <li><a href="#scores">Scores</a></li>
+        <li><a href="#players">Players</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#admin">Admin</a></li>
+        <li>
+          <button
+            id="dark-mode-button"
+            onclick="window.toggleTheme()"
+            data-tooltip="Dark Mode Toggle"
+            data-placement="bottom"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <title>brightness-6</title>
+              <path
+                d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z"
+              />
+            </svg>
+          </button>
+        </li>
+        <li>
+          <button
+            class="hide"
+            id="logout-button"
+            onclick="window.logout()"
+            data-tooltip="Logout"
+            data-placement="bottom"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <title>logout</title>
+              <path
+                d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+              />
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
 </header>
 
 <!-- Elements where we'll place the content from the .gz files -->
@@ -40,98 +51,14 @@
 <div id="content-about" class="tab-content"></div>
 <div id="content-admin" class="tab-content"></div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 <footer class="container" style="text-align: center; text-wrap: auto">
-    <div class="grid">
-        <section>
-            <svg id="logo_svg" width="175px"></svg>
-            <div>
-                Powered by <a href="https://warpedpinball.com">Warped Pinball</a>
-            </div>
-            <p><code id="version">Vector 0.0.0</code></p>
-        </section>
-    </div>
+  <div class="grid">
+    <section>
+      <svg id="logo_svg" width="175px"></svg>
+      <div>
+        Powered by <a href="https://warpedpinball.com">Warped Pinball</a>
+      </div>
+      <p><code id="version">Vector 0.0.0</code></p>
+    </section>
+  </div>
 </footer>
-
-
-<script>
-     /**
-     * Loads the content for a given tab (e.g., 'tab1') by fetching the compressed HTML file.
-     */
-     async function loadTabContent(tabId) {
-        const element = document.getElementById('content-' + tabId);
-        
-        if (!element) {
-            console.error("Element not found: " + tabId);
-            return;
-        }
-
-        // If we've already loaded content before, we can skip
-        // reloading to save bandwidth (optional)
-        if (element.dataset.loaded === "true") {
-            return;
-        }
-        
-        // Otherwise, attempt to fetch the .gz content and inject into the DOM
-        const url = `./html/${tabId}.html.gz`;
-        console.log("Loading tab content: " + url, element);
-        await loadGzFileIntoElement(url, element);
-    }
-
-    /**
-     * Determines which tab is currently active based on the hash,
-     * then loads and displays the appropriate content.
-     * Also updates the page <title>.
-     */
-    async function updateTabContent() {
-        // Extract the fragment ID from the hash (e.g., '#tab1' -> 'tab1')
-        const hash = window.location.hash || "#scores";
-        const tabId = hash.replace('#', '');
-
-        // (Optional) A lookup for our custom tab titles
-        const tabTitles = {
-            scores: "Scores",
-            players: "List",
-            about: "About",
-            admin: "Admin"
-        };
-
-        // Set the document title based on the tab
-        // fallback to a default if the tab isn't recognized
-        document.title = tabTitles[tabId] || "Warped Pinball";
-
-        // Hide all tab content sections first
-        document.querySelectorAll('.tab-content').forEach(div => {
-            div.style.display = 'none';
-        });
-
-        // Ensure the tab content is loaded, then display it
-        await loadTabContent(tabId);
-        const activeTab = document.getElementById('content-' + tabId);
-        if (activeTab) {
-            activeTab.style.display = 'block';
-        }
-    }
-
-    // Listen for hash changes (including browser back/forward buttons)
-    window.addEventListener('hashchange', updateTabContent);
-
-    // load globally required elements
-    window.loadGzFileIntoElement = loadGzFileIntoElement;
-
-    // Load the default (or current) tab only after essential resources are loaded
-    updateTabContent();
-    console.log("Root HTML loaded");
-</script>

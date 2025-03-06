@@ -1,49 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <style id="pico_css"></style>
-</head>
+  </head>
 
-<body class="container-fluid">
+  <body class="container-fluid">
     <div id="root_html"></div>
 
+    <div id="root_js"></div>
     <script>
-        /*
-         * Loads a gzipped file from 'url' using DecompressionStream if available.
-         * Returns a Promise that resolves to the uncompressed text.
-         * 
-         */
-        async function loadGzFile(url) {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error("Network response was not OK: " + response.status);
-            }
-            // Decompress the gz stream
-            const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
-            // Convert the stream to text
-            const text = await new Response(decompressedStream).text();
-            return text;
+      /*
+       * Loads a gzipped file from 'url' using DecompressionStream if available.
+       * Returns a Promise that resolves to the uncompressed text.
+       *
+       */
+      async function loadGzFile(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Network response was not OK: " + response.status);
         }
+        // Decompress the gz stream
+        const decompressedStream = response.body.pipeThrough(
+          new DecompressionStream("gzip"),
+        );
+        // Convert the stream to text
+        const text = await new Response(decompressedStream).text();
+        return text;
+      }
 
-        /**
-         * Loads the content of a gzipped file and injects it into a specified element.
-         */
-        async function loadGzFileIntoElement(url, element_id) {
-            try {
-                const element = document.getElementById(element_id);
-                content = await loadGzFile(url);
-                element.innerHTML = content;
-                element.dataset.loaded = "true";
-            } catch (error) {
-                console.error("Failed to load content: " + error);
-            }
+      /**
+       * Loads the content of a gzipped file and injects it into a specified element.
+       */
+      async function loadGzFileIntoElement(url, element_id) {
+        try {
+          const element = document.getElementById(element_id);
+          if (!element) {
+            console.error("Element not found: " + element_id);
+            return;
+          }
+
+          content = await loadGzFile(url);
+          // if the url ends in .js or .js.gz
+          if (url.endsWith(".js.gz")) {
+            const newElement = document.createElement("script");
+            newElement.src = URL.createObjectURL(
+              new Blob([content], { type: "application/javascript" }),
+            );
+            newElement.async = false;
+            element.appendChild(newElement);
+          } else {
+            element.innerHTML = content;
+          }
+          element.dataset.loaded = "true";
+        } catch (error) {
+          console.error("Failed to load content: " + error);
         }
+      }
 
-        loadGzFileIntoElement('/css/pico.min.css.gz', 'pico_css');
-        loadGzFileIntoElement('/html/root.html.gz', 'root_html');
+      loadGzFileIntoElement("/css/pico.min.css.gz", "pico_css");
+      loadGzFileIntoElement("/html/root.html.gz", "root_html");
+      loadGzFileIntoElement("/js/root.js.gz", "root_js");
     </script>
-</body>
-
+  </body>
 </html>
