@@ -824,6 +824,9 @@ window.getGameStatus = async function () {
   const data = await window.fetchGameStatus();
   const gameStatus = document.getElementById("game-status");
 
+  // Exit if no status element
+  if (!gameStatus) return;
+
   // If game not active, hide status and exit
   if (data.GameActive !== true) {
     gameStatus.classList.add("hide");
