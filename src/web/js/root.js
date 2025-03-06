@@ -2,23 +2,11 @@
  * Loads the content for a given tab (e.g., 'tab1') by fetching the compressed HTML file.
  */
 async function loadTabContent(tabId) {
-  const element = document.getElementById("content-" + tabId);
+  const element_id = "content-" + tabId;
 
-  if (!element) {
-    console.error("Element not found: " + tabId);
-    return;
-  }
-
-  // If we've already loaded content before, we can skip
-  // reloading to save bandwidth (optional)
-  if (element.dataset.loaded === "true") {
-    return;
-  }
-
-  // Otherwise, attempt to fetch the .gz content and inject into the DOM
   const url = `./html/${tabId}.html.gz`;
-  console.log("Loading tab content: " + url, element);
-  await loadGzFileIntoElement(url, element);
+  console.log("Loading tab content: " + url, element_id);
+  await loadGzFileIntoElement(url, element_id);
 }
 
 /**

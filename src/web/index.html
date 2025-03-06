@@ -40,6 +40,10 @@
             return;
           }
 
+          if (element.dataset.loaded === "true") {
+            return;
+          }
+
           content = await loadGzFile(url);
           // if the url ends in .js or .js.gz
           if (url.endsWith(".js.gz")) {
