@@ -5,6 +5,7 @@ from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
 import Pico_Led
+import uctypes
 from ls import ls
 from machine import RTC
 from Memory_Main import blank_ram
@@ -759,9 +760,9 @@ def app_export_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
-    from Memory_Main import save_ram
-
-    return save_ram(), 200
+    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    for value in ram_access:
+        yield f"{value}\n".encode("utf-8")
 
 
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
