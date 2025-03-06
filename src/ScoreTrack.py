@@ -348,6 +348,8 @@ def initialize_leaderboard():
         fake_entry = {"initials": "ZZZ", "full_name": " ", "score": 100, "date": "04/17/2024"}
         top_scores.append(fake_entry)
 
+
+def check_for_machine_high_scores():
     # check for high scores in machine that we dont have yet
     scores = _read_machine_score(True)
     year, month, day, _, _, _, _, _ = rtc.datetime()

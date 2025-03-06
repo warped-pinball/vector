@@ -19,7 +19,7 @@ function getCurrentPlayers(data) {
 
 function getAvailableIndex(allIndices, maxIndex) {
   const indicesSet = new Set(allIndices);
-  for (let i = 1; i <= maxIndex; i++) {
+  for (let i = 0; i <= maxIndex; i++) {
     if (!indicesSet.has(i)) {
       return i;
     }
@@ -92,7 +92,7 @@ function toggleSaveButton(fieldset) {
   } else {
     saveButton.classList.remove("hide");
     if (deleteButton) {
-      deleteButton.classList.add("hide");
+      deleteButton.class.add("hide");
     }
   }
 }
@@ -135,7 +135,7 @@ async function populateForm() {
     });
 
     if (players.length < 30) {
-      const extraRowIndex = getAvailableIndex(allIndices, 30); // Adjusted to 30
+      const extraRowIndex = getAvailableIndex(allIndices, 29); // Adjusted to 29
       addPlayerRow(form, extraRowIndex, "", "");
     }
   } catch (error) {
