@@ -491,15 +491,8 @@ def app_getScoresPageData(request):
 
         return scores
 
-    # TODO make sure to invalidate cache when any of these are updated
+    # TODO add players to response data
     return {"leaders": format_scores(top_scores), "tournament": format_scores(get_scoreboard("tournament")), "claimable": get_claim_score_list()}
-
-
-@add_route("/api/top_scores")
-def app_getTopScores(request):
-    from ScoreTrack import top_scores
-
-    return top_scores
 
 
 @add_route("/api/leaders/reset", auth=True)
@@ -507,6 +500,7 @@ def app_resetScores(request):
     from SPI_DataStore import blankStruct
 
     blankStruct("leaders")
+    invalidate_cache("/api/scores_page_data")
 
 
 @add_route("/api/tournament/reset", auth=True)
@@ -516,6 +510,7 @@ def app_tournamentClear(request):
 
     blankStruct("tournament")
     SharedState.gameCounter = 0
+    invalidate_cache("/api/scores_page_data")
 
 
 @add_route("/api/scores/claim")
@@ -524,6 +519,7 @@ def app_claimScore(request):
 
     data = request.data
     claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
+    invalidate_cache("/api/scores_page_data")
 
 
 #
