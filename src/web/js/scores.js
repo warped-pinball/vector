@@ -274,6 +274,7 @@ var refreshFunctions = {
   "leader-board": window.updateLeaderboardArticles,
   "tournament-board": window.updateTournamentArticles,
   "personal-board": window.updatePersonalArticles,
+  "claimable-scores": window.getClaimableScores,
 };
 
 window.startAutoRefreshForTab = function (tabId) {
