@@ -7,7 +7,7 @@ from machine import RTC
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 import faults
-from ScoreTrack import CheckForNewScores, initialize_leaderboard
+from ScoreTrack import CheckForNewScores, initialize_leaderboard, check_for_machine_high_scores
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -287,8 +287,11 @@ def create_schedule(ap_mode: bool = False):
     # set the display message
     schedule(refresh, 30000)
 
-    # initialize the leader board 10 seconds after boot
-    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
+    # initialize the leader board right away
+    schedule(initialize_leaderboard, 700, log="Server: Initialize Leader Board")
+
+    # check for scores in the machine later - after it is done initializing
+    schedule(check_for_machine_high_scores, 10500, log="Server: Power up machine score check")
 
     # print out memory usage
     schedule(resource_go, 5000, 10000)
