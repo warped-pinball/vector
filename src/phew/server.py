@@ -154,6 +154,7 @@ async def _handle_request(reader, writer):
                 await writer.drain()
         else:
             # string/bytes
+            # TODO try writing json.dump directly to writer instead of using dumps else where and doing extra steps
             writer.write(response.body)
             await writer.drain()
 

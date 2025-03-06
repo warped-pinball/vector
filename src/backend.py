@@ -57,7 +57,7 @@ def route_wrapper(func):
                 response = response, 200
 
             if isinstance(response, dict) or isinstance(response, list):
-                response = json_dumps(response), 200
+                response = json_dumps(response, separators=(",", ":")), 200
 
             if isinstance(response, tuple):
                 if len(response) == 2:
@@ -596,7 +596,7 @@ def app_getScores(request):
         score["full_name"] = player_record["full_name"]
         score["ago"] = time_ago(score["date"], now_seconds)
 
-    return json_dumps(scores), 200
+    return scores, 200
 
 
 @add_route("/api/player/scores/reset", auth=True)
@@ -840,19 +840,19 @@ def app_apply_update(request):
     from logger import logger_instance as Log
     from update import apply_update
 
-    yield json_dumps({"log": "Starting update", "percent": 0})
+    yield json_dumps({"log": "Starting update", "percent": 0}, separators=(",", ":"))
     data = request.data
     try:
         for response in apply_update(data["url"]):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
-            yield json_dumps(response)
+            yield json_dumps(response, separators=(",", ":"))
             gc_collect()
     except Exception as e:
         Log.log(f"BKD: Error applying update: {e}")
-        yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
-        yield json_dumps({"log": "Try again in a moment", "percent": 100})
+        yield json_dumps({"log": f"Error applying update: {e}", "percent": 100}, separators=(",", ":"))
+        yield json_dumps({"log": "Try again in a moment", "percent": 100}, separators=(",", ":"))
 
 
 #
