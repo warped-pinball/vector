@@ -137,8 +137,6 @@ def add_route(path, auth=False, cool_down_seconds=0, single_instance=False, cach
 
         func = route_wrapper(func)
 
-        # TODO maybe we could put the cache around the auth decorator
-        # But we would need to be careful about how the headers were handled
         if cache:
             func = add_cache(path)(func)
 
