@@ -299,7 +299,7 @@ window.startAutoRefreshForTab = function (tabId) {
       clearInterval(window.currentRefreshIntervalId);
       window.currentRefreshIntervalId = null;
     }
-  }, 60000);
+  }, 4000);
 };
 
 /*
