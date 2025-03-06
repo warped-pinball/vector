@@ -456,7 +456,7 @@ def app_reset_memory(request):
 #
 # Leaderboard
 #
-@add_route("/api/scores_page_data")  # TODO , cache=True)
+@add_route("/api/scores_page_data", cache=True)
 def app_getScoresPageData(request):
     from ScoreTrack import get_claim_score_list, top_scores
 
@@ -471,7 +471,6 @@ def app_getScoresPageData(request):
         return rows
 
     def format_scores(scores):
-        print(scores)
         # filter out negative scores
         scores = [score for score in scores if score["score"] > 0]
         # sort the rows by score
