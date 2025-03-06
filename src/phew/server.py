@@ -284,20 +284,20 @@ def create_schedule(ap_mode: bool = False):
     #
     # one time tasks
     #
-    # set the display message
-    schedule(refresh, 30000)
-
-    # initialize the leader board 10 seconds after boot
-    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
-
-    # print out memory usage
-    schedule(resource_go, 5000, 10000)
-
     # initialize the fram
     schedule(sflash_driver_init, 200)
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
+
+    # print out memory usage
+    schedule(resource_go, 5000, 10000)
+
+    # initialize the leader board 10 seconds after boot
+    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
+
+    # set the display message
+    schedule(refresh, 30000)
 
     #
     # reoccuring tasks

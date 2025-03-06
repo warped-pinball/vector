@@ -456,39 +456,51 @@ def app_reset_memory(request):
 #
 # Leaderboard
 #
-def get_scoreboard(key):
-    """Get the leaderboard from memory"""
-    rows = []
-    for i in range(ds_memory_map[key]["count"]):
-        row = ds_read_record(key, i)
-        if row.get("score", 0) > 0:
-            rows.append(row)
-
-    # sort the rows by score
-    rows.sort(key=lambda x: x["score"], reverse=True)
-
-    from time import time
-
-    from phew.ntp import time_ago
-
-    now_seconds = time()
-
-    # add the rank to each row
-    for i, row in enumerate(rows):
-        row["rank"] = i + 1
-        if "date" in row:
-            row["ago"] = time_ago(row["date"], now_seconds)
-
-    return rows
-
-
 @add_route("/api/scores_page_data")  # TODO , cache=True)
 def app_getScoresPageData(request):
-    from ScoreTrack import get_claim_score_list
+    from ScoreTrack import get_claim_score_list, top_scores
 
-    # TODO ScoreTrack.top_scores is empty?
+    def get_scoreboard(key):
+        rows = []
+        for i in range(ds_memory_map[key]["count"]):
+            row = ds_read_record(key, i)
+            if row.get("score", 0) > 0:
+                rows.append(row)
+            else:
+                break
+        return rows
+
+    def format_scores(scores):
+        print(scores)
+        # filter out negative scores
+        scores = [score for score in scores if score["score"] > 0]
+        # sort the rows by score
+        scores.sort(key=lambda x: x["score"], reverse=True)
+
+        from time import time
+
+        from phew.ntp import time_ago
+
+        now_seconds = time()
+
+        # add the rank to each row
+        for i, score in enumerate(scores):
+            score["rank"] = i + 1
+            if "date" in score:
+                print(score["date"])
+                score["ago"] = time_ago(score["date"], now_seconds)
+
+        return scores
+
     # TODO make sure to invalidate cache when any of these are updated
-    return {"leaders": get_scoreboard("leaders"), "tournament": get_scoreboard("tournament"), "claimable": get_claim_score_list()}
+    return {"leaders": format_scores(top_scores), "tournament": format_scores(get_scoreboard("tournament")), "claimable": get_claim_score_list()}
+
+
+@add_route("/api/top_scores")
+def app_getTopScores(request):
+    from ScoreTrack import top_scores
+
+    return top_scores
 
 
 @add_route("/api/leaders/reset", auth=True)
