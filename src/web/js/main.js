@@ -6,8 +6,7 @@ const pageConfig = {
     title: "Scores",
     resources: [
       { url: "/html/scores.html.gz", targetId: "page_html" },
-      { url: "/js/scores.js.gz", targetId: "page_js" },
-      { url: "/js/live_scores.js.gz", targetId: "extra_js" },
+      { url: "/js/live_scores.js.gz", targetId: "page_js" },
     ],
   },
   about: {

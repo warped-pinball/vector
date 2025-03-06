@@ -233,6 +233,7 @@
 
     <div id="main_js" style="display: none"></div>
     <div id="page_js" style="display: none"></div>
+    <div id="scores_js" style="display: none"></div>
     <div id="extra_js" style="display: none"></div>
     <div id="js-sha256" style="display: none"></div>
     <div id="install_warning_js" style="display: none"></div>
@@ -456,6 +457,7 @@
         "install_warning_js",
       );
       fetchDecompressAndApply("/js/configure.js.gz", "configure_js");
+      fetchDecompressAndApply("/js/scores.js.gz", "scores_js");
       fetchDecompressAndApply("/js/js-sha256.min.js.gz", "js-sha256");
     </script>
   </body>
