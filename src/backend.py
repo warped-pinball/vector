@@ -7,7 +7,7 @@ from time import sleep, time
 import Pico_Led
 from ls import ls
 from machine import RTC
-from Memory_Main import blank_ram, save_ram
+from Memory_Main import blank_ram
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
@@ -759,6 +759,8 @@ def app_export_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
+    from Memory_Main import save_ram
+
     return save_ram(), 200
 
 
