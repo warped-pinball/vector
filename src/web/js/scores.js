@@ -300,7 +300,7 @@ const renderer = {
       );
 
       if (success) {
-        scheduler.refreshClaimableScores();
+        scheduler.refreshAllBoardData();
       }
       modal.close();
     });
@@ -364,7 +364,7 @@ const scheduler = {
       } else {
         this.stopAutoRefresh();
       }
-    }, 10000); // Refresh every 10 seconds
+    }, 2000); // Refresh every 10 seconds
   },
 
   stopAutoRefresh() {
