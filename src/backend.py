@@ -28,6 +28,8 @@ AP_NAME = "Warped Pinball"
 # Authentication variables
 challenges = {}
 CHALLENGE_EXPIRATION_SECONDS = 60
+# route etag cache
+route_cache = {}
 
 
 #
@@ -39,23 +41,23 @@ def route_wrapper(func):
         try:
             response = func(request)
 
-            default_headers = {
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-                "Pragma": "no-cache",
-            }
-
             if response is None:
                 response = "ok", 200
 
             if type(response).__name__ == "generator":
                 return response
 
+            default_headers = {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+            }
+
             if isinstance(response, str):
                 response = response, 200
 
             if isinstance(response, dict) or isinstance(response, list):
-                response = json_dumps(response), 200
+                response = json_dumps(response, separators=(",", ":")), 200
 
             if isinstance(response, tuple):
                 if len(response) == 2:
@@ -87,7 +89,43 @@ def route_wrapper(func):
     return wrapped_route
 
 
-def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
+def invalidate_cache(path):
+    # Aproximately a 1 in 4.2 billion chance of a collision
+    # Probably closer to 1 2^16 in practice because we don't have a good source of entropy
+    route_cache[path] = random_hex(4)
+
+
+def add_cache(path):
+    # we should only need to initialize the cache once
+    if path in route_cache:
+        raise ValueError(f"Route {path} already has a cache entry")
+
+    # "invalidating" is really just making a new random tag
+    invalidate_cache(path)
+
+    def decorator(func):
+        def cached_route(request):
+            # we trust that there is an entry since we initialized it at boot
+            etag = route_cache[path]
+
+            # Return 304 if client has current version
+            if request.headers.get("if-none-match") == etag:
+                return "", 304, {"ETag": etag}
+
+            # Add ETag to response headers
+            # This will fail for generators, but we want that since we can't cache them
+            body, status, headers = func(request)
+            headers["Cache-Control"] = "no-cache, must-revalidate"
+            headers["Pragma"] = "no-cache"
+            headers["ETag"] = etag
+            return body, status, headers
+
+        return cached_route
+
+    return decorator
+
+
+def add_route(path, auth=False, cool_down_seconds=0, single_instance=False, cache=False):
     """Decorator to add a route to the server with gc_collect() and error handling"""
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
@@ -97,16 +135,19 @@ def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
         if cool_down_seconds > 0 or single_instance:
             func = cool_down(cool_down_seconds, single_instance)(func)
 
+        func = route_wrapper(func)
+
+        # TODO maybe we could put the cache around the auth decorator
+        # But we would need to be careful about how the headers were handled
+        if cache:
+            func = add_cache(path)(func)
+
         if auth:
             func = require_auth(func)
 
-        wrapped = route_wrapper(func)
-
         from phew.server import add_route as phew_add_route
 
-        phew_add_route(path, wrapped)
-
-        # return route
+        phew_add_route(path, func)
 
     return decorator
 
@@ -415,40 +456,50 @@ def app_reset_memory(request):
 #
 # Leaderboard
 #
-def get_scoreboard(key):
-    """Get the leaderboard from memory"""
-    rows = []
-    for i in range(ds_memory_map[key]["count"]):
-        row = ds_read_record(key, i)
-        if row.get("score", 0) > 0:
-            rows.append(row)
+@add_route("/api/scores_page_data", cache=True)
+def app_getScoresPageData(request):
+    from ScoreTrack import get_claim_score_list, top_scores
 
-    # sort the rows by score
-    rows.sort(key=lambda x: x["score"], reverse=True)
+    def get_scoreboard(key):
+        rows = []
+        for i in range(ds_memory_map[key]["count"]):
+            row = ds_read_record(key, i)
+            if row.get("score", 0) > 0:
+                rows.append(row)
+            else:
+                break
+        return rows
 
-    from time import time
+    def format_scores(scores):
+        # filter out negative scores
+        scores = [score for score in scores if score["score"] > 0]
+        # sort the rows by score
+        scores.sort(key=lambda x: x["score"], reverse=True)
 
-    from phew.ntp import time_ago
+        from time import time
 
-    now_seconds = time()
+        from phew.ntp import time_ago
 
-    # add the rank to each row
-    for i, row in enumerate(rows):
-        row["rank"] = i + 1
-        if "date" in row:
-            row["ago"] = time_ago(row["date"], now_seconds)
+        now_seconds = time()
 
-    return rows
+        # add the rank to each row
+        for i, score in enumerate(scores):
+            score["rank"] = i + 1
+            if "date" in score:
+                print(score["date"])
+                score["ago"] = time_ago(score["date"], now_seconds)
+
+        return scores
+
+    # TODO make sure to invalidate cache when any of these are updated
+    return {"leaders": format_scores(top_scores), "tournament": format_scores(get_scoreboard("tournament")), "claimable": get_claim_score_list()}
 
 
-@add_route("/api/leaders")
-def app_leaderBoardRead(request):
-    return get_scoreboard("leaders")
+@add_route("/api/top_scores")
+def app_getTopScores(request):
+    from ScoreTrack import top_scores
 
-
-@add_route("/api/tournament")
-def app_tournamentRead(request):
-    return get_scoreboard("tournament")
+    return top_scores
 
 
 @add_route("/api/leaders/reset", auth=True)
@@ -465,15 +516,6 @@ def app_tournamentClear(request):
 
     blankStruct("tournament")
     SharedState.gameCounter = 0
-
-
-@add_route("/api/scores/claimable")
-def app_getClaimableScores(request):
-    # TODO only if web ui score claim is enabled
-
-    from ScoreTrack import get_claim_score_list
-
-    return get_claim_score_list()
 
 
 @add_route("/api/scores/claim")
@@ -554,7 +596,7 @@ def app_getScores(request):
         score["full_name"] = player_record["full_name"]
         score["ago"] = time_ago(score["date"], now_seconds)
 
-    return json_dumps(scores), 200
+    return scores, 200
 
 
 @add_route("/api/player/scores/reset", auth=True)
@@ -798,19 +840,19 @@ def app_apply_update(request):
     from logger import logger_instance as Log
     from update import apply_update
 
-    yield json_dumps({"log": "Starting update", "percent": 0})
+    yield json_dumps({"log": "Starting update", "percent": 0}, separators=(",", ":"))
     data = request.data
     try:
         for response in apply_update(data["url"]):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
-            yield json_dumps(response)
+            yield json_dumps(response, separators=(",", ":"))
             gc_collect()
     except Exception as e:
         Log.log(f"BKD: Error applying update: {e}")
-        yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
-        yield json_dumps({"log": "Try again in a moment", "percent": 100})
+        yield json_dumps({"log": f"Error applying update: {e}", "percent": 100}, separators=(",", ":"))
+        yield json_dumps({"log": "Try again in a moment", "percent": 100}, separators=(",", ":"))
 
 
 #
