@@ -274,7 +274,6 @@ var refreshFunctions = {
   "leader-board": window.updateLeaderboardArticles,
   "tournament-board": window.updateTournamentArticles,
   "personal-board": window.updatePersonalArticles,
-  "claimable-scores": window.getClaimableScores,
 };
 
 window.startAutoRefreshForTab = function (tabId) {
@@ -397,6 +396,7 @@ window.getClaimableScores = async function () {
   );
   const data = await response.json();
 
+  console.log("Updating claimable scores...");
   console.log(data);
   // eample data with 2 games, one with 2 players and one with 1 player
   // [
@@ -871,3 +871,4 @@ window.getGameStatus();
 
 // Poll for updates
 setInterval(window.getGameStatus, 1500);
+setInterval(window.getClaimableScores, 4000);
