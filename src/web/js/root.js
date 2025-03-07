@@ -1,44 +1,33 @@
-/**
- * Loads the content for a given tab (e.g., 'tab1') by fetching the compressed HTML file.
- */
-async function loadTabContent(tabId) {
-  const element_id = "content-" + tabId;
-
-  const url = `./html/${tabId}.html.gz`;
-  console.log("Loading tab content: " + url, element_id);
-  await loadGzFileIntoElement(url, element_id);
-}
-
-/**
- * Determines which tab is currently active based on the hash,
- * then loads and displays the appropriate content.
- * Also updates the page <title>.
- */
 async function updateTabContent() {
   // Extract the fragment ID from the hash (e.g., '#tab1' -> 'tab1')
   const hash = window.location.hash || "#scores";
   const tabId = hash.replace("#", "");
 
-  // (Optional) A lookup for our custom tab titles
+  // Update the page title based on the tab
+  set_tab_title(tabId);
+
+  // Hide all tab content sections first
+  set_tab_content(tabId);
+}
+
+async function set_tab_title(tabId) {
   const tabTitles = {
     scores: "Scores",
     players: "List",
     about: "About",
     admin: "Admin",
   };
-
-  // Set the document title based on the tab
-  // fallback to a default if the tab isn't recognized
   document.title = tabTitles[tabId] || "Warped Pinball";
+}
 
-  // Hide all tab content sections first
+async function set_tab_content(tabId) {
+  // Hide all tab content sections
   document.querySelectorAll(".tab-content").forEach((div) => {
     div.style.display = "none";
   });
 
-  // Ensure the tab content is loaded, then display it
-  await loadTabContent(tabId);
-  const activeTab = document.getElementById("content-" + tabId);
+  // Show the selected tab content
+  const activeTab = document.getElementById(tabId + "_html");
   if (activeTab) {
     activeTab.style.display = "block";
   }
@@ -47,14 +36,20 @@ async function updateTabContent() {
 // Listen for hash changes (including browser back/forward buttons)
 window.addEventListener("hashchange", updateTabContent);
 
-// load globally required elements
-window.loadGzFileIntoElement = loadGzFileIntoElement;
-
 // Load the default (or current) tab only after essential resources are loaded
 updateTabContent();
 
-async function populate_root_page() {
-  loadGzFileIntoElement("/svg/logo.svg.gz", "logo_svg");
-}
+content_mapping = [
+  ["/svg/logo.svg.gz", "logo_svg"],
+  ["/css/scores.css.gz", "css_files"],
+  ["/html/scores.html.gz", "scores_html"],
+  ["/js/scores.js.gz", "js_files"],
+  ["/html/players.html.gz", "players_html"],
+  ["/html/about.html.gz", "about_html"],
+  ["/html/admin.html.gz", "admin_html"],
+];
 
-populate_root_page();
+// Load the content of the tabs
+for (let [url, element_id] of content_mapping) {
+  window.loadGzFileIntoElement(url, element_id);
+}

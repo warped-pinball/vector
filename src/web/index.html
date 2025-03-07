@@ -3,9 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <style id="pico_css"></style>
+    <style>
+      svg {
+        width: 20%;
+        height: auto;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      /* button tags in nav tag set to w/h of 28px */
+      nav button {
+        padding: 0;
+        width: 45px !important;
+        height: 45px !important;
+      }
+
+      /* SVGs in nav buttons should fill the space */
+      nav button svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* make the ::after on summary text 0 width*/
+      details.dropdown summary::after {
+        width: 0;
+        margin: 0;
+      }
+    </style>
   </head>
 
-  <body class="container-fluid">
+  <body class="container">
     <div id="root_html"></div>
 
     <div id="root_js"></div>
@@ -53,6 +82,10 @@
             );
             newElement.async = false;
             element.appendChild(newElement);
+          } else if (url.endsWith(".css.gz")) {
+            newElement = document.createElement("style");
+            newElement.innerHTML = content;
+            element.appendChild(newElement);
           } else {
             element.innerHTML = content;
           }
@@ -61,6 +94,8 @@
           console.error("Failed to load content: " + error);
         }
       }
+
+      window.loadGzFileIntoElement = loadGzFileIntoElement;
 
       loadGzFileIntoElement("/css/pico.min.css.gz", "pico_css");
       loadGzFileIntoElement("/html/root.html.gz", "root_html");
