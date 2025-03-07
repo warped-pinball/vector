@@ -52,4 +52,9 @@ window.loadGzFileIntoElement = loadGzFileIntoElement;
 
 // Load the default (or current) tab only after essential resources are loaded
 updateTabContent();
-console.log("Root HTML loaded");
+
+async function populate_root_page() {
+  loadGzFileIntoElement("/svg/logo.svg.gz", "logo_svg");
+}
+
+populate_root_page();

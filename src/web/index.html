@@ -45,7 +45,7 @@
           }
 
           content = await loadGzFile(url);
-          // if the url ends in .js or .js.gz
+          // handle js files so they actually execute
           if (url.endsWith(".js.gz")) {
             const newElement = document.createElement("script");
             newElement.src = URL.createObjectURL(
