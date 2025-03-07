@@ -327,7 +327,7 @@ def create_schedule(ap_mode: bool = False):
         schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
 
         # initialize the time and date 5 seconds after boot
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+        schedule(initialize_timedate, 5000, log="Server: Initialize time/date")
 
         # reconnect to wifi occasionally
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
