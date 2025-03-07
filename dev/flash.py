@@ -153,7 +153,8 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
             "from ScoreTrack import update_leaderboard, _update_tournamentboard",
         ]
         # add leaderboard and tournament data
-        + [f"update_leaderboard({json.dumps(record)})" for record in test_data["leaders"]]
+        # + [f"update_leaderboard({json.dumps(record)})" for record in test_data["leaders"]]
+        + [f'datastore.write_record("leaders", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["leaders"])]
         + [f"_update_tournamentboard({json.dumps(record)})" for record in test_data["tournament"]]
         + [
             'extras = datastore.read_record("extras", 0)',
@@ -161,6 +162,8 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
             'datastore.write_record("extras", extras, 0)',
         ]
     )
+
+    print(test_data_script)
 
     cmd = f"mpremote connect {pico_port} exec '{test_data_script}'"
     for attempt in range(3):
