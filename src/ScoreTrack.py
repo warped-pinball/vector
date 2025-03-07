@@ -62,6 +62,9 @@ def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""
     recent_scores.insert(0, game)
     recent_scores.pop()
+    from backend import invalidate_cache
+
+    invalidate_cache("/api/scores_page_data")
     print("SCORE: add to claims list: ", recent_scores)
 
 

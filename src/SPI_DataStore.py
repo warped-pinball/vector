@@ -65,6 +65,10 @@ def write_record(structure_name, record, index=0, set=0):
         start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
         data = serialize(record, structure_name)
         fram.write(start_address, data)
+        if structure_name in ["leaders", "tournament"]:
+            from backend import invalidate_cache
+
+            invalidate_cache("/api/scores_page_data")
 
     except Exception as e:
         error_message = f"Error writing record to {structure_name}: {e}"

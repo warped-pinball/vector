@@ -154,6 +154,7 @@ async def _handle_request(reader, writer):
                 await writer.drain()
         else:
             # string/bytes
+            # TODO try writing json.dump directly to writer instead of using dumps else where and doing extra steps
             writer.write(response.body)
             await writer.drain()
 
@@ -284,20 +285,20 @@ def create_schedule(ap_mode: bool = False):
     #
     # one time tasks
     #
-    # set the display message
-    schedule(refresh, 30000)
-
-    # initialize the leader board 10 seconds after boot
-    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
-
-    # print out memory usage
-    schedule(resource_go, 5000, 10000)
-
     # initialize the fram
     schedule(sflash_driver_init, 200)
 
     # initialize the sflash
     schedule(sflash_initialize, 700)
+
+    # print out memory usage
+    schedule(resource_go, 5000, 10000)
+
+    # initialize the leader board 10 seconds after boot
+    schedule(initialize_leaderboard, 10000, log="Server: Initialize Leader Board")
+
+    # set the display message
+    schedule(refresh, 30000)
 
     #
     # reoccuring tasks
@@ -326,7 +327,7 @@ def create_schedule(ap_mode: bool = False):
         schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
 
         # initialize the time and date 5 seconds after boot
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+        schedule(initialize_timedate, 5000, log="Server: Initialize time/date")
 
         # reconnect to wifi occasionally
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
