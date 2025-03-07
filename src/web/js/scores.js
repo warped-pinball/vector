@@ -274,6 +274,7 @@ var refreshFunctions = {
   "leader-board": window.updateLeaderboardArticles,
   "tournament-board": window.updateTournamentArticles,
   "personal-board": window.updatePersonalArticles,
+  "claimable-scores": window.getClaimableScores,
 };
 
 window.startAutoRefreshForTab = function (tabId) {
@@ -404,6 +405,11 @@ window.getClaimableScores = async function () {
   // ]
 
   const claimableScores = document.getElementById("claimable-scores");
+
+  // if claimable scores is not present, return
+  if (!claimableScores) {
+    return;
+  }
 
   // if the length of the data is 0, hide the claimable scores
   if (data.length === 0) {
@@ -822,6 +828,9 @@ window.getGameStatus = async function () {
   // Fetch data from API
   const data = await window.fetchGameStatus();
   const gameStatus = document.getElementById("game-status");
+
+  // Exit if no status element
+  if (!gameStatus) return;
 
   // If game not active, hide status and exit
   if (data.GameActive !== true) {
