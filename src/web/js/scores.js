@@ -406,6 +406,11 @@ window.getClaimableScores = async function () {
 
   const claimableScores = document.getElementById("claimable-scores");
 
+  // if claimable scores is not present, return
+  if (!claimableScores) {
+    return;
+  }
+
   // if the length of the data is 0, hide the claimable scores
   if (data.length === 0) {
     claimableScores.classList.add("hide");
