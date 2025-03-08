@@ -150,20 +150,18 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
         + [f'datastore.write_record("names", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["names"])]
         # set leaderboard data
         + [
-            "from ScoreTrack import update_leaderboard, _update_tournamentboard",
+            "from ScoreTrack import update_leaderboard, update_tournament",
         ]
         # add leaderboard and tournament data
         # + [f"update_leaderboard({json.dumps(record)})" for record in test_data["leaders"]]
         + [f'datastore.write_record("leaders", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["leaders"])]
-        + [f"_update_tournamentboard({json.dumps(record)})" for record in test_data["tournament"]]
+        + [f"update_tournament({json.dumps(record)})" for record in test_data["tournament"]]
         + [
             'extras = datastore.read_record("extras", 0)',
             f'extras["other"] = {test_data["settings"]["score_capture"]}',
             'datastore.write_record("extras", extras, 0)',
         ]
     )
-
-    print(test_data_script)
 
     cmd = f"mpremote connect {pico_port} exec '{test_data_script}'"
     for attempt in range(3):
