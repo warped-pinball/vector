@@ -52,7 +52,7 @@ def claim_score(initials, player_index, score):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
             print("SCORE: claim new score:", initials, score, game_index, player_index)
             recent_scores[game_index][player_index + 1] = (initials, score)
-            new_score = {"initials": initials, "full_name": None, "score": score}
+            new_score = { "initials": initials, "full_name": None, "score": score, "game": game[0] }
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 update_tournament(new_score)
             else:
@@ -362,20 +362,6 @@ def check_for_machine_high_scores():
             update_leaderboard(new_score)
 
 
-def _place_game_in_tournament(game):
-    """place game (all four scores) in tournament board
-    game: gamecounter, score 0, 1, 2, 3
-    """
-    log.log("SCORE: add to tournament")
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    new_score = {"initials": " ", "full_name": " ", "score": 0, "date": f"{month:02d}/{day:02d}/{year}", "game": game[0]}
-
-    for i in range(4):
-        if int(game[i + 1][1]) > 0:
-            new_score["score"] = int(game[i + 1][1])
-            _update_tournamentboard(new_score)
-
-
 def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
 
@@ -387,12 +373,25 @@ def update_tournament(new_entry):
         print("SCORE: tournament add bad score")
         return False
 
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
-
     count = DataStore.memory_map["tournament"]["count"]
     rec = DataStore.read_record("tournament", 0)
     nextIndex = rec["index"]
+
+
+    #check for a match in the tournament board, for Claim Score function
+    #   look back 6 games x 4 scores = 24 places for a match
+    if "game" in new_entry:  #claim will have a game count
+        print("SCORE: tournament claim score checking")
+        for i in range(24):
+            ind = nextIndex - 1 - i
+            if ind < 0:
+                ind += count
+            rec = DataStore.read_record("tournament", ind)
+            if rec["game"] == new_entry["game"] and rec["score"] == new_entry["score"]:
+                rec["initials"] = new_entry["initials"]                
+                DataStore.write_record("tournament", rec, ind)
+        return
+
 
     new_entry["game"] = S.gameCounter
     new_entry["full_name"] = ""
