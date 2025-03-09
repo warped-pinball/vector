@@ -416,7 +416,7 @@ def app_reset_memory(request):
 #
 # Leaderboard
 #
-def get_scoreboard(key):
+def get_scoreboard(key, sort_by="score", reverse=False):
     """Get the leaderboard from memory"""
     rows = []
     for i in range(ds_memory_map[key]["count"]):
@@ -425,7 +425,7 @@ def get_scoreboard(key):
             rows.append(row)
 
     # sort the rows by score
-    rows.sort(key=lambda x: x["score"], reverse=True)
+    rows.sort(key=lambda x: x[sort_by], reverse=reverse)
 
     from time import time
 
@@ -444,12 +444,12 @@ def get_scoreboard(key):
 
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
-    return get_scoreboard("leaders")
+    return get_scoreboard("leaders", reverse=True)
 
 
 @add_route("/api/tournament")
 def app_tournamentRead(request):
-    return get_scoreboard("tournament")
+    return get_scoreboard("tournament", sort_by="game")
 
 
 @add_route("/api/leaders/reset", auth=True)
@@ -859,10 +859,10 @@ def add_ap_mode_routes():
         Pico_Led.off()
 
 
-def connect_to_wifi():
+def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
 
-    if phew_is_connected():
+    if phew_is_connected() and initialize==False:
         return True
 
     from discovery import setup as discovery_setup
@@ -935,6 +935,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        connect_to_wifi(True)
         while not connect_to_wifi():
             print("retrying wifi")
             sleep(1)

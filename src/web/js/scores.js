@@ -396,8 +396,6 @@ window.getClaimableScores = async function () {
   );
   const data = await response.json();
 
-  console.log("Updating claimable scores...");
-  console.log(data);
   // eample data with 2 games, one with 2 players and one with 1 player
   // [
   //  [['', 1123980]]
