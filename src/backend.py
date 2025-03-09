@@ -5,9 +5,10 @@ from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
 import Pico_Led
+import uctypes
 from ls import ls
 from machine import RTC
-from Memory_Main import blank_ram, save_ram
+from Memory_Main import blank_ram
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
@@ -469,8 +470,6 @@ def app_tournamentClear(request):
 
 @add_route("/api/scores/claimable")
 def app_getClaimableScores(request):
-    # TODO only if web ui score claim is enabled
-
     from ScoreTrack import get_claim_score_list
 
     return get_claim_score_list()
@@ -759,7 +758,9 @@ def app_export_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
-    return save_ram(), 200
+    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    for value in ram_access:
+        yield f"{value}\n".encode("utf-8")
 
 
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
@@ -858,10 +859,10 @@ def add_ap_mode_routes():
         Pico_Led.off()
 
 
-def connect_to_wifi():
+def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
 
-    if phew_is_connected():
+    if phew_is_connected() and initialize==False:
         return True
 
     from discovery import setup as discovery_setup
@@ -934,6 +935,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        connect_to_wifi(True)
         while not connect_to_wifi():
             print("retrying wifi")
             sleep(1)

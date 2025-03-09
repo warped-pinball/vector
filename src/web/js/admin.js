@@ -411,6 +411,11 @@ async function checkForUpdates() {
     const data = await response.json();
     const updateButton = document.getElementById("update-button");
 
+    if (!updateButton) {
+      console.log("No update button found, must have left page");
+      return;
+    }
+
     // get the current version from the page
     const current = document
       .getElementById("version")

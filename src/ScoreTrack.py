@@ -50,10 +50,13 @@ def claim_score(initials, player_index, score):
     initials = initials.upper()
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
-            print("SCORE: new score:", initials, score, game_index, player_index)
+            print("SCORE: claim new score:", initials, score, game_index, player_index)
             recent_scores[game_index][player_index + 1] = (initials, score)
             new_score = {"initials": initials, "full_name": None, "score": score}
-            update_leaderboard(new_score)
+            if DataStore.read_record("extras", 0)["tournament_mode"]:
+                update_tournament(new_score)
+            else:
+                update_leaderboard(new_score)
             return
     raise ValueError("SCORE: Score not found in claim list")
 
@@ -348,6 +351,8 @@ def initialize_leaderboard():
         fake_entry = {"initials": "ZZZ", "full_name": " ", "score": 100, "date": "04/17/2024"}
         top_scores.append(fake_entry)
 
+
+def check_for_machine_high_scores():
     # check for high scores in machine that we dont have yet
     scores = _read_machine_score(True)
     year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -371,16 +376,29 @@ def _place_game_in_tournament(game):
             _update_tournamentboard(new_score)
 
 
-def _update_tournamentboard(new_entry):
+def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
+
+    if new_entry["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
+        print("SCORE: tournament add bad Initials")
+        return False
+
+    if new_entry["score"] < 1000 :
+        print("SCORE: tournament add bad score")
+        return False
+
+    year, month, day, _, _, _, _, _ = rtc.datetime()
+    new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
+
     count = DataStore.memory_map["tournament"]["count"]
     rec = DataStore.read_record("tournament", 0)
     nextIndex = rec["index"]
 
     new_entry["game"] = S.gameCounter
+    new_entry["full_name"] = ""
     new_entry["index"] = nextIndex
     DataStore.write_record("tournament", new_entry, nextIndex)
-    print("SCORE: tournament new score ", new_entry)
+    log.log(f"SCORE: tournament new score {new_entry}")
 
     nextIndex += 1
     if nextIndex >= count:
@@ -441,20 +459,21 @@ def CheckForNewScores(nState=[0]):
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
                     # in play scores
                     log.log("SCORE: end, use in-play scores")
-                    scores = _read_machine_score(False)
-                    game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
+                    scores = _read_machine_score(False)                    
                 else:
                     # high scores
                     log.log("SCORE: end, use high scores")
                     scores = _read_machine_score(True)
-                    game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
-
+             
                 if DataStore.read_record("extras", 0)["tournament_mode"]:
-                    _place_game_in_tournament(game)
+                    for i in range(0, 4):
+                        update_tournament({"initials": scores[i][0], "score": scores[i][1]})
                 else:
-                    for i in range(1, 5):
-                        update_leaderboard({"initials": game[i][0], "score": game[i][1]})
-                    _place_game_in_claim_list(game)
+                    for i in range(0, 4):                    
+                        update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
+
+                game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
+                _place_game_in_claim_list(game)
 
                 # put high scores back in machine memory
                 place_machine_scores()

@@ -299,7 +299,7 @@ window.startAutoRefreshForTab = function (tabId) {
       clearInterval(window.currentRefreshIntervalId);
       window.currentRefreshIntervalId = null;
     }
-  }, 60000);
+  }, 4000);
 };
 
 /*
@@ -395,8 +395,6 @@ window.getClaimableScores = async function () {
     false,
   );
   const data = await response.json();
-
-  console.log(data);
   // eample data with 2 games, one with 2 players and one with 1 player
   // [
   //  [['', 1123980]]
@@ -404,6 +402,11 @@ window.getClaimableScores = async function () {
   // ]
 
   const claimableScores = document.getElementById("claimable-scores");
+
+  // if claimable scores is not present, return
+  if (!claimableScores) {
+    return;
+  }
 
   // if the length of the data is 0, hide the claimable scores
   if (data.length === 0) {
@@ -823,6 +826,9 @@ window.getGameStatus = async function () {
   const data = await window.fetchGameStatus();
   const gameStatus = document.getElementById("game-status");
 
+  // Exit if no status element
+  if (!gameStatus) return;
+
   // If game not active, hide status and exit
   if (data.GameActive !== true) {
     gameStatus.classList.add("hide");
@@ -862,3 +868,4 @@ window.getGameStatus();
 
 // Poll for updates
 setInterval(window.getGameStatus, 1500);
+setInterval(window.getClaimableScores, 4000);
