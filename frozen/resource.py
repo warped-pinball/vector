@@ -35,7 +35,8 @@ def get_flash_usage(details):
 
 def go(details=False):
     stack_usage = micropython.stack_use()
-    print("stack use", stack_usage)
+    if details:
+        print("stack use", stack_usage)
     stack_percent = (stack_usage / 6144) * 100
 
     ram_usage_percent = get_ram_usage(details)
