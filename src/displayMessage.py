@@ -8,9 +8,10 @@ updated for system 9 - optionally shows IP address in high score display
 """
 
 from Shadow_Ram_Definitions import shadowRam
-
 import SharedState as S
 import SPI_DataStore as DataStore
+from logger import logger_instance
+log = logger_instance
 
 localCopyIp = 0
 show_ip_last_state = False
@@ -28,7 +29,7 @@ def fixAdjustmentChecksum():
             end = S.gdata["Adjustments"].get("ChecksumEndAdr", None)
             resultLoc = S.gdata["Adjustments"].get("ChecksumResultAdr", None)
             if start is None or end is None or resultLoc is None:
-                print("DISP: Checksum addresses not found in adjustments")
+                log.log("DISP: Checksum addresses not found in adjustments")
                 return False
             
             origCS = shadowRam[resultLoc]
@@ -87,7 +88,7 @@ def _set_mem(msgText):
                 shadowRam[address_offset + k] = msgText[2][k]
             shadowRam[S.gdata["DisplayMessage"]["EnableByteAddress"]] = 0
         except Exception as e:
-            print(f"MSG Fault 87: {e}")
+            log.log(f"MSG: set mem fault {e}")
 
     # system 9
     elif S.gdata["DisplayMessage"]["Type"] == 9:
@@ -130,7 +131,7 @@ def _typ3_DecimalandPad(input, length):
         elif "A" <= char <= "Z":
             out.append(ord(char) - 0x36)
         else:
-            print(f"Warning: Unsupported character '{char}'")
+            log.log(f"Warning: Unsupported character '{char}'")
     while len(out) < length:
         out.insert(0, 0x00)
     return out
@@ -161,7 +162,7 @@ def _set(ipAddress):
             _set_mem(msg)
             fixAdjustmentChecksum()
         except Exception:
-            print("MSG: Failure in set ip")
+            log.log("MSG: Failure in set ip 1")
 
     elif S.gdata["DisplayMessage"]["Type"] == 2:  # 2 display modules
         # 16 char 3 lines,  IP address shown complete on each 16 digit display
@@ -205,7 +206,7 @@ def _set(ipAddress):
             msg_nums[3] = int(ipAddress[third_dot + 1 :])
             _set_mem(msg_nums)
         except Exception:
-            print("MSG: Failure in set ip")
+            log.log("MSG: Failure in set ip 9")
 
 
 def init(ipAddress):
@@ -215,6 +216,8 @@ def init(ipAddress):
     global localCopyIp, show_ip_last_state
     localCopyIp = ipAddress
     show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]
+
+    refresh_9()    #here at boot up, cannot be in scheduler or might mess up a game
     return
 
 

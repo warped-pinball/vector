@@ -13,7 +13,6 @@ import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
-
 log = logger_instance
 
 rtc = RTC()
@@ -50,7 +49,7 @@ def claim_score(initials, player_index, score):
     initials = initials.upper()
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
-            print("SCORE: claim new score:", initials, score, game_index, player_index)
+            log.log(f"SCORE: claim new score: {initials}, {score}, {game_index}, {player_index}")
             recent_scores[game_index][player_index + 1] = (initials, score)
             new_score = { "initials": initials, "full_name": None, "score": score, "game": game[0] }
             if DataStore.read_record("extras", 0)["tournament_mode"]:
@@ -121,8 +120,10 @@ def _read_machine_score(HighScores):
                     in_play_score[0] = high_score[0]  # copy initals over
 
     if all(score[1] == 0 for score in in_play_scores):
+        log.log("SCORE: High Scores used")
         return high_scores
     else:
+        log.log("SCORE: In play scores used")
         return in_play_scores
 
 
@@ -166,7 +167,7 @@ def place_machine_scores():
     global top_scores
 
     if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
-        print("SCORE: Place system 11 machine scores")
+        log.log("SCORE: Place system 11 machine scores")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
             try:
@@ -195,7 +196,7 @@ def place_machine_scores():
 
     elif S.gdata["HighScores"]["Type"] == 9:
         # system 9, copy in scores, no intiials
-        print("SCORE: Place system 9 machine high scores")
+        log.log("SCORE: Place system 9 machine high scores")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]
             shadowRam[score_start : score_start + 4] = _int_to_bcd(top_scores[index]["score"])
@@ -291,7 +292,7 @@ def update_leaderboard(new_entry):
     year, month, day, _, _, _, _, _ = rtc.datetime()
     new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
-    print("SCORE: Update Leader Board: ", new_entry)
+    log.log( f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
     # add player name to new_entry if there is an initals match
@@ -381,7 +382,7 @@ def update_tournament(new_entry):
     #check for a match in the tournament board, for Claim Score function
     #   look back 6 games x 4 scores = 24 places for a match
     if "game" in new_entry:  #claim will have a game count
-        print("SCORE: tournament claim score checking")
+        log.log("SCORE: tournament claim score checking")
         for i in range(24):
             ind = nextIndex - 1 - i
             if ind < 0:
