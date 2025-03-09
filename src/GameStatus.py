@@ -1,8 +1,8 @@
 import time
-
 from Shadow_Ram_Definitions import shadowRam
-
 import SharedState as S
+from logger import logger_instance
+log = logger_instance
 
 # Initialize the game status in SharedState
 S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
@@ -32,7 +32,7 @@ def _get_machine_score(player):
         else:
             print("GSTAT: InPlay not defined")
     except Exception as e:
-        print(f"GSTAT: error in get_machine_score: {e}")
+        log.log(f"GSTAT: error in get_machine_score: {e}")
     return 0
 
 
@@ -45,7 +45,7 @@ def _get_ball_in_play():
             mapping = {ball_in_play["Ball1"]: 1, ball_in_play["Ball2"]: 2, ball_in_play["Ball3"]: 3, ball_in_play["Ball4"]: 4, ball_in_play["Ball5"]: 5}
             return mapping.get(token, 0)
     except Exception as e:
-        print(f"GSTAT: error in get_ball_in_play: {e}")
+        log.log(f"GSTAT: error in get_ball_in_play: {e}")
     return 0
 
 
@@ -76,7 +76,7 @@ def game_report():
         else:
             data["GameTime"] = 0
     except Exception as e:
-        print(f"GSTAT: Error in report generation: {e}")
+        log.log(f"GSTAT: Error in report generation: {e}")
     return data
 
 
@@ -99,12 +99,3 @@ def poll_fast():
     else:
         S.game_status["poll_state"] = 0
 
-
-if __name__ == "__main__":
-    import json
-
-    import GameDefsLoad
-
-    GameDefsLoad.go()
-    print(json.dumps(game_report()))
-    poll_fast()
