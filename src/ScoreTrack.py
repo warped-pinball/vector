@@ -110,6 +110,8 @@ def _read_machine_score(HighScores):
                     except Exception:
                         high_scores[idx][0] = None
 
+                high_scores[idx][0] = high_scores[idx][0].strip()
+                
                 if high_scores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
                     high_scores[idx][0] = ""
 
