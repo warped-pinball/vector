@@ -175,7 +175,7 @@ def place_machine_scores():
             try:
                 scoreBCD = _int_to_bcd(top_scores[index]["score"])
             except Exception:
-                print("SCORE: score convert problem")
+                log.log("SCORE: score convert problem")
                 scoreBCD = _int_to_bcd(100)
 
             shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]] = scoreBCD
@@ -191,7 +191,7 @@ def place_machine_scores():
                         shadowRam[initial_start + i] = _ascii_to_type3(ord(initials[i]))
 
             except Exception:
-                print("SCORE: place machine scores exception")
+                log.log("SCORE: place machine scores exception")
                 shadowRam[initial_start] = 64
                 shadowRam[initial_start + 1] = 64
                 shadowRam[initial_start + 2] = 64
@@ -259,7 +259,7 @@ def update_individual_score(new_entry):
         return False
 
     if not (0 <= playernum < DataStore.memory_map["individual"]["count"]):
-        print("SCORE: Player out of range")
+        log.log("SCORE: Player out of range")
         return False
 
     new_entry["full_name"] = playername
@@ -284,11 +284,11 @@ def update_individual_score(new_entry):
 
 
 def update_leaderboard(new_entry):
-    """called by check for new scores,    one call for each valid new score entry"""
+    """called by check for new scores, one call for each valid new score entry"""
     global top_scores
 
     if new_entry["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
-        print("SCORE: Bad Initials")
+        log.log("SCORE: Bad Initials")
         return False
 
     year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -369,11 +369,11 @@ def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
 
     if new_entry["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
-        print("SCORE: tournament add bad Initials")
+        log.log("SCORE: tournament add bad Initials")
         return False
 
     if new_entry["score"] < 1000 :
-        print("SCORE: tournament add bad score")
+        log.log("SCORE: tournament add bad score")
         return False
 
     count = DataStore.memory_map["tournament"]["count"]

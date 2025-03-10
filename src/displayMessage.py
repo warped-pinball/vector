@@ -217,6 +217,7 @@ def init(ipAddress):
     localCopyIp = ipAddress
     show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]
 
+    log.log(f"MSG: init ip address {ipAddress}")
     refresh_9()    #here at boot up, cannot be in scheduler or might mess up a game
     return
 
