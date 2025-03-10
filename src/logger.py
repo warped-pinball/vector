@@ -1,98 +1,72 @@
+# event / message/ fault logger - goes to serial FRAM
 import gc
-
 import SPI_Store as fram
 
 # FRAM configuration
 AddressStart = 0x2400
 LoggerLength = 0x1FFF
+
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6
-NextWriteAddress = 0
-LogEndMarker = "\n"  # "<END>"
+LogEndMarker = "\n"
 
 
 class Logger:
     def __init__(self):
-        global NextWriteAddress
-        self._initialize_log()
-
-    def _initialize_log(self):
-        global NextWriteAddress
         address_bytes = fram.read(AddressPointer, 4)
-        NextWriteAddress = int.from_bytes(address_bytes, "big")
-        if NextWriteAddress < AddressStart or NextWriteAddress > AddressEnd:
-            NextWriteAddress = AddressStart
+        self.NextWriteAddress = int.from_bytes(address_bytes, "big")
+        if self.NextWriteAddress < AddressStart or self.NextWriteAddress >= AddressEnd:
+            self.NextWriteAddress = AddressStart
 
     def delete_log(self):
-        global NextWriteAddress
-        NextWriteAddress = AddressStart
+        self.NextWriteAddress = AddressStart
 
-        clear_data = b"\x00" * 16  # 16 bytes
+        clear_data = b"\x00" * 16
         current_address = AddressStart
         while current_address <= AddressEnd:
             fram.write(current_address, clear_data)
             current_address += len(clear_data)
 
-        address_bytes = NextWriteAddress.to_bytes(4, "big")
+        address_bytes = self.NextWriteAddress.to_bytes(4, "big")
         fram.write(AddressPointer, address_bytes)
         self.log("LOG: Delete All")
+        print("address after delete is ", self.NextWriteAddress)
 
     def log(self, message):
-        global NextWriteAddress
         print(message)
         message += LogEndMarker  # Append the end marker
         for char in message:
-            fram.write(NextWriteAddress, char.encode("utf-8"))  # Write each character as a byte
-            NextWriteAddress += 1
-            if NextWriteAddress > AddressEnd:
-                NextWriteAddress = AddressStart  # Wrap around if end is reached
+            fram.write(self.NextWriteAddress, char.encode("utf-8"))
+            self.NextWriteAddress += 1
+            if self.NextWriteAddress >= AddressEnd:
+                self.NextWriteAddress = AddressStart  # Wrap around if end is reached
 
         # Save the updated NextWriteAddress back to the fram
-        address_bytes = NextWriteAddress.to_bytes(4, "big")
+        address_bytes = self.NextWriteAddress.to_bytes(4, "big")
         fram.write(AddressPointer, address_bytes)
-
-    def get_logs(self):
-        logs = []
-        global NextWriteAddress
-        current_address = NextWriteAddress
-        read_size = 16  # Number of bytes to read at a time
-
-        while True:
-            remaining_bytes = AddressEnd - current_address + 1
-            bytes_to_read = min(read_size, remaining_bytes)
-            data = fram.read(current_address, bytes_to_read)
-
-            for byte in data:
-                char = chr(byte)
-                logs.append(char)
-                current_address += 1
-                if current_address > AddressEnd:
-                    current_address = AddressStart  # Wrap around if end is reached
-                if "".join(logs).endswith(LogEndMarker):
-                    return "".join(logs).replace(LogEndMarker, "")
 
     def get_logs_stream(self):
         gc.collect()
-        global NextWriteAddress
 
-        if NextWriteAddress < AddressStart or NextWriteAddress > AddressEnd:
-            NextWriteAddress = AddressStart
-        current_address = NextWriteAddress
+        if self.NextWriteAddress < AddressStart or self.NextWriteAddress > AddressEnd:
+            self.NextWriteAddress = AddressStart
+        current_address = self.NextWriteAddress
         read_size = 16
-        remaining_bytes = AddressEnd - AddressStart
+        remaining_bytes = AddressEnd - AddressStart  # whole logger space
 
         while True:
             bytes_to_read = min(read_size, remaining_bytes)
             data = fram.read(current_address, bytes_to_read)
-            remaining_bytes -= read_size
 
             for byte in data:
                 yield chr(byte).encode("utf-8")
                 current_address += 1
-                if current_address > AddressEnd:
+                remaining_bytes -= 1
+                if current_address >= AddressEnd:
                     current_address = AddressStart
+                    break
 
-            if remaining_bytes < 16:
+            if remaining_bytes < 1:
                 return
 
 
