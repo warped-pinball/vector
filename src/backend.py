@@ -8,7 +8,6 @@ import Pico_Led
 import uctypes
 from ls import ls
 from machine import RTC
-from Memory_Main import blank_ram
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from uctypes import bytearray_at
 from ujson import dumps as json_dumps
@@ -23,7 +22,6 @@ from SPI_DataStore import write_record as ds_write_record
 # Constants
 #
 rtc = RTC()
-ram_access = bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 WIFI_MAX_ATTEMPTS = 2
 AP_NAME = "Warped Pinball"
 # Authentication variables
@@ -397,23 +395,6 @@ def app_game_status(request):
 
 
 #
-# Memory
-#
-@add_route("/api/memory/reset", auth=True)
-def app_reset_memory(request):
-    import reset_control
-
-    from phew.server import restart_schedule as phew_restart_schedule
-
-    reset_control.reset()
-    sleep(2)
-    blank_ram()
-    sleep(1)
-    reset_control.release(True)
-    phew_restart_schedule()
-
-
-#
 # Leaderboard
 #
 def get_scoreboard(key, sort_by="score", reverse=False):
@@ -480,7 +461,7 @@ def app_claimScore(request):
     from ScoreTrack import claim_score
 
     data = request.data
-    claim_score(initials=data["initials"].strip(), player_index=data["player_index"], score=data["score"])
+    claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
 
 
 #
@@ -507,8 +488,14 @@ def app_updatePlayer(request):
     index = int(body["id"])
     if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
+  
+    initials = body["initials"].upper()  #very particular intials conditioning
+    i_intials = ""
+    for c in initials:
+        if 'A' <= c <= 'Z':
+            i_intials += c
+    initials = (i_intials + "   ")[:3]
 
-    initials = body["initials"].strip().upper()[:3]
     name = body["full_name"][:16]
 
     # if name and initials are empty, delete the record
@@ -660,14 +647,23 @@ def app_factoryReset(request):
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
     from SPI_DataStore import blankAll as D_blank
+    from SPI_Store import write_16_fram
 
     Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
-    Log.delete_log()
+    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)   
+    Log.delete_log()   
     D_blank()
-    A_blank()
+    A_blank()    
     Log.log("BKD: Factory Reset")
+
+    #corrupt adjustments to force game factory reset on next boot
+    for i in range(1930, 1970):  
+        ram_access[i] = 0
+    write_16_fram(SRAM_DATA_BASE + 1930, 1930)        
+    write_16_fram(SRAM_DATA_BASE + 1950, 1950)  
+
     reset()  # reset PICO
 
 
