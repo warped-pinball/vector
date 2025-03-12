@@ -92,7 +92,6 @@ def _read_machine_score(HighScores):
         pass
 
     # grab four high scores (in order of high->low score, not player number!)
-    #if HighScores:
     if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
         for idx in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
