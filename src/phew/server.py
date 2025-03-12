@@ -287,11 +287,11 @@ def create_schedule(ap_mode: bool = False):
     # set the display message
     schedule(refresh, 30000)
 
-    # check for scores in the machine  (picks up deafults after reboot)
-    schedule(check_for_machine_high_scores, 3500, log="Server: Power up machine score check")
-
     # initialize the leader board right away
-    schedule(initialize_leaderboard, 4000, log="Server: Initialize Leader Board")
+    schedule(initialize_leaderboard, 600, log="Server: Initialize Leader Board")
+
+    # check for scores in the machine  (picks up deafults after reboot)
+    schedule(check_for_machine_high_scores, 9500, log="Server: Power up machine score check")
 
     # print out memory usage
     schedule(resource_go, 5000, 10000)

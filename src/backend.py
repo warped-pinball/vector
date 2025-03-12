@@ -480,7 +480,7 @@ def app_claimScore(request):
     from ScoreTrack import claim_score
 
     data = request.data
-    claim_score(initials=data["initials"].strip(), player_index=data["player_index"], score=data["score"])
+    claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
 
 
 #
@@ -507,8 +507,14 @@ def app_updatePlayer(request):
     index = int(body["id"])
     if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
+  
+    initials = body["initials"].upper()  #very particular intials conditioning
+    i_intials = ""
+    for c in initials:
+        if 'A' <= c <= 'Z':
+            i_intials += c
+    initials = (i_intials + "   ")[:3]
 
-    initials = body["initials"].strip().upper()[:3]
     name = body["full_name"][:16]
 
     # if name and initials are empty, delete the record
