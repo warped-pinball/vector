@@ -49,6 +49,16 @@ def _get_ball_in_play():
     return 0
 
 
+def _get_number_of_players():
+    """only works for pinbot    """
+    try:
+        p=shadowRam[172]+1
+        return p
+    except Exception as e:
+        log.log(f"GSTAT: error in get_number_of_players: {e}")
+    return 0
+
+
 def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
@@ -90,12 +100,35 @@ def poll_fast():
             S.game_status["game_active"] = True
             print("GSTAT: start game @ time=", S.game_status["time_game_start"])
             S.game_status["poll_state"] = 1
+
+            #game was over, now started - so move in player 1 initials and name if found
+            if S.zoom_incoming_intials != "":
+                S.zoom_initials[0] = S.zoom_incoming_intials                
+                S.zoom_names[0] = S.zoom_incomming_name
+                S.zoom_incoming_intials = ""
+                S.zoom_incomming_name = ""
+            
+            S.game_status["number_of_players"] = 1
+
+
     elif ps == 1:
-        if _get_ball_in_play() == 0:
+        #if number of players increments, copy in initials and name
+        if S.game_status["number_of_players"] != _get_number_of_players():           
+            if S.zoom_incoming_intials != "":
+                S.zoom_initials[S.game_status["number_of_players"]-1] = S.zoom_incoming_intials
+                S.zoom_names[S.game_status["number_of_players"]-1] = S.zoom_incomming_name
+                S.zoom_incoming_intials = ""
+                S.zoom_incomming_name = ""
+            S.game_status["number_of_players"] = _get_number_of_players()
+
+
+        if _get_ball_in_play() == 0:  #game end
             S.game_status["time_game_end"] = time.ticks_ms()
             print("GSTAT: end game @ time=", S.game_status["time_game_end"])
             S.game_status["game_active"] = False
             S.game_status["poll_state"] = 2
+
+            
     else:
         S.game_status["poll_state"] = 0
 
