@@ -14,6 +14,8 @@ from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
 
+import USB_Comms
+
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
 
@@ -280,6 +282,7 @@ def create_schedule(ap_mode: bool = False):
     from discovery import DEVICE_TIMEOUT, announce, listen
     from displayMessage import refresh
     from GameStatus import poll_fast
+    from USB_Comms import usb_data_process
 
     #
     # one time tasks
@@ -305,6 +308,9 @@ def create_schedule(ap_mode: bool = False):
     #
     # reoccuring tasks
     #
+
+    #usb serial data handler for ZOOM interface
+    schedule(usb_data_process, 0, 405)
 
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)

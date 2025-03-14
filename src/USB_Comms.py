@@ -21,6 +21,7 @@ def usb_data_handler(timer):
         stash in global for main line to pick up
     '''
     global buffer, incoming_data
+    #print(" P ",end="")
     loop_count = 0
     while poller.poll(0) and loop_count < 100:
         data = sys.stdin.read(1)
@@ -41,7 +42,7 @@ def usb_data_process():
         call on a schedule 
     '''        
     global incoming_data
-    print("USB: process data running")   
+    #print("USB")   
     loop_count=0     
     while incoming_data and loop_count<10:
         loop_count += 1

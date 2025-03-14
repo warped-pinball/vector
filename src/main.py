@@ -8,7 +8,6 @@
 
 import resource
 import time
-from time import sleep
 
 import machine
 import Memory_Main as MemoryMain
@@ -19,17 +18,8 @@ import faults
 import GameDefsLoad
 import SharedState as S
 from logger import logger_instance
+
 Log = logger_instance
-
-import uos
-#from SPI_Store import initialize as initialize_spi_store
-import uasyncio
-import uselect
-import sys
-
-
-incoming_data = []
-
 
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -38,9 +28,12 @@ DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 LED_Out = machine.Pin(26, machine.Pin.OUT)
 
 timer = machine.Timer()
+led_board = None
+
 
 def error_toggle(timer):
     led_board.toggle()
+
 
 def set_error_led():
     global led_board
@@ -112,6 +105,7 @@ def check_ap_button():
 
 
 reset_control.init()
+
 print("\n\n")
 print("  Warped Pinball :: System11.Wifi")
 Log.log(f"          Version {S.WarpedVersion}")
@@ -124,6 +118,7 @@ This work is licensed under CC BY-NC 4.0
 """
 )
 
+
 ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check()
 if bus_activity_fault:
@@ -133,6 +128,7 @@ if bus_activity_fault:
     Log.log("Main: Reset Circuit fault detected !!")
 
 # load up Game Definitions
+
 if not bus_activity_fault and not ap_mode:
     GameDefsLoad.go()
 else:
@@ -141,73 +137,10 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
-
-
-
-
-
-async def main_task():
-    global incoming_data
-
-    for x in range(4):
-        print("test line from vector bootup ", x)        
-        await uasyncio.sleep(0.5)
-
-    while True:
-        #print("continue running")        
-        if incoming_data:
-            buffer = incoming_data.pop(0)  #pops a string from the list        
-            #print(f"Processing buffer in main_task: {buffer}")
-            #print("incomming st#ff ")
-            search_str = "VECTOR: display "
-            index = buffer.find(search_str)            
-            if index != -1 and index + len(search_str) < len(buffer):
-                char_to_send = buffer[index + len(search_str)]
-                #print(f"Character to send to diagdisplay: {char_to_send}")
-                disp.write_char(char_to_send)
-        await uasyncio.sleep(1)
-
-async def main():
-    # Create tasks for both the usb_data_handler and main_task
-    usb_task = uasyncio.create_task(usb_data_handler())
-    main_task_instance = uasyncio.create_task(main_task())
-
-    # Wait for both tasks to complete (they won't, because they run indefinitely)
-    await usb_task
-    await main_task_instance
-
-async def usb_data_handler():
-    """get serial data from the serial port"""
-    global incoming_data
-    poller = uselect.poll()
-    poller.register(sys.stdin, uselect.POLLIN)
-    buffer = ""
-    
-    while True:
-        while poller.poll(0):
-            data = sys.stdin.read(1)
-            if data in ('\n','\r'):
-                if buffer: #if buffer is not empty and string has been terminated by \n or \r
-                    print(f"Data received at vector: {buffer}")
-                    incoming_data.append(buffer)                    
-                    buffer = ""
-            else:
-                buffer += data
-                if len(buffer) > 500:
-                    buffer = ""
-        await uasyncio.sleep(0.1)
-
-
-
-
-# Run the main coroutine
-uasyncio.run(main())
-
-print("PAST UASYNC MAIN CALL NOw")
-
 time.sleep(0.5)
 reset_control.release(True)
 time.sleep(4)
+
 resource.go(True)
 
 # launch wifi, and server. Should not return
@@ -217,8 +150,3 @@ Log.log("MAIN: Launching Wifi")
 go(ap_mode)
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)
-
-
-
-
-
