@@ -54,9 +54,9 @@ def usb_data_process():
         index = in_buffer.find(search_str)
         if index != -1 and index + len(search_str) < len(in_buffer):
             start_index = index + len(search_str)
-            S.zoom_initials = in_buffer[start_index:start_index + 3].strip()
+            S.zoom_incoming_intials = in_buffer[start_index:start_index + 3].strip()
         
-            # name coming in?
+            # NAME coming in?
             name_search_str = "N:"
             name_index = in_buffer.find(name_search_str)
             if name_index != -1 and name_index + len(name_search_str) < len(in_buffer):
@@ -65,14 +65,14 @@ def usb_data_process():
 
 
             #finish intial clean up
-            S.zoom_initials = S.zoom_initials.upper()
+            S.zoom_incoming_intials = S.zoom_incoming_intials.upper()
             i_intials = ""
-            for c in S.zoom_initials:
+            for c in S.zoom_incoming_intials:
                 if 'A' <= c <= 'Z':
                     i_intials += c
-            S.zoom_initials = (i_intials + "   ")[:3]
+            S.zoom_incoming_intials = (i_intials + "   ")[:3]
 
-            print(f"USB: initials received: {S.zoom_initials}")
+            print(f"USB: initials received: {S.zoom_incoming_intials}")
             print(f"USB: name received: {S.zoom_incomming_name}")
 
     

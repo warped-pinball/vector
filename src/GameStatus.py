@@ -103,6 +103,7 @@ def poll_fast():
 
             #game was over, now started - so move in player 1 initials and name if found
             if S.zoom_incoming_intials != "":
+                print("GSTAT: moving in player 1 initials and name")
                 S.zoom_initials[0] = S.zoom_incoming_intials                
                 S.zoom_names[0] = S.zoom_incomming_name
                 S.zoom_incoming_intials = ""
@@ -115,6 +116,7 @@ def poll_fast():
         #if number of players increments, copy in initials and name
         if S.game_status["number_of_players"] != _get_number_of_players():           
             if S.zoom_incoming_intials != "":
+                print(f"GSTAT: moving in player {S.game_status['number_of_players']} initials")
                 S.zoom_initials[S.game_status["number_of_players"]-1] = S.zoom_incoming_intials
                 S.zoom_names[S.game_status["number_of_players"]-1] = S.zoom_incomming_name
                 S.zoom_incoming_intials = ""
