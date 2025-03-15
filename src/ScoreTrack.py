@@ -120,6 +120,7 @@ def _read_machine_score(HighScores):
                 #zoom initials
                 if S.zoom_initials[idx] != ""  and  S.zoom_initials[idx] != "   " :
                     high_scores[idx][0] = S.zoom_initials[idx]
+                    print("SCORE: using zoom intials", S.zoom_initials[idx])
                     
         # if we have high scores, intials AND in-play socres, put initials to the in play scores
         for in_play_score in in_play_scores:

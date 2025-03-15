@@ -87,7 +87,7 @@ usb_timer.init(period=100, mode=machine.Timer.PERIODIC, callback=usb_data_handle
 import GameStatus
 def send_game_status():
     gs = GameStatus.game_report()
-    print(f"ZOOM: {gs}")
+    print(f"ZOOM: GAME: {gs}")
 
 
 
