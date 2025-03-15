@@ -299,7 +299,7 @@ def update_individual_score(new_entry):
 def _find_zoom_name_by_initials(new_entry):
     #match zoom initials - return name
     for idx in range(4):
-        if S.zoom_initials[idx] == new_entry["initials"]: :            
+        if S.zoom_initials[idx] == new_entry["initials"]:        
             print("SCORE: found zoom name", S.zoom_names[idx])
             return (S.zoom_names[idx], idx)
     return (None, -1)
