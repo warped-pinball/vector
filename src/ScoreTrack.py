@@ -296,6 +296,15 @@ def update_individual_score(new_entry):
     return True
 
 
+def _find_zoom_name_by_initials(new_entry):
+    #match zoom initials - return name
+    for idx in range(4):
+        if S.zoom_initials[idx] == new_entry["initials"]: :            
+            print("SCORE: found zoom name", S.zoom_names[idx])
+            return (S.zoom_names[idx], idx)
+    return (None, -1)
+
+
 def update_leaderboard(new_entry):
     """called by check for new scores, one call for each valid new score entry"""
     global top_scores
@@ -311,7 +320,10 @@ def update_leaderboard(new_entry):
     update_individual_score(new_entry)
 
     # add player name to new_entry if there is an initals match
-    new_entry["full_name"], ind = find_player_by_initials(new_entry)
+    #new_entry["full_name"], ind = find_player_by_initials(new_entry)
+
+    #replace for now with only checking names given from zoom
+    new_entry["full_name"], ind = _find_zoom_name_by_initials(new_entry)
     if new_entry["full_name"] is None:
         new_entry["full_name"] = ""
 
