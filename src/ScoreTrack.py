@@ -115,18 +115,22 @@ def _read_machine_score(HighScores):
                 high_scores[idx][0] = high_scores[idx][0].strip()
                 
                 if high_scores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
-                    high_scores[idx][0] = ""
-
-                #zoom initials
-                if S.zoom_initials[idx] != ""  and  S.zoom_initials[idx] != "   " :
-                    high_scores[idx][0] = S.zoom_initials[idx]
-                    print("SCORE: using zoom intials", S.zoom_initials[idx])
+                    high_scores[idx][0] = ""              
                     
         # if we have high scores, intials AND in-play socres, put initials to the in play scores
         for in_play_score in in_play_scores:
             for high_score in high_scores:
                 if in_play_score[1] == high_score[1]:
                     in_play_score[0] = high_score[0]  # copy initals over
+
+
+    #zoom initials
+    for idx in range(4):
+        if S.zoom_initials[idx] != ""  and  S.zoom_initials[idx] != "   " :
+            high_scores[idx][0] = S.zoom_initials[idx]
+            in_play_scores[idx][0] = S.zoom_initials[idx]
+            print("SCORE: using zoom intials", S.zoom_initials[idx])
+
 
     if all(score[1] == 0 for score in in_play_scores):
         log.log("SCORE: High Scores used")
