@@ -86,6 +86,6 @@ import GameStatus
 import json
 def send_game_status():
     gs = GameStatus.game_report()
-    gs['zoom_initials'] = S.zoom_intials  
+    gs['zoom_initials'] = S.zoom_initials  
     gs_json = json.dumps(gs)
     print(f"ZOOM: GAME: {gs_json}")
