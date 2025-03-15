@@ -114,14 +114,14 @@ def poll_fast():
 
     elif ps == 1:
         #if number of players increments, copy in initials and name
-        if S.game_status["number_of_players"] != _get_number_of_players():           
+        if S.game_status["number_of_players"] != _get_number_of_players():    
+            S.game_status["number_of_players"] = _get_number_of_players()
             if S.zoom_incoming_intials != "":
                 print(f"GSTAT: moving in player {S.game_status['number_of_players']} initials")
                 S.zoom_initials[S.game_status["number_of_players"]-1] = S.zoom_incoming_intials
                 S.zoom_names[S.game_status["number_of_players"]-1] = S.zoom_incomming_name
                 S.zoom_incoming_intials = ""
-                S.zoom_incomming_name = ""
-            S.game_status["number_of_players"] = _get_number_of_players()
+                S.zoom_incomming_name = ""    
 
         if _get_ball_in_play() == 0:  #game end
             S.game_status["time_game_end"] = time.ticks_ms()
