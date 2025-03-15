@@ -121,7 +121,6 @@ def poll_fast():
                 S.zoom_incomming_name = ""
             S.game_status["number_of_players"] = _get_number_of_players()
 
-
         if _get_ball_in_play() == 0:  #game end
             S.game_status["time_game_end"] = time.ticks_ms()
             print("GSTAT: end game @ time=", S.game_status["time_game_end"])

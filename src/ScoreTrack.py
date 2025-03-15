@@ -46,14 +46,7 @@ def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
 
-    #condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
-    i_intials = ""
-    for c in initials:
-        if 'A' <= c <= 'Z':
-            i_intials += c
-    initials = (i_intials + "   ")[:3]
-
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
             log.log(f"SCORE: claim new score: {initials}, {score}, {game_index}, {player_index}")
@@ -92,19 +85,22 @@ def _read_machine_score(HighScores):
         pass
 
     # grab four high scores (in order of high->low score, not player number!)
-    if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
-        for idx in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
-            score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
-            high_scores[idx][1] = _bcd_to_int(score_bytes)
-            if high_scores[idx][1] < 1000:
-                high_scores[idx][1] = 0
+    if HighScores:
+        if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
+            for idx in range(4):
+                score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
+                score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
+                high_scores[idx][1] = _bcd_to_int(score_bytes)
+                if high_scores[idx][1] < 1000:
+                    high_scores[idx][1] = 0
 
         # initials
         if "InitialAdr" in S.gdata["HighScores"]:
             for idx in range(4):
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * 3
                 initials_bytes = shadowRam[initial_start : initial_start + 3]
+
+                print("Initials READ MACHINE hex codes:", [hex(b) for b in initials_bytes])
 
                 if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
                     initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
@@ -116,9 +112,15 @@ def _read_machine_score(HighScores):
                     except Exception:
                         high_scores[idx][0] = None
 
+                high_scores[idx][0] = high_scores[idx][0].strip()
+                
                 if high_scores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
                     high_scores[idx][0] = ""
 
+                #zoom initials
+                if S.zoom_initials[idx] != ""  and  S.zoom_initials[idx] != "   " :
+                    high_scores[idx][0] = S.zoom_initials[idx]
+                    
         # if we have high scores, intials AND in-play socres, put initials to the in play scores
         for in_play_score in in_play_scores:
             for high_score in high_scores:
@@ -172,13 +174,6 @@ def place_machine_scores():
     """write four highest scores & initials from storage to machine memory"""
     global top_scores
 
-    #possible high score intials are empty if there was a reset / reboot etc
-    #games do not like empties!
-    for index in range(4):
-        if len(top_scores[index]["initials"]) != 3:
-            top_scores[index]["initials"] = "   "
-            top_scores[index]["score"] = 100
-
     if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
         log.log("SCORE: Place system 11 machine scores")
         for index in range(4):
@@ -195,9 +190,10 @@ def place_machine_scores():
             try:
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
                 initials = top_scores[index]["initials"]
+                initials = ''.join([c if 32 <= ord(c) <= 126 else ' ' for c in initials])
 
                 for i in range(3):
-                    if S.gdata["HighScores"]["Type"] == 1:
+                    if S.gdata["HighScores"]["Type"] == 1:                        
                         shadowRam[initial_start + i] = ord(initials[i])
                     elif S.gdata["HighScores"]["Type"] == 3:
                         shadowRam[initial_start + i] = _ascii_to_type3(ord(initials[i]))
@@ -361,6 +357,12 @@ def initialize_leaderboard():
     count = DataStore.memory_map["leaders"]["count"]
     top_scores = [DataStore.read_record("leaders", i) for i in range(count)]
 
+    # make sure we have 4 entries
+    #while len(top_scores) < 4:
+    #    fake_entry = {"initials": "AAA", "full_name": "", "score": 10000, "date": "04/17/2024"}
+    #    log.log("SCORE: place fake score at boot")
+    #    top_scores.append(fake_entry)
+
 
 def check_for_machine_high_scores():
     # check for high scores in machine that we dont have yet
@@ -369,6 +371,9 @@ def check_for_machine_high_scores():
     for idx in range(4):
         if scores[idx][1] > 1000:  # could be left over ip address digits in system 9
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
+
+            print("Initials hex codes:", scores[idx][0], ":", [hex(ord(c)) if 32 <= ord(c) <= 126 else hex(ord(c)) for c in scores[idx][0]])
+
             log.log("SCORE: place game score into vector")
             update_leaderboard(new_score)
 
@@ -487,6 +492,12 @@ def CheckForNewScores(nState=[0]):
 
                 # put high scores back in machine memory
                 place_machine_scores()
+
+                S.zoom_incoming_intials=""
+                S.zoom_incomming_name=""
+                for i in range(4):
+                    S.zoom_initials[i] = ""
+                    S.zoom_names[i] = ""
 
                 # put ip address back up on system 9 displays
                 displayMessage.refresh_9()

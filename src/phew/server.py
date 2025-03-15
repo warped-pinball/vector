@@ -283,6 +283,7 @@ def create_schedule(ap_mode: bool = False):
     from displayMessage import refresh
     from GameStatus import poll_fast
     from USB_Comms import usb_data_process
+    from USB_Comms import send_game_status
 
     #
     # one time tasks
@@ -308,6 +309,8 @@ def create_schedule(ap_mode: bool = False):
     #
     # reoccuring tasks
     #
+
+    schedule(send_game_status, 14000, 3000)
 
     #usb serial data handler for ZOOM interface
     schedule(usb_data_process, 0, 405)

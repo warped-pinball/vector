@@ -50,7 +50,7 @@ def usb_data_process():
         in_buffer = incoming_data.pop(0)  #pops a complete string from the list        
 
         #initals and name coming in?
-        search_str = "VECTOR I: "
+        search_str = "VECTOR: I: "
         index = in_buffer.find(search_str)
         if index != -1 and index + len(search_str) < len(in_buffer):
             start_index = index + len(search_str)
@@ -77,10 +77,17 @@ def usb_data_process():
 
     
 
-
 # Set up a timer to call usb_data_handler every 100ms
 usb_timer = machine.Timer(-1)
 usb_timer.init(period=100, mode=machine.Timer.PERIODIC, callback=usb_data_handler)
+
+
+
+#send game status to zoom -
+import GameStatus
+def send_game_status():
+    gs = GameStatus.game_report()
+    print(f"ZOOM: {gs}")
 
 
 
