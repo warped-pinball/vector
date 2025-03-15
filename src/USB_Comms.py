@@ -82,12 +82,10 @@ usb_timer = machine.Timer(-1)
 usb_timer.init(period=100, mode=machine.Timer.PERIODIC, callback=usb_data_handler)
 
 
-
-#send game status to zoom -
 import GameStatus
+import json
+
 def send_game_status():
     gs = GameStatus.game_report()
-    print(f"ZOOM: GAME: {gs}")
-
-
-
+    gs_json = json.dumps(gs)
+    print(f"ZOOM: GAME: {gs_json}")
