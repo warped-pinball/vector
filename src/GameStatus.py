@@ -76,6 +76,8 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        data["NumberOfPlayers"] = S.game_status["number_of_players"]
+
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
                 data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
