@@ -22,13 +22,20 @@ Check us out: [Warped Pinball](https://warpedpinball.com)
 - **Over-the-Air Updates**: Easily update your Vector with the latest features. Your board will never automatically install software without you 
 - **Unaltered Gameplay**: Enjoy modern features without changing the classic feel.
 
-## FAQ
+## FAQ & Trouble shooting
 
-Many frequently asked questions are addressed in [our FAQ video on youtube](https://youtu.be/iD46myZ2hAI?si=HNcbDbbh4u5xqsF9). If you have other questions 
+If you have any questions or trouble we reccomend:
+ - [our FAQ video on youtube](https://youtu.be/iD46myZ2hAI?si=HNcbDbbh4u5xqsF9)
+ - [Open an issue](https://github.com/warped-pinball/vector/issues/new/choose)
+ - Contact us at [inventingfun@gmail.com](mailto:inventingfun@gmail.com)
 
 ## Contributing
 
-We welcome contributions to the Vector project. we do not yet have a formal process for contributing, but we are working on it. In the meantime, please feel free to [open an issue](https://github.com/warped-pinball/vector/issues/new/choose) and we'll get back to you as soon as we can.
+For developers interested in contributing or modifying the software:
+
+1. Clone this repository
+2. Set up the development environment (see [dev/readme.md](dev/readme.md))
+3. Build and flash using the provided scripts
 
 
 ## License

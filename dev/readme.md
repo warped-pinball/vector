@@ -63,14 +63,12 @@
 1. **Build and Deploy to Pico**
    From the root of your repository:
 
-   `./dev/sync.py`
+   `./dev/sync.sh`
 
-2. **Get Sync Script Help**
-   `./dev/sync.py --help`
 
 ## Automatic Configuration
 
-To automatically configure your system, create a JSON file with the following structure:
+To automatically configure your vector when flashing, create a JSON file with the following structure:
 
 ```json
 {
