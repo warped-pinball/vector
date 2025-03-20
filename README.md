@@ -7,14 +7,14 @@
 
 Vector is a modern hardware and software solution that brings advanced features to classic pinball machines while preserving their original gameplay. It allows your Williams/Bally System 9 and 11 games (with plans for WPC and Data East support in 2025) to take advantage of modern electronics and connectivity.
 
-Checkout our [demo site](https://vector.doze.dev) which is hosted on a vector board
+Check out our [demo site](https://vector.doze.dev) which is hosted on a vector board
 
 Check us out: [Warped Pinball](https://warpedpinball.com)
 
 ## Features
 
 - **ZERO subscriptions or dependencies** There are no servers to fail, no services to pay for. You don't even really need to connect to the internet. We don't (and can't) control your device in any way once you purchase it. You may *optionally* install our free updates. 
-- **WiFi connectivity**: Securely access all the great features of vector from any device on your local internet. There's zero "phone-home" or data collection. Don't believe us? You can read the source code right here on GitHub. 
+- **WiFi connectivity**: Securely access all the great features of vector from any device on your local internet. There's no "phone-home" or data collection. Don't believe us? You can read the source code right here on GitHub. 
 - **Adjustments Profiles**: Change your games adjustments / settings through the web interface with a single button click. Save up to 4 profiles so you can easily switch between your "free play", "Tournament", and "Arcade" adjustments, or anything else you like.
 - **Live Scores**: Watch scores for in-progress games change in realtime with fun effects.
 - **Extended Leaderboard**: Expand the high scores on your machine to 20 slots.
@@ -35,11 +35,21 @@ If you have any questions or trouble we recommend:
 
 ## Contributing
 
-For developers interested in contributing or modifying the software:
+We welcome contributions from others. This is a passion project for us and we love sharing that passion with others. In order to run the project you will need our custom hardware but a pinball machine is not strictly required, although highly recommended for "testing" and "breaks" while developing. Reach out if you need any help with your setup.
 
-1. Clone this repository
-2. Set up the development environment (see [dev/readme.md](dev/readme.md))
-3. Build and flash using the provided scripts
+### Workflow
+
+Generally speaking, development by outside developers should follow this workflow: 
+
+1. Open an issue describing what you want. 
+    It's important to do this since it's entirely possible we've already explored your idea and there's a technical reason we have not implemented it. The constraints within vector are complicated and we work hard to strike a balance between features and performance. So it's a good idea to chat with us first so you can be sure you're working with all the best information.
+2. Fork this repository and clone it to your local machine.
+3. Set up the development environment (see [dev/readme.md](dev/readme.md))
+4. Develop your changes on a new branch.
+5. Test your changes on your local machine.
+6. Submit a cross-fork pull request to the main branch of this repository.
+7. Wait patiently for us to review your changes. We will provide feedback and may ask you to make changes.
+8. Once your changes are approved, we will merge them into the main branch and likely make a release soon after.
 
 
 ## License
