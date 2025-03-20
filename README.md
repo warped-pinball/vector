@@ -1,5 +1,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/warped-pinball/vector?color=blue)](https://github.com/warped-pinball/vector/releases/latest)
-
+![License](https://img.shields.io/badge/license-CC%20BY--NC-blue)
+![GitHub issues](https://img.shields.io/github/issues/warped-pinball/vector)
+![GitHub last commit](https://img.shields.io/github/last-commit/warped-pinball/vector)
 
 # Vector
 
