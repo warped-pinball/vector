@@ -28,6 +28,7 @@ Check us out: [Warped Pinball](https://warpedpinball.com)
 ## FAQ & Troubleshooting
 
 If you have any questions or trouble we recommend:
+ - The bottom of the admin page has helpful documentation
  - [our FAQ video on YouTube](https://youtu.be/iD46myZ2hAI?si=HNcbDbbh4u5xqsF9)
  - [Open an issue](https://github.com/warped-pinball/vector/issues/new/choose)
  - Contact us at [inventingfun@gmail.com](mailto:inventingfun@gmail.com)
