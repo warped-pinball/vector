@@ -7,9 +7,13 @@
 1. **Download Miniforge Installer**
    Choose `x86_64` for most Linux PCs or `aarch64` for Raspberry Pi:
 
-   `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh`
-   # OR for Raspberry Pi
-   `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh`
+   ```bash
+   #x86
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+   
+   # Raspberry Pi
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+   ```
 
 2. **Make the Installer Executable**
 
