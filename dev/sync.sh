@@ -29,8 +29,11 @@ fi
 echo "Flashing the Pico ..."
 # We'll pass the same environment if needed, but flash.py might not need it
 # for the basic steps. Adjust if your flash.py script has extra flags.
-echo "$PORT"
-python dev/flash.py "$BUILD_DIR" --port "$PORT"
+PORT_PARAM=""
+if [ -n "$PORT" ]; then
+PORT_PARAM="--port ${PORT}"
+fi
+python dev/flash.py "$BUILD_DIR" $PORT_PARAM
 if [ $? -ne 0 ]; then
   echo "Flashing failed. Aborting."
   exit 1
