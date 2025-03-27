@@ -870,10 +870,10 @@ window.getGameStatus = async function () {
 
     // Hide players with no score
     if (newScore === 0) {
-      tag.classList.add("hide");
-      // Explicitly set score to zero and hide score element when zero
-      scoreElement.style.setProperty("--num", 0);
-      scoreElement.classList.add("hide");
+      // replace score element with empty div with the same id
+      const newScoreElement = document.createElement("div");
+      newScoreElement.id = scoreElement.id;
+      scoreElement.replaceWith(newScoreElement);
       window.scoreHistory[i].lastScore = 0;
       continue;
     }
@@ -893,5 +893,5 @@ window.getGameStatus = async function () {
 window.getGameStatus();
 
 // Poll for updates
-setInterval(window.getGameStatus, 15000);
+setInterval(window.getGameStatus, 1500);
 setInterval(window.getClaimableScores, 4000);
