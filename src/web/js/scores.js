@@ -747,6 +747,14 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
   const playerHistory = window.scoreHistory[playerId];
   const isInitialScore = !playerHistory.initialized;
 
+  // Hide score element if score is zero
+  if (newScore === 0) {
+    scoreElement.classList.add("hide");
+    return;
+  } else {
+    scoreElement.classList.remove("hide");
+  }
+
   // Get current displayed score
   const style = window.getComputedStyle(scoreElement);
   const oldScore = parseInt(style.getPropertyValue("--num") || "0", 10);
@@ -839,6 +847,7 @@ window.getGameStatus = async function () {
         const scoreElement = document.getElementById(`live-player-${i}-score`);
         if (scoreElement) {
           scoreElement.style.setProperty("--num", 0);
+          scoreElement.classList.add("hide");
           window.scoreHistory[i].lastScore = 0;
         }
       }
@@ -854,16 +863,17 @@ window.getGameStatus = async function () {
   for (let i = 1; i <= 4; i++) {
     const tag = document.getElementById(`live-player-${i}`);
     const scoreElement = document.getElementById(`live-player-${i}-score`);
-    
+
     if (!tag || !scoreElement) continue;
-    
+
     const newScore = data.Scores[i - 1] || 0;
 
     // Hide players with no score
     if (newScore === 0) {
       tag.classList.add("hide");
-      // Explicitly set score to zero when hidden
+      // Explicitly set score to zero and hide score element when zero
       scoreElement.style.setProperty("--num", 0);
+      scoreElement.classList.add("hide");
       window.scoreHistory[i].lastScore = 0;
       continue;
     }
@@ -871,6 +881,7 @@ window.getGameStatus = async function () {
     // Show player and update score
     tag.classList.remove("hide");
     scoreElement.classList.add("css-score-anim");
+    scoreElement.classList.remove("hide"); // Make sure score is visible for non-zero scores
     window.processScoreChange(scoreElement, i, newScore);
   }
 
@@ -882,5 +893,5 @@ window.getGameStatus = async function () {
 window.getGameStatus();
 
 // Poll for updates
-setInterval(window.getGameStatus, 1500);
+setInterval(window.getGameStatus, 15000);
 setInterval(window.getClaimableScores, 4000);
