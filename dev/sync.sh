@@ -15,6 +15,7 @@
 ENVIRONMENT="${1:-dev}"     # If user doesn't specify, default to 'dev'
 BUILD_DIR="build"           # adjust as necessary
 SOURCE_DIR="src"            # adjust as necessary
+PORT="${2}"                # optionally define port
 
 # --- 1. Build the project ---
 echo "Building project with environment=${ENVIRONMENT} ..."
@@ -28,7 +29,11 @@ fi
 echo "Flashing the Pico ..."
 # We'll pass the same environment if needed, but flash.py might not need it
 # for the basic steps. Adjust if your flash.py script has extra flags.
-python dev/flash.py "$BUILD_DIR"
+PORT_PARAM=""
+if [ -n "$PORT" ]; then
+PORT_PARAM="--port ${PORT}"
+fi
+python dev/flash.py "$BUILD_DIR" $PORT_PARAM
 if [ $? -ne 0 ]; then
   echo "Flashing failed. Aborting."
   exit 1
