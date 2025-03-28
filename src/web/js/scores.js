@@ -747,6 +747,14 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
   const playerHistory = window.scoreHistory[playerId];
   const isInitialScore = !playerHistory.initialized;
 
+  // Hide score element if score is zero
+  if (newScore === 0) {
+    scoreElement.classList.add("hide");
+    return;
+  } else {
+    scoreElement.classList.remove("hide");
+  }
+
   // Get current displayed score
   const style = window.getComputedStyle(scoreElement);
   const oldScore = parseInt(style.getPropertyValue("--num") || "0", 10);
@@ -832,6 +840,18 @@ window.getGameStatus = async function () {
   // If game not active, hide status and exit
   if (data.GameActive !== true) {
     gameStatus.classList.add("hide");
+    // Reset all scores to zero when game is not active
+    const players = document.getElementById("live-players");
+    if (players) {
+      for (let i = 1; i <= 4; i++) {
+        const scoreElement = document.getElementById(`live-player-${i}-score`);
+        if (scoreElement) {
+          scoreElement.style.setProperty("--num", 0);
+          scoreElement.classList.add("hide");
+          window.scoreHistory[i].lastScore = 0;
+        }
+      }
+    }
     return;
   }
 
@@ -840,23 +860,29 @@ window.getGameStatus = async function () {
 
   // Process player scores
   const players = document.getElementById("live-players");
-  for (const tag of players.children) {
-    const playerId = tag.id.split("-")[2];
-    const scoreElement = document.getElementById(
-      `live-player-${playerId}-score`,
-    );
-    const newScore = data.Scores[playerId - 1];
+  for (let i = 1; i <= 4; i++) {
+    const tag = document.getElementById(`live-player-${i}`);
+    const scoreElement = document.getElementById(`live-player-${i}-score`);
+
+    if (!tag || !scoreElement) continue;
+
+    const newScore = data.Scores[i - 1] || 0;
 
     // Hide players with no score
-    if (newScore === undefined || newScore === 0) {
-      tag.classList.add("hide");
+    if (newScore === 0) {
+      // replace score element with empty div with the same id
+      const newScoreElement = document.createElement("div");
+      newScoreElement.id = scoreElement.id;
+      scoreElement.replaceWith(newScoreElement);
+      window.scoreHistory[i].lastScore = 0;
       continue;
     }
 
     // Show player and update score
     tag.classList.remove("hide");
     scoreElement.classList.add("css-score-anim");
-    window.processScoreChange(scoreElement, playerId, newScore);
+    scoreElement.classList.remove("hide"); // Make sure score is visible for non-zero scores
+    window.processScoreChange(scoreElement, i, newScore);
   }
 
   // Update ball in play display
