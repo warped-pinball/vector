@@ -53,7 +53,7 @@ Generally speaking, development by outside developers should follow this workflo
 
 ### Contributors
 
-<a href="https://github.com/warped-pinball/vector/graphs/contributors">
+<a href="https://github.com/warped-pinball/vector/graphs/contributors" alt="Contributors">
   <img src="https://contrib.rocks/image?repo=warped-pinball/vector" />
 </a>
 
