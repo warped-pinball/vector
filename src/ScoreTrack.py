@@ -177,7 +177,7 @@ def place_machine_scores():
     for index in range(4):
         if len(top_scores[index]["initials"]) != 3:
             top_scores[index]["initials"] = "   "
-            top_scores[index]["score"] = 100
+            #top_scores[index]["score"] = 100  only change initials, not score (blank initials happen with good scores sometimes)
 
     if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
         log.log("SCORE: Place system 11 machine scores")
