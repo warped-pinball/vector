@@ -214,7 +214,6 @@ def place_machine_scores():
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]
             shadowRam[score_start : score_start + 4] = _int_to_bcd(top_scores[index]["score"])
-            print("  top scores: ", top_scores[index])
 
 
 def _remove_machine_scores():
