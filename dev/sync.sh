@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
-#
-# deploy.sh
-#
-# Usage:
-#   ./deploy.sh [dev|beta|prod]
-#
-# Description:
-#   1) Build the project (defaults to 'dev' environment).
-#   2) Flash the board (wipe, copy files, apply config).
-#   3) Connect to the board REPL via mpremote.
+
 
 # --- Configuration ---
 
@@ -16,6 +7,14 @@ ENVIRONMENT="${1:-dev}"     # If user doesn't specify, default to 'dev'
 BUILD_DIR="build"           # adjust as necessary
 SOURCE_DIR="src"            # adjust as necessary
 PORT="${2}"                # optionally define port
+
+# --- 0. Setup ---
+
+# Check we have the latest version of Trench Coat downloaded
+# https://github.com/warped-pinball/trench-coat/releases/latest
+
+
+
 
 # --- 1. Build the project ---
 echo "Building project with environment=${ENVIRONMENT} ..."
