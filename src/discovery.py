@@ -23,9 +23,10 @@ def announce():
 
     from ujson import dumps
 
+    from phew import get_ip_address
     from SharedState import WarpedVersion, gdata
 
-    msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}
+    msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"], "ip": get_ip_address()}
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
