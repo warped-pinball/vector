@@ -1,5 +1,7 @@
 # The UDP port we will send/receive on
 DISCOVERY_PORT = 37020
+GAME_STATUS_PORT = 37021
+GAME_FINAL_SCORE_PORT = 37022
 DEVICE_TIMEOUT = 60  # Will announce at 1/2 this interval
 MAXIMUM_KNOWN_DEVICES = 10  # TODO establish what a reasonable limit is
 
@@ -17,38 +19,57 @@ def setup():
     known_devices[get_ip_address()] = {"name": gdata["GameInfo"]["GameName"], "version": WarpedVersion, "self": True}
 
 
+def broadcast(msg, port):
+    """
+    Broadcast a string to a UDP port.
+    """
+    import socket
+
+    # if the msg is a dict, convert it to a string
+    if isinstance(msg, dict):
+        from json import dumps
+
+        msg = dumps(msg)
+    elif not isinstance(msg, str):
+        raise ValueError("msg must be a string or dict")
+
+    try:
+        print("Broadcasting:", msg, "to port", port)
+        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        send_sock.sendto(msg.encode("utf-8"), ("255.255.255.255", port))
+    except Exception as e:
+        print("Failed to broadcast:", e)
+    finally:
+        send_sock.close()
+
+
+def broadcast_game_status():
+    """
+    Broadcast the game status to the local network.
+    """
+    from GameStatus import game_report
+    from phew import get_ip_address
+
+    msg = {"game_ip": get_ip_address(), "game_status": game_report()}
+
+    broadcast(msg, GAME_STATUS_PORT)
+
+
 def announce():
     """Broadcast this device's info to the local network."""
     from time import time
-
-    from ujson import dumps
 
     from phew import get_ip_address
     from SharedState import WarpedVersion, gdata
 
     msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"], "ip": get_ip_address()}
 
-    # Broadcast to 255.255.255.255 on DISCOVERY_PORT
-    global send_sock, known_devices
-
-    if not send_sock:
-        import socket
-
-        # Prepare a socket for sending broadcast
-        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    try:
-        send_sock.sendto(
-            dumps(msg).encode("utf-8"),
-            ("255.255.255.255", DISCOVERY_PORT),
-        )
-    except Exception as e:
-        print("Failed to broadcast announcement:", e)
+    broadcast(msg, DISCOVERY_PORT)
 
     # Prune devices that haven't been seen in a while
-    # technically we could do this in the listen() function
-    # but it makes more sense to do it here because the announce frequency is closer to the timeout
+    global known_devices
     now = time()
     known_devices = {ip_str: info for ip_str, info in known_devices.items() if info.get("self", False) or (now - info["last_seen"]) <= DEVICE_TIMEOUT}
 
