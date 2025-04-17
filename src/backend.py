@@ -9,7 +9,6 @@ import uctypes
 from ls import ls
 from machine import RTC
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-from uctypes import bytearray_at
 from ujson import dumps as json_dumps
 
 import faults
@@ -449,6 +448,13 @@ def app_tournamentClear(request):
     SharedState.gameCounter = 0
 
 
+@add_route("/api/scores/last")
+def app_getLastScores(request):
+    from ScoreTrack import get_last_game
+
+    return get_last_game()
+
+
 @add_route("/api/scores/claimable")
 def app_getClaimableScores(request):
     from ScoreTrack import get_claim_score_list
@@ -488,11 +494,11 @@ def app_updatePlayer(request):
     index = int(body["id"])
     if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
-  
-    initials = body["initials"].upper()  #very particular intials conditioning
+
+    initials = body["initials"].upper()  # very particular intials conditioning
     i_intials = ""
     for c in initials:
-        if 'A' <= c <= 'Z':
+        if "A" <= c <= "Z":
             i_intials += c
     initials = (i_intials + "   ")[:3]
 
@@ -652,17 +658,17 @@ def app_factoryReset(request):
     Log = logger_instance
 
     reset_control.reset()  # turn off pinbal machine
-    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)   
-    Log.delete_log()   
+    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    Log.delete_log()
     D_blank()
-    A_blank()    
+    A_blank()
     Log.log("BKD: Factory Reset")
 
-    #corrupt adjustments to force game factory reset on next boot
-    for i in range(1930, 1970):  
+    # corrupt adjustments to force game factory reset on next boot
+    for i in range(1930, 1970):
         ram_access[i] = 0
-    write_16_fram(SRAM_DATA_BASE + 1930, 1930)        
-    write_16_fram(SRAM_DATA_BASE + 1950, 1950)  
+    write_16_fram(SRAM_DATA_BASE + 1930, 1930)
+    write_16_fram(SRAM_DATA_BASE + 1950, 1950)
 
     reset()  # reset PICO
 
@@ -858,7 +864,7 @@ def add_ap_mode_routes():
 def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
 
-    if phew_is_connected() and initialize==False:
+    if phew_is_connected() and not initialize:
         return True
 
     from discovery import setup as discovery_setup
