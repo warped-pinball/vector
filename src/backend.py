@@ -448,6 +448,13 @@ def app_tournamentClear(request):
     SharedState.gameCounter = 0
 
 
+@add_route("/api/scores/last")
+def app_getLastScores(request):
+    from ScoreTrack import get_last_game
+
+    return get_last_game()
+
+
 @add_route("/api/scores/claimable")
 def app_getClaimableScores(request):
     from ScoreTrack import get_claim_score_list
