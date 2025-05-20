@@ -48,6 +48,11 @@
         "BytesInScore": 4
     },
 
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": "0x200"
+    },
+
     "HSRewards": {
         "Type": 0,
         "HS1": 1937,
