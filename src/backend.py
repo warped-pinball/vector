@@ -938,9 +938,6 @@ def go(ap_mode):
         dns.run_catchall(ip)
     else:
         connect_to_wifi(True)
-        while not connect_to_wifi():
-            print("retrying wifi")
-            sleep(1)
         Pico_Led.on()
         add_app_mode_routes()
         from phew.server import set_callback
