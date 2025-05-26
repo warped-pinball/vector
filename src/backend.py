@@ -434,9 +434,8 @@ def app_tournamentRead(request):
 
 @add_route("/api/leaders/reset", auth=True)
 def app_resetScores(request):
-    from SPI_DataStore import blankStruct
-
-    blankStruct("leaders")
+    from ScoreTrack import reset_scores
+    reset_scores()
 
 
 @add_route("/api/tournament/reset", auth=True)
