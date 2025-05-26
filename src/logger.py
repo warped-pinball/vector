@@ -2,9 +2,10 @@
 import gc
 import SPI_Store as fram
 
-# FRAM configuration
-AddressStart = 0x2400
-LoggerLength = 0x1FFF
+# FRAM map configuration
+from FramMap import LOGGER_CONFIG
+AddressStart = LOGGER_CONFIG["AddressStart"]
+LoggerLength = LOGGER_CONFIG["LoggerLength"]
 
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6

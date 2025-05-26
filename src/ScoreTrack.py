@@ -31,6 +31,13 @@ recent_scores = [
 ]
 
 
+def reset_scores():
+    #reset leader board scores
+    from SPI_DataStore import blankStruct
+    blankStruct("leaders")
+
+
+
 def get_claim_score_list():
     result = []
     if DataStore.read_record("extras", 0)["claim_scores"] is True:
