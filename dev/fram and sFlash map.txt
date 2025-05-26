@@ -19,7 +19,7 @@ Blank spot - hold for more data store - - -
 
 0x23FF
 	Game adjustments storage (4 sets),
-		128 bytes plus 16 cahracter name
+		128 bytes plus 16 character name
 		Total space, (128+16)*4 = 576 bytes
 		0x2100 - 0x2340  (reserve extra 767total)
 		0x2344 - one byte last profile loaded 0-3
