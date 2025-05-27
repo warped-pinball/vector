@@ -1,0 +1,87 @@
+{
+    "GameInfo": {
+        "GameName": "Johnny Mnemonic",
+        "System": "WPC",
+        "FileVer": 1
+    },
+
+    "Definition": {
+        "version": 1
+    },
+
+    "Memory" : {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 947,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 135,
+        "GameActiveValue": 0,
+        "Players": 5905,
+        "ScoreAdr": 5792,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 7
+    },
+
+    "DisplayMessage": {
+        "Type": 0,
+        "Address": "0x7B4",
+        "Length": 7,
+        "Number": 6,
+        "EnableByteAddress": "0x7B0"
+    },
+
+    "Adjustments" :{
+        "Type": 0,
+        "ChecksumStartAdr": 6161,
+        "ChecksumEndAdr": 6916,
+        "ChecksumResultAdr": 0
+    },
+
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7268,
+        "BytesInScore":6,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7265,
+        "InitialSpacing": 9,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7306,
+        "GrandChampInitAdr": 7303,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301  
+    },
+
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 1937,
+        "HS2": 1938,
+        "HS3": 1939,
+        "HS4": 1940,
+        "DisableByte": 0
+    },
+
+    "Switches": {
+        "Type": 0,
+        "Address": 56,
+        "Length": 23
+    },
+
+    "CoinDrop": {
+        "Type": 0
+    }
+}
