@@ -37,11 +37,14 @@
     },
 
     "DisplayMessage": {
-        "Type": 0,
-        "Address": "0x7B4",
-        "Length": 7,
-        "Number": 6,
-        "EnableByteAddress": "0x7B0"
+        "Type": 10,
+        "AddressS1": 7558,
+        "AddressS2": 7623,
+        "AddressS3": 7688,
+        "Length": 32,
+        "ChecksumStartAdr": 7558,
+        "ChecksumEndAdr": 7750,
+        "ChecksumResultAdr": 7751
     },
 
     "Adjustments" :{
