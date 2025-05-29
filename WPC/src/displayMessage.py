@@ -119,7 +119,7 @@ def refresh():
     #just turned off 
     if show_ip_last_state==1 and DataStore.read_record("extras", 0)["show_ip_address"]==0:
         # turn off custom message                
-        _blank()
+        _blank()        
         print("MSG: turned off")
         
     #refresh message    

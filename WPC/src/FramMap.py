@@ -21,8 +21,13 @@ LOGGER_CONFIG = {
 
 
 ADJUSTMENTS_CONFIG = {
+    "NumRecords": 4,
     "AddressStart": 0x2000,
-    "DataLength": 0x0600,
+    "RecordSize":   320,  
+    "NamesAddress": 0x2500,
+    "NamesLength":  16,
+    "LastLoadedAddress": 0x25F0,
+    "TotalDataLength":   0x0600
 }
 
 #shadow ram 0x0000-0x1FFF

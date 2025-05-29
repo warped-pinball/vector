@@ -1,57 +1,72 @@
 """
 WPC
 
-
 Save and Restore adjustments
-
 four save indexes
 16 character name for each
-
 """
-from Shadow_Ram_Definitions import shadowRam
 
-import displayMessage
+from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 import SPI_Store as fram
 from logger import logger_instance as Log
-
+#fram config includes 384-16-16=352 bytes for data, 16 for name, 16 open at end of each record, four records 
 from FramMap import ADJUSTMENTS_CONFIG
 
-#ADJ_FRAM_START = 0x2000  
+print("ADJS: fram map config", ADJUSTMENTS_CONFIG)
+
+#FRAM address constants
+ADJ_NUM_SLOTS = ADJUSTMENTS_CONFIG["NumRecords"]
 ADJ_FRAM_START = ADJUSTMENTS_CONFIG["AddressStart"]
-ADJ_FRAM_RECORD_SIZE = 352+16
-ADJ_NUM_SLOTS = 4
-ADJ_NAMES_START = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
-ADJ_NAMES_LENGTH = 16
-ADJ_LAST_LOADED_ADR = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * ADJ_NUM_SLOTS
+ADJ_FRAM_RECORD_SIZE = ADJUSTMENTS_CONFIG["RecordSize"] 
+ADJ_FRAM_TOTAL_DATA_LENGTH = ADJUSTMENTS_CONFIG["TotalDataLength"]
+
+ADJ_NAMES_START = ADJUSTMENTS_CONFIG["NamesAddress"]
+ADJ_NAMES_LENGTH = ADJUSTMENTS_CONFIG["NamesLength"]
+
+ADJ_LAST_LOADED_ADR = ADJUSTMENTS_CONFIG["LastLoadedAddress"]
 
 
 def blank_all():
-    """blank out all names and storage - only for manufacturing init"""
-    for i in range(4):
-        set_name(i, "")
-        # blank the data also
-        data = bytearray(ADJ_FRAM_RECORD_SIZE)
-        fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * i
-        fram.write(fram_adr, data)
+    """blank out all adjustment storage - only for manufacturing init"""
+    chunk_size = 16
+    zero_chunk = bytearray(chunk_size)
+
+    fram_adr = ADJ_FRAM_START
+    
+    # Write zeros in chunks to the entire adjustment area
+    remaining = ADJ_FRAM_TOTAL_DATA_LENGTH
+    offset = 0    
+    Log.log(f"ADJS: Blanking {remaining:04X} bytes from {fram_adr:04X}")
+    
+    while remaining > 0:
+        write_size = min(chunk_size, remaining)
+        if write_size < chunk_size:
+            # For the last partial chunk
+            fram.write(fram_adr + offset, zero_chunk[:write_size])
+        else:
+            fram.write(fram_adr + offset, zero_chunk)
+            
+        offset += write_size
+        remaining -= write_size
+    
+    # Also clear the last loaded index
+    fram.write(ADJ_LAST_LOADED_ADR, bytearray([0]))
+    
+    Log.log("ADJS: All adjustment data cleared")
 
 
 def _get_range_from_gamedef():
-    # for ranges check game data:
-    #       1) check Adjustment.cpyStart / cpyEnd
-    #       2) then if ChecksumStartAdr / ChecksumResultAdr
-    #       2) then if Adjustments.Type ==1 assume 780-7ff
-    #       3) then : fault - no ranges
-    cpyStart = S.gdata["Adjustments"].get("cpyStart", 0)
-    cpyEnd = S.gdata["Adjustments"].get("cpyEnd", 0)
-    if cpyStart == 0 or cpyEnd == 0:
+    # get range of adjustments in shadowram from gamedef json
+    cpyStart=0
+    cpyEnd=0
+    chkAdr=0
+    if S.gdata["Adjustments"]["Type"] == 10:
         cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
-        cpyEnd = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
-    if cpyStart == 0 or cpyEnd == 0:
-        if S.gdata["Adjustments"].get("Type", 0) == 1:
-            cpyStart = 0x780
-            cpyEnd = 0x800
-    return cpyStart, cpyEnd
+        cpyEnd = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
+        chkAdr = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
+ 
+    return cpyStart, cpyEnd, chkAdr
 
 
 def get_names():
@@ -69,11 +84,11 @@ def set_name(index, name):
     # Calculate the FRAM address for this index
     fram_address = ADJ_NAMES_START + index * ADJ_NAMES_LENGTH
     fram.write(fram_address, name_bytes)
-    # Log.log(f"ADJS: Name set at index {index}: {name}")
+    print(f"ADJS: Name set at index {index}: {name}")
 
 
 def restore_adjustments(index, reset=True):
-    """pull from fram data and put in shadow ram in the machine, reset after by default"""
+    """pull from FRAM data and put in shadow ram in the machine, reset after by default"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
         return "Fault: Invalid Index"
 
@@ -98,7 +113,7 @@ def restore_adjustments(index, reset=True):
         raise ValueError(f"No data in the adjustment profile {index}")
 
     # will return 0,0 if none found
-    cpyStart, cpyEnd = _get_range_from_gamedef()
+    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
 
     # store this one as the last laoded
     fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
@@ -109,22 +124,17 @@ def restore_adjustments(index, reset=True):
 
     # shut down the pinball machine
     import reset_control
-
     reset_control.reset()
 
     from time import sleep
-
     sleep(2)
 
     shadowRam[cpyStart:cpyEnd] = data[: cpyEnd - cpyStart]
     Log.log(f"ADJS: Adjustments restored {index}")
 
-    displayMessage.fixAdjustmentChecksum()
     fram.write_all_fram_now()
-
     # restart the pinball machine
     reset_control.release(True)
-
     sleep(4)
     # restart the server schedule
     from phew.server import restart_schedule
@@ -138,7 +148,7 @@ def store_adjustments(index):
         return "Fault: Invalid Index"
 
     # will return 0,0 if none found
-    cpyStart, cpyEnd = _get_range_from_gamedef()
+    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
 
     # if valid ranges do the copy
     if cpyStart > 0 and cpyEnd > 0:
@@ -167,7 +177,7 @@ def get_active_adjustment():
     in case of two matches use last_loaded number from fram
     """
 
-    cpyStart, cpyEnd = _get_range_from_gamedef()
+    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     end_address = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
     if cpyStart == 0 or cpyEnd == 0 or end_address == 0:
         return None
