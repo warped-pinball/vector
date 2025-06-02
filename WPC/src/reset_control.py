@@ -2,7 +2,6 @@
 
 import machine
 from machine import Pin
-
 from logger import logger_instance
 
 Log = logger_instance

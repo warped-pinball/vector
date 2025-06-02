@@ -231,7 +231,7 @@ def place_machine_scores():
                 scoreBCD = _int_to_bcd(100)
 
             shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]] = scoreBCD
-            print("  top scores: ", top_scores[0])
+            #print("  top scores: ", top_scores[0])
 
             #grand champ initials
             try:
@@ -255,7 +255,7 @@ def place_machine_scores():
                 scoreBCD = _int_to_bcd(100)
 
             shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]] = scoreBCD
-            print("  top scores: ", top_scores[index+gc])
+            #print("  top scores: ", top_scores[index+gc])
 
             try:
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + index * S.gdata["HighScores"]["InitialSpacing"]
@@ -338,7 +338,8 @@ def update_individual_score(new_entry):
     playername, playernum = find_player_by_initials(new_entry)
 
     if not playername or playername in [" ", "@@@", "   "]:
-        print("SCORE: No indiv player ", initials)
+        #print("SCORE: No indiv player ", initials)
+        pass
         return False
 
     if not (0 <= playernum < DataStore.memory_map["individual"]["count"]):
@@ -350,7 +351,7 @@ def update_individual_score(new_entry):
     # Load existing scores
     scores = []
     num_scores = DataStore.memory_map["individual"]["count"]
-    print("SCORE: num sores = ", num_scores, playernum)
+    #print("SCORE: num sores = ", num_scores, playernum)
     for i in range(num_scores):
         scores.append(DataStore.read_record("individual", i, playernum))
 
@@ -362,7 +363,7 @@ def update_individual_score(new_entry):
     for i in range(num_scores):
         DataStore.write_record("individual", scores[i], i, playernum)
 
-    print(f"Updated scores for {initials}")
+    #print(f"Updated scores for {initials}")
     return True
 
 
@@ -379,7 +380,7 @@ def update_leaderboard(new_entry):
     year, month, day, _, _, _, _, _ = rtc.datetime()
     new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
-    log.log( f"SCORE: Update Leader Board: {new_entry}")
+    #og.log( f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
     # add player name to new_entry if there is an initals match

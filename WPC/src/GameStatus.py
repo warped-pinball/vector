@@ -69,11 +69,12 @@ def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
     try:
-        data["GameActive"] = S.game_status["game_active"]
-        if not data["GameActive"]:
-            return data
-
         data["BallInPlay"] = _get_ball_in_play()
+
+        if data["BallInPlay"] == 0:
+            data["GameActive"] = False
+        else:
+            data["GameActive"] = True
 
         data["Scores"] = [
             _get_machine_score(0),
@@ -82,6 +83,7 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        '''
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
                 data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
@@ -91,6 +93,8 @@ def game_report():
                 data["GameTime"] = 0
         else:
             data["GameTime"] = 0
+        '''
+        
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data

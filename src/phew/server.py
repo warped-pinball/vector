@@ -307,13 +307,13 @@ def create_schedule(ap_mode: bool = False):
     #
 
     # update the game status every 0.25 second
-    schedule(poll_fast, 15000, 250)
+    #       schedule(poll_fast, 20000, 1000)  #250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 1000)
+    schedule(sflash_tick, 1000, 4000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):

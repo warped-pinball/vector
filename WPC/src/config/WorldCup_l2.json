@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Johnny Mnemonic",
+        "GameName": "World Cup Soccer",
         "System": "WPC",
         "FileVer": 1
     },
@@ -17,8 +17,8 @@
     },
 
     "BallInPlay": {
-        "Type": 1,
-        "Address": 947,
+        "Type": 10,
+        "Address": 1043,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -28,46 +28,46 @@
 
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5905,
-        "ScoreAdr": 5792,
+        "Players": 6057,
+        "ScoreAdr": 5936,
         "ScoreBytes": 6,
         "ScoreSpacing": 7
     },
 
     "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7558,
-        "AddressS2": 7623,
-        "AddressS3": 7688,
+        "Type": 0,
+        "AddressS1": 7624,
+        "AddressS2": 7624,
+        "AddressS3": 7624,
         "Length": 32,
-        "ChecksumStartAdr": 7558,
-        "ChecksumEndAdr": 7750,
-        "ChecksumResultAdr": 7751
+        "ChecksumStartAdr": 7624,
+        "ChecksumEndAdr": 7818,
+        "ChecksumResultAdr": 7819
     },
 
     "Adjustments" :{
         "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
+        "CustomMessageOn": 0,
+        "ChecksumStartAdr": 7061,
+        "ChecksumEndAdr": 7302,
+        "ChecksumResultAdr": 7303
     },
 
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7268,
+        "ScoreAdr": 7408,
         "BytesInScore":6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7265,
+        "InitialAdr": 7405,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7306,
-        "GrandChampInitAdr": 7303,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7300,
-        "ChecksumResultAdr": 7301  
+        "GrandChampScoreAdr": 7446,
+        "GrandChampInitAdr": 7443,
+        "ChecksumStartAdr": 7405,
+        "ChecksumEndAdr": 7442,
+        "ChecksumResultAdr": 7443  
     },
 
     "HSRewards": {

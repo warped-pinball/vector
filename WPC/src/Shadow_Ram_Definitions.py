@@ -19,9 +19,6 @@ SRAM_DATA_BASE = 0x20080000 # WPC!  PICO2W
 
 
 
-
-
-
 #SRAM_DATA_BASE_21 = SRAM_DATA_BASE >> 11  # 21 MSBits to be preloaded in pio for address generation
 #SRAM_DATA_LENGTH = 0x00000800  # 2k byte total
 
@@ -31,4 +28,4 @@ SRAM_DATA_LENGTH = 0x00002000    #8k byte total
 
 shadowRam = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 
-
+print("sram->", len(shadowRam), hex(SRAM_DATA_BASE), hex(SRAM_DATA_LENGTH))
