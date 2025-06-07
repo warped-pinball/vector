@@ -61,13 +61,13 @@ def CatchVMA():
     wait(0, gpio, 13)       #wait for VMA+ADR to go active(low), assumme this hardware is set for total address validation   
     jmp (pin,"start_adr")   #confirm still active (debounce)
 
-    # in the past used a gpio to singal pio1 - now can use IRQ in RP2350
+    # in the past used a gpio to singal pio1 - now can use IRQ in RP2350?
     set(pins,1)    [4]     #rpio22 signal other pio to start - delay happens after pin state changes
-    set(pins,0)            
+    set(pins,0)    [4]        
     #word(0xC40C)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
 
-    wait(1,gpio,1)         #wait for eClock HIGH
-    wait(0,gpio,1)         #wait for eClock LOW
+    wait(1,gpio,1)  [6]    #wait for eClock HIGH
+    wait(0,gpio,1)  [4]    #wait for eClock LOW
     wrap()
 
 
@@ -101,9 +101,9 @@ def ReadAddress():
 
     #READ Process, Get Address  
     mov(isr,y)             .side(0)     #copy 21 bit address msb to isr,ready to shift in 11 lsb from pins    
-    #in_(pins,3)            .side(0)     #read A8/9/10, set A_Select to 1
+    #in_(pins,3)            .side(0)    #read A8/9/10, set A_Select to 1
     in_(pins,5)            .side(0)     #read A8/9/10/11/12, set A_Select to 1  (WPC)
-    nop()                  .side(1)
+    nop()           [3]    .side(1)     #side set happens at begining of instruction                <<< -add delay here   
     nop()           [3]    .side(1)
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)   [3]    .side(0)     #send out address result for DMA   
@@ -116,7 +116,7 @@ def ReadAddress():
     #mov(pindirs,~null)    .side(2)   #new for rp2350
 
     nop() [3]              .side(2)  
-
+   
 
     pull(noblock)          .side(2) 
     #pull(block)          .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
@@ -125,7 +125,7 @@ def ReadAddress():
 
 
     #READ Process, wrap up   
-    mov(osr,invert(x))     .side(2)     #invert to all zeroes
+    mov(osr,invert(x)) [3]   .side(2)     #invert to all zeroes
     wait(0, gpio, 1)   [3] .side(2)     #wait for eclock to go LOW   
     out(pindirs,8)         .side(0)     #pins to inputs, and return data_dir to normal    OSR->pindirs    
     #mov(pindirs,null)  [1]  .side(0)      #new for rp2350
@@ -134,7 +134,7 @@ def ReadAddress():
 
     #WRITE process
     label("do_write")    
-    irq(5)                   
+    irq(5)      [3]             
     wait(1,gpio,1)  [3]                 #when eClock goes high
     wait(0,gpio,1)  [3]                 #wait for eClock to go low
     wrap() 
@@ -209,7 +209,7 @@ def pio_start():
     #   SIDESET: A_select and Data_Dir
     #   IN: Address Pins
     #   OUT: Data Pins
-    sm_ReadAddress = rp2.StateMachine(0, ReadAddress, freq=125000000, set_base=machine.Pin(22), sideset_base=machine.Pin(27), out_base=machine.Pin(FIRST_DATA_PIN) ,in_base=machine.Pin(FIRST_ADR_PIN), jmp_pin=machine.Pin(WR_PIN))  
+    sm_ReadAddress = rp2.StateMachine(0, ReadAddress, freq=150000000, set_base=machine.Pin(22), sideset_base=machine.Pin(27), out_base=machine.Pin(FIRST_DATA_PIN) ,in_base=machine.Pin(FIRST_ADR_PIN), jmp_pin=machine.Pin(WR_PIN))  
    
     #   PRELOAD: Y with 21 bit shadow ram base addres
     #   SIDESET: A_Select
@@ -221,7 +221,8 @@ def pio_start():
     sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
 
     #   IN: Data Pins
-    sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
+    sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
+
     #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22), sideset_base=26  )  #side set for testing
 
     #   catch CADR the rtc clock address dedcode

@@ -547,12 +547,13 @@ def CheckForNewScores(nState=[0]):
 
                 #game has ended but players can be putting in initials now, wait for scores to show up
                 if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:   
-                    #how many players? wait for all initials to go in and fake scoes to be replaced
-                    scores = _read_machine_score(UseHighScores= True)
+                    #how many players? wait for all initials to go in and fake scores to be replaced
+
+                    #grand champ scor eis maxed so no player gets it
+                    scores = _read_machine_score(UseHighScores= True)                    
                     high_score_count = 0
-                    for x in range(1,5):
-                        if scores[x][1] > 10000: 
-                            high_score_count += 1
+                    high_score_count = sum(1 for x in range(1, 5) if scores[x][1] > 10000)
+
                     if high_score_count >= shadowRam[S.gdata["InPlay"]["Players"]]:    
                         print("SCORE: initials are all entered now")                                            
                         nState[0] = 3                    
@@ -573,7 +574,8 @@ def CheckForNewScores(nState=[0]):
                     else:
                         # high scores
                         log.log("SCORE: end, use high scores")
-                        scores = _read_machine_score(UseHighScores= True)
+                        #scores = _read_machine_score(UseHighScores= True)
+                        scores = _read_machine_score(UseHighScores= False)
                 
                     if DataStore.read_record("extras", 0)["tournament_mode"]:
                         for i in range(0, 4):
@@ -584,6 +586,7 @@ def CheckForNewScores(nState=[0]):
                             if scores[i][1] > 9000:          
                                 update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
 
+                    # how do we know to use grand champ at 0 or not...
                     game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
                     _place_game_in_claim_list(game)
 
