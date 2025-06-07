@@ -159,12 +159,11 @@ def GetWriteAddress():
     
     #WRITE Process, Get Address  
     mov(isr,y)             .side(0)     #copy 21 bit address msb to isr,ready to shift in 11 lsb from pins    
-    #in_(pins,3)            .side(0)     #read A8/9/10, set A_Select to 1
     in_(pins,5)            .side(0)     #read A8/9/10/11/12, set A_Select to 1  (WPC)
     nop()              [7] .side(1)    
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)          .side(0)     #send out address result for DMA    
-    irq(6)                      #start write ram pio
+    irq(6)                              #start write ram pio
     wrap()
   
   
@@ -180,13 +179,13 @@ def GetWriteAddress():
 def WriteRam():
     
     wrap_target()    
-    wait(1,irq,6)          #wait for IRQ6 and reset it    
+    wait(1,irq,6)           #wait for IRQ6 and reset it    
 
-    wait(0, gpio, 13)  [7] #wait for qclock to go Low    
-    nop() [7]      
+    wait(0, gpio, 13)  [10]  #wait for qclock to go Low      7->9
+    nop()              [9]      
 
-    in_(pins,8)            #read all 8 data in one go      
-    push(noblock)          #push out data byte, picked up by DMA    
+    in_(pins,8)             #read all 8 data in one go      
+    push(noblock)           #push out data byte, picked up by DMA    
 
     wrap()
     
@@ -214,28 +213,23 @@ def pio_start():
     #   PRELOAD: Y with 21 bit shadow ram base addres
     #   SIDESET: A_Select
     #   IN: Address Pins
-    sm_GetWriteAddress = rp2.StateMachine(1, GetWriteAddress, freq=125000000, sideset_base=machine.Pin(27) ,in_base=machine.Pin(FIRST_ADR_PIN))
+    sm_GetWriteAddress = rp2.StateMachine(1, GetWriteAddress, freq=150000000, sideset_base=machine.Pin(27) ,in_base=machine.Pin(FIRST_ADR_PIN))
     
     #   IN: Data Pins
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )
-    sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
+    sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=150000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
+    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )   #side set for testing
 
     #   IN: Data Pins
     sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
-
-    #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22), sideset_base=26  )  #side set for testing
+    #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22), sideset_base=26  )  #side set for testing
 
     #   catch CADR the rtc clock address dedcode
     #sm_CatchCADR = rp2.StateMachine(9, CatchCADR, freq=125000000, jmp_pin=machine.Pin(11) )
 
 
     print("PIO Start")
-
     #sm_CatchCADR.active(1)
-
-
     sm_CatchVma.active(1)
-   
 
     #PIO0_SM0
     sm_ReadAddress.active(1)
