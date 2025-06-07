@@ -62,7 +62,7 @@ def CatchVMA():
     jmp (pin,"start_adr")   #confirm still active (debounce)
 
     # in the past used a gpio to singal pio1 - now can use IRQ in RP2350
-    set(pins,1)    [4]     #rpio22 low to signal other pios to start - delay happens after pin state changes
+    set(pins,1)    [4]     #rpio22 signal other pio to start - delay happens after pin state changes
     set(pins,0)            
     #word(0xC40C)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
 
@@ -111,12 +111,15 @@ def ReadAddress():
     #delays @push and mov and out required to give DMAx2 time?  why is it so slow... ?
   
     #READ Process, send data out to pins
-    mov(osr,x)           .side(0)     #load all ones to osr from x   
-    out(pindirs,8)       .side(2)     #pins to outputs (1=output), side set is data_dir output      
+    mov(osr,x)      [3]     .side(0)     #load all ones to osr from x   
+    out(pindirs,8)  [3]     .side(2)     #pins to outputs (1=output), side set is data_dir output      
     #mov(pindirs,~null)    .side(2)   #new for rp2350
 
+    nop() [3]              .side(2)  
 
-    pull(block)          .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
+
+    pull(noblock)          .side(2) 
+    #pull(block)          .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
                                       #change to block to give DMA thim eit need dynamically instead of wait states in previous lines...
     out(pins,8)          .side(2)     #OSR -> Pins   
 
