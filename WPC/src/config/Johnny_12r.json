@@ -67,15 +67,19 @@
         "GrandChampInitAdr": 7303,
         "ChecksumStartAdr": 7265,
         "ChecksumEndAdr": 7300,
-        "ChecksumResultAdr": 7301  
+        "ChecksumResultAdr": 7301,
+        "GCChecksumStartAdr": 7303, 
+        "GCChecksumEndAdr": 7311,
+        "GCChecksumResultAdr": 7312
     },
 
     "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
+        "Type": 10,
+        "HS1": 7016,
+        "HS2": 7018,
+        "HS3": 7020,
+        "HS4": 7022,
+        "HS5": 7024,
         "DisableByte": 0
     },
 

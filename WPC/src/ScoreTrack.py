@@ -35,30 +35,40 @@ recent_scores = [
 
 
 def reset_scores():
+    """reset high scores"""
     from SPI_DataStore import blankStruct    
     blankStruct("leaders")
-    _remove_machine_scores(GrandChampMax=False)
+    _remove_machine_scores(GrandChamp="Zero")
 
 
 
 def fix_high_score_checksum():
-    """fix high score checksum if needed"""
-    # check for high score checksum
-    if S.gdata["HighScores"]["Type"] == 10:  # 10 for std WPC
+    """fix high score checksum if needed, also do grand champion checksum"""
+
+    def _calc_checksum(start_adr, end_adr):
+        """calculate checksum for a range of addresses"""
         chk = 0
-        for adr in range(S.gdata["HighScores"]["ChecksumStartAdr"], S.gdata["HighScores"]["ChecksumEndAdr"] + 1):
-            chk = chk + shadowRam[adr]
-        chk =0xFFFF - chk
-        # Store MSByte and LSByte
+        for adr in range(start_adr, end_adr + 1):
+            chk += shadowRam[adr]
+        chk = 0xFFFF - chk
         msb = (chk >> 8) & 0xFF
         lsb = chk & 0xFF
-        #print("SCORE: Checksum: ---------------- ", hex(chk), hex(msb), hex(lsb))
+        return msb,lsb
+
+    if S.gdata["HighScores"]["Type"] == 10:  # 10 for std WPC              
+        msb,lsb = _calc_checksum(S.gdata["HighScores"]["ChecksumStartAdr"], S.gdata["HighScores"]["ChecksumEndAdr"])
+        #print("SCORE: Checksum: ---------------- ", hex(msb), hex(lsb))
         shadowRam[S.gdata["HighScores"]["ChecksumResultAdr"]] = msb
         shadowRam[S.gdata["HighScores"]["ChecksumResultAdr"] + 1] = lsb
-
+      
+        msb,lsb = _calc_checksum(S.gdata["HighScores"]["GCChecksumStartAdr"], S.gdata["HighScores"]["GCChecksumEndAdr"])
+        #print("SCORE: Checksum Grand Champ : ---------------- ", hex(msb), hex(lsb))
+        shadowRam[S.gdata["HighScores"]["GCChecksumResultAdr"]] = msb
+        shadowRam[S.gdata["HighScores"]["GCChecksumResultAdr"] + 1] = lsb
 
 
 def get_claim_score_list():
+    """fetch the list of claimable scores"""
     result = []
     if DataStore.read_record("extras", 0)["claim_scores"] is True:
         for game in recent_scores[:4]:
@@ -69,8 +79,9 @@ def get_claim_score_list():
     return result
 
 
+
 def claim_score(initials, player_index, score):
-    # claim a score from the recent scores list
+    """ claim a score from the recent scores list - do not require a player index, search all """
     global recent_scores
 
     #condition the initials - more important than one would think.  machines freak if non printables get in
@@ -81,17 +92,24 @@ def claim_score(initials, player_index, score):
             i_intials += c
     initials = (i_intials + "   ")[:3]
 
+    if initials in ["@@@", "   ", "???",""]:  
+        return
+
+    print("claim score-")
+
     for game_index, game in enumerate(recent_scores):
-        if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
-            log.log(f"SCORE: claim new score: {initials}, {score}, {game_index}, {player_index}")
-            recent_scores[game_index][player_index + 1] = (initials, score)
-            new_score = { "initials": initials, "full_name": None, "score": score, "game": game[0] }
-            if DataStore.read_record("extras", 0)["tournament_mode"]:
-                update_tournament(new_score)
-            else:
-                update_leaderboard(new_score)
-            return
-    raise ValueError("SCORE: Score not found in claim list")
+        for player_index in range (4):
+            if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
+                log.log(f"SCORE: claim new score: {initials}, {score}, {game_index}, {player_index}")
+                recent_scores[game_index][player_index + 1] = (initials, score)
+                new_score = { "initials": initials, "full_name": None, "score": score, "game": game[0] }
+                if DataStore.read_record("extras", 0)["tournament_mode"]:
+                    update_tournament(new_score)
+                else:
+                    update_leaderboard(new_score)
+                return
+    #only print here as we expect to see many non-matches with WPC structure
+    #print("SCORE: Score not found in claim list")
 
 
 def _place_game_in_claim_list(game):
@@ -102,7 +120,7 @@ def _place_game_in_claim_list(game):
 
 
 def _read_machine_score(UseHighScores = True):
-    """read machine scores
+    """read machine scores - in play and highscores
     and if HighScores is True try to get intials from highscore area
     """
     high_scores = [["", 0], ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -275,9 +293,9 @@ def place_machine_scores():
 
 
 
-def _remove_machine_scores(GrandChampMax=True):
-    """remove machine scores - WPC"""
-    if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:     #WPC
+def _remove_machine_scores(GrandChamp="Max"):
+    """remove machine scores to prep for forced intial entry  - WPC """
+    if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:    
         log.log("SCORE: Remove machine scores type 10")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
@@ -293,21 +311,18 @@ def _remove_machine_scores(GrandChampMax=True):
 
 
         # set grand champion score to max, so all players will be int he normal 1-4 places
-        if "GrandChampScoreAdr" in S.gdata["HighScores"]:
-            #initial_start = S.gdata["HighScores"]["GrandChampInitAdr"]
-            #shadowRam[initial_start + i] = 0x41 
-            #shadowRam[initial_start + i] = 0x41 
-            #shadowRam[initial_start + i] = 0x41 
-
+        #Or near zero for reset leaderboard function
+        if "GrandChampScoreAdr" in S.gdata["HighScores"]:          
             score_start = S.gdata["HighScores"]["GrandChampScoreAdr"]            
-            if GrandChampMax:
+            if GrandChamp=="Max":
                 # set grand champion score to max
                 for i in range(S.gdata["HighScores"]["BytesInScore"]):
                     shadowRam[score_start + i] = 0x99
-            #else: 
-            #    for i in range(S.gdata["HighScores"]["BytesInScore"]):
-            #        shadowRam[score_start + i] = 0x00
-            #        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"]-4] = 0x90
+            elif GrandChamp=="Zero":
+                # set grand champ to min
+                for i in range(S.gdata["HighScores"]["BytesInScore"]):
+                    shadowRam[score_start + i] = 0x00
+                shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"]-2] = 0x90
 
         fix_high_score_checksum()
    
@@ -393,14 +408,16 @@ def update_leaderboard(new_entry):
 
     # if matches a record without initials in top_scores (score claim) - just add initials
     for entry in top_scores:
+        #print(f"SCORE: Check for initials match: {entry['initials']} == {new_entry['initials']}, score: {entry['score']} == {new_entry['score']}")
         if entry["initials"] == "" and entry["score"] == new_entry["score"]:
+            print(" using claim - - - - - ")
             entry["initials"] = new_entry["initials"]
-            entry["full_name"] = new_entry["full_name"]
+            entry["full_name"] = new_entry["full_name"]          
             DataStore.write_record("leaders", entry, top_scores.index(entry))
-            return True
+            return True  
 
     # Check if the score already exists in the top_scores list
-    if any(entry["initials"] == new_entry["initials"] and entry["score"] == new_entry["score"] for entry in top_scores):
+    if any(entry["score"] == new_entry["score"] for entry in top_scores):
         return False  # Entry already exists, do not add it
 
     # Check if the new score is higher than the lowest in the list or if the list is not full
@@ -442,11 +459,16 @@ def check_for_machine_high_scores(report=True):
     year, month, day, _, _, _, _, _ = rtc.datetime()
     for idx in range(5):   #with WPC could be 5 scores - - 
 
-        if scores[idx][1] > 9000:  #ignore placed fake scores            
+        if scores[idx][1] > 10000:  #ignore placed fake scores            
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
             if report:
-                log.log("SCORE: place game score into vector")
-            update_leaderboard(new_score)
+                log.log(f"SCORE: place game score into vector {new_score}")
+
+            #As a claim first 
+            claim_score(new_score["initials"], 0, new_score["score"])
+        
+            #then as new score
+            #update_leaderboard(new_score)
    
 
 
@@ -503,19 +525,24 @@ def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter,GameEndCount
 
-    if nState[0] == 0:  # power up init        
+
+    #power up init state - only runs once
+    if nState[0] == 0:        
         place_machine_scores()
         nState[0] = 1
         # if enter initials on game set high score rewards to zero
-        if S.gdata["HSRewards"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
-            shadowRam[S.gdata["HSRewards"]["HS1"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
+        if S.gdata["HSRewards"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
+            for key, value in S.gdata["HSRewards"].items():
+                if key.startswith("HS"):  # Check if the key starts with 'HS'
+                    shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
+           
        
+
+    #only run this if ball in play is enabled
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
        
-        if nState[0] == 1:  # waiting for a game to start           
+        # waiting for a game to start          
+        if nState[0] == 1:   
             GameEndCount =0
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
@@ -525,7 +552,7 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             #players could be putting in initials from last game in the event of top 5 score, always check here
-            check_for_machine_high_scores(False)    
+            check_for_machine_high_scores(True)    
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
@@ -536,58 +563,79 @@ def CheckForNewScores(nState=[0]):
                 _remove_machine_scores()
                 S.gameCounter = (S.gameCounter + 1) % 100
 
-        elif nState[0] == 2:  # waiting for game to end
-            print("SCORE: game end check ",GameEndCount)
+        
+        # waiting for game to end
+        elif nState[0] == 2:  
+            print("SCORE: game end check ")
             print(_read_machine_score(UseHighScores= True))           
-
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
+                nState[0] = 3  
+
+
+        # game over, wait for intiials to be entered
+        elif nState[0] == 3:                    
+
+                #time out
                 GameEndCount += 1
-                if GameEndCount > 30: 
-                    nState[0] = 3   #timeout
+                if GameEndCount > 75:                 
+                    nState[0] = 4   #called @ 5second intervals, inital enter time limit is 90 seconds per player. 
+                    GameEndCount = 0
+
+                #game start check, if a game starts get out of here
+                if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:   
+                    nState[0] = 4
 
                 #game has ended but players can be putting in initials now, wait for scores to show up
                 if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:   
                     #how many players? wait for all initials to go in and fake scores to be replaced
 
-                    #grand champ scor eis maxed so no player gets it
+                    #grand champ score is maxed out so no player gets it
                     scores = _read_machine_score(UseHighScores= True)                    
                     high_score_count = 0
                     high_score_count = sum(1 for x in range(1, 5) if scores[x][1] > 10000)
 
                     if high_score_count >= shadowRam[S.gdata["InPlay"]["Players"]]:    
                         print("SCORE: initials are all entered now")                                            
-                        nState[0] = 3                    
+                        nState[0] = 4                    
                     print("SCORE: waiting for initials, count = ", high_score_count, " players = ", shadowRam[S.gdata["InPlay"]["Players"]])    
                 else:
                     #go ahead and end game, on game initials are not enabled
                     print("SCORE: game over, not waiting for initials")
-                    nState[0]=3
+                    nState[0] = 4
 
+    
 
-        elif nState[0]==3:                
-                    # game over
+        # game over clean up process
+        elif nState[0]==4:                
+                    # game over - back to top state
                     nState[0] = 1
                     if (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
                         # in play scores
                         log.log("SCORE: end, use in-play scores")
-                        scores = _read_machine_score(UseHighScores= False)                    
+                        scores = _read_machine_score(UseHighScores= False)   
+                                     
                     else:
                         # high scores
                         log.log("SCORE: end, use high scores")
-                        #scores = _read_machine_score(UseHighScores= True)
-                        scores = _read_machine_score(UseHighScores= False)
-                
+                        scores = _read_machine_score(UseHighScores=True)[1:]  #remove grand champ
+                         
+                                        
                     if DataStore.read_record("extras", 0)["tournament_mode"]:
                         for i in range(0, 4):
-                            if scores[i][1] > 9000:    
+                            if scores[i][1] > 10000:    
                                 update_tournament({"initials": scores[i][0], "score": scores[i][1]})
                     else:
                         for i in range(0, 4):        
-                            if scores[i][1] > 9000:          
+                            if scores[i][1] > 10000:          
                                 update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
 
-                    # how do we know to use grand champ at 0 or not...
-                    game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
+                    # Update claim list
+                    game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
+
+                    # Set any placeholder scores less than 10000 to zero and no initials
+                    game = [game[0]] + [
+                        ("", 0) if score[1] < 10000 else score for score in game[1:]
+                    ]           
                     _place_game_in_claim_list(game)
 
                     # put high scores back in machine memory
