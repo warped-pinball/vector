@@ -171,6 +171,7 @@ def _read_machine_score(UseHighScores = True):
                 initial_start = S.gdata["HighScores"]["GrandChampInitAdr"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]
                 high_scores[0][0] = bytes(initials_bytes).decode("ascii")
+                print("grand champ initials ", high_scores[0][0])
                 if high_scores[0][0] in ["???", "", None, "   "]:
                     high_scores[0][0] = ""
 
@@ -352,7 +353,7 @@ def update_individual_score(new_entry):
     initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
-    if not playername or playername in [" ", "@@@", "   "]:
+    if not playername or playername in [" ", "@@@", "   ", ""]:
         #print("SCORE: No indiv player ", initials)
         pass
         return False
@@ -363,12 +364,16 @@ def update_individual_score(new_entry):
 
     new_entry["full_name"] = playername
 
+
     # Load existing scores
     scores = []
     num_scores = DataStore.memory_map["individual"]["count"]
-    #print("SCORE: num sores = ", num_scores, playernum)
     for i in range(num_scores):
-        scores.append(DataStore.read_record("individual", i, playernum))
+        existing_score = DataStore.read_record("individual", i, playernum)
+        if existing_score and existing_score.get("score") == new_entry["score"]:
+            return False
+        scores.append(existing_score)
+
 
     scores.append(new_entry)
     scores.sort(key=lambda x: x["score"], reverse=True)
@@ -396,7 +401,7 @@ def update_leaderboard(new_entry):
     new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
     #og.log( f"SCORE: Update Leader Board: {new_entry}")
-    update_individual_score(new_entry)
+    #update_individual_score(new_entry)
 
     # add player name to new_entry if there is an initals match
     new_entry["full_name"], ind = find_player_by_initials(new_entry)
@@ -414,12 +419,15 @@ def update_leaderboard(new_entry):
             entry["initials"] = new_entry["initials"]
             entry["full_name"] = new_entry["full_name"]          
             DataStore.write_record("leaders", entry, top_scores.index(entry))
+
+            update_individual_score(new_entry)
             return True  
 
     # Check if the score already exists in the top_scores list
     if any(entry["score"] == new_entry["score"] for entry in top_scores):
         return False  # Entry already exists, do not add it
 
+    update_individual_score(new_entry)
     # Check if the new score is higher than the lowest in the list or if the list is not full
     top_scores.append(new_entry)
     top_scores.sort(key=lambda x: x["score"], reverse=True)
