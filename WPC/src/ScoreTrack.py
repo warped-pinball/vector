@@ -37,6 +37,7 @@ recent_scores = [
 def reset_scores():
     """reset high scores"""
     from SPI_DataStore import blankStruct    
+    print(" RESET Leader scores")
     blankStruct("leaders")
     _remove_machine_scores(GrandChamp="Zero")
 
@@ -108,6 +109,10 @@ def claim_score(initials, player_index, score):
                 else:
                     update_leaderboard(new_score)
                 return
+            
+                #if claim was a grand champ to 1-4 place then intials nedd updated on the game!
+                 
+            
     #only print here as we expect to see many non-matches with WPC structure
     #print("SCORE: Score not found in claim list")
 
@@ -236,7 +241,7 @@ def place_machine_scores():
             #top_scores[index]["score"] = 100  only change intials, not score (blank initials happen with good scores sometimes)
 
     if S.gdata["HighScores"]["Type"] == 10:
-        log.log("SCORE: Place WPC machine scores")
+        print("SCORE: Place WPC machine scores")
 
         gc=0
         if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -296,7 +301,7 @@ def place_machine_scores():
 
 def _remove_machine_scores(GrandChamp="Max"):
     """remove machine scores to prep for forced intial entry  - WPC """
-    if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:    
+    if S.gdata["HighScores"]["Type"] == 10:    
         log.log("SCORE: Remove machine scores type 10")
         for index in range(4):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
@@ -470,14 +475,11 @@ def check_for_machine_high_scores(report=True):
         if scores[idx][1] > 10000:  #ignore placed fake scores            
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
             if report:
-                log.log(f"SCORE: place game score into vector {new_score}")
+                print(f"SCORE: place game score into vector {new_score}")
 
             #As a claim first 
             claim_score(new_score["initials"], 0, new_score["score"])
         
-            #then as new score
-            #update_leaderboard(new_score)
-   
 
 
 
@@ -543,6 +545,8 @@ def CheckForNewScores(nState=[0]):
             for key, value in S.gdata["HSRewards"].items():
                 if key.startswith("HS"):  # Check if the key starts with 'HS'
                     shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
+        from Adjustments import _fixChecksum
+        _fixChecksum()
            
        
 
@@ -559,8 +563,11 @@ def CheckForNewScores(nState=[0]):
                 nGameIdleCounter = 0
                 print("SCORE: game list 10 minute expire")
 
-            #players could be putting in initials from last game in the event of top 5 score, always check here
+            #players could be putting in initials from last game in the event of top 5 score, always check here            
             check_for_machine_high_scores(True)    
+            #if (DataStore.read_record("extras", 0)["enter_initials_on_game"] == False):
+            #only call if new score or initials????
+            place_machine_scores()
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
@@ -568,7 +575,8 @@ def CheckForNewScores(nState=[0]):
                 # Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
-                _remove_machine_scores()
+                if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
+                    _remove_machine_scores()
                 S.gameCounter = (S.gameCounter + 1) % 100
 
         
@@ -617,7 +625,7 @@ def CheckForNewScores(nState=[0]):
         elif nState[0]==4:                
                     # game over - back to top state
                     nState[0] = 1
-                    if (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
+                    if (DataStore.read_record("extras", 0)["enter_initials_on_game"] == False):
                         # in play scores
                         log.log("SCORE: end, use in-play scores")
                         scores = _read_machine_score(UseHighScores= False)   
@@ -647,6 +655,7 @@ def CheckForNewScores(nState=[0]):
                     _place_game_in_claim_list(game)
 
                     # put high scores back in machine memory
-                    place_machine_scores()
+                    if (DataStore.read_record("extras", 0)["enter_initials_on_game"] == True):
+                        place_machine_scores()
 
 
