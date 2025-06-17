@@ -81,6 +81,7 @@ jobs:
             echo "OUTPUT_FILE=update.json" >> $GITHUB_ENV
           else
             echo "OUTPUT_FILE=update_${{ matrix.target_system }}.json" >> $GITHUB_ENV
+          fi
 
       - name: Generate update file
         run: |
@@ -97,6 +98,7 @@ jobs:
               --output "${{ env.OUTPUT_FILE }}" \
               --version "${{ env.VERSION }}" \
               --target_system "${{ matrix.target_system }}"
+          fi
 
       - name: Compute checksum
         id: checksum
@@ -131,13 +133,10 @@ jobs:
       - name: Compute checksums and prepare markdown
         id: prep
         run: |
-          echo "MARKDOWN=<!-- checksums:start -->" >> $GITHUB_ENV
-          for dir in */; do
-            FILE=$(find "$dir" -type f)
-            SHA=$(sha256sum "$FILE" | awk '{print $1}')
-            FILENAME=$(basename "$FILE")
-            echo "$FILENAME: $SHA" >> checksums.txt
-            echo "$FILENAME: $SHA" >> checksum_block.txt
+          echo "<!-- checksums:start -->" > checksum_block.txt
+          for file in *.json; do
+            SHA=$(sha256sum "$file" | awk '{print $1}')
+            echo "$file: $SHA" >> checksum_block.txt
           done
           echo "<!-- checksums:end -->" >> checksum_block.txt
 
