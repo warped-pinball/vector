@@ -188,10 +188,10 @@ def _read_machine_score(UseHighScores = True):
                     in_play_score[0] = high_score[0]  # copy initals over
 
     if UseHighScores:
-        log.log("SCORE: High Scores used")
+        print("SCORE: High Scores used")
         return high_scores
     else:
-        log.log("SCORE: In play scores used")
+        print("SCORE: In play scores used")
         return in_play_scores
 
 

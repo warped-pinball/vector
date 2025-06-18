@@ -621,7 +621,7 @@ def app_setTournamentMode(request):
     if "tournament_mode" in json_data:
         info = ds_read_record("extras", 0)
         info["tournament_mode"] = bool(json_data["tournament_mode"])
-        ds_write_record("extras", info, 0)
+        ds_write_record("extras", info, 0)      
 
 
 @add_route("/api/settings/get_show_ip")
@@ -635,6 +635,8 @@ def app_setShowIP(request):
     info = ds_read_record("extras", 0)
     info["show_ip_address"] = bool(data["show_ip"])
     ds_write_record("extras", info, 0)
+    import displayMessage
+    displayMessage.refresh()
 
 
 @add_route("/api/settings/factory_reset", auth=True)

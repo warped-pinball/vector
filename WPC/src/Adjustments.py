@@ -100,7 +100,7 @@ def _get_range_from_gamedef():
 def _fixChecksum():
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     if (cpyStart == 0 or cpyEnd == 0):
-        raise ValueError("No valid range found in game data")
+        raise ValueError("No valid range found in game data 1")
 
     chk = 0
     for adr in range(cpyStart, cpyEnd + 1):
@@ -174,7 +174,7 @@ def restore_adjustments(index, reset=True):
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     cpyEndCheck = max(cpyEnd, chkAdr+2)
     if (cpyStart == 0 or cpyEnd == 0):
-        raise ValueError("No valid range found in game data")
+        raise ValueError("No valid range found in game data 2")
 
     # store this one as the last loaded
     fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
@@ -243,7 +243,7 @@ def get_active_adjustment():
     """
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     if cpyStart == 0 or cpyEnd == 0 or chkAdr == 0:
-        print("ADJS: No valid range found in game data")
+        print("ADJS: No valid range found in game data 3")
         return None
 
     matches = []

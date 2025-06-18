@@ -133,7 +133,7 @@ resource.go(True)
 # launch wifi, and server. Should not return
 from backend import go 
 
-print("MAIN: Launching Wifi molde=",ap_mode)
+print("MAIN: Launching Wifi AP mode=",ap_mode)
 go(ap_mode)
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)
