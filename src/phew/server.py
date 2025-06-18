@@ -7,7 +7,11 @@ from machine import RTC
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 import faults
-from ScoreTrack import CheckForNewScores, initialize_leaderboard, check_for_machine_high_scores
+from ScoreTrack import (
+    CheckForNewScores,
+    check_for_machine_high_scores,
+    initialize_leaderboard,
+)
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -277,7 +281,7 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from backend import connect_to_wifi
-    from discovery import DEVICE_TIMEOUT, announce, listen
+    from discovery import DEVICE_TIMEOUT, announce, broadcast_game_status, listen
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -314,6 +318,8 @@ def create_schedule(ap_mode: bool = False):
 
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 1000)
+
+    schedule(broadcast_game_status, 10000, 250)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
