@@ -81,7 +81,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: upload files for ${{ matrix.target_system }}
+          name: build-files-${{ matrix.target_system }}
           path: update_${{ matrix.target_system }}.json
           overwrite: true
           if-no-files-found: warn
@@ -128,7 +128,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-files
+          name: build-files-${{ matrix.target_system }}
 
       - name: Append checksums to Release notes
         uses: actions/github-script@v6
