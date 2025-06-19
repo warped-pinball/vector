@@ -11,15 +11,18 @@ on:
 permissions:
   contents: write
 
+env:
+  PYTHON_VERSION: "3.10"
+
 jobs:
-  ## 1️⃣ Determine the version string
+  # 1️⃣ Compute the version string once
   determine_version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # latest checkout major :contentReference[oaicite:0]{index=0}
 
       - name: Compute version
         id: set_version
@@ -36,7 +39,7 @@ jobs:
           FULL="${BASE}${SUFFIX}"
           echo "version=$FULL" >> $GITHUB_OUTPUT
 
-  ## 2️⃣ Create (or update) the GitHub Release once
+  # 2️⃣ Create or update the GitHub Release once
   create_release:
     needs: determine_version
     runs-on: ubuntu-latest
@@ -45,17 +48,25 @@ jobs:
     outputs:
       upload_url: ${{ steps.cr.outputs.upload_url }}
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
       - name: Create or update Release
         id: cr
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2  # floating v2 picks latest v2.x :contentReference[oaicite:1]{index=1}
         with:
           tag_name:    ${{ needs.determine_version.outputs.version }}
           name:        ${{ needs.determine_version.outputs.version }}
+          body:        |
+            • Version: ${{ needs.determine_version.outputs.version }}
+            • Trigger: ${{ github.event_name }}
           draft:       false
           prerelease:  ${{ github.event_name != 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  ## 3️⃣ Build per matrix target and upload JSON
-  build:
+  # 3️⃣ Build per-target and upload each JSON asset
+  build_and_upload:
     needs: [determine_version, create_release]
     runs-on: ubuntu-latest
     strategy:
@@ -68,15 +79,15 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.target_system }}
-        uses: actions/setup-python@v5
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5  # latest setup-python major :contentReference[oaicite:2]{index=2}
         with:
-          python-version: "3.10"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
       - name: Update SharedState.py
@@ -89,6 +100,7 @@ jobs:
           python dev/build.py \
             --build-dir build \
             --target_system "${{ matrix.target_system }}"
+          rm -f private_key.pem
           if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
             echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
             python dev/build_update.py \
@@ -103,7 +115,7 @@ jobs:
               --version "${VERSION}"
           fi
 
-      - name: Upload JSON to existing Release
+      - name: Upload JSON asset to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url:         ${{ env.UPLOAD_URL }}
