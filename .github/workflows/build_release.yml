@@ -75,6 +75,8 @@ jobs:
         with:
           name: build-files
           path: update_*.json
+          overwrite: true
+          if-no-files-found: warn
 
   publish-prerelease:
     needs: build
