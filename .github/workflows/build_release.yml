@@ -118,32 +118,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  annotate-release:
-    needs: build
-    if: ${{ github.event_name == 'release' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-files-${{ matrix.target_system }}
+  # annotate-release:
+  #   needs: build
+  #   if: ${{ github.event_name == 'release' }}
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: build-files-${{ matrix.target_system }}
 
-      - name: Append checksums to Release notes
-        uses: actions/github-script@v6
-        env:
-          FILES: ${{ needs.build.outputs.files }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const files = process.env.FILES;
-            const block = `<!-- checksums:start -->\n${files}\n<!-- checksums:end -->`;
-            const release = context.payload.release;
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `${release.body || ''}\n${block}`
-            });
+  #     - name: Append checksums to Release notes
+  #       uses: actions/github-script@v6
+  #       env:
+  #         FILES: ${{ needs.build.outputs.files }}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const files = process.env.FILES;
+  #           const block = `<!-- checksums:start -->\n${files}\n<!-- checksums:end -->`;
+  #           const release = context.payload.release;
+  #           await github.rest.repos.updateRelease({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             release_id: release.id,
+  #             body: `${release.body || ''}\n${block}`
+  #           });
