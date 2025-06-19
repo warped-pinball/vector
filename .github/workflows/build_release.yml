@@ -8,117 +8,89 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: write
-
-env:
-  PYTHON_VERSION: "3.10"
-
 jobs:
-  # 1️⃣ Compute the version string once
-  determine_version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.set_version.outputs.version }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4  # latest checkout major :contentReference[oaicite:0]{index=0}
-
-      - name: Compute version
-        id: set_version
-        run: |
-          BASE=$(grep WarpedVersion src/common/SharedState.py \
-                   | awk -F '"' '{print $2}')
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            SUFFIX="-dev${{ github.event.pull_request.number }}"
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            SUFFIX="-beta${{ github.run_number }}"
-          else
-            SUFFIX=""
-          fi
-          FULL="${BASE}${SUFFIX}"
-          echo "version=$FULL" >> $GITHUB_OUTPUT
-
-  # 2️⃣ Create or update the GitHub Release once
-  create_release:
-    needs: determine_version
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      upload_url: ${{ steps.cr.outputs.upload_url }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Create or update Release
-        id: cr
-        uses: softprops/action-gh-release@v2  # floating v2 picks latest v2.x :contentReference[oaicite:1]{index=1}
-        with:
-          tag_name:    ${{ needs.determine_version.outputs.version }}
-          name:        ${{ needs.determine_version.outputs.version }}
-          body:        |
-            • Version: ${{ needs.determine_version.outputs.version }}
-            • Trigger: ${{ github.event_name }}
-          draft:       false
-          prerelease:  ${{ github.event_name != 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 3️⃣ Build per-target and upload each JSON asset
-  build_and_upload:
-    needs: [determine_version, create_release]
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         target_system: [sys11, wpc, em]
-    env:
-      VERSION:    ${{ needs.determine_version.outputs.version }}
-      UPLOAD_URL: ${{ needs.create_release.outputs.upload_url }}
+    outputs:
+      version: ${{ steps.determine_version.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5  # latest setup-python major :contentReference[oaicite:2]{index=2}
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
+      - name: Determine build environment and version
+        id: determine_version
+        run: |
+          BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F '"' '{print $2}')
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SUFFIX="-dev${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            SUFFIX="-beta${{ github.run_number }}"
+          else
+            SUFFIX=""
+          fi
+          VERSION="$BASE_VERSION$SUFFIX"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Update SharedState.py
         run: |
-          sed -i "s|WarpedVersion = .*|WarpedVersion = \"${VERSION}\"|" \
-            src/common/SharedState.py
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
 
-      - name: Build update JSON for ${{ matrix.target_system }}
+      - name: Build and generate update file
         run: |
-          python dev/build.py \
-            --build-dir build \
-            --target_system "${{ matrix.target_system }}"
+          python dev/build.py --build-dir build --target_system ${{ matrix.target_system }}
           rm -f private_key.pem
-          if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
+          if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
             echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
-              --version "${VERSION}" \
+              --version ${{ env.VERSION }} \
               --private-key private_key.pem
           else
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
-              --version "${VERSION}"
+              --version ${{ env.VERSION }}
           fi
 
-      - name: Upload JSON asset to Release
-        uses: actions/upload-release-asset@v1
+      - name: Create or update GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url:         ${{ env.UPLOAD_URL }}
-          asset_path:         update_${{ matrix.target_system }}.json
-          asset_name:         update_${{ matrix.target_system }}.json
-          asset_content_type: application/json
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          body: |
+            Version: ${{ env.VERSION }}
+            Trigger: ${{ github.event_name }}
+          draft: false
+          prerelease: ${{ github.event_name != 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload update files to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: |
+            update_sys11.json
+            update_wpc.json
+            update_em.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
