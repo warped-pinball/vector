@@ -18,7 +18,7 @@ jobs:
         target_system: [sys11, wpc, em]
     outputs:
       version: ${{ steps.determine_version.outputs.version }}
-      files: ${{ steps.collect_outputs.outputs.files }}
+      files:   ${{ steps.collect_outputs.outputs.files }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -98,13 +98,21 @@ jobs:
         with:
           path: .
 
+      - name: Debug workspace layout
+        run: |
+          echo "PWD: $(pwd)"
+          echo "Listing all files:"
+          find . -maxdepth 3 | sed 's/^/  /'
+          echo "Looking for JSON update files:"
+          find . -type f -name "update_*.json" -exec echo "  -> {}" \;
+
       - name: Create or Update Pre-Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build.outputs.version }}
-          name:    ${{ needs.build.outputs.version }}
+          name:     ${{ needs.build.outputs.version }}
           body: |
-            PR:    ${{ github.event.pull_request.html_url }}
+            PR:     ${{ github.event.pull_request.html_url }}
             Branch: ${{ github.event.pull_request.head.ref }}
             Version: ${{ needs.build.outputs.version }}
 
@@ -112,7 +120,8 @@ jobs:
             ${{ needs.build.outputs.files }}
             <!-- checksums:end -->
           prerelease: true
-          files: update_*.json
+          files: |
+            **/update_*.json
           fail_on_unmatched_files: false
           append_body: true
         env:
@@ -130,10 +139,17 @@ jobs:
         with:
           path: .
 
+      - name: Debug workspace layout
+        run: |
+          set -euxo pipefail
+          echo "PWD: $(pwd)"
+          echo "Files on disk:"
+          ls -R .
+
       - name: Append checksums to Release notes
         uses: actions/github-script@v6
         env:
-          FILES: ${{ needs.build.outputs.files }}
+          FILES:      ${{ needs.build.outputs.files }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
