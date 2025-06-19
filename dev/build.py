@@ -74,7 +74,17 @@ class Builder:
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
         shutil.copytree(os.path.join(self.source_dir, 'common'), self.build_dir)
-        shutil.copytree(os.path.join(self.source_dir, self.target_system), self.build_dir)
+        
+        sys_src_path = os.path.join(self.source_dir, self.target_system)
+        for root, dirs, files in os.walk(sys_src_path):
+            rel_path = os.path.relpath(root, sys_src_path)
+            dest_dir = os.path.join(self.build_dir, rel_path)
+            if not os.path.exists(dest_dir):
+                os.makedirs(dest_dir)
+            for file in files:
+                src_file = os.path.join(root, file)
+                dest_file = os.path.join(dest_dir, file)
+                shutil.copy2(src_file, dest_file)
 
     @step_report
     def compile_py_files(self):
