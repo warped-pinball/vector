@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        target_system: [default, wpc, em]
+        target_system: [sys11, wpc, em]
 
     steps:
       - name: Check out code
@@ -64,7 +64,7 @@ jobs:
 
       - name: Build project
         run: |
-          python dev/build.py --build-dir build --env ${{ env.ENV }}
+          python dev/build.py --build-dir build --env ${{ env.ENV }} --target_system ${{ matrix.target_system }}
 
       - name: Create key files (if provided)
         run: |
@@ -77,7 +77,7 @@ jobs:
       - name: Determine output filename
         id: output
         run: |
-          if [ "${{ matrix.target_system }}" = "default" ]; then
+          if [ "${{ matrix.target_system }}" = "sys11" ]; then
             echo "OUTPUT_FILE=update.json" >> $GITHUB_ENV
           else
             echo "OUTPUT_FILE=update_${{ matrix.target_system }}.json" >> $GITHUB_ENV
@@ -91,13 +91,11 @@ jobs:
               --output "${{ env.OUTPUT_FILE }}" \
               --version "${{ env.VERSION }}" \
               --private-key private_key.pem \
-              --target_system "${{ matrix.target_system }}"
           else
             python dev/build_update.py \
               --build-dir build \
               --output "${{ env.OUTPUT_FILE }}" \
               --version "${{ env.VERSION }}" \
-              --target_system "${{ matrix.target_system }}"
           fi
 
       - name: Compute checksum

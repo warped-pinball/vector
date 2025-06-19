@@ -73,7 +73,8 @@ class Builder:
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
-        shutil.copytree(self.source_dir, self.build_dir)
+        shutil.copytree(os.path.join(self.source_dir, 'common'), self.build_dir)
+        shutil.copytree(os.path.join(self.source_dir, self.target_system), self.build_dir)
 
     @step_report
     def compile_py_files(self):
