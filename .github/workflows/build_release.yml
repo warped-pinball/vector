@@ -81,7 +81,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-files
+          name: upload files for ${{ matrix.target_system }}
           path: update_${{ matrix.target_system }}.json
           overwrite: true
           if-no-files-found: warn
