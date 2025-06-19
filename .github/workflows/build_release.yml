@@ -121,7 +121,7 @@ jobs:
           prerelease: true
           files: "${{ env.OUTPUT_FILE }}"
           fail_on_unmatched_files: false
-          update_existing: true
+          append_body: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
