@@ -247,7 +247,7 @@ def main():
     parser.add_argument("--target_system", default="sys11", help="Target system for the build (e.g., sys11, wpc, em, etc.)")
     args = parser.parse_args()
 
-    builder = Builder(args.build_dir, args.source_dir, args.env, args.target_system)
+    builder = Builder(args.build_dir, args.source_dir, args.target_system)
 
     # Run build steps in sequence
     builder.copy_files_to_build()
