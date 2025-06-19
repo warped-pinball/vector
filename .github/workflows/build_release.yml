@@ -35,7 +35,7 @@ jobs:
       - name: Determine build environment and version
         id: determine_version
         run: |
-          BASE_VERSION=$(grep WarpedVersion src/SharedState.py | awk -F'"' '{print $2}')
+          BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F'"' '{print $2}')
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             ENV="dev"
@@ -59,8 +59,8 @@ jobs:
 
       - name: Update SharedState.py Version
         run: |
-          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/SharedState.py
-          git diff src/SharedState.py
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
+          git diff src/common/SharedState.py
 
       - name: Build project
         run: |
