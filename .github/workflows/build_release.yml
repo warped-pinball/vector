@@ -9,16 +9,10 @@ on:
     types: [published]
 
 jobs:
-  build:
+  build_and_release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      matrix:
-        target_system: [sys11, wpc, em]
-    outputs:
-      version: ${{ steps.determine_version.outputs.version }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -52,23 +46,25 @@ jobs:
         run: |
           sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
 
-      - name: Build and generate update file
+      - name: Build and generate update files
         run: |
-          python dev/build.py --build-dir build --target_system ${{ matrix.target_system }}
-          rm -f private_key.pem
-          if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
-            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
-            python dev/build_update.py \
-              --build-dir build \
-              --output update_${{ matrix.target_system }}.json \
-              --version ${{ env.VERSION }} \
-              --private-key private_key.pem
-          else
-            python dev/build_update.py \
-              --build-dir build \
-              --output update_${{ matrix.target_system }}.json \
-              --version ${{ env.VERSION }}
-          fi
+          for target in sys11 wpc em; do
+            python dev/build.py --build-dir build --target_system $target
+            rm -f private_key.pem
+            if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
+              echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+              python dev/build_update.py \
+                --build-dir build \
+                --output "update_${target}.json" \
+                --version ${{ env.VERSION }} \
+                --private-key private_key.pem
+            else
+              python dev/build_update.py \
+                --build-dir build \
+                --output "update_${target}.json" \
+                --version ${{ env.VERSION }}
+            fi
+          done
 
       - name: Create or update GitHub Release
         id: create_release
