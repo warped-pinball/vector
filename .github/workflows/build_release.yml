@@ -90,12 +90,12 @@ jobs:
               --build-dir build \
               --output "${{ env.OUTPUT_FILE }}" \
               --version "${{ env.VERSION }}" \
-              --private-key private_key.pem \
+              --private-key private_key.pem
           else
             python dev/build_update.py \
               --build-dir build \
               --output "${{ env.OUTPUT_FILE }}" \
-              --version "${{ env.VERSION }}" \
+              --version "${{ env.VERSION }}"
           fi
 
       - name: Compute checksum
