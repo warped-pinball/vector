@@ -11,11 +11,8 @@ on:
 permissions:
   contents: write
 
-env:
-  PYTHON_VERSION: "3.10"
-
 jobs:
-  # 1️⃣ Determine the version string
+  ## 1️⃣ Determine the version string
   determine_version:
     runs-on: ubuntu-latest
     outputs:
@@ -39,44 +36,61 @@ jobs:
           FULL="${BASE}${SUFFIX}"
           echo "version=$FULL" >> $GITHUB_OUTPUT
 
-  # 2️⃣ Build per target system and publish directly to Release
-  build_and_release:
+  ## 2️⃣ Create (or update) the GitHub Release once
+  create_release:
     needs: determine_version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      upload_url: ${{ steps.cr.outputs.upload_url }}
+    steps:
+      - name: Create or update Release
+        id: cr
+        uses: actions/create-release@v1
+        with:
+          tag_name:    ${{ needs.determine_version.outputs.version }}
+          name:        ${{ needs.determine_version.outputs.version }}
+          draft:       false
+          prerelease:  ${{ github.event_name != 'release' }}
+
+  ## 3️⃣ Build per matrix target and upload JSON
+  build:
+    needs: [determine_version, create_release]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target_system: [sys11, wpc, em]
     env:
-      VERSION: ${{ needs.determine_version.outputs.version }}
+      VERSION:    ${{ needs.determine_version.outputs.version }}
+      UPLOAD_URL: ${{ needs.create_release.outputs.upload_url }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
+      - name: Set up Python ${{ matrix.target_system }}
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.10"
           cache: pip
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Update SharedState.py to ${{ env.VERSION }}
+      - name: Update SharedState.py
         run: |
           sed -i "s|WarpedVersion = .*|WarpedVersion = \"${VERSION}\"|" \
             src/common/SharedState.py
 
-      - name: Build update JSON
+      - name: Build update JSON for ${{ matrix.target_system }}
         run: |
           python dev/build.py \
             --build-dir build \
             --target_system "${{ matrix.target_system }}"
-          rm -f private_key.pem
           if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
-            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" \
-              > private_key.pem
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
@@ -89,13 +103,10 @@ jobs:
               --version "${VERSION}"
           fi
 
-      - name: Publish Release & upload JSON
-        uses: softprops/action-gh-release@v2.3.2
+      - name: Upload JSON to existing Release
+        uses: actions/upload-release-asset@v1
         with:
-          token:        ${{ secrets.GITHUB_TOKEN }}
-          tag_name:     ${{ env.VERSION }}
-          name:         ${{ env.VERSION }}
-          body:         |
-            • Version: ${{ env.VERSION }}
-            • Source:  ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || github.ref }}
-          files:        update_${{ matrix.target_system }}.json
+          upload_url:         ${{ env.UPLOAD_URL }}
+          asset_path:         update_${{ matrix.target_system }}.json
+          asset_name:         update_${{ matrix.target_system }}.json
+          asset_content_type: application/json
