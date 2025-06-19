@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     strategy:
       matrix:
         target_system: [sys11, wpc, em]
-
+    outputs:
+      files: ${{ steps.collect_outputs.outputs.files }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -36,134 +36,100 @@ jobs:
         id: determine_version
         run: |
           BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F'"' '{print $2}')
-
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ENV="dev"
             SUFFIX="-dev${{ github.event.pull_request.number }}"
-            VERSION="$BASE_VERSION$SUFFIX"
           elif [ "${{ github.event_name }}" = "push" ]; then
-            ENV="beta"
             SUFFIX="-beta${{ github.run_number }}"
-            VERSION="$BASE_VERSION$SUFFIX"
-          elif [ "${{ github.event_name }}" = "release" ]; then
-            ENV="prod"
-            VERSION="$BASE_VERSION"
           else
-            ENV="dev"
-            SUFFIX="-dev"
-            VERSION="$BASE_VERSION$SUFFIX"
-          fi
 
-          echo "ENV=$ENV" >> $GITHUB_ENV
+            SUFFIX=""
+          fi
+          VERSION="$BASE_VERSION$SUFFIX"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Write modified version back to SharedState.py
+      - name: Update SharedState.py
         run: |
           sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
-          git diff src/common/SharedState.py
 
-      - name: Build project for ${{ matrix.target_system }}
+      - name: Build and generate update file
         run: |
-          python dev/build.py \
-            --build-dir build \
-            --env ${{ env.ENV }} \
-            --target_system ${{ matrix.target_system }}
-
-      - name: Create key files (if provided)
-        run: |
+          python dev/build.py --build-dir build --target_system ${{ matrix.target_system }}
+          rm -f private_key.pem
           if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
             echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+            python dev/build_update.py --build-dir build --output update_${{ matrix.target_system }}.json --version ${{ env.VERSION }} --private-key private_key.pem --target_system ${{ matrix.target_system }}
           else
-            echo "No private key specified, building unsigned."
+            python dev/build_update.py --build-dir build --output update_${{ matrix.target_system }}.json --version ${{ env.VERSION }} --target_system ${{ matrix.target_system }}
           fi
+          SHA=$(sha256sum update_${{ matrix.target_system }}.json | awk '{print $1}')
+          echo "update_${{ matrix.target_system }}.json:$SHA" >> checksums.txt
 
-      - name: Determine output filename
-        id: output
+      - name: Collect outputs
+        id: collect_outputs
         run: |
-          if [ "${{ matrix.target_system }}" = "sys11" ]; then
-            echo "OUTPUT_FILE=update.json" >> $GITHUB_ENV
-          else
-            echo "OUTPUT_FILE=update_${{ matrix.target_system }}.json" >> $GITHUB_ENV
-          fi
+          files=$(jq -R -s -c 'split("\n")[:-1]' checksums.txt)
+          echo "files=$files" >> $GITHUB_OUTPUT
 
-      - name: Generate update file
-        run: |
-          if [ -f "private_key.pem" ]; then
-            python dev/build_update.py \
-              --build-dir build \
-              --output "${{ env.OUTPUT_FILE }}" \
-              --version "${{ env.VERSION }}" \
-              --private-key private_key.pem
-          else
-            python dev/build_update.py \
-              --build-dir build \
-              --output "${{ env.OUTPUT_FILE }}" \
-              --version "${{ env.VERSION }}"
-          fi
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: update_*.json
 
-      - name: Compute checksum
-        id: checksum
-        run: |
-          SHA256=$(sha256sum "${{ env.OUTPUT_FILE }}" | awk '{print $1}')
-          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
-          echo "FILENAME=${{ env.OUTPUT_FILE }}" >> $GITHUB_OUTPUT
+  publish-prerelease:
+    needs: build
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
 
-      - name: Create or Update Pre-Release for Pull Request
-        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+      - name: Create or Update Pre-Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.VERSION }}
-          name: ${{ env.VERSION }}
+          tag_name: ${{ needs.build.outputs.version }}
+          name: ${{ needs.build.outputs.version }}
           body: |
             PR: ${{ github.event.pull_request.html_url }}
             Branch: ${{ github.event.pull_request.head.ref }}
-            Version: ${{ env.VERSION }}
+            Version: ${{ needs.build.outputs.version }}
+
+            <!-- checksums:start -->
+            ${{ needs.build.outputs.files }}
+            <!-- checksums:end -->
           prerelease: true
-          files: "${{ env.OUTPUT_FILE }}"
+          files: update_*.json
           fail_on_unmatched_files: false
           append_body: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload to official GitHub Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: "${{ env.OUTPUT_FILE }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ matrix.target_system }}"
-          path: "${{ env.OUTPUT_FILE }}"
-
   annotate-release:
     needs: build
+    if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-
+    permissions:
+      contents: write
     steps:
-      - name: Download artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
+        with:
+          name: build-files
 
-      - name: Compute checksums and prepare markdown
-        run: |
-          echo "<!-- checksums:start -->" > checksum_block.txt
-          for file in *.json; do
-            SHA=$(sha256sum "$file" | awk '{print $1}')
-            echo "$file: $SHA" >> checksum_block.txt
-          done
-          echo "<!-- checksums:end -->" >> checksum_block.txt
-
-      - name: Append checksums to release
+      - name: Append checksums to Release notes
         uses: actions/github-script@v6
+        env:
+          FILES: ${{ needs.build.outputs.files }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const block = fs.readFileSync('checksum_block.txt', 'utf8');
+            const files = process.env.FILES;
+            const block = `<!-- checksums:start -->\n${files}\n<!-- checksums:end -->`;
             const release = context.payload.release;
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
