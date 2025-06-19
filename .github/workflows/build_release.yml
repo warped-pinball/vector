@@ -18,7 +18,6 @@ jobs:
         target_system: [sys11, wpc, em]
     outputs:
       version: ${{ steps.determine_version.outputs.version }}
-      files:   ${{ steps.collect_outputs.outputs.files }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -69,97 +68,35 @@ jobs:
               --output update_${{ matrix.target_system }}.json \
               --version ${{ env.VERSION }}
           fi
-          SHA=$(sha256sum update_${{ matrix.target_system }}.json | awk '{print $1}')
-          echo "update_${{ matrix.target_system }}.json:$SHA" >> checksums.txt
 
-      - name: Collect outputs
-        id: collect_outputs
-        run: |
-          files=$(jq -R -s -c 'split("\n")[:-1]' checksums.txt)
-          echo "files=$files" >> $GITHUB_OUTPUT
-
-      - name: Upload artifacts
+      - name: Upload JSON artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-files-${{ matrix.target_system }}
+          name: update-json-${{ matrix.target_system }}
           path: update_${{ matrix.target_system }}.json
           overwrite: true
-          if-no-files-found: warn
 
-  publish-prerelease:
+  release:
     needs: build
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download build artifacts
+      - name: Download all update JSONs
         uses: actions/download-artifact@v4
         with:
           path: .
 
-      - name: Debug workspace layout
-        run: |
-          echo "PWD: $(pwd)"
-          echo "Listing all files:"
-          find . -maxdepth 3 | sed 's/^/  /'
-          echo "Looking for JSON update files:"
-          find . -type f -name "update_*.json" -exec echo "  -> {}" \;
-
-      - name: Create or Update Pre-Release
+      - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build.outputs.version }}
           name:     ${{ needs.build.outputs.version }}
           body: |
-            PR:     ${{ github.event.pull_request.html_url }}
-            Branch: ${{ github.event.pull_request.head.ref }}
-            Version: ${{ needs.build.outputs.version }}
-
-            <!-- checksums:start -->
-            ${{ needs.build.outputs.files }}
-            <!-- checksums:end -->
-          prerelease: true
+            • Version: ${{ needs.build.outputs.version }}
+            • Source: ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || github.ref }}
+          prerelease: ${{ github.event_name != 'release' }}
           files: |
-            **/update_*.json
-          fail_on_unmatched_files: false
-          append_body: true
+            update_*.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  annotate-release:
-    needs: build
-    if: ${{ github.event_name == 'release' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: .
-
-      - name: Debug workspace layout
-        run: |
-          set -euxo pipefail
-          echo "PWD: $(pwd)"
-          echo "Files on disk:"
-          ls -R .
-
-      - name: Append checksums to Release notes
-        uses: actions/github-script@v6
-        env:
-          FILES:      ${{ needs.build.outputs.files }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const files = process.env.FILES;
-            const block = `<!-- checksums:start -->\n${files}\n<!-- checksums:end -->`;
-            const release = context.payload.release;
-            await github.rest.repos.updateRelease({
-              owner:      context.repo.owner,
-              repo:       context.repo.repo,
-              release_id: release.id,
-              body:       `${release.body || ''}\n${block}`
-            });
