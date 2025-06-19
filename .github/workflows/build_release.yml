@@ -77,13 +77,6 @@ jobs:
             Trigger: ${{ github.event_name }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload update files to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
           files: |
             update_sys11.json
             update_wpc.json
