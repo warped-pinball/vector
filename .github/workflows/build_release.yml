@@ -82,7 +82,7 @@ jobs:
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
           files: |
-            update_sys11.json
+            update.json
             update_wpc.json
             update_em.json
         env:
