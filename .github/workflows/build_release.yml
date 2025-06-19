@@ -57,7 +57,7 @@ jobs:
           echo "ENV=$ENV" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Update SharedState.py Version
+      - name: Write modified version back to SharedState.py
         run: |
           sed -i "s/WarpedVersion = .*/WarpedVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
           git diff src/common/SharedState.py
