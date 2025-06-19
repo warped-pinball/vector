@@ -17,6 +17,7 @@ jobs:
       matrix:
         target_system: [sys11, wpc, em]
     outputs:
+      version: ${{ steps.determine_version.outputs.version }}
       files: ${{ steps.collect_outputs.outputs.files }}
     steps:
       - name: Check out code
@@ -35,17 +36,17 @@ jobs:
       - name: Determine build environment and version
         id: determine_version
         run: |
-          BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F'"' '{print $2}')
+          BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F '"' '{print $2}')
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             SUFFIX="-dev${{ github.event.pull_request.number }}"
           elif [ "${{ github.event_name }}" = "push" ]; then
             SUFFIX="-beta${{ github.run_number }}"
           else
-
             SUFFIX=""
           fi
           VERSION="$BASE_VERSION$SUFFIX"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Update SharedState.py
         run: |
@@ -57,9 +58,16 @@ jobs:
           rm -f private_key.pem
           if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
             echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
-            python dev/build_update.py --build-dir build --output update_${{ matrix.target_system }}.json --version ${{ env.VERSION }} --private-key private_key.pem
+            python dev/build_update.py \
+              --build-dir build \
+              --output update_${{ matrix.target_system }}.json \
+              --version ${{ env.VERSION }} \
+              --private-key private_key.pem
           else
-            python dev/build_update.py --build-dir build --output update_${{ matrix.target_system }}.json --version ${{ env.VERSION }}
+            python dev/build_update.py \
+              --build-dir build \
+              --output update_${{ matrix.target_system }}.json \
+              --version ${{ env.VERSION }}
           fi
           SHA=$(sha256sum update_${{ matrix.target_system }}.json | awk '{print $1}')
           echo "update_${{ matrix.target_system }}.json:$SHA" >> checksums.txt
