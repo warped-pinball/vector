@@ -8,70 +8,52 @@ on:
   release:
     types: [published]
 
+env:
+  PYTHON_VERSION: "3.10"
+
 jobs:
-  # 1️⃣ Determine the version string once
+  # ─── Determine version once ────────────────────────────────────────────────
   determine_version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Read base version and set full version
+      - name: Read base version and compute suffix
         id: set_version
         run: |
-          BASE_VERSION=$(grep WarpedVersion src/common/SharedState.py | awk -F '"' '{print $2}')
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE=$(grep WarpedVersion src/common/SharedState.py \
+                    | awk -F '"' '{print $2}')
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SUFFIX="-dev${{ github.event.pull_request.number }}"
-          elif [ "${{ github.event_name }}" = "push" ]; then
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
             SUFFIX="-beta${{ github.run_number }}"
           else
             SUFFIX=""
           fi
-          FULL_VERSION="$BASE_VERSION$SUFFIX"
-          echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          FULL="${BASE}${SUFFIX}"
+          echo "version=$FULL" >> $GITHUB_OUTPUT
 
-  # 2️⃣ Create (or update) the Release and grab its upload_url
-  create_release:
+  # ─── Build + Release per target ───────────────────────────────────────────
+  build_and_release:
     needs: determine_version
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      upload_url: ${{ steps.make_release.outputs.upload_url }}
-    steps:
-      - name: Create or update GitHub Release
-        id: make_release
-        uses: actions/create-release@v1
-        with:
-          tag_name:     ${{ needs.determine_version.outputs.version }}
-          release_name: ${{ needs.determine_version.outputs.version }}
-          draft:        false
-          prerelease:   ${{ github.event_name != 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 3️⃣ Build per-target and upload JSON directly into that Release
-  build:
-    needs: [determine_version, create_release]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
     strategy:
       matrix:
         target_system: [sys11, wpc, em]
     env:
       VERSION: ${{ needs.determine_version.outputs.version }}
-      UPLOAD_URL: ${{ needs.create_release.outputs.upload_url }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install dependencies
         run: |
@@ -80,14 +62,17 @@ jobs:
 
       - name: Update SharedState.py to ${{ env.VERSION }}
         run: |
-          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${VERSION}\"/" src/common/SharedState.py
+          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${VERSION}\"/" \
+            src/common/SharedState.py
 
       - name: Build and generate update JSON
         run: |
-          python dev/build.py --build-dir build --target_system "${{ matrix.target_system }}"
+          python dev/build.py --build-dir build \
+                              --target_system "${{ matrix.target_system }}"
           rm -f private_key.pem
-          if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
-            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+          if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" \
+              > private_key.pem
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
@@ -100,12 +85,16 @@ jobs:
               --version "${VERSION}"
           fi
 
-      - name: Upload update_${{ matrix.target_system }}.json to Release
-        uses: actions/upload-release-asset@v1
+      - name: Publish Release & attach JSON
+        uses: softprops/action-gh-release@v2.3.2
         with:
-          upload_url:       ${{ env.UPLOAD_URL }}
-          asset_path:       update_${{ matrix.target_system }}.json
-          asset_name:       update_${{ matrix.target_system }}.json
-          asset_content_type: application/json
+          tag_name:     ${{ env.VERSION }}
+          release_name: ${{ env.VERSION }}
+          body: |
+            • Version: ${{ env.VERSION }}
+            • Source:   ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || github.ref }}
+          draft:       false
+          prerelease:  ${{ github.event_name != 'release' }}
+          files:       update_${{ matrix.target_system }}.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
