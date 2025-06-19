@@ -8,21 +8,21 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write           # needed to create/update releases
+  pull-requests: write      # if you want to modify PR comments, labels, etc.
+
 env:
   PYTHON_VERSION: "3.10"
 
 jobs:
-  # ─── Determine version once ────────────────────────────────────────────────
   determine_version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Read base version and compute suffix
-        id: set_version
+      - uses: actions/checkout@v4
+      - id: set_version
         run: |
           BASE=$(grep WarpedVersion src/common/SharedState.py \
                     | awk -F '"' '{print $2}')
@@ -36,7 +36,6 @@ jobs:
           FULL="${BASE}${SUFFIX}"
           echo "version=$FULL" >> $GITHUB_OUTPUT
 
-  # ─── Build + Release per target ───────────────────────────────────────────
   build_and_release:
     needs: determine_version
     runs-on: ubuntu-latest
@@ -46,10 +45,9 @@ jobs:
     env:
       VERSION: ${{ needs.determine_version.outputs.version }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -60,19 +58,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Update SharedState.py to ${{ env.VERSION }}
+      - name: Update SharedState.py
         run: |
           sed -i "s/WarpedVersion = .*/WarpedVersion = \"${VERSION}\"/" \
             src/common/SharedState.py
 
-      - name: Build and generate update JSON
+      - name: Build update JSON
         run: |
           python dev/build.py --build-dir build \
                               --target_system "${{ matrix.target_system }}"
-          rm -f private_key.pem
           if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
-            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" \
-              > private_key.pem
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
@@ -85,16 +81,13 @@ jobs:
               --version "${VERSION}"
           fi
 
-      - name: Publish Release & attach JSON
+      - name: Publish Release & upload JSON
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name:     ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
-          body: |
+          name:         ${{ env.VERSION }}
+          body:         |
             • Version: ${{ env.VERSION }}
-            • Source:   ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || github.ref }}
-          draft:       false
-          prerelease:  ${{ github.event_name != 'release' }}
-          files:       update_${{ matrix.target_system }}.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            • Source:  ${{ github.ref }}
+          files:        update_${{ matrix.target_system }}.json
+          token:        ${{ secrets.REPO_PAT }}
