@@ -9,23 +9,26 @@ on:
     types: [published]
 
 permissions:
-  contents: write           # needed to create/update releases
-  pull-requests: write      # if you want to modify PR comments, labels, etc.
+  contents: write
 
 env:
   PYTHON_VERSION: "3.10"
 
 jobs:
+  # 1️⃣ Determine the version string
   determine_version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - id: set_version
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Compute version
+        id: set_version
         run: |
           BASE=$(grep WarpedVersion src/common/SharedState.py \
-                    | awk -F '"' '{print $2}')
+                   | awk -F '"' '{print $2}')
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SUFFIX="-dev${{ github.event.pull_request.number }}"
           elif [[ "${{ github.event_name }}" == "push" ]]; then
@@ -36,6 +39,7 @@ jobs:
           FULL="${BASE}${SUFFIX}"
           echo "version=$FULL" >> $GITHUB_OUTPUT
 
+  # 2️⃣ Build per target system and publish directly to Release
   build_and_release:
     needs: determine_version
     runs-on: ubuntu-latest
@@ -45,9 +49,10 @@ jobs:
     env:
       VERSION: ${{ needs.determine_version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -58,17 +63,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Update SharedState.py
+      - name: Update SharedState.py to ${{ env.VERSION }}
         run: |
-          sed -i "s/WarpedVersion = .*/WarpedVersion = \"${VERSION}\"/" \
+          sed -i "s|WarpedVersion = .*|WarpedVersion = \"${VERSION}\"|" \
             src/common/SharedState.py
 
       - name: Build update JSON
         run: |
-          python dev/build.py --build-dir build \
-                              --target_system "${{ matrix.target_system }}"
+          python dev/build.py \
+            --build-dir build \
+            --target_system "${{ matrix.target_system }}"
+          rm -f private_key.pem
           if [[ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]]; then
-            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+            echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" \
+              > private_key.pem
             python dev/build_update.py \
               --build-dir build \
               --output update_${{ matrix.target_system }}.json \
@@ -84,10 +92,10 @@ jobs:
       - name: Publish Release & upload JSON
         uses: softprops/action-gh-release@v2.3.2
         with:
+          token:        ${{ secrets.GITHUB_TOKEN }}
           tag_name:     ${{ env.VERSION }}
           name:         ${{ env.VERSION }}
           body:         |
             • Version: ${{ env.VERSION }}
-            • Source:  ${{ github.ref }}
+            • Source:  ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || github.ref }}
           files:        update_${{ matrix.target_system }}.json
-          token:        ${{ secrets.REPO_PAT }}
