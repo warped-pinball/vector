@@ -61,10 +61,9 @@ def step_report(func):
 
 
 class Builder:
-    def __init__(self, build_dir, source_dir, environment="dev"):
+    def __init__(self, build_dir, source_dir):
         self.build_dir = build_dir
         self.source_dir = source_dir
-        self.environment = environment
 
     @step_report
     def copy_files_to_build(self):
@@ -233,10 +232,9 @@ def main():
     parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
     parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
     parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
-    parser.add_argument("--env", default="dev", help="Build environment (dev, test, prod, etc.)")
     args = parser.parse_args()
 
-    builder = Builder(args.build_dir, args.source_dir, args.env)
+    builder = Builder(args.build_dir, args.source_dir)
 
     # Run build steps in sequence
     builder.copy_files_to_build()
