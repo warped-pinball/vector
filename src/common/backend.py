@@ -772,13 +772,22 @@ def app_getLogs(request):
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
     from mrequests.mrequests import get
+    from SharedState import gdata
 
-    # from urequests import get as urequests_get
+    # determine which update channel to use based on the game config
+    system = "sys11"
+    try:
+        sys_info = gdata.get("GameInfo", {}).get("System", "").upper()
+        if "WPC" in sys_info:
+            system = "wpc"
+        elif "EM" in sys_info:
+            system = "em"
+    except Exception:
+        pass
 
-    url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
+    url = f"https://updates.warpedpinball.com/{system}/latest.json"
     headers = {
         "User-Agent": "MicroPython-Device",
-        "Accept": "application/vnd.github+json",
     }
 
     resp = get(url, headers=headers)
