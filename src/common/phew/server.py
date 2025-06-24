@@ -1,13 +1,16 @@
 import time
 
+import faults
 import machine
 import ntptime
 import uasyncio
 from machine import RTC
+from ScoreTrack import (
+    CheckForNewScores,
+    check_for_machine_high_scores,
+    initialize_leaderboard,
+)
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-
-import faults
-from ScoreTrack import CheckForNewScores, initialize_leaderboard, check_for_machine_high_scores
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -307,7 +310,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     # update the game status every 0.25 second
-    #       schedule(poll_fast, 20000, 1000)  #250)
+    schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
