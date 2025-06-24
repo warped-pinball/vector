@@ -12,14 +12,14 @@
 
 # --- Configuration ---
 
-ENVIRONMENT="${1:-dev}"     # If user doesn't specify, default to 'dev'
+SYSTEM="${1:-dev}"     # If user doesn't specify, default to 'dev'
 BUILD_DIR="build"           # adjust as necessary
 SOURCE_DIR="src"            # adjust as necessary
 PORT="${2}"                # optionally define port
 
 # --- 1. Build the project ---
-echo "Building project with environment=${ENVIRONMENT} ..."
-python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR" --env "$ENVIRONMENT"
+echo "Building project for system=${SYSTEM} ..."
+python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR" --target_system "$SYSTEM"
 if [ $? -ne 0 ]; then
   echo "Build failed. Aborting."
   exit 1
