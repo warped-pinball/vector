@@ -893,5 +893,5 @@ window.getGameStatus = async function () {
 window.getGameStatus();
 
 // Poll for updates
-setInterval(window.getGameStatus, 3000);  //1500);
-setInterval(window.getClaimableScores, 8000);
+setInterval(window.getGameStatus, 1500);
+setInterval(window.getClaimableScores, 4000);
