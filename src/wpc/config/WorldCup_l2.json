@@ -37,14 +37,14 @@
     },
 
     "DisplayMessage": {
-        "Type": 0,
-        "AddressS1": 7624,
-        "AddressS2": 7624,
-        "AddressS3": 7624,
+        "Type": 10,
+        "AddressS1": 7697,
+        "AddressS2": 7762,
+        "AddressS3": 7827,
         "Length": 32,
-        "ChecksumStartAdr": 7624,
-        "ChecksumEndAdr": 7818,
-        "ChecksumResultAdr": 7819
+        "ChecksumStartAdr": 7697,
+        "ChecksumEndAdr": 7889,
+        "ChecksumResultAdr": 7890
     },
 
     "Adjustments" :{
