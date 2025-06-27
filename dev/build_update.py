@@ -18,7 +18,7 @@ OUTPUT_FILE = "update.json"
 
 hardware_configs = {
     "sys11": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.24.1", "1.23.0-preview"]},
-    "wpc": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.25.1", "1.23.0-preview"]},
+    "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0"]},
     "em": {"supported_hardware": [], "micropython_versions": []},  # TODO fill this in when hardware finalized
 }
 
