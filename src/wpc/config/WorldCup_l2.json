@@ -51,8 +51,8 @@
         "Type": 10,
         "CustomMessageOn": 0,
         "ChecksumStartAdr": 7061,
-        "ChecksumEndAdr": 7302,
-        "ChecksumResultAdr": 7303
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301
     },
 
     "HighScores": {
@@ -66,8 +66,11 @@
         "GrandChampScoreAdr": 7446,
         "GrandChampInitAdr": 7443,
         "ChecksumStartAdr": 7405,
-        "ChecksumEndAdr": 7442,
-        "ChecksumResultAdr": 7443  
+        "ChecksumEndAdr": 7440,
+        "ChecksumResultAdr": 7441,
+        "GCChecksumStartAdr": 7443, 
+        "GCChecksumEndAdr": 7451,
+        "GCChecksumResultAdr": 7452
     },
 
     "HSRewards": {
