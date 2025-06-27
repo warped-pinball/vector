@@ -12,7 +12,7 @@ IF EXIST build (
 
 REM Run the Python build script
 echo Running build script...
-python dev/build.py --build-dir build/ --source-dir src/ --target_system sys11
+python dev/build.py --build-dir build/ --source-dir src/ --target_hardware sys11
 
 REM Check for errors
 IF %ERRORLEVEL% NEQ 0 (

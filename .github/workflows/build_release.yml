@@ -49,7 +49,7 @@ jobs:
       - name: Build and generate update files
         run: |
           for target in sys11 wpc em; do
-            python dev/build.py --build-dir build --target_system $target
+            python dev/build.py --build-dir build --target_hardware $target
             output_file="update_${target}.json"
             if [ "$target" = "sys11" ]; then
               output_file="update.json"

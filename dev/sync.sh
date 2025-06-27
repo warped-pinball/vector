@@ -19,7 +19,7 @@ PORT="${2}"                # optionally define port
 
 # --- 1. Build the project ---
 echo "Building project for system=${SYSTEM} ..."
-python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR" --target_system "$SYSTEM"
+python dev/build.py --build-dir "$BUILD_DIR" --source-dir "$SOURCE_DIR" --target_hardware "$SYSTEM"
 if [ $? -ne 0 ]; then
   echo "Build failed. Aborting."
   exit 1

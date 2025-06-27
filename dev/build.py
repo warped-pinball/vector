@@ -61,10 +61,10 @@ def step_report(func):
 
 
 class Builder:
-    def __init__(self, build_dir, source_dir, target_system="sys11"):
+    def __init__(self, build_dir, source_dir, target_hardware="sys11"):
         self.build_dir = build_dir
         self.source_dir = source_dir
-        self.target_system = target_system
+        self.target_hardware = target_hardware
 
     @step_report
     def copy_files_to_build(self):
@@ -72,9 +72,9 @@ class Builder:
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
-        shutil.copytree(os.path.join(self.source_dir, 'common'), self.build_dir)
-        
-        sys_src_path = os.path.join(self.source_dir, self.target_system)
+        shutil.copytree(os.path.join(self.source_dir, "common"), self.build_dir)
+
+        sys_src_path = os.path.join(self.source_dir, self.target_hardware)
         for root, dirs, files in os.walk(sys_src_path):
             rel_path = os.path.relpath(root, sys_src_path)
             dest_dir = os.path.join(self.build_dir, rel_path)
@@ -244,10 +244,10 @@ def main():
     parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
     parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
     parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
-    parser.add_argument("--target_system", default="sys11", help="Target system for the build (e.g., sys11, wpc, em, etc.)")
+    parser.add_argument("--target_hardware", default="sys11", help="Target system for the build (e.g., sys11, wpc, em, etc.)")
     args = parser.parse_args()
 
-    builder = Builder(args.build_dir, args.source_dir, args.target_system)
+    builder = Builder(args.build_dir, args.source_dir, args.target_hardware)
 
     # Run build steps in sequence
     builder.copy_files_to_build()
