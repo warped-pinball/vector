@@ -60,13 +60,15 @@ jobs:
                 --build-dir build \
                 --output "$output_file" \
                 --version ${{ env.VERSION }} \
+                --target_hardware $target \
                 --private-key private_key.pem
                 rm -f private_key.pem
             else
               python dev/build_update.py \
                 --build-dir build \
                 --output "$output_file" \
-                --version ${{ env.VERSION }}
+                --version ${{ env.VERSION }} \
+                --target_hardware $target
             fi
           done
 
