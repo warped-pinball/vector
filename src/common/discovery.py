@@ -12,20 +12,21 @@ def setup():
     global known_devices
 
     from phew import get_ip_address
-    from SharedState import WarpedVersion, gdata
+    from SharedState import gdata
+    from systemConfig import SystemVersion
 
-    known_devices[get_ip_address()] = {"name": gdata["GameInfo"]["GameName"], "version": WarpedVersion, "self": True}
+    known_devices[get_ip_address()] = {"name": gdata["GameInfo"]["GameName"], "version": SystemVersion, "self": True}
 
 
 def announce():
     """Broadcast this device's info to the local network."""
     from time import time
 
+    from SharedState import gdata
+    from systemConfig import SystemVersion
     from ujson import dumps
 
-    from SharedState import WarpedVersion, gdata
-
-    msg = {"version": WarpedVersion, "name": gdata["GameInfo"]["GameName"]}
+    msg = {"version": SystemVersion, "name": gdata["GameInfo"]["GameName"]}
 
     # Broadcast to 255.255.255.255 on DISCOVERY_PORT
     global send_sock, known_devices
