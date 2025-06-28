@@ -729,9 +729,9 @@ def app_getDateTime(request):
 #
 @add_route("/api/version")
 def app_version(request):
-    import SharedState
+    from systemConfig import SystemVersion
 
-    return {"version": SharedState.WarpedVersion}
+    return {"version": SystemVersion}
 
 
 @add_route("/api/fault")
