@@ -17,7 +17,7 @@
     },
 
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 1043,
         "Ball1": 1,
         "Ball2": 2,
@@ -49,7 +49,7 @@
 
     "Adjustments" :{
         "Type": 10,
-        "CustomMessageOn": 0,
+        "CustomMessageOn": 7102,
         "ChecksumStartAdr": 7061,
         "ChecksumEndAdr": 7300,
         "ChecksumResultAdr": 7301

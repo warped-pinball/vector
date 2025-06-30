@@ -82,7 +82,7 @@ def check_ap_button():
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
-            #LED_Out.toggle()
+            LED_Out.toggle()
             time.sleep(0.1)
         time.sleep(3)
         return True  # AP mode
@@ -94,12 +94,12 @@ reset_control.init()
 
 print("\n\n")
 print("  Warped Pinball :: System WPC.Wifi")
-Log.log(f"          Version WPC {S.WarpedVersion}")
+Log.log(f"          Version WPC 0.0.1 ") #{S.WarpedVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
     """
-WPC.Wifi from Warped Pinball
+WPC.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )
