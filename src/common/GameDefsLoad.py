@@ -34,10 +34,11 @@ def convert_hex_to_int(data):
 
 
 safe_defaults = {
-    "GameInfo": {"GameName": "Generic System 11", "System": "11x"},
+    "GameInfo": {"GameName": "Generic System", "System": "X"},
     "Definition": {"version": 1},
     "Memory": {"Start": 0, "Length": 2048, "NvStart": 0, "NvLength": 2048},
     "BallInPlay": {"Type": 0},
+    "InPlay": {"Type": 0},
     "DisplayMessage": {"Type": 0},
     "Adjustments": {"Type": 0},
     "HighScores": {"Type": 0},
@@ -45,6 +46,11 @@ safe_defaults = {
     "Switches": {"Type": 0},
     "CoinDrop": {"Type": 0},
 }
+
+safe_defaults_wpc = {"Memory" : {"Start": 1,"Length": 8192,"NvStart": 2048,"NvLength": 2048} }
+
+
+
 
 
 def parse_config_line(line):
@@ -100,7 +106,14 @@ def list_game_configs():
 
 def go(safe_mode=False):
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
-    data = safe_defaults
+
+    data = safe_defaults.copy()
+    try:
+        from systemConfig import vectorSystem
+        if vectorSystem == "wpc":            
+            data["Memory"] = safe_defaults_wpc["Memory"].copy()
+    except Exception as e:
+        Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")
 
     if not safe_mode:
         try:

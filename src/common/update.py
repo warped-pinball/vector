@@ -286,22 +286,37 @@ def validate_compatibility():
     if not any(mp_version_obj == m for m in supported_micropython_versions):
         raise Exception(f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}")
 
-    # hardware version
-    hardware = "Unknown"
-    try:
-        if implementation._machine == "Raspberry Pi Pico W with RP2040":
-            hardware = "vector_v4"
-    except Exception:
-        pass
-
-    from SPI_Store import sflash_driver_init, sflash_is_on_board
-
-    sflash_driver_init()
-    if sflash_is_on_board:
-        hardware = "vector_v5"
+    # hardware compatibility
+    hardware = detect_hardware_version()
 
     if hardware not in metadata.get("supported_hardware", []):
         raise Exception(f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}")
+
+
+def detect_hardware_version():
+    # This is written akwardly in order to run on unknown future hardware
+    from sys import implementation
+
+    known_hardware = {
+        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040", "sflash": False},
+        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040", "sflash": True},
+        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "sflash": False},
+    }
+
+    for hardware, details in known_hardware.items():
+        if implementation._machine == details["machine"]:
+            try:
+                from SPI_Store import sflash_driver_init, sflash_is_on_board
+
+                sflash_driver_init()
+                if sflash_is_on_board == details["sflash"]:
+                    return hardware
+            except Exception:
+                # assume no SFlash
+                if not details["sflash"]:
+                    return hardware
+
+    return "Unknown"
 
 
 def apply_update(url):

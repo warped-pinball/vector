@@ -30,3 +30,16 @@ def r():
     print_memory()
     print("Address of shadowRam:", hex(uctypes.addressof(shadowRam)))
     print("Address of high_ram:", hex(uctypes.addressof(high_ram)))
+
+
+
+import sys
+
+def test_recursion_depth(depth=0):
+    try:
+        return test_recursion_depth(depth + 1)
+    except Exception as e:
+        print(f"Maximum recursion depth reached: {depth}")
+        return depth
+    
+

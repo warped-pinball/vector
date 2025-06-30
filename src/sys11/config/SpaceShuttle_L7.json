@@ -44,7 +44,7 @@
         "BytesInScore": 4
     },
 
-    "InPlayScores": {
+    "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x38",
         "ZeroNibble": 15,
