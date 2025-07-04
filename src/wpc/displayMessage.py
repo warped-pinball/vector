@@ -61,7 +61,7 @@ def _set(ipAddress):
 
     if S.gdata["DisplayMessage"]["Type"] == 10:
         # 16 x 2 lines x 3 screens
-        inp = " WARPED PINBALL "
+        inp = "WARPED PINBALL  "
 
         if "AddressS1" in S.gdata["DisplayMessage"]:
             for i, char in enumerate(inp + padded_ip):
