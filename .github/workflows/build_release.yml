@@ -98,17 +98,17 @@ jobs:
           # Fetch existing release body if it exists
           EXISTING_BODY=""
           if gh release view "${{ env.VERSION }}" --json body -q .body > body.txt 2>/dev/null; then
-        EXISTING_BODY=$(cat body.txt)
+          EXISTING_BODY=$(cat body.txt)
           fi
 
           # Remove any existing versions section
           CLEANED_BODY=$(echo "$EXISTING_BODY" | awk '/## Versions Section/{flag=1} /<!-- END VERSIONS SECTION -->/{flag=0;next} !flag')
-          
+
           # Compose new body
           if [ -n "$CLEANED_BODY" ]; then
-        echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
+          echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
           else
-        echo -e "$VERSION_SECTION" > new_body.txt
+          echo -e "$VERSION_SECTION" > new_body.txt
           fi
 
           echo "body<<EOF" >> $GITHUB_OUTPUT
@@ -127,8 +127,8 @@ jobs:
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
           files: |
-        update.json
-        update_wpc.json
-        update_em.json
+            update.json
+            update_wpc.json
+            update_em.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
