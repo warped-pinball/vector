@@ -89,10 +89,10 @@ jobs:
         id: prepare_body
         run: |
           VERSION_SECTION="## Versions Section
-          - Vector: ${{ env.VERSION }}
-          - Sys11: ${{ env.SYS11_VERSION }}
-          - WPC: ${{ env.WPC_VERSION }}
-          - EM: ${{ env.EM_VERSION }}
+          - Vector: `${{ env.VERSION }}`
+          - Sys11: `${{ env.SYS11_VERSION }}`
+          - WPC: `${{ env.WPC_VERSION }}`
+          - EM: `${{ env.EM_VERSION }}`
           <!-- END VERSIONS SECTION -->"
 
           # Fetch existing release body if it exists
