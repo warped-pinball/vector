@@ -11,17 +11,13 @@
 import resource
 import time
 
+import faults
+import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
 import reset_control
-from Shadow_Ram_Definitions import shadowRam
-
-import faults
-import GameDefsLoad
-import SharedState as S
 from logger import logger_instance
-import uctypes  
-
+from systemConfig import SystemVersion
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -33,13 +29,16 @@ LED_Out = machine.Pin(26, machine.Pin.OUT)
 timer = machine.Timer()
 led_board = None
 
+
 def error_toggle(timer):
     led_board.toggle()
+
 
 def set_error_led():
     global led_board
     led_board = machine.Pin(26, machine.Pin.OUT)
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
+
 
 def bus_activity_fault_check():
     # Looking for bus activity via transitions - reset hold is not working?
@@ -67,7 +66,6 @@ def bus_activity_fault_check():
     return False
 
 
-
 def check_ap_button():
     # holding down AP setup button?
     zero_count = 0
@@ -78,7 +76,7 @@ def check_ap_button():
             zero_count += 1
 
     if zero_count == num_Checks:
-        #Log.log("Main: Button press-wifi config")
+        # Log.log("Main: Button press-wifi config")
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
@@ -94,7 +92,7 @@ reset_control.init()
 
 print("\n\n")
 print("  Warped Pinball :: System WPC.Wifi")
-Log.log(f"          Version WPC 0.0.1 ") #{S.WarpedVersion}")
+Log.log(f"          Version WPC {SystemVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
@@ -112,7 +110,7 @@ if bus_activity_fault:
     set_error_led()
     faults.raise_fault(faults.HDWR01)
     print("Main: Bus Activity fault detected !!")
-    #Log.log("Main: Reset Circuit fault detected !!")
+    # Log.log("Main: Reset Circuit fault detected !!")
 
 
 # load up Game Definitions
@@ -131,11 +129,9 @@ time.sleep(1)
 resource.go(True)
 
 # launch wifi, and server. Should not return
-from backend import go 
+from backend import go  # noqa: E402
 
-print("MAIN: Launching Wifi AP mode=",ap_mode)
+print("MAIN: Launching Wifi AP mode=", ap_mode)
 go(ap_mode)
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)
-
-
