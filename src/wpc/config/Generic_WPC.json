@@ -1,7 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Generic System 11",
-        "System": "11x",
+        "GameName": "Generic System WPC",
+        "System": "WPC",
         "FileVer": 1
     },
 
@@ -24,6 +24,14 @@
         "Ball3": "0xF3",
         "Ball4": "0xF4",
         "Ball5": "0xF5"
+    },
+
+     "InPlay": {
+        "Type": 0,
+        "GameActiveAdr": 135,
+        "GameActiveValue": 0,
+        "Players": 5905,
+        "ScoreAdr": 5792
     },
 
     "DisplayMessage": {

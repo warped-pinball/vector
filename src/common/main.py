@@ -112,7 +112,7 @@ print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
     """
-SYS11.Wifi from Warped Pinball
+SYS11.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )
