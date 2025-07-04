@@ -96,7 +96,6 @@ jobs:
             Sys11 Version: ${{ env.SYS11_VERSION }}
             WPC Version: ${{ env.WPC_VERSION }}
             EM Version: ${{ env.EM_VERSION }}
-            Trigger: ${{ github.event_name }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
           files: |
