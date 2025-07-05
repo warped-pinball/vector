@@ -422,7 +422,7 @@ async function checkForUpdates() {
       .textContent.split(" ")[1];
 
     // link to release notes in text
-    const releaseNotes = document.getElementById("release-notes");
+    const releaseNotes = document.getElementById("notes");
     try {
       // check that the release notes are available
       if (!data["release_page"] || !data["version"]) {
