@@ -9,15 +9,14 @@
 import resource
 import time
 
+import faults
+import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
 import reset_control
-from Shadow_Ram_Definitions import shadowRam
-
-import faults
-import GameDefsLoad
-import SharedState as S
 from logger import logger_instance
+from Shadow_Ram_Definitions import shadowRam
+from systemConfig import SystemVersion
 
 Log = logger_instance
 
@@ -108,12 +107,12 @@ reset_control.init()
 
 print("\n\n")
 print("  Warped Pinball :: System11.Wifi")
-Log.log(f"          Version {S.WarpedVersion}")
+Log.log(f"          Version {SystemVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
     """
-SYS11.Wifi from Warped Pinball
+SYS11.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )

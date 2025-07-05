@@ -1,13 +1,16 @@
 import time
 
+import faults
 import machine
 import ntptime
 import uasyncio
 from machine import RTC
+from ScoreTrack import (
+    CheckForNewScores,
+    check_for_machine_high_scores,
+    initialize_leaderboard,
+)
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-
-import faults
-from ScoreTrack import CheckForNewScores, initialize_leaderboard, check_for_machine_high_scores
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
@@ -313,7 +316,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(CheckForNewScores, 15000, 5000)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 1000)
+    schedule(sflash_tick, 1000, 4000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):

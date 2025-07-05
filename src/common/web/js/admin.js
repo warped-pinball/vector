@@ -422,27 +422,23 @@ async function checkForUpdates() {
       .textContent.split(" ")[1];
 
     // link to release notes in text
-    const releaseNotes = document.getElementById("release-notes");
+    const releaseNotes = document.getElementById("notes");
     try {
       // check that the release notes are available
-      if (!data["html_url"] || !data["tag_name"]) {
+      if (!data["release_page"] || !data["version"]) {
         throw new Error("No release notes available");
       }
-      releaseNotes.href = data["html_url"];
-      releaseNotes.textContent = "Release Notes for " + data["tag_name"];
+      releaseNotes.href = data["release_page"];
+      releaseNotes.textContent = "Release Notes for " + data["version"];
     } catch (e) {
       releaseNotes.classList.add("hide");
     }
 
     // if the latest is equal to the current version we are up to date
-    if (data["tag_name"] === current) {
+    if (data["version"] === current) {
       updateButton.style.backgroundColor = "#8e8e8e";
       updateButton.style.borderColor = "#8e8e8e";
       updateButton.textContent = "Already up to date";
-      updateButton.disabled = true;
-    } else if (!data["assets"].find((asset) => asset.name === "update.json")) {
-      console.error("No update.json asset found for latest version");
-      updateButton.textContent = "Could not get updates";
       updateButton.disabled = true;
     } else {
       // there is an update with an update.json asset
@@ -451,12 +447,10 @@ async function checkForUpdates() {
       updateButton.disabled = false;
       updateButton.style.backgroundColor = "#e8b85a";
       updateButton.style.borderColor = "#e8b85a";
-      updateButton.textContent = `Update to ${data["tag_name"]}`;
+      updateButton.textContent = `Update to ${data["version"]}`;
 
       // get the url for the update.json asset and add an event listener to the button
-      update_url = data["assets"].find(
-        (asset) => asset.name === "update.json",
-      ).browser_download_url;
+      update_url = data["url"];
 
       // define the call back function to apply the update
       const callback = async () => {
@@ -464,7 +458,7 @@ async function checkForUpdates() {
       };
 
       updateButton.addEventListener("click", async () => {
-        await confirmAction("update to version: " + data["tag_name"], callback);
+        await confirmAction("update to version: " + data["version"], callback);
       });
     }
   } catch (e) {

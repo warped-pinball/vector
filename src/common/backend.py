@@ -4,18 +4,17 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
+import faults
 import Pico_Led
 import uctypes
 from ls import ls
 from machine import RTC
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-from ujson import dumps as json_dumps
-
-import faults
 from phew.server import add_route as phew_add_route
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
+from ujson import dumps as json_dumps
 
 #
 # Constants
@@ -354,7 +353,6 @@ for file_path in ls("web"):
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
     import reset_control
-
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
@@ -435,6 +433,7 @@ def app_tournamentRead(request):
 @add_route("/api/leaders/reset", auth=True)
 def app_resetScores(request):
     from ScoreTrack import reset_scores
+
     reset_scores()
 
 
@@ -635,15 +634,17 @@ def app_setShowIP(request):
     info = ds_read_record("extras", 0)
     info["show_ip_address"] = bool(data["show_ip"])
     ds_write_record("extras", info, 0)
+    import displayMessage
+
+    displayMessage.refresh()
 
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     import reset_control
-    from machine import reset
-
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
+    from machine import reset
     from SPI_DataStore import blankAll as D_blank
     from SPI_Store import write_16_fram
 
@@ -728,9 +729,9 @@ def app_getDateTime(request):
 #
 @add_route("/api/version")
 def app_version(request):
-    import SharedState
+    from systemConfig import SystemVersion
 
-    return {"version": SharedState.WarpedVersion}
+    return {"version": SystemVersion}
 
 
 @add_route("/api/fault")
@@ -770,16 +771,9 @@ def app_getLogs(request):
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
     from mrequests.mrequests import get
+    from systemConfig import updatesURL
 
-    # from urequests import get as urequests_get
-
-    url = "https://api.github.com/repos/warped-pinball/vector/releases/latest"
-    headers = {
-        "User-Agent": "MicroPython-Device",
-        "Accept": "application/vnd.github+json",
-    }
-
-    resp = get(url, headers=headers)
+    resp = get(updatesURL)
     buff = bytearray(1024)
     while True:
         buff[0:] = resp.read(1024)
