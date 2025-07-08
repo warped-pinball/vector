@@ -17,14 +17,14 @@ def download_scores():
     data.append(
         {
             "FileType": "leaders",
-            "contents": [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"].count)],
+            "contents": [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])],
         }
     )
 
     data.append(
         {
             "FileType": "tournament",
-            "contents": [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"].count)],
+            "contents": [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])],
         }
     )
 
@@ -37,7 +37,7 @@ def download_names(request):
     print("download names - - - ")
     try:
         # Collect player names data
-        names_data = [DataStore.read_record("names", i) for i in range(DataStore.memory_map["names"].count)]
+        names_data = [DataStore.read_record("names", i) for i in range(DataStore.memory_map["names"]["count"])]
 
         response_body = [{"FileType": "names", "contents": names_data}]
         # Prepare the final response

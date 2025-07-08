@@ -398,7 +398,7 @@ def app_game_status(request):
 def get_scoreboard(key, sort_by="score", reverse=False):
     """Get the leaderboard from memory"""
     rows = []
-    for i in range(ds_memory_map[key].count):
+    for i in range(ds_memory_map[key]["count"]):
         row = ds_read_record(key, i)
         if row.get("score", 0) > 0:
             rows.append(row)
@@ -468,7 +468,7 @@ def app_claimScore(request):
 @add_route("/api/players")
 def app_getPlayers(request):
     players = {}
-    count = ds_memory_map["names"].count
+    count = ds_memory_map["names"]["count"]
     # Iterate through the player records
     for i in range(count):
         record = ds_read_record("names", i)
@@ -484,7 +484,7 @@ def app_updatePlayer(request):
     body = request.data
 
     index = int(body["id"])
-    if index < 0 or index > ds_memory_map["names"].count:
+    if index < 0 or index > ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
 
     initials = body["initials"].upper()  # very particular intials conditioning
@@ -522,7 +522,7 @@ def app_getScores(request):
     player_record = ds_read_record("names", player_id)
 
     scores = []
-    numberOfScores = ds_memory_map["individual"].count
+    numberOfScores = ds_memory_map["individual"]["count"]
     for i in range(numberOfScores):
         record = ds_read_record("individual", i, player_id)
         score = record["score"]

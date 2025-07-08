@@ -20,42 +20,16 @@ top_scores = []
 nGameIdleCounter = 0
 
 
-class RecentScores:
-    """Ring buffer for the last few games worth of scores."""
-
-    def __init__(self, capacity=6):
-        self.capacity = capacity
-        self.buffer = [[i, ("", 0), ("", 0), ("", 0), ("", 0)] for i in range(capacity)]
-        self.start = 0
-
-    def insert(self, index, game):  # only used for index 0
-        if index != 0:
-            raise IndexError("Only front insert supported")
-        self.start = (self.start - 1) % self.capacity
-        self.buffer[self.start] = game
-
-    def pop(self):
-        """Remove the oldest entry (no-op for fixed buffer)."""
-        # Oldest entry will be overwritten on next insert
-        pass
-
-    def __getitem__(self, item):
-        if isinstance(item, slice):
-            return [self[i] for i in range(*item.indices(self.capacity))]
-        return self.buffer[(self.start + item) % self.capacity]
-
-    def __len__(self):
-        return self.capacity
-
-    def __iter__(self):
-        for i in range(self.capacity):
-            yield self[i]
-
-    def __repr__(self):
-        return repr([self[i] for i in range(self.capacity)])
-
-
-recent_scores = RecentScores()
+# hold the last four (plus two older records) games worth of scores.
+# first number is game counter (game ID), then 4 scores plus intiials
+recent_scores = [
+    [0, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [1, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [2, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [3, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [4, ("", 0), ("", 0), ("", 0), ("", 0)],
+    [5, ("", 0), ("", 6), ("", 0), ("", 0)],
+]
 
 
 def reset_scores():
@@ -285,7 +259,7 @@ def find_player_by_initials(new_entry):
     findInitials = new_entry["initials"]
     if findInitials == "" or findInitials is None:
         return ("", -1)
-    count = DataStore.memory_map["names"].count
+    count = DataStore.memory_map["names"]["count"]
     for index in range(count):
         rec = DataStore.read_record("names", index)
         if rec is not None:
@@ -304,7 +278,7 @@ def update_individual_score(new_entry):
         print("SCORE: No indiv player ", initials)
         return False
 
-    if not (0 <= playernum < DataStore.memory_map["individual"].count):
+    if not (0 <= playernum < DataStore.memory_map["individual"]["count"]):
         log.log("SCORE: Player out of range")
         return False
 
@@ -312,7 +286,7 @@ def update_individual_score(new_entry):
 
     # Load existing scores
     scores = []
-    num_scores = DataStore.memory_map["individual"].count
+    num_scores = DataStore.memory_map["individual"]["count"]
     print("SCORE: num sores = ", num_scores, playernum)
     for i in range(num_scores):
         scores.append(DataStore.read_record("individual", i, playernum))
@@ -349,7 +323,7 @@ def update_leaderboard(new_entry):
         new_entry["full_name"] = ""
 
     # Load scores
-    top_scores = [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"].count)]
+    top_scores = [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])]
 
     # if matches a record without initials in top_scores (score claim) - just add initials
     for entry in top_scores:
@@ -367,7 +341,7 @@ def update_leaderboard(new_entry):
     top_scores.append(new_entry)
     top_scores.sort(key=lambda x: x["score"], reverse=True)
 
-    count = DataStore.memory_map["leaders"].count
+    count = DataStore.memory_map["leaders"]["count"]
     top_scores = top_scores[:count]
     for i in range(count):
         DataStore.write_record("leaders", top_scores[i], i)
@@ -382,7 +356,7 @@ def initialize_leaderboard():
 
     # init gameCounter, find highest # in tournament board
     n = 0
-    for i in range(DataStore.memory_map["tournament"].count):
+    for i in range(DataStore.memory_map["tournament"]["count"]):
         try:
             game_value = DataStore.read_record("tournament", i)["game"]
             n = max(game_value, n)
@@ -392,7 +366,7 @@ def initialize_leaderboard():
     S.gameCounter = n
 
     # load up top scores from fram
-    count = DataStore.memory_map["leaders"].count
+    count = DataStore.memory_map["leaders"]["count"]
     top_scores = [DataStore.read_record("leaders", i) for i in range(count)]
 
 
@@ -418,7 +392,7 @@ def update_tournament(new_entry):
         log.log("SCORE: tournament add bad score")
         return False
 
-    count = DataStore.memory_map["tournament"].count
+    count = DataStore.memory_map["tournament"]["count"]
     rec = DataStore.read_record("tournament", 0)
     nextIndex = rec["index"]
 

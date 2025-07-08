@@ -14,6 +14,7 @@ import faults
 import SharedState
 import SPI_DataStore
 from logger import logger_instance
+from systemConfig import safe_defaults
 
 Log = logger_instance
 
@@ -41,23 +42,6 @@ def freeze_lists(data):
     if isinstance(data, list):
         return tuple(freeze_lists(v) for v in data)
     return data
-
-
-safe_defaults = {
-    "GameInfo": {"GameName": "Generic System", "System": "X"},
-    "Definition": {"version": 1},
-    "Memory": {"Start": 0, "Length": 2048, "NvStart": 0, "NvLength": 2048},
-    "BallInPlay": {"Type": 0},
-    "InPlay": {"Type": 0},
-    "DisplayMessage": {"Type": 0},
-    "Adjustments": {"Type": 0},
-    "HighScores": {"Type": 0},
-    "HSRewards": {"Type": 0},
-    "Switches": {"Type": 0},
-    "CoinDrop": {"Type": 0},
-}
-
-safe_defaults_wpc = {"Memory": {"Start": 1, "Length": 8192, "NvStart": 2048, "NvLength": 2048}}
 
 
 def parse_config_line(line):
@@ -115,13 +99,6 @@ def go(safe_mode=False):
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
 
     data = safe_defaults.copy()
-    try:
-        from systemConfig import vectorSystem
-
-        if vectorSystem == "wpc":
-            data["Memory"] = safe_defaults_wpc["Memory"].copy()
-    except Exception as e:
-        Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")
 
     if not safe_mode:
         try:
