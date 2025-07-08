@@ -4,65 +4,65 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
 numberOfPlayers = const(30)
 top_mem = const(32767)
 
-memory_map = {
-    "MapVersion": {"start": top_mem - 16, "size": 16, "count": 1},
-    "names": {"start": top_mem - 16 - (20 * 30), "size": 20, "count": numberOfPlayers},
-    "leaders": {"start": top_mem - 16 - (20 * 30) - (35 * 20), "size": 35, "count": 20},
-    "tournament": {
-        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100),
-        "size": 12,
-        "count": 100,
-    },
-    "individual": {
-        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30),
-        "size": 14,
-        "count": 20,
-        "sets": numberOfPlayers,
-    },  # count(scores) of 20, and 30 players
-    "configuration": {
-        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1),
-        "size": 96,
-        "count": 1,
-    },
-    "extras": {
-        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1) - (48 * 1),
-        "size": 48,
-        "count": 1,
-    },
-}
+
+class MapEntry:
+    __slots__ = ("start", "size", "count", "sets")
+
+    def __init__(self, start, size, count, sets=None):
+        self.start = start
+        self.size = size
+        self.count = count
+        self.sets = sets
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+memory_map = {}
+
+_ptr = top_mem
+_ptr -= 16
+memory_map["MapVersion"] = MapEntry(_ptr, 16, 1)
+
+_ptr -= 20 * numberOfPlayers
+memory_map["names"] = MapEntry(_ptr, 20, numberOfPlayers)
+
+_ptr -= 35 * 20
+memory_map["leaders"] = MapEntry(_ptr, 35, 20)
+
+_ptr -= 12 * 100
+memory_map["tournament"] = MapEntry(_ptr, 12, 100)
+
+_ptr -= 14 * 20 * numberOfPlayers
+memory_map["individual"] = MapEntry(_ptr, 14, 20, numberOfPlayers)
+
+_ptr -= 96 * 1
+memory_map["configuration"] = MapEntry(_ptr, 96, 1)
+
+_ptr -= 48 * 1
+memory_map["extras"] = MapEntry(_ptr, 48, 1)
 
 
 def show_mem_map():
-    # Calculate the actual start addresses
-    memory_map["MapVersion"]["start"] = top_mem - memory_map["MapVersion"]["size"]
-    memory_map["names"]["start"] = memory_map["MapVersion"]["start"] - (memory_map["names"]["size"] * memory_map["names"]["count"])
-    memory_map["leaders"]["start"] = memory_map["names"]["start"] - (memory_map["leaders"]["size"] * memory_map["leaders"]["count"])
-    memory_map["tournament"]["start"] = memory_map["leaders"]["start"] - (memory_map["tournament"]["size"] * memory_map["tournament"]["count"])
-    memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
-    memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
-    memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
-    # Calculate the end addresses
+    """Print calculated start and end addresses for FRAM structures."""
     for key, value in memory_map.items():
-        value["end"] = value["start"] + (value["size"] * value["count"]) - 1
-    # Print the final memory map
-    for key, value in memory_map.items():
-        print(f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}")
+        end = value.start + (value.size * value.count) - 1
+        print(f"{key}: start={value.start}, end={end}, size={value.size}, count={value.count}")
 
 
 def write_record(structure_name, record, index=0, set=0):
     try:
         structure = memory_map[structure_name]
-        start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
+        start_address = structure.start + index * structure.size + structure.size * structure.count * set
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
@@ -127,11 +127,11 @@ def serialize(record, structure_name):
 
 def read_record(structure_name, index=0, set=0):
     structure = memory_map[structure_name]
-    if "sets" in structure:
-        start_address = structure["start"] + index * structure["size"] + set * structure["size"] * structure["count"]
+    if structure.sets is not None:
+        start_address = structure.start + index * structure.size + set * structure.size * structure.count
     else:
-        start_address = structure["start"] + index * structure["size"]
-    data = fram.read(start_address, structure["size"])
+        start_address = structure.start + index * structure.size
+    data = fram.read(start_address, structure.size)
     return deserialize(data, structure_name)
 
 
@@ -237,12 +237,12 @@ def blankStruct(structure_name):
         "other": 1,
     }
     structure = memory_map[structure_name]
-    if "sets" in structure:
-        for x in range(structure["sets"]):
-            for i in range(structure["count"]):
+    if structure.sets is not None:
+        for x in range(structure.sets):
+            for i in range(structure.count):
                 write_record(structure_name, fake_entry, i, x)
     else:
-        for i in range(structure["count"]):
+        for i in range(structure.count):
             write_record(structure_name, fake_entry, i)
     Log.log(f"DATST: blank {structure_name}")
 
@@ -250,7 +250,7 @@ def blankStruct(structure_name):
 def blankIndPlayerScores(playernum):
     fake_entry = {"score": 0, "date": ""}
     structure = memory_map["individual"]
-    for i in range(structure["count"]):
+    for i in range(structure.count):
         write_record("individual", fake_entry, i, playernum)
 
 

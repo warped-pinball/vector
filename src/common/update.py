@@ -242,19 +242,16 @@ def download_update(url):
                 pass
 
     else:
-        # TODO modify this to use a buffer so we aren't recreating a buffer every loop
-        # https://docs.micropython.org/en/latest/reference/constrained.html
-        # look for buffers
-
+        # Use a persistent buffer to minimise allocations when saving the update
         percent = start_percent
         buff = bytearray(1024)
         with open("update.json", "wb") as f:
             while True:
-                buff[0:] = response.read(1024)
-                f.write(buff)
-                percent += percent_per_chunk * ((end_percent - percent) / percent)
-                if len(buff) < 1024:
+                read_bytes = response.readinto(buff)
+                if not read_bytes:
                     break
+                f.write(memoryview(buff)[:read_bytes])
+                percent += percent_per_chunk * ((end_percent - percent) / percent)
                 yield {"percent": percent}
 
     response.close()

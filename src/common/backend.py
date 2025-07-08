@@ -125,17 +125,19 @@ def get_content_type(file_path):
     return "application/octet-stream"
 
 
+_file_buffer = bytearray(1024)
+
+
 def create_file_handler(file_path):
-    # Compute ETag incrementally to save memory
+    """Return a streaming file handler using a shared buffer."""
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
-            buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
-                if not buff:
+                read_bytes = f.readinto(_file_buffer)
+                if not read_bytes:
                     break
-                hasher.update(buff)
+                hasher.update(memoryview(_file_buffer)[:read_bytes])
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
@@ -144,12 +146,11 @@ def create_file_handler(file_path):
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
-            buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
-                if not buff:
+                read_bytes = f.readinto(_file_buffer)
+                if not read_bytes:
                     break
-                yield buff
+                yield memoryview(_file_buffer)[:read_bytes]
         gc_collect()
 
     def file_handler(request):
@@ -397,7 +398,7 @@ def app_game_status(request):
 def get_scoreboard(key, sort_by="score", reverse=False):
     """Get the leaderboard from memory"""
     rows = []
-    for i in range(ds_memory_map[key]["count"]):
+    for i in range(ds_memory_map[key].count):
         row = ds_read_record(key, i)
         if row.get("score", 0) > 0:
             rows.append(row)
@@ -467,7 +468,7 @@ def app_claimScore(request):
 @add_route("/api/players")
 def app_getPlayers(request):
     players = {}
-    count = ds_memory_map["names"]["count"]
+    count = ds_memory_map["names"].count
     # Iterate through the player records
     for i in range(count):
         record = ds_read_record("names", i)
@@ -483,7 +484,7 @@ def app_updatePlayer(request):
     body = request.data
 
     index = int(body["id"])
-    if index < 0 or index > ds_memory_map["names"]["count"]:
+    if index < 0 or index > ds_memory_map["names"].count:
         raise ValueError(f"Invalid index: {index}")
 
     initials = body["initials"].upper()  # very particular intials conditioning
@@ -521,7 +522,7 @@ def app_getScores(request):
     player_record = ds_read_record("names", player_id)
 
     scores = []
-    numberOfScores = ds_memory_map["individual"]["count"]
+    numberOfScores = ds_memory_map["individual"].count
     for i in range(numberOfScores):
         record = ds_read_record("individual", i, player_id)
         score = record["score"]
