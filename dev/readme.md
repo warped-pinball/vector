@@ -1,18 +1,31 @@
 # Development Setup
 
-These scripts build and deploy Vector to a Raspberry Pi Pico.
+These scripts build and deploy Vector to a Raspberry Pi Pico.
 
 ## Environment
 
-1. Install **Python 3.11** and ensure `mpy-cross` and `mpremote` are available.
-2. Create a virtual environment (you can use `venv` or Conda):
+Vector requires Python 3 and the `mpy-cross` and `mpremote` tools.
 
-   ```bash
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   pip install -r dev/requirements.txt
-   pre-commit install
-   ```
+### Using `venv`
+
+```bash
+python3 -m venv .venv
+# Linux/macOS
+source .venv/bin/activate
+# Windows (Git Bash)
+source .venv/Scripts/activate
+pip install -r dev/requirements.txt
+pre-commit install
+```
+
+### Using Conda
+
+```bash
+conda create -n vector python=3
+conda activate vector
+pip install -r dev/requirements.txt
+pre-commit install
+```
 
 ## Build and Flash
 
@@ -22,7 +35,7 @@ Run the `sync.sh` script from the repository root. Pass the target hardware (`sy
 ./dev/sync.sh sys11 /dev/ttyACM0
 ```
 
-The script will build the project, wipe the Pico, copy the files and connect to the REPL.
+The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
 ## Automatic Configuration
 
