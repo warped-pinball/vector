@@ -4,10 +4,9 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
@@ -45,24 +44,42 @@ memory_map = {
 def show_mem_map():
     # Calculate the actual start addresses
     memory_map["MapVersion"]["start"] = top_mem - memory_map["MapVersion"]["size"]
-    memory_map["names"]["start"] = memory_map["MapVersion"]["start"] - (memory_map["names"]["size"] * memory_map["names"]["count"])
-    memory_map["leaders"]["start"] = memory_map["names"]["start"] - (memory_map["leaders"]["size"] * memory_map["leaders"]["count"])
-    memory_map["tournament"]["start"] = memory_map["leaders"]["start"] - (memory_map["tournament"]["size"] * memory_map["tournament"]["count"])
-    memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
-    memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
-    memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
+    memory_map["names"]["start"] = memory_map["MapVersion"]["start"] - (
+        memory_map["names"]["size"] * memory_map["names"]["count"]
+    )
+    memory_map["leaders"]["start"] = memory_map["names"]["start"] - (
+        memory_map["leaders"]["size"] * memory_map["leaders"]["count"]
+    )
+    memory_map["tournament"]["start"] = memory_map["leaders"]["start"] - (
+        memory_map["tournament"]["size"] * memory_map["tournament"]["count"]
+    )
+    memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (
+        memory_map["individual"]["size"]
+        * memory_map["individual"]["count"]
+        * memory_map["individual"]["sets"]
+    )
+    memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (
+        memory_map["configuration"]["size"] * memory_map["configuration"]["count"]
+    )
+    memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (
+        memory_map["extras"]["size"] * memory_map["extras"]["count"]
+    )
+
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
+
     # Print the final memory map
     for key, value in memory_map.items():
-        print(f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}")
+        print(
+            f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}"
+        )
 
 
 def write_record(structure_name, record, index=0, set=0):
     try:
         structure = memory_map[structure_name]
-        start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
+        start_address = structure["start"] + index * structure["size"] + structure["size"] * structure.get("count", 1) * set
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
