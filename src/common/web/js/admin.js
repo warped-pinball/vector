@@ -408,7 +408,20 @@ async function checkForUpdates() {
 
   try {
     const response = await window.smartFetch("/api/update/check", null, false);
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`update check failed: ${response.status}`);
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error("Invalid JSON in update check response", jsonError);
+      throw jsonError;
+    }
+
+    console.debug("Update check response data:", data);
+
     const updateButton = document.getElementById("update-button");
 
     if (!updateButton) {
@@ -422,16 +435,18 @@ async function checkForUpdates() {
       .textContent.split(" ")[1];
 
     // link to release notes in text
-    const releaseNotes = document.getElementById("notes");
-    try {
-      // check that the release notes are available
-      if (!data["release_page"] || !data["version"]) {
-        throw new Error("No release notes available");
+    const releaseNotes = document.getElementById("release-notes");
+    if (releaseNotes) {
+      if (data["release_page"]) {
+        releaseNotes.href = data["release_page"];
       }
-      releaseNotes.href = data["release_page"];
-      releaseNotes.textContent = "Release Notes for " + data["version"];
-    } catch (e) {
-      releaseNotes.classList.add("hide");
+      if (data["notes"]) {
+        releaseNotes.textContent = `Release Notes for ${data["version"] || ""}`;
+        releaseNotes.title = data["notes"];
+        releaseNotes.classList.remove("hide");
+      } else {
+        releaseNotes.classList.add("hide");
+      }
     }
 
     // if the latest is equal to the current version we are up to date
@@ -464,8 +479,11 @@ async function checkForUpdates() {
   } catch (e) {
     console.error("Failed to check for updates:", e);
     const updateButton = document.getElementById("update-button");
-    updateButton.textContent = "Could not get updates";
-    updateButton.disabled = true;
+    if (updateButton) {
+      updateButton.textContent = "Could not get updates";
+      updateButton.disabled = true;
+      updateButton.title = e.message || e.toString();
+    }
   }
 }
 

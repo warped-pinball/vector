@@ -770,16 +770,18 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
+    """Check for available updates and return the result as JSON."""
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
     resp = get(updatesURL)
-    buff = bytearray(1024)
-    while True:
-        buff[0:] = resp.read(1024)
-        if not buff:
-            break
-        yield buff
+
+    try:
+        data = resp.json()
+    finally:
+        resp.close()
+
+    return data
 
 
 @add_route("/api/update/apply", auth=True)
