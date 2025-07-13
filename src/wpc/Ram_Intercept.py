@@ -27,9 +27,9 @@ FIRST_DATA_PIN = 14
 
 
 
-#PIO-PRG: CatchCADR - - this one designed to be in PIO#1,  real time clock interface in PIO#2
-#
-#   JMP Pin Must be CADR (#11)
+
+#CLOCK ADRESS (CADR)
+#   JMP Pin Must be CADR (#GP11)
 #       
 @rp2.asm_pio()  
 def CatchCADR():
