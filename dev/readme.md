@@ -1,76 +1,63 @@
-# Conda Setup Guide
+# Development Setup
 
-## Installation
+These scripts build and deploy Vector to a Raspberry Pi Pico.
 
-### Linux/Raspberry Pi
+## Environment
 
-```bash
-# Download Miniforge Installer
-# For x86_64 (most Linux PCs)
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-# OR for Raspberry Pi (aarch64)
-# wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+Vector requires Python 3 and the `mpy-cross` and `mpremote` tools.
 
-# Make the installer executable
-chmod +x Miniforge3-Linux-*.sh
-
-# Run the installer
-./Miniforge3-Linux-*.sh
-
-# Activate Conda (after installation)
-source ~/miniforge3/bin/activate
-
-# Verify installation
-conda --version
-```
-
-### Windows
-
-1. **Download Miniforge Installer**  
-   Visit https://github.com/conda-forge/miniforge/releases and download `Miniforge3-Windows-x86_64.exe`
-
-2. **Run Installer**  
-   Follow the setup prompts, ensuring Conda is added to your PATH.
-
-3. **Activate Conda**  
-   ```cmd
-   conda init
-   ```
-   Restart Command Prompt after running this command.
-
-## Setup Environment and Install Requirements
+### Using `venv`
 
 ```bash
-# Create environment
-conda create -n pico python=3.11
-
-# Activate environment
-conda activate pico
-
-# Install requirements
+python3 -m venv .venv
+# Linux/macOS
+source .venv/bin/activate
+# Windows (Git Bash)
+source .venv/Scripts/activate
 pip install -r dev/requirements.txt
+pre-commit install
 ```
 
-## Usage
-
-**Build and Deploy to Pico:**
+### Using Conda
 
 ```bash
-# From the root of your repository
-./dev/sync.sh
+conda create -n vector python=3
+conda activate vector
+pip install -r dev/requirements.txt
+pre-commit install
 ```
+
+## Build and Flash
+
+Run the `sync.sh` script from the repository root. Pass the target hardware (`sys11` or `wpc`) as the first argument and optionally the Pico serial port as the second argument.
+
+```bash
+./dev/sync.sh sys11 /dev/ttyACM0
+```
+
+The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
 ## Automatic Configuration
 
-To automatically configure your vector when flashing, create a JSON file with the following structure:
+Create a `dev/config.json` file so the sync script can configure Wi‑Fi and game settings automatically:
 
 ```json
 {
-   "ssid": "Your WiFi SSID",
-   "password": "Your WiFi Password",
-   "gamename": "GenericSystem11",
-   "Gpassword": ""
+  "ssid": "Your WiFi SSID",
+  "password": "Your WiFi Password",
+  "gamename": "GenericSystem11",
+  "Gpassword": ""
 }
 ```
 
-Replace the placeholder values with your actual WiFi SSID, password, and game name.
+Save the file with your values before running `sync.sh`.
+
+## Building Update Packages
+
+To generate an over‑the‑air update file run:
+
+```bash
+python dev/build_update.py --version 1.2.3 --target_hardware sys11
+```
+
+This creates `update.json` in the repository root.
