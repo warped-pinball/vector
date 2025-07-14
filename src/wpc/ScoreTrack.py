@@ -116,6 +116,9 @@ def claim_score(initials, player_index, score):
     #only print here as we expect to see many non-matches with WPC structure
     #print("SCORE: Score not found in claim list")
 
+    #required for case where user resets highs scores on the machine             
+    update_leaderboard(  { "initials": initials, "full_name": None, "score": score, "game": 0 }  )
+
 
 def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""

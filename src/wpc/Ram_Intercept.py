@@ -31,6 +31,8 @@ FIRST_DATA_PIN = 14
 #CLOCK ADRESS (CADR)
 #   JMP Pin Must be CADR (#GP11)
 #       
+#  must be in PIO1  - to trigger PIO2_SM0
+
 @rp2.asm_pio()  
 def CatchCADR():
     wrap_target()
@@ -64,7 +66,9 @@ def CatchVMA():
     # in the past used a gpio to singal pio1 - now can use IRQ in RP2350?
     #set(pins,1)    [4]     #rpio22 signal other pio to start - delay happens after pin state changes
     #set(pins,0)    [4]        
-    word(0xC40C)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
+
+    #use new IRQ system - this AM must be in #1 so we trigger PIO0_SM0
+    word(0xC40C)    [4]   # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
 
     wait(1,gpio,1)  [6]    #wait for eClock HIGH
     wait(0,gpio,1)  [4]    #wait for eClock LOW
@@ -94,8 +98,8 @@ def ReadAddress():
        
     label("start_adr")    
     wrap_target()
-    #wait(1,gpio,22)                     #wait for signal from PIO1, dont loop back here until eclock is high
-    wait(1,irq,4) [2]
+    #wait(1,gpio,22)                    #old way - wait for signal from PIO1 on gpio, dont loop back here until eclock is high
+    wait(1,irq,4)                       #new way for rp2350 - wait for IRQ4, this is the signal from PIO1
   
     jmp(pin,"do_write")                 #pin is W/R (not R/W, has been inverted) 
 
@@ -113,11 +117,10 @@ def ReadAddress():
     #READ Process, send data out to pins
     mov(osr,x)      [3]     .side(0)     #load all ones to osr from x   
     out(pindirs,8)  [3]     .side(2)     #pins to outputs (1=output), side set is data_dir output      
-    #mov(pindirs,~null)    .side(2)   #new for rp2350
+    #mov(pindirs,~null)    .side(2)      #new for rp2350 (save an instruction?)
 
     nop() [3]              .side(2)  
    
-
     pull(noblock)          .side(2) 
     #pull(block)          .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
                                       #change to block to give DMA thim eit need dynamically instead of wait states in previous lines...
@@ -125,10 +128,10 @@ def ReadAddress():
 
 
     #READ Process, wrap up   
-    mov(osr,invert(x)) [3]   .side(2)     #invert to all zeroes
+    mov(osr,invert(x)) [3]   .side(2)   #invert to all zeroes
     wait(0, gpio, 1)   [3] .side(2)     #wait for eclock to go LOW   
     out(pindirs,8)         .side(0)     #pins to inputs, and return data_dir to normal    OSR->pindirs    
-    #mov(pindirs,null)  [1]  .side(0)      #new for rp2350
+    #mov(pindirs,null)  [1]  .side(0)   #new for rp2350
 
     jmp("start_adr")       .side(0)     #read done, back to the top
 
@@ -224,7 +227,11 @@ def pio_start():
     #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22), sideset_base=26  )  #side set for testing
 
     #   catch CADR the rtc clock address dedcode
-    #sm_CatchCADR = rp2.StateMachine(9, CatchCADR, freq=125000000, jmp_pin=machine.Pin(11) )
+    #sm_CatchCADR = rp2.StateMachine(5, CatchCADR, freq=125000000, jmp_pin=machine.Pin(11) )
+
+    #the rest of clock ADR - in PIO2  
+
+
 
 
     print("PIO Start")
