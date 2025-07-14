@@ -62,9 +62,9 @@ def CatchVMA():
     jmp (pin,"start_adr")   #confirm still active (debounce)
 
     # in the past used a gpio to singal pio1 - now can use IRQ in RP2350?
-    set(pins,1)    [4]     #rpio22 signal other pio to start - delay happens after pin state changes
-    set(pins,0)    [4]        
-    #word(0xC40C)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
+    #set(pins,1)    [4]     #rpio22 signal other pio to start - delay happens after pin state changes
+    #set(pins,0)    [4]        
+    word(0xC40C)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO back one (to pio 0)   irq(4)[4]relative index=-1
 
     wait(1,gpio,1)  [6]    #wait for eClock HIGH
     wait(0,gpio,1)  [4]    #wait for eClock LOW
@@ -94,8 +94,8 @@ def ReadAddress():
        
     label("start_adr")    
     wrap_target()
-    wait(1,gpio,22)                     #wait for signal from PIO1, dont loop back here until eclock is high
-    #wait(1,irq,4) [2]
+    #wait(1,gpio,22)                     #wait for signal from PIO1, dont loop back here until eclock is high
+    wait(1,irq,4) [2]
   
     jmp(pin,"do_write")                 #pin is W/R (not R/W, has been inverted) 
 
@@ -220,7 +220,7 @@ def pio_start():
     #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )   #side set for testing
 
     #   IN: Data Pins
-    sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
+    sm_CatchVma = rp2.StateMachine(4, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
     #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22), sideset_base=26  )  #side set for testing
 
     #   catch CADR the rtc clock address dedcode
