@@ -57,8 +57,8 @@
 
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7526,
-        "BytesInScore":6,
+        "ScoreAdr": 7500,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
         "InitialAdr": 7523,
         "InitialSpacing": 9,
