@@ -122,6 +122,12 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
+
+while 1:
+    print("k")
+    time.sleep(10)
+
+
 time.sleep(0.5)
 reset_control.release(True)
 time.sleep(1)
