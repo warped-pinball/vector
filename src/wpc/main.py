@@ -123,9 +123,65 @@ if not bus_activity_fault:
     MemoryMain.go()
 
 
+
+PIO0_BASE = 0x50200000
+PIO1_BASE = 0x50300000
+PIO2_BASE = 0x50400000  # Hypothetical for RP2350, confirm in datasheet
+
+# Define register offsets
+CTRL_OFFSET = 0x00
+FSTAT_OFFSET = 0x04
+SM0_EXECCTRL_OFFSET = 0x0C
+SM0_CLKDIV_OFFSET = 0x10
+SM0_SHIFTCTRL_OFFSET = 0xD0  # Add SHIFTCTRL register offset
+
+def read_pio_status(pio_base):
+    """Read and print PIO status."""
+    ctrl = machine.mem32[pio_base + CTRL_OFFSET]
+    fstat = machine.mem32[pio_base + FSTAT_OFFSET]
+    sm0_execctrl = machine.mem32[pio_base + SM0_EXECCTRL_OFFSET]
+    sm0_clkdiv = machine.mem32[pio_base + SM0_CLKDIV_OFFSET]
+    sm0_shiftctrl = machine.mem32[pio_base + SM0_SHIFTCTRL_OFFSET]  # Read SHIFTCTRL
+
+    print(f"PIO Base: {hex(pio_base)}")
+    print(f"  CTRL: {hex(ctrl)}")
+    print(f"  FSTAT: {hex(fstat)}")
+    print(f"  SM0_EXECCTRL: {hex(sm0_execctrl)}")
+    print(f"  SM0_CLKDIV: {hex(sm0_clkdiv)}")
+    print(f"  SM0_SHIFTCTRL: {hex(sm0_shiftctrl)}")  # Print SHIFTCTRL value
+
+import dmaprint
+
+#machine.mem32[0x2007FFF0] = 0
+
 while 1:
     print("k")
-    time.sleep(10)
+
+    '''
+    print("Reading PIO0 status:")
+    read_pio_status(PIO0_BASE)
+    print("Reading PIO1 status:")
+    read_pio_status(PIO1_BASE)
+    print("Reading PIO2 status (if available):")
+    read_pio_status(PIO2_BASE)
+    '''
+
+    #machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] =  machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] |0x01
+
+    #dmaprint.printdma()
+    #dmaprint.print_dma6_registers()
+
+    ram_value = machine.mem32[0x50000000 + 0x240 ]
+    # Print the value in hexadecimal format
+    print(f"RAM[0x50000000 + 0x240 ]: {hex(ram_value)}")
+
+    ram_value = machine.mem32[0x50000000 + 0x204]
+    # Print the value in hexadecimal format
+    print(f"RAM[0x50000000 + 0x204]: {hex(ram_value)}")
+
+    #machine.mem32[0x2007FFF0] = 0
+
+    time.sleep(4)
 
 
 time.sleep(0.5)
