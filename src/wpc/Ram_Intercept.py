@@ -269,7 +269,6 @@ def CLOCK_DetectOperation():
     irq(5) 
     jmp("clk_start")
 
-
     #write section
     label("clk_do_write")
     jmp (not_x,"write_offset")
@@ -292,17 +291,17 @@ def CLOCK_DetectOperation():
 #
 # SM#5, PIO1
 #
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW)) 
+@rp2.asm_pio() 
 def CLOCK_WriteIndex():
     wrap_target()
     wait(1,irq,6)
 
     #READ Process, Get Address  
-    mov(isr,y)      .side(1)            #copy 26 bit address msb to isr,ready to shift in 6 lsb from DATA pins    
+    mov(isr,y)                          #copy 26 bit address msb to isr,ready to shift in 6 lsb from DATA pins    
     wait(1, gpio, 11)  [2]              #wait for CADR to go Low    
 
     in_(pins,6)                         #read 6 data pins as addresses (CLOCK WPC)          
-    push(noblock)   .side(0)            #push out entire address, picked up by DMA  
+    push(noblock)                       #push out entire address, picked up by DMA6  
 
     wrap()
 
@@ -311,17 +310,15 @@ def CLOCK_WriteIndex():
 #
 # SM#6, PIO1
 #
-@rp2.asm_pio() 
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW)) 
 def CLOCK_WriteData():
+
     wrap_target()
+    wait(1,irq,7)
 
-    wait(1,irq,6)
-
-    wait(0, gpio, 13)  [6]  #wait for qclock to go Low    
-    #nop()              [6]      
-
-    in_(pins,8)             #read all 8 data in one go      
-    push(noblock)           #push out data byte, picked up by DMA    
+    wait(1, gpio, 11)  [2]          #wait for CADR (Qclock) to go Low    
+    in_(pins,8)                     #read all 8 data in one go      
+    push(noblock)                   #push out data byte, picked up by DMA8    
 
     wrap()
 
@@ -332,11 +329,10 @@ def CLOCK_WriteData():
 #
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH,rp2.PIO.OUT_LOW), out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT) 
 def CLOCK_ReadData():
-    label("start_clock_WI")
     wrap_target()
 
     wait(1,irq,5)
-    push(noblock)   [3]    .side(0)     #trigger DMA with push (data does not matter)
+    push(noblock)   [3]    .side(0)      #trigger DMA with push (data does not matter)
   
     #READ Process, send data out to pins
     mov(osr,x)      [3]     .side(0)     #load all ones to osr from x   
@@ -351,10 +347,10 @@ def CLOCK_ReadData():
     out(pins,8)          .side(2)     #OSR -> Pins   
 
     #READ data, wrap up   
-    mov(osr,invert(x)) [3]      .side(2)    #invert to all zeroes
-    wait(0, gpio, 1)   [3]      .side(2)    #wait for eclock to go LOW   
+   
+    wait(1, gpio, 11)   [3]     .side(2)    #wait for CADR to go high  
+    mov(osr,invert(x))  [3]     .side(2)    #invert to all zeroes
     out(pindirs,8)              .side(0)    #pins to inputs, and return data_dir to normal    OSR->pindirs    
-
     #mov(pindirs,null)  [1]  .side(0)   #new for rp2350
 
     wrap()
@@ -421,9 +417,6 @@ def pio_start():
     # jmp pin is W/R
     sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6), sideset_base=machine.Pin(27) )   
 
-
-
-
     #CLOCK_DetectOperation
     #in base is data lines
     #side set for test only
@@ -431,7 +424,7 @@ def pio_start():
     sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14) )   
     #CLOCK_WriteIndex
 
-    sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26))   
+    sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14)  )   
     #CLOCK_WriteData
 
     sm_Clock_ReadData = rp2.StateMachine(7, CLOCK_ReadData, freq=150000000, jmp_pin=machine.Pin(11) )   
@@ -491,8 +484,12 @@ def pio_start():
     sm_Clock_WriteIndex.exec("pull()")
     sm_Clock_WriteIndex.exec("out(y,32)")
 
-    #sm_Clock_WriteData.active(1)
-    #sm_Clock_ReadData.active(1)
+    sm_Clock_WriteData.active(1)
+
+    sm_Clock_ReadData.active(1)
+    sm_Clock_ReadData.put(0x0FF )
+    sm_Clock_ReadData.exec("pull()")
+    sm_Clock_ReadData.exec("out(x,8)")
 
 
     PIO0_BASE = 0x50200000
@@ -517,27 +514,28 @@ def dma_start_clock():
 
     dma_channels = f"MEM: {a},{b},{c},{d}"
     print(dma_channels," <-MUST be 6-7-8-9 !")
-    if not all(str(i) in dma_channels for i in range(6, 10)):  #2,3,4,5,6
+    if not all(str(i) in dma_channels for i in range(6, 10)):  #6,7,8,9
         return "fault"
  
     #DMA channel assignments
     DMA_WRITEOFFS_1 = 6
     DMA_WRITEOFFS_2 = 7     
-    DMA_READDATA = 8
-    DMA_WRITEDATA = 9
-
+    DMA_WRITEDATA = 8
+    DMA_READDATA = 9
+   
     #uctypes structs for each channel
     dma_writeoff_1 = dma_d.DMA_CHANS[DMA_WRITEOFFS_1]   
     dma_writeoff_2 = dma_d.DMA_CHANS[DMA_WRITEOFFS_2]    
+    dma_writedata = dma_d.DMA_CHANS[DMA_WRITEDATA]         
     dma_readdata = dma_d.DMA_CHANS[DMA_READDATA]                     
-    dma_writedata = dma_d.DMA_CHANS[DMA_WRITEDATA]                   
+             
 
     #------------------------
     # DMA 6   DMA_WRITEOFFS_1
     #------------------------
     dma_writeoff_1.READ_ADDR_REG =    0x50300000 + 0x024    # PIO1_SM1 RX buffer
     dma_writeoff_1.WRITE_ADDR_REG =   0x50000000 + 0x204    # DMA8 write address
-    dma_writeoff_1.CTRL_REG.CHAIN_TO = DMA_WRITEOFFS_2      # chain on to copy the address on
+    dma_writeoff_1.CTRL_REG.CHAIN_TO = DMA_WRITEOFFS_2      # chain on to copy the address on with DMA 7
     dma_writeoff_1.CTRL_REG.INCR_WRITE = 0
     dma_writeoff_1.CTRL_REG.INCR_READ = 0
     dma_writeoff_1.CTRL_REG.IRQ_QUIET = 1
@@ -546,8 +544,6 @@ def dma_start_clock():
     dma_writeoff_1.CTRL_REG.EN = 1
     dma_writeoff_1.CTRL_REG.HIGH_PRIORITY = 1
     dma_writeoff_1.TRANS_COUNT_REG_TRIG = 0x10000001        #pre-trigger this DMA (will wait on DREQ), turn on auto trigger
-
-
 
     #------------------------
     # DMA 7   DMA_WRITEOFFS_2
@@ -564,7 +560,20 @@ def dma_start_clock():
     dma_writeoff_2.CTRL_REG.HIGH_PRIORITY = 1
     dma_writeoff_2.TRANS_COUNT_REG = 0x0000001 
 
-
+    #------------------------
+    # DMA 8   DMA_WRITEDATA
+    #------------------------
+    dma_writedata.READ_ADDR_REG =    0x50300000 + 0x028    # read from PIO1_SM2 Rx buffer
+    dma_writedata.WRITE_ADDR_REG =   0x2007ffff            # write to register is written by DMA6
+    dma_writedata.CTRL_REG.CHAIN_TO = DMA_WRITEDATA            
+    dma_writedata.CTRL_REG.INCR_WRITE = 0
+    dma_writedata.CTRL_REG.INCR_READ = 0
+    dma_writedata.CTRL_REG.IRQ_QUIET = 1
+    dma_writedata.CTRL_REG.TREQ_SEL =  14
+    dma_writedata.CTRL_REG.DATA_SIZE = 0    #byte only                  
+    dma_writedata.CTRL_REG.EN = 1
+    dma_writedata.CTRL_REG.HIGH_PRIORITY = 1
+    dma_writedata.TRANS_COUNT_REG_TRIG =  0x10000001    # auto trigger every DREQ (output from PIO1_sm2)
 
 
 
