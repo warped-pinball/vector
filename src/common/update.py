@@ -363,12 +363,9 @@ def apply_update(url):
         "percent": 100,
     }
 
-    from machine import reset as machine_reset
-    from reset_control import reset as reset_control
+    from reboot import schedule_reboot
 
-    reset_control()
-    sleep(2)  # make sure the game fully shuts down and allow last messages to be finish sending
-    machine_reset()
+    schedule_reboot()
 
 
 def crc16_of_file(path: str) -> str:
