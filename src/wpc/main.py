@@ -152,7 +152,7 @@ def read_pio_status(pio_base):
 
 import dmaprint
 
-#machine.mem32[0x2007FFF0] = 0
+machine.mem32[0x50000000 + 0x3C0] = 0x55
 
 while 1:
     print("k")
@@ -186,9 +186,15 @@ while 1:
     # Print the value in hexadecimal format
     print(f"RAM[0x50000000 + 0x204]: {hex(ram_value)}")
 
-    #ram_value = machine.mem32[0x2007ffc0]
+    ram_value = machine.mem32[0x50000000 + 0x280]
     # Print the value in hexadecimal format
-    #print(f"RAM[0x2007ffc0]: {hex(ram_value)}")
+    print(f"RAM[0x50000000 + 0x280]: {hex(ram_value)}")
+
+
+    ram_value = machine.mem32[0x50000000 + 0x3C0]
+    # Print the value in hexadecimal format
+    print(f"RAM[0x50000000 + 0x3C0]: {hex(ram_value)}")
+
 
     #machine.mem32[0x2007ffc0]=0xA5
 
