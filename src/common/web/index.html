@@ -18,6 +18,13 @@
         display: none;
       }
 
+      .note {
+        margin-top: 1rem;
+        padding: 0.5rem;
+        border-left: 4px solid #4caf50;
+        background-color: #2a2e2a;
+      }
+
       /* button tags in nav tag set to w/h of 28px */
       nav button {
         padding: 0;
@@ -130,8 +137,8 @@
           <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
 
           <p>
-            Once you have saved, please power cycle your pinball machine and
-            connect to your selected WiFi network.
+            After saving, your machine will reboot automatically. Reconnect to
+            your WiFi to access your pinball machine.
           </p>
 
           <footer style="position: relative">
@@ -147,6 +154,7 @@
             ></small>
             <button onclick="window.save_configuration()">💾 Save</button>
           </footer>
+          <p id="config-note" class="hide note"></p>
         </article>
       </dialog>
       <dialog id="install_warning_modal">

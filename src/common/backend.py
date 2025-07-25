@@ -644,7 +644,7 @@ def app_factoryReset(request):
     import reset_control
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
-    from machine import reset
+    from reboot import schedule_reboot
     from SPI_DataStore import blankAll as D_blank
     from SPI_Store import write_16_fram
 
@@ -663,18 +663,17 @@ def app_factoryReset(request):
     write_16_fram(SRAM_DATA_BASE + 1930, 1930)
     write_16_fram(SRAM_DATA_BASE + 1950, 1950)
 
-    reset()  # reset PICO
+    schedule_reboot()
 
 
 @add_route("/api/settings/reboot", auth=True)
 def app_reboot(request):
     import reset_control
-    from machine import reset
+    from reboot import schedule_reboot
 
     reset_control.reset()
-    sleep(2)
-    reset()
-
+    schedule_reboot()
+    
 
 #
 # Networking
@@ -829,6 +828,7 @@ def add_ap_mode_routes():
     def app_setWifi(request):
         """Set the wifi SSID and password"""
         from GameDefsLoad import list_game_configs
+        from reboot import schedule_reboot
 
         all_game_configs = list_game_configs().keys()
 
@@ -847,6 +847,15 @@ def add_ap_mode_routes():
         )
 
         Pico_Led.off()
+
+        schedule_reboot()
+
+        return {
+            "msg": (
+                "Your configuration has been saved and your machine is rebooting, "
+                "reconnect to your WiFi to access your pinball machine"
+            )
+        }, 200
 
 
 def connect_to_wifi(initialize=False):
