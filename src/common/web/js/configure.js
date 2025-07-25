@@ -173,16 +173,18 @@ async function save_configuration() {
   // save the vector configuration
   let response_vector = await set_vector_config();
 
-  if (!response_vector.status == 200) {
+  if (!response_vector.ok) {
     alert("Error saving vector configuration; Try again");
     return;
   }
 
-  response_vector = null;
+  const data = await response_vector.json();
 
-  alert(
-    "Configuration saved. Power cycle your Pinball Machine to apply the changes",
-  );
+  const note = document.getElementById("config-note");
+  if (note) {
+    note.textContent = data.msg;
+    note.classList.remove("hide");
+  }
 }
 
 window.save_configuration = save_configuration;

@@ -850,7 +850,12 @@ def add_ap_mode_routes():
 
         schedule_reboot()
 
-        return {"msg": "Configuration saved. Rebooting"}, 200
+        return {
+            "msg": (
+                "Your configuration has been saved and your machine is rebooting, "
+                "reconnect to your WiFi to access your pinball machine"
+            )
+        }, 200
 
 
 def connect_to_wifi(initialize=False):
