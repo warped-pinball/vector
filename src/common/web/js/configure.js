@@ -180,11 +180,7 @@ async function save_configuration() {
 
   const data = await response_vector.json();
 
-  const note = document.getElementById("config-note");
-  if (note) {
-    note.textContent = data.msg;
-    note.classList.remove("hide");
-  }
+  alert(data.msg);
 }
 
 window.save_configuration = save_configuration;
