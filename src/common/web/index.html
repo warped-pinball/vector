@@ -250,7 +250,11 @@
           const { version } = await res.json();
           const current = localStorage.getItem(VERSION_KEY);
           if (current && current !== version) {
+            const savedPassword = localStorage.getItem("password");
             localStorage.clear();
+            if (savedPassword !== null) {
+              localStorage.setItem("password", savedPassword);
+            }
             localStorage.setItem(VERSION_KEY, version);
             location.reload();
           } else if (!current) {
