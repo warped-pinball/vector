@@ -14,9 +14,10 @@ Ram intercept module - REVISION 5 - CADR version
     read and write operations to shadow the RTC registers in RP2350 ram
 
 
-    PIO#0:  Clock read a write operations, uses SMs 0,1,2,3
-    PIO#1:  Ram read and write operations,  uses SMs 4,5,6
+    PIO#0:  Ram read and write operations,  uses SMs 4,5,6
+
     PIO#2:  Triggering for RAM and CLOCK, uses SMs: 9,10,11
+
     SM#8 reserved for use by micopython Wifi chip interface
 
 """
@@ -78,36 +79,22 @@ def CatchCADR():
 #Pass VMA or CADR on to next pio module
 #   SM#11, PIO2
 #
-#   pass irq signal to correct VMA OR CADR
 #   and wait for clock cycle ignoring future IRQs that can be false
 #
 #   this needs to happen in one place to lock out CADR when VMA is in process and vice versa
-#
-#   pin for JMP is CADR (GPIO#11)
 #
 #@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
 @rp2.asm_pio()  
 def Pass_VMA_CADR():
     wrap_target()
     
-    wait(1, irq, 5)           #wait for signal from CADR or VMA (both use irq5)   
-    jmp(pin, "not_cadr_trigger")   
-
-    #send trigger IRQ (new style for RP2350) - CADR 
-    word(0xC40C)  #.side(1)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO minus one (we are in PIO2 so back one is PIO1)   
-    jmp ("vma_cadr_done")      
-
-
-    label("not_cadr_trigger") 
-    nop()    
-    #send trigger IRQ (new stlye for rp2350) - VMA
-    word(0xC41C)      # (1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
-    #word(0xC40C) 
-
-    label("vma_cadr_done")
-    wait(1,gpio,1)  [6]   #wait for eClock HIGH
-    wait(0,gpio,1)  [1]   #wait for eClock LOW
-    irq(clear, 5)  # .side(0)   #clear IRQ5 before looping back, will have been spammed
+    wait(1, irq, 5)         #wait for signal from CADR or VMA (both use irq5)     
+                            #send trigger IRQ (new stlye for rp2350) - VMA
+    word(0xC41C)            #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    
+    wait(1,gpio,1)  [6]     #wait for eClock HIGH
+    wait(0,gpio,1)  [2]     #wait for eClock LOW
+    irq(clear, 5)           #clear IRQ5 before looping back, will have been spammed
     wrap()
 
 
@@ -236,141 +223,6 @@ def WriteRam():
     
  
 
-
-
-
-
-
-
-
-
-
-# CLOCK step 1 - signaled from PIO2
-#
-# SM#4, PIO1
-#  JMP pin = W/R  gpio12
-#  in pin - address line 0
-#
-# side set is LED:Aselect
-#
-#@rp2.asm_pio( sideset_init=(rp2.PIO.OUT_LOW) ) 
-@rp2.asm_pio( )
-def CLOCK_DetectOperation():
-
-    label("clk_start")    
-    #wrap_target()
-  
-    wait(1,irq,4)           #this is the signal from PIO1
-
-    nop() [3]       #.side(1)      #set A_Select
-
-    mov (isr,null)
-    in_ (pins,1)            #read address line 0
-    mov (x,isr) [3] #.side(0)    #store address line 0 in X  <<need at least 3 delay for A_Select, one more would probably be good!
-
-    #mov (x,null)  #alternate to 3 lines above - untested
-    #mov (x,pins)    
-
-    jmp(pin, "clk_do_write")    # jump based on W/R - jump on 1 which is WRITE
- 
-    jmp(not_x,"clk_start") #read offset, do nothing
-
-    #trigger data read
-    irq(5)  
-    jmp("clk_start")
-
-    #write section
-    label("clk_do_write")
-    jmp (not_x,"write_offset")
-    
-    #trigger write to Data
-    irq(7)  
-    jmp("clk_start")
-  
-    label("write_offset")
-    irq(6)      #trigger write to address offset(index)
-    
-    #wrap()
-
-    #write data    (adr=1  r/w=0)        
-    #write offsets (adr=0  r/w=0)
-    #read data     (adr=1, r/w=1)
-
-
-
-#CLOCK write the address offset (index)
-#
-# SM#5, PIO1
-#
-@rp2.asm_pio() 
-def CLOCK_WriteIndex():
-    wrap_target()
-    wait(1,irq,6)
-
-    #READ Process, Get Address  
-    mov(isr,y)                          #copy 26 bit address msb to isr,ready to shift in 6 lsb from DATA pins    
-    wait(1, gpio, 11)  [2]              #wait for CADR to go Low    
-
-    in_(pins,6)                         #read 6 data pins as addresses (CLOCK WPC)          
-    push(noblock)                       #push out entire address, picked up by DMA6  
-
-    wrap()
-
-
-#CLOCK Write Data
-#
-# SM#6, PIO1
-#
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW)) 
-def CLOCK_WriteData():
-
-    wrap_target()
-    wait(1,irq,7)
-
-    wait(1, gpio, 11)  [2]          #wait for CADR (Qclock) to go Low    
-    in_(pins,8)                     #read all 8 data in one go      
-    push(noblock)                   #push out data byte, picked up by DMA8    
-
-    wrap()
-
-
-#CLOCK Read Data
-#
-# SM#7, PIO1
-#
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW), out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT) 
-def CLOCK_ReadData():
-    wrap_target()
-
-    wait(1,irq,5)
-    push(noblock)   [3]                 #trigger DMA with push (data does not matter)
-  
-    nop()           [7]     .side(0)  
-
-    #READ Process, send data out to pins
-    mov(osr,x)      [7]     .side(0)     #load all ones to osr from x   
-    out(pindirs,8)  [7]     .side(1)     #pins to outputs (1=output), side set is data_dir output      
-    #mov(pindirs,~null)     .side(1)      #new for rp2350 (save an instruction?)
-      
-    pull(noblock)           .side(1) 
-    #pull(block)            .side(1)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
-                                         #change to block to give DMA thim eit need dynamically instead of wait states in previous lines...
-    out(pins,8)             .side(1)     #OSR -> Pins   
-
-    #READ data, wrap up   
-   
-    wait(0, gpio, 1)    [2]  .side(1)    #wait for E clock to go low
-    mov(osr,invert(x))       .side(1)    #invert to all zeroes
-    out(pindirs,8)           .side(0)    #pins to inputs, and return data_dir to normal    OSR->pindirs    
-    #mov(pindirs,null)  [1]  .side(0)   #new for rp2350
-
-    wrap()
-
-
-
-
-
-
  
 def pio_start():
 
@@ -422,35 +274,6 @@ def pio_start():
     
     
 
-    #
-    # Start up all CLOCK dedicated SMs in PIO1
-    #
-    
-    # aselect is side set
-    # jmp pin is W/R
-    #sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6), sideset_base=machine.Pin(27) )   
-    sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6) )   
-
-
-    '''
-    
-    #CLOCK_DetectOperation
-    #in base is data lines
-    #side set for test only
-    #jmp pin on CADR (11)
-    #diag   sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14) )   
-    sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11), in_base=machine.Pin(14) )   
-    
-
-    #diag  sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14)  )   
-    sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,in_base=machine.Pin(14)  )   
-    
-    #diag??    sm_Clock_ReadData = rp2.StateMachine(7, CLOCK_ReadData, freq=150000000, sideset_base=machine.Pin(28) , out_base=machine.Pin(FIRST_DATA_PIN)) 
-    sm_Clock_ReadData = rp2.StateMachine(7, CLOCK_ReadData, freq=150000000, sideset_base=machine.Pin(28) , out_base=machine.Pin(FIRST_DATA_PIN))   
-    '''
-    
-
-    
 
     print("PIO Start")
 
@@ -461,7 +284,7 @@ def pio_start():
     sm_CatchCADR.active(1)
     sm_CatchVma.active(1)
     sm_Pass_VMA_CADR.active(1)
-    #sm_Pass_VMA_CADR.exec("irq(clear,5)")
+    sm_Pass_VMA_CADR.exec("irq(clear,5)")
 
         
     #
@@ -489,169 +312,11 @@ def pio_start():
     #clear IRQs for clean start up
     sm_WriteRam.exec("irq(clear,4)")
     sm_WriteRam.exec("irq(clear,5)")
-    sm_WriteRam.exec("irq(clear,6)")
-       
-    
-    #
-    #Clock (CADR) section PIO (#1)
-    #
-
-    reg_addr = 0x504000CC
-    current_value = machine.mem32[reg_addr]
-    machine.mem32[reg_addr] = current_value | (1 << 30)
-    print(f"Set bit 30: 0x{reg_addr:08X} = {hex(machine.mem32[reg_addr])}")
-
-
-    sm_Clock_DetectOperation.active(1)
-
-
-
-    '''
-    sm_Clock_WriteIndex.active(1)
-    sm_Clock_WriteIndex.put(RamDef.CLOCKRAM_DATA_BASE_26)     #clock storage in pico ram (26bits) room for 64 locations, 6 more address bits
-    sm_Clock_WriteIndex.exec("pull()")
-    sm_Clock_WriteIndex.exec("out(y,32)")
-
-    sm_Clock_WriteData.active(1)
-
-    sm_Clock_ReadData.active(1)
-    sm_Clock_ReadData.put(0x0FF )
-    sm_Clock_ReadData.exec("pull()")
-    sm_Clock_ReadData.exec("out(x,8)")
-
-    '''
-
+    sm_WriteRam.exec("irq(clear,6)")  
 
     PIO0_BASE = 0x50200000
     PIO1_BASE = 0x50300000
     PIO2_BASE = 0x50400000  
-
-    #SM0_SHIFTCTRL_OFFSET = 0xD0 
-    #machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] =  machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] |0x01
-
-
-
-
-
-
-def dma_start_clock():
-    #************************************************
-    # DMA Setup for RTC   access, read and writes
-    #************************************************
-    a=rp2.DMA()
-    b=rp2.DMA()
-    c=rp2.DMA()
-    d=rp2.DMA()        
-    e=rp2.DMA()
-
-    dma_channels = f"MEM: {a},{b},{c},{d},{e}"
-    print(dma_channels," <-MUST be 6-7-8-9-10 !")
-    if not all(str(i) in dma_channels for i in range(6, 11)):  #6,7,8,9,10
-        return "fault"
- 
-    #DMA channel assignments
-    DMA_WRITEOFFS_1 = 6
-    DMA_WRITEOFFS_2 = 7     
-    DMA_WRITEDATA = 8
-    DMA_TRIGREAD = 9
-    DMA_READDATA = 10
-   
-    #uctypes structs for each channel
-    dma_writeoff_1 = dma_d.DMA_CHANS[DMA_WRITEOFFS_1]   
-    dma_writeoff_2 = dma_d.DMA_CHANS[DMA_WRITEOFFS_2]    
-    dma_writedata = dma_d.DMA_CHANS[DMA_WRITEDATA]         
-    dma_triggerread = dma_d.DMA_CHANS[DMA_TRIGREAD]
-    dma_readdata = dma_d.DMA_CHANS[DMA_READDATA]                     
-             
-
-    #------------------------
-    # DMA 6   DMA_WRITEOFFS_1
-    #------------------------
-    dma_writeoff_1.READ_ADDR_REG =    0x50300000 + 0x024    # PIO1_SM1 RX buffer
-    dma_writeoff_1.WRITE_ADDR_REG =   0x50000000 + 0x204    # DMA8 write address
-    dma_writeoff_1.CTRL_REG.CHAIN_TO = DMA_WRITEOFFS_2      # chain on to copy the address on with DMA 7
-    dma_writeoff_1.CTRL_REG.INCR_WRITE = 0
-    dma_writeoff_1.CTRL_REG.INCR_READ = 0
-    dma_writeoff_1.CTRL_REG.IRQ_QUIET = 1
-    dma_writeoff_1.CTRL_REG.TREQ_SEL =  13                  #dma_d.DREQ   PIO1_RX1   
-    dma_writeoff_1.CTRL_REG.DATA_SIZE = 2                   #32 bit move (address)
-    dma_writeoff_1.CTRL_REG.EN = 1
-    dma_writeoff_1.CTRL_REG.HIGH_PRIORITY = 1
-    dma_writeoff_1.TRANS_COUNT_REG_TRIG = 0x10000001        #pre-trigger this DMA (will wait on DREQ), turn on auto trigger
-
-    #------------------------
-    # DMA 7   DMA_WRITEOFFS_2
-    #------------------------
-    dma_writeoff_2.READ_ADDR_REG =    0x50000000 + 0x204    # read from DMA8 write address
-    dma_writeoff_2.WRITE_ADDR_REG =   0x50000000 + 0x280    # write to DMA10 read address   
-    dma_writeoff_2.CTRL_REG.CHAIN_TO = DMA_WRITEOFFS_2            
-    dma_writeoff_2.CTRL_REG.INCR_WRITE = 0
-    dma_writeoff_2.CTRL_REG.INCR_READ = 0
-    dma_writeoff_2.CTRL_REG.IRQ_QUIET = 1
-    dma_writeoff_2.CTRL_REG.TREQ_SEL =  0x3F
-    dma_writeoff_2.CTRL_REG.DATA_SIZE = 2                  
-    dma_writeoff_2.CTRL_REG.EN = 1
-    dma_writeoff_2.CTRL_REG.HIGH_PRIORITY = 1
-    dma_writeoff_2.TRANS_COUNT_REG = 0x0000001 
-
-    #------------------------
-    # DMA 8   DMA_WRITEDATA
-    #------------------------
-    dma_writedata.READ_ADDR_REG =    0x50300000 + 0x028    # read from PIO1_SM2 Rx buffer
-    dma_writedata.WRITE_ADDR_REG =   0x2007ffff            # write to register is written by DMA6
-    dma_writedata.CTRL_REG.CHAIN_TO = DMA_WRITEDATA            
-    dma_writedata.CTRL_REG.INCR_WRITE = 0
-    dma_writedata.CTRL_REG.INCR_READ = 0
-    dma_writedata.CTRL_REG.IRQ_QUIET = 1
-    dma_writedata.CTRL_REG.TREQ_SEL =  14
-    dma_writedata.CTRL_REG.DATA_SIZE = 0    #byte only                  
-    dma_writedata.CTRL_REG.EN = 1
-    dma_writedata.CTRL_REG.HIGH_PRIORITY = 1
-    dma_writedata.TRANS_COUNT_REG_TRIG =  0x10000001    # auto trigger every DREQ (output from PIO1_sm2)
-
-    #--------------------------
-    # DMA 9   DMA_READDATATRIG
-    #--------------------------
-    #take the dummy byte from PIO1_SM3 and throw away. Trigger DMA10 to move Ram data byte into PIO1_SM3
-    dma_triggerread.READ_ADDR_REG =    0x50300000 + 0x02C    # PIO1_SM3 RX buffer
-    dma_triggerread.WRITE_ADDR_REG =   0x50000000 + 0x3C0    # write this to harmless place - - -   DMA channel 15 read address
-    dma_triggerread.CTRL_REG.CHAIN_TO = DMA_READDATA      # chain on to DMA 10
-    dma_triggerread.CTRL_REG.INCR_WRITE = 0
-    dma_triggerread.CTRL_REG.INCR_READ = 0
-    dma_triggerread.CTRL_REG.IRQ_QUIET = 1
-    dma_triggerread.CTRL_REG.TREQ_SEL =  15                  #dma_d.DREQ   PIO1_RX1   
-    dma_triggerread.CTRL_REG.DATA_SIZE = 2                   #32 bit move
-    dma_triggerread.CTRL_REG.EN = 1
-    dma_triggerread.CTRL_REG.HIGH_PRIORITY = 1
-    dma_triggerread.TRANS_COUNT_REG_TRIG = 0x10000001        #pre-trigger this DMA (will wait on DREQ), turn on auto trigger
-
-    #--------------------------
-    # DMA 10   DMA_READDATA
-    #--------------------------
-    dma_readdata.READ_ADDR_REG =    0x2007ffff          # filled in from writeoffset_2, start with harmless address
-    dma_readdata.WRITE_ADDR_REG =   0x50300000 + 0x1C   # PIO1_SM3 Tx
-    dma_readdata.CTRL_REG.CHAIN_TO = DMA_READDATA            
-    dma_readdata.CTRL_REG.INCR_WRITE = 0
-    dma_readdata.CTRL_REG.INCR_READ = 0
-    dma_readdata.CTRL_REG.IRQ_QUIET = 1
-    dma_readdata.CTRL_REG.TREQ_SEL =  0x3F
-    dma_readdata.CTRL_REG.DATA_SIZE = 0        #byte only                  
-    dma_readdata.CTRL_REG.EN = 1
-    dma_readdata.CTRL_REG.HIGH_PRIORITY = 1
-    dma_readdata.TRANS_COUNT_REG =  0x00000001    # auto trigger every DREQ (output from PIO1_sm2)
-
-
-
-
-
-
-
-
-
-
-
-
-    return "ok"
 
 
 
@@ -669,7 +334,7 @@ def dma_start():
 
     dma_channels = f"MEM: {a},{b},{c},{d}"
     print(dma_channels," <-MUST be 2-3-4-5 !")
-    if not all(str(i) in dma_channels for i in range(2, 6)):  #2,3,4,5,6
+    if not all(str(i) in dma_channels for i in range(2, 6)):  #2,3,4,5
         return "fault"
  
     #DMA channel assignments
@@ -755,11 +420,7 @@ def configure():
     if dma_start() != "ok":
         print("MEM: DMA setup failed")
         return "fault"
-    
-    if dma_start_clock() != "ok":
-        print("MEM: DMA for RTC setup failed")
-        return "fault"
-    
+        
     pio_start()   
     return "ok"
 
