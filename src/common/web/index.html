@@ -242,6 +242,31 @@
       // === Configuration ===
       const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
 
+      const VERSION_KEY = "vector_version";
+      async function checkVersion() {
+        try {
+          const res = await fetch("/api/version", { cache: "no-store" });
+          if (!res.ok) return;
+          const { version } = await res.json();
+          const current = localStorage.getItem(VERSION_KEY);
+          if (current && current !== version) {
+            const savedPassword = localStorage.getItem("password");
+            localStorage.clear();
+            if (savedPassword !== null) {
+              localStorage.setItem("password", savedPassword);
+            }
+            localStorage.setItem(VERSION_KEY, version);
+            location.reload();
+          } else if (!current) {
+            localStorage.setItem(VERSION_KEY, version);
+          }
+        } catch (e) {
+          console.error("Version check failed", e);
+        }
+      }
+
+      checkVersion();
+
       // === Utility: Cache Management ===
       function cacheGet(url) {
         const data = localStorage.getItem(url);
