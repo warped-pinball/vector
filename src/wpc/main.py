@@ -150,16 +150,21 @@ def read_pio_status(pio_base):
     print(f"  SM0_CLKDIV: {hex(sm0_clkdiv)}")
     print(f"  SM0_SHIFTCTRL: {hex(sm0_shiftctrl)}")  # Print SHIFTCTRL value
 
-import dmaprint
 
-machine.mem32[0x50000000 + 0x3C0] = 0x55
+
+
+#machine.mem32[0x50000000 + 0x3C0] = 0x55
 
 while 1:
     print("k")
 
     # Print 64 bytes of data starting from 0x2007FFC0
-    base_address = 0x2007FFC0
+    #base_address = 0x2007FFC0
     length = 64
+
+    base_address = 0x50400000 + 0x48
+
+
     bytes_per_row = 16
 
     print(f"Memory Dump (starting at 0x{base_address:08X}, length {length} bytes):")
@@ -182,9 +187,13 @@ while 1:
     print("")  # Extra newline for spacing
 
 
-    ram_value = machine.mem32[0x50000000 + 0x204]
+    ram_value = machine.mem32[0x50200000 + 0xCC]
     # Print the value in hexadecimal format
-    print(f"RAM[0x50000000 + 0x204]: {hex(ram_value)}")
+    print(f"RAM[0x50200000 + 0CC]: {hex(ram_value)}")
+
+    ram_value = machine.mem32[0x50300000 + 0xCC]
+    # Print the value in hexadecimal format
+    print(f"RAM[0x50300000 + 0xCC]: {hex(ram_value)}")
 
     ram_value = machine.mem32[0x50000000 + 0x280]
     # Print the value in hexadecimal format
@@ -196,7 +205,19 @@ while 1:
     print(f"RAM[0x50000000 + 0x3C0]: {hex(ram_value)}")
 
 
+
+    # Set bit 30 in the register at location 0x504000CC
+    reg_addr = 0x504000CC
+    current_value = machine.mem32[reg_addr]
+    machine.mem32[reg_addr] = current_value | (1 << 30)
+    print(f"Set bit 30: 0x{reg_addr:08X} = {hex(machine.mem32[reg_addr])}")
+
+
+
+
     #machine.mem32[0x2007ffc0]=0xA5
+
+
 
 
     time.sleep(4)

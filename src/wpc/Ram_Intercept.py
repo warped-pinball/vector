@@ -44,7 +44,8 @@ FIRST_DATA_PIN = 14
 #   SM#9, PIO2
 #   JMP Pin is VMA_ADR (GPIO#13) 
 #    
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+@rp2.asm_pio()  
 def CatchVMA():
     wrap_target()
     label("start_adr")
@@ -60,7 +61,8 @@ def CatchVMA():
 #   SM#10,  PIO2
 #   JMP Pin is CADR (GPIO#11)
 #
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+@rp2.asm_pio()  
 def CatchCADR():
     wrap_target()
     label("start_cadr")
@@ -83,28 +85,29 @@ def CatchCADR():
 #
 #   pin for JMP is CADR (GPIO#11)
 #
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
+@rp2.asm_pio()  
 def Pass_VMA_CADR():
     wrap_target()
     
     wait(1, irq, 5)           #wait for signal from CADR or VMA (both use irq5)   
-    nop() 
     jmp(pin, "not_cadr_trigger")   
 
     #send trigger IRQ (new style for RP2350) - CADR 
-    word(0xC40C)       # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO minus one (we are in PIO2 so back one is PIO1)   
-
+    word(0xC40C)  #.side(1)     # (1100 0100 0000 1100 ) = ( 0xC40C)   IRQ4 to PIO minus one (we are in PIO2 so back one is PIO1)   
     jmp ("vma_cadr_done")      
 
-    label("not_cadr_trigger")
-    nop() 
+
+    label("not_cadr_trigger") 
+    nop()    
     #send trigger IRQ (new stlye for rp2350) - VMA
     word(0xC41C)      # (1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    #word(0xC40C) 
 
     label("vma_cadr_done")
     wait(1,gpio,1)  [6]   #wait for eClock HIGH
     wait(0,gpio,1)  [1]   #wait for eClock LOW
-    irq(clear, 5)         #clear IRQ5 before looping back, will have been spammed
+    irq(clear, 5)  # .side(0)   #clear IRQ5 before looping back, will have been spammed
     wrap()
 
 
@@ -128,50 +131,54 @@ def Pass_VMA_CADR():
 #   <<19>>
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH,rp2.PIO.OUT_LOW), out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT) 
 def ReadAddress():
-       
+
+    nop() .side(0)  #why is this required!!! crazy town
+
     label("start_adr")    
     wrap_target()
-    wait(1,irq,4)                       #new way for rp2350 - wait for IRQ4, this is the signal from PIO2
-  
+    
+    wait(1,irq,4)                       #new way for rp2350 - wait for IRQ4, this is the signal from PIO2  
     jmp(pin,"do_write")                 #pin is W/R (not R/W, has been inverted) 
 
     #READ Process, Get Address  
     mov(isr,y)             .side(0)     #copy 21 bit address msb to isr,ready to shift in 11 lsb from pins    
     in_(pins,5)            .side(0)     #read A8/9/10/11/12, set A_Select to 1  (WPC)
-    nop()           [3]    .side(1)     #side set happens at begining of instruction        <<< -add delay here   
-    nop()           [3]    .side(1)
+    nop()           [3]    .side(1)     #side set happens at begining of instruction      
+    #nop()           [3]    .side(1)
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)   [3]    .side(0)     #send out address result for DMA   
 
-    #delays @push and mov and out required to give DMAx2 time?  why is it so slow... ?
+    #delays @push and mov and out required to give DMAx2 time
   
     #READ Process, send data out to pins
     mov(osr,x)      [3]     .side(0)     #load all ones to osr from x   
     out(pindirs,8)  [3]     .side(2)     #pins to outputs (1=output), side set is data_dir output      
-    #mov(pindirs,~null)    .side(2)      #new for rp2350 (save an instruction?)
+    #mov(pindirs,~null)     .side(2)      #new for rp2350 (save an instruction?)    
 
-    nop() [3]              .side(2)  
+    nop() [3]               .side(2)  
    
-    pull(noblock)          .side(2) 
-    #pull(block)          .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
+    pull(noblock)           .side(2) 
+    #pull(block)            .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
                                       #change to block to give DMA thim eit need dynamically instead of wait states in previous lines...
-    out(pins,8)          .side(2)     #OSR -> Pins   
+    out(pins,8)             .side(2)     #OSR -> Pins   
 
 
     #READ Process, wrap up   
-    mov(osr,invert(x)) [3]   .side(2)   #invert to all zeroes
-    wait(0, gpio, 1)   [3] .side(2)     #wait for eclock to go LOW   
-    out(pindirs,8)         .side(0)     #pins to inputs, and return data_dir to normal    OSR->pindirs    
+    mov(osr,invert(x)) [3]  .side(2)   #invert to all zeroes
+    wait(0, gpio, 1)   [3]  .side(2)     #wait for eclock to go LOW   
+    out(pindirs,8)          .side(0)     #pins to inputs, and return data_dir to normal    OSR->pindirs    
     #mov(pindirs,null)  [1]  .side(0)   #new for rp2350
 
     jmp("start_adr")       .side(0)     #read done, back to the top
 
     #WRITE process
     label("do_write")    
-    irq(5)      [3]             
+    irq(5)          [3]             
     wait(1,gpio,1)  [3]                 #when eClock goes high
     wait(0,gpio,1)  [3]                 #wait for eClock to go low
-    wrap() 
+
+    #jmp("start_adr")
+    wrap() #for some reason wrap is not well behaved
     
 
     
@@ -246,17 +253,20 @@ def WriteRam():
 #
 # side set is LED:Aselect
 #
-@rp2.asm_pio( sideset_init=(rp2.PIO.OUT_LOW) ) 
+#@rp2.asm_pio( sideset_init=(rp2.PIO.OUT_LOW) ) 
+@rp2.asm_pio( )
 def CLOCK_DetectOperation():
+
     label("clk_start")    
-    wrap_target()
+    #wrap_target()
   
     wait(1,irq,4)           #this is the signal from PIO1
 
-    nop() [3]       .side(1)      #set A_Select
+    nop() [3]       #.side(1)      #set A_Select
+
     mov (isr,null)
     in_ (pins,1)            #read address line 0
-    mov (x,isr) [3] .side(0)    #store address line 0 in X  <<need at least 3 delay for A_Select, one more would probably be good!
+    mov (x,isr) [3] #.side(0)    #store address line 0 in X  <<need at least 3 delay for A_Select, one more would probably be good!
 
     #mov (x,null)  #alternate to 3 lines above - untested
     #mov (x,pins)    
@@ -266,7 +276,7 @@ def CLOCK_DetectOperation():
     jmp(not_x,"clk_start") #read offset, do nothing
 
     #trigger data read
-    irq(5) 
+    irq(5)  
     jmp("clk_start")
 
     #write section
@@ -274,12 +284,13 @@ def CLOCK_DetectOperation():
     jmp (not_x,"write_offset")
     
     #trigger write to Data
-    irq(7)   
+    irq(7)  
     jmp("clk_start")
   
     label("write_offset")
     irq(6)      #trigger write to address offset(index)
-    wrap()
+    
+    #wrap()
 
     #write data    (adr=1  r/w=0)        
     #write offsets (adr=0  r/w=0)
@@ -332,7 +343,7 @@ def CLOCK_ReadData():
     wrap_target()
 
     wait(1,irq,5)
-    push(noblock)   [3]    .side(0)      #trigger DMA with push (data does not matter)
+    push(noblock)   [3]                 #trigger DMA with push (data does not matter)
   
     nop()           [7]     .side(0)  
 
@@ -380,15 +391,17 @@ def pio_start():
     #   IN: Address Pins
     #   OUT: Data Pins
     sm_ReadAddress = rp2.StateMachine(0, ReadAddress, freq=150000000, set_base=machine.Pin(22), sideset_base=machine.Pin(27), out_base=machine.Pin(FIRST_DATA_PIN) ,in_base=machine.Pin(FIRST_ADR_PIN), jmp_pin=machine.Pin(WR_PIN))  
-   
-    #   PRELOAD: Y with 21 bit shadow ram base addres
+       
+    #   PRELOAD: Y with 21 bit shadow ram base address
     #   SIDESET: A_Select
     #   IN: Address Pins
     sm_GetWriteAddress = rp2.StateMachine(1, GetWriteAddress, freq=150000000, sideset_base=machine.Pin(27) ,in_base=machine.Pin(FIRST_ADR_PIN))
     
     #   IN: Data Pins
     sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=150000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )   #side set for testing
+    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )   #side set for testing    
+
+
 
 
 
@@ -404,35 +417,40 @@ def pio_start():
     # passes catch VMA or Catch CADR to next PIO module
     # JMP pin is CADR GPIO#11
     # receive IRQ5
-    sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11) )  
+    sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11))#, sideset_base=machine.Pin(27) )  
     #sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11), sideset_base=machine.Pin(26)  )  #side set for test
     
-
+    
 
     #
-    # Start up all CLOCK dedicated SMs in PIO2
+    # Start up all CLOCK dedicated SMs in PIO1
     #
-
+    
     # aselect is side set
     # jmp pin is W/R
-    sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6), sideset_base=machine.Pin(27) )   
+    #sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6), sideset_base=machine.Pin(27) )   
+    sm_Clock_DetectOperation = rp2.StateMachine(4, CLOCK_DetectOperation, freq=150000000, jmp_pin=machine.Pin(WR_PIN), in_base=machine.Pin(6) )   
 
+
+    '''
+    
     #CLOCK_DetectOperation
     #in base is data lines
     #side set for test only
     #jmp pin on CADR (11)
-    sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14) )   
-    #CLOCK_WriteIndex
+    #diag   sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14) )   
+    sm_Clock_WriteIndex = rp2.StateMachine(5, CLOCK_WriteIndex, freq=150000000, jmp_pin=machine.Pin(11), in_base=machine.Pin(14) )   
+    
 
-    sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14)  )   
-    #CLOCK_WriteData
-
+    #diag  sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,sideset_base=machine.Pin(26), in_base=machine.Pin(14)  )   
+    sm_Clock_WriteData = rp2.StateMachine(6, CLOCK_WriteData, freq=150000000, jmp_pin=machine.Pin(11) ,in_base=machine.Pin(14)  )   
+    
+    #diag??    sm_Clock_ReadData = rp2.StateMachine(7, CLOCK_ReadData, freq=150000000, sideset_base=machine.Pin(28) , out_base=machine.Pin(FIRST_DATA_PIN)) 
     sm_Clock_ReadData = rp2.StateMachine(7, CLOCK_ReadData, freq=150000000, sideset_base=machine.Pin(28) , out_base=machine.Pin(FIRST_DATA_PIN))   
-    #CLOCK_ReadData
+    '''
+    
 
-
-
-
+    
 
     print("PIO Start")
 
@@ -443,9 +461,9 @@ def pio_start():
     sm_CatchCADR.active(1)
     sm_CatchVma.active(1)
     sm_Pass_VMA_CADR.active(1)
-    sm_Pass_VMA_CADR.exec("irq(clear,5)")
+    #sm_Pass_VMA_CADR.exec("irq(clear,5)")
 
-
+        
     #
     #Ram access part (shadowram) PIO (#0)
     #
@@ -455,7 +473,7 @@ def pio_start():
     sm_ReadAddress.put(RamDef.SRAM_DATA_BASE_19)   #wpc
     sm_ReadAddress.exec("pull()")
     sm_ReadAddress.exec("out(y,32)")
-    sm_ReadAddress.put(0x0FF )
+    sm_ReadAddress.put(0x0FF)
     sm_ReadAddress.exec("pull()")
     sm_ReadAddress.exec("out(x,8)")
 
@@ -473,12 +491,22 @@ def pio_start():
     sm_WriteRam.exec("irq(clear,5)")
     sm_WriteRam.exec("irq(clear,6)")
        
-
+    
     #
     #Clock (CADR) section PIO (#1)
     #
+
+    reg_addr = 0x504000CC
+    current_value = machine.mem32[reg_addr]
+    machine.mem32[reg_addr] = current_value | (1 << 30)
+    print(f"Set bit 30: 0x{reg_addr:08X} = {hex(machine.mem32[reg_addr])}")
+
+
     sm_Clock_DetectOperation.active(1)
 
+
+
+    '''
     sm_Clock_WriteIndex.active(1)
     sm_Clock_WriteIndex.put(RamDef.CLOCKRAM_DATA_BASE_26)     #clock storage in pico ram (26bits) room for 64 locations, 6 more address bits
     sm_Clock_WriteIndex.exec("pull()")
@@ -491,12 +519,15 @@ def pio_start():
     sm_Clock_ReadData.exec("pull()")
     sm_Clock_ReadData.exec("out(x,8)")
 
+    '''
+
 
     PIO0_BASE = 0x50200000
     PIO1_BASE = 0x50300000
     PIO2_BASE = 0x50400000  
-    SM0_SHIFTCTRL_OFFSET = 0xD0 
-    machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] =  machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] |0x01
+
+    #SM0_SHIFTCTRL_OFFSET = 0xD0 
+    #machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] =  machine.mem32[PIO1_BASE + SM0_SHIFTCTRL_OFFSET] |0x01
 
 
 
