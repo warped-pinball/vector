@@ -160,12 +160,7 @@ async function configure_check() {
   }
   const data = await response.json();
   if (data.in_ap_mode) {
-    if (document.getElementById("configure_modal")) {
-      await populate_configure_modal();
-      document.getElementById("configure_modal").setAttribute("open", "");
-    } else {
-      await window.handleNavigation("setup");
-    }
+    await window.handleNavigation("setup");
   }
 }
 
