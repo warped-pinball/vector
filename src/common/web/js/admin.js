@@ -440,7 +440,7 @@ async function checkForUpdates() {
     if (releaseNotes) {
       if (data["release_page"]) {
         releaseLink.href = data["release_page"];
-        releaseLink.textContent = `GitHub release for ${data["version"] || ""}`;
+        releaseLink.textContent = `GitHub release for ${data["version"] || "unknown version"}`;
         releaseLink.classList.remove("hide");
       } else {
         releaseLink.classList.add("hide");
