@@ -120,12 +120,15 @@ async function populate_configure_modal() {
 }
 
 async function generate_claim_qr() {
-  const { generate } = await import("/js/lean-qr.min.js");
+  if (!window.leanQR || !window.leanQR.generate) {
+    console.error("leanQR library not loaded");
+    return;
+  }
   const random = crypto.getRandomValues(new Uint32Array(1))[0];
   const claimCode = random.toString(16).padStart(8, "0");
   const claimURL = `https://origin-beta.doze.dev?claim_code=${claimCode}`;
 
-  const qr = generate(claimURL);
+  const qr = window.leanQR.generate(claimURL);
   const canvas = document.getElementById("claim-qr");
   if (canvas) qr.toCanvas(canvas);
 
