@@ -31,12 +31,9 @@ def r():
     print("Address of high_ram:", hex(uctypes.addressof(high_ram)))
 
 
-import sys
-
-
 def test_recursion_depth(depth=0):
     try:
         return test_recursion_depth(depth + 1)
-    except Exception as e:
+    except Exception:
         print(f"Maximum recursion depth reached: {depth}")
         return depth
