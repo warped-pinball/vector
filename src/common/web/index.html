@@ -94,61 +94,6 @@
       <!--        -->
       <!-- MODALS -->
       <!--        -->
-      <dialog id="configure_modal">
-        <article>
-          <header>
-            <h2>Configure Your Vector</h2>
-          </header>
-          <h3>WiFi Settings</h3>
-          <details id="ssid_select_placeholder" class="dropdown">
-            <summary>Scanning for WiFi networks</summary>
-          </details>
-          <input
-            type="password"
-            name="wifi_password"
-            placeholder="WiFi password"
-            aria-label="WiFi Password"
-          />
-
-          <h3>Game Settings</h3>
-          <details id="game_config_select_placeholder" class="dropdown">
-            <summary>Building list of games</summary>
-          </details>
-          <input
-            type="password"
-            name="vector_password"
-            placeholder="Admin Password"
-            aria-label="Pinball Admin Password"
-          />
-
-          <p>
-            Please <mark>double check your game and ROM version</mark> If you
-            are unsure, do not guess. If you have a ROM that is not listed we
-            may be able to add it for you.
-          </p>
-
-          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
-
-          <p>
-            Once you have saved, please power cycle your pinball machine and
-            connect to your selected WiFi network.
-          </p>
-
-          <footer style="position: relative">
-            <small
-              style="
-                position: absolute;
-                display: block;
-                top: 50%;
-                transform: translateY(-50%);
-                bottom: auto;
-              "
-              >Previous IP: <a id="previous-ip" href="#"></a
-            ></small>
-            <button onclick="window.save_configuration()">💾 Save</button>
-          </footer>
-        </article>
-      </dialog>
       <dialog id="install_warning_modal">
         <article>
           <h2>Warning: Issues Detected</h2>

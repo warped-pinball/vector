@@ -27,6 +27,13 @@ const pageConfig = {
       { url: "/js/admin.js.gz", targetId: "page_js" },
     ],
   },
+  setup: {
+    title: "AP Configuration",
+    resources: [
+      { url: "/html/ap_config.html.gz", targetId: "page_html" },
+      { url: "/js/ap.js.gz", targetId: "page_js" },
+    ],
+  },
 };
 
 let previousResourceIds = [];

@@ -120,6 +120,11 @@ async function populate_configure_modal() {
 }
 
 async function configure_check() {
+  if (typeof window.handleNavigation !== "function") {
+    setTimeout(configure_check, 100);
+    return;
+  }
+
   let response = await window.smartFetch("/api/in_ap_mode", null, false);
   if (!response.ok) {
     console.log("Retrying in AP mode check");
@@ -131,9 +136,12 @@ async function configure_check() {
   }
   const data = await response.json();
   if (data.in_ap_mode) {
-    await populate_configure_modal();
-    // open the modal
-    document.getElementById("configure_modal").setAttribute("open", "");
+    if (document.getElementById("configure_modal")) {
+      await populate_configure_modal();
+      document.getElementById("configure_modal").setAttribute("open", "");
+    } else {
+      window.handleNavigation("setup");
+    }
   }
 }
 
