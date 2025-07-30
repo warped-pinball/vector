@@ -451,8 +451,7 @@ async function checkForUpdates() {
 
     // if the latest is equal to the current version we are up to date
     if (data["version"] === current) {
-      updateButton.style.backgroundColor = "#8e8e8e";
-      updateButton.style.borderColor = "#8e8e8e";
+      updateButton.classList.remove("golden-button");
       updateButton.textContent = "Already up to date";
       updateButton.disabled = true;
     } else {
@@ -460,8 +459,7 @@ async function checkForUpdates() {
 
       // update available
       updateButton.disabled = false;
-      updateButton.style.backgroundColor = "#e8b85a";
-      updateButton.style.borderColor = "#e8b85a";
+      updateButton.classList.add("golden-button");
       updateButton.textContent = `Update to ${data["version"]}`;
 
       // get the url for the update.json asset and add an event listener to the button
