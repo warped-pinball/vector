@@ -1,3 +1,10 @@
+function generate_random_hex(length) {
+  return crypto
+    .getRandomValues(new Uint32Array(1))[0]
+    .toString(16)
+    .padStart(length, "0");
+}
+
 async function build_game_config_select() {
   // get all configurations
   const response = await fetch("/api/game/configs_list");
@@ -124,8 +131,7 @@ async function generate_claim_qr() {
     console.error("leanQR library not loaded");
     return;
   }
-  const random = crypto.getRandomValues(new Uint32Array(1))[0];
-  const claimCode = random.toString(16).padStart(8, "0");
+  const claimCode = generate_random_hex(8);
   const claimURL = `https://origin-beta.doze.dev?claim_code=${claimCode}`;
 
   const qr = window.leanQR.generate(claimURL);
