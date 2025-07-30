@@ -15,6 +15,26 @@
     background-color: #c53d3d;
   }
 
+  .golden-button {
+    background-color: #e8b85a;
+    border-color: #e8b85a;
+    box-shadow: 0 0 20px rgba(232, 185, 90, 0.51);
+    animation: pulse 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    from {
+      box-shadow:
+        0 0 20px rgba(232, 185, 90, 0.51),
+        0 0 40px rgba(232, 185, 90, 0.3);
+    }
+    to {
+      box-shadow:
+        0 0 40px rgba(232, 185, 90, 0.8),
+        0 0 80px rgba(232, 185, 90, 0.4);
+    }
+  }
+
   /* Adjustments Profiles Styling */
   .profile-row {
     display: flex;
@@ -227,7 +247,8 @@
       </div>
       <div>
         <p>Apply the latest update to your Vector</p>
-        <a id="release-notes" target="_blank" rel="noopener noreferrer"></a>
+        <p id="release-notes"></p>
+        <a id="release-link" target="_blank" rel="noopener noreferrer"></a>
       </div>
     </div>
   </section>
