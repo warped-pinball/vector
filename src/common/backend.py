@@ -543,6 +543,11 @@ def app_getScores(request):
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
     """Return best score for each registered player."""
+    from time import time
+
+    from phew.ntp import time_ago
+
+    now_seconds = time()
 
     bests = {}
     # total players and individual scores
@@ -552,7 +557,6 @@ def app_personal_bests(request):
     for player_id in range(total_players):
         player = ds_read_record("names", player_id)
         if not player["initials"].strip():
-            print(f"Skipping player {player_id} with no initials")
             continue
 
         for score_idx in range(total_scores):
@@ -564,13 +568,17 @@ def app_personal_bests(request):
                         "full_name": player["full_name"],
                         "score": record["score"],
                         "date": record["date"].strip().replace("\x00", " "),
+                        "ago": time_ago(record["date"].strip().replace("\x00", " "), now_seconds),
                     }
-                else:
-                    print(f"Skipping score {record['score']} for player {player_id} as it is not a new best")
-            else:
-                print(f"Skipping score {record['score']} for player {player_id} as it is not positive")
 
-    return bests
+    records = sorted(
+        ({"player_id": pid, "initials": d["initials"], "full_name": d["full_name"], "score": d["score"], "date": d["date"], "ago": d["ago"]} for pid, d in bests.items()),
+        key=lambda x: x["score"],
+        reverse=True,
+    )
+    for idx, rec in enumerate(records, start=1):
+        rec["rank"] = idx
+    return records
 
 
 @add_route("/api/player/scores/reset", auth=True)

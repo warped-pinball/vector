@@ -207,10 +207,7 @@ window.updatePersonalArticles = function () {
         return response.json();
       })
       .then(function (data) {
-        localStorage.setItem(
-          "/api/personal/bests",
-          JSON.stringify(data),
-        );
+        localStorage.setItem("/api/personal/bests", JSON.stringify(data));
         window.renderFullArticleList(
           "personalArticles",
           data,
