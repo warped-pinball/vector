@@ -119,6 +119,30 @@ async function populate_configure_modal() {
   populate_previous_ip();
 }
 
+async function generate_claim_qr() {
+  const { generate } = await import("/js/lean-qr.min.js");
+  const random = crypto.getRandomValues(new Uint32Array(1))[0];
+  const claimCode = random.toString(16).padStart(8, "0");
+  const claimURL = `https://origin-beta.doze.dev?claim_code=${claimCode}`;
+
+  const qr = generate(claimURL);
+  const canvas = document.getElementById("claim-qr");
+  if (canvas) qr.toCanvas(canvas);
+
+  const link = document.getElementById("claim-link");
+  if (link) {
+    link.href = claimURL;
+    link.textContent = claimURL;
+  }
+}
+
+async function init_setup_page() {
+  await populate_configure_modal();
+  await generate_claim_qr();
+}
+
+window.init_setup_page = init_setup_page;
+
 async function configure_check() {
   if (typeof window.handleNavigation !== "function") {
     setTimeout(configure_check, 100);
@@ -140,7 +164,7 @@ async function configure_check() {
       await populate_configure_modal();
       document.getElementById("configure_modal").setAttribute("open", "");
     } else {
-      window.handleNavigation("setup");
+      await window.handleNavigation("setup");
     }
   }
 }

@@ -32,7 +32,6 @@ const pageConfig = {
     resources: [
       { url: "/html/ap_config.html.gz", targetId: "page_html" },
       { url: "/js/lean-qr.min.js.gz", targetId: "page_js" },
-      { url: "/js/ap.js.gz", targetId: "page_js" },
     ],
   },
 };
@@ -111,6 +110,10 @@ async function handleNavigation(
       }
     }
     await loadPageResources(pageKey);
+    const initFunction = window[`init_${pageKey}`];
+    if (typeof initFunction === "function") {
+      await initFunction();
+    }
     currentPageKey = pageKey;
     console.log(`Navigation to ${pageKey} completed.`);
   } catch (error) {
