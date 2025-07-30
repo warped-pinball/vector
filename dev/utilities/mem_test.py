@@ -1,3 +1,7 @@
+import pytest
+
+pytest.skip("Requires MicroPython uctypes module", allow_module_level=True)
+
 import uctypes
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, shadowRam
 

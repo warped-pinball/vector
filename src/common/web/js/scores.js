@@ -186,10 +186,41 @@ window.updatePersonalArticles = function () {
 
   // Read selected player ID from our custom dropdown
   var player_id = window.getDropDownValue("playerDropdown");
-  // If user hasn't selected anything or default is empty => do nothing
-  if (!player_id || player_id === "null") {
-    console.log("No player selected, skipping personal scoreboard update.");
-    container.innerHTML = "";
+
+  // When no player is selected or "all" is chosen show personal bests
+  if (!player_id || player_id === "null" || player_id === "all") {
+    var columns = [
+      { header: "#", key: "rank" },
+      { header: "Score", key: "score" },
+      { header: "Player", key: "player" },
+      { header: "Ago", key: "ago" },
+      { header: "Date", key: "date" },
+    ];
+
+    fetch("/api/personal/bests")
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error(
+            "Network response was not ok: " + response.statusText,
+          );
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        localStorage.setItem(
+          "/api/personal/bests",
+          JSON.stringify(data),
+        );
+        window.renderFullArticleList(
+          "personalArticles",
+          data,
+          columns,
+          "five-col",
+        );
+      })
+      .catch(function (error) {
+        console.error("Error fetching personal bests:", error);
+      });
     return;
   }
 
@@ -240,7 +271,7 @@ window.loadPlayers = async function (data) {
   if (!playerDropdownContainer) return;
 
   // Build a { id: "PlayerName (INI)" } object for the dropdown
-  var dropdownOptions = {};
+  var dropdownOptions = { all: "All Personal Bests" };
   Object.entries(data).forEach(function ([id, player]) {
     var displayName = player.name.trim();
     if (player.initials.trim()) {
@@ -274,6 +305,9 @@ window.loadPlayers = async function (data) {
   // Clear container, place the new dropdown
   playerDropdownContainer.innerHTML = "";
   playerDropdownContainer.appendChild(dropDownElement);
+
+  // Show all personal bests by default
+  window.updatePersonalArticles();
 };
 
 /*

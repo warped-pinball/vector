@@ -540,6 +540,42 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/personal/bests")
+def app_personal_bests(request):
+    """Return best score for each registered player."""
+    from time import time
+    from phew.ntp import time_ago
+    from personal_bests import compute_personal_bests
+
+    players = {}
+    player_count = ds_memory_map["names"]["count"]
+    for i in range(player_count):
+        rec = ds_read_record("names", i)
+        initials = rec["initials"].replace("\x00", " ").strip("\0")
+        full_name = rec["full_name"].replace("\x00", " ").strip("\0")
+        if initials or full_name:
+            players[str(i)] = {"initials": initials, "full_name": full_name}
+
+    scores = {}
+    score_count = ds_memory_map["individual"]["count"]
+    for pid in players.keys():
+        p_scores = []
+        for j in range(score_count):
+            rec = ds_read_record("individual", j, int(pid))
+            if rec.get("score", 0) > 0:
+                p_scores.append({"score": rec["score"], "date": rec["date"]})
+        scores[pid] = p_scores
+
+    results = compute_personal_bests(players, scores)
+
+    now = time()
+    for row in results:
+        row["ago"] = time_ago(row["date"], now)
+        row["player"] = row["full_name"] if row["full_name"] else row["initials"]
+
+    return json_dumps(results), 200
+
+
 @add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
     from SPI_DataStore import blankIndPlayerScores
