@@ -126,28 +126,34 @@ async function populate_configure_modal() {
   populate_previous_ip();
 }
 
-async function generate_claim_qr() {
-  if (!window.leanQR || !window.leanQR.generate) {
-    console.error("leanQR library not loaded");
-    return;
-  }
+async function generate_claim_link() {
   const claimCode = generate_random_hex(8);
   const claimURL = `https://origin-beta.doze.dev?claim_code=${claimCode}`;
-
-  const qr = window.leanQR.generate(claimURL);
-  const canvas = document.getElementById("claim-qr");
-  if (canvas) qr.toCanvas(canvas);
 
   const link = document.getElementById("claim-link");
   if (link) {
     link.href = claimURL;
     link.textContent = claimURL;
   }
+
+  const copyBtn = document.getElementById("claim-copy");
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(claimURL);
+        const original = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = original), 1000);
+      } catch (err) {
+        console.error("Copy failed", err);
+      }
+    };
+  }
 }
 
 async function init_setup_page() {
   await populate_configure_modal();
-  await generate_claim_qr();
+  await generate_claim_link();
 }
 
 window.init_setup_page = init_setup_page;

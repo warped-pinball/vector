@@ -1,21 +1,16 @@
 <style>
-  #claim-qr {
-    image-rendering: pixelated;
-    width: 40vmin;
-    margin: 1rem auto;
+  #claim-link {
     display: block;
+    margin-bottom: 1rem;
+    word-break: break-all;
   }
 </style>
-<script>
-  window.leanQR = {};
-  window.exports = window.leanQR;
-</script>
 <article>
   <header><h2>Configure Your Vector</h2></header>
-  <canvas id="claim-qr"></canvas>
   <p>
-    Scan to claim your game or open
+    Claim your game at
     <a id="claim-link" target="_blank"></a>
+    <button id="claim-copy" style="margin-left: 0.5rem">Copy</button>
   </p>
   <h3>WiFi Settings</h3>
   <details id="ssid_select_placeholder" class="dropdown">

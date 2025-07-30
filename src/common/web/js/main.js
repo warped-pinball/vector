@@ -29,10 +29,7 @@ const pageConfig = {
   },
   setup: {
     title: "AP Configuration",
-    resources: [
-      { url: "/html/ap_config.html.gz", targetId: "page_html" },
-      { url: "/js/lean-qr.min.js.gz", targetId: "page_js" },
-    ],
+    resources: [{ url: "/html/ap_config.html.gz", targetId: "page_html" }],
   },
 };
 
