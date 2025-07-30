@@ -161,6 +161,8 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
             f'extras["other"] = {test_data["settings"]["score_capture"]}',
             'datastore.write_record("extras", extras, 0)',
         ]
+        # add individual player data
+        + [f'datastore.write_record("individual", {json.dumps(record)}, {index})' for index, record in enumerate(test_data["individual"])]
     )
 
     cmd = f"mpremote connect {pico_port} exec '{test_data_script}'"

@@ -543,37 +543,34 @@ def app_getScores(request):
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
     """Return best score for each registered player."""
-    from time import time
-    from phew.ntp import time_ago
-    from personal_bests import compute_personal_bests
 
-    players = {}
-    player_count = ds_memory_map["names"]["count"]
-    for i in range(player_count):
-        rec = ds_read_record("names", i)
-        initials = rec["initials"].replace("\x00", " ").strip("\0")
-        full_name = rec["full_name"].replace("\x00", " ").strip("\0")
-        if initials or full_name:
-            players[str(i)] = {"initials": initials, "full_name": full_name}
+    bests = {}
+    # total players and individual scores
+    total_players = ds_memory_map["names"]["count"]
+    total_scores = ds_memory_map["individual"]["count"]
 
-    scores = {}
-    score_count = ds_memory_map["individual"]["count"]
-    for pid in players.keys():
-        p_scores = []
-        for j in range(score_count):
-            rec = ds_read_record("individual", j, int(pid))
-            if rec.get("score", 0) > 0:
-                p_scores.append({"score": rec["score"], "date": rec["date"]})
-        scores[pid] = p_scores
+    for player_id in range(total_players):
+        player = ds_read_record("names", player_id)
+        if not player["initials"].strip():
+            print(f"Skipping player {player_id} with no initials")
+            continue
 
-    results = compute_personal_bests(players, scores)
+        for score_idx in range(total_scores):
+            record = ds_read_record("individual", score_idx, player_id)
+            if record["score"] > 0:
+                if player_id not in bests or record["score"] > bests[player_id]["score"]:
+                    bests[player_id] = {
+                        "initials": player["initials"],
+                        "full_name": player["full_name"],
+                        "score": record["score"],
+                        "date": record["date"].strip().replace("\x00", " "),
+                    }
+                else:
+                    print(f"Skipping score {record['score']} for player {player_id} as it is not a new best")
+            else:
+                print(f"Skipping score {record['score']} for player {player_id} as it is not positive")
 
-    now = time()
-    for row in results:
-        row["ago"] = time_ago(row["date"], now)
-        row["player"] = row["full_name"] if row["full_name"] else row["initials"]
-
-    return json_dumps(results), 200
+    return bests
 
 
 @add_route("/api/player/scores/reset", auth=True)

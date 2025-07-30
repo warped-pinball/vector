@@ -1,11 +1,6 @@
-import pytest
-
-pytest.skip("Requires MicroPython uctypes module", allow_module_level=True)
-
 import uctypes
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, shadowRam
-
 from logger import logger_instance
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, shadowRam
 
 Log = logger_instance
 # high_ram = uctypes.bytearray_at(SRAM_DATA_BASE+2048, 1500)
@@ -36,8 +31,8 @@ def r():
     print("Address of high_ram:", hex(uctypes.addressof(high_ram)))
 
 
-
 import sys
+
 
 def test_recursion_depth(depth=0):
     try:
@@ -45,5 +40,3 @@ def test_recursion_depth(depth=0):
     except Exception as e:
         print(f"Maximum recursion depth reached: {depth}")
         return depth
-    
-
