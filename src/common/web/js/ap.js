@@ -3,7 +3,7 @@
     await populate_configure_modal();
   }
 
-  const { generate } = await import("https://unpkg.com/lean-qr@2.5.0?module");
+  const { generate } = await import("/js/lean-qr.min.js");
   const random = crypto.getRandomValues(new Uint32Array(1))[0];
   const claimCode = random.toString(16).padStart(8, "0");
   const claimURL = `https://origin-beta.doze.dev?claim_code=${claimCode}`;
