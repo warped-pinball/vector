@@ -117,9 +117,62 @@ async function getShowIP() {
   });
 }
 
+// Midnight Madness settings
+async function getMidnightMadness() {
+  const response = await window.smartFetch(
+    "/api/time/get_midnight_madness",
+    null,
+    false,
+  );
+  const data = await response.json();
+
+  const enableToggle = document.getElementById(
+    "midnight-madness-enable-toggle",
+  );
+  const alwaysToggle = document.getElementById(
+    "midnight-madness-always-toggle",
+  );
+  const nowButton = document.getElementById(
+    "midnight-madness-now-button",
+  );
+
+  enableToggle.checked = data["enabled"];
+  alwaysToggle.checked = data["always"];
+
+  enableToggle.disabled = false;
+  alwaysToggle.disabled = false;
+  nowButton.disabled = false;
+
+  function addListener(toggle) {
+    toggle.addEventListener("change", async () => {
+      const payload = {
+        enabled: enableToggle.checked ? 1 : 0,
+        always: alwaysToggle.checked ? 1 : 0,
+      };
+      await window.smartFetch(
+        "/api/time/set_midnight_madness",
+        payload,
+        true,
+      );
+    });
+  }
+
+  addListener(enableToggle);
+  addListener(alwaysToggle);
+
+  nowButton.addEventListener("click", async () => {
+    await window.smartFetch(
+      "/api/time/trigger_midnight_madness",
+      null,
+      true,
+    );
+  });
+}
+
 tournamentModeToggle();
 getScoreClaimMethods();
 getShowIP();
+getMidnightMadness();
 
 //
 // Adjustment Profiles

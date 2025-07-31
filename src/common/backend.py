@@ -639,6 +639,36 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/time/get_midnight_madness")
+def app_getMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    return {
+        "enabled": record["WPCTimeOn"],
+        "always": record["MM_Always"],
+    }
+
+
+@add_route("/api/time/set_midnight_madness", auth=True)
+def app_setMidnightMadness(request):
+    data = request.data
+    record = ds_read_record("extras", 0)
+    if "enabled" in data:
+        record["WPCTimeOn"] = bool(data["enabled"])
+    if "always" in data:
+        record["MM_Always"] = bool(data["always"])
+    ds_write_record("extras", record, 0)
+    from wpc.Time import intiialize
+
+    intiialize()
+
+
+@add_route("/api/time/trigger_midnight_madness", auth=True)
+def app_triggerMidnightMadness(request):
+    from wpc.Time import trigger_midnight_madness
+
+    trigger_midnight_madness()
+
+
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     import reset_control
