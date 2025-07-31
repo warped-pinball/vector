@@ -646,35 +646,22 @@ def app_midnightMadnessAvailable(request):
 
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
-    record = ds_read_record("extras", 0)
     return {
-        "enabled": record["WPCTimeOn"],
-        "always": record["MM_Always"],
+        "enabled": True,
+        "always": True,
     }
 
 
 @add_route("/api/time/set_midnight_madness", auth=True)
 def app_setMidnightMadness(request):
-    data = request.data
-    record = ds_read_record("extras", 0)
-    if "enabled" in data:
-        record["WPCTimeOn"] = bool(data["enabled"])
-    if "always" in data:
-        record["MM_Always"] = bool(data["always"])
-    ds_write_record("extras", record, 0)
-    from wpc.Time import intiialize
-
-    intiialize()
+    # TODO
+    pass
 
 
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
-    record = ds_read_record("extras", 0)
-    if not record["WPCTimeOn"]:
-        return {"msg": "Midnight Madness disabled"}, 403
-    from wpc.Time import trigger_midnight_madness
-
-    trigger_midnight_madness()
+    # TODO
+    pass
 
 
 @add_route("/api/settings/factory_reset", auth=True)
