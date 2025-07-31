@@ -826,22 +826,29 @@ def app_enable_origin(request):
 
     print("Connecting to Origin server...")
     ws_url = ORIGIN_URL.replace("https://", "ws://") + "/ws/claim"
-    ws = connect(ws_url)
+    try:
+        ws = connect(ws_url)
+    except Exception as e:
+        print(f"Origin server connection failed: {e}")
+        return {"error": "unreachable"}, 503
+
     try:
         priv, pub = generate_x25519_keypair()
         print("Sending public key to Origin server...")
         ws.send(ujson.dumps({"client_key": ubinascii.b2a_base64(pub).decode()}))
         print("Waiting for response from Origin server...")
         resp = ws.recv()
+        print("Received response from Origin server")
+        data = ujson.loads(resp)
+        server_key = ubinascii.a2b_base64(data["server_key"])
+        claim_code = data["claim_code"]
+        machine_id = data["machine_id"]
+        signature = ubinascii.unhexlify(data["signature"])
+    except Exception as e:
+        print(f"Error during Origin handshake: {e}")
+        return {"error": "handshake"}, 502
     finally:
         ws.close()
-
-    print("Received response from Origin server")
-    data = ujson.loads(resp)
-    server_key = ubinascii.a2b_base64(data["server_key"])
-    claim_code = data["claim_code"]
-    machine_id = data["machine_id"]
-    signature = ubinascii.unhexlify(data["signature"])
 
     shared_secret = priv.exchange(server_key)
     print("Shared secret established")
