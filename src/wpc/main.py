@@ -154,7 +154,7 @@ def read_pio_status(pio_base):
 
 
 #machine.mem32[0x50000000 + 0x3C0] = 0x55
-
+'''
 while 1:
     print("k")
 
@@ -162,7 +162,7 @@ while 1:
     #base_address = 0x2007FFC0
     length = 64
 
-    base_address = 0x20081F80  # + 0x48
+    base_address = 0x20081FC0  # + 0x48
 
 
     bytes_per_row = 16
@@ -212,7 +212,7 @@ while 1:
     machine.mem32[reg_addr] = current_value | (1 << 30)
     print(f"Set bit 30: 0x{reg_addr:08X} = {hex(machine.mem32[reg_addr])}")
 
-
+'''
 
 
     #machine.mem32[0x2007ffc0]=0xA5
@@ -220,7 +220,7 @@ while 1:
 
 
 
-    time.sleep(4)
+time.sleep(4)
 
 
 time.sleep(0.5)

@@ -10,9 +10,7 @@ Ram intercept module - REVISION 5 - CADR version
     All write operations are decoded and stored to internal RP2350 ram (writes are allowed to
     propagate on the main board to the standard ram also)
 
-    Clock addresses (CADR in hardware) are also decoded and special clock PIO handles
-    read and write operations to shadow the RTC registers in RP2350 ram
-
+    Clock addresses (CADR in hardware) are also decoded and placed in prallele at the end of ram
 
     PIO#0:  Ram read and write operations,  uses SMs 4,5,6
 
@@ -119,7 +117,7 @@ def Pass_VMA_CADR():
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH,rp2.PIO.OUT_LOW), out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT) 
 def ReadAddress():
 
-    nop() .side(0)  #why is this required!!! crazy town
+    #nop() .side(0)  #why is this required!!! crazy town
 
     label("start_adr")    
     wrap_target()
@@ -131,7 +129,7 @@ def ReadAddress():
     mov(isr,y)             .side(0)     #copy 21 bit address msb to isr,ready to shift in 11 lsb from pins    
     in_(pins,5)            .side(0)     #read A8/9/10/11/12, set A_Select to 1  (WPC)
     nop()           [3]    .side(1)     #side set happens at begining of instruction      
-    #nop()           [3]    .side(1)
+    nop()           [3]    .side(1)
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)   [3]    .side(0)     #send out address result for DMA   
 
@@ -256,21 +254,18 @@ def pio_start():
 
 
 
-
     #VMA Catch SM
     sm_CatchVma = rp2.StateMachine(9, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13) )  
-    #sm_CatchVma = rp2.StateMachine(9, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13),  sideset_base=machine.Pin(26)  )  #side set for test
   
     # CADR Catch (rtc clock address dedcode)
     # JMP pin is CADR GPIO#11
     sm_CatchCADR = rp2.StateMachine(10, CatchCADR, freq=150000000, jmp_pin=machine.Pin(11) ) 
-    #sm_CatchCADR = rp2.StateMachine(10, CatchCADR, freq=150000000, jmp_pin=machine.Pin(11),  sideset_base=machine.Pin(26) )  #side set for test
 
     # passes catch VMA or Catch CADR to next PIO module
     # JMP pin is CADR GPIO#11
     # receive IRQ5
-    sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11))#, sideset_base=machine.Pin(27) )  
-    #sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11), sideset_base=machine.Pin(26)  )  #side set for test
+    sm_Pass_VMA_CADR = rp2.StateMachine(11, Pass_VMA_CADR, freq=150000000, jmp_pin=machine.Pin(11))
+    
     
     
 

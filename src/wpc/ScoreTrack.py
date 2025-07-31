@@ -532,18 +532,19 @@ def update_tournament(new_entry):
     return
 
 
+tim=0
 
 GameEndCount =0
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter,GameEndCount
-
+    global tim
 
 
 
     # Print 64 bytes of data starting from 0x2007FFC0
-    base_address = 0x2007FFC0
-    length = 64
+    base_address = 0x20081FF0
+    length = 16
     bytes_per_row = 16
 
     print(f"Memory Dump (starting at 0x{base_address:08X}, length {length} bytes):")
@@ -570,6 +571,12 @@ def CheckForNewScores(nState=[0]):
 
     #power up init state - only runs once
     if nState[0] == 0:        
+
+        import machine
+        #machine.mem32[0x20081FF8] = 0x01010B3B
+        machine.mem32[0x20081FF8] = 0x02030101
+        
+
         place_machine_scores()
         nState[0] = 1
         # if enter initials on game set high score rewards to zero
@@ -618,6 +625,16 @@ def CheckForNewScores(nState=[0]):
             print(_read_machine_score(UseHighScores= True))           
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 3  
+
+            tim=tim+1
+            if tim==5:
+                machine.mem32[0x20081FF8] = 0x00180101
+                print("#$#$#$#$#$#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            if tim==6:
+                machine.mem32[0x20081FF8] = 0x01180101
+                print("#$#$#$#$#$#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+                
+
 
 
         # game over, wait for intiials to be entered
