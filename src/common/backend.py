@@ -639,6 +639,11 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/time/midnight_madness_available")
+def app_midnightMadnessAvailable(request):
+    return {"available": True}
+
+
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
@@ -662,8 +667,11 @@ def app_setMidnightMadness(request):
     intiialize()
 
 
-@add_route("/api/time/trigger_midnight_madness", auth=True)
+@add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    if not record["WPCTimeOn"]:
+        return {"msg": "Midnight Madness disabled"}, 403
     from wpc.Time import trigger_midnight_madness
 
     trigger_midnight_madness()

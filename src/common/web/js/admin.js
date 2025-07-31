@@ -138,12 +138,12 @@ async function getMidnightMadness() {
 
   enableToggle.checked = data["enabled"];
   alwaysToggle.checked = data["always"];
+  nowButton.disabled = !data["enabled"];
 
   enableToggle.disabled = false;
   alwaysToggle.disabled = false;
-  nowButton.disabled = false;
 
-  function addListener(toggle) {
+  function addListener(toggle, after) {
     toggle.addEventListener("change", async () => {
       const payload = {
         enabled: enableToggle.checked ? 1 : 0,
@@ -154,25 +154,44 @@ async function getMidnightMadness() {
         payload,
         true,
       );
+      if (after) after();
     });
   }
 
-  addListener(enableToggle);
+  addListener(enableToggle, () => {
+    nowButton.disabled = !enableToggle.checked;
+  });
   addListener(alwaysToggle);
 
   nowButton.addEventListener("click", async () => {
     await window.smartFetch(
       "/api/time/trigger_midnight_madness",
       null,
-      true,
+      false,
     );
   });
+}
+
+async function initMidnightMadness() {
+  const section = document.getElementById("midnight-madness-section");
+  const response = await window.smartFetch(
+    "/api/time/midnight_madness_available",
+    null,
+    false,
+  );
+  const data = await response.json();
+  if (!data.available) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+  await getMidnightMadness();
 }
 
 tournamentModeToggle();
 getScoreClaimMethods();
 getShowIP();
-getMidnightMadness();
+initMidnightMadness();
 
 //
 // Adjustment Profiles
