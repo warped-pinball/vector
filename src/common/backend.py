@@ -810,13 +810,12 @@ def app_apply_update(request):
 @add_route("/api/origin/enable", auth=True)
 def app_enable_origin(request):
     # establish shared secret with origin server
-    # request a new machine id response should be machine_id, something to generate a shared secret with, a claim code, signature
-    # validate the signature of the response (RSA public key / curve25519)
-    # generate a shared secret using the machine id and the something to generate a shared secret with
-    # TODO store the shared secret in the datastore (we'll do this in the future, skip for now)
+    #   request a new machine id response should be machine_id, something to generate a shared secret with, a claim code, signature
+    #   validate the signature of the response (RSA public key / curve25519)
+    #   generate a shared secret using the machine id and the something to generate a shared secret with
+    #   TODO store the shared secret in the datastore (we'll do this in the future, skip for now)
 
     # send introduction to origin server so it can generate the shared secret
-    # introduce ourselves to the origin server and test connection
 
     # return claim code for user to use in origin app to establish ownership
 
