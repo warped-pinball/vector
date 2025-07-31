@@ -810,42 +810,58 @@ def app_apply_update(request):
 @add_route("/api/origin/enable", auth=True)
 def app_enable_origin(request):
     """Establish a shared secret with the Origin server and return a claim link."""
-    from websocket_client import connect
-    from curve25519 import generate_x25519_keypair
-    from rsa import PublicKey, pkcs1, VerificationError
     import ubinascii
     import ujson
+    from curve25519 import generate_x25519_keypair
+    from rsa.key import PublicKey
+    from rsa.pkcs1 import verify
+    from websocket_client import connect
 
+    print("Enabling Origin...")
     ORIGIN_URL = "https://origin.warpedpinball.com"
     ORIGIN_PUBLIC_KEY = PublicKey(
-        0x728a502d0abceed30e15c3f94b4119f86b96ac1c456af405a39594803237d8d978174e663292d51b065a9c186cc2251ee4999b382ff9426cba73e59380df70d7d6f5ce58118310fb1bf6676624be6be307ebf144d0a27b904c9c3abe793aaaad7fa98827467edc3e2f16d3bce0794630bfe133cfda46c505b310b389aefeba89f51949ab909ea8f00aa1c7823ace7e76470880889657b2e3c46a5589eceba1197490b2b1a8b59b78bd1dd785728e0f5716a311620d37ba8aad95c506105dce0f1fcf94686362753f4c1a9514f9d81e066093cf5d37688ea702df3648f5fb763f67ce6eefd16113f22fc30c5672995c4bf0f21235cda70129e9d6bc451dee6b34,
-        65537,
+        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
+        e=65537,
     )
 
+    print("Connecting to Origin server...")
     ws_url = ORIGIN_URL.replace("https://", "ws://") + "/ws/claim"
     ws = connect(ws_url)
     try:
         priv, pub = generate_x25519_keypair()
+        print("Sending public key to Origin server...")
         ws.send(ujson.dumps({"client_key": ubinascii.b2a_base64(pub).decode()}))
+        print("Waiting for response from Origin server...")
         resp = ws.recv()
     finally:
         ws.close()
 
+    print("Received response from Origin server")
     data = ujson.loads(resp)
     server_key = ubinascii.a2b_base64(data["server_key"])
     claim_code = data["claim_code"]
     machine_id = data["machine_id"]
     signature = ubinascii.unhexlify(data["signature"])
 
-    message = machine_id + data["server_key"] + claim_code
-    try:
-        pkcs1.verify(message.encode(), signature, ORIGIN_PUBLIC_KEY)
-    except VerificationError:
-        return {"error": "signature"}, 400
+    shared_secret = priv.exchange(server_key)
+    print("Shared secret established")
 
-    _ = priv.exchange(server_key)  # shared secret, TODO: store securely
+    try:
+        result = verify(shared_secret, signature, ORIGIN_PUBLIC_KEY)
+        if result != "SHA-256":
+            raise Exception(f"Signature invalid! {result}")
+    except Exception:
+        return {"error": "signature"}, 400
+    print("Signature verified")
+
+    # TODO store the shared secret in a secure way
+    import SharedState
+
+    SharedState.origin_shared_secret = shared_secret
+    SharedState.origin_machine_id = machine_id
 
     claim_url = "%s/claim?code=%s" % (ORIGIN_URL, claim_code)
+    print(f"Claim URL: {claim_url}")
     return {"claim_url": claim_url}
 
 
