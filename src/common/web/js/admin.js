@@ -571,7 +571,54 @@ window.customUpdate = async function () {
 // Origin
 //
 
-// check if we've been linked to origin already
-async function checkOriginLinked() {}
+async function checkOriginLinked() {
+  try {
+    const response = await window.smartFetch(
+      "/api/origin/status",
+      null,
+      false,
+    );
+    const data = await response.json();
+    if (data.linked) {
+      const button = document.getElementById("link-origin-button");
+      button.disabled = true;
+      button.textContent = "Origin Enabled";
+    }
+  } catch (e) {
+    console.error("Failed to get origin status", e);
+  }
+}
 
-async function enableOrigin() {}
+async function enableOrigin() {
+  const button = document.getElementById("link-origin-button");
+  button.disabled = true;
+  button.textContent = "Linking...";
+  try {
+    const response = await window.smartFetch(
+      "/api/origin/enable",
+      null,
+      true,
+    );
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    const data = await response.json();
+    const linkDiv = document.getElementById("origin-link");
+    const link = document.getElementById("origin-claim-link");
+    link.href = data.claim_url;
+    link.textContent = "Claim This Machine";
+    linkDiv.classList.remove("hide");
+    button.textContent = "Waiting for Claim";
+  } catch (e) {
+    console.error("Failed to enable origin", e);
+    alert("Failed to enable Origin");
+    button.textContent = "Enable Origin";
+    button.disabled = false;
+  }
+}
+
+document
+  .getElementById("link-origin-button")
+  .addEventListener("click", enableOrigin);
+
+checkOriginLinked();
