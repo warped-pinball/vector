@@ -436,13 +436,18 @@ async function checkForUpdates() {
 
     // link to release notes in text
     const releaseNotes = document.getElementById("release-notes");
+    const releaseLink = document.getElementById("release-link");
     if (releaseNotes) {
       if (data["release_page"]) {
-        releaseNotes.href = data["release_page"];
+        releaseLink.href = data["release_page"];
+        releaseLink.textContent = `GitHub release for ${data["version"] || "unknown version"}`;
+        releaseLink.classList.remove("hide");
+      } else {
+        releaseLink.classList.add("hide");
       }
+
       if (data["notes"]) {
-        releaseNotes.textContent = `Release Notes for ${data["version"] || ""}`;
-        releaseNotes.title = data["notes"];
+        releaseNotes.innerHTML = data["notes"];
         releaseNotes.classList.remove("hide");
       } else {
         releaseNotes.classList.add("hide");
