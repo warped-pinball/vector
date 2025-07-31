@@ -639,6 +639,31 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/time/midnight_madness_available")
+def app_midnightMadnessAvailable(request):
+    return {"available": True}
+
+
+@add_route("/api/time/get_midnight_madness")
+def app_getMidnightMadness(request):
+    return {
+        "enabled": True,
+        "always": True,
+    }
+
+
+@add_route("/api/time/set_midnight_madness", auth=True)
+def app_setMidnightMadness(request):
+    # TODO
+    pass
+
+
+@add_route("/api/time/trigger_midnight_madness")
+def app_triggerMidnightMadness(request):
+    # TODO
+    pass
+
+
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     import reset_control
