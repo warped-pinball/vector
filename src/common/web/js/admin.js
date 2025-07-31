@@ -566,3 +566,12 @@ window.customUpdate = async function () {
     await window.applyUpdate(url);
   });
 };
+
+//
+// Origin
+//
+
+// check if we've been linked to origin already
+async function checkOriginLinked() {}
+
+async function enableOrigin() {}
