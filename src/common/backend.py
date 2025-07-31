@@ -818,7 +818,7 @@ def app_enable_origin(request):
     from websocket_client import connect
 
     print("Enabling Origin...")
-    ORIGIN_URL = "https://origin.warpedpinball.com"
+    ORIGIN_URL = "https://origin-beta.doze.dev"
     ORIGIN_PUBLIC_KEY = PublicKey(
         n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
         e=65537,
@@ -846,6 +846,7 @@ def app_enable_origin(request):
         signature = ubinascii.unhexlify(data["signature"])
     except Exception as e:
         print(f"Error during Origin handshake: {e}")
+        print("Received response:", resp)
         return {"error": "handshake"}, 502
     finally:
         ws.close()
@@ -872,7 +873,7 @@ def app_enable_origin(request):
     return {"claim_url": claim_url}
 
 
-@add_route("/api/origin/status", auth=True)
+@add_route("/api/origin/status")
 def app_origin_status(request):
     """Return linking status with Origin server."""
     return {"linked": False}
