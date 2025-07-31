@@ -23,7 +23,7 @@ class WebSocket:
         else:
             header.append(0x80 | 127)
             header.extend(struct.pack('>Q', length))
-        mask = urandom.getrandbits(32).to_bytes(4, 'big')
+        mask = bytes(urandom.getrandbits(8) for _ in range(4))
         header.extend(mask)
         masked = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
         self.sock.send(header + masked)
@@ -77,7 +77,8 @@ def connect(url):
     addr = usocket.getaddrinfo(host, port)[0][-1]
     sock = usocket.socket()
     sock.connect(addr)
-    key = ubinascii.b2a_base64(urandom.getrandbits(128).to_bytes(16, 'big')).strip()
+    key_bytes = bytes(urandom.getrandbits(8) for _ in range(16))
+    key = ubinascii.b2a_base64(key_bytes).strip()
     headers = (
         'GET {path} HTTP/1.1\r\n'
         'Host: {host}\r\n'
