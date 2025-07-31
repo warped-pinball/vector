@@ -18,6 +18,9 @@ from logger import logger_instance
 log = logger_instance
 
 from Shadow_Ram_Definitions import SRAM_CLOCK_MINUTES, SRAM_CLOCK_HOURS
+from Ram_Intercept import DISABLE_CLOCK_ADDRESS, DISABLE_CLOCK_DATA
+
+
 
 def _midnight_now():
     machine.mem8[SRAM_CLOCK_HOURS] = 0x18
@@ -25,15 +28,17 @@ def _midnight_now():
 
 def intiialize():
     """ call anytime to configure module to new switch settings
-            reads switches out of SPI_DataStore!
-            enable/disable clock
-            enable/disalbe midnightmadness always on"""        
+        reads switches out of SPI_DataStore!
+        enable/disable clock
+        enable/disalbe midnightmadness always on"""        
     
     if DataStore.read_record("extras", 0)["WPCTimeOn"] == False:
-             log.log("TIME: enable off")
+        log.log("TIME: enable off")
+        #special code to turn off the PIO TIME Function
+        machine.mem32[DISABLE_CLOCK_ADDRESS] = DISABLE_CLOCK_DATA   
     
     if DataStore.read_record("extras", 0)["MM_Always"] == True:
-             _midnight_now()            
+        _midnight_now()            
             
 
 def trigger_midnight_madness():

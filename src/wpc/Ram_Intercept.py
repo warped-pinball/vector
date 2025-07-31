@@ -35,6 +35,13 @@ FIRST_ADR_PIN = 6
 FIRST_DATA_PIN = 14
 
 
+#pointer and value to disable clock PIO (used in time.py)
+PIO2_BASE = 0x50400000
+INSTR_MEM_OFFSET = 0x048  # Offset to instruction memory in PIO
+INSTR_INDEX = 5           # 6th instruction (0-based index)
+DISABLE_CLOCK_DATA = 0x0000
+DISABLE_CLOCK_ADDRESS = PIO2_BASE + INSTR_MEM_OFFSET + (INSTR_INDEX * 4)
+
 
 
 
