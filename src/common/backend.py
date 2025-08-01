@@ -836,7 +836,7 @@ def app_enable_origin(request):
     try:
         priv, pub = generate_x25519_keypair()
         print("Sending public key to Origin server...")
-        ws.send(ujson.dumps({"client_key": ubinascii.b2a_base64(pub).decode()}))
+        ws.send(ujson.dumps({"client_key": ubinascii.b2a_base64(pub).decode(), "game_title": ds_read_record("configuration", 0)["gamename"]}))
         print("Waiting for response from Origin server...")
         resp = ws.recv()
         print("Received response from Origin server")
