@@ -653,7 +653,7 @@ def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
     enabled = record.get("WPCTimeOn", False)
     alwaysMM = record.get("MM_Always", False)
-    print("##########################",enabled,alwaysMM)
+    print("##########################",alwaysMM,enabled)
     return {
         "enabled": enabled,
         "always": alwaysMM,

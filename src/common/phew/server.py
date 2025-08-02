@@ -318,13 +318,6 @@ def create_schedule(ap_mode: bool = False):
     # call serial flash tick every 1 second for ongoing erase operations
     schedule(sflash_tick, 1000, 4000)
 
-    try:
-        import Time
-        if hasattr(Time, "update_game_time"):
-            schedule(Time.update_game_time, 35000, 60000)
-    except ImportError:
-        pass
-
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
         # copy ram values to fram every 0.1 seconds

@@ -179,7 +179,7 @@ def _read_machine_score(UseHighScores = True):
                 initial_start = S.gdata["HighScores"]["GrandChampInitAdr"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]
                 high_scores[0][0] = bytes(initials_bytes).decode("ascii")
-                print("grand champ initials ", high_scores[0][0])
+                #print("grand champ initials ", high_scores[0][0])
                 if high_scores[0][0] in ["???", "", None, "   "]:
                     high_scores[0][0] = ""
 
@@ -532,13 +532,11 @@ def update_tournament(new_entry):
     return
 
 
-tim=0
-
 GameEndCount =0
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter,GameEndCount
-    global tim
+
 
 
 
@@ -626,14 +624,6 @@ def CheckForNewScores(nState=[0]):
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 3  
 
-            tim=tim+1
-            if tim==5:
-                machine.mem32[0x20081FF8] = 0x00180101
-                print("#$#$#$#$#$#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-            if tim==6:
-                machine.mem32[0x20081FF8] = 0x01180101
-                print("#$#$#$#$#$#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-                
 
 
 

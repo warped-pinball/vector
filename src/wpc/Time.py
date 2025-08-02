@@ -22,6 +22,13 @@ from Ram_Intercept import DISABLE_CLOCK_ADDRESS, DISABLE_CLOCK_DATA, ENABLE_CLOC
 
 #this is the power up state
 Time_Enabeled = True
+MM_Trigger_Active_Count = 0
+
+def initialize():
+    #set schedule call back
+    from phew import server
+    server.schedule(update_game_time, 25000, 30000)
+    print("SERVER TIME SETUPO -------------------------------------")
 
 def _midnight_now():
     machine.mem8[SRAM_CLOCK_HOURS] = 0x18
@@ -29,33 +36,39 @@ def _midnight_now():
 
 def trigger_midnight_madness():
     """ call this from midnight madness now button """
+    global MM_Trigger_Active_Count
     if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
         _midnight_now()
         # trigger and then let update_game_time set back to normal      
         log.log("TIME: trigger Midnight Madness")
+        MM_Trigger_Active_Count = 3
 
 def update_game_time():
     print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
     """setup phew timer to call this once every minute.  handle config changes and time updates"""
-    if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
-        import time
-        t = time.localtime() 
-        machine.mem8[SRAM_CLOCK_HOURS] = t[3]  # Hour (0-23)
-        machine.mem8[SRAM_CLOCK_MINUTES] = t[4]  # Minute (0-59)
+    global Time_Enabeled,MM_Trigger_Active_Count
+    if MM_Trigger_Active_Count == 0:
+        if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
+            if DataStore.read_record("extras", 0)["MM_Always"] == True:
+                _midnight_now()    
+                print("SET  MIDNIGHT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+            else:
+                import time
+                t = time.localtime() 
+                machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23)
+                machine.mem8[SRAM_CLOCK_MINUTES] = 0x20   #t[4]  # Minute (0-59)                   
 
-        if DataStore.read_record("extras", 0)["MM_Always"] == True:
-            _midnight_now()            
-
-    if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):
-        log.log("TIME: enable off")
-        #special code to turn off the PIO TIME Function
-        machine.mem32[DISABLE_CLOCK_ADDRESS] = DISABLE_CLOCK_DATA   
-        Time_Enabeled=False
-    
-    if (DataStore.read_record("extras", 0)["WPCTimeOn"] == True) and (Time_Enabeled==False):
-        log.log("TIME: enable on")
-        #special code to turn off the PIO TIME Function
-        machine.mem32[DISABLE_CLOCK_ADDRESS] = ENABLE_CLOCK_DATA   
-        Time_Enabeled=True
-
+        if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):
+            log.log("TIME: enable off")
+            #special code to turn off the PIO TIME Function
+            machine.mem32[DISABLE_CLOCK_ADDRESS] = DISABLE_CLOCK_DATA   
+            Time_Enabeled=False
+        
+        if (DataStore.read_record("extras", 0)["WPCTimeOn"] == True) and (Time_Enabeled==False):
+            log.log("TIME: enable on")
+            #special code to turn off the PIO TIME Function
+            machine.mem32[DISABLE_CLOCK_ADDRESS] = ENABLE_CLOCK_DATA   
+            Time_Enabeled=True
+    else:
+        MM_Trigger_Active_Count=MM_Trigger_Active_Count-1
    
