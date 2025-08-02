@@ -40,9 +40,8 @@ PIO2_BASE = 0x50400000
 INSTR_MEM_OFFSET = 0x048  # Offset to instruction memory in PIO
 INSTR_INDEX = 5           # 6th instruction (0-based index)
 DISABLE_CLOCK_DATA = 0xA042  #Mov y,y   1010 0000 0100 0010  = 0xA042
+ENABLE_CLOCK_DATA = 0xC005   # IRQ(5)  1100 0000 0000 1001   = 0xC005
 DISABLE_CLOCK_ADDRESS = PIO2_BASE + INSTR_MEM_OFFSET + (INSTR_INDEX * 4)
-
-
 
 
 #
@@ -76,7 +75,7 @@ def CatchCADR():
     wait(0, gpio, 11)           #wait for CADR to go active(low)
     jmp (pin,"start_cadr")      #confirm still active (debounce)
              
-    irq(5)   
+    irq(5)   #<<<<<<< point here for enable and disable clock interface <<<<<<<<<<
     wrap()
 
 

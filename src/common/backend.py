@@ -16,6 +16,8 @@ from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
 
+import SharedState as S
+
 #
 # Constants
 #
@@ -641,27 +643,37 @@ def app_setShowIP(request):
 
 @add_route("/api/time/midnight_madness_available")
 def app_midnightMadnessAvailable(request):
-    return {"available": True}
-
+    if S.gdata["GameInfo"].get("Clock") == "MM":
+        return {"available": True}
+    else:
+        return {"available": False}
 
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    enabled = record.get("WPCTimeOn", False)
+    alwaysMM = record.get("MM_Always", False)
+    print("##########################",enabled,alwaysMM)
     return {
-        "enabled": True,
-        "always": True,
+        "enabled": enabled,
+        "always": alwaysMM,
     }
-
 
 @add_route("/api/time/set_midnight_madness", auth=True)
 def app_setMidnightMadness(request):
-    # TODO
-    pass
+    data = request.data
+    info = ds_read_record("extras", 0)
+    info["MM_Always"] = bool(data["always"])
+    info["WPCTimeOn"] = bool(data["enabled"])
+    print("*******************  ",info["MM_Always"], info["WPCTimeOn"])
+    ds_write_record("extras", info, 0)
 
 
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
-    # TODO
-    pass
+    import Time
+    print("TIGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGER")
+    Time.trigger_midnight_madness()
 
 
 @add_route("/api/settings/factory_reset", auth=True)

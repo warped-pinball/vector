@@ -114,9 +114,9 @@ def serialize(record, structure_name):
                 enable |= 0x04
             if record.get("tournament_mode", True):
                 enable |= 0x08
-            if record.get("WPCTimeOn", True):     #was "flag5"
+            if record.get("flag5", True):
                 enable |= 0x10
-            if record.get("MM_Always", True):     #was "flag6"
+            if record.get("flag6", True):
                 enable |= 0x20
         else:
             enable = record["enable"]
@@ -198,8 +198,8 @@ def deserialize(data, structure_name):
                 "claim_scores": bool(enable & 0x02),
                 "show_ip_address": bool(enable & 0x04),
                 "tournament_mode": bool(enable & 0x08),
-                "WPCTimeOn": bool(enable & 0x10),
-                "MM_Always": bool(enable & 0x20),
+                "flag5": bool(enable & 0x10),
+                "flag6": bool(enable & 0x20),
             }
         except Exception:
             Log.log("DATSTORE: fault extras")
@@ -212,8 +212,8 @@ def deserialize(data, structure_name):
                 "claim_scores": False,
                 "show_ip_address": True,
                 "tournament_mode": False,
-                "WPCTimeOn": False,
-                "MM_Always": False,
+                "flag5": False,
+                "flag6": False,
             }
     else:
         raise ValueError("Unknown structure name")
@@ -261,7 +261,7 @@ def blankAll():
     blankStruct("individual")
     blankStruct("configuration")
     blankStruct("extras")
-    record1 = {"version": "Map Ver: 1.1"}
+    record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)
 
 
@@ -277,9 +277,8 @@ if __name__ == "__main__":
 
     blankAll()
 
-    record1 = {"version": "Map Ver: 1.1"}
+    record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)
-
 
     print("\n\n")
     show_mem_map()
