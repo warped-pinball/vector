@@ -111,12 +111,8 @@ def claim_score(initials, player_index, score):
                 return
             
                 #if claim was a grand champ to 1-4 place then intials nedd updated on the game!
-                 
-            
-    #only print here as we expect to see many non-matches with WPC structure
-    #print("SCORE: Score not found in claim list")
 
-    #required for case where user resets highs scores on the machine             
+    #required for case where user resets high scores on the machine             
     update_leaderboard(  { "initials": initials, "full_name": None, "score": score, "game": 0 }  )
 
 
@@ -537,36 +533,6 @@ def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter,GameEndCount
 
-
-
-
-    # Print 64 bytes of data starting from 0x2007FFC0
-    base_address = 0x20081FF0
-    length = 16
-    bytes_per_row = 16
-
-    print(f"Memory Dump (starting at 0x{base_address:08X}, length {length} bytes):")
-    print("Address    | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F")
-    print("-----------+------------------------------------------------")
-
-    import machine
-    
-    for offset in range(0, length, bytes_per_row):
-        # Print the starting address of the row
-        row_address = base_address + offset
-        print(f"0x{row_address:08X} | ", end="")
-
-        # Print the 16 bytes in the row
-        for i in range(bytes_per_row):
-            byte_address = row_address + i
-            byte_value = machine.mem8[byte_address]  # Read 8-bit value
-            print(f"{byte_value:02X} ", end="")
-
-        print("")  # Newline after each row
-
-    print("")  # Extra newline for spacing
-
-
     #power up init state - only runs once
     if nState[0] == 0:        
 
@@ -583,8 +549,7 @@ def CheckForNewScores(nState=[0]):
                 if key.startswith("HS"):  # Check if the key starts with 'HS'
                     shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
         from Adjustments import _fixChecksum
-        _fixChecksum()
-           
+        _fixChecksum()       
        
 
     #only run this if ball in play is enabled
@@ -625,8 +590,6 @@ def CheckForNewScores(nState=[0]):
                 nState[0] = 3  
 
 
-
-
         # game over, wait for intiials to be entered
         elif nState[0] == 3:                    
 
@@ -658,7 +621,6 @@ def CheckForNewScores(nState=[0]):
                     print("SCORE: game over, not waiting for initials")
                     nState[0] = 4
 
-    
 
         # game over clean up process
         elif nState[0]==4:                

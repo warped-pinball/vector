@@ -653,7 +653,6 @@ def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
     enabled = record.get("WPCTimeOn", False)
     alwaysMM = record.get("MM_Always", False)
-    print("##########################",alwaysMM,enabled)
     return {
         "enabled": enabled,
         "always": alwaysMM,
@@ -665,14 +664,11 @@ def app_setMidnightMadness(request):
     info = ds_read_record("extras", 0)
     info["MM_Always"] = bool(data["always"])
     info["WPCTimeOn"] = bool(data["enabled"])
-    print("*******************  ",info["MM_Always"], info["WPCTimeOn"])
     ds_write_record("extras", info, 0)
-
 
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
     import Time
-    print("TIGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGER")
     Time.trigger_midnight_madness()
 
 

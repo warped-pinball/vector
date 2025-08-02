@@ -2,9 +2,9 @@
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0 
 """
-Ram intercept module - REVISION 5 - CADR version
+Ram intercept module - REVISION 5 - CADR version (Clock support)
 
-    PIO0,1,2  and  DMA 2,3,4,5
+    PIO0 and PIO2  and  DMA 2,3,4,5
 
     This module intercepts all read operations and sources the data from internal RP2350 ram
     All write operations are decoded and stored to internal RP2350 ram (writes are allowed to
@@ -123,8 +123,6 @@ def Pass_VMA_CADR():
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH,rp2.PIO.OUT_LOW), out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT) 
 def ReadAddress():
 
-    #nop() .side(0)  #why is this required!!! crazy town
-
     label("start_adr")    
     wrap_target()
     
@@ -138,7 +136,6 @@ def ReadAddress():
     nop()           [3]    .side(1)
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)   [3]    .side(0)     #send out address result for DMA   
-
     #delays @push and mov and out required to give DMAx2 time
   
     #READ Process, send data out to pins
@@ -147,7 +144,6 @@ def ReadAddress():
     #mov(pindirs,~null)     .side(2)      #new for rp2350 (save an instruction?)    
 
     nop() [3]               .side(2)  
-   
     pull(noblock)           .side(2) 
     #pull(block)            .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer    
                                       #change to block to give DMA thim eit need dynamically instead of wait states in previous lines...
@@ -217,7 +213,7 @@ def WriteRam():
     wrap_target()    
     wait(1,irq,6)           #wait for IRQ6 and reset it    
 
-    wait(0, gpio, 13)  [10]  #wait for qclock to go Low      7->9
+    wait(0, gpio, 13)  [10] #wait for qclock to go Low      7->9
     nop()              [9]      
 
     in_(pins,8)             #read all 8 data in one go      
@@ -240,7 +236,6 @@ def pio_start():
     for pin_num in range(6, 14):  # range goes from 6 to 13
         machine.Pin(pin_num, machine.Pin.IN)
 
-
     #   PRELOAD: y with 21 bit shadow ram base address
     #   PRELOAD: x with all ones for use in pin data direction
     #   SIDESET: A_select and Data_Dir
@@ -255,12 +250,8 @@ def pio_start():
     
     #   IN: Data Pins
     sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=150000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN) , sideset_base=machine.Pin(26) )   #side set for testing    
-
-
-
-
-    #VMA Catch SM
+  
+    #VMA Catch
     sm_CatchVma = rp2.StateMachine(9, CatchVMA, freq=150000000, jmp_pin=machine.Pin(13) )  
   
     # CADR Catch (rtc clock address dedcode)
@@ -286,7 +277,6 @@ def pio_start():
     sm_CatchVma.active(1)
     sm_Pass_VMA_CADR.active(1)
     sm_Pass_VMA_CADR.exec("irq(clear,5)")
-
         
     #
     #Ram access part (shadowram) PIO (#0)
@@ -318,8 +308,6 @@ def pio_start():
     PIO0_BASE = 0x50200000
     PIO1_BASE = 0x50300000
     PIO2_BASE = 0x50400000  
-
-
 
 
 

@@ -5,7 +5,7 @@
 # This work is licensed under CC BY-NC 4.0
 """
 Time Module
-    Manipulate the Hour and Minute to cause midnightmadness
+    Manipulate the Hour and Minute to cause midnight madness
         "Extras":"MM_Always"
     Set minute and hour to pico time when enabeled    
     Disable clock PIO function when disabeled (in case this breaks some machines in the future)
@@ -28,7 +28,6 @@ def initialize():
     #set schedule call back
     from phew import server
     server.schedule(update_game_time, 25000, 30000)
-    print("SERVER TIME SETUPO -------------------------------------")
 
 def _midnight_now():
     machine.mem8[SRAM_CLOCK_HOURS] = 0x18
@@ -43,19 +42,17 @@ def trigger_midnight_madness():
         log.log("TIME: trigger Midnight Madness")
         MM_Trigger_Active_Count = 3
 
-def update_game_time():
-    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+def update_game_time():    
     """setup phew timer to call this once every minute.  handle config changes and time updates"""
     global Time_Enabeled,MM_Trigger_Active_Count
     if MM_Trigger_Active_Count == 0:
         if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
             if DataStore.read_record("extras", 0)["MM_Always"] == True:
                 _midnight_now()    
-                print("SET  MIDNIGHT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
             else:
                 import time
                 t = time.localtime() 
-                machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23)
+                machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23) might go back to this with twilight zone
                 machine.mem8[SRAM_CLOCK_MINUTES] = 0x20   #t[4]  # Minute (0-59)                   
 
         if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):
