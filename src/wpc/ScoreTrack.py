@@ -96,8 +96,6 @@ def claim_score(initials, player_index, score):
     if initials in ["@@@", "   ", "???",""]:  
         return
 
-    print("claim score-")
-
     for game_index, game in enumerate(recent_scores):
         for player_index in range (4):
             if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
