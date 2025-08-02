@@ -35,6 +35,7 @@ def trigger_midnight_madness():
         log.log("TIME: trigger Midnight Madness")
 
 def update_game_time():
+    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
     """setup phew timer to call this once every minute.  handle config changes and time updates"""
     if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
         import time
