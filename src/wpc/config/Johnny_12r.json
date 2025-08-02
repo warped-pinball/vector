@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "Johnny Mnemonic",
         "System": "WPC",
+        "Clock": "MM",
         "FileVer": 1
     },
 

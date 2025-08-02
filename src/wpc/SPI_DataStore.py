@@ -117,9 +117,9 @@ def serialize(record, structure_name):
                 enable |= 0x04
             if record.get("tournament_mode", True):
                 enable |= 0x08
-            if record.get("flag5", True):
+            if record.get("WPCTimeOn", True):     #was "flag5"
                 enable |= 0x10
-            if record.get("flag6", True):
+            if record.get("MM_Always", True):     #was "flag6"
                 enable |= 0x20
         else:
             enable = record["enable"]
@@ -201,8 +201,8 @@ def deserialize(data, structure_name):
                 "claim_scores": bool(enable & 0x02),
                 "show_ip_address": bool(enable & 0x04),
                 "tournament_mode": bool(enable & 0x08),
-                "flag5": bool(enable & 0x10),
-                "flag6": bool(enable & 0x20),
+                "WPCTimeOn": bool(enable & 0x10),
+                "MM_Always": bool(enable & 0x20)
             }
         except Exception:
             Log.log("DATSTORE: fault extras")
@@ -215,8 +215,8 @@ def deserialize(data, structure_name):
                 "claim_scores": False,
                 "show_ip_address": True,
                 "tournament_mode": False,
-                "flag5": False,
-                "flag6": False,
+                "WPCTimeOn": False,
+                "MM_Always": False,
             }
     else:
         raise ValueError("Unknown structure name")

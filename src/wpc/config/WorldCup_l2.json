@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "World Cup Soccer",
         "System": "WPC",
+        "Clock": "Yes",
         "FileVer": 1
     },
 

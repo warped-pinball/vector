@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "Creature ft Black Lagoon",
         "System": "WPC",
+        "Clock": "Yes",
         "FileVer": 1
     },
 

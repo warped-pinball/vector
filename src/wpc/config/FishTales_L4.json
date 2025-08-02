@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "Fish Tales",
         "System": "WPC",
+        "Clock": "Yes",
         "FileVer": 1
     },
 
