@@ -3,6 +3,13 @@
 // Global variable for the current auto-refresh interval
 window.currentRefreshIntervalId = null;
 
+// Format numeric scores with commas for readability
+window.formatScore = function (score) {
+  var num = parseInt(score, 10);
+  if (isNaN(num)) return score;
+  return num.toLocaleString();
+};
+
 /*
  * Function: renderHeaderRow
  * Renders a header row (with column labels) into the specified container.
@@ -46,6 +53,8 @@ window.renderDataRow = function (item, columns, colClass) {
       if (fullName.trim() !== "") {
         value += " (" + fullName + ")";
       }
+    } else if (col.key === "score") {
+      value = window.formatScore(item[col.key]);
     } else {
       // For the rank column, we do not prepend "#"
       value = item[col.key] !== undefined ? item[col.key] : "";
@@ -452,7 +461,7 @@ window.getClaimableScores = async function () {
       game.appendChild(playDiv);
 
       // add the score to the score div
-      scoreDiv.innerText = player[1];
+      scoreDiv.innerText = window.formatScore(player[1]);
 
       // if the initials are present, use them, otherwise replace with a "claim" button
       if (player[0] === "") {
@@ -462,7 +471,7 @@ window.getClaimableScores = async function () {
 
           // set modal score
           const modalScore = document.getElementById("score-to-claim");
-          modalScore.innerText = player[1];
+          modalScore.innerText = window.formatScore(player[1]);
 
           // set player number
           const playerNumber = document.getElementById("player-number");
@@ -750,6 +759,7 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
   // Hide score element if score is zero
   if (newScore === 0) {
     scoreElement.classList.add("hide");
+    scoreElement.dataset.score = "0";
     return;
   } else {
     scoreElement.classList.remove("hide");
@@ -777,9 +787,10 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
     }
   }
 
-  // If score changed, update the CSS variable to animate
+  // If score changed, update the CSS variable to animate and display text
   if (newScore !== oldScore) {
     scoreElement.style.setProperty("--num", newScore);
+    scoreElement.dataset.score = window.formatScore(newScore);
 
     // Only animate positive changes after initial load AND initial game setup
     if (
@@ -847,6 +858,7 @@ window.getGameStatus = async function () {
         const scoreElement = document.getElementById(`live-player-${i}-score`);
         if (scoreElement) {
           scoreElement.style.setProperty("--num", 0);
+          scoreElement.dataset.score = "0";
           scoreElement.classList.add("hide");
           window.scoreHistory[i].lastScore = 0;
         }
@@ -873,6 +885,7 @@ window.getGameStatus = async function () {
       // replace score element with empty div with the same id
       const newScoreElement = document.createElement("div");
       newScoreElement.id = scoreElement.id;
+      newScoreElement.dataset.score = "0";
       scoreElement.replaceWith(newScoreElement);
       window.scoreHistory[i].lastScore = 0;
       continue;

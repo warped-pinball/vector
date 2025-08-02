@@ -108,7 +108,6 @@ def claim_score(initials, player_index, score):
                     update_leaderboard(new_score)
                 return
             
-                #if claim was a grand champ to 1-4 place then intials nedd updated on the game!
 
     #required for case where user resets high scores on the machine             
     update_leaderboard(  { "initials": initials, "full_name": None, "score": score, "game": 0 }  )
