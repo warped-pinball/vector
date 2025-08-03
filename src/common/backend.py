@@ -651,11 +651,9 @@ def app_midnightMadnessAvailable(request):
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
-    enabled = record.get("WPCTimeOn", False)
-    alwaysMM = record.get("MM_Always", False)
     return {
-        "enabled": enabled,
-        "always": alwaysMM,
+        "enabled": record.get("WPCTimeOn", False),
+        "always": record.get("MM_Always", False),
     }
 
 @add_route("/api/time/set_midnight_madness", auth=True)
