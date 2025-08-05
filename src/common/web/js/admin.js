@@ -440,7 +440,9 @@ async function checkForUpdates() {
     if (releaseNotes) {
       if (data["release_page"]) {
         releaseLink.href = data["release_page"];
-        releaseLink.textContent = `GitHub release for ${data["version"] || "unknown version"}`;
+        releaseLink.textContent = `GitHub release for ${
+          data["version"] || "unknown version"
+        }`;
         releaseLink.classList.remove("hide");
       } else {
         releaseLink.classList.add("hide");
@@ -576,54 +578,75 @@ window.customUpdate = async function () {
 // Origin
 //
 
-async function checkOriginLinked() {
-  try {
-    const response = await window.smartFetch(
-      "/api/origin/status",
-      null,
-      false,
-    );
-    const data = await response.json();
-    if (data.linked) {
-      const button = document.getElementById("link-origin-button");
-      button.disabled = true;
-      button.textContent = "Origin Enabled";
-    }
-  } catch (e) {
-    console.error("Failed to get origin status", e);
-  }
-}
-
-async function enableOrigin() {
+async function setupOriginIntegration() {
   const button = document.getElementById("link-origin-button");
-  button.disabled = true;
-  button.textContent = "Linking...";
-  try {
-    const response = await window.smartFetch(
-      "/api/origin/enable",
-      null,
-      true,
-    );
-    if (!response.ok) {
-      throw new Error("status " + response.status);
+  const linkDiv = document.getElementById("origin-link");
+  const link = document.getElementById("origin-claim-link");
+
+  async function checkStatus() {
+    try {
+      const response = await window.smartFetch(
+        "/api/origin/status",
+        null,
+        false,
+      );
+      const data = await response.json();
+      if (data.linked) {
+        button.disabled = false;
+        button.textContent = "Manage in App";
+        button.onclick = () => window.open(link.href, "_blank");
+        link.href = data.claim_url || "#";
+        link.textContent = "Manage in App";
+        linkDiv.classList.remove("hide");
+      } else {
+        button.disabled = false;
+        button.textContent = "Enable Origin";
+        button.onclick = enableOrigin;
+      }
+    } catch (e) {
+      console.error("Failed to get origin status", e);
+      button.disabled = false;
+      button.textContent = "Retry";
+      button.onclick = checkStatus;
     }
-    const data = await response.json();
-    const linkDiv = document.getElementById("origin-link");
-    const link = document.getElementById("origin-claim-link");
-    link.href = data.claim_url;
-    link.textContent = "Claim This Machine";
-    linkDiv.classList.remove("hide");
-    button.textContent = "Waiting for Claim";
-  } catch (e) {
-    console.error("Failed to enable origin", e);
-    alert("Failed to enable Origin");
-    button.textContent = "Enable Origin";
-    button.disabled = false;
   }
+
+  async function enableOrigin() {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.setAttribute("aria-label", "Please wait…");
+    button.textContent = "Linking...";
+    try {
+      const response = await window.smartFetch(
+        "/api/origin/enable",
+        null,
+        true,
+      );
+      if (!response.ok) {
+        throw new Error("status " + response.status);
+      }
+      const data = await response.json();
+      link.href = data.claim_url;
+      link.textContent = "Claim This Machine";
+      linkDiv.classList.remove("hide");
+      button.textContent = "Manage in App";
+      button.removeAttribute("aria-busy");
+      button.removeAttribute("aria-label");
+      button.disabled = false;
+      button.onclick = () => window.open(link.href, "_blank");
+      window.open(link.href, "_blank");
+    } catch (e) {
+      console.error("Failed to enable origin", e);
+      alert("Failed to enable Origin");
+      button.textContent = "Enable Origin";
+      button.removeAttribute("aria-busy");
+      button.removeAttribute("aria-label");
+      button.disabled = false;
+      button.onclick = enableOrigin;
+    }
+  }
+
+  await checkStatus();
 }
 
-document
-  .getElementById("link-origin-button")
-  .addEventListener("click", enableOrigin);
-
-checkOriginLinked();
+setupOriginIntegration();
