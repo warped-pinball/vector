@@ -16,6 +16,8 @@ from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
 
+import SharedState as S
+
 #
 # Constants
 #
@@ -678,6 +680,35 @@ def app_setShowIP(request):
     import displayMessage
 
     displayMessage.refresh()
+
+
+@add_route("/api/time/midnight_madness_available")
+def app_midnightMadnessAvailable(request):
+    if S.gdata["GameInfo"].get("Clock") == "MM":
+        return {"available": True}
+    else:
+        return {"available": False}
+
+@add_route("/api/time/get_midnight_madness")
+def app_getMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    return {
+        "enabled": record.get("WPCTimeOn", False),
+        "always": record.get("MM_Always", False),
+    }
+
+@add_route("/api/time/set_midnight_madness", auth=True)
+def app_setMidnightMadness(request):
+    data = request.data
+    info = ds_read_record("extras", 0)
+    info["MM_Always"] = bool(data["always"])
+    info["WPCTimeOn"] = bool(data["enabled"])
+    ds_write_record("extras", info, 0)
+
+@add_route("/api/time/trigger_midnight_madness")
+def app_triggerMidnightMadness(request):
+    import Time
+    Time.trigger_midnight_madness()
 
 
 @add_route("/api/settings/factory_reset", auth=True)

@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "Generic System WPC",
         "System": "WPC",
+        "Clock": "No",
         "FileVer": 1
     },
 
