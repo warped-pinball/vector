@@ -542,6 +542,47 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/personal/bests")
+def app_personal_bests(request):
+    """Return best score for each registered player."""
+    from time import time
+
+    from phew.ntp import time_ago
+
+    now_seconds = time()
+
+    bests = {}
+    # total players and individual scores
+    total_players = ds_memory_map["names"]["count"]
+    total_scores = ds_memory_map["individual"]["count"]
+
+    for player_id in range(total_players):
+        player = ds_read_record("names", player_id)
+        if not player["initials"].strip():
+            continue
+
+        for score_idx in range(total_scores):
+            record = ds_read_record("individual", score_idx, player_id)
+            if record["score"] > 0:
+                if player_id not in bests or record["score"] > bests[player_id]["score"]:
+                    bests[player_id] = {
+                        "initials": player["initials"],
+                        "full_name": player["full_name"],
+                        "score": record["score"],
+                        "date": record["date"].strip().replace("\x00", " "),
+                        "ago": time_ago(record["date"].strip().replace("\x00", " "), now_seconds),
+                    }
+
+    records = sorted(
+        ({"player_id": pid, "initials": d["initials"], "full_name": d["full_name"], "score": d["score"], "date": d["date"], "ago": d["ago"]} for pid, d in bests.items()),
+        key=lambda x: x["score"],
+        reverse=True,
+    )
+    for idx, rec in enumerate(records, start=1):
+        rec["rank"] = idx
+    return records
+
+
 @add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
     from SPI_DataStore import blankIndPlayerScores
