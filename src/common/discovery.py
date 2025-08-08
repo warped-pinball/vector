@@ -11,14 +11,17 @@ DISCOVERY_PORT = 37020
 DEVICE_TIMEOUT = 60  # seconds before a device is considered gone
 DISCOVER_REFRESH = 600  # send a new discovery request every 10 minutes
 MAXIMUM_KNOWN_DEVICES = 50  # limit number of tracked devices
+MAX_NAME_LENGTH = 32  # prevent abusive game name lengths
 
-# Known devices keyed by 4 byte IP representation
-known_devices = {}
+# Known devices stored as strings: first 4 chars are IP, rest is game name
+known_devices = []
 recv_sock = None
 send_sock = None
 last_discover_time = 0
 local_ip_bytes = None
+local_ip_chars = ""
 self_info = None
+self_entry = ""
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
@@ -33,19 +36,21 @@ def bytes_to_ip(ip_bytes: bytes) -> str:
 
 def setup() -> None:
     """Initialise discovery state for this board."""
-    global known_devices, local_ip_bytes, self_info
+    global known_devices, local_ip_bytes, local_ip_chars, self_info, self_entry
 
     from phew import get_ip_address
     from SharedState import gdata
     from systemConfig import SystemVersion
 
     local_ip_bytes = ip_to_bytes(get_ip_address())
+    local_ip_chars = "".join(chr(b) for b in local_ip_bytes)
     self_info = {
-        "name": gdata["GameInfo"]["GameName"],
+        "name": gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH],
         "version": SystemVersion,
         "self": True,
     }
-    known_devices = {local_ip_bytes: self_info}
+    self_entry = local_ip_chars + self_info["name"]
+    known_devices = [self_entry]
     refresh_known_devices()
 
 
@@ -108,11 +113,16 @@ def handle_message(msg: dict, ip_str: str) -> None:
         refresh_known_devices()
         return
 
-    if "name" in msg and "version" in msg:
-        known_devices[ip_bytes] = {
-            "version": msg["version"],
-            "name": msg["name"],
-        }
+    if "name" in msg:
+        name = str(msg["name"])[:MAX_NAME_LENGTH]
+        ip_chars = "".join(chr(b) for b in ip_bytes)
+        entry = ip_chars + name
+        for i, dev in enumerate(known_devices):
+            if dev.startswith(ip_chars):
+                known_devices[i] = entry
+                break
+        else:
+            known_devices.append(entry)
         enforce_limit()
         debug_known_devices()
 
@@ -151,28 +161,25 @@ def refresh_known_devices() -> None:
     """Clear known devices and broadcast a discovery request."""
     global known_devices
 
-    known_devices = {local_ip_bytes: self_info}
+    known_devices = [self_entry]
     broadcast_discover()
 
 
 def enforce_limit() -> None:
     """Ensure we do not track more than MAXIMUM_KNOWN_DEVICES."""
-    global known_devices, local_ip_bytes
+    global known_devices
 
     if len(known_devices) <= MAXIMUM_KNOWN_DEVICES:
         return
 
-    # Always keep the local device
-    new_known = {local_ip_bytes: known_devices.get(local_ip_bytes)}
-    for ip, info in known_devices.items():
-        if ip == local_ip_bytes:
-            continue
-        new_known[ip] = info
-        if len(new_known) >= MAXIMUM_KNOWN_DEVICES:
-            break
-    known_devices = new_known
+    # Keep the local device at index 0 and trim the rest
+    del known_devices[MAXIMUM_KNOWN_DEVICES:]
 
 
 def debug_known_devices() -> None:  # pragma: no cover - debugging helper
-    printable = {bytes_to_ip(ip): info for ip, info in known_devices.items()}
+    printable = {}
+    for dev in known_devices:
+        ip_chars, name = dev[:4], dev[4:]
+        ip = bytes_to_ip(bytes(ord(c) for c in ip_chars))
+        printable[ip] = {"name": name}
     print("Known devices:", printable)

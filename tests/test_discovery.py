@@ -10,24 +10,28 @@ from src.common import discovery  # noqa: E402
 
 
 def setup_function():
-    discovery.known_devices = {}
+    discovery.known_devices = []
     discovery.recv_sock = None
     discovery.send_sock = None
     discovery.last_discover_time = 0
     discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.10")
+    discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
     discovery.self_info = {
         "name": "local",
         "version": "1",
         "self": True,
     }
-    discovery.known_devices[discovery.local_ip_bytes] = discovery.self_info
+    discovery.self_entry = discovery.local_ip_chars + discovery.self_info["name"]
+    discovery.known_devices.append(discovery.self_entry)
 
 
-def test_handle_message_stores_ip_as_bytes():
-    discovery.handle_message({"name": "Test", "version": "1"}, "192.168.0.20")
-    keys = [k for k in discovery.known_devices.keys() if k != discovery.local_ip_bytes]
-    assert len(keys) == 1
-    assert isinstance(keys[0], bytes) and len(keys[0]) == 4
+def test_handle_message_stores_ip_in_first_four_chars():
+    discovery.handle_message({"name": "Test"}, "192.168.0.20")
+    devices = [d for d in discovery.known_devices if not d.startswith(discovery.local_ip_chars)]
+    assert len(devices) == 1
+    entry = devices[0]
+    assert [ord(c) for c in entry[:4]] == [192, 168, 0, 20]
+    assert entry[4:] == "Test"
 
 
 def test_handle_message_discover_triggers_intro(monkeypatch):
@@ -71,10 +75,7 @@ def test_maybe_discover_resends_after_interval():
 
 
 def test_refresh_known_devices_resets_known_devices(monkeypatch):
-    discovery.known_devices[discovery.ip_to_bytes("192.168.0.20")] = {
-        "name": "Test",
-        "version": "1",
-    }
+    discovery.known_devices.append("".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.20")) + "Test")
     called = {}
 
     def fake_broadcast():
@@ -82,8 +83,16 @@ def test_refresh_known_devices_resets_known_devices(monkeypatch):
 
     monkeypatch.setattr(discovery, "broadcast_discover", fake_broadcast)
     discovery.refresh_known_devices()
-    assert discovery.known_devices == {discovery.local_ip_bytes: discovery.self_info}
+    assert discovery.known_devices == [discovery.self_entry]
     assert called.get("done")
+
+
+def test_handle_message_truncates_long_name():
+    long_name = "X" * (discovery.MAX_NAME_LENGTH + 5)
+    discovery.handle_message({"name": long_name}, "192.168.0.21")
+    ip_chars = "".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.21"))
+    stored = [d for d in discovery.known_devices if d.startswith(ip_chars)][0]
+    assert len(stored[4:]) == discovery.MAX_NAME_LENGTH
 
 
 def test_announce_broadcasts_self_info():
