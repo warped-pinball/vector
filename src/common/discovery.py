@@ -139,7 +139,7 @@ def prune_known_devices() -> None:
     known_devices = {
         ip: info
         for ip, info in known_devices.items()
-        if info.get("self", False) or (now - info.get("last_seen", 0)) <= DEVICE_TIMEOUT
+        if info.get("self", False) or ("last_seen" in info and (now - info["last_seen"]) <= DEVICE_TIMEOUT)
     }
 
 
