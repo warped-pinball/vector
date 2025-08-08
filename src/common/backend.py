@@ -777,9 +777,9 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/network/peers")
 def app_getPeers(request):
-    from discovery import known_devices, local_ip_chars
+    from discovery import get_peer_map
 
-    return [d for d in known_devices if not d.startswith(local_ip_chars)]
+    return get_peer_map()
 
 
 #

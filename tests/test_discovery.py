@@ -148,3 +148,11 @@ def test_refresh_known_devices_passes_delay(monkeypatch):
     monkeypatch.setattr(discovery, "broadcast_discover", lambda: None)
     discovery.refresh_known_devices()
     assert captured["delay"] == 0.5
+
+
+def test_get_peer_map_includes_self_and_peers():
+    peer_ip_chars = "".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.20"))
+    discovery.known_devices.append(peer_ip_chars + "Peer")
+    mapping = discovery.get_peer_map()
+    assert mapping["192.168.0.10"] == {"name": "local", "self": True}
+    assert mapping["192.168.0.20"] == {"name": "Peer", "self": False}

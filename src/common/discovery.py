@@ -232,10 +232,15 @@ def enforce_limit() -> None:
     del known_devices[MAXIMUM_KNOWN_DEVICES:]
 
 
-def debug_known_devices() -> None:  # pragma: no cover - debugging helper
-    printable = {}
+def get_peer_map() -> dict:
+    """Return mapping of known devices keyed by IP string."""
+    peers = {}
     for dev in known_devices:
         ip_chars, name = dev[:4], dev[4:]
         ip = bytes_to_ip(bytes(ord(c) for c in ip_chars))
-        printable[ip] = {"name": name}
-    print("Known devices:", printable)
+        peers[ip] = {"name": name, "self": ip_chars == local_ip_chars}
+    return peers
+
+
+def debug_known_devices() -> None:  # pragma: no cover - debugging helper
+    print("Known devices:", get_peer_map())
