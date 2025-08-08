@@ -1,23 +1,34 @@
 # Network discovery utilities for Raspberry Pi Pico 2W boards
-# Implements a discovery request on boot and periodic refreshes.
+#
+# Devices on the same network coordinate to maintain a shared registry of
+# participants.  The board with the lowest IP address becomes the "registry"
+# device and is responsible for broadcasting the full list of known peers when
+# new devices arrive or when peers are marked offline.
 
 import socket
+from random import choice
 from time import sleep, time
 
 from ujson import dumps, loads
 
-# The UDP port we will send/receive on
+# UDP port used for discovery traffic
 DISCOVERY_PORT = 37020
-# Time to spread announcements over a refresh cycle (seconds)
-ANNOUNCE_WINDOW = 1.0
-DISCOVER_REFRESH = 600  # send a new discovery request every 10 minutes
-MAXIMUM_KNOWN_DEVICES = 50  # limit number of tracked devices
-MAX_NAME_LENGTH = 32  # prevent abusive game name lengths
 
-# Known devices stored as strings: first 4 chars are IP, rest is game name
+# Refresh known devices every 10 minutes
+DISCOVER_REFRESH = 600
+
+# Limit list sizes and names to avoid memory abuse
+MAXIMUM_KNOWN_DEVICES = 50
+MAX_NAME_LENGTH = 32
+
+# Storage for known devices.  Each entry is a string where the first four
+# characters are the IP address bytes and the remainder is the game name.
 known_devices = []
+
+# Sockets are created lazily
 recv_sock = None
 send_sock = None
+
 last_discover_time = 0
 local_ip_bytes = None
 local_ip_chars = ""
@@ -26,17 +37,20 @@ self_entry = ""
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
-    """Convert dotted-quad string to 4 byte representation."""
+    """Convert dotted-quad string to a 4-byte representation."""
+
     return bytes(int(part) for part in ip_str.split("."))
 
 
 def bytes_to_ip(ip_bytes: bytes) -> str:
-    """Convert 4 byte IP representation back to dotted-quad string."""
+    """Convert 4-byte representation to dotted-quad string."""
+
     return ".".join(str(b) for b in ip_bytes)
 
 
 def setup() -> None:
     """Initialise discovery state for this board."""
+
     global known_devices, local_ip_bytes, local_ip_chars, self_info, self_entry
 
     from phew import get_ip_address
@@ -55,90 +69,149 @@ def setup() -> None:
     refresh_known_devices()
 
 
-def send_intro(target_ip: bytes) -> None:
-    """Send our device information directly to ``target_ip``."""
+def _ensure_send_sock() -> None:
     global send_sock
-
-    from SharedState import gdata
-    from systemConfig import SystemVersion
-
     if not send_sock:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    msg = {"version": SystemVersion, "name": gdata["GameInfo"]["GameName"]}
-    try:
-        send_sock.sendto(dumps(msg).encode("utf-8"), (bytes_to_ip(target_ip), DISCOVERY_PORT))
-    except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to send intro:", e)
 
+def broadcast_hello() -> None:
+    """Broadcast that this device has joined the network."""
 
-def announce() -> None:
-    """Broadcast this device's information to the local network."""
-    global send_sock
-
-    if not send_sock:
-        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    msg = {"name": self_info["name"], "version": self_info["version"]}
+    _ensure_send_sock()
+    msg = {"hello": True, "name": self_info["name"]}
     try:
         send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to broadcast announcement:", e)
+        print("Failed to send hello:", e)
 
 
-def broadcast_discover() -> None:
-    """Broadcast a discovery request to the local network."""
-    global send_sock, last_discover_time
+def announce() -> None:
+    """Alias retained for compatibility with server scheduling."""
 
-    if not send_sock:
-        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    broadcast_hello()
 
+
+def broadcast_full_list() -> None:
+    """Broadcast the full list of known devices."""
+
+    _ensure_send_sock()
+    peers = []
+    for dev in known_devices:
+        ip = bytes_to_ip(bytes(ord(c) for c in dev[:4]))
+        peers.append({"ip": ip, "name": dev[4:]})
+    msg = {"full": peers}
     try:
-        send_sock.sendto(dumps({"discover": True}).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
+        send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to send discovery request:", e)
-    last_discover_time = time()
+        print("Failed to broadcast full list:", e)
+
+
+def send_ping(target_ip: bytes) -> None:
+    """Send a direct ping to ``target_ip``."""
+
+    _ensure_send_sock()
+    try:
+        send_sock.sendto(dumps({"ping": True}).encode("utf-8"), (bytes_to_ip(target_ip), DISCOVERY_PORT))
+    except Exception as e:  # pragma: no cover - network errors are non-deterministic
+        print("Failed to send ping:", e)
+
+
+def is_registry() -> bool:
+    """Return True if this device has the lowest IP in ``known_devices``."""
+
+    for dev in known_devices:
+        if dev.startswith(local_ip_chars):
+            continue
+        peer_bytes = bytes(ord(c) for c in dev[:4])
+        if peer_bytes < local_ip_bytes:
+            return False
+    return True
+
+
+def _add_or_update(ip_chars: str, name: str) -> None:
+    entry = ip_chars + name
+    for i, dev in enumerate(known_devices):
+        if dev.startswith(ip_chars):
+            known_devices[i] = entry
+            break
+    else:
+        known_devices.append(entry)
+    enforce_limit()
+    known_devices.sort(key=lambda d: d[:4])
 
 
 def handle_message(msg: dict, ip_str: str) -> None:
     """Handle an incoming message from ``ip_str``."""
+
     global known_devices
 
     ip_bytes = ip_to_bytes(ip_str)
+    ip_chars = "".join(chr(b) for b in ip_bytes)
 
-    if msg.get("discover"):
-        send_intro(ip_bytes)
-        refresh_known_devices()
+    if msg.get("ping"):
+        _ensure_send_sock()
+        try:
+            send_sock.sendto(dumps({"pong": True}).encode("utf-8"), (ip_str, DISCOVERY_PORT))
+        except Exception:  # pragma: no cover - network errors are non-deterministic
+            pass
         return
 
-    if "name" in msg:
+    if msg.get("pong"):
+        return  # Ignored for now
+
+    if msg.get("offline"):
+        off_ip = msg["offline"]
+        off_chars = "".join(chr(b) for b in ip_to_bytes(off_ip))
+        known_devices = [d for d in known_devices if not d.startswith(off_chars)]
+        if is_registry():
+            broadcast_full_list()
+        return
+
+    if msg.get("hello"):
+        name = str(msg.get("name", ""))[:MAX_NAME_LENGTH]
+        _add_or_update(ip_chars, name)
+        if is_registry() and ip_chars != local_ip_chars:
+            broadcast_full_list()
+        return
+
+    if msg.get("full"):
+        peers = msg["full"]
+        new_list = []
+        found_self = False
+        for peer in peers:
+            try:
+                ip = peer["ip"]
+                name = str(peer["name"])
+            except (KeyError, TypeError):
+                continue
+            name = name[:MAX_NAME_LENGTH]
+            ip_chars_peer = "".join(chr(b) for b in ip_to_bytes(ip))
+            if ip_chars_peer == local_ip_chars:
+                found_self = True
+            else:
+                new_list.append(ip_chars_peer + name)
+        new_list.insert(0, self_entry)
+        known_devices = new_list[:MAXIMUM_KNOWN_DEVICES]
+        if not found_self:
+            broadcast_hello()
+        return
+
+    if "name" in msg:  # Backwards compatibility for simple announcements
         name = str(msg["name"])[:MAX_NAME_LENGTH]
-        if name:
-            name = chr(ord(name[0]) & 0x7F) + name[1:]
-        ip_chars = "".join(chr(b) for b in ip_bytes)
-        entry = ip_chars + name
-        for i, dev in enumerate(known_devices):
-            if dev.startswith(ip_chars):
-                known_devices[i] = entry
-                break
-        else:
-            known_devices.append(entry)
-        enforce_limit()
-        debug_known_devices()
+        _add_or_update(ip_chars, name)
 
 
 def listen() -> None:
-    """Check for any incoming discovery or intro packets. Non-blocking."""
-    global recv_sock
+    """Check for any incoming discovery packets.  Non-blocking."""
 
+    global recv_sock
     if not recv_sock:
         recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         recv_sock.bind(("0.0.0.0", DISCOVERY_PORT))
-        recv_sock.settimeout(0)  # Non-blocking
+        recv_sock.settimeout(0)
 
     while True:
         try:
@@ -150,96 +223,59 @@ def listen() -> None:
             msg = loads(data.decode("utf-8"))
         except ValueError:
             continue
-
         handle_message(msg, addr[0])
 
 
+def refresh_known_devices() -> None:
+    """Rebuild the known devices list by syncing with the network."""
+
+    global known_devices, last_discover_time
+    known_devices = [self_entry]
+    broadcast_hello()
+    last_discover_time = time()
+    end = time() + 1.0
+    while time() < end:
+        listen()
+        sleep(0.05)
+    if is_registry():
+        broadcast_full_list()
+
+
 def maybe_discover() -> None:
-    """Broadcast a discovery request if our refresh interval has elapsed."""
+    """Refresh the device list if the refresh interval has elapsed."""
+
     if (time() - last_discover_time) >= DISCOVER_REFRESH:
         refresh_known_devices()
 
 
-def listen_for(duration: float, announce_delay: float) -> None:
-    """Listen for discovery traffic for ``duration`` seconds.
-
-    ``announce_delay`` specifies when during the window we should
-    broadcast our own announcement.
-    """
-    start = time()
-    end = start + duration
-    announced = False
-    while time() < end:
-        listen()
-        now = time()
-        if not announced and (now - start) >= announce_delay:
-            announce()
-            # Clear marker bit for our own entry
-            for i, dev in enumerate(known_devices):
-                if dev.startswith(local_ip_chars):
-                    first = chr(ord(dev[4]) & 0x7F)
-                    known_devices[i] = dev[:4] + first + dev[5:]
-                    break
-            announced = True
-        sleep(0.05)
-    if not announced:
-        announce()
-        for i, dev in enumerate(known_devices):
-            if dev.startswith(local_ip_chars):
-                first = chr(ord(dev[4]) & 0x7F)
-                known_devices[i] = dev[:4] + first + dev[5:]
-                break
-
-
-def refresh_known_devices() -> None:
-    """Refresh the known devices list by syncing with the network."""
-    global known_devices
-
-    # Mark all existing devices as unheard by setting high bit on first char
-    for i, dev in enumerate(known_devices):
-        first = chr(ord(dev[4]) | 0x80)
-        known_devices[i] = dev[:4] + first + dev[5:]
-
-    broadcast_discover()
-
-    # Keep list ordered by IP to coordinate announcement delays
-    known_devices.sort(key=lambda d: d[:4])
-    total = len(known_devices) or 1
-    pos = 0
-    for idx, dev in enumerate(known_devices):
-        if dev.startswith(local_ip_chars):
-            pos = idx
-            break
-    delay = pos / total
-
-    # Listen for announcements and send our own after the computed delay
-    listen_for(ANNOUNCE_WINDOW * 2, delay)
-
-    # Remove any devices we didn't hear from
-    known_devices = [dev[:4] + chr(ord(dev[4]) & 0x7F) + dev[5:] for dev in known_devices if ord(dev[4]) & 0x80 == 0]
-    enforce_limit()
-    known_devices.sort(key=lambda d: d[:4])
-
-
 def enforce_limit() -> None:
     """Ensure we do not track more than MAXIMUM_KNOWN_DEVICES."""
-    global known_devices
 
+    global known_devices
     if len(known_devices) <= MAXIMUM_KNOWN_DEVICES:
         return
-
-    # Keep the local device at index 0 and trim the rest
     del known_devices[MAXIMUM_KNOWN_DEVICES:]
 
 
 def get_peer_map() -> dict:
     """Return mapping of known devices keyed by IP string."""
+
     peers = {}
     for dev in known_devices:
         ip_chars, name = dev[:4], dev[4:]
         ip = bytes_to_ip(bytes(ord(c) for c in ip_chars))
         peers[ip] = {"name": name, "self": ip_chars == local_ip_chars}
     return peers
+
+
+def ping_random_peer() -> None:
+    """Ping a random peer to help detect offline devices."""
+
+    peers = [d for d in known_devices if not d.startswith(local_ip_chars)]
+    if not peers:
+        return
+    target = choice(peers)
+    send_ping(bytes(ord(c) for c in target[:4]))
 
 
 def debug_known_devices() -> None:  # pragma: no cover - debugging helper
