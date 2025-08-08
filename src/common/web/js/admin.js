@@ -593,14 +593,11 @@ async function setupOriginIntegration() {
       const data = await response.json();
       if (data.linked) {
         button.disabled = false;
-        button.textContent = "Manage in App";
+        button.textContent = "Manage on Warped Pinball Network";
         button.onclick = () => window.open(link.href, "_blank");
-        link.href = data.claim_url || "#";
-        link.textContent = "Manage in App";
-        linkDiv.classList.remove("hide");
       } else {
         button.disabled = false;
-        button.textContent = "Enable Origin";
+        button.textContent = "Connect to Warped Pinball Network";
         button.onclick = enableOrigin;
       }
     } catch (e) {
