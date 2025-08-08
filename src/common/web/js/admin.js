@@ -580,8 +580,6 @@ window.customUpdate = async function () {
 
 async function setupOriginIntegration() {
   const button = document.getElementById("link-origin-button");
-  const linkDiv = document.getElementById("origin-link");
-  const link = document.getElementById("origin-claim-link");
 
   async function checkStatus() {
     try {
@@ -592,10 +590,12 @@ async function setupOriginIntegration() {
       );
       const data = await response.json();
       if (data.linked) {
+        button.classList.remove("gold-pulse");
         button.disabled = false;
-        button.textContent = "Manage on Warped Pinball Network";
-        button.onclick = () => window.open(link.href, "_blank");
+        button.textContent = "Connected, open in app";
+        button.onclick = () => window.open(data.claim_url, "_self");
       } else {
+        button.classList.add("gold-pulse");
         button.disabled = false;
         button.textContent = "Connect to Warped Pinball Network";
         button.onclick = enableOrigin;
@@ -609,10 +609,9 @@ async function setupOriginIntegration() {
   }
 
   async function enableOrigin() {
+    button.classList.remove("gold-pulse");
     button.disabled = true;
-    button.setAttribute("aria-busy", "true");
-    button.setAttribute("aria-label", "Please wait…");
-    button.textContent = "Linking...";
+    button.textContent = "Establishing Connection...";
     try {
       const response = await window.smartFetch(
         "/api/origin/enable",
@@ -623,22 +622,16 @@ async function setupOriginIntegration() {
         throw new Error("status " + response.status);
       }
       const data = await response.json();
-      link.href = data.claim_url;
-      link.textContent = "Claim This Machine";
-      linkDiv.classList.remove("hide");
-      button.textContent = "Manage in App";
-      button.removeAttribute("aria-busy");
-      button.removeAttribute("aria-label");
+      button.classList.add("gold-pulse");
       button.disabled = false;
-      button.onclick = () => window.open(link.href, "_blank");
-      window.open(link.href, "_blank");
+      button.textContent = "Claim this game";
+      button.onclick = () => window.open(data.claim_url, "_self");
     } catch (e) {
       console.error("Failed to enable origin", e);
       alert("Failed to enable Origin");
-      button.textContent = "Enable Origin";
-      button.removeAttribute("aria-busy");
-      button.removeAttribute("aria-label");
+      button.classList.add("gold-pulse");
       button.disabled = false;
+      button.textContent = "Connect to Warped Pinball Network";
       button.onclick = enableOrigin;
     }
   }
