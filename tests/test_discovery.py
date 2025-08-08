@@ -74,19 +74,6 @@ def test_maybe_discover_resends_after_interval():
     assert not dummy.sent
 
 
-def test_refresh_known_devices_resets_known_devices(monkeypatch):
-    discovery.known_devices.append("".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.20")) + "Test")
-    called = {}
-
-    def fake_broadcast():
-        called["done"] = True
-
-    monkeypatch.setattr(discovery, "broadcast_discover", fake_broadcast)
-    discovery.refresh_known_devices()
-    assert discovery.known_devices == [discovery.self_entry]
-    assert called.get("done")
-
-
 def test_handle_message_truncates_long_name():
     long_name = "X" * (discovery.MAX_NAME_LENGTH + 5)
     discovery.handle_message({"name": long_name}, "192.168.0.21")
@@ -115,3 +102,49 @@ def test_announce_broadcasts_self_info():
     payload = loads(data.decode("utf-8"))
     assert payload["name"] == discovery.self_info["name"]
     assert payload["version"] == discovery.self_info["version"]
+
+
+def test_refresh_known_devices_prunes_and_sorts(monkeypatch):
+    ip20 = "".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.20"))
+    ip30 = "".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.30"))
+    discovery.known_devices.extend([ip20 + "Test", ip30 + "Other"])
+
+    def fake_listen(duration, delay):
+        discovery.announce()
+        # Unmark self
+        for i, dev in enumerate(discovery.known_devices):
+            if dev.startswith(discovery.local_ip_chars):
+                discovery.known_devices[i] = dev[:4] + chr(ord(dev[4]) & 0x7F) + dev[5:]
+                break
+        # Only device at ip20 responds
+        discovery.handle_message({"name": "Test"}, "192.168.0.20")
+
+    monkeypatch.setattr(discovery, "listen_for", fake_listen)
+    monkeypatch.setattr(discovery, "broadcast_discover", lambda: None)
+    discovery.refresh_known_devices()
+    assert discovery.known_devices == [discovery.self_entry, ip20 + "Test"]
+
+
+def test_refresh_known_devices_passes_delay(monkeypatch):
+    discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.20")
+    discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
+    discovery.self_entry = discovery.local_ip_chars + discovery.self_info["name"]
+    discovery.known_devices = [
+        "".join(chr(b) for b in discovery.ip_to_bytes("192.168.0.10")) + "A",
+        discovery.self_entry,
+    ]
+
+    captured = {}
+
+    def fake_listen(duration, delay):
+        captured["delay"] = delay
+        discovery.announce()
+        for i, dev in enumerate(discovery.known_devices):
+            if dev.startswith(discovery.local_ip_chars):
+                discovery.known_devices[i] = dev[:4] + chr(ord(dev[4]) & 0x7F) + dev[5:]
+                break
+
+    monkeypatch.setattr(discovery, "listen_for", fake_listen)
+    monkeypatch.setattr(discovery, "broadcast_discover", lambda: None)
+    discovery.refresh_known_devices()
+    assert captured["delay"] == 0.5

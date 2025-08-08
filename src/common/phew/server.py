@@ -280,7 +280,7 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from backend import connect_to_wifi
-    from discovery import DEVICE_TIMEOUT, announce, listen
+    from discovery import announce, listen
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -325,11 +325,11 @@ def create_schedule(ap_mode: bool = False):
 
     # non AP mode only tasks
     if not ap_mode:
-        # every 1/2 of DEVICE_TIMEOUT announce our presence
-        schedule(announce, 10000, DEVICE_TIMEOUT * 1000 // 2)
+        # announce our presence every 30 seconds
+        schedule(announce, 10000, 30000)
 
-        # every 1/20 of DEVICE_TIMEOUT listen for others
-        schedule(listen, 10000, DEVICE_TIMEOUT * 1000 // 20)
+        # listen for others every 3 seconds
+        schedule(listen, 10000, 3000)
 
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")

@@ -2,13 +2,14 @@
 # Implements a discovery request on boot and periodic refreshes.
 
 import socket
-from time import time
+from time import sleep, time
 
 from ujson import dumps, loads
 
 # The UDP port we will send/receive on
 DISCOVERY_PORT = 37020
-DEVICE_TIMEOUT = 60  # seconds before a device is considered gone
+# Time to spread announcements over a refresh cycle (seconds)
+ANNOUNCE_WINDOW = 1.0
 DISCOVER_REFRESH = 600  # send a new discovery request every 10 minutes
 MAXIMUM_KNOWN_DEVICES = 50  # limit number of tracked devices
 MAX_NAME_LENGTH = 32  # prevent abusive game name lengths
@@ -115,6 +116,8 @@ def handle_message(msg: dict, ip_str: str) -> None:
 
     if "name" in msg:
         name = str(msg["name"])[:MAX_NAME_LENGTH]
+        if name:
+            name = chr(ord(name[0]) & 0x7F) + name[1:]
         ip_chars = "".join(chr(b) for b in ip_bytes)
         entry = ip_chars + name
         for i, dev in enumerate(known_devices):
@@ -157,12 +160,65 @@ def maybe_discover() -> None:
         refresh_known_devices()
 
 
+def listen_for(duration: float, announce_delay: float) -> None:
+    """Listen for discovery traffic for ``duration`` seconds.
+
+    ``announce_delay`` specifies when during the window we should
+    broadcast our own announcement.
+    """
+    start = time()
+    end = start + duration
+    announced = False
+    while time() < end:
+        listen()
+        now = time()
+        if not announced and (now - start) >= announce_delay:
+            announce()
+            # Clear marker bit for our own entry
+            for i, dev in enumerate(known_devices):
+                if dev.startswith(local_ip_chars):
+                    first = chr(ord(dev[4]) & 0x7F)
+                    known_devices[i] = dev[:4] + first + dev[5:]
+                    break
+            announced = True
+        sleep(0.05)
+    if not announced:
+        announce()
+        for i, dev in enumerate(known_devices):
+            if dev.startswith(local_ip_chars):
+                first = chr(ord(dev[4]) & 0x7F)
+                known_devices[i] = dev[:4] + first + dev[5:]
+                break
+
+
 def refresh_known_devices() -> None:
-    """Clear known devices and broadcast a discovery request."""
+    """Refresh the known devices list by syncing with the network."""
     global known_devices
 
-    known_devices = [self_entry]
+    # Mark all existing devices as unheard by setting high bit on first char
+    for i, dev in enumerate(known_devices):
+        first = chr(ord(dev[4]) | 0x80)
+        known_devices[i] = dev[:4] + first + dev[5:]
+
     broadcast_discover()
+
+    # Keep list ordered by IP to coordinate announcement delays
+    known_devices.sort(key=lambda d: d[:4])
+    total = len(known_devices) or 1
+    pos = 0
+    for idx, dev in enumerate(known_devices):
+        if dev.startswith(local_ip_chars):
+            pos = idx
+            break
+    delay = pos / total
+
+    # Listen for announcements and send our own after the computed delay
+    listen_for(ANNOUNCE_WINDOW * 2, delay)
+
+    # Remove any devices we didn't hear from
+    known_devices = [dev[:4] + chr(ord(dev[4]) & 0x7F) + dev[5:] for dev in known_devices if ord(dev[4]) & 0x80 == 0]
+    enforce_limit()
+    known_devices.sort(key=lambda d: d[:4])
 
 
 def enforce_limit() -> None:
