@@ -2,6 +2,8 @@ import os
 import sys
 import time
 
+from ujson import loads
+
 # Ensure we can import the discovery module
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from src.common import discovery  # noqa: E402
@@ -82,3 +84,25 @@ def test_refresh_known_devices_resets_known_devices(monkeypatch):
     discovery.refresh_known_devices()
     assert discovery.known_devices == {discovery.local_ip_bytes: discovery.self_info}
     assert called.get("done")
+
+
+def test_announce_broadcasts_self_info():
+    class DummySock:
+        def __init__(self):
+            self.sent = []
+
+        def setsockopt(self, *args, **kwargs):
+            pass
+
+        def sendto(self, data, addr):
+            self.sent.append((data, addr))
+
+    dummy = DummySock()
+    discovery.send_sock = dummy
+    discovery.announce()
+    assert dummy.sent
+    data, addr = dummy.sent[0]
+    assert addr == ("255.255.255.255", discovery.DISCOVERY_PORT)
+    payload = loads(data.decode("utf-8"))
+    assert payload["name"] == discovery.self_info["name"]
+    assert payload["version"] == discovery.self_info["version"]

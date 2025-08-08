@@ -8,6 +8,7 @@ from ujson import dumps, loads
 
 # The UDP port we will send/receive on
 DISCOVERY_PORT = 37020
+DEVICE_TIMEOUT = 60  # seconds before a device is considered gone
 DISCOVER_REFRESH = 600  # send a new discovery request every 10 minutes
 MAXIMUM_KNOWN_DEVICES = 50  # limit number of tracked devices
 
@@ -64,6 +65,21 @@ def send_intro(target_ip: bytes) -> None:
         send_sock.sendto(dumps(msg).encode("utf-8"), (bytes_to_ip(target_ip), DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
         print("Failed to send intro:", e)
+
+
+def announce() -> None:
+    """Broadcast this device's information to the local network."""
+    global send_sock
+
+    if not send_sock:
+        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    msg = {"name": self_info["name"], "version": self_info["version"]}
+    try:
+        send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
+    except Exception as e:  # pragma: no cover - network errors are non-deterministic
+        print("Failed to broadcast announcement:", e)
 
 
 def broadcast_discover() -> None:
