@@ -20,7 +20,6 @@ DISCOVER_REFRESH = 600
 # Limit list sizes and names to avoid memory abuse
 MAXIMUM_KNOWN_DEVICES = 50
 MAX_NAME_LENGTH = 32
-PING_TIMEOUT = 5
 
 # Storage for known devices.  Each entry is a string where the first four
 # characters are the IP address bytes and the remainder is the game name.
@@ -34,10 +33,9 @@ last_discover_time = 0
 local_ip_bytes = None
 local_ip_chars = ""
 self_info = None
-self_entry = ""
 
-# Track peers we've pinged and are awaiting responses from
-pending_pings = {}
+# Track a single peer we're awaiting a pong from
+pending_ping = None
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
@@ -55,7 +53,7 @@ def bytes_to_ip(ip_bytes: bytes) -> str:
 def setup() -> None:
     """Initialise discovery state for this board."""
 
-    global known_devices, local_ip_bytes, local_ip_chars, self_info, self_entry
+    global known_devices, local_ip_bytes, local_ip_chars, self_info
 
     from phew import get_ip_address
     from SharedState import gdata
@@ -68,8 +66,7 @@ def setup() -> None:
         "version": SystemVersion,
         "self": True,
     }
-    self_entry = local_ip_chars + self_info["name"]
-    known_devices = [self_entry]
+    known_devices = []
     refresh_known_devices()
 
 
@@ -82,8 +79,6 @@ def _ensure_send_sock() -> None:
 
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
-
-    maybe_discover()
     _ensure_send_sock()
     msg = {"hello": True, "name": self_info["name"]}
     try:
@@ -96,7 +91,7 @@ def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
     _ensure_send_sock()
-    peers = []
+    peers = [{"ip": bytes_to_ip(local_ip_bytes), "name": self_info["name"]}]
     for dev in known_devices:
         ip = bytes_to_ip(bytes(ord(c) for c in dev[:4]))
         peers.append({"ip": ip, "name": dev[4:]})
@@ -121,8 +116,6 @@ def is_registry() -> bool:
     """Return True if this device has the lowest IP in ``known_devices``."""
 
     for dev in known_devices:
-        if dev.startswith(local_ip_chars):
-            continue
         peer_bytes = bytes(ord(c) for c in dev[:4])
         if peer_bytes < local_ip_bytes:
             return False
@@ -145,7 +138,7 @@ def _add_or_update(ip_chars: str, name: str) -> None:
 def handle_message(msg: dict, ip_str: str) -> None:
     """Handle an incoming message from ``ip_str``."""
 
-    global known_devices, last_discover_time
+    global known_devices, last_discover_time, pending_ping
 
     last_discover_time = time()
     ip_bytes = ip_to_bytes(ip_str)
@@ -160,7 +153,8 @@ def handle_message(msg: dict, ip_str: str) -> None:
         return
 
     if msg.get("pong"):
-        pending_pings.pop(ip_chars, None)
+        if pending_ping == ip_bytes:
+            pending_ping = None
         return
 
     if msg.get("offline"):
@@ -194,7 +188,6 @@ def handle_message(msg: dict, ip_str: str) -> None:
                 found_self = True
             else:
                 new_list.append(ip_chars_peer + name)
-        new_list.insert(0, self_entry)
         known_devices = new_list[:MAXIMUM_KNOWN_DEVICES]
         if not found_self:
             broadcast_hello()
@@ -231,8 +224,9 @@ def listen() -> None:
 def refresh_known_devices() -> None:
     """Rebuild the known devices list by syncing with the network."""
 
-    global known_devices, last_discover_time
-    known_devices = [self_entry]
+    global known_devices, last_discover_time, pending_ping
+    known_devices = []
+    pending_ping = None
     broadcast_hello()
     last_discover_time = time()
     end = time() + 1.0
@@ -253,36 +247,26 @@ def maybe_discover() -> None:
 def get_peer_map() -> dict:
     """Return mapping of known devices keyed by IP string."""
 
-    peers = {}
+    peers = {bytes_to_ip(local_ip_bytes): {"name": self_info["name"], "self": True}}
     for dev in known_devices:
         ip_chars, name = dev[:4], dev[4:]
         ip = bytes_to_ip(bytes(ord(c) for c in ip_chars))
-        peers[ip] = {"name": name, "self": ip_chars == local_ip_chars}
+        peers[ip] = {"name": name, "self": False}
     return peers
 
 
 def ping_random_peer() -> None:
-    """Ping a random peer to help detect offline devices."""
+    """Ping a random peer and mark previous one offline if it didn't respond."""
+
+    global pending_ping, known_devices
 
     peers = [d for d in known_devices if not d.startswith(local_ip_chars)]
-    if not peers:
-        return
-    target = choice(peers)
-    ip_chars = target[:4]
-    send_ping(bytes(ord(c) for c in ip_chars))
-    pending_pings[ip_chars] = time() + PING_TIMEOUT
 
-
-def check_pending_pings() -> None:
-    """Mark peers offline if their ping timed out."""
-
-    global known_devices
-    now = time()
-    expired = [ip for ip, deadline in pending_pings.items() if now >= deadline]
-    for ip_chars in expired:
-        pending_pings.pop(ip_chars, None)
-        known_devices = [d for d in known_devices if not d.startswith(ip_chars)]
-        ip_str = bytes_to_ip(bytes(ord(c) for c in ip_chars))
+    # If a previous ping is still pending, mark that peer offline
+    if pending_ping:
+        off_chars = "".join(chr(b) for b in pending_ping)
+        known_devices = [d for d in known_devices if not d.startswith(off_chars)]
+        ip_str = bytes_to_ip(pending_ping)
         _ensure_send_sock()
         try:
             send_sock.sendto(dumps({"offline": ip_str}).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
@@ -290,3 +274,11 @@ def check_pending_pings() -> None:
             pass
         if is_registry():
             broadcast_full_list()
+        pending_ping = None
+        peers = [d for d in known_devices if not d.startswith(local_ip_chars)]
+    if not peers:
+        return
+    target = choice(peers)
+    ip_bytes = bytes(ord(c) for c in target[:4])
+    send_ping(ip_bytes)
+    pending_ping = ip_bytes

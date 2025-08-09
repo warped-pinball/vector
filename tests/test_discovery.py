@@ -12,7 +12,7 @@ def setup_function():
     discovery.recv_sock = None
     discovery.send_sock = None
     discovery.last_discover_time = 0
-    discovery.pending_pings = {}
+    discovery.pending_ping = None
     discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.10")
     discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
     discovery.self_info = {
@@ -20,8 +20,6 @@ def setup_function():
         "version": "1",
         "self": True,
     }
-    discovery.self_entry = discovery.local_ip_chars + discovery.self_info["name"]
-    discovery.known_devices.append(discovery.self_entry)
 
 
 def _ip_chars(ip: str) -> str:
@@ -29,6 +27,7 @@ def _ip_chars(ip: str) -> str:
 
 
 def test_is_registry_lowest_ip():
+    assert discovery.is_registry()
     discovery.known_devices.append(_ip_chars("192.168.0.20") + "Peer")
     assert discovery.is_registry()
     discovery.known_devices.append(_ip_chars("192.168.0.5") + "A")
@@ -58,7 +57,6 @@ def test_handle_full_list_rebuilds_and_resends_hello_if_missing_self(monkeypatch
     discovery.handle_message(msg, "192.168.0.20")
     assert called.get("hello")
     assert discovery.known_devices == [
-        discovery.self_entry,
         _ip_chars("192.168.0.20") + "Peer",
     ]
 
@@ -66,9 +64,8 @@ def test_handle_full_list_rebuilds_and_resends_hello_if_missing_self(monkeypatch
 def test_handle_offline_promotes_registry(monkeypatch):
     discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.20")
     discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
-    discovery.self_entry = discovery.local_ip_chars + discovery.self_info["name"]
     ip10 = _ip_chars("192.168.0.10")
-    discovery.known_devices = [ip10 + "A", discovery.self_entry, _ip_chars("192.168.0.30") + "B"]
+    discovery.known_devices = [ip10 + "A", _ip_chars("192.168.0.30") + "B"]
 
     called = {}
 
@@ -82,13 +79,13 @@ def test_handle_offline_promotes_registry(monkeypatch):
 
 
 def test_handle_pong_clears_pending_ping():
-    ip_chars = _ip_chars("192.168.0.20")
-    discovery.pending_pings[ip_chars] = 0
+    ip_bytes = discovery.ip_to_bytes("192.168.0.20")
+    discovery.pending_ping = ip_bytes
     discovery.handle_message({"pong": True}, "192.168.0.20")
-    assert not discovery.pending_pings
+    assert discovery.pending_ping is None
 
 
-def test_ping_timeout_marks_offline_and_broadcasts(monkeypatch):
+def test_ping_marks_offline_on_next_call(monkeypatch):
     peer_ip = "192.168.0.20"
     ip_chars = _ip_chars(peer_ip)
     discovery.known_devices.append(ip_chars + "Peer")
@@ -99,29 +96,24 @@ def test_ping_timeout_marks_offline_and_broadcasts(monkeypatch):
         called["full"] = True
 
     monkeypatch.setattr(discovery, "broadcast_full_list", fake_broadcast)
+    monkeypatch.setattr(discovery, "choice", lambda peers: peers[0])
 
     class DummySock:
+        def __init__(self):
+            self.packets = []
+
         def sendto(self, data, addr):
-            called["pkt"] = (data, addr)
+            self.packets.append((data, addr))
 
     discovery.send_sock = DummySock()
 
-    class FakeTime:
-        def __init__(self):
-            self.now = 0
+    discovery.ping_random_peer()
+    assert discovery.pending_ping == discovery.ip_to_bytes(peer_ip)
+    discovery.ping_random_peer()
 
-        def time(self):
-            return self.now
-
-    fake = FakeTime()
-    monkeypatch.setattr(discovery, "time", fake.time)
-
-    discovery.pending_pings[ip_chars] = fake.time() + discovery.PING_TIMEOUT
-    fake.now = discovery.PING_TIMEOUT + 1
-    discovery.check_pending_pings()
-
+    assert discovery.pending_ping is None
     assert ip_chars not in [d[:4] for d in discovery.known_devices]
-    data, addr = called["pkt"]
+    data, addr = discovery.send_sock.packets[1]
     assert addr == ("255.255.255.255", discovery.DISCOVERY_PORT)
     assert loads(data.decode("utf-8")) == {"offline": peer_ip}
     assert called.get("full")
