@@ -20,6 +20,7 @@ DISCOVER_REFRESH = 600
 # Limit list sizes and names to avoid memory abuse
 MAXIMUM_KNOWN_DEVICES = 50
 MAX_NAME_LENGTH = 32
+PING_TIMEOUT = 5
 
 # Storage for known devices.  Each entry is a string where the first four
 # characters are the IP address bytes and the remainder is the game name.
@@ -34,6 +35,9 @@ local_ip_bytes = None
 local_ip_chars = ""
 self_info = None
 self_entry = ""
+
+# Track peers we've pinged and are awaiting responses from
+pending_pings = {}
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
@@ -79,18 +83,13 @@ def _ensure_send_sock() -> None:
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
 
+    maybe_discover()
     _ensure_send_sock()
     msg = {"hello": True, "name": self_info["name"]}
     try:
         send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
         print("Failed to send hello:", e)
-
-
-def announce() -> None:
-    """Alias retained for compatibility with server scheduling."""
-
-    broadcast_hello()
 
 
 def broadcast_full_list() -> None:
@@ -138,15 +137,17 @@ def _add_or_update(ip_chars: str, name: str) -> None:
             break
     else:
         known_devices.append(entry)
-    enforce_limit()
+    if len(known_devices) > MAXIMUM_KNOWN_DEVICES:
+        del known_devices[MAXIMUM_KNOWN_DEVICES:]
     known_devices.sort(key=lambda d: d[:4])
 
 
 def handle_message(msg: dict, ip_str: str) -> None:
     """Handle an incoming message from ``ip_str``."""
 
-    global known_devices
+    global known_devices, last_discover_time
 
+    last_discover_time = time()
     ip_bytes = ip_to_bytes(ip_str)
     ip_chars = "".join(chr(b) for b in ip_bytes)
 
@@ -159,7 +160,8 @@ def handle_message(msg: dict, ip_str: str) -> None:
         return
 
     if msg.get("pong"):
-        return  # Ignored for now
+        pending_pings.pop(ip_chars, None)
+        return
 
     if msg.get("offline"):
         off_ip = msg["offline"]
@@ -248,15 +250,6 @@ def maybe_discover() -> None:
         refresh_known_devices()
 
 
-def enforce_limit() -> None:
-    """Ensure we do not track more than MAXIMUM_KNOWN_DEVICES."""
-
-    global known_devices
-    if len(known_devices) <= MAXIMUM_KNOWN_DEVICES:
-        return
-    del known_devices[MAXIMUM_KNOWN_DEVICES:]
-
-
 def get_peer_map() -> dict:
     """Return mapping of known devices keyed by IP string."""
 
@@ -275,8 +268,25 @@ def ping_random_peer() -> None:
     if not peers:
         return
     target = choice(peers)
-    send_ping(bytes(ord(c) for c in target[:4]))
+    ip_chars = target[:4]
+    send_ping(bytes(ord(c) for c in ip_chars))
+    pending_pings[ip_chars] = time() + PING_TIMEOUT
 
 
-def debug_known_devices() -> None:  # pragma: no cover - debugging helper
-    print("Known devices:", get_peer_map())
+def check_pending_pings() -> None:
+    """Mark peers offline if their ping timed out."""
+
+    global known_devices
+    now = time()
+    expired = [ip for ip, deadline in pending_pings.items() if now >= deadline]
+    for ip_chars in expired:
+        pending_pings.pop(ip_chars, None)
+        known_devices = [d for d in known_devices if not d.startswith(ip_chars)]
+        ip_str = bytes_to_ip(bytes(ord(c) for c in ip_chars))
+        _ensure_send_sock()
+        try:
+            send_sock.sendto(dumps({"offline": ip_str}).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
+        except Exception:  # pragma: no cover - network errors are non-deterministic
+            pass
+        if is_registry():
+            broadcast_full_list()

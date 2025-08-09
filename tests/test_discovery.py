@@ -1,6 +1,8 @@
 import os
 import sys
 
+from ujson import loads
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from src.common import discovery  # noqa: E402
 
@@ -10,6 +12,7 @@ def setup_function():
     discovery.recv_sock = None
     discovery.send_sock = None
     discovery.last_discover_time = 0
+    discovery.pending_pings = {}
     discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.10")
     discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
     discovery.self_info = {
@@ -76,3 +79,49 @@ def test_handle_offline_promotes_registry(monkeypatch):
     discovery.handle_message({"offline": "192.168.0.10"}, "192.168.0.30")
     assert called.get("full")
     assert all(not d.startswith(ip10) for d in discovery.known_devices)
+
+
+def test_handle_pong_clears_pending_ping():
+    ip_chars = _ip_chars("192.168.0.20")
+    discovery.pending_pings[ip_chars] = 0
+    discovery.handle_message({"pong": True}, "192.168.0.20")
+    assert not discovery.pending_pings
+
+
+def test_ping_timeout_marks_offline_and_broadcasts(monkeypatch):
+    peer_ip = "192.168.0.20"
+    ip_chars = _ip_chars(peer_ip)
+    discovery.known_devices.append(ip_chars + "Peer")
+
+    called = {}
+
+    def fake_broadcast():
+        called["full"] = True
+
+    monkeypatch.setattr(discovery, "broadcast_full_list", fake_broadcast)
+
+    class DummySock:
+        def sendto(self, data, addr):
+            called["pkt"] = (data, addr)
+
+    discovery.send_sock = DummySock()
+
+    class FakeTime:
+        def __init__(self):
+            self.now = 0
+
+        def time(self):
+            return self.now
+
+    fake = FakeTime()
+    monkeypatch.setattr(discovery, "time", fake.time)
+
+    discovery.pending_pings[ip_chars] = fake.time() + discovery.PING_TIMEOUT
+    fake.now = discovery.PING_TIMEOUT + 1
+    discovery.check_pending_pings()
+
+    assert ip_chars not in [d[:4] for d in discovery.known_devices]
+    data, addr = called["pkt"]
+    assert addr == ("255.255.255.255", discovery.DISCOVERY_PORT)
+    assert loads(data.decode("utf-8")) == {"offline": peer_ip}
+    assert called.get("full")

@@ -280,7 +280,7 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from backend import connect_to_wifi
-    from discovery import announce, listen
+    from discovery import broadcast_hello, check_pending_pings, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -326,10 +326,14 @@ def create_schedule(ap_mode: bool = False):
     # non AP mode only tasks
     if not ap_mode:
         # announce our presence every 30 seconds
-        schedule(announce, 10000, 30000)
+        schedule(broadcast_hello, 10000, 30000)
 
         # listen for others every 3 seconds
         schedule(listen, 10000, 3000)
+
+        # ping peers and check for offline devices
+        schedule(ping_random_peer, 12000, 15000)
+        schedule(check_pending_pings, 12000, 5000)
 
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
