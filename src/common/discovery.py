@@ -69,6 +69,8 @@ def setup() -> None:
 
 
 def _send(msg: dict, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
+    print(f"DISCOVERY:Sending message to {addr}: {msg}")
+
     global send_sock
     if not send_sock:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -135,6 +137,7 @@ def registry_should_broadcast():
 
 def handle_message(msg: dict, ip_str: str) -> None:
     """Handle an incoming message from ``ip_str``."""
+    print(f"DISCOVERY: Received message from {ip_str}: {msg}")
     global pending_ping, known_devices, local_ip_bytes, local_ip_chars
 
     ip_bytes = ip_to_bytes(ip_str)
@@ -142,7 +145,7 @@ def handle_message(msg: dict, ip_str: str) -> None:
 
     if msg.get("ping"):
         _send({"pong": True}, (ip_str, DISCOVERY_PORT))
-        if ip_str not in [d[:4] for d in known_devices]:
+        if ip_chars not in [d[:4] for d in known_devices]:
             broadcast_hello()
         return
 
@@ -183,10 +186,6 @@ def handle_message(msg: dict, ip_str: str) -> None:
         if not found_self and len(known_devices) < MAXIMUM_KNOWN_DEVICES:
             broadcast_hello()
         return
-
-    if "name" in msg:  # Backwards compatibility for simple announcements
-        name = str(msg["name"])[:MAX_NAME_LENGTH]
-        _add_or_update(ip_chars, name)
 
 
 def _recv():
