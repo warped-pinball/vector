@@ -3,10 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/pico.min.css" />
     <style id="custom_styles"></style>
-    <div id="pico_css" style="display: none"></div>
-    <div id="main_css" style="display: none"></div>
-    <div id="page_css" style="display: none"></div>
     <link rel="manifest" href="/manifest.json" />
     <style>
       svg {
@@ -222,7 +220,7 @@
     <footer class="container" style="text-align: center; text-wrap: auto">
       <div class="grid">
         <section>
-          <div id="logo" aria-busy="true" width="175px"></div>
+          <img id="logo" src="/svg/logo.svg" width="175px" alt="logo" />
           <div>
             Powered by <a href="https://warpedpinball.com">Warped Pinball</a>
           </div>
@@ -231,257 +229,11 @@
       </div>
     </footer>
 
-    <div id="main_js" style="display: none"></div>
     <div id="page_js" style="display: none"></div>
-    <div id="extra_js" style="display: none"></div>
-    <div id="js-sha256" style="display: none"></div>
-    <div id="install_warning_js" style="display: none"></div>
-    <div id="configure_js" style="display: none"></div>
-
-    <script>
-      // === Configuration ===
-      const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
-
-      const VERSION_KEY = "vector_version";
-      async function checkVersion() {
-        try {
-          const res = await fetch("/api/version", { cache: "no-store" });
-          if (!res.ok) return;
-          const { version } = await res.json();
-          const current = localStorage.getItem(VERSION_KEY);
-          if (current && current !== version) {
-            const savedPassword = localStorage.getItem("password");
-            localStorage.clear();
-            if (savedPassword !== null) {
-              localStorage.setItem("password", savedPassword);
-            }
-            localStorage.setItem(VERSION_KEY, version);
-            location.reload();
-          } else if (!current) {
-            localStorage.setItem(VERSION_KEY, version);
-          }
-        } catch (e) {
-          console.error("Version check failed", e);
-        }
-      }
-
-      checkVersion();
-
-      // === Utility: Cache Management ===
-      function cacheGet(url) {
-        const data = localStorage.getItem(url);
-        const time = localStorage.getItem(url + "_time");
-        if (data && time && Date.now() - parseInt(time, 10) < CACHE_TTL) {
-          return data;
-        }
-        return null;
-      }
-
-      function cacheSet(url, data) {
-        localStorage.setItem(url, data);
-        localStorage.setItem(url + "_time", Date.now().toString());
-      }
-
-      function invalidateCache(url) {
-        localStorage.removeItem(url);
-        localStorage.removeItem(url + "_time");
-      }
-
-      function clearCache() {
-        localStorage.clear();
-        location.reload();
-      }
-
-      // === Utility: Determine Resource Type ===
-      function determineResourceType(url) {
-        if (url.endsWith(".gz")) url = url.slice(0, -3);
-        const map = {
-          ".css": "css",
-          ".js": "js",
-          ".html": "html",
-          ".svg": "svg",
-          ".png": "image",
-          ".jpg": "image",
-          ".jpeg": "image",
-          ".gif": "image",
-          ".json": "json",
-        };
-        const ext = "." + url.split(".").pop();
-        return map[ext] || "unknown";
-      }
-
-      // === Utility: Authenticated Fetch ===
-      async function smartFetch(url, data = false, auth = true) {
-        console.log({ url, data, auth });
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        if (auth) {
-          const password = await window.get_password();
-
-          const cRes = await fetch("/api/auth/challenge");
-          if (!cRes.ok) throw new Error("Failed to get challenge.");
-          const { challenge } = await cRes.json();
-
-          const urlObj = new URL(url, window.location.origin);
-
-          // stringify data if present and unescape characters
-          const data_str = data ? JSON.stringify(data) : "";
-
-          const msg = challenge + urlObj.pathname + urlObj.search + data_str;
-          const hmacHex = sha256.hmac(password, msg);
-          headers["X-Auth-HMAC"] = hmacHex;
-          headers["X-Auth-challenge"] = challenge;
-        }
-
-        const method = data ? "POST" : "GET";
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: data ? JSON.stringify(data) : undefined,
-        });
-        if (auth && response.status === 401) {
-          alert("Authentication failed. Please try again.");
-          window.logout();
-        }
-        return response;
-      }
-
-      // === Utility: Fetch Resource (with optional auth) ===
-      async function fetchResource(url, timeout = 5000, auth = false) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeout);
-
-        let response;
-        if (auth) {
-          response = await smartFetch(url);
-        } else {
-          response = await fetch(url, { signal: controller.signal });
-        }
-        clearTimeout(timer);
-
-        if (!response.ok)
-          throw new Error(`Fetch error: ${response.statusText}`);
-
-        return url.endsWith(".gz") ? response.body : await response.text();
-      }
-
-      // === Utility: Decompress Data ===
-      async function decompressData(data, url) {
-        // If not gzipped or data is already a string (cached), skip decompression
-        if (!url.endsWith(".gz") || typeof data === "string") {
-          return data;
-        }
-
-        const start = performance.now();
-        const stream = data.pipeThrough(new DecompressionStream("gzip"));
-        const decompressed = await new Response(stream).text();
-        // Cache decompressed data for future loads
-        cacheSet(url, decompressed);
-        return decompressed;
-      }
-
-      // === Utility: Apply to DOM ===
-      function applyResourceToDOM(data, url, targetId) {
-        console.log(
-          `Applying data to ${targetId} from ${url} (length: ${data.length})`,
-        );
-        const placeholder = document.getElementById(targetId);
-        if (!placeholder) {
-          console.error(`Placeholder not found: ${targetId}`);
-          return;
-        }
-        const type = determineResourceType(url);
-
-        let newElement;
-        if (type === "css") {
-          newElement = document.createElement("style");
-          newElement.textContent = data;
-        } else if (type === "js") {
-          newElement = document.createElement("script");
-          newElement.src = URL.createObjectURL(
-            new Blob([data], { type: "application/javascript" }),
-          );
-          newElement.async = false;
-        } else if (type === "html") {
-          newElement = document.createElement("div");
-          newElement.innerHTML = data;
-        } else if (type === "svg") {
-          newElement = new DOMParser().parseFromString(
-            data,
-            "image/svg+xml",
-          ).documentElement;
-        } else if (type === "image") {
-          newElement = document.createElement("img");
-          newElement.src = URL.createObjectURL(
-            new Blob([data], { type: "image/png" }),
-          );
-        } else {
-          placeholder.style.display = "none";
-          return;
-        }
-
-        placeholder.replaceWith(newElement);
-        newElement.id = targetId;
-        newElement.style.display = "";
-      }
-
-      // === New Function: Fetch and Decompress (No Apply) ===
-      async function fetchDecompress(
-        url,
-        useCache = true,
-        timeout = 5000,
-        auth = false,
-      ) {
-        let data = useCache ? cacheGet(url) : null;
-        if (!data) {
-          data = await fetchResource(url, timeout, auth);
-          // Cache non-gz data immediately
-          if (!url.endsWith(".gz")) {
-            cacheSet(url, data);
-          }
-        }
-        return decompressData(data, url);
-      }
-
-      // === Main Orchestration: Fetch, Decompress, and Apply ===
-      async function fetchDecompressAndApply(
-        url,
-        targetId,
-        useCache = true,
-        timeout = 30000,
-        auth = false,
-      ) {
-        try {
-          const data = await fetchDecompress(url, useCache, timeout, auth);
-          applyResourceToDOM(data, url, targetId);
-        } catch (error) {
-          console.error(
-            `Error in fetchDecompressAndApply(${url}): ${error.message}`,
-          );
-          invalidateCache(url);
-          const placeholder = document.getElementById(targetId);
-          if (placeholder) placeholder.style.display = "none";
-        }
-      }
-
-      // Expose functions globally if needed
-      window.fetchDecompressAndApply = fetchDecompressAndApply;
-      window.fetchDecompress = fetchDecompress;
-      window.clearCache = clearCache;
-      window.smartFetch = smartFetch;
-
-      // Load default/common resources
-      fetchDecompressAndApply("/css/pico.min.css.gz", "pico_css");
-      fetchDecompressAndApply("/svg/logo.svg.gz", "logo");
-      fetchDecompressAndApply("/js/main.js.gz", "main_js");
-      fetchDecompressAndApply(
-        "/js/install_warning.js.gz",
-        "install_warning_js",
-      );
-      fetchDecompressAndApply("/js/configure.js.gz", "configure_js");
-      fetchDecompressAndApply("/js/js-sha256.min.js.gz", "js-sha256");
-    </script>
+    <script src="/js/js-sha256.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/install_warning.js"></script>
+    <script src="/js/configure.js"></script>
   </body>
 </html>

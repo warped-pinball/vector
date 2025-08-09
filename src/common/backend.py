@@ -6,6 +6,7 @@ from time import sleep, time
 
 import faults
 import Pico_Led
+import SharedState as S
 import uctypes
 from ls import ls
 from machine import RTC
@@ -15,8 +16,6 @@ from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
-
-import SharedState as S
 
 #
 # Constants
@@ -128,43 +127,46 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
-    # Compute ETag incrementally to save memory
+    is_gz = file_path.endswith(".gz")
+    served_path = file_path[:-3] if is_gz else file_path
+
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
             buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                buff[0:] = f.read(1024)
                 if not buff:
                     break
                 hasher.update(buff)
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
-        etag = random_hex(8)  # Fallback to a random ETag
+        etag = random_hex(8)
 
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
             buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                buff[0:] = f.read(1024)
                 if not buff:
                     break
                 yield buff
         gc_collect()
 
     def file_handler(request):
-        # Check for conditional request
         if request.headers.get("if-none-match") == etag:
-            return "", 304, {"ETag": etag}  # Tell the browser to use it's cached copy
+            return "", 304, {"ETag": etag}
 
         headers = {
-            "Content-Type": get_content_type(file_path),
+            "Content-Type": get_content_type(served_path),
             "Connection": "close",
-            "Cache-Control": "public, max-age=31536000, immutable",  # Cache for 1 year, immutable
+            "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        if is_gz:
+            headers["Content-Encoding"] = "gzip"
         return file_stream_generator(), 200, headers
 
     return route_wrapper(file_handler)
@@ -343,10 +345,13 @@ def check_password(request):
 # Static File Server
 #
 for file_path in ls("web"):
-    route = file_path[3:]  # This should give '/index.html' for 'web/index.html'
-    phew_add_route(route, create_file_handler(file_path))
+    route = file_path[3:]
+    if file_path.endswith(".gz"):
+        route = route[:-3]
+    handler = create_file_handler(file_path)
+    phew_add_route(route, handler)
     if route == "/index.html":
-        phew_add_route("/", create_file_handler(file_path))
+        phew_add_route("/", handler)
 
 
 #
@@ -689,6 +694,7 @@ def app_midnightMadnessAvailable(request):
     else:
         return {"available": False}
 
+
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
@@ -696,6 +702,7 @@ def app_getMidnightMadness(request):
         "enabled": record.get("WPCTimeOn", False),
         "always": record.get("MM_Always", False),
     }
+
 
 @add_route("/api/time/set_midnight_madness", auth=True)
 def app_setMidnightMadness(request):
@@ -705,9 +712,11 @@ def app_setMidnightMadness(request):
     info["WPCTimeOn"] = bool(data["enabled"])
     ds_write_record("extras", info, 0)
 
+
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
     import Time
+
     Time.trigger_midnight_madness()
 
 
