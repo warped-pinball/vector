@@ -93,6 +93,7 @@ def broadcast_full_list() -> None:
 
 def registry_ip_bytes() -> bytes:
     # find the minimum known device IP
+    global known_devices, local_ip_bytes
     if not known_devices:
         return local_ip_bytes
     return min(bytes(dev[:4]) for dev in known_devices)
@@ -240,12 +241,12 @@ def get_peer_map() -> dict:
 def ping_random_peer() -> None:
     """Ping a random peer and mark previous one offline if it didn't respond."""
 
-    global pending_ping, known_devices
+    global pending_ping, known_devices, local_ip_bytes
 
     peers = [d for d in known_devices if not d.startswith(local_ip_chars)]
 
     # If a previous ping is still pending, mark that peer offline
-    if pending_ping:
+    if pending_ping and pending_ping != local_ip_bytes:
         off_chars = "".join(chr(b) for b in pending_ping)
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
         ip_str = bytes_to_ip(pending_ping)
