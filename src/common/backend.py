@@ -779,8 +779,7 @@ def app_getAvailableSSIDs(request):
 def app_getPeers(request):
     from discovery import get_peer_map
 
-    peers = get_peer_map()
-    return {ip: info for ip, info in peers.items() if not info["self"]}
+    return get_peer_map()
 
 
 #
