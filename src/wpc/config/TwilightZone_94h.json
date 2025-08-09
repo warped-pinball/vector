@@ -2,6 +2,7 @@
     "GameInfo": {
         "GameName": "Twilight Zone",
         "System": "WPC",
+        "Clock": "Yes",
         "FileVer": 1
     },
 

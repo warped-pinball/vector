@@ -16,6 +16,8 @@ from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
 
+import SharedState as S
+
 #
 # Constants
 #
@@ -540,6 +542,47 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/personal/bests")
+def app_personal_bests(request):
+    """Return best score for each registered player."""
+    from time import time
+
+    from phew.ntp import time_ago
+
+    now_seconds = time()
+
+    bests = {}
+    # total players and individual scores
+    total_players = ds_memory_map["names"]["count"]
+    total_scores = ds_memory_map["individual"]["count"]
+
+    for player_id in range(total_players):
+        player = ds_read_record("names", player_id)
+        if not player["initials"].strip():
+            continue
+
+        for score_idx in range(total_scores):
+            record = ds_read_record("individual", score_idx, player_id)
+            if record["score"] > 0:
+                if player_id not in bests or record["score"] > bests[player_id]["score"]:
+                    bests[player_id] = {
+                        "initials": player["initials"],
+                        "full_name": player["full_name"],
+                        "score": record["score"],
+                        "date": record["date"].strip().replace("\x00", " "),
+                        "ago": time_ago(record["date"].strip().replace("\x00", " "), now_seconds),
+                    }
+
+    records = sorted(
+        ({"player_id": pid, "initials": d["initials"], "full_name": d["full_name"], "score": d["score"], "date": d["date"], "ago": d["ago"]} for pid, d in bests.items()),
+        key=lambda x: x["score"],
+        reverse=True,
+    )
+    for idx, rec in enumerate(records, start=1):
+        rec["rank"] = idx
+    return records
+
+
 @add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
     from SPI_DataStore import blankIndPlayerScores
@@ -637,6 +680,35 @@ def app_setShowIP(request):
     import displayMessage
 
     displayMessage.refresh()
+
+
+@add_route("/api/time/midnight_madness_available")
+def app_midnightMadnessAvailable(request):
+    if S.gdata["GameInfo"].get("Clock") == "MM":
+        return {"available": True}
+    else:
+        return {"available": False}
+
+@add_route("/api/time/get_midnight_madness")
+def app_getMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    return {
+        "enabled": record.get("WPCTimeOn", False),
+        "always": record.get("MM_Always", False),
+    }
+
+@add_route("/api/time/set_midnight_madness", auth=True)
+def app_setMidnightMadness(request):
+    data = request.data
+    info = ds_read_record("extras", 0)
+    info["MM_Always"] = bool(data["always"])
+    info["WPCTimeOn"] = bool(data["enabled"])
+    ds_write_record("extras", info, 0)
+
+@add_route("/api/time/trigger_midnight_madness")
+def app_triggerMidnightMadness(request):
+    import Time
+    Time.trigger_midnight_madness()
 
 
 @add_route("/api/settings/factory_reset", auth=True)

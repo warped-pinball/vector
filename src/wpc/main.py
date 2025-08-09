@@ -18,6 +18,7 @@ import Memory_Main as MemoryMain
 import reset_control
 from logger import logger_instance
 from systemConfig import SystemVersion
+from machine import Pin
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -105,12 +106,18 @@ This work is licensed under CC BY-NC 4.0
 
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
-bus_activity_fault = bus_activity_fault_check()
-if bus_activity_fault:
-    set_error_led()
-    faults.raise_fault(faults.HDWR01)
-    print("Main: Bus Activity fault detected !!")
-    # Log.log("Main: Reset Circuit fault detected !!")
+
+usb_power_pin = Pin("WL_GPIO2", Pin.IN)
+if usb_power_pin.value() == 1:
+    usb_power_state = True
+    bus_activity_fault=False
+else:    
+    bus_activity_fault = bus_activity_fault_check()
+    if bus_activity_fault:
+        set_error_led()
+        faults.raise_fault(faults.HDWR01)
+        print("Main: Bus Activity fault detected !!")
+        # Log.log("Main: Reset Circuit fault detected !!")
 
 
 # load up Game Definitions
@@ -121,6 +128,10 @@ else:
 
 if not bus_activity_fault:
     MemoryMain.go()
+
+
+import Time
+Time.initialize()
 
 time.sleep(0.5)
 reset_control.release(True)

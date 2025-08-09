@@ -96,8 +96,6 @@ def claim_score(initials, player_index, score):
     if initials in ["@@@", "   ", "???",""]:  
         return
 
-    print("claim score-")
-
     for game_index, game in enumerate(recent_scores):
         for player_index in range (4):
             if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
@@ -110,9 +108,8 @@ def claim_score(initials, player_index, score):
                     update_leaderboard(new_score)
                 return
             
-                #if claim was a grand champ to 1-4 place then intials nedd updated on the game!
-                 
-    #required for case where user resets highs scores on the machine             
+
+    #required for case where user resets high scores on the machine             
     update_leaderboard(  { "initials": initials, "full_name": None, "score": score, "game": 0 }  )
 
 
@@ -175,7 +172,7 @@ def _read_machine_score(UseHighScores = True):
                 initial_start = S.gdata["HighScores"]["GrandChampInitAdr"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]
                 high_scores[0][0] = bytes(initials_bytes).decode("ascii")
-                print("grand champ initials ", high_scores[0][0])
+                #print("grand champ initials ", high_scores[0][0])
                 if high_scores[0][0] in ["???", "", None, "   "]:
                     high_scores[0][0] = ""
 
@@ -528,15 +525,19 @@ def update_tournament(new_entry):
     return
 
 
-
 GameEndCount =0
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter,GameEndCount
 
-
     #power up init state - only runs once
     if nState[0] == 0:        
+
+        import machine
+        #machine.mem32[0x20081FF8] = 0x01010B3B
+        machine.mem32[0x20081FF8] = 0x02030101
+        
+
         place_machine_scores()
         nState[0] = 1
         # if enter initials on game set high score rewards to zero
@@ -545,8 +546,7 @@ def CheckForNewScores(nState=[0]):
                 if key.startswith("HS"):  # Check if the key starts with 'HS'
                     shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
         from Adjustments import _fixChecksum
-        _fixChecksum()
-           
+        _fixChecksum()       
        
 
     #only run this if ball in play is enabled
@@ -618,7 +618,6 @@ def CheckForNewScores(nState=[0]):
                     print("SCORE: game over, not waiting for initials")
                     nState[0] = 4
 
-    
 
         # game over clean up process
         elif nState[0]==4:                
