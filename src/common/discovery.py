@@ -32,7 +32,6 @@ send_sock = None
 last_discover_time = 0
 local_ip_bytes = None
 local_ip_chars = ""
-self_info = None
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
@@ -50,22 +49,23 @@ def bytes_to_ip(ip_bytes: bytes) -> str:
     return ".".join(str(b) for b in ip_bytes)
 
 
+def _get_local_name() -> str:
+    """Retrieve this board's game name, truncated to the max length."""
+
+    from SharedState import gdata
+
+    return gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH]
+
+
 def setup() -> None:
     """Initialise discovery state for this board."""
 
-    global known_devices, local_ip_bytes, local_ip_chars, self_info
+    global known_devices, local_ip_bytes, local_ip_chars
 
     from phew import get_ip_address
-    from SharedState import gdata
-    from systemConfig import SystemVersion
 
     local_ip_bytes = ip_to_bytes(get_ip_address())
     local_ip_chars = "".join(chr(b) for b in local_ip_bytes)
-    self_info = {
-        "name": gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH],
-        "version": SystemVersion,
-        "self": True,
-    }
     known_devices = []
     refresh_known_devices()
 
@@ -80,7 +80,7 @@ def _ensure_send_sock() -> None:
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
     _ensure_send_sock()
-    msg = {"hello": True, "name": self_info["name"]}
+    msg = {"hello": True, "name": _get_local_name()}
     try:
         send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
@@ -91,11 +91,8 @@ def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
     _ensure_send_sock()
-    peers = [{"ip": bytes_to_ip(local_ip_bytes), "name": self_info["name"]}]
-    for dev in known_devices:
-        ip = bytes_to_ip(bytes(ord(c) for c in dev[:4]))
-        peers.append({"ip": ip, "name": dev[4:]})
-    msg = {"full": peers}
+    payload = "|".join([local_ip_chars + _get_local_name()] + known_devices)
+    msg = {"full": payload}
     try:
         send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
     except Exception as e:  # pragma: no cover - network errors are non-deterministic
@@ -123,16 +120,23 @@ def is_registry() -> bool:
 
 
 def _add_or_update(ip_chars: str, name: str) -> None:
+    """Insert or update a peer keeping ``known_devices`` sorted."""
+
     entry = ip_chars + name
-    for i, dev in enumerate(known_devices):
-        if dev.startswith(ip_chars):
-            known_devices[i] = entry
-            break
-    else:
-        known_devices.append(entry)
-    if len(known_devices) > MAXIMUM_KNOWN_DEVICES:
-        del known_devices[MAXIMUM_KNOWN_DEVICES:]
-    known_devices.sort(key=lambda d: d[:4])
+    lo, hi = 0, len(known_devices)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        peer_ip = known_devices[mid][:4]
+        if peer_ip < ip_chars:
+            lo = mid + 1
+        elif peer_ip > ip_chars:
+            hi = mid
+        else:
+            known_devices[mid] = entry
+            return
+    if len(known_devices) >= MAXIMUM_KNOWN_DEVICES:
+        return
+    known_devices.insert(lo, entry)
 
 
 def handle_message(msg: dict, ip_str: str) -> None:
@@ -173,23 +177,24 @@ def handle_message(msg: dict, ip_str: str) -> None:
         return
 
     if msg.get("full"):
-        peers = msg["full"]
+        peers_str = msg["full"]
+        if not isinstance(peers_str, str):
+            return
+        peers = [p for p in peers_str.split("|") if p]
         new_list = []
         found_self = False
         for peer in peers:
-            try:
-                ip = peer["ip"]
-                name = str(peer["name"])
-            except (KeyError, TypeError):
+            if len(peer) < 4:
                 continue
-            name = name[:MAX_NAME_LENGTH]
-            ip_chars_peer = "".join(chr(b) for b in ip_to_bytes(ip))
+            ip_chars_peer = peer[:4]
+            name = peer[4:][:MAX_NAME_LENGTH]
             if ip_chars_peer == local_ip_chars:
                 found_self = True
             else:
                 new_list.append(ip_chars_peer + name)
+        new_list.sort()
         known_devices = new_list[:MAXIMUM_KNOWN_DEVICES]
-        if not found_self:
+        if not found_self and len(known_devices) < MAXIMUM_KNOWN_DEVICES:
             broadcast_hello()
         return
 
@@ -247,7 +252,7 @@ def maybe_discover() -> None:
 def get_peer_map() -> dict:
     """Return mapping of known devices keyed by IP string."""
 
-    peers = {bytes_to_ip(local_ip_bytes): {"name": self_info["name"], "self": True}}
+    peers = {bytes_to_ip(local_ip_bytes): {"name": _get_local_name(), "self": True}}
     for dev in known_devices:
         ip_chars, name = dev[:4], dev[4:]
         ip = bytes_to_ip(bytes(ord(c) for c in ip_chars))

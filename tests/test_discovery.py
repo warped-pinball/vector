@@ -15,11 +15,7 @@ def setup_function():
     discovery.pending_ping = None
     discovery.local_ip_bytes = discovery.ip_to_bytes("192.168.0.10")
     discovery.local_ip_chars = "".join(chr(b) for b in discovery.local_ip_bytes)
-    discovery.self_info = {
-        "name": "local",
-        "version": "1",
-        "self": True,
-    }
+    discovery._get_local_name = lambda: "local"
 
 
 def _ip_chars(ip: str) -> str:
@@ -53,12 +49,10 @@ def test_handle_full_list_rebuilds_and_resends_hello_if_missing_self(monkeypatch
         called["hello"] = True
 
     monkeypatch.setattr(discovery, "broadcast_hello", fake_hello)
-    msg = {"full": [{"ip": "192.168.0.20", "name": "Peer"}]}
+    msg = {"full": _ip_chars("192.168.0.20") + "Peer"}
     discovery.handle_message(msg, "192.168.0.20")
     assert called.get("hello")
-    assert discovery.known_devices == [
-        _ip_chars("192.168.0.20") + "Peer",
-    ]
+    assert discovery.known_devices == [_ip_chars("192.168.0.20") + "Peer"]
 
 
 def test_handle_offline_promotes_registry(monkeypatch):
@@ -117,3 +111,31 @@ def test_ping_marks_offline_on_next_call(monkeypatch):
     assert addr == ("255.255.255.255", discovery.DISCOVERY_PORT)
     assert loads(data.decode("utf-8")) == {"offline": peer_ip}
     assert called.get("full")
+
+
+def test_handle_hello_ignores_when_full():
+    # Fill the list to the maximum
+    for i in range(discovery.MAXIMUM_KNOWN_DEVICES):
+        ip = f"192.168.0.{i+1}"
+        discovery.known_devices.append(_ip_chars(ip) + "P")
+    before = list(discovery.known_devices)
+    discovery.handle_message({"hello": True, "name": "Extra"}, "192.168.0.99")
+    assert discovery.known_devices == before
+
+
+def test_broadcast_full_list_packs_payload():
+    discovery.known_devices = [_ip_chars("192.168.0.20") + "Peer"]
+
+    packets = []
+
+    class DummySock:
+        def sendto(self, data, addr):
+            packets.append((data, addr))
+
+    discovery.send_sock = DummySock()
+    discovery.broadcast_full_list()
+    data, addr = packets[0]
+    msg = loads(data.decode("utf-8"))
+    parts = msg["full"].split("|")
+    assert parts[0] == _ip_chars("192.168.0.10") + "local"
+    assert parts[1] == _ip_chars("192.168.0.20") + "Peer"
