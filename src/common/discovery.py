@@ -7,7 +7,6 @@
 
 import socket
 from random import choice
-from time import sleep, time
 
 from ujson import dumps, loads
 
@@ -29,7 +28,6 @@ known_devices = []
 recv_sock = None
 send_sock = None
 
-last_discover_time = 0
 local_ip_bytes = None
 local_ip_chars = ""
 
@@ -67,20 +65,14 @@ def setup() -> None:
     local_ip_bytes = ip_to_bytes(get_ip_address())
     local_ip_chars = "".join(chr(b) for b in local_ip_bytes)
     known_devices = []
-    refresh_known_devices()
+    broadcast_hello()
 
 
-def _ensure_send_sock() -> None:
+def _send(msg: dict, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
     global send_sock
     if not send_sock:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-
-def _send(msg: dict, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
-    """Serialize and send ``msg`` to ``addr`` ignoring network errors."""
-
-    _ensure_send_sock()
     try:  # pragma: no cover - network errors are non-deterministic
         send_sock.sendto(dumps(msg).encode("utf-8"), addr)
     except Exception:
@@ -99,18 +91,23 @@ def broadcast_full_list() -> None:
     _send({"full": payload})
 
 
-def is_registry() -> bool:
-    """Return True if this device has the lowest IP in ``known_devices``."""
+def registry_ip_bytes() -> bytes:
+    # find the minimum known device IP
+    if not known_devices:
+        return local_ip_bytes
+    return min(bytes(dev[:4]) for dev in known_devices)
 
-    for dev in known_devices:
-        peer_bytes = bytes(ord(c) for c in dev[:4])
-        if peer_bytes < local_ip_bytes:
-            return False
-    return True
+
+def is_registry() -> bool:
+    """Return True if this device is the registry (lowest IP) in ``known_devices``."""
+    return registry_ip_bytes() == local_ip_bytes
 
 
 def _add_or_update(ip_chars: str, name: str) -> None:
     """Insert or update a peer keeping ``known_devices`` sorted."""
+
+    if ip_chars == local_ip_chars:
+        return
 
     entry = ip_chars + name
     for i, dev in enumerate(known_devices):
@@ -126,12 +123,23 @@ def _add_or_update(ip_chars: str, name: str) -> None:
         known_devices.append(entry)
 
 
+def anyone_out_there():
+    if is_registry():
+        broadcast_full_list()
+
+
+def registry_should_broadcast():
+    global pending_ping
+    if len(known_devices) > 0:
+        anyone_out_there()
+    else:
+        pending_ping = registry_ip_bytes()
+
+
 def handle_message(msg: dict, ip_str: str) -> None:
     """Handle an incoming message from ``ip_str``."""
+    global pending_ping, known_devices, local_ip_bytes, local_ip_chars
 
-    global known_devices, last_discover_time, pending_ping
-
-    last_discover_time = time()
     ip_bytes = ip_to_bytes(ip_str)
     ip_chars = "".join(chr(b) for b in ip_bytes)
 
@@ -151,16 +159,14 @@ def handle_message(msg: dict, ip_str: str) -> None:
             return
         off_chars = "".join(chr(b) for b in ip_to_bytes(off_ip))
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
-        if is_registry():
-            broadcast_full_list()
+        registry_should_broadcast()
         return
 
     if msg.get("hello"):
         name = str(msg.get("name", ""))[:MAX_NAME_LENGTH]
-        _add_or_update(ip_chars, name)
-        if is_registry() and ip_chars != local_ip_chars:
-            broadcast_full_list()
-        return
+        if ip_chars != local_ip_chars:
+            _add_or_update(ip_chars, name)
+            registry_should_broadcast()
 
     if msg.get("full"):
         peers_str = msg["full"]
@@ -218,29 +224,6 @@ def listen() -> None:
         if not msg:
             return
         handle_message(msg, addr[0])
-
-
-def refresh_known_devices() -> None:
-    """Rebuild the known devices list by syncing with the network."""
-
-    global known_devices, last_discover_time, pending_ping
-    known_devices = []
-    pending_ping = None
-    broadcast_hello()
-    last_discover_time = time()
-    end = time() + 1.0
-    while time() < end:
-        listen()
-        sleep(0.05)
-    if is_registry():
-        broadcast_full_list()
-
-
-def maybe_discover() -> None:
-    """Refresh the device list if the refresh interval has elapsed."""
-
-    if (time() - last_discover_time) >= DISCOVER_REFRESH:
-        refresh_known_devices()
 
 
 def get_peer_map() -> dict:
