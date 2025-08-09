@@ -139,3 +139,11 @@ def test_broadcast_full_list_packs_payload():
     parts = msg["full"].split("|")
     assert parts[0] == _ip_chars("192.168.0.10") + "local"
     assert parts[1] == _ip_chars("192.168.0.20") + "Peer"
+
+
+def test_add_or_update_keeps_sorted():
+    discovery._add_or_update(_ip_chars("192.168.0.20"), "A")
+    discovery._add_or_update(_ip_chars("192.168.0.5"), "B")
+    discovery._add_or_update(_ip_chars("192.168.0.30"), "C")
+    ips = [d[:4] for d in discovery.known_devices]
+    assert ips == [_ip_chars("192.168.0.5"), _ip_chars("192.168.0.20"), _ip_chars("192.168.0.30")]

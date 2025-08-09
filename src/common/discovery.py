@@ -77,36 +77,32 @@ def _ensure_send_sock() -> None:
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 
+def _send(msg: dict, addr: tuple) -> None:
+    """Serialize and send ``msg`` to ``addr`` ignoring network errors."""
+
+    _ensure_send_sock()
+    try:  # pragma: no cover - network errors are non-deterministic
+        send_sock.sendto(dumps(msg).encode("utf-8"), addr)
+    except Exception:
+        pass
+
+
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
-    _ensure_send_sock()
-    msg = {"hello": True, "name": _get_local_name()}
-    try:
-        send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
-    except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to send hello:", e)
+    _send({"hello": True, "name": _get_local_name()}, ("255.255.255.255", DISCOVERY_PORT))
 
 
 def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
-    _ensure_send_sock()
     payload = "|".join([local_ip_chars + _get_local_name()] + known_devices)
-    msg = {"full": payload}
-    try:
-        send_sock.sendto(dumps(msg).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
-    except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to broadcast full list:", e)
+    _send({"full": payload}, ("255.255.255.255", DISCOVERY_PORT))
 
 
 def send_ping(target_ip: bytes) -> None:
     """Send a direct ping to ``target_ip``."""
 
-    _ensure_send_sock()
-    try:
-        send_sock.sendto(dumps({"ping": True}).encode("utf-8"), (bytes_to_ip(target_ip), DISCOVERY_PORT))
-    except Exception as e:  # pragma: no cover - network errors are non-deterministic
-        print("Failed to send ping:", e)
+    _send({"ping": True}, (bytes_to_ip(target_ip), DISCOVERY_PORT))
 
 
 def is_registry() -> bool:
@@ -123,20 +119,17 @@ def _add_or_update(ip_chars: str, name: str) -> None:
     """Insert or update a peer keeping ``known_devices`` sorted."""
 
     entry = ip_chars + name
-    lo, hi = 0, len(known_devices)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        peer_ip = known_devices[mid][:4]
-        if peer_ip < ip_chars:
-            lo = mid + 1
-        elif peer_ip > ip_chars:
-            hi = mid
-        else:
-            known_devices[mid] = entry
+    for i, dev in enumerate(known_devices):
+        peer_ip = dev[:4]
+        if peer_ip == ip_chars:
+            known_devices[i] = entry
             return
-    if len(known_devices) >= MAXIMUM_KNOWN_DEVICES:
-        return
-    known_devices.insert(lo, entry)
+        if peer_ip > ip_chars:
+            if len(known_devices) < MAXIMUM_KNOWN_DEVICES:
+                known_devices.insert(i, entry)
+            return
+    if len(known_devices) < MAXIMUM_KNOWN_DEVICES:
+        known_devices.append(entry)
 
 
 def handle_message(msg: dict, ip_str: str) -> None:
@@ -149,11 +142,7 @@ def handle_message(msg: dict, ip_str: str) -> None:
     ip_chars = "".join(chr(b) for b in ip_bytes)
 
     if msg.get("ping"):
-        _ensure_send_sock()
-        try:
-            send_sock.sendto(dumps({"pong": True}).encode("utf-8"), (ip_str, DISCOVERY_PORT))
-        except Exception:  # pragma: no cover - network errors are non-deterministic
-            pass
+        _send({"pong": True}, (ip_str, DISCOVERY_PORT))
         return
 
     if msg.get("pong"):
@@ -203,8 +192,8 @@ def handle_message(msg: dict, ip_str: str) -> None:
         _add_or_update(ip_chars, name)
 
 
-def listen() -> None:
-    """Check for any incoming discovery packets.  Non-blocking."""
+def _recv():
+    """Receive a discovery packet if available."""
 
     global recv_sock
     if not recv_sock:
@@ -213,16 +202,24 @@ def listen() -> None:
         recv_sock.bind(("0.0.0.0", DISCOVERY_PORT))
         recv_sock.settimeout(0)
 
-    while True:
-        try:
-            data, addr = recv_sock.recvfrom(1024)
-        except OSError:
-            return
+    try:
+        data, addr = recv_sock.recvfrom(1024)
+    except OSError:
+        return None, None
+    try:
+        msg = loads(data.decode("utf-8"))
+    except ValueError:
+        return None, None
+    return msg, addr
 
-        try:
-            msg = loads(data.decode("utf-8"))
-        except ValueError:
-            continue
+
+def listen() -> None:
+    """Check for any incoming discovery packets.  Non-blocking."""
+
+    while True:
+        msg, addr = _recv()
+        if not msg:
+            return
         handle_message(msg, addr[0])
 
 
@@ -272,11 +269,7 @@ def ping_random_peer() -> None:
         off_chars = "".join(chr(b) for b in pending_ping)
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
         ip_str = bytes_to_ip(pending_ping)
-        _ensure_send_sock()
-        try:
-            send_sock.sendto(dumps({"offline": ip_str}).encode("utf-8"), ("255.255.255.255", DISCOVERY_PORT))
-        except Exception:  # pragma: no cover - network errors are non-deterministic
-            pass
+        _send({"offline": ip_str}, ("255.255.255.255", DISCOVERY_PORT))
         if is_registry():
             broadcast_full_list()
         pending_ping = None
