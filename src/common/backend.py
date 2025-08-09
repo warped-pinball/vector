@@ -6,6 +6,7 @@ from time import sleep, time
 
 import faults
 import Pico_Led
+import SharedState as S
 import uctypes
 from ls import ls
 from machine import RTC
@@ -15,8 +16,6 @@ from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
-
-import SharedState as S
 
 #
 # Constants
@@ -689,6 +688,7 @@ def app_midnightMadnessAvailable(request):
     else:
         return {"available": False}
 
+
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
     record = ds_read_record("extras", 0)
@@ -696,6 +696,7 @@ def app_getMidnightMadness(request):
         "enabled": record.get("WPCTimeOn", False),
         "always": record.get("MM_Always", False),
     }
+
 
 @add_route("/api/time/set_midnight_madness", auth=True)
 def app_setMidnightMadness(request):
@@ -705,9 +706,11 @@ def app_setMidnightMadness(request):
     info["WPCTimeOn"] = bool(data["enabled"])
     ds_write_record("extras", info, 0)
 
+
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
     import Time
+
     Time.trigger_midnight_madness()
 
 
@@ -774,9 +777,10 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/network/peers")
 def app_getPeers(request):
-    from discovery import known_devices
+    from discovery import get_peer_map
 
-    return known_devices
+    peers = get_peer_map()
+    return {ip: info for ip, info in peers.items() if not info["self"]}
 
 
 #
