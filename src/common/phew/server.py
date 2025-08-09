@@ -325,17 +325,17 @@ def create_schedule(ap_mode: bool = False):
 
     # non AP mode only tasks
     if not ap_mode:
-        # announce our presence every 30 seconds
-        schedule(broadcast_hello, 10000, 30000)
+        # announce our presence once after boot
+        schedule(broadcast_hello, 10000)
 
-        # listen for others every 3 seconds
-        schedule(listen, 10000, 3000)
+        # listen for others every 2 seconds
+        schedule(listen, 10000, 2000)
 
         # periodically refresh the peer list
         schedule(maybe_discover, 10000, 60000)
 
         # ping peers to detect offline devices
-        schedule(ping_random_peer, 12000, 15000)
+        schedule(ping_random_peer, 12000, 5000)
 
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")

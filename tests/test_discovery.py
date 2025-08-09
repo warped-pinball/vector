@@ -79,6 +79,17 @@ def test_handle_pong_clears_pending_ping():
     assert discovery.pending_ping is None
 
 
+def test_offline_for_self_triggers_hello(monkeypatch):
+    called = {}
+
+    def fake_hello():
+        called["hello"] = True
+
+    monkeypatch.setattr(discovery, "broadcast_hello", fake_hello)
+    discovery.handle_message({"offline": "192.168.0.10"}, "192.168.0.20")
+    assert called.get("hello")
+
+
 def test_ping_marks_offline_on_next_call(monkeypatch):
     peer_ip = "192.168.0.20"
     ip_chars = _ip_chars(peer_ip)
@@ -139,6 +150,7 @@ def test_broadcast_full_list_packs_payload():
     parts = msg["full"].split("|")
     assert parts[0] == _ip_chars("192.168.0.10") + "local"
     assert parts[1] == _ip_chars("192.168.0.20") + "Peer"
+    assert addr == ("255.255.255.255", discovery.DISCOVERY_PORT)
 
 
 def test_add_or_update_keeps_sorted():

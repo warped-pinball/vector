@@ -77,7 +77,7 @@ def _ensure_send_sock() -> None:
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 
-def _send(msg: dict, addr: tuple) -> None:
+def _send(msg: dict, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
     """Serialize and send ``msg`` to ``addr`` ignoring network errors."""
 
     _ensure_send_sock()
@@ -89,20 +89,14 @@ def _send(msg: dict, addr: tuple) -> None:
 
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
-    _send({"hello": True, "name": _get_local_name()}, ("255.255.255.255", DISCOVERY_PORT))
+    _send({"hello": True, "name": _get_local_name()})
 
 
 def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
     payload = "|".join([local_ip_chars + _get_local_name()] + known_devices)
-    _send({"full": payload}, ("255.255.255.255", DISCOVERY_PORT))
-
-
-def send_ping(target_ip: bytes) -> None:
-    """Send a direct ping to ``target_ip``."""
-
-    _send({"ping": True}, (bytes_to_ip(target_ip), DISCOVERY_PORT))
+    _send({"full": payload})
 
 
 def is_registry() -> bool:
@@ -152,6 +146,9 @@ def handle_message(msg: dict, ip_str: str) -> None:
 
     if msg.get("offline"):
         off_ip = msg["offline"]
+        if off_ip == bytes_to_ip(local_ip_bytes):
+            broadcast_hello()
+            return
         off_chars = "".join(chr(b) for b in ip_to_bytes(off_ip))
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
         if is_registry():
@@ -269,7 +266,7 @@ def ping_random_peer() -> None:
         off_chars = "".join(chr(b) for b in pending_ping)
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
         ip_str = bytes_to_ip(pending_ping)
-        _send({"offline": ip_str}, ("255.255.255.255", DISCOVERY_PORT))
+        _send({"offline": ip_str})
         if is_registry():
             broadcast_full_list()
         pending_ping = None
@@ -278,5 +275,5 @@ def ping_random_peer() -> None:
         return
     target = choice(peers)
     ip_bytes = bytes(ord(c) for c in target[:4])
-    send_ping(ip_bytes)
+    _send({"ping": True}, (bytes_to_ip(ip_bytes), DISCOVERY_PORT))
     pending_ping = ip_bytes
