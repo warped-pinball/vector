@@ -4,7 +4,7 @@ import sys
 import time
 
 DISCOVERY_PORT = 37020
-BROADCAST_INTERVAL = 5  # Seconds between sending broadcasts
+DISCOVER_REFRESH = 600  # Seconds between discovery broadcasts
 DEVICE_TIMEOUT = 30  # Seconds before we consider a device "gone"
 
 DEVICE_TYPE = "desktop_tester"
@@ -42,22 +42,29 @@ class DesktopDiscovery:
         self.recv_sock.bind(("0.0.0.0", DISCOVERY_PORT))
         self.recv_sock.setblocking(False)
 
-        # Prepare our send socket (for broadcast)
+        # Prepare our send socket (for broadcast/unicast)
         self.send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        self.last_broadcast_time = 0
+        self.last_discover_time = 0
         self.local_ip = get_local_ip()
 
-    def broadcast_announce(self):
-        """Send a JSON broadcast with our IP, device type, and version."""
-        message = {"version": self.version, "name": "DesktopTester"}
+        # Kick off discovery immediately
+        self.broadcast_discover()
+
+    def broadcast_discover(self):
+        """Send a broadcast requesting introductions from other boards."""
+        message = {"discover": True}
         data = json.dumps(message).encode("utf-8")
-        # Broadcast to the "all 1s" address on the given port
         self.send_sock.sendto(data, ("255.255.255.255", DISCOVERY_PORT))
 
-    def receive_announcements(self):
-        """Receive any incoming broadcast packets, parse them, and update known devices."""
+    def send_intro(self, target_ip):
+        message = {"version": self.version, "name": "DesktopTester"}
+        data = json.dumps(message).encode("utf-8")
+        self.send_sock.sendto(data, (target_ip, DISCOVERY_PORT))
+
+    def receive_messages(self):
+        """Receive any incoming packets, parse them, and respond if needed."""
         while True:
             try:
                 data, addr = self.recv_sock.recvfrom(1024)
@@ -71,14 +78,15 @@ class DesktopDiscovery:
             try:
                 msg = json.loads(data.decode("utf-8"))
             except json.JSONDecodeError:
-                # Not valid JSON
                 continue
 
-            # Expecting: { "ip": str, "type": str, "version": str }
+            if msg.get("discover"):
+                self.send_intro(addr[0])
+                continue
+
             if "name" in msg and "version" in msg:
                 name = msg["name"]
                 version = msg["version"]
-
                 now = time.time()
                 self.known_devices[addr[0]] = {"version": version, "last_seen": now, "name": name}
 
@@ -94,15 +102,12 @@ class DesktopDiscovery:
     def update(self):
         """Perform one discovery iteration: broadcast (if needed), receive, prune."""
         now = time.time()
-        # Broadcast every BROADCAST_INTERVAL seconds
-        if (now - self.last_broadcast_time) >= BROADCAST_INTERVAL:
-            self.broadcast_announce()
-            self.last_broadcast_time = now
 
-        # Listen for others
-        self.receive_announcements()
+        if (now - self.last_discover_time) >= DISCOVER_REFRESH:
+            self.broadcast_discover()
+            self.last_discover_time = now
 
-        # Prune
+        self.receive_messages()
         self.prune_old_devices()
 
 
