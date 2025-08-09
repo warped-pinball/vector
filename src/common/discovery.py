@@ -84,6 +84,11 @@ def broadcast_hello() -> None:
     _send({"hello": True, "name": _get_local_name()})
 
 
+def im_lonely() -> None:
+    if not known_devices:
+        broadcast_hello()
+
+
 def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
@@ -124,17 +129,13 @@ def _add_or_update(ip_chars: str, name: str) -> None:
         known_devices.append(entry)
 
 
-def anyone_out_there():
-    if is_registry():
-        broadcast_full_list()
-
-
 def registry_should_broadcast():
     global pending_ping
     if len(known_devices) > 0:
-        anyone_out_there()
-    else:
-        pending_ping = registry_ip_bytes()
+        if is_registry():
+            broadcast_full_list()
+        else:
+            pending_ping = registry_ip_bytes()
 
 
 def handle_message(msg: dict, ip_str: str) -> None:

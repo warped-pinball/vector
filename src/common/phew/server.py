@@ -280,7 +280,7 @@ def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
     from backend import connect_to_wifi
-    from discovery import anyone_out_there, broadcast_hello, listen, ping_random_peer
+    from discovery import broadcast_hello, im_lonely, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
 
@@ -334,8 +334,8 @@ def create_schedule(ap_mode: bool = False):
         # ping peers to detect offline devices
         schedule(ping_random_peer, 12000, 5000)
 
-        # periodically refresh the peer list (if we're the registry)
-        schedule(anyone_out_there, 10000, 60000)
+        # periodically call out if alone
+        schedule(im_lonely, 10000, 60000)
 
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
