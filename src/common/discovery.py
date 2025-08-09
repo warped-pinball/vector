@@ -84,11 +84,6 @@ def broadcast_hello() -> None:
     _send({"hello": True, "name": _get_local_name()})
 
 
-def im_lonely() -> None:
-    if not known_devices:
-        broadcast_hello()
-
-
 def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
 
@@ -147,6 +142,8 @@ def handle_message(msg: dict, ip_str: str) -> None:
 
     if msg.get("ping"):
         _send({"pong": True}, (ip_str, DISCOVERY_PORT))
+        if ip_str not in [d[:4] for d in known_devices]:
+            broadcast_hello()
         return
 
     if msg.get("pong"):
@@ -166,16 +163,14 @@ def handle_message(msg: dict, ip_str: str) -> None:
 
     if msg.get("hello"):
         name = str(msg.get("name", ""))[:MAX_NAME_LENGTH]
-        if ip_chars != local_ip_chars:
-            _add_or_update(ip_chars, name)
-            registry_should_broadcast()
+        _add_or_update(ip_chars, name)
+        registry_should_broadcast()
 
     if msg.get("full"):
         peers_str = msg["full"]
         if not isinstance(peers_str, str):
             return
         peers = [p for p in peers_str.split("|") if p]
-        new_list = []
         found_self = False
         for peer in peers:
             if len(peer) < 4:
@@ -184,10 +179,7 @@ def handle_message(msg: dict, ip_str: str) -> None:
             name = peer[4:][:MAX_NAME_LENGTH]
             if ip_chars_peer == local_ip_chars:
                 found_self = True
-            else:
-                new_list.append(ip_chars_peer + name)
-        new_list.sort()
-        known_devices = new_list[:MAXIMUM_KNOWN_DEVICES]
+            _add_or_update(ip_chars_peer, name)
         if not found_self and len(known_devices) < MAXIMUM_KNOWN_DEVICES:
             broadcast_hello()
         return
@@ -257,7 +249,7 @@ def ping_random_peer() -> None:
         pending_ping = None
         peers = [d for d in known_devices if not d.startswith(local_ip_chars)]
     if not peers:
-        return
+        broadcast_hello()
     target = choice(peers)
     ip_bytes = bytes(ord(c) for c in target[:4])
     _send({"ping": True}, (bytes_to_ip(ip_bytes), DISCOVERY_PORT))
