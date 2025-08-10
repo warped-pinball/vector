@@ -5,26 +5,26 @@ const pageConfig = {
   scores: {
     title: "Scores",
     resources: [
-      { url: "/html/scores.html.gz", targetId: "page_html" },
-      { url: "/js/scores.js.gz", targetId: "page_js" },
+      { url: "/html/scores.html", targetId: "page_html" },
+      { url: "/js/scores.js", targetId: "page_js" },
     ],
   },
   about: {
     title: "About Warped Pinball",
-    resources: [{ url: "/html/about.html.gz", targetId: "page_html" }],
+    resources: [{ url: "/html/about.html", targetId: "page_html" }],
   },
   players: {
     title: "Players",
     resources: [
-      { url: "/html/players.html.gz", targetId: "page_html" },
-      { url: "/js/players.js.gz", targetId: "page_js" },
+      { url: "/html/players.html", targetId: "page_html" },
+      { url: "/js/players.js", targetId: "page_js" },
     ],
   },
   admin: {
     title: "Admin",
     resources: [
-      { url: "/html/admin.html.gz", targetId: "page_html" },
-      { url: "/js/admin.js.gz", targetId: "page_js" },
+      { url: "/html/admin.html", targetId: "page_html" },
+      { url: "/js/admin.js", targetId: "page_js" },
     ],
   },
 };
@@ -32,6 +32,29 @@ const pageConfig = {
 let previousResourceIds = [];
 let isNavigating = false;
 let currentPageKey = null;
+
+async function fetchAndApply(url, targetId) {
+  const placeholder = document.getElementById(targetId);
+  if (!placeholder) {
+    console.warn(`Target ${targetId} not found`);
+    return;
+  }
+  if (url.endsWith(".js")) {
+    const script = document.createElement("script");
+    script.src = url;
+    script.id = targetId;
+    script.async = false;
+    placeholder.replaceWith(script);
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status}`);
+    }
+    const text = await response.text();
+    placeholder.style.display = "";
+    placeholder.innerHTML = text;
+  }
+}
 
 async function loadPageResources(pageKey) {
   const config = pageConfig[pageKey];
@@ -41,7 +64,7 @@ async function loadPageResources(pageKey) {
   }
   clearPreviousResources(previousResourceIds);
   const loadPromises = config.resources.map((resource) =>
-    fetchDecompressAndApply(resource.url, resource.targetId)
+    fetchAndApply(resource.url, resource.targetId)
       .then(() => {
         console.log(
           `Loaded resource: ${resource.url} into ${resource.targetId}`,
