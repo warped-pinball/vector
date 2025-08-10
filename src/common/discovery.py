@@ -23,6 +23,7 @@ class MessageType:
     PONG = 4
     OFFLINE = 5
 
+
 # UDP port used for discovery traffic
 DISCOVERY_PORT = 37020
 
@@ -47,14 +48,13 @@ local_ip_chars = ""
 # Track a single peer we're awaiting a pong from
 pending_ping = None
 
+
 class DiscoveryMessage:
     """Structured discovery message with compact binary encoding."""
 
     __slots__ = ("type", "name", "peers", "ip")
 
-    def __init__(self, mtype: int, name: Optional[str] = None,
-                 peers: Optional[Iterable[Tuple[str, str]]] = None,
-                 ip: Optional[bytes] = None) -> None:
+    def __init__(self, mtype: int, name: Optional[str] = None, peers: Optional[Iterable[Tuple[str, str]]] = None, ip: Optional[bytes] = None) -> None:
         self.type = mtype
         self.name = name
         self.peers = peers
@@ -172,6 +172,7 @@ class DiscoveryMessage:
 
         return None
 
+
 def ip_to_bytes(ip_str: str) -> bytes:
     """Convert dotted-quad string to a 4-byte representation."""
 
@@ -245,6 +246,7 @@ def is_registry() -> bool:
 
 def _add_or_update(ip_chars: str, name: str) -> None:
     """Insert or update a peer keeping ``known_devices`` sorted."""
+    global known_devices, local_ip_chars
 
     if ip_chars == local_ip_chars:
         return
