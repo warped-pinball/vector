@@ -5,6 +5,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from common.discovery import DiscoveryMessage, MessageType
+from common import discovery
 
 
 def _ip_chars(*bytes_):
@@ -54,3 +55,20 @@ def test_repr_full_does_not_consume():
     data = msg.encode()
     decoded = DiscoveryMessage.decode(data)
     assert list(decoded.peers) == peers
+
+
+def test_registry_ip_bytes_returns_minimum_peer_ip():
+    """Ensure registry_ip_bytes handles string entries without TypeError."""
+    # Save old globals to restore after test
+    old_devices = discovery.known_devices
+    old_local_ip = discovery.local_ip_bytes
+    try:
+        discovery.known_devices = [
+            _ip_chars(192, 168, 0, 5) + "Game5",
+            _ip_chars(192, 168, 0, 3) + "Game3",
+        ]
+        discovery.local_ip_bytes = bytes([192, 168, 0, 10])
+        assert discovery.registry_ip_bytes() == bytes([192, 168, 0, 3])
+    finally:
+        discovery.known_devices = old_devices
+        discovery.local_ip_bytes = old_local_ip
