@@ -8,7 +8,12 @@
 import socket
 from random import choice
 
-from ujson import dumps, loads
+# Message type identifiers for compact binary encoding
+HELLO = 1
+FULL = 2
+PING = 3
+PONG = 4
+OFFLINE = 5
 
 # UDP port used for discovery traffic
 DISCOVERY_PORT = 37020
@@ -33,6 +38,86 @@ local_ip_chars = ""
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
+
+
+def encode_message(msg: dict) -> bytes:
+    """Encode a discovery ``msg`` dictionary into a compact binary format."""
+
+    if msg.get("hello"):
+        name = str(msg.get("name", ""))[:MAX_NAME_LENGTH]
+        name_bytes = name.encode("utf-8")
+        return bytes([HELLO, len(name_bytes)]) + name_bytes
+
+    if msg.get("full"):
+        payload = str(msg["full"])
+        peers = [p for p in payload.split("|") if p]
+        parts = [bytes([FULL, len(peers)])]
+        for peer in peers:
+            if len(peer) < 4:
+                continue
+            ip_part = bytes(ord(c) for c in peer[:4])
+            name_bytes = peer[4:].encode("utf-8")[:MAX_NAME_LENGTH]
+            parts.append(ip_part + bytes([len(name_bytes)]) + name_bytes)
+        return b"".join(parts)
+
+    if msg.get("ping"):
+        return bytes([PING])
+
+    if msg.get("pong"):
+        return bytes([PONG])
+
+    if msg.get("offline"):
+        ip_bytes = ip_to_bytes(msg["offline"])
+        return bytes([OFFLINE]) + ip_bytes
+
+    raise ValueError("Unknown message type")
+
+
+def decode_message(data: bytes) -> dict | None:
+    """Decode binary ``data`` into a discovery message dictionary."""
+
+    if not data:
+        return None
+    mtype = data[0]
+    if mtype == HELLO:
+        if len(data) < 2:
+            return None
+        name_len = data[1]
+        name = data[2 : 2 + name_len].decode("utf-8", "ignore")
+        return {"hello": True, "name": name}
+
+    if mtype == FULL:
+        if len(data) < 2:
+            return None
+        count = data[1]
+        offset = 2
+        peers = []
+        for _ in range(count):
+            if len(data) < offset + 5:
+                return None
+            ip_part = data[offset : offset + 4]
+            offset += 4
+            name_len = data[offset]
+            offset += 1
+            name = data[offset : offset + name_len].decode("utf-8", "ignore")
+            offset += name_len
+            ip_chars = "".join(chr(b) for b in ip_part)
+            peers.append(ip_chars + name)
+        return {"full": "|".join(peers)}
+
+    if mtype == PING:
+        return {"ping": True}
+
+    if mtype == PONG:
+        return {"pong": True}
+
+    if mtype == OFFLINE:
+        if len(data) < 5:
+            return None
+        ip_str = bytes_to_ip(data[1:5])
+        return {"offline": ip_str}
+
+    return None
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
@@ -76,7 +161,7 @@ def _send(msg: dict, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     try:  # pragma: no cover - network errors are non-deterministic
-        send_sock.sendto(dumps(msg).encode("utf-8"), addr)
+        send_sock.sendto(encode_message(msg), addr)
     except Exception:
         pass
 
@@ -202,11 +287,8 @@ def _recv():
         data, addr = recv_sock.recvfrom(1024)
     except OSError:
         return None, None
-    try:
-        msg = loads(data.decode("utf-8"))
-    except ValueError:
-        return None, None
-    return msg, addr
+    msg = decode_message(data)
+    return (msg, addr) if msg else (None, None)
 
 
 def listen() -> None:
