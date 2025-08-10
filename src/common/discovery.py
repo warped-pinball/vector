@@ -6,14 +6,13 @@
 # new devices arrive or when peers are marked offline.
 
 import socket
-from enum import IntEnum
 from dataclasses import dataclass
 from typing import Generator, Iterable, Optional, Tuple
 from random import choice
 
 
-class MessageType(IntEnum):
-    """Types of discovery messages."""
+class MessageType:
+    """Types of discovery messages represented as integer constants."""
 
     HELLO = 1
     FULL = 2
@@ -49,10 +48,10 @@ pending_ping = None
 class DiscoveryMessage:
     """Structured discovery message with compact binary encoding."""
 
-    type: MessageType
+    type: int
     name: Optional[str] = None
     peers: Optional[Iterable[Tuple[str, str]]] = None
-    ip: Optional[str] = None
+    ip: Optional[bytes] = None
 
     @classmethod
     def hello(cls, name: str) -> "DiscoveryMessage":
@@ -71,16 +70,16 @@ class DiscoveryMessage:
         return cls(MessageType.PONG)
 
     @classmethod
-    def offline(cls, ip: str) -> "DiscoveryMessage":
+    def offline(cls, ip: bytes) -> "DiscoveryMessage":
         return cls(MessageType.OFFLINE, ip=ip)
 
     # ------------------------------------------------------------------ encoding
     def encode(self) -> bytes:
-        if self.type is MessageType.HELLO and self.name is not None:
+        if self.type == MessageType.HELLO and self.name is not None:
             name_bytes = self.name[:MAX_NAME_LENGTH].encode("utf-8")
             return bytes([MessageType.HELLO, len(name_bytes)]) + name_bytes
 
-        if self.type is MessageType.FULL and self.peers is not None:
+        if self.type == MessageType.FULL and self.peers is not None:
             peers_list = list(self.peers)
             parts = [bytes([MessageType.FULL, len(peers_list)])]
             for ip_chars, name in peers_list:
@@ -89,14 +88,14 @@ class DiscoveryMessage:
                 parts.append(ip_part + bytes([len(name_bytes)]) + name_bytes)
             return b"".join(parts)
 
-        if self.type is MessageType.PING:
+        if self.type == MessageType.PING:
             return bytes([MessageType.PING])
 
-        if self.type is MessageType.PONG:
+        if self.type == MessageType.PONG:
             return bytes([MessageType.PONG])
 
-        if self.type is MessageType.OFFLINE and self.ip is not None:
-            return bytes([MessageType.OFFLINE]) + ip_to_bytes(self.ip)
+        if self.type == MessageType.OFFLINE and self.ip is not None:
+            return bytes([MessageType.OFFLINE]) + self.ip
 
         raise ValueError("Incomplete message for encoding")
 
@@ -105,16 +104,16 @@ class DiscoveryMessage:
     def decode(data: bytes) -> Optional["DiscoveryMessage"]:
         if not data:
             return None
-        mtype = MessageType(data[0])
+        mtype = data[0]
 
-        if mtype is MessageType.HELLO:
+        if mtype == MessageType.HELLO:
             if len(data) < 2:
                 return None
             name_len = data[1]
             name = data[2 : 2 + name_len].decode("utf-8", "ignore")
             return DiscoveryMessage(MessageType.HELLO, name=name)
 
-        if mtype is MessageType.FULL:
+        if mtype == MessageType.FULL:
             if len(data) < 2:
                 return None
             count = data[1]
@@ -135,17 +134,16 @@ class DiscoveryMessage:
 
             return DiscoveryMessage(MessageType.FULL, peers=peer_gen())
 
-        if mtype is MessageType.PING:
+        if mtype == MessageType.PING:
             return DiscoveryMessage(MessageType.PING)
 
-        if mtype is MessageType.PONG:
+        if mtype == MessageType.PONG:
             return DiscoveryMessage(MessageType.PONG)
 
-        if mtype is MessageType.OFFLINE:
+        if mtype == MessageType.OFFLINE:
             if len(data) < 5:
                 return None
-            ip_str = bytes_to_ip(data[1:5])
-            return DiscoveryMessage(MessageType.OFFLINE, ip=ip_str)
+            return DiscoveryMessage(MessageType.OFFLINE, ip=data[1:5])
 
         return None
 
@@ -257,33 +255,33 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
     ip_bytes = ip_to_bytes(ip_str)
     ip_chars = "".join(chr(b) for b in ip_bytes)
 
-    if msg.type is MessageType.PING:
+    if msg.type == MessageType.PING:
         _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
         if ip_chars not in [d[:4] for d in known_devices]:
             broadcast_hello()
         return
 
-    if msg.type is MessageType.PONG:
+    if msg.type == MessageType.PONG:
         if pending_ping == ip_bytes:
             pending_ping = None
         return
 
-    if msg.type is MessageType.OFFLINE and msg.ip is not None:
+    if msg.type == MessageType.OFFLINE and msg.ip is not None:
         off_ip = msg.ip
-        if off_ip == bytes_to_ip(local_ip_bytes):
+        if off_ip == local_ip_bytes:
             broadcast_hello()
             return
-        off_chars = "".join(chr(b) for b in ip_to_bytes(off_ip))
+        off_chars = "".join(chr(b) for b in off_ip)
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
         registry_should_broadcast()
         return
 
-    if msg.type is MessageType.HELLO and msg.name is not None:
+    if msg.type == MessageType.HELLO and msg.name is not None:
         name = msg.name[:MAX_NAME_LENGTH]
         _add_or_update(ip_chars, name)
         registry_should_broadcast()
 
-    if msg.type is MessageType.FULL and msg.peers is not None:
+    if msg.type == MessageType.FULL and msg.peers is not None:
         found_self = False
         for ip_chars_peer, name in msg.peers:
             name = name[:MAX_NAME_LENGTH]
@@ -345,8 +343,7 @@ def ping_random_peer() -> None:
     if pending_ping and pending_ping != local_ip_bytes:
         off_chars = "".join(chr(b) for b in pending_ping)
         known_devices = [d for d in known_devices if not d.startswith(off_chars)]
-        ip_str = bytes_to_ip(pending_ping)
-        _send(DiscoveryMessage.offline(ip_str))
+        _send(DiscoveryMessage.offline(pending_ping))
         if is_registry():
             broadcast_full_list()
         pending_ping = None

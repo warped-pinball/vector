@@ -15,7 +15,7 @@ def test_encode_decode_hello():
     msg = DiscoveryMessage.hello("Test")
     data = msg.encode()
     decoded = DiscoveryMessage.decode(data)
-    assert decoded and decoded.type is MessageType.HELLO and decoded.name == "Test"
+    assert decoded and decoded.type == MessageType.HELLO and decoded.name == "Test"
 
 
 def test_encode_decode_full():
@@ -23,17 +23,18 @@ def test_encode_decode_full():
     msg = DiscoveryMessage.full(peers)
     data = msg.encode()
     decoded = DiscoveryMessage.decode(data)
-    assert decoded and decoded.type is MessageType.FULL
+    assert decoded and decoded.type == MessageType.FULL
     assert list(decoded.peers) == peers
 
 
 def test_encode_decode_ping_pong():
-    assert DiscoveryMessage.decode(DiscoveryMessage.ping().encode()).type is MessageType.PING
-    assert DiscoveryMessage.decode(DiscoveryMessage.pong().encode()).type is MessageType.PONG
+    assert DiscoveryMessage.decode(DiscoveryMessage.ping().encode()).type == MessageType.PING
+    assert DiscoveryMessage.decode(DiscoveryMessage.pong().encode()).type == MessageType.PONG
 
 
 def test_encode_decode_offline():
-    msg = DiscoveryMessage.offline("192.168.0.5")
+    ip = bytes([192, 168, 0, 5])
+    msg = DiscoveryMessage.offline(ip)
     data = msg.encode()
     decoded = DiscoveryMessage.decode(data)
-    assert decoded and decoded.type is MessageType.OFFLINE and decoded.ip == "192.168.0.5"
+    assert decoded and decoded.type == MessageType.OFFLINE and decoded.ip == ip
