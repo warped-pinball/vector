@@ -236,7 +236,11 @@ def registry_ip_bytes() -> bytes:
     global known_devices, local_ip_bytes
     if not known_devices:
         return local_ip_bytes
-    return min(bytes(dev[:4]) for dev in known_devices)
+    # ``known_devices`` stores entries as strings where the first four
+    # characters are the raw IP bytes. ``bytes()`` cannot be called on a
+    # string without providing an encoding, so we convert each character to
+    # its ordinal value explicitly.
+    return min(bytes(ord(c) for c in dev[:4]) for dev in known_devices)
 
 
 def is_registry() -> bool:
