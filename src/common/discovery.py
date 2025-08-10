@@ -80,6 +80,24 @@ class DiscoveryMessage:
     def offline(cls, ip: bytes) -> "DiscoveryMessage":
         return cls(MessageType.OFFLINE, ip=ip)
 
+    # ------------------------------------------------------------------ display
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        tname = {
+            MessageType.HELLO: "HELLO",
+            MessageType.FULL: "FULL",
+            MessageType.PING: "PING",
+            MessageType.PONG: "PONG",
+            MessageType.OFFLINE: "OFFLINE",
+        }.get(self.type, str(self.type))
+
+        if self.type == MessageType.HELLO and self.name is not None:
+            return f"<DiscoveryMessage {tname} name={self.name!r}>"
+        if self.type == MessageType.FULL:
+            return f"<DiscoveryMessage {tname} peers>"
+        if self.type == MessageType.OFFLINE and self.ip is not None:
+            return f"<DiscoveryMessage {tname} ip={bytes_to_ip(self.ip)}>"
+        return f"<DiscoveryMessage {tname}>"
+
     # ------------------------------------------------------------------ encoding
     def encode(self) -> bytes:
         if self.type == MessageType.HELLO and self.name is not None:

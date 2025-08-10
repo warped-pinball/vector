@@ -38,3 +38,19 @@ def test_encode_decode_offline():
     data = msg.encode()
     decoded = DiscoveryMessage.decode(data)
     assert decoded and decoded.type == MessageType.OFFLINE and decoded.ip == ip
+
+
+def test_repr_readable():
+    ip = bytes([192, 168, 0, 5])
+    assert "HELLO" in repr(DiscoveryMessage.hello("X"))
+    assert "OFFLINE" in repr(DiscoveryMessage.offline(ip))
+    assert "192.168.0.5" in repr(DiscoveryMessage.offline(ip))
+
+
+def test_repr_full_does_not_consume():
+    peers = [(_ip_chars(1, 2, 3, 4), "a"), (_ip_chars(5, 6, 7, 8), "b")]
+    msg = DiscoveryMessage.full(iter(peers))
+    _ = repr(msg)
+    data = msg.encode()
+    decoded = DiscoveryMessage.decode(data)
+    assert list(decoded.peers) == peers
