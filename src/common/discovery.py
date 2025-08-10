@@ -6,9 +6,12 @@
 # new devices arrive or when peers are marked offline.
 
 import socket
-from dataclasses import dataclass
-from typing import Generator, Iterable, Optional, Tuple
 from random import choice
+
+try:  # MicroPython may lack the ``typing`` module
+    from typing import Generator, Iterable, Optional, Tuple
+except ImportError:  # pragma: no cover - fallback for MicroPython
+    Generator = Iterable = Optional = Tuple = None  # type: ignore
 
 
 class MessageType:
@@ -44,14 +47,18 @@ local_ip_chars = ""
 # Track a single peer we're awaiting a pong from
 pending_ping = None
 
-@dataclass
 class DiscoveryMessage:
     """Structured discovery message with compact binary encoding."""
 
-    type: int
-    name: Optional[str] = None
-    peers: Optional[Iterable[Tuple[str, str]]] = None
-    ip: Optional[bytes] = None
+    __slots__ = ("type", "name", "peers", "ip")
+
+    def __init__(self, mtype: int, name: Optional[str] = None,
+                 peers: Optional[Iterable[Tuple[str, str]]] = None,
+                 ip: Optional[bytes] = None) -> None:
+        self.type = mtype
+        self.name = name
+        self.peers = peers
+        self.ip = ip
 
     @classmethod
     def hello(cls, name: str) -> "DiscoveryMessage":
