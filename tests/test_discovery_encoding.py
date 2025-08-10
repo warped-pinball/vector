@@ -4,10 +4,7 @@ import sys
 # Ensure src directory is on sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from common.discovery import (
-    encode_message,
-    decode_message,
-)
+from common.discovery import DiscoveryMessage, MessageType
 
 
 def _ip_chars(*bytes_):
@@ -15,26 +12,28 @@ def _ip_chars(*bytes_):
 
 
 def test_encode_decode_hello():
-    msg = {"hello": True, "name": "Test"}
-    data = encode_message(msg)
-    assert decode_message(data) == msg
+    msg = DiscoveryMessage.hello("Test")
+    data = msg.encode()
+    decoded = DiscoveryMessage.decode(data)
+    assert decoded and decoded.type is MessageType.HELLO and decoded.name == "Test"
 
 
 def test_encode_decode_full():
-    p1 = _ip_chars(192, 168, 0, 1) + "dev1"
-    p2 = _ip_chars(192, 168, 0, 2) + "dev2"
-    payload = "|".join([p1, p2])
-    msg = {"full": payload}
-    data = encode_message(msg)
-    assert decode_message(data) == msg
+    peers = [(_ip_chars(192, 168, 0, 1), "dev1"), (_ip_chars(192, 168, 0, 2), "dev2")]
+    msg = DiscoveryMessage.full(peers)
+    data = msg.encode()
+    decoded = DiscoveryMessage.decode(data)
+    assert decoded and decoded.type is MessageType.FULL
+    assert list(decoded.peers) == peers
 
 
 def test_encode_decode_ping_pong():
-    assert decode_message(encode_message({"ping": True})) == {"ping": True}
-    assert decode_message(encode_message({"pong": True})) == {"pong": True}
+    assert DiscoveryMessage.decode(DiscoveryMessage.ping().encode()).type is MessageType.PING
+    assert DiscoveryMessage.decode(DiscoveryMessage.pong().encode()).type is MessageType.PONG
 
 
 def test_encode_decode_offline():
-    msg = {"offline": "192.168.0.5"}
-    data = encode_message(msg)
-    assert decode_message(data) == msg
+    msg = DiscoveryMessage.offline("192.168.0.5")
+    data = msg.encode()
+    decoded = DiscoveryMessage.decode(data)
+    assert decoded and decoded.type is MessageType.OFFLINE and decoded.ip == "192.168.0.5"
