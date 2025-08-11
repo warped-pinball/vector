@@ -273,6 +273,8 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
 
     if msg.type == MessageType.HELLO and msg.name is not None:
         name = msg.name[:MAX_NAME_LENGTH]
+        if pending_ping == ip_bytes:
+            pending_ping = None
         _add_or_update(ip_bytes, name)
         registry_should_broadcast()
     elif ip_bytes not in [d[:4] for d in known_devices]:  # if we don't know this sender, send a hello
@@ -280,8 +282,8 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
 
     if msg.type == MessageType.PING:
         _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
-        if ip_bytes not in [d[:4] for d in known_devices]:
-            broadcast_hello()
+        if pending_ping == ip_bytes:
+            pending_ping = None
         return
 
     if msg.type == MessageType.PONG:
@@ -295,9 +297,10 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         if off_ip == _get_local_ip_bytes():
             broadcast_hello()
             return
+        else:
+            # remove the offline device from the known devices list
+            known_devices = [d for d in known_devices if not d.startswith(off_ip)]
 
-        # remove the offline device from the known devices list
-        known_devices = [d for d in known_devices if not d.startswith(off_ip)]
         # expect the registry to re-broadcast the full list
         registry_should_broadcast()
         return
