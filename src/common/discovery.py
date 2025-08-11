@@ -286,7 +286,11 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
             broadcast_hello()
         else:
             # remove the offline device from the known devices list
-            known_devices = [d for d in known_devices if not d.startswith(off_ip)]
+            # known_devices = [d for d in known_devices if not d.startswith(off_ip)]
+
+            # ping the supposedly offline device
+            _send(DiscoveryMessage.ping(), (bytes_to_ip(off_ip), DISCOVERY_PORT))
+            pending_ping = off_ip
 
         # expect the registry to re-broadcast the full list
         registry_should_broadcast()
