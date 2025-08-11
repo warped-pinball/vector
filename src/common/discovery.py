@@ -88,7 +88,7 @@ class DiscoveryMessage:
         }.get(self.type, str(self.type))
 
         if self.type == MessageType.HELLO and self.name is not None:
-            return f"<DiscoveryMessage {tname} name={self.name!r}>"
+            return f"<DiscoveryMessage {tname} name={self.name.decode('utf-8', 'ignore')}>"
         if self.type == MessageType.FULL:
             peers_str = ", ".join(f"{bytes_to_ip(peer[0])}:{peer[1].decode('utf-8', 'ignore')}" for peer in self.peers)
             return f"<DiscoveryMessage {tname} peers=[{peers_str}]>"
@@ -136,6 +136,8 @@ class DiscoveryMessage:
             return DiscoveryMessage(MessageType.HELLO, name=name)
 
         if mtype == MessageType.FULL:
+            print(f"Decoding FULL message with length {len(data)}")
+            print(f"Data: {data}")
             if len(data) < 2:
                 return None
             count = data[1]
