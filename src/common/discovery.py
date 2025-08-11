@@ -256,11 +256,11 @@ def _add_or_update(ip_bytes: bytes, name: str) -> None:
 
 
 def registry_should_broadcast():
-    global pending_ping
+    # global pending_ping
     if is_registry():
         broadcast_full_list()
-    elif len(known_devices) > 0:
-        pending_ping = registry_ip_bytes()
+    # elif len(known_devices) > 0:
+    #     pending_ping = registry_ip_bytes()
 
 
 def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
