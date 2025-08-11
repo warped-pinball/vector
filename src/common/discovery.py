@@ -90,7 +90,8 @@ class DiscoveryMessage:
         if self.type == MessageType.HELLO and self.name is not None:
             return f"<DiscoveryMessage {tname} name={self.name!r}>"
         if self.type == MessageType.FULL:
-            return f"<DiscoveryMessage {tname} peers={list(self.peers)}>"
+            peers_str = ", ".join(f"{bytes_to_ip(peer[0])}:{peer[1]}" for peer in self.peers)
+            return f"<DiscoveryMessage {tname} peers=[{peers_str}]>"
         if self.type == MessageType.OFFLINE and self.ip is not None:
             return f"<DiscoveryMessage {tname} ip={bytes_to_ip(self.ip)}>"
         return f"<DiscoveryMessage {tname}>"
