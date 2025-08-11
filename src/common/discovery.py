@@ -257,11 +257,10 @@ def _add_or_update(ip_bytes: bytes, name: str) -> None:
 
 def registry_should_broadcast():
     global pending_ping
-    if len(known_devices) > 0:
-        if is_registry():
-            broadcast_full_list()
-        else:
-            pending_ping = registry_ip_bytes()
+    if is_registry():
+        broadcast_full_list()
+    elif len(known_devices) > 0:
+        pending_ping = registry_ip_bytes()
 
 
 def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
@@ -271,10 +270,11 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
 
     ip_bytes = ip_to_bytes(ip_str)
 
+    if pending_ping == ip_bytes:
+        pending_ping = None
+
     if msg.type == MessageType.HELLO and msg.name is not None:
         name = msg.name[:MAX_NAME_LENGTH]
-        if pending_ping == ip_bytes:
-            pending_ping = None
         _add_or_update(ip_bytes, name)
         registry_should_broadcast()
     elif msg.type == MessageType.OFFLINE and msg.ip is not None:
@@ -282,7 +282,6 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         off_ip = msg.ip
         if off_ip == _get_local_ip_bytes():
             broadcast_hello()
-            return
         else:
             # remove the offline device from the known devices list
             known_devices = [d for d in known_devices if not d.startswith(off_ip)]
@@ -306,14 +305,12 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
 
     if msg.type == MessageType.PING:
         _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
-        if pending_ping == ip_bytes:
-            pending_ping = None
         return
 
-    if msg.type == MessageType.PONG:
-        if pending_ping == ip_bytes:
-            pending_ping = None
-        return
+    # if msg.type == MessageType.PONG:
+    #     if pending_ping == ip_bytes:
+    #         pending_ping = None
+    #     return
 
 
 def _recv():
@@ -370,7 +367,7 @@ def ping_random_peer() -> None:
         pending_ping = None
 
     # if we have no peers introduce myself to the void
-    if not known_devices:
+    if len(known_devices) == 0:
         print("No known devices to ping.")
         pending_ping = None
         broadcast_hello()
