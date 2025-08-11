@@ -106,7 +106,7 @@ class DiscoveryMessage:
             peers_list = list(self.peers)
             parts = [bytes([MessageType.FULL, len(peers_list)])]
             for ip_bytes, name in peers_list:
-                name_bytes = name[:MAX_NAME_LENGTH].encode("utf-8")
+                name_bytes = name[:MAX_NAME_LENGTH]
                 parts.append(ip_bytes + bytes([len(name_bytes)]) + name_bytes)
             return b"".join(parts)
 
