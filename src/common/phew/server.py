@@ -332,7 +332,7 @@ def create_schedule(ap_mode: bool = False):
         schedule(listen, 10500, 2000)
 
         # ping peers to detect offline devices
-        schedule(ping_random_peer, 12000, 5000)
+        schedule(ping_random_peer, 12000, 10000)
 
         # initialize the time and date 5 seconds after boot
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
