@@ -271,8 +271,12 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
 
     ip_bytes = ip_to_bytes(ip_str)
 
-    # make sure we have an entry for the sending ip
-    _add_or_update(ip_bytes, msg.name)
+    if msg.type == MessageType.HELLO and msg.name is not None:
+        name = msg.name[:MAX_NAME_LENGTH]
+        _add_or_update(ip_bytes, name)
+        registry_should_broadcast()
+    elif ip_bytes not in [d[:4] for d in known_devices]:  # if we don't know this sender, send a hello
+        broadcast_hello()
 
     if msg.type == MessageType.PING:
         _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
@@ -297,11 +301,6 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         # expect the registry to re-broadcast the full list
         registry_should_broadcast()
         return
-
-    if msg.type == MessageType.HELLO and msg.name is not None:
-        name = msg.name[:MAX_NAME_LENGTH]
-        _add_or_update(ip_bytes, name)
-        registry_should_broadcast()
 
     if msg.type == MessageType.FULL and msg.peers is not None:
         found_self = False
