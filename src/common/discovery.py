@@ -277,21 +277,7 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
             pending_ping = None
         _add_or_update(ip_bytes, name)
         registry_should_broadcast()
-    elif ip_bytes not in [d[:4] for d in known_devices]:  # if we don't know this sender, send a hello
-        broadcast_hello()
-
-    if msg.type == MessageType.PING:
-        _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
-        if pending_ping == ip_bytes:
-            pending_ping = None
-        return
-
-    if msg.type == MessageType.PONG:
-        if pending_ping == ip_bytes:
-            pending_ping = None
-        return
-
-    if msg.type == MessageType.OFFLINE and msg.ip is not None:
+    elif msg.type == MessageType.OFFLINE and msg.ip is not None:
         # if someone is saying I'm offline, reintroduce myself
         off_ip = msg.ip
         if off_ip == _get_local_ip_bytes():
@@ -304,8 +290,7 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         # expect the registry to re-broadcast the full list
         registry_should_broadcast()
         return
-
-    if msg.type == MessageType.FULL and msg.peers is not None:
+    elif msg.type == MessageType.FULL and msg.peers is not None:
         found_self = False
         for ip_bytes_peer, name in msg.peers:
             name = name[:MAX_NAME_LENGTH]
@@ -314,6 +299,20 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
             _add_or_update(ip_bytes_peer, name)
         if not found_self and len(known_devices) < MAXIMUM_KNOWN_DEVICES:
             broadcast_hello()
+        return
+    elif ip_bytes not in [d[:4] for d in known_devices]:
+        # if we don't know this sender, send a hello
+        broadcast_hello()
+
+    if msg.type == MessageType.PING:
+        _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
+        if pending_ping == ip_bytes:
+            pending_ping = None
+        return
+
+    if msg.type == MessageType.PONG:
+        if pending_ping == ip_bytes:
+            pending_ping = None
         return
 
 
@@ -372,6 +371,7 @@ def ping_random_peer() -> None:
 
     # if we have no peers introduce myself to the void
     if not known_devices:
+        print("No known devices to ping.")
         pending_ping = None
         broadcast_hello()
         return
