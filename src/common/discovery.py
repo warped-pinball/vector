@@ -106,9 +106,8 @@ class DiscoveryMessage:
             peers_list = list(self.peers)
             parts = [bytes([MessageType.FULL, len(peers_list)])]
             for ip_bytes, name in peers_list:
-                ip_part = bytes(ord(c) for c in ip_bytes[:4])
                 name_bytes = name[:MAX_NAME_LENGTH].encode("utf-8")
-                parts.append(ip_part + bytes([len(name_bytes)]) + name_bytes)
+                parts.append(ip_bytes + bytes([len(name_bytes)]) + name_bytes)
             return b"".join(parts)
 
         if self.type == MessageType.PING:
@@ -199,10 +198,8 @@ def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_POR
     if not send_sock:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    try:  # pragma: no cover - network errors are non-deterministic
-        send_sock.sendto(msg.encode(), addr)
-    except Exception:
-        pass
+
+    send_sock.sendto(msg.encode(), addr)
 
 
 def broadcast_hello() -> None:
@@ -259,6 +256,8 @@ def registry_should_broadcast():
     # global pending_ping
     if is_registry():
         broadcast_full_list()
+    else:
+        print("DISCOVERY: The registry should broadcast, but I am not the registry.")
     # elif len(known_devices) > 0:
     #     pending_ping = registry_ip_bytes()
 
