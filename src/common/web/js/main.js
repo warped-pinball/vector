@@ -273,15 +273,35 @@ window.toggleTheme = toggleTheme;
 // Index.html required js
 //
 
-function setFaviconFromSVGElement(elementId) {
+async function setFaviconFromSVGElement(elementId) {
   console.log(`Setting favicon from SVG element: ${elementId}`);
-  const svgElement = document.getElementById(elementId);
-  if (!svgElement) {
+  const element = document.getElementById(elementId);
+  if (!element) {
     console.error(`Element with ID "${elementId}" not found.`);
     return;
   }
 
-  const svgString = new XMLSerializer().serializeToString(svgElement);
+  let svgString;
+  if (element.tagName.toLowerCase() === "svg") {
+    svgString = new XMLSerializer().serializeToString(element);
+  } else if (element.tagName.toLowerCase() === "img" && element.src) {
+    try {
+      const response = await fetch(element.src);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${element.src}: ${response.status}`);
+      }
+      svgString = await response.text();
+    } catch (error) {
+      console.error("Failed to retrieve SVG content:", error);
+      return;
+    }
+  } else {
+    console.error(
+      `Unsupported element type for favicon: ${element.tagName.toLowerCase()}`,
+    );
+    return;
+  }
+
   const canvas = document.createElement("canvas");
   canvas.width = 32;
   canvas.height = 32;
@@ -296,7 +316,7 @@ function setFaviconFromSVGElement(elementId) {
     URL.revokeObjectURL(url);
 
     const pngDataURL = canvas.toDataURL("image/png");
-    let favicon =
+    const favicon =
       document.querySelector("link[rel='icon']") ||
       document.createElement("link");
     favicon.rel = "icon";
@@ -306,6 +326,7 @@ function setFaviconFromSVGElement(elementId) {
   };
 
   img.onerror = (error) => {
+    URL.revokeObjectURL(url);
     console.error("Failed to load SVG for favicon:", error);
   };
 
@@ -313,11 +334,9 @@ function setFaviconFromSVGElement(elementId) {
 }
 
 setTimeout(() => {
-  try {
-    setFaviconFromSVGElement("logo");
-  } catch (error) {
+  setFaviconFromSVGElement("logo").catch((error) => {
     console.error("Error setting favicon:", error);
-  }
+  });
 }, 1000);
 
 function toggleTheme() {
