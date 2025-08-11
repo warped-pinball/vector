@@ -236,7 +236,7 @@ def is_registry() -> bool:
 def _add_or_update(ip_bytes: bytes, name: str) -> None:
     """Insert or update a peer keeping ``known_devices`` sorted."""
     global known_devices
-    print(f"DISCOVERY: Adding/updating device {bytes_to_ip(ip_bytes)} with name {name}")
+    print(f"DISCOVERY: Adding/updating device {bytes_to_ip(ip_bytes)} with name {name.decode('utf-8', 'ignore')}")
 
     if ip_bytes == _get_local_ip_bytes():
         return
