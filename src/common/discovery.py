@@ -34,7 +34,7 @@ DISCOVER_REFRESH = 600
 MAXIMUM_KNOWN_DEVICES = 50
 MAX_NAME_LENGTH = 32
 
-# Storage for known devices.  Each entry is a string where the first four
+# Storage for known devices.  Each entry is a bytes object where the first four
 # bytes are the IP address bytes and the remainder is the game name.
 known_devices = []
 
@@ -51,18 +51,18 @@ class DiscoveryMessage:
 
     __slots__ = ("type", "name", "peers", "ip")
 
-    def __init__(self, mtype: int, name: Optional[str] = None, peers: Optional[Iterable[Tuple[str, str]]] = None, ip: Optional[bytes] = None) -> None:
+    def __init__(self, mtype: int, name: Optional[bytes] = None, peers: Optional[Iterable[Tuple[str, str]]] = None, ip: Optional[bytes] = None) -> None:
         self.type = mtype
         self.name = name
         self.peers = peers
         self.ip = ip
 
     @classmethod
-    def hello(cls, name: str) -> "DiscoveryMessage":
+    def hello(cls, name: bytes) -> "DiscoveryMessage":
         return cls(MessageType.HELLO, name=name)
 
     @classmethod
-    def full(cls, peers: Iterable[Tuple[str, str]]) -> "DiscoveryMessage":
+    def full(cls, peers: Iterable[bytes]) -> "DiscoveryMessage":
         return cls(MessageType.FULL, peers=peers)
 
     @classmethod
@@ -90,7 +90,7 @@ class DiscoveryMessage:
         if self.type == MessageType.HELLO and self.name is not None:
             return f"<DiscoveryMessage {tname} name={self.name!r}>"
         if self.type == MessageType.FULL:
-            peers_str = ", ".join(f"{bytes_to_ip(peer[0])}:{peer[1]}" for peer in self.peers)
+            peers_str = ", ".join(f"{bytes_to_ip(peer[0])}:{peer[1].decode('utf-8', 'ignore')}" for peer in self.peers)
             return f"<DiscoveryMessage {tname} peers=[{peers_str}]>"
         if self.type == MessageType.OFFLINE and self.ip is not None:
             return f"<DiscoveryMessage {tname} ip={bytes_to_ip(self.ip)}>"
@@ -99,7 +99,7 @@ class DiscoveryMessage:
     # ------------------------------------------------------------------ encoding
     def encode(self) -> bytes:
         if self.type == MessageType.HELLO and self.name is not None:
-            name_bytes = self.name[:MAX_NAME_LENGTH].encode("utf-8")
+            name_bytes = self.name[:MAX_NAME_LENGTH]
             return bytes([MessageType.HELLO, len(name_bytes)]) + name_bytes
 
         if self.type == MessageType.FULL and self.peers is not None:
@@ -130,10 +130,9 @@ class DiscoveryMessage:
 
         if mtype == MessageType.HELLO:
             if len(data) < 2:
-                print("DISCOVERY: Malformed HELLO message")
                 return None
             name_len = data[1]
-            name = data[2 : 2 + name_len].decode("utf-8", "ignore")
+            name = data[2 : 2 + name_len]
             return DiscoveryMessage(MessageType.HELLO, name=name)
 
         if mtype == MessageType.FULL:
@@ -150,7 +149,7 @@ class DiscoveryMessage:
                     offset += 4
                     name_len = data[offset]
                     offset += 1
-                    name = data[offset : offset + name_len].decode("utf-8", "ignore")
+                    name = data[offset : offset + name_len]
                     offset += name_len
                     yield ip_part, name
 
@@ -185,12 +184,13 @@ def _get_local_ip_bytes() -> bytes:
     return ip_to_bytes(get_ip_address())
 
 
-def _get_local_name() -> str:
+def _get_local_name_bytes() -> bytes:
     """Retrieve this board's game name, truncated to the max length."""
-
     from SharedState import gdata
 
-    return gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH]
+    str_name = gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH]
+
+    return str_name.encode("utf-8")
 
 
 def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
@@ -206,14 +206,14 @@ def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_POR
 
 def broadcast_hello() -> None:
     """Broadcast that this device has joined the network."""
-    _send(DiscoveryMessage.hello(_get_local_name()))
+    _send(DiscoveryMessage.hello(_get_local_name_bytes()))
 
 
 def broadcast_full_list() -> None:
     """Broadcast the full list of known devices."""
     global known_devices
     local_ip_bytes = _get_local_ip_bytes()
-    peers = [(local_ip_bytes, _get_local_name())] + [(d[:4], d[4:]) for d in known_devices]
+    peers = [(local_ip_bytes, _get_local_name_bytes())] + [(d[:4], d[4:]) for d in known_devices]
     _send(DiscoveryMessage.full(peers))
 
 
@@ -349,11 +349,11 @@ def get_peer_map() -> dict:
     """Return mapping of known devices keyed by IP string."""
     global known_devices
 
-    peers = {bytes_to_ip(_get_local_ip_bytes()): {"name": _get_local_name(), "self": True}}
+    peers = {bytes_to_ip(_get_local_ip_bytes()): {"name": _get_local_name_bytes(), "self": True}}
     for dev in known_devices:
         ip_bytes, name = dev[:4], dev[4:]
         ip = bytes_to_ip(ip_bytes)
-        peers[ip] = {"name": name, "self": False}
+        peers[ip] = {"name": name.decode("utf-8", "ignore"), "self": False}
     return peers
 
 
