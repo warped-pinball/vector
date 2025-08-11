@@ -29,3 +29,15 @@ async function smartFetch(url, data = false, auth = true) {
 }
 
 window.smartFetch = smartFetch;
+
+async function fetchGzip(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
+  }
+  const ds = new DecompressionStream("gzip");
+  const decompressed = response.body.pipeThrough(ds);
+  return await new Response(decompressed).text();
+}
+
+window.fetchGzip = fetchGzip;

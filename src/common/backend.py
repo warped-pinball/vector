@@ -167,7 +167,10 @@ def create_file_handler(file_path):
             "ETag": etag,
         }
         if is_gz:
-            headers["Content-Encoding"] = "gzip"
+            if served_path.endswith(".svg"):
+                headers["Content-Type"] = "application/gzip"
+            else:
+                headers["Content-Encoding"] = "gzip"
         return file_stream_generator(), 200, headers
 
     return route_wrapper(file_handler)

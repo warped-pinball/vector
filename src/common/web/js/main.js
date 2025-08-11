@@ -248,6 +248,7 @@ async function init() {
   console.log("Initializing navigation and page...");
   initializeNavigation();
   await initializePage();
+  await loadLogo();
 }
 
 if (document.readyState === "loading") {
@@ -273,35 +274,7 @@ window.toggleTheme = toggleTheme;
 // Index.html required js
 //
 
-async function setFaviconFromSVGElement(elementId) {
-  console.log(`Setting favicon from SVG element: ${elementId}`);
-  const element = document.getElementById(elementId);
-  if (!element) {
-    console.error(`Element with ID "${elementId}" not found.`);
-    return;
-  }
-
-  let svgString;
-  if (element.tagName.toLowerCase() === "svg") {
-    svgString = new XMLSerializer().serializeToString(element);
-  } else if (element.tagName.toLowerCase() === "img" && element.src) {
-    try {
-      const response = await fetch(element.src);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${element.src}: ${response.status}`);
-      }
-      svgString = await response.text();
-    } catch (error) {
-      console.error("Failed to retrieve SVG content:", error);
-      return;
-    }
-  } else {
-    console.error(
-      `Unsupported element type for favicon: ${element.tagName.toLowerCase()}`,
-    );
-    return;
-  }
-
+async function setFaviconFromSVGString(svgString) {
   const canvas = document.createElement("canvas");
   canvas.width = 32;
   canvas.height = 32;
@@ -333,11 +306,20 @@ async function setFaviconFromSVGElement(elementId) {
   img.src = url;
 }
 
-setTimeout(() => {
-  setFaviconFromSVGElement("logo").catch((error) => {
-    console.error("Error setting favicon:", error);
-  });
-}, 1000);
+async function loadLogo() {
+  try {
+    const svgText = await fetchGzip("/svg/logo.svg");
+    const blob = new Blob([svgText], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const logo = document.getElementById("logo");
+    if (logo) {
+      logo.src = url;
+    }
+    await setFaviconFromSVGString(svgText);
+  } catch (error) {
+    console.error("Failed to load logo:", error);
+  }
+}
 
 function toggleTheme() {
   const html = document.documentElement;

@@ -212,8 +212,8 @@ class Builder:
         print(f"Gzipping files in {directory}...")
         for root, dirs, files in os.walk(directory):
             for file in files:
-                if file.endswith((".gz", ".svg")):
-                    # Skip existing gzip files and SVG images which remain plain XML
+                if file.endswith(".gz"):
+                    # Skip existing gzip files
                     continue
                 file_path = os.path.join(root, file)
                 with open(file_path, "rb") as f:
