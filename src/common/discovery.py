@@ -130,6 +130,7 @@ class DiscoveryMessage:
 
         if mtype == MessageType.HELLO:
             if len(data) < 2:
+                print("DISCOVERY: Malformed HELLO message")
                 return None
             name_len = data[1]
             name = data[2 : 2 + name_len].decode("utf-8", "ignore")
@@ -166,6 +167,7 @@ class DiscoveryMessage:
                 return None
             return DiscoveryMessage(MessageType.OFFLINE, ip=data[1:5])
 
+        print(f"DISCOVERY: Unknown message type {mtype}")
         return None
 
 
@@ -300,7 +302,10 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         return
     elif ip_bytes not in [d[:4] for d in known_devices]:
         # if we don't know this sender, send a hello
-        broadcast_hello()
+        if is_registry():
+            broadcast_full_list()
+        else:
+            broadcast_hello()
 
     if msg.type == MessageType.PING:
         _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
