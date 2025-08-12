@@ -167,8 +167,7 @@ class DiscoveryMessage:
                 return None
             return DiscoveryMessage(MessageType.OFFLINE, ip=data[1:5])
 
-        print(f"DISCOVERY: Unknown message type {mtype}")
-        return None
+        raise ValueError(f"Unknown message type {mtype} in data: {data}")
 
 
 def ip_to_bytes(ip_str: str) -> bytes:
@@ -322,8 +321,8 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
     #     return
 
 
-def _recv():
-    """Receive a discovery packet if available."""
+def listen() -> None:
+    """Check for any incoming discovery packets. Non-blocking."""
 
     global recv_sock
     if not recv_sock:
@@ -332,22 +331,29 @@ def _recv():
         recv_sock.bind(("0.0.0.0", DISCOVERY_PORT))
         recv_sock.settimeout(0)
 
-    try:
-        data, addr = recv_sock.recvfrom(1024)
-    except OSError:
-        return None, None
-    msg = DiscoveryMessage.decode(data)
-    return (msg, addr) if msg else (None, None)
-
-
-def listen() -> None:
-    """Check for any incoming discovery packets.  Non-blocking."""
-
     while True:
-        msg, addr = _recv()
-        if not msg:
+        try:
+            data, addr = recv_sock.recvfrom(1024)
+        except OSError:
             return
-        handle_message(msg, addr[0])
+
+        try:
+            msg = DiscoveryMessage.decode(data)
+            if msg:
+                handle_message(msg, addr[0])
+        except Exception as main_e:
+            # fall back to parsing json
+            try:
+                from json import loads
+
+                msg = loads(data)
+                if "name" in msg:
+                    _add_or_update(ip_to_bytes(addr[0]), msg["name"].encode("utf-8", "ignore"))
+                    global pending_ping
+                    if pending_ping == ip_to_bytes(addr[0]):
+                        pending_ping = None
+            except Exception as fallback_e:
+                print(f"DISCOVERY: Error decoding message {main_e} tried fallback: {fallback_e}")
 
 
 def get_peer_map() -> dict:
