@@ -61,104 +61,138 @@ roll2 = 0
 lsb_pin = Pin(0, Pin.OUT)
 next_pin = Pin(1, Pin.OUT)
 
-
-
-
-
+# Buffer for SPI1 16-bit values
+spi1_buffer = []
 
 def spi1_timer_callback(timer):
-    global last_lower_5, score, last_bits, roll1, roll2
-    global lsb_pin,stable_lower_5,scoreDig,low_counts
-
+    global spi1_buffer
     SPI1_load_Pin.value(1)
     time.sleep_us(2)
-    buf = bytearray(2)      #  << some timing variation!  gets long.  move to PIO?
+    buf = bytearray(2)
     spi1.readinto(buf)
     SPI1_load_Pin.value(0)
-
-
     value = int.from_bytes(buf, 'big')
-    reversed_value = reverse_bits_16(value)
-    lower_5 = reversed_value & 0x1F  # Only 5 bits
-    
-    #from here down 190uS
+    spi1_buffer.append(value)
 
-    # keep a count for each bit. each counter init to 100
-    for bit in range(5):
-        bit_val = (lower_5 >> bit) & 1
-        if bit_val == 1:
-            if 100 <= low_counts[bit]:
-                if low_counts[bit]<200:
-                    low_counts[bit] += 1                    
+
+
+
+
+import rp2
+from machine import Pin, StateMachine
+
+# Pin assignments
+PIO_MISO_PIN = 12  # MISO (data in)
+PIO_SCK_PIN  = 10  # SCK (clock out)
+PIO_CS_PIN   = 13  # CS (chip select out)
+
+# PIO program: SPI master, 16 bits, 1ms interval
+@rp2.asm_pio(
+    in_shiftdir=rp2.PIO.SHIFT_LEFT,
+    autopull=True, pull_thresh=16,
+    out_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_LOW), # CS high, SCK low
+    out_shiftdir=rp2.PIO.SHIFT_LEFT
+)
+def spi_master_16bit():
+    set(pins, 0b1)         # CS low (active)
+    set(x, 15)             # 16 bits to read
+    label("bitloop")
+    set(pins, 0b1)         # SCK low
+    nop()                  # Short delay (adjust for speed)
+    set(pins, 0b11)        # SCK high
+    in_(pins, 1)           # Sample MISO
+    nop()                  # Short delay (adjust for speed)
+    set(pins, 0b1)         # SCK low
+    jmp(x_dec, "bitloop")
+    set(pins, 0b0)         # CS high (inactive)
+    # Delay for ~1ms (adjust for your clock freq)
+    set(y, 999)            # 1000 cycles at 1MHz = 1ms
+    label("delay")
+    nop()
+    jmp(y_dec, "delay")
+
+# Setup state machine
+sm = StateMachine(
+    0, spi_master_16bit, freq=1000000,
+    in_base=Pin(PIO_MISO_PIN),
+    out_base=Pin(PIO_CS_PIN)  # CS is bit 0, SCK is bit 1 (use consecutive pins)
+)
+sm.active(1)
+
+# Fetch samples from PIO buffer
+spi1_buffer = []
+def fetch_pio_samples():
+    while sm.rx_fifo() > 0:
+        value = sm.get() & 0xFFFF
+        spi1_buffer.append(value)
+
+
+def process_spi1_buffer():
+    global spi1_buffer, last_lower_5, score, last_bits, roll1, roll2
+    global lsb_pin, stable_lower_5, scoreDig, low_counts
+
+    while spi1_buffer:
+        value = spi1_buffer.pop(0)
+        reversed_value = reverse_bits_16(value)
+        lower_5 = reversed_value & 0x1F  # Only 5 bits
+
+        #from here down 190uS
+
+        # keep a count for each bit. each counter init to 100
+        for bit in range(5):
+            bit_val = (lower_5 >> bit) & 1
+            if bit_val == 1:
+                if 100 <= low_counts[bit]:
+                    if low_counts[bit]<200:
+                        low_counts[bit] += 1                    
+                else:
+                    low_counts[bit] = 100
+            # If bit is 0
             else:
-                low_counts[bit] = 100
-        # If bit is 0
-        else:
-            if low_counts[bit] <= 100:
-                if low_counts[bit] > 0:
-                    low_counts[bit] -= 1                
-            else:
-                low_counts[bit] = 100
+                if low_counts[bit] <= 100:
+                    if low_counts[bit] > 0:
+                        low_counts[bit] -= 1                
+                else:
+                    low_counts[bit] = 100
 
-    LOW_THRES=2
-    HIGH_THRES=18
-    for bit in range(5):
-        if low_counts[bit] < (100-LOW_THRES):
-            stable_lower_5 &= ~(1 << bit)
-        if low_counts[bit] > (100+HIGH_THRES):
-            stable_lower_5 |= (1 << bit)
+        LOW_THRES=2
+        HIGH_THRES=18
+        for bit in range(5):
+            if low_counts[bit] < (100-LOW_THRES):
+                stable_lower_5 &= ~(1 << bit)
+            if low_counts[bit] > (100+HIGH_THRES):
+                stable_lower_5 |= (1 << bit)
 
-    # Output the LSB of stable_lower_5 to GPIO#1 - DIAG
-    lsb_pin.value (stable_lower_5 & 0x01)
-    next_pin.value((stable_lower_5 >> 2) & 0x01)
+        # Output the LSB of stable_lower_5 to GPIO#1 - DIAG
+        lsb_pin.value (stable_lower_5 & 0x01)
+        next_pin.value((stable_lower_5 >> 2) & 0x01)
 
-    for i in range(5):
-        mask = 1 << i
-        if (stable_lower_5 & mask)==0 and  (last_bits & mask)!=0:    
-            if scoreDig[i] == 9:
-                scoreDig[i] = 0               
-            else:
-                scoreDig[i] += 1     
-    last_bits = stable_lower_5 
-    
+        for i in range(5):
+            mask = 1 << i
+            if (stable_lower_5 & mask)==0 and  (last_bits & mask)!=0:    
+                if scoreDig[i] == 9:
+                    scoreDig[i] = 0               
+                else:
+                    scoreDig[i] += 1     
+        last_bits = stable_lower_5 
 
-    #roll over to correct lesser digits
-    if (stable_lower_5 & 0x03) == 0:  #both LOW
-        roll1 +=1
-        if roll1 > 7:
-            if scoreDig[0]!=0:
-                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10")    
-                scoreDig[0]=0
+        #roll over to correct lesser digits
+        if (stable_lower_5 & 0x03) == 0:  #both LOW
+            roll1 +=1
+            if roll1 > 7:
+                if scoreDig[0]!=0:
+                    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%10")    
+                    scoreDig[0]=0
+                roll1=0
+        else:        
             roll1=0
-    else:        
-        roll1=0
 
-
-    '''
-    if (stable_lower_5 & 0x06) == 0:  #both LOW
-        roll2 +=1
-        if roll2 > 7:
-            if scoreDig[1]!=0:
-                print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  100")    
-                scoreDig[1]=0
-            roll2=0
-    else:        
-        roll2=0
-    '''
-
-
-    SCORE_MULT=10
-    if stable_lower_5 != last_lower_5:
-        score = scoreDig[0]*1 + scoreDig[1]*10 + scoreDig[2]*100 + scoreDig[3]*1000
-        score = score * SCORE_MULT
-        print(f"{stable_lower_5:05b}  Score: {score}")
-        last_lower_5 = stable_lower_5
-
-  
-
-
-
-
+        SCORE_MULT=10
+        if stable_lower_5 != last_lower_5:
+            score = scoreDig[0]*1 + scoreDig[1]*10 + scoreDig[2]*100 + scoreDig[3]*1000
+            score = score * SCORE_MULT
+            print(f"{stable_lower_5:05b}  Score: {score}")
+            last_lower_5 = stable_lower_5
 
 # Set up a timer to call the callback at 1kHz (every 1ms)
 spi1_timer = Timer()
@@ -181,6 +215,21 @@ def slow_pattern():
     """
     Send some slow patterns to the LEDs.
     """
+
+
+
+    # Initialize SPI0
+    spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
+
+    # Initialize LOAD pin
+    load = Pin(LOAD_PIN, Pin.OUT)
+    load.value(0)
+
+    # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
+    spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
+            sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
+
+
     patterns = [
         0x0001, 0x0002, 0x0004, 0x0008,
         0x0010, 0x0020, 0x0040, 0x0080,
@@ -341,6 +390,128 @@ def calibrate_pwm_hi_low():
     print("Calibration complete. HI and LOW duties are now set.")
 
 
+def hardware_spi0_eeprom_test():
+    """
+    Assign SPI0 to GPIO 2/3/4/5 and test read/write to an attached EEPROM chip.
+    GP2 = SCK (clock), GP3 = MOSI (tx), GP4 = MISO (rx), GP5 = CS (chip select).
+    This example reads the first byte from a 25LC256/25AA256 EEPROM.
+    """
+    from machine import SPI, Pin
+    import time
+
+    # Assign pins
+    SCK = 2
+    MOSI = 3
+    MISO = 4
+    CS = 5
+
+    OPCODE_WREN = 0x06  # set write enable latch
+    OPCODE_WRDI = 0x04  # write disable              <<clears WEL
+    OPCODE_RDSR = 0x05  # read status register
+    OPCODE_WRSR = 0x01  # write status register      <<clears WEL
+    OPCODE_READ = 0x03  # read memory
+    OPCODE_WRITE = 0x02  # write memory               <<clears WEL
+    STATUS_REG_VAL = 0x82  # wrill write this val i
+
+    # Set up SPI0
+    spi = SPI(0, baudrate=600000, polarity=1, phase=1, sck=Pin(SCK), mosi=Pin(MOSI), miso=Pin(MISO))
+    cs = Pin(CS, Pin.OUT)
+    cs.value(1)  # Deselect EEPROM
+
+
+    # FRAM write just one byte cmd
+    def reg_cmd(spi, cs, reg):
+        msg = bytearray()
+        msg.append(0x00 | reg)
+        cs.value(0)
+        spi.write(msg)
+        cs.value(1)
+
+
+    # FRAM write one byte to one register location
+    def reg_write(spi, cs, reg, data):
+        msg = bytearray()
+        msg.append(0x00 | reg)
+        msg.append(data)
+        cs.value(0)
+        spi.write(msg)  # blocking
+        cs.value(1)
+
+
+    # FRAM
+    def mem_write(spi, cs, address, data):
+        # Enable write operations
+        reg_cmd(spi, cs, OPCODE_WREN)
+
+        # Split data into chunks of 16 bytes
+        chunk_size = 16
+        for i in range(0, len(data), chunk_size):
+            # print("x",i)
+            chunk = data[i : i + chunk_size]
+            print(chunk)
+            reg_cmd(spi, cs, OPCODE_WREN)
+
+            msg = bytearray()
+            msg.append(0x00 | OPCODE_WRITE)
+            msg.append((address & 0xFF00) >> 8)
+            msg.append(address & 0x00FF)
+            msg.extend(chunk)
+
+            cs.value(0)
+            spi.write(msg)
+            cs.value(1)
+            address += chunk_size
+
+
+    # FRAM
+    def write(address, data):
+        mem_write(spi, cs, address, data)
+
+
+    # FRAM
+    def mem_read(spi, cs, address, nbytes):
+        data = bytearray()
+        chunk_size = 16
+        offset = 0
+
+        while offset < nbytes:
+            remaining = nbytes - offset
+            read_size = min(chunk_size, remaining)
+
+            # Prepare the message
+            msg = bytearray()
+            msg.append(OPCODE_READ)
+            msg.append((address & 0xFF00) >> 8)
+            msg.append(address & 0x00FF)
+
+            # Send the message and read the data
+            cs.value(0)
+            spi.write(msg)
+            data.extend(spi.read(read_size))
+            cs.value(1)
+
+            # Update the address and offset for the next chunk
+            address += chunk_size
+            offset += chunk_size
+        return data
+
+
+    # FRAM
+    def read(address, nbytes):
+        return mem_read(spi, cs, address, nbytes)
+
+
+    # Example: Write then read address 0x0000
+    print("Writing 0xA5 to EEPROM address 0x0000...")
+    data = [1,2,3]
+    mem_write(spi, cs, 0, data)
+    print("Reading from EEPROM address 0x0000...")
+    value =  mem_read(spi, cs, 0, 4)
+    print("EEPROM[0] =", value)
+
+    # Clean up
+    spi.deinit()
+    cs.value(1)
 
 
 def main():
@@ -353,6 +524,7 @@ def main():
         print("3 - PWM Ramp Test")
         print("4 - Slow LED Pattern")
         print("5 - SPI1 16-bit Read Loop")
+        print("6 - FRAM")
         print("0 - Exit")
         return input("Enter choice: ")
 
@@ -365,9 +537,41 @@ def main():
             except KeyboardInterrupt:
                 print("\nTest Switches stopped.")
         elif choice == '2':
+
             print("Running Calibrate PWM HI/LOW. Press Enter to continue after calibration.")
             calibrate_pwm_hi_low()
-            input("Press Enter to return to menu...")
+            score = 0
+            scoreDig = bytearray([0] * 8)
+            print("Calibration done. You can now adjust score with keys: 0 (reset), + (add 10), - (subtract 10).")
+            while True:
+                process_spi1_buffer()
+
+                key = input("Score adjust (0/+/-)")
+                if key == '0':
+                    score = 0
+                    scoreDig = bytearray([0] * 8)
+                    print("Score reset to 0.")
+                elif key == '+':
+                    score += 10
+                    # Optionally update scoreDig[1] for 10s digit
+                    if scoreDig[0] == 9:
+                        scoreDig[0] = 0
+                    else:
+                        scoreDig[0] += 1
+                    print(f"Score incremented to {score}.")
+                elif key == '-':
+                    score -= 10
+                    # Optionally update scoreDig[1] for 10s digit
+                    if scoreDig[0] == 0:
+                        scoreDig[0] = 9
+                    else:
+                        scoreDig[0] -= 1
+                    print(f"Score decremented to {score}.")
+                elif key == '':
+                    break
+                else:
+                    print("Invalid key. Use 0, +, -, or Enter.")
+
         elif choice == '3':
             print("Running PWM Ramp Test. Press Ctrl+C to stop.")
             try:
@@ -386,6 +590,15 @@ def main():
                 read_spi1_16bit_loop()
             except KeyboardInterrupt:
                 print("\nSPI1 16-bit Read Loop stopped.")
+
+
+
+        elif choice == '6':
+            print("Running SPI0 EEPROM Hardware Test. Press Enter to return to menu.")
+            hardware_spi0_eeprom_test()
+            input("Press Enter to return to menu...")
+
+
         elif choice == '0':
             print("Exiting.")
             break
