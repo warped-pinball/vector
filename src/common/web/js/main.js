@@ -5,26 +5,26 @@ const pageConfig = {
   scores: {
     title: "Scores",
     resources: [
-      { url: "/html/scores.html.gz", targetId: "page_html" },
-      { url: "/js/scores.js.gz", targetId: "page_js" },
+      { url: "/html/scores.html", targetId: "page_html" },
+      { url: "/js/scores.js", targetId: "page_js" },
     ],
   },
   about: {
     title: "About Warped Pinball",
-    resources: [{ url: "/html/about.html.gz", targetId: "page_html" }],
+    resources: [{ url: "/html/about.html", targetId: "page_html" }],
   },
   players: {
     title: "Players",
     resources: [
-      { url: "/html/players.html.gz", targetId: "page_html" },
-      { url: "/js/players.js.gz", targetId: "page_js" },
+      { url: "/html/players.html", targetId: "page_html" },
+      { url: "/js/players.js", targetId: "page_js" },
     ],
   },
   admin: {
     title: "Admin",
     resources: [
-      { url: "/html/admin.html.gz", targetId: "page_html" },
-      { url: "/js/admin.js.gz", targetId: "page_js" },
+      { url: "/html/admin.html", targetId: "page_html" },
+      { url: "/js/admin.js", targetId: "page_js" },
     ],
   },
 };
@@ -32,6 +32,29 @@ const pageConfig = {
 let previousResourceIds = [];
 let isNavigating = false;
 let currentPageKey = null;
+
+async function fetchAndApply(url, targetId) {
+  const placeholder = document.getElementById(targetId);
+  if (!placeholder) {
+    console.warn(`Target ${targetId} not found`);
+    return;
+  }
+  if (url.endsWith(".js")) {
+    const script = document.createElement("script");
+    script.src = url;
+    script.id = targetId;
+    script.async = false;
+    placeholder.replaceWith(script);
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status}`);
+    }
+    const text = await response.text();
+    placeholder.style.display = "";
+    placeholder.innerHTML = text;
+  }
+}
 
 async function loadPageResources(pageKey) {
   const config = pageConfig[pageKey];
@@ -41,7 +64,7 @@ async function loadPageResources(pageKey) {
   }
   clearPreviousResources(previousResourceIds);
   const loadPromises = config.resources.map((resource) =>
-    fetchDecompressAndApply(resource.url, resource.targetId)
+    fetchAndApply(resource.url, resource.targetId)
       .then(() => {
         console.log(
           `Loaded resource: ${resource.url} into ${resource.targetId}`,
@@ -225,6 +248,7 @@ async function init() {
   console.log("Initializing navigation and page...");
   initializeNavigation();
   await initializePage();
+  await loadLogo();
 }
 
 if (document.readyState === "loading") {
@@ -250,15 +274,7 @@ window.toggleTheme = toggleTheme;
 // Index.html required js
 //
 
-function setFaviconFromSVGElement(elementId) {
-  console.log(`Setting favicon from SVG element: ${elementId}`);
-  const svgElement = document.getElementById(elementId);
-  if (!svgElement) {
-    console.error(`Element with ID "${elementId}" not found.`);
-    return;
-  }
-
-  const svgString = new XMLSerializer().serializeToString(svgElement);
+async function setFaviconFromSVGString(svgString) {
   const canvas = document.createElement("canvas");
   canvas.width = 32;
   canvas.height = 32;
@@ -273,7 +289,7 @@ function setFaviconFromSVGElement(elementId) {
     URL.revokeObjectURL(url);
 
     const pngDataURL = canvas.toDataURL("image/png");
-    let favicon =
+    const favicon =
       document.querySelector("link[rel='icon']") ||
       document.createElement("link");
     favicon.rel = "icon";
@@ -283,19 +299,27 @@ function setFaviconFromSVGElement(elementId) {
   };
 
   img.onerror = (error) => {
+    URL.revokeObjectURL(url);
     console.error("Failed to load SVG for favicon:", error);
   };
 
   img.src = url;
 }
 
-setTimeout(() => {
+async function loadLogo() {
   try {
-    setFaviconFromSVGElement("logo");
+    const svgText = await fetchGzip("/svg/logo.svg");
+    const blob = new Blob([svgText], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const logo = document.getElementById("logo");
+    if (logo) {
+      logo.src = url;
+    }
+    await setFaviconFromSVGString(svgText);
   } catch (error) {
-    console.error("Error setting favicon:", error);
+    console.error("Failed to load logo:", error);
   }
-}, 1000);
+}
 
 function toggleTheme() {
   const html = document.documentElement;
