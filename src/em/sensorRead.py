@@ -37,17 +37,48 @@ class SensorReader:
         nop()                    .side(0)   [3]
         wrap()
 
-    def __init__(self, sm_id=4, freq=340000):
+
+    #setup control fro teh hi and low analog thresholds
+    ANALOG_HI_GPIO = 19
+    ANALOG_LOW_GPIO = 18
+   
+
+
+   
+
+
+
+
+    def __init__(self):
+
+
         self.sm = rp2.StateMachine(
-            sm_id, SensorReader.spi_master_16bit, freq=freq,
+            4, SensorReader.spi_master_16bit, freq=340000,
             in_base=machine.Pin(SensorReader.PIO_MISO_PIN),
             sideset_base=machine.Pin(SensorReader.PIO_SCK_PIN),
             set_base=machine.Pin(SensorReader.PIO_CS_PIN)
         )
         self.sm.active(1)
 
+
+        hiPwm = machine.PWM(machine.Pin(19))
+        lowPwm = machine.PWM(machine.Pin(18))
+        hiPwm.freq(1000)
+        lowPwm.freq(1000)
+        hiPwm.duty_u16(int(65535 * 0.8))   # 80% duty cycle
+        lowPwm.duty_u16(int(65535 * 0.2))  # 20% duty cycle
+
+
+    def calibratePwms(self):
+
+
+        
+
     def pull_sensor_value(self):
         return self.sm.get()
+
+
+
 
 if __name__ == "__main__":
     sensor = SensorReader()
