@@ -42,9 +42,9 @@ memory_map = {
         "size": 48,
         "count": 1,
     },
-    "KeyStore": {
-        "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100) - (18 * 20 * 30) - (96 * 1) - (48 * 1) - (40),
-        "size": 40,
+    "cloud": {
+        "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100) - (18 * 20 * 30) - (96 * 1) - (48 * 1) - (64),
+        "size": 16+32+16,
         "count": 1
     }
 }
@@ -59,7 +59,7 @@ def show_mem_map():
     memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
     memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
     memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
-    memory_map["KeyStore"]["start"] = memory_map["extras"]["start"] - (memory_map["KeyStore"]["size"] * memory_map["KeyStore"]["count"])
+    memory_map["cloud"]["start"] = memory_map["extras"]["start"] - (memory_map["cloud"]["size"] * memory_map["cloud"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
@@ -130,6 +130,17 @@ def serialize(record, structure_name):
         else:
             enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
+    elif structure_name == "cloud":
+        id_bytes = list(record["id"]) if not isinstance(record["id"], list) else record["id"]
+        secret_bytes = list(record["secret"]) if not isinstance(record["secret"], list) else record["secret"]
+        reserved = record.get("reserved", [0]*16)
+        reserved_bytes = list(reserved) if not isinstance(reserved, list) else reserved
+        return struct.pack(
+            "<16B32B16B",       # all unsigned bytes
+            *id_bytes,
+            *secret_bytes,
+            *reserved_bytes
+        )
     else:
         raise ValueError("Unknown structure name")
 
@@ -224,6 +235,16 @@ def deserialize(data, structure_name):
                 "WPCTimeOn": False,
                 "MM_Always": False,
             }
+    elif structure_name == "cloud":       
+        unpacked = struct.unpack("<16B32B16B", data)
+        id = list(unpacked[0:16])         # First 16 bytes
+        secret = list(unpacked[16:48])    
+        reserved = list(unpacked[48:64])  # Last 16 bytes
+        return {
+            "id" : id,
+            "secret" : secret,
+            "reserved" : reserved           
+        }
     else:
         raise ValueError("Unknown structure name")
 
@@ -244,6 +265,9 @@ def blankStruct(structure_name):
         "Gpassword": "",
         "gamename": "Generic_WPC",
         "other": 1,
+        "secret": [0]*32,
+        "reserved" : [0]*16,
+        "id" : [0]*16
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
@@ -272,6 +296,7 @@ def blankAll():
     blankStruct("extras")
     record1 = {"version": "Map Ver: 2.0"}
     write_record("MapVersion", record1, index=0)
+    blankStruct("cloud")
 
 
 def writeIP(ipaddress):
@@ -295,3 +320,16 @@ if __name__ == "__main__":
 
     readver = read_record("MapVersion", index=0)
     print("read ver string=", readver["version"])
+
+
+    cloud = read_record("cloud",index=0)
+    print (cloud)
+    cloud["secret"] = bytes([1, 2, 3, 4, 5, 6])
+    write_record("cloud",cloud,index=0)
+    cloud = read_record("cloud",index=0)
+    print (cloud)
+    cloud["reserved"]= [4,5,1,2]
+    write_record("cloud",cloud,index=0)
+    cloud = read_record("cloud",index=0)
+    print (cloud)
+
