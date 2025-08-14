@@ -10,19 +10,16 @@ LOAD_PIN = 8      # GP8 for LOAD (GPIO)
 SPI1_SCK_PIN = 10   # GP10 for SPI1 SCK
 SPI1_MOSI_PIN = 11  # GP11 for SPI1 MOSI
 SPI1_MISO_PIN = 12  # GP13 for SPI1 MISO
-SPI1_LD = 13
-SPI1_load_Pin = Pin(SPI1_LD, Pin.OUT)
+#SPI1_LD = 13
+#SPI1_load_Pin = Pin(SPI1_LD, Pin.OUT)
 
 # Initialize SPI0
-spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
+#spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
 
 # Initialize LOAD pin
 load = Pin(LOAD_PIN, Pin.OUT)
 load.value(0)
 
-# Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
-spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
-           sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
 
 # Configure PWM on GPIO18 ("HI") and GPIO19 ("LOW")
 HI = PWM(Pin(19))
@@ -64,6 +61,18 @@ next_pin = Pin(1, Pin.OUT)
 # Buffer for SPI1 16-bit values
 spi1_buffer = []
 
+
+
+
+def setup_spi1():
+    # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
+    spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
+        sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
+    
+# Set up a timer to call the callback at 1kHz (every 1ms)
+#spi1_timer = Timer()
+#spi1_timer.init(freq=1000, mode=Timer.PERIODIC, callback=spi1_timer_callback)
+
 def spi1_timer_callback(timer):
     global spi1_buffer
     SPI1_load_Pin.value(1)
@@ -79,51 +88,17 @@ def spi1_timer_callback(timer):
 
 
 import rp2
-from machine import Pin, StateMachine
+from machine import Pin
+import machine
 
-# Pin assignments
-PIO_MISO_PIN = 12  # MISO (data in)
-PIO_SCK_PIN  = 10  # SCK (clock out)
-PIO_CS_PIN   = 13  # CS (chip select out)
 
-# PIO program: SPI master, 16 bits, 1ms interval
-@rp2.asm_pio(
-    in_shiftdir=rp2.PIO.SHIFT_LEFT,
-    autopull=True, pull_thresh=16,
-    out_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_LOW), # CS high, SCK low
-    out_shiftdir=rp2.PIO.SHIFT_LEFT
-)
-def spi_master_16bit():
-    set(pins, 0b1)         # CS low (active)
-    set(x, 15)             # 16 bits to read
-    label("bitloop")
-    set(pins, 0b1)         # SCK low
-    nop()                  # Short delay (adjust for speed)
-    set(pins, 0b11)        # SCK high
-    in_(pins, 1)           # Sample MISO
-    nop()                  # Short delay (adjust for speed)
-    set(pins, 0b1)         # SCK low
-    jmp(x_dec, "bitloop")
-    set(pins, 0b0)         # CS high (inactive)
-    # Delay for ~1ms (adjust for your clock freq)
-    set(y, 999)            # 1000 cycles at 1MHz = 1ms
-    label("delay")
-    nop()
-    jmp(y_dec, "delay")
-
-# Setup state machine
-sm = StateMachine(
-    0, spi_master_16bit, freq=1000000,
-    in_base=Pin(PIO_MISO_PIN),
-    out_base=Pin(PIO_CS_PIN)  # CS is bit 0, SCK is bit 1 (use consecutive pins)
-)
-sm.active(1)
 
 # Fetch samples from PIO buffer
 spi1_buffer = []
 def fetch_pio_samples():
     while sm.rx_fifo() > 0:
         value = sm.get() & 0xFFFF
+        print("pio samnple=",value)
         spi1_buffer.append(value)
 
 
@@ -132,6 +107,11 @@ def process_spi1_buffer():
     global lsb_pin, stable_lower_5, scoreDig, low_counts
 
     while spi1_buffer:
+
+    
+
+
+
         value = spi1_buffer.pop(0)
         reversed_value = reverse_bits_16(value)
         lower_5 = reversed_value & 0x1F  # Only 5 bits
@@ -194,9 +174,7 @@ def process_spi1_buffer():
             print(f"{stable_lower_5:05b}  Score: {score}")
             last_lower_5 = stable_lower_5
 
-# Set up a timer to call the callback at 1kHz (every 1ms)
-spi1_timer = Timer()
-spi1_timer.init(freq=1000, mode=Timer.PERIODIC, callback=spi1_timer_callback)
+
 
 def send_led_data(data: int):
     """
@@ -537,6 +515,11 @@ def main():
             except KeyboardInterrupt:
                 print("\nTest Switches stopped.")
         elif choice == '2':
+
+            import SensorReader
+            sensor = SensorReader()
+            d = sensor.pull_sensor_value()
+            print("  0x{:04X}".format(d))
 
             print("Running Calibrate PWM HI/LOW. Press Enter to continue after calibration.")
             calibrate_pwm_hi_low()
