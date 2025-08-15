@@ -9,6 +9,9 @@ FRAM - 32K Byte
 		Version 1 fills down to:  21707  (0x54CB)
 		expand score number in WPC - now down to:  19047   (0x4A67)
 
+		adding web key data now - - - -
+
+		
 Blank spot - hold for more data store - - -
 
 
