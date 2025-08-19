@@ -45,6 +45,8 @@ python dev/sync.py auto
 
 Each board is identified, firmware for each hardware platform is built once,
 and all boards are flashed in parallel.
+When more than one board is flashed, build and flash logs are suppressed and
+progress is reported as boards complete (e.g., `2 of 3 boards complete`).
 
 ## Automatic Configuration
 
