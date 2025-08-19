@@ -1,5 +1,36 @@
 //
-// Navigation & Resrouce Loading
+// DOM Helpers
+//
+function waitForElementById(id, timeout = 2000) {
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById(id);
+    if (existing) {
+      resolve(existing);
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(el);
+      }
+    });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(
+        new Error(`Element with id "${id}" not found within ${timeout}ms`),
+      );
+    }, timeout);
+  });
+}
+
+//
+// Navigation & Resource Loading
 //
 const pageConfig = {
   scores: {
@@ -182,26 +213,27 @@ function clearPreviousResources(resourceIds) {
   resourceIds.forEach(clearResource);
 }
 
-function initializeNavigation() {
+async function initializeNavigation() {
   const navLinks = [
     { id: "navigate-scores", page: "scores" },
     { id: "navigate-about", page: "about" },
     { id: "navigate-players", page: "players" },
     { id: "navigate-admin", page: "admin" },
   ];
-  navLinks.forEach((link) => {
-    const elem = document.getElementById(link.id);
-    if (elem) {
+
+  for (const link of navLinks) {
+    try {
+      const elem = await window.waitForElementById(link.id);
       elem.addEventListener("click", (e) => {
         e.preventDefault();
         console.log(`Navigation link clicked: ${link.page}`);
         handleNavigation(link.page);
       });
       console.log(`Event listener added to: ${link.id}`);
-    } else {
+    } catch (err) {
       console.warn(`Navigation link element with ID "${link.id}" not found.`);
     }
-  });
+  }
 }
 
 function getCurrentPage() {
@@ -246,7 +278,7 @@ window.onpopstate = async () => {
 
 async function init() {
   console.log("Initializing navigation and page...");
-  initializeNavigation();
+  await initializeNavigation();
   await initializePage();
   await loadLogo();
 }
@@ -269,6 +301,7 @@ window.initializeNavigation = initializeNavigation;
 window.initializePage = initializePage;
 window.init = init;
 window.toggleTheme = toggleTheme;
+window.waitForElementById = waitForElementById;
 
 //
 // Index.html required js
