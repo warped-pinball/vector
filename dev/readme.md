@@ -37,6 +37,14 @@ Run the `sync.sh` script from the repository root. Pass the target hardware (`sy
 
 The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
+To automatically detect and flash all connected boards, run:
+
+```bash
+./dev/sync.sh auto
+```
+
+Each board is identified, built for its hardware, and flashed.
+
 ## Automatic Configuration
 
 Create a `dev/config.json` file so the sync script can configure Wi‑Fi and game settings automatically:

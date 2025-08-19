@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# deploy.sh
+# sync.sh
 #
 # Usage:
-#   ./deploy.sh [dev|beta|prod]
+#   ./sync.sh [sys11|wpc|em|auto] [port]
 #
 # Description:
-#   1) Build the project (defaults to 'dev' environment).
+#   1) Build the project for the chosen hardware (defaults to 'dev').
 #   2) Flash the board (wipe, copy files, apply config).
 #   3) Connect to the board REPL via mpremote.
 
@@ -16,6 +16,41 @@ SYSTEM="${1:-dev}"     # If user doesn't specify, default to 'dev'
 BUILD_DIR="build"           # adjust as necessary
 SOURCE_DIR="src"            # adjust as necessary
 PORT="${2}"                # optionally define port
+
+if [ "$SYSTEM" = "auto" ]; then
+  echo "Detecting connected boards ..."
+  BOARDS_JSON=$(python dev/detect_boards.py)
+  if [ $? -ne 0 ] || [ -z "$BOARDS_JSON" ]; then
+    echo "No boards detected. Aborting."
+    exit 1
+  fi
+  echo "Boards detected: $BOARDS_JSON"
+  python - "$BOARDS_JSON" <<'PYTHON'
+import json, subprocess, sys
+mapping = json.loads(sys.argv[1])
+for hardware, ports in mapping.items():
+    build_dir = f"build/{hardware}"
+    subprocess.check_call([
+        "python",
+        "dev/build.py",
+        "--build-dir",
+        build_dir,
+        "--source-dir",
+        "src",
+        "--target_hardware",
+        hardware,
+    ])
+    for port in ports:
+        subprocess.check_call([
+            "python",
+            "dev/flash.py",
+            build_dir,
+            "--port",
+            port,
+        ])
+PYTHON
+  exit $?
+fi
 
 # --- 1. Build the project ---
 echo "Building project for system=${SYSTEM} ..."
