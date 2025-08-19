@@ -19,7 +19,7 @@ PORT="${2}"                # optionally define port
 
 if [ "$SYSTEM" = "auto" ]; then
   echo "Detecting connected boards ..."
-  BOARDS_JSON=$(python dev/detect_boards.py)
+  BOARDS_JSON=$(timeout 15s python dev/detect_boards.py)
   if [ $? -ne 0 ] || [ -z "$BOARDS_JSON" ]; then
     echo "No boards detected. Aborting."
     exit 1

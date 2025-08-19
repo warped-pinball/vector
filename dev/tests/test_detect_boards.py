@@ -1,11 +1,6 @@
-import pathlib
 from unittest.mock import patch
 
-import pytest
-
-import sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-import dev.detect_boards as detect_boards
+from .. import detect_boards
 
 
 class Result:
@@ -16,8 +11,11 @@ class Result:
 
 @patch("dev.detect_boards.subprocess.run")
 def test_detect_boards(mock_run):
-    def side_effect(cmd, capture_output, text, check):
-        if cmd == ["mpremote", "connect", "list"]:
+    calls = []
+
+    def side_effect(cmd, **kwargs):
+        calls.append((cmd, kwargs.get("timeout")))
+        if cmd == ["mpremote", "devs"]:
             return Result("/dev/ttyACM0\n/dev/ttyACM1\n")
         if cmd[:3] == ["mpremote", "connect", "/dev/ttyACM0"]:
             return Result("sys11\n")
@@ -29,4 +27,7 @@ def test_detect_boards(mock_run):
 
     mapping = detect_boards.detect_boards()
     assert mapping == {"sys11": ["/dev/ttyACM0"], "wpc": ["/dev/ttyACM1"]}
+    # Expect one call for listing and one per port
     assert mock_run.call_count == 3
+    # Each subprocess call should include a timeout
+    assert all(timeout == 5.0 for _, timeout in calls)
