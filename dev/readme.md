@@ -71,5 +71,6 @@ To generate an over‑the‑air update file run:
 ```bash
 python dev/build_update.py --version 1.2.3 --target_hardware sys11
 ```
-
-This creates `update.json` in the repository root.
+The script packages files from `build/sys11` (or the corresponding hardware subdirectory)
+and writes `update.json` to the repository root. Use `--build-dir` to override the
+source directory if needed.
