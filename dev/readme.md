@@ -43,7 +43,8 @@ To automatically detect and flash all connected boards, run:
 ./dev/sync.sh auto
 ```
 
-Each board is identified, built for its hardware, and flashed.
+Each board is identified, firmware for each hardware platform is built once,
+and all boards are flashed in parallel.
 
 ## Automatic Configuration
 

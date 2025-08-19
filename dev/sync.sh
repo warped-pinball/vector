@@ -25,30 +25,7 @@ if [ "$SYSTEM" = "auto" ]; then
     exit 1
   fi
   echo "Boards detected: $BOARDS_JSON"
-  python - "$BOARDS_JSON" <<'PYTHON'
-import json, subprocess, sys
-mapping = json.loads(sys.argv[1])
-for hardware, ports in mapping.items():
-    build_dir = f"build/{hardware}"
-    subprocess.check_call([
-        "python",
-        "dev/build.py",
-        "--build-dir",
-        build_dir,
-        "--source-dir",
-        "src",
-        "--target_hardware",
-        hardware,
-    ])
-    for port in ports:
-        subprocess.check_call([
-            "python",
-            "dev/flash.py",
-            build_dir,
-            "--port",
-            port,
-        ])
-PYTHON
+  python dev/auto_flash.py "$BOARDS_JSON"
   exit $?
 fi
 
