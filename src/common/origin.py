@@ -7,7 +7,7 @@ from SPI_DataStore import read_record as ds_read_record
 from websocket_client import connect
 
 ORIGIN_URL = "https://origin-beta.doze.dev"
-ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8002/ws/claim".replace("https://", "").replace("http://", "")
+ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8002/ws/setup".replace("https://", "").replace("http://", "")
 # TODO make this port 8001 for production
 
 
@@ -27,6 +27,7 @@ def setup_origin(request):
     claim_code = data["claim_code"]
     machine_id = data["machine_id"]
     shared_secret = priv.exchange(server_key)
+    print("Shared secret established with Origin server:", ubinascii.hexlify(shared_secret).decode())
     claim_url = "%s/claim?code=%s" % (ORIGIN_URL, claim_code)
     S.origin_pending_claim = {"id": machine_id, "secret": shared_secret, "claim_url": claim_url}
     return {"claim_url": claim_url}
@@ -58,16 +59,33 @@ def msg_origin(msg: str, sign: bool = True):
 
         ws = connect(ORIGIN_WS_URL)
         ws.send(msg)
-        resp = ws.recv()
-        sig = resp.split("|")[-1]
-        data = resp[: -len(sig) - 1]
+        resp = ws.recv().decode("utf-8")
+        print("response from Origin server:", resp)
 
-        signature = ubinascii.unhexlify(sig)
+        try:
+            data, sig_hex = resp.rsplit("|", 1)  # split from the right exactly once
+        except ValueError:
+            raise Exception("Response missing signature separator '|'")
+
+        sig_hex = sig_hex.strip()
+
+        try:
+            signature = ubinascii.unhexlify(sig_hex)
+        except Exception as e:
+            raise Exception("Signature was not valid hex: {}".format(e))
+
+        if len(signature) != 256:
+            raise Exception("Invalid signature length: {}".format(len(signature)))
+
+        print("response from Origin server:", resp)
+        print("Signature from Origin server ({} bytes)".format(len(signature)), signature)
+        print("data from Origin server:", data)
+
         ORIGIN_PUBLIC_KEY = PublicKey(
             n=28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273,  # noqa
             e=65537,
         )
-        result = verify(data, signature, ORIGIN_PUBLIC_KEY)
+        result = verify(data.encode("utf-8"), signature, ORIGIN_PUBLIC_KEY)
         if result != "SHA-256":
             raise Exception(f"Signature invalid! {result}")
 
@@ -78,7 +96,7 @@ def msg_origin(msg: str, sign: bool = True):
             ws.close()
 
     # TODO parse / handle response commands like "finalize claim" which should move the pending claim from shared state to the fram
-
+    # TODO add a timeout handler
     return data
 
 
