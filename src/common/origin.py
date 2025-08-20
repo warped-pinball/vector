@@ -7,7 +7,8 @@ from SPI_DataStore import read_record as ds_read_record
 from websocket_client import connect
 
 ORIGIN_URL = "https://origin-beta.doze.dev"
-ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8001/ws/claim".replace("https://", "").replace("http://", "")
+ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8002/ws/claim".replace("https://", "").replace("http://", "")
+# TODO make this port 8001 for production
 
 
 def setup_origin(request):
@@ -36,6 +37,7 @@ def msg_origin(msg: str, sign: bool = True):
     import SPI_DataStore as ds
     from backend import hmac_sha256
 
+    ws = None
     try:
         if sign:
             cloud_config = ds.read_record("cloud", 0)
@@ -72,7 +74,8 @@ def msg_origin(msg: str, sign: bool = True):
     except Exception as e:
         raise Exception(f"Error during Origin message exchange: {e}")
     finally:
-        ws.close()
+        if ws is not None:
+            ws.close()
 
     # TODO parse / handle response commands like "finalize claim" which should move the pending claim from shared state to the fram
 
@@ -84,8 +87,8 @@ def app_origin_status(request):
 
     import SharedState as S
 
-    if S.pending_claim:
-        return {"linked": False, "claim_url": S.pending_claim["claim_url"]}
+    if S.origin_pending_claim:
+        return {"linked": False, "claim_url": S.origin_pending_claim["claim_url"]}
 
     import SPI_DataStore as ds
 
