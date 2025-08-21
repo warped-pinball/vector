@@ -901,8 +901,9 @@ def app_enable_origin(request):
 
 @add_route("/api/origin/status")
 def app_origin_status(request):
-    """Return linking status with Origin server."""
-    return {"linked": False}
+    from origin import origin_status
+
+    return origin_status()
 
 
 #
