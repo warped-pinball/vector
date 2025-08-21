@@ -243,8 +243,15 @@ def main():
     parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
     parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
     parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
-    parser.add_argument("--target_hardware", default="sys11", help="Target system for the build (e.g., sys11, wpc, em, etc.)")
+    parser.add_argument(
+        "--target_hardware",
+        default="sys11",
+        help="Target system for the build (e.g., sys11, wpc, em, etc.)",
+    )
     args = parser.parse_args()
+
+    if args.build_dir == BUILD_DIR_DEFAULT:
+        args.build_dir = os.path.join(args.build_dir, args.target_hardware)
 
     builder = Builder(args.build_dir, args.source_dir, args.target_hardware)
 
