@@ -288,7 +288,7 @@ window.loadPlayers = async function (data) {
   // - Callback => once a user picks a player, we refresh personal scoreboard
   var dropDownElement = await window.createDropDownElement(
     "playerDropdown",
-    "Select Player",
+    "All Personal Bests",
     dropdownOptions,
     null, // no default value
     true, // sort the options
