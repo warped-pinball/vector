@@ -9,11 +9,12 @@ from ScoreTrack import (
     CheckForNewScores,
     check_for_machine_high_scores,
     initialize_leaderboard,
+    storeSensorData
 )
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
-from SPI_UpdateStore import initialize as sflash_initialize
-from SPI_UpdateStore import tick as sflash_tick
+#from SPI_UpdateStore import initialize as sflash_initialize
+#from SPI_UpdateStore import tick as sflash_tick
 
 from . import logging
 
@@ -219,7 +220,7 @@ def copy_to_fram():
     MemIndex += 16
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
-        print("FRAM: cycle complete")
+        #print("FRAM: cycle complete")
         led_board.toggle()
 
 
@@ -303,7 +304,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(sflash_driver_init, 200)
 
     # initialize the sflash
-    schedule(sflash_initialize, 700)
+    # schedule(sflash_initialize, 700)
 
     #
     # reoccuring tasks
@@ -316,7 +317,12 @@ def create_schedule(ap_mode: bool = False):
     schedule(CheckForNewScores, 15000, 5000)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 4000)
+    #schedule(sflash_tick, 1000, 4000)
+
+
+    #EM store snsor data in ram
+    schedule(storeSensorData, 500, 10)
+
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):

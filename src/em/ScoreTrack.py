@@ -9,7 +9,6 @@ Score Track
 
 """
 from machine import RTC,Timer,Pin
-from Shadow_Ram_Definitions import shadowRam
 import sensorRead
 import array
 import time
@@ -23,6 +22,9 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+
+#this pin is the output from the PIO game active filter
+game_active_pin = Pin(15, Pin.OUT)   
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -39,69 +41,129 @@ recent_scores = [
 #set up the EM score sensors - 
 sensor = sensorRead.SensorReader()
 sensor.calibratePwms()
+
 lastValue =0
 segmentMS =0
-gameHistory=array.array('H')
+
+GAME_HIST_SIZE = 20000
+gameHistory=array.array('H', [0]*GAME_HIST_SIZE)
+gameHistoryIndex=0
+
+
+
+def reverse_bits_16(x):
+    x = ((x & 0xAAAA) >> 1) | ((x & 0x5555) << 1)
+    x = ((x & 0xCCCC) >> 2) | ((x & 0x3333) << 2)
+    x = ((x & 0xF0F0) >> 4) | ((x & 0x0F0F) << 4)
+    x = ((x & 0xFF00) >> 8) | ((x & 0x00FF) << 8)
+    #x = x & 0x0F
+    return x
+
 
 #the sensor class will update the buffer each 5mS with 5 readings
 #   we need to empty before it fills up at 2000/5ms = 400mS
 
-sensor_timer = Timer()
-sensor_timer.init(freq=5, mode=Timer.PERIODIC, callback=lambda t: storeSensorData())
-
 #check for new scores is called at 5 second intervals
-# so here - in an IRQ we will pull data and store in 
-# the giant ram game buffer
+# so here - called faster we take data and store in gameHistory
+#called from phwew schedeuler 
 def storeSensorData():
-    global sensor,lastValue,segmentMS,gameHistory 
+    global sensor, lastValue, segmentMS, gameHistory,gameHistoryIndex
 
-    newValue = sensor.pop_buffer()
-    while True:
-        if newValue is None:
-            return
+    if game_active_pin.value() == 1:
+
+        for i in range (400):
+
+            newValue = sensor.pop_buffer()  
+            if newValue is not None:
+                newValue = reverse_bits_16(newValue)
+                newValue = newValue & 0x0F     
+
+                if segmentMS > 2000 or newValue != lastValue:  
+                    # store value and time
+                    if gameHistoryIndex < (GAME_HIST_SIZE-6):
+                        gameHistory[gameHistoryIndex]=lastValue
+                        gameHistoryIndex += 1
+                        #gameHistory.append(lastValue)
+                        gameHistory[gameHistoryIndex]=segmentMS
+                        gameHistoryIndex += 1
+                        #gameHistory.append(segmentMS)
+                        print("!",lastValue,segmentMS, gameHistoryIndex)
+                    else:
+                        print("FULL")    
+
+                    lastValue = newValue
+                    segmentMS = 1
+
+                else:
+                    # if newValue == lastValue:
+                    segmentMS = segmentMS + 1
+
+
+    for i in range(990):
+        newValue = sensor.pop_buffer()   
         
-        if segmentMS>65533 or newValue != lastValue:
-            #store value and time
-            gameHistory.append(lastValue)
-            gameHistory.append(segmentMS)
-            lastValue=newValue
-            segmentMS=1
-
-        else:
-            #if newValue == lastValue:
-            segmentMS = segmentMS +1
-
-
-
-# Start and End game detection
-# Setup GPIO pins for Start and End Game buttons
-start_button_pin = Pin(21, Pin.IN)  
-end_game_pin = Pin(20, Pin.IN)        
-
-
-def start_button_irq(pin):    
-    '''detect start button via gpio IRQ'''
-    first = pin.value()
-    time.sleep_ms(1)  
-    second = pin.value()
-    if first == 1 and second == 1:
-        print("Start button state changed:", pin.value())
-        S.game_status["game_active"]=True
-
-
-def end_game_irq(pin):
-    '''detect end lamp via GPIO IRQ'''
-    first = pin.value()
-    time.sleep_ms(1)  
-    second = pin.value()
-    if first == 0 and second == 0:
-        print("End game button state changed:", pin.value())
-        S.game_status["game_active"]=False
+    return
     
 
-# Attach IRQ handlers for any change of state
-start_button_pin.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=start_button_irq)
-end_game_pin.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=end_game_irq)
+    import SharedState as S
+    if S.game_status["game_active"] == False:
+        if len(gameHistory) > 0:
+            #gameHistory.clear()  # dump data in place            
+            sensor.clear_buffer()          
+
+    else:  # game is active       
+
+        for i in range(500):
+            newValue = sensor.pop_buffer()   
+
+
+        return
+
+
+
+
+
+        limit=5000
+        #print("!")
+        while True:
+            newValue = sensor.pop_buffer()                      
+            if newValue is None:
+                print("     none")
+                return
+            
+            newValue = reverse_bits_16(newValue)
+            newValue = newValue & 0x0F            
+            
+            if segmentMS > 65533 or newValue != lastValue:
+                # store value and time
+                if len(gameHistory) < 1000:
+                    gameHistory.append(lastValue)
+                    gameHistory.append(segmentMS)
+                    print("!",lastValue,segmentMS)
+                else:
+                    print("FULL")    
+
+                lastValue = newValue
+                segmentMS = 1
+
+            else:
+                # if newValue == lastValue:
+                segmentMS = segmentMS + 1
+
+            limit = limit -1
+            if limit <0:
+                print("store data exit",sensor.buffer_length())
+                return
+
+
+def plen():
+    global sensor, lastValue, segmentMS, gameHistory
+    return len(gameHistory)
+
+
+
+
+
 
 
 
@@ -158,59 +220,7 @@ def _read_machine_score(HighScores):
     """read machine scores
     and if HighScores is True try to get intials from highscore area
     """
-    high_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-    in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-
-    # Build a set of all four in-play scores, index=0,1,2,3 (player number)
-    try:
-        if S.gdata["InPlay"]["Type"] == 1:
-            for idx in range(4):
-                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
-                in_play_score_bytes = shadowRam[score_start : score_start + 4]
-                in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes)
-    except Exception:
-        pass
-
-    # grab four high scores (in order of high->low score, not player number!)
-    if S.gdata["HighScores"]["Type"] in [1, 2, 3, 9]:
-        for idx in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
-            score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
-            high_scores[idx][1] = _bcd_to_int(score_bytes)
-            if high_scores[idx][1] < 1000:
-                high_scores[idx][1] = 0
-
-        # initials
-        if "InitialAdr" in S.gdata["HighScores"]:
-            for idx in range(4):
-                initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * 3
-                initials_bytes = shadowRam[initial_start : initial_start + 3]
-
-                if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
-                    initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
-                    high_scores[idx][0] = bytes(initials_bytes).decode("ascii")
-                elif S.gdata["HighScores"]["Type"] == 3:  # 0=space,1='0',10='9', 11='A'
-                    try:
-                        processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
-                        high_scores[idx][0] = processed_initials.decode("ascii")
-                    except Exception:
-                        high_scores[idx][0] = None
-
-                if high_scores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
-                    high_scores[idx][0] = ""
-
-        # if we have high scores, intials AND in-play socres, put initials to the in play scores
-        for in_play_score in in_play_scores:
-            for high_score in high_scores:
-                if in_play_score[1] == high_score[1]:
-                    in_play_score[0] = high_score[0]  # copy initals over
-
-    if all(score[1] == 0 for score in in_play_scores):
-        log.log("SCORE: High Scores used")
-        return high_scores
-    else:
-        log.log("SCORE: In play scores used")
-        return in_play_scores
+    pass
 
 
 def _bcd_to_int(score_bytes):
@@ -249,81 +259,8 @@ def _ascii_to_type3(c):
 
 
 def place_machine_scores():
-    """write four highest scores & initials from storage to machine memory"""
-    global top_scores
+    pass
 
-    #possible high score intials are empty if there was a reset / reboot etc
-    #games do not like empties!
-    for index in range(4):
-        if len(top_scores[index]["initials"]) != 3:
-            top_scores[index]["initials"] = "   "
-            #top_scores[index]["score"] = 100  only change initials, not score (blank initials happen with good scores sometimes)
-
-    if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
-        log.log("SCORE: Place system 11 machine scores")
-        for index in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            try:
-                scoreBCD = _int_to_bcd(top_scores[index]["score"])
-            except Exception:
-                log.log("SCORE: score convert problem")
-                scoreBCD = _int_to_bcd(100)
-
-            shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]] = scoreBCD
-            print("  top scores: ", top_scores[index])
-
-            try:
-                initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-                initials = top_scores[index]["initials"]
-
-                for i in range(3):
-                    if S.gdata["HighScores"]["Type"] == 1:
-                        shadowRam[initial_start + i] = ord(initials[i])
-                    elif S.gdata["HighScores"]["Type"] == 3:
-                        shadowRam[initial_start + i] = _ascii_to_type3(ord(initials[i]))
-
-            except Exception:
-                log.log("SCORE: place machine scores exception")
-                shadowRam[initial_start] = 64
-                shadowRam[initial_start + 1] = 64
-                shadowRam[initial_start + 2] = 64
-
-    elif S.gdata["HighScores"]["Type"] == 9:
-        # system 9, copy in scores, no intiials
-        log.log("SCORE: Place system 9 machine high scores")
-        for index in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["BytesInScore"]
-            shadowRam[score_start : score_start + 4] = _int_to_bcd(top_scores[index]["score"])
-
-
-def _remove_machine_scores():
-    """remove machine scores"""
-    if S.gdata["HighScores"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:  # system 11 type 1
-        log.log("SCORE: Remove machine scores type 1")
-        for index in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-            for i in range(4):
-                shadowRam[score_start + i] = 0  # score
-            for i in range(3):
-                shadowRam[initial_start + i] = 0x3F  # intials
-            shadowRam[score_start + 2] = 5 - index
-
-    elif S.gdata["HighScores"]["Type"] == 3 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:  # system 11, type 3
-        log.log("SCORE: Remove machine scores type 3")
-        for index in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-
-            for i in range(4):
-                shadowRam[score_start + i] = 0
-            shadowRam[score_start + 2] = 5 - index
-            for i in range(3):
-                shadowRam[initial_start + i] = 0x00
-
-    elif S.gdata["HighScores"]["Type"] == 9:
-        log.log("SCORE: Remove machine scores system 9")
-        place_machine_scores()
 
 
 def find_player_by_initials(new_entry):
@@ -443,15 +380,7 @@ def initialize_leaderboard():
 
 
 def check_for_machine_high_scores():
-    # check for high scores in machine that we dont have yet
-    scores = _read_machine_score(True)
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    for idx in range(4):
-        if scores[idx][1] > 1000:  # could be left over ip address digits in system 9
-            new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
-            log.log("SCORE: place game score into vector")
-            update_leaderboard(new_score)
-
+    pass
 
 def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
@@ -499,19 +428,22 @@ def update_tournament(new_entry):
     return
 
 
+
+import resource
+
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
+    global gameHistory
+
+    resource.go()
 
     if nState[0] == 0:  # power up init       
         nState[0] = 1
 
-    if nState[0] == 1:  # waiting for a game to start
-        if S.game_status["game_active"]==True:    #comes from IRQs above
-            nState[0] = 2
-
+    if nState[0] == 1:  # waiting for a game to start       
         nGameIdleCounter += 1  # claim score list expiration timer
-        print("SCORE: game start check ", nGameIdleCounter)
+        print("SCORE: game start check - ", nGameIdleCounter, gameHistoryIndex)
 
         if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
             game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -519,19 +451,26 @@ def CheckForNewScores(nState=[0]):
             nGameIdleCounter = 0
             print("SCORE: game list 10 minute expire")                     
 
+        #if game_active_flag == True:
+        if game_active_pin.value() == 1:
+            #if S.game_status["game_active"]==True:    #comes from IRQs above
+            S.game_status["game_active"]=True
+            print("SCORE: Game Start")
+            nState[0] = 2
+
+
 
     elif nState[0] == 2:  # waiting for game to end
 
     
         #process data in storeage...
 
+        print("SCORE: game end check ",  sensor.buffer_length() ,  gameHistoryIndex  )
 
-        print("SCORE: game end check")
-
-        if  S.game_status["game_active"]==False:  
+        if game_active_pin.value() == 0:
+            print("SCORE: Game End")
+            S.game_status["game_active"]=False
             #load scoes into scores[][]
-
-
 
             # game over
             nState[0] = 1           
@@ -547,5 +486,4 @@ def CheckForNewScores(nState=[0]):
             game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
             _place_game_in_claim_list(game)
 
-            # put high scores back in machine memory
-            place_machine_scores()
+
