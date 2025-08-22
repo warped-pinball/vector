@@ -99,8 +99,9 @@ def storeSensorData():
                     segmentMS = segmentMS + 1
 
 
-    for i in range(990):
-        newValue = sensor.pop_buffer()   
+
+    #for i in range(990):
+    #    newValue = sensor.pop_buffer()   
         
     return
     
