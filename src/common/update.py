@@ -204,58 +204,20 @@ def download_update(url):
     total_length = 400000
     percent_per_chunk = 1024 * (end_percent - start_percent) / total_length
 
-    # if sflash is on board, store it in sflash
-    # TODO sflash-based update dormant for now
-    if False:
-        from json import loads as json_loads
+    # TODO modify this to use a buffer so we aren't recreating a buffer every loop
+    # https://docs.micropython.org/en/latest/reference/constrained.html
+    # look for buffers
 
-        from SPI_Store import sflash_is_on_board
-        from SPI_UpdateStore import write_consumer
-
-        if sflash_is_on_board:
-            # get first line
-            first_lines = response.read(1024).split(b"\n")
-            print(type(first_lines))
-            line_1 = first_lines[0]
-            print(f"First line: {line_1}")
-
-            # parse as json
-            meta_data = json_loads(line_1)
-
-            # get incoming software version
-            version = Version.from_str(meta_data.get("version", ""))
-            print(f"Version: {version}")
-
-            wc = write_consumer(f"{version.major}.{version.minor}.{version.patch}\n")
-            next(wc)
-            data = bytearray().join(first_lines)
-            wc.send(data)
-            bytes_so_far = 1024
-            while chunk := response.read(1024):
-                wc.send(bytearray(chunk, "utf-8"))
-                bytes_so_far += len(chunk)
-                yield {"percent": start_percent + (bytes_so_far * percent_per_chunk)}
-
-            try:
-                wc.send(None)
-            except StopIteration:
-                pass
-
-    else:
-        # TODO modify this to use a buffer so we aren't recreating a buffer every loop
-        # https://docs.micropython.org/en/latest/reference/constrained.html
-        # look for buffers
-
-        percent = start_percent
-        buff = bytearray(1024)
-        with open("update.json", "wb") as f:
-            while True:
-                buff[0:] = response.read(1024)
-                f.write(buff)
-                percent += percent_per_chunk * ((end_percent - percent) / percent)
-                if len(buff) < 1024:
-                    break
-                yield {"percent": percent}
+    percent = start_percent
+    buff = bytearray(1024)
+    with open("update.json", "wb") as f:
+        while True:
+            buff[0:] = response.read(1024)
+            f.write(buff)
+            percent += percent_per_chunk * ((end_percent - percent) / percent)
+            if len(buff) < 1024:
+                break
+            yield {"percent": percent}
 
     response.close()
 
@@ -298,23 +260,14 @@ def detect_hardware_version():
     from sys import implementation
 
     known_hardware = {
-        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040", "sflash": False},
-        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040", "sflash": True},
-        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "sflash": False},
+        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040"},
+        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040"},
+        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350"},
     }
 
     for hardware, details in known_hardware.items():
         if implementation._machine == details["machine"]:
-            try:
-                from SPI_Store import sflash_driver_init, sflash_is_on_board
-
-                sflash_driver_init()
-                if sflash_is_on_board == details["sflash"]:
-                    return hardware
-            except Exception:
-                # assume no SFlash
-                if not details["sflash"]:
-                    return hardware
+            return hardware
 
     return "Unknown"
 
