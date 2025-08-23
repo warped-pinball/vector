@@ -16,8 +16,6 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 # from logger import logger_instance  <<the logger uses this driver, cant really be imported here
 # Log = logger_instance
 
-SPI_store_version = 2  # this is not refrenced anywhere, do we need it?
-
 # FRAM  Register and command defs for FM25L16B
 OPCODE_WREN = 0x06  # set write enable latch
 OPCODE_WRDI = 0x04  # write disable              <<clears WEL
