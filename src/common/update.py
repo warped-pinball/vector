@@ -259,14 +259,20 @@ def detect_hardware_version():
     # This is written akwardly in order to run on unknown future hardware
     from sys import implementation
 
+    from machine import Pin
+
     known_hardware = {
-        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040"},
-        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040"},
-        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350"},
+        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
+        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
+        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": False},
+        "EM": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": True},
     }
 
+    # read GPIO28, set GPIO28_HIGH based on its state
+    GPIO28_HIGH = Pin(28, Pin.IN).value()
+
     for hardware, details in known_hardware.items():
-        if implementation._machine == details["machine"]:
+        if implementation._machine == details["machine"] and GPIO28_HIGH == details["GPIO28_HIGH"]:
             return hardware
 
     return "Unknown"
