@@ -14,6 +14,7 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
 from SPI_UpdateStore import initialize as sflash_initialize
 from SPI_UpdateStore import tick as sflash_tick
+from USB_Comms import send_game_status
 
 from . import logging
 
@@ -308,6 +309,8 @@ def create_schedule(ap_mode: bool = False):
     #
     # reoccuring tasks
     #
+
+    schedule(send_game_status, 14000, 3000)
 
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
