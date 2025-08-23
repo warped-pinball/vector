@@ -1,0 +1,95 @@
+{
+    "GameInfo": {
+        "GameName": "World Cup Soccer",
+        "System": "WPC",
+        "Clock": "Yes",
+        "FileVer": 1
+    },
+
+    "Definition": {
+        "version": 1
+    },
+
+    "Memory" : {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 1043,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 141,
+        "GameActiveValue": 0,
+        "Players": 6057,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 7
+    },
+
+    "DisplayMessage": {
+        "Type": 10,
+        "AddressS1": 7697,
+        "AddressS2": 7762,
+        "AddressS3": 7827,
+        "Length": 32,
+        "ChecksumStartAdr": 7697,
+        "ChecksumEndAdr": 7889,
+        "ChecksumResultAdr": 7890
+    },
+
+    "Adjustments" :{
+        "Type": 10,
+        "CustomMessageOn": 7102,
+        "ChecksumStartAdr": 7061,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301
+    },
+
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7408,
+        "BytesInScore":6,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7405,
+        "InitialSpacing": 9,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7446,
+        "GrandChampInitAdr": 7443,
+        "ChecksumStartAdr": 7405,
+        "ChecksumEndAdr": 7440,
+        "ChecksumResultAdr": 7441,
+        "GCChecksumStartAdr": 7443, 
+        "GCChecksumEndAdr": 7451,
+        "GCChecksumResultAdr": 7452
+    },
+
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 1937,
+        "HS2": 1938,
+        "HS3": 1939,
+        "HS4": 1940,
+        "DisableByte": 0
+    },
+
+    "Switches": {
+        "Type": 0,
+        "Address": 56,
+        "Length": 23
+    },
+
+    "CoinDrop": {
+        "Type": 0
+    }
+}

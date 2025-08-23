@@ -1,84 +1,78 @@
-# Conda Setup Guide
+# Development Setup
 
-## Installation
+These scripts build and deploy Vector to a Raspberry Pi Pico.
 
-### Linux/Raspberry Pi
+## Environment
 
-1. **Download Miniforge Installer**
-   Choose `x86_64` for most Linux PCs or `aarch64` for Raspberry Pi:
+Vector requires Python 3 and the `mpy-cross` and `mpremote` tools.
 
-   `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh`
-   # OR for Raspberry Pi
-   `wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh`
+### Using `venv`
 
-2. **Make the Installer Executable**
+```bash
+python3 -m venv .venv
+# Linux/macOS
+source .venv/bin/activate
+# Windows (Git Bash)
+source .venv/Scripts/activate
+pip install -r dev/requirements.txt
+pre-commit install
+```
 
-   `chmod +x Miniforge3-Linux-*.sh`
+### Using Conda
 
-3. **Run the Installer**
+```bash
+conda create -n vector python=3
+conda activate vector
+pip install -r dev/requirements.txt
+pre-commit install
+```
 
-   `./Miniforge3-Linux-*.sh`
+## Build and Flash
 
-4. **Activate Conda**
+Run the `sync.py` script from the repository root. Pass the target hardware (`sys11`, `wpc`, `em`, or `auto`) as the first argument and optionally the Pico serial port as the second argument.
 
-   `source ~/miniforge3/bin/activate`
+```bash
+python dev/sync.py sys11 /dev/ttyACM0
+```
 
-5. **Verify Conda Installation**
+The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
-   `conda --version`
+To automatically detect and flash all connected boards, run:
 
+```bash
+python dev/sync.py auto
+```
 
-### Windows
-
-1. **Download Miniforge Installer**
-   Visit https://github.com/conda-forge/miniforge/releases and download `Miniforge3-Windows-x86_64.exe`.
-
-2. **Run Installer and Add Conda to PATH**
-   Follow the setup prompts, ensuring Conda is added to your PATH.
-
-3. **Activate Conda in New Terminals**
-   Open a new Command Prompt and run:
-
-   `conda init`
-
-   Restart Command Prompt if needed.
-
----
-
-## Setup Environment and Install Requirements
-
-1. **Create Environment**
-   `conda create -n pico python=3.11`
-
-2. **Activate Environment**
-   `conda activate pico`
-
-3. **Install Requirements**
-   `pip install -r dev/requirements.txt`
-
----
-
-## Usage
-
-1. **Build and Deploy to Pico**
-   From the root of your repository:
-
-   `./dev/sync.py`
-
-2. **Get Sync Script Help**
-   `./dev/sync.py --help`
+Each board is identified, firmware for each hardware platform is built once,
+and all boards are flashed in parallel. Build artifacts are always written to
+`build/<hardware>` so individual builds do not interfere with one another.
+When more than one board is flashed, build and flash logs are suppressed and
+progress updates in place starting at `0 of N boards complete` with a small
+ellipsis animation until all boards finish.
 
 ## Automatic Configuration
 
-To automatically configure your system, create a JSON file with the following structure:
+Create a `dev/config.json` file so the sync script can configure Wi‑Fi and game settings automatically:
 
 ```json
 {
-   "ssid": "Your WiFi SSID",
-   "password": "Your WiFi Password",
-   "gamename": "GenericSystem11",
-   "Gpassword": ""
+  "ssid": "Your WiFi SSID",
+  "password": "Your WiFi Password",
+  "gamename": "GenericSystem11",
+  "Gpassword": ""
 }
 ```
 
-Replace the placeholder values with your actual WiFi SSID, password, and game name. Save this file and use it as needed for your configuration.
+Save the file with your values before running `sync.py`.
+
+## Building Update Packages
+
+To generate an over‑the‑air update file run:
+
+```bash
+python dev/build_update.py --version 1.2.3 --target_hardware sys11
+```
+The script packages files from `build/<hardware>` by default and writes
+`update.json` to the repository root. Supplying `--build-dir` is optional; if
+you point it at the root `build` directory the script automatically selects the
+appropriate hardware subfolder.
