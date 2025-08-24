@@ -787,9 +787,9 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/network/peers")
 def app_getPeers(request):
-    from discovery import known_devices
+    from discovery import get_peer_map
 
-    return known_devices
+    return get_peer_map()
 
 
 #
@@ -957,7 +957,6 @@ def connect_to_wifi(initialize=False):
     if phew_is_connected() and not initialize:
         return True
 
-    from discovery import setup as discovery_setup
     from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
@@ -976,7 +975,6 @@ def connect_to_wifi(initialize=False):
             # TODO remove ip address args and move to scheduler
             writeIP(ip_address)
             init_display(ip_address)
-            discovery_setup()
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults
