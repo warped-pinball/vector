@@ -1,7 +1,7 @@
 # Resource (ram and flash and stack) report
 import gc
 import os
-
+import uctypes
 import micropython
 
 #from logger import logger_instance
@@ -33,6 +33,27 @@ def get_flash_usage(details):
     return flash_usage_percent
 
 
+def print_ram_section(start_addr=0x20080000, length=0x80):
+    """
+    Print out a large section of RAM from start_addr to start_addr+length.
+    Default: 0x20080000 to 0x20080080 (128 bytes).
+    """
+    ram = uctypes.bytearray_at(start_addr, length)
+    for i in range(0, length, 16):
+        chunk = ram[i:i+16]
+        hex_str = ' '.join('{:02X}'.format(b) for b in chunk)
+        print("0x{:08X}: {}".format(start_addr + i, hex_str))
+
+    # Call buffer_depth from SensorReader and print the result
+    try:
+        import sensorRead 
+        # If you have an instance, pass its state machine; otherwise, just call with no argument
+        depth = sensorRead.depthSensorRx()
+        print("Sensor buffer depth:", depth)
+    except Exception as e:
+        print("Could not get sensor buffer depth:", e)
+
+
 def go(details=False):
     stack_usage = micropython.stack_use()
     if details:
@@ -46,3 +67,5 @@ def go(details=False):
     #    Log.log(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
 
     print(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
+
+    print_ram_section()

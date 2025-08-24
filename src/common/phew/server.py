@@ -311,7 +311,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     # update the game status every 0.25 second
-    schedule(poll_fast, 15000, 250)
+    #schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
@@ -321,7 +321,7 @@ def create_schedule(ap_mode: bool = False):
 
 
     #EM store snsor data in ram
-    schedule(storeSensorData, 500, 10)
+    schedule(storeSensorData, 1000, 1000)
 
 
     # only if there are no hardware faults

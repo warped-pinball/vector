@@ -15,6 +15,7 @@ import faults
 import GameDefsLoad
 import machine
 
+import uctypes
 
 from logger import logger_instance
 from systemConfig import SystemVersion
@@ -66,6 +67,20 @@ def check_ap_button():
     else:
         return False  # Normal boot mode, no button press
 
+
+
+
+def clear_ram_section(start_addr=0x20080000, length=0x20):
+    """
+    Clear (set to zero) a section of RAM from start_addr to start_addr+length.
+    Default: 0x20080000 to 0x20088000 (32KB).
+    """
+    ram = uctypes.bytearray_at(start_addr, length)
+    for i in range(length):
+        ram[i] = 0
+
+
+clear_ram_section()
 
 
 

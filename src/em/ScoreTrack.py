@@ -23,8 +23,7 @@ rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 
-#this pin is the output from the PIO game active filter
-game_active_pin = Pin(15, Pin.OUT)   
+
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -39,8 +38,8 @@ recent_scores = [
 
 
 #set up the EM score sensors - 
-sensor = sensorRead.SensorReader()
-sensor.calibratePwms()
+sensorRead.initialize()
+sensorRead.calibrate()
 
 lastValue =0
 segmentMS =0
@@ -67,9 +66,15 @@ def reverse_bits_16(x):
 # so here - called faster we take data and store in gameHistory
 #called from phwew schedeuler 
 def storeSensorData():
-    global sensor, lastValue, segmentMS, gameHistory,gameHistoryIndex
+    global lastValue, segmentMS, gameHistory,gameHistoryIndex
 
-    if game_active_pin.value() == 1:
+    gpio0 = Pin(0, Pin.OUT)
+    gpio0.value(not gpio0.value())
+
+    return
+
+    '''
+    if sensor.gameActive() == 1:
 
         for i in range (400):
 
@@ -155,10 +160,13 @@ def storeSensorData():
             if limit <0:
                 print("store data exit",sensor.buffer_length())
                 return
+    '''
+
+
 
 
 def plen():
-    global sensor, lastValue, segmentMS, gameHistory
+    global lastValue, segmentMS, gameHistory
     return len(gameHistory)
 
 
@@ -444,7 +452,7 @@ def CheckForNewScores(nState=[0]):
 
     if nState[0] == 1:  # waiting for a game to start       
         nGameIdleCounter += 1  # claim score list expiration timer
-        print("SCORE: game start check - ", nGameIdleCounter, gameHistoryIndex)
+        print("SCORE: game start check - ",  sensorRead.depthSensorRx() , gameHistoryIndex)
 
         if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
             game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -453,7 +461,7 @@ def CheckForNewScores(nState=[0]):
             print("SCORE: game list 10 minute expire")                     
 
         #if game_active_flag == True:
-        if game_active_pin.value() == 1:
+        if sensorRead.gameActive() == 1:
             #if S.game_status["game_active"]==True:    #comes from IRQs above
             S.game_status["game_active"]=True
             print("SCORE: Game Start")
@@ -466,9 +474,9 @@ def CheckForNewScores(nState=[0]):
     
         #process data in storeage...
 
-        print("SCORE: game end check ",  sensor.buffer_length() ,  gameHistoryIndex  )
+        print("SCORE: game end check ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
 
-        if game_active_pin.value() == 0:
+        if sensorRead.gameActive() == 0:
             print("SCORE: Game End")
             S.game_status["game_active"]=False
             #load scoes into scores[][]
