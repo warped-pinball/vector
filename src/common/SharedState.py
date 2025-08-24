@@ -1,5 +1,4 @@
-# Common firmware version shared by all builds
-VectorVersion = "1.3.12"
+VectorVersion = "1.4.1"
 
 # counts game start cycles
 gameCounter = 0
