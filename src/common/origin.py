@@ -87,17 +87,27 @@ def send(msg: str, sign: bool = True):
 
 
 def recv():
-    ws = open_ws()
+    ws = open_ws(if_configured=True)
+
+    if ws is None:
+        return
+
     resp = ws.recv()
 
     if resp is None:
         return
+
+    if "|" not in resp:
+        raise Exception("Response missing signature")
 
     body, signature = resp.rsplit("|", 1)
 
     result = verify(body.encode("utf-8"), ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
     if result != "SHA-256":
         raise Exception("Origin server response signature invalid!")
+
+    if not body:
+        raise Exception("Response Route missing")
 
     route, body = body.split("|", 1)
 

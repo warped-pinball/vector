@@ -331,7 +331,7 @@ def create_schedule(ap_mode: bool = False):
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
 
         # handle incoming messages from the origin server
-        schedule(origin_recv, 1000, 1000)
+        schedule(origin_recv, 10000, 1000)
 
     restart_schedule()
 
