@@ -70,8 +70,14 @@ def close_ws():
         ws = None
 
 
-def send(msg: str, sign: bool = True):
+def send(route: str, msg: str, sign: bool = True):
+    if len(route) == 0 or "|" in route:
+        raise Exception("Invalid route:", route)
+
     ws = open_ws()
+
+    if ws is None:
+        return
 
     if sign:
         cloud_config = get_config()
@@ -83,7 +89,7 @@ def send(msg: str, sign: bool = True):
         msg += "|" + str(S.origin_next_challenge)
         msg += "|" + str(hmac_sha256(cloud_config["secret"], msg))
 
-    ws.send(msg)
+    ws.send(f"{route}|{msg}")
 
 
 def recv():
@@ -130,11 +136,20 @@ def send_handshake_request():
     client_key_b64 = _b64encode(pub)
     msg = ujson.dumps({"client_key": client_key_b64, "game_title": game_title})
 
-    send(msg, sign=False)
+    send("handshake", msg, sign=False)
 
     global metadata
 
     metadata["pending_handshake"] = {"private_key": priv}
+
+
+def send_acknowledgment():
+    ws = open_ws()
+
+    if ws is None:
+        return
+
+    ws.send("ack", "")
 
 
 def handle_handshake(data):
@@ -167,6 +182,8 @@ def handle_handshake(data):
     # remove the pending_handshake from metadata
     del metadata["pending_handshake"]
 
+    send_acknowledgment()
+
 
 def handle_claimed():
     from SPI_DataStore import write_record as ds_write_record
@@ -178,6 +195,8 @@ def handle_claimed():
     ds_write_record("cloud", 0, {"id": claim_data["id"], "secret": claim_data["secret"]})
 
     del metadata["pending_claim"]
+
+    send_acknowledgment()
 
 
 def app_origin_status(request):
