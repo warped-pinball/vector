@@ -33,6 +33,14 @@ def get_config():
         raise Exception("No ID set in cloud config")
     if not cloud_config.get("secret"):
         raise Exception("No secret set in cloud config")
+
+    # Check if id is all zeros
+    if cloud_config["id"] == [0] * len(cloud_config["id"]):
+        raise Exception("ID cannot be all zeros")
+
+    # Check if secret is all zeros
+    if cloud_config["secret"] == [0] * len(cloud_config["secret"]):
+        raise Exception("Secret cannot be all zeros")
     return cloud_config
 
 
@@ -98,7 +106,10 @@ def recv():
     if ws is None:
         return
 
-    resp = ws.recv()
+    try:
+        resp = ws.recv()
+    except OSError:
+        return  # no message to process
 
     if resp is None:
         return
@@ -107,15 +118,15 @@ def recv():
         raise Exception("Response missing signature")
 
     body, signature = resp.rsplit("|", 1)
+    result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
-    result = verify(body.encode("utf-8"), ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
     if result != "SHA-256":
         raise Exception("Origin server response signature invalid!")
 
     if not body:
         raise Exception("Response Route missing")
 
-    route, body = body.split("|", 1)
+    route, body = body.decode().split("|", 1)
 
     routes = {"handshake": handle_handshake, "claimed": handle_claimed}
 
@@ -149,7 +160,7 @@ def send_acknowledgment():
     if ws is None:
         return
 
-    ws.send("ack", "")
+    send("ack", "")
 
 
 def handle_handshake(data):
@@ -182,8 +193,6 @@ def handle_handshake(data):
     # remove the pending_handshake from metadata
     del metadata["pending_handshake"]
 
-    send_acknowledgment()
-
 
 def handle_claimed():
     from SPI_DataStore import write_record as ds_write_record
@@ -196,19 +205,15 @@ def handle_claimed():
 
     del metadata["pending_claim"]
 
-    send_acknowledgment()
 
+def status():
+    if metadata.get("pending_claim"):
+        return {"linked": False, "claim_url": metadata["pending_claim"]["claim_url"]}
 
-def app_origin_status(request):
-    """Return linking status with Origin server."""
-    import SharedState as S
-
-    if S.origin_pending_claim:
-        return {"linked": False, "claim_url": S.origin_pending_claim["claim_url"]}
-
-    import SPI_DataStore as ds
-
-    cloud_config = ds.read_record("cloud", 0)
-    if cloud_config["secret"] and cloud_config["id"]:
+    try:
+        get_config()
         return {"linked": True}
+    except Exception:
+        pass
+
     return {"linked": False}

@@ -662,7 +662,7 @@ if (typeof window !== "undefined") {
 
 // TODO update to use new wait for load js functions
 async function setupOriginIntegration() {
-  const button = await document.waitForElementById("link-origin-button");
+  const button = await window.waitForElementById("link-origin-button");
 
   async function checkStatus() {
     try {

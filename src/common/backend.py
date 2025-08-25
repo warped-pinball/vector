@@ -894,16 +894,16 @@ def app_apply_update(request):
 #
 @add_route("/api/origin/enable", auth=True)
 def app_enable_origin(request):
-    from origin import setup_origin
+    from origin import send_handshake_request
 
-    return setup_origin(request)
+    return send_handshake_request()
 
 
 @add_route("/api/origin/status")
 def app_origin_status(request):
-    from origin import origin_status
+    from origin import status
 
-    return origin_status()
+    return status()
 
 
 #
