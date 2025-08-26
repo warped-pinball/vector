@@ -1,4 +1,3 @@
-import SharedState as S
 import ubinascii
 import ujson
 from backend import hmac_sha256
@@ -79,6 +78,7 @@ def close_ws():
 
 
 def send(route: str, msg: str, sign: bool = True):
+    global metadata
     if len(route) == 0 or "|" in route:
         raise Exception("Invalid route:", route)
 
@@ -89,12 +89,12 @@ def send(route: str, msg: str, sign: bool = True):
 
     if sign:
         cloud_config = get_config()
-        if not S.origin_next_challenge:
-            raise Exception("No next challenge set in SharedState")
+        if not metadata.get("next_challenge"):
+            raise Exception("No next challenge set in metadata")
 
         # Append HMAC fields if signing
         msg += "|" + str(cloud_config["id"])
-        msg += "|" + str(S.origin_next_challenge)
+        msg += "|" + str(metadata["next_challenge"])
         msg += "|" + str(hmac_sha256(cloud_config["secret"], msg))
 
     ws.send(f"{route}|{msg}")
@@ -194,7 +194,7 @@ def handle_handshake(data):
     del metadata["pending_handshake"]
 
 
-def handle_claimed():
+def handle_claimed(data):
     from SPI_DataStore import write_record as ds_write_record
 
     if "pending_claim" not in metadata:
@@ -204,6 +204,11 @@ def handle_claimed():
     ds_write_record("cloud", 0, {"id": claim_data["id"], "secret": claim_data["secret"]})
 
     del metadata["pending_claim"]
+
+
+def handle_challenge(data):
+    global metadata
+    metadata["next_challenge"] = data
 
 
 def status():
