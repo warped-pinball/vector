@@ -723,3 +723,5 @@ async function setupOriginIntegration() {
 }
 
 setupOriginIntegration();
+
+// TODO make caim URL show up / work when claim pending
