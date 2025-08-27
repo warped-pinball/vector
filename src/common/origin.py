@@ -30,7 +30,14 @@ def _b64encode(b: bytes) -> str:
 
 
 def get_config():
+    # First check if we have a pending claim
+    if metadata.get("pending_claim"):
+        pending_claim = metadata["pending_claim"]
+        if pending_claim.get("id") and pending_claim.get("secret"):
+            return pending_claim
+
     cloud_config = ds_read_record("cloud", 0)
+
     if not cloud_config.get("id"):
         raise Exception("No ID set in cloud config")
     if not cloud_config.get("secret"):
@@ -43,22 +50,25 @@ def get_config():
     # Check if secret is all zeros
     if cloud_config["secret"] == [0] * len(cloud_config["secret"]):
         raise Exception("Secret cannot be all zeros")
+
+    # Convert id and secret from list of bytes to base64 encoded string
+    if isinstance(cloud_config["id"], list):
+        cloud_config["id"] = _b64encode(bytes(cloud_config["id"]))
+    if isinstance(cloud_config["secret"], list):
+        cloud_config["secret"] = _b64encode(bytes(cloud_config["secret"]))
+
     return cloud_config
 
 
-def open_ws(if_configured=True):
+def is_claimed() -> bool:
+    config = ds_read_record("cloud", 0)
+    return config.get("id") and config.get("secret")
+
+
+def open_ws():
     global ws
 
     if ws is None:
-        if if_configured:
-            # check if we have an id & secret in datastore
-            try:
-                get_config()
-            except Exception:
-                # with the exception of when there's a pending claim or handshake, don't open WS
-                if not metadata.get("pending_handshake") and not metadata.get("pending_claim"):
-                    return None
-
         ws = connect(ORIGIN_WS_URL)
 
     if ws is None:
@@ -87,13 +97,9 @@ def send(route: str, msg: str, sign: bool = True):
 
     ws = open_ws()
 
-    if ws is None:
-        return
-
     msg = route + "|" + msg
 
     if sign:
-        cloud_config = get_config()
         next_challenge = metadata.get("challenges", [None]).pop(0)
         if not next_challenge:
             send_request_challenges()
@@ -102,9 +108,12 @@ def send(route: str, msg: str, sign: bool = True):
             sleep(0.5)  # wait a moment for challenges to arrive
             recv()
 
+        config = get_config()
+
         # Append HMAC fields if signing
-        msg += "|" + str(cloud_config["id"]) + "|" + str(next_challenge)
-        msg += "|" + str(hmac_sha256(cloud_config["secret"], msg))
+        msg += "|" + str(config["id"])
+        msg += "|" + str(next_challenge)
+        msg += "|" + str(hmac_sha256(config["secret"], msg))
 
     ws.send(msg)
 
@@ -113,10 +122,7 @@ def send(route: str, msg: str, sign: bool = True):
 
 
 def recv():
-    ws = open_ws(if_configured=True)
-
-    if ws is None:
-        return
+    ws = open_ws()
 
     try:
         resp = ws.recv()
@@ -140,7 +146,7 @@ def recv():
 
     route, body = body.decode().split("|", 1)
 
-    routes = {"handshake": handle_handshake, "claimed": handle_claimed}
+    routes = {"handshake": handle_handshake, "claimed": handle_claimed, "challenges": handle_challenges}
 
     if route in routes:
         routes[route](body)
@@ -149,8 +155,6 @@ def recv():
 
 
 def send_handshake_request():
-    open_ws(if_configured=False)
-
     # Generate X25519 keys
     priv, pub = generate_x25519_keypair()
 
@@ -167,20 +171,11 @@ def send_handshake_request():
 
 
 def send_request_challenges():
-    ws = open_ws()
-
-    if ws is None:
-        return
-
-    send("request_challenges", '{"num": 10}', sign=False)
+    # request the max challenges number of challenges
+    send("request_challenges", f'{{"num": {MAX_CHALLENGES}}}', sign=False)
 
 
 def send_acknowledgment():
-    ws = open_ws()
-
-    if ws is None:
-        return
-
     send("ack", "")
 
 
@@ -227,7 +222,7 @@ def handle_claimed(data):
     del metadata["pending_claim"]
 
 
-def handle_challenge(data):
+def handle_challenges(data):
     global metadata
     challenges = [c for c in ujson.loads(data) if c]
 
