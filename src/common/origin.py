@@ -1,3 +1,5 @@
+from asyncio import sleep
+
 import ubinascii
 import ujson
 from backend import hmac_sha256
@@ -7,6 +9,7 @@ from rsa.pkcs1 import verify
 from SPI_DataStore import read_record as ds_read_record
 from websocket_client import connect
 
+MAX_CHALLENGES = 10
 ORIGIN_URL = "https://origin-beta.doze.dev"
 ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8002/ws/setup".replace("https://", "").replace("http://", "")  # TODO update port to 8001 for prod
 ORIGIN_PUBLIC_KEY = PublicKey(
@@ -87,17 +90,26 @@ def send(route: str, msg: str, sign: bool = True):
     if ws is None:
         return
 
+    msg = route + "|" + msg
+
     if sign:
         cloud_config = get_config()
-        if not metadata.get("next_challenge"):
-            raise Exception("No next challenge set in metadata")
+        next_challenge = metadata.get("challenges", [None]).pop(0)
+        if not next_challenge:
+            send_request_challenges()
+
+        while next_challenge := metadata.get("challenges", [None]).pop(0):
+            sleep(0.5)  # wait a moment for challenges to arrive
+            recv()
 
         # Append HMAC fields if signing
-        msg += "|" + str(cloud_config["id"])
-        msg += "|" + str(metadata["next_challenge"])
+        msg += "|" + str(cloud_config["id"]) + "|" + str(next_challenge)
         msg += "|" + str(hmac_sha256(cloud_config["secret"], msg))
 
-    ws.send(f"{route}|{msg}")
+    ws.send(msg)
+
+    if sign and len(metadata.get("challenges", [])) < MAX_CHALLENGES / 4:
+        send_request_challenges()
 
 
 def recv():
@@ -154,6 +166,15 @@ def send_handshake_request():
     metadata["pending_handshake"] = {"private_key": priv}
 
 
+def send_request_challenges():
+    ws = open_ws()
+
+    if ws is None:
+        return
+
+    send("request_challenges", '{"num": 10}', sign=False)
+
+
 def send_acknowledgment():
     ws = open_ws()
 
@@ -208,7 +229,17 @@ def handle_claimed(data):
 
 def handle_challenge(data):
     global metadata
-    metadata["next_challenge"] = data
+    challenges = [c for c in ujson.loads(data) if c]
+
+    current_challenges = metadata.get("challenges", [])
+
+    num_new_challenges = MAX_CHALLENGES - len(challenges)
+    kept_challenges = MAX_CHALLENGES - num_new_challenges
+
+    # trim down current challenges
+    current_challenges = current_challenges[:kept_challenges]
+    current_challenges.extend(challenges)
+    metadata["challenges"] = current_challenges
 
 
 def status():
