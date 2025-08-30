@@ -23,7 +23,7 @@ rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 
-
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -35,11 +35,6 @@ recent_scores = [
     [4, ("", 0), ("", 0), ("", 0), ("", 0)],
     [5, ("", 0), ("", 6), ("", 0), ("", 0)],
 ]
-
-
-#set up the EM score sensors - 
-sensorRead.initialize()
-sensorRead.calibrate()
 
 lastValue =0
 segmentMS =0
@@ -59,19 +54,119 @@ def reverse_bits_16(x):
     return x
 
 
-#the sensor class will update the buffer each 5mS with 5 readings
-#   we need to empty before it fills up at 2000/5ms = 400mS
 
-#check for new scores is called at 5 second intervals
-# so here - called faster we take data and store in gameHistory
-#called from phwew schedeuler 
-def storeSensorData():
+PROCESS_IDLE = 0
+PROCESS_START = 1
+PROCESS_STORE = 2
+PROCESS_RUN =3
+
+PROCESS_START_PAUSE = 3
+stateVar=0
+stateCount=0
+
+gpio0 = Pin(0, Pin.OUT)
+gpio0.value(not gpio0.value())
+
+gpio1 = Pin(1, Pin.OUT)
+gpio1.value(not gpio1.value())
+
+
+#called from phew schedeuler 
+def processSensorData():
+    ''' called each 1 or 2 seconds.  watch game active and decide when to operate on data
+    coming in from sensor module -  either store for learning or process for live scores'''
     global lastValue, segmentMS, gameHistory,gameHistoryIndex
+    global stateVar, stateCount
 
-    gpio0 = Pin(0, Pin.OUT)
+
+    global gpio0
     gpio0.value(not gpio0.value())
 
+
+    if stateVar == PROCESS_IDLE:
+        '''wait for game to start'''
+        if sensorRead.gameActive() == 1:
+            stateVar = PROCESS_START
+        else:
+            processEmpty()
+
+    elif stateVar == PROCESS_START:
+        '''game start delay'''
+        if sensorRead.gameActive()==1:
+            stateCount += 1
+            if stateCount > PROCESS_START_PAUSE:
+
+                #run or store for learning
+                if S.run_learning_game == True:
+                    stateVar = PROCESS_STORE
+                else:
+                    stateVar = PROCESS_RUN
+        else:
+            stateVar = PROCESS_IDLE  
+
+
+    elif stateVar == PROCESS_STORE:
+        #store data for learn
+        processAndStore()
+        if sensorRead.gameActive() == 0:
+            stateVar = PROCESS_IDLE  
+
+
+    elif stateVar == PROCESS_RUN:
+        #run data now - live score
+        processAndRun()
+        if sensorRead.gameActive() == 0:
+            stateVar = PROCESS_IDLE  
+
+
+
+
+# Define the RAM as an array of 32-bit unsigned ints
+import uctypes
+ram_bytes = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+bufferPointerIndex = 0
+SRAM_BIT_MASK = (SRAM_DATA_LENGTH-1)
+
+def pullWithDelete():
+    '''optimized for speed, 1000 calls approx = 50mS'''
+    global bufferPointerIndex
+    offset = bufferPointerIndex   
+    b0 = ram_bytes[offset]
+    b1 = ram_bytes[offset+1]
+    b2 = ram_bytes[offset+2]
+    b3 = ram_bytes[offset+3]
+    word = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
+    if word != 0:        
+        ram_bytes[offset] = 0
+        ram_bytes[offset+1] = 0
+        ram_bytes[offset+2] = 0
+        ram_bytes[offset+3] = 0
+        bufferPointerIndex += 4
+        bufferPointerIndex &= SRAM_BIT_MASK
+    return word
+
+
+def processEmpty():
+    ''' pull and discard during gameActive is false'''
+    global bufferPointerIndex, gpio1
+    for x in range(2500):
+        if pullWithDelete() == 0:        
+            return
+                
+        
+    
+def processAndStore():
+    '''compress as data and time values - store into large buffer (gameHistory)'''
+    gpio1.value(1)
+
+    gpio1.value(0)
     return
+
+
+def processAndRun():
+    pass
+
+
 
     '''
     if sensor.gameActive() == 1:

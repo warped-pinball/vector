@@ -1,14 +1,21 @@
+# This file is part of the Warped Pinball SYS_EM_Wifi Project.
+# https://creativecommons.org/licenses/by-nc/4.0/
+# This work is licensed under CC BY-NC 4.0
+"""
+Sensor Read
+    setup analog threshold PWMs
+    PIO to gather sensor data on SPI
+    DMA to copt sensor data to bulk ram store (8k)
+    sample rate 1mS
+"""
+
 import rp2
 import machine
 import Dma_Registers_RP2350 as dma_d
-from machine import Timer,Pin
-from collections import deque
+from machine import Pin
 import time
 
-SRAM_DATA_BASE = 0x20080000 # WPC!  PICO2W
-SRAM_DATA_LENGTH = 0x00002000    #8k byte total
-
-
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 
 # Pin assignments
@@ -36,7 +43,7 @@ def spi_master_16bit():
     label("bitloop")         
 
     nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1] #data in pin changes on rising edge of clock
+    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
     nop()                    .side(1)   
     nop()                    .side(1)  [1]
     
@@ -115,12 +122,11 @@ def drive_game_active_pin():
 
 smSpi = None
 
-
 def initialize():
     global smSpi,lowPwm,hiPwm
 
-    print("setup sensor reads")
-    #dma_start()
+    print("SENSOR: setup sensor read DMA / PIO")
+    dma_start()
 
     #state machine - for SPI read of coil sensors
     smSpi = rp2.StateMachine(4, spi_master_16bit, freq=340000,
@@ -129,7 +135,6 @@ def initialize():
         set_base=machine.Pin(PIO_CS_PIN)
     )
     smSpi.active(1)
-
 
     #give the analog PWM outputs a default
     hiPwm.freq(1000)
@@ -155,34 +160,37 @@ def initialize():
     smb.active(1)
 
 
+dma_sensor = None
+
+def dma_diag():
+    global dma_sensor
+    if dma_sensor is not None:
+        print("SENSOR: DMA write address =", hex(dma_sensor.WRITE_ADDR_REG))
+        print("SENSOR: DMA transfer count =", hex(dma_sensor.TRANS_COUNT_REG))
+
 
 def dma_start():
+    global dma_sensor    
     #**************************************************
     # DMA Setup for bus memory access, read and writes
     #**************************************************
     a=rp2.DMA()
-    b=rp2.DMA()
-    c=rp2.DMA()        
+   
+    # DMA channel assignment (we can use any channel in this case)
+    DMA_SENSOR = a.channel 
+    print("SENSOR: using DMA channel: ",DMA_SENSOR)
 
-    dma_channels = f"MEM: {a},{b},{c}"
-    print(dma_channels," <-MUST be 2-3-4 !")
-    if not all(str(i) in dma_channels for i in range(2, 5)):  #2,3,4
-        return "fault"
-
-    #DMA channel assignments
-    DMA_SENSOR = 2
-    
-    #uctypes structs for each channel
+    #uctypes struct for registers
     dma_sensor = dma_d.DMA_CHANS[DMA_SENSOR]   
                 
-    #-----------------------------------------------
-    # DMA 2 - copy from sensor PIO to reserved Ram
-    #-----------------------------------------------
+    #-------------------------------------------------------
+    # DMA - copy from sensor PIO to reserved Ram - circular
+    #-------------------------------------------------------
     dma_sensor.READ_ADDR_REG =      0x50300000 + 0x020      # PIO1_SM0 (4) RX buffer
     dma_sensor.WRITE_ADDR_REG =     SRAM_DATA_BASE
     dma_sensor.CTRL_REG.CHAIN_TO =  DMA_SENSOR # <<only triggerws at the end of 0x0800              # no chain trigger
 
-    dma_sensor.CTRL_REG.INCR_WRITE =    2       #32 bits
+    dma_sensor.CTRL_REG.INCR_WRITE =    1       #enable increment to write address
     dma_sensor.CTRL_REG.INCR_READ =     0
     dma_sensor.CTRL_REG.RING_SEL=       1       #ring is appllied to write addresses
     dma_sensor.CTRL_REG.RING_SIZE =     13      #13 bits in ring (8k)
@@ -193,9 +201,10 @@ def dma_start():
     dma_sensor.CTRL_REG.EN =            1
     dma_sensor.CTRL_REG.HIGH_PRIORITY = 1
 
-    dma_sensor.TRANS_COUNT_REG_TRIG =   0xF000 #wrap forever 0x0800     #pre-trigger this DMA (will wait on DREQ)
+    dma_sensor.TRANS_COUNT_REG =        0xF0000008 #wrap forever 0x0800     #pre-trigger this DMA (will wait on DREQ)
+    dma_sensor.READ_ADDR_REG_TRIG =     0x50300000 + 0x020  
 
-
+    print("SENSOR: DMA setup complete")
 
 def clearSensorRx():
     global smSpi    
@@ -236,29 +245,9 @@ def gameActive():
 
 
 
-
-'''
-self.hiPwm.duty_u16(int(65535*0.75))  
-self.lowPwm.duty_u16(int(65535*0.25))     
-while True:
-    v = self.pop_buffer()   
-    
-    if v is None:
-        v=0
-    else:    
-        v = self.reverse_bits_16(v)
-        v = v & 0x0F
-        print("&   >> ",hex(v))
-'''
-
-
 def calibrate():
+    '''calibrate the analog output pwms - sensors need to be idleing for this'''
     global smSpi,lowPwm,hiPwm
-
-    pass
-
-
-    return
 
     for duty in range(0, 65536, 256):  # Ramp in steps of 256 for speed        
         print(".",end="")
@@ -275,7 +264,7 @@ def calibrate():
             v = reverse_bits_16(v)
             v = v & 0x0F
             if (v & 0x03) == 0:  # Two LSBs clear
-                print(f"LOW PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
+                print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
                 lowCal=duty
                 break        
 
@@ -294,20 +283,18 @@ def calibrate():
             v = reverse_bits_16(v)
             v = v & 0x0F            
         if (v & 0x03) == 0:  # Two LSBs clear               
-            print(f"HIGH PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
+            print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
             highCal=duty
             break
 
 
-    print(" claibration complete: ",lowCal,highCal)
+    print("\nSENSOR: calibration complete:",lowCal,highCal)
     lowCalThres = int(lowCal*0.9)
     lowPwm.duty_u16(lowCalThres)
     highCalThres = int(highCal*1.1)
     hiPwm.duty_u16(highCalThres)
-    print(" claibration thresholds: ", lowCalThres, highCalThres)
-    print(" thresholds as percentage: LOW = {:.2%}, HIGH = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
-
-
+    print("SENSOR: calibration thresholds:",lowCalThres,highCalThres)
+    print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
 
 
 #test

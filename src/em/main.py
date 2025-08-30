@@ -20,6 +20,11 @@ import uctypes
 from logger import logger_instance
 from systemConfig import SystemVersion
 
+import sensorRead
+
+sensorRead.initialize()
+sensorRead.calibrate()
+
 Log = logger_instance
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -79,8 +84,6 @@ def clear_ram_section(start_addr=0x20080000, length=0x20):
     for i in range(length):
         ram[i] = 0
 
-
-clear_ram_section()
 
 
 

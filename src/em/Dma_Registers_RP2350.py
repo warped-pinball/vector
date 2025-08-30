@@ -32,6 +32,7 @@ DMA_CHAN_REGS = {
     "TRANS_COUNT_REG":       0x08 | UINT32,
     "TRANS_COUNT_REG_TRIG":  0x1C | UINT32,            # will trigger!
     "CTRL_REG_TRIG":         0x0c | UINT32,            # will trigger!
+    "READ_ADDR_REG_TRIG":    0x3C | UINT32,
     "CTRL_REG":          (0x10, DMA_CTRL_TRIG_FIELDS)  # 0x0C would cause trigger also. move to 0x10 to prebvent trigger at setup
 }
 

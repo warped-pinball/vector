@@ -15,3 +15,7 @@ gdata = {}
 
 # game status
 game_status = {}
+
+
+run_learning_game = False
+

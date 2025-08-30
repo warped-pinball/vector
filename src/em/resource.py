@@ -4,11 +4,6 @@ import os
 import uctypes
 import micropython
 
-#from logger import logger_instance
-
-#Log = logger_instance
-
-
 def get_ram_usage(details):
     # gc.collect()
     free_ram = gc.mem_free()
@@ -45,14 +40,14 @@ def print_ram_section(start_addr=0x20080000, length=0x80):
         print("0x{:08X}: {}".format(start_addr + i, hex_str))
 
     # Call buffer_depth from SensorReader and print the result
-    try:
-        import sensorRead 
-        # If you have an instance, pass its state machine; otherwise, just call with no argument
-        depth = sensorRead.depthSensorRx()
-        print("Sensor buffer depth:", depth)
-    except Exception as e:
-        print("Could not get sensor buffer depth:", e)
 
+    
+    import sensorRead 
+    # If you have an instance, pass its state machine; otherwise, just call with no argument
+    depth = sensorRead.depthSensorRx()
+    print("RESOURCE: Sensor buffer depth:", depth)     
+    sensorRead.dma_diag()    
+    
 
 def go(details=False):
     stack_usage = micropython.stack_use()
