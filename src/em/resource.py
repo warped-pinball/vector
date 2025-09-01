@@ -63,4 +63,10 @@ def go(details=False):
 
     print(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
 
-    print_ram_section()
+
+
+    #print_ram_section()
+
+    from ScoreTrack import lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
+    print("RESOURCE:  history index: ",gameHistoryIndex)
+

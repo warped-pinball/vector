@@ -39,9 +39,18 @@ recent_scores = [
 lastValue =0
 segmentMS =0
 
-GAME_HIST_SIZE = 20000
-gameHistory=array.array('H', [0]*GAME_HIST_SIZE)
+
+
+GAME_HIST_SIZE = 10000
+gameHistory=array.array('I', [0]*GAME_HIST_SIZE)        #32 bit
+gameHistoryTime=array.array('H', [0]*GAME_HIST_SIZE)    #16 bit
 gameHistoryIndex=0
+GAMEHIST_STATUS_EMPTY=0
+GAMEHIST_STATUS_DONE=1
+GAMEHIST_STATUS_OVERFLOW=2
+gameHistoryStatus=GAMEHIST_STATUS_EMPTY
+
+
 
 
 
@@ -64,23 +73,69 @@ PROCESS_START_PAUSE = 3
 stateVar=0
 stateCount=0
 
-gpio0 = Pin(0, Pin.OUT)
-gpio0.value(not gpio0.value())
+gpio26 = Pin(26, Pin.OUT)
+gpio26.value(not gpio26.value())
 
 gpio1 = Pin(1, Pin.OUT)
 gpio1.value(not gpio1.value())
+
+S.run_learning_game = True
+
+
+
+
+
+def save_game_history(filename="game_history.dat"):
+    """Save gameHistory, gameHistoryTime, and gameHistoryIndex to a file."""
+    global gameHistory, gameHistoryTime, gameHistoryIndex
+
+    try:
+        with open(filename, "wb") as f:
+            # Write gameHistoryIndex as 4 bytes (little endian)
+            f.write(gameHistoryIndex.to_bytes(4, "little"))
+            # Write gameHistory values (each 4 bytes)
+            for i in range(gameHistoryIndex):
+                f.write(gameHistory[i].to_bytes(4, "little"))
+            # Write gameHistoryTime values (each 2 bytes)
+            for i in range(gameHistoryIndex):
+                f.write(gameHistoryTime[i].to_bytes(2, "little"))
+        print(f"Game history saved to {filename}")
+    except Exception as e:
+        print(f"Error saving game history: {e}")
+
+
+
+def load_game_history(filename="game_history.dat"):
+    """Restore gameHistory, gameHistoryTime, and gameHistoryIndex from a file."""
+    global gameHistory, gameHistoryTime, gameHistoryIndex
+
+    try:
+        with open(filename, "rb") as f:
+            # Read gameHistoryIndex (4 bytes, little endian)
+            gameHistoryIndex = int.from_bytes(f.read(4), "little")
+            # Read gameHistory values (each 4 bytes)
+            for i in range(gameHistoryIndex):
+                gameHistory[i] = int.from_bytes(f.read(4), "little")
+            # Read gameHistoryTime values (each 2 bytes)
+            for i in range(gameHistoryIndex):
+                gameHistoryTime[i] = int.from_bytes(f.read(2), "little")
+        print(f"Game history loaded from {filename}")
+    except Exception as e:
+        print(f"Error loading game history: {e}")
+
+
 
 
 #called from phew schedeuler 
 def processSensorData():
     ''' called each 1 or 2 seconds.  watch game active and decide when to operate on data
     coming in from sensor module -  either store for learning or process for live scores'''
-    global lastValue, segmentMS, gameHistory,gameHistoryIndex
+    global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
     global stateVar, stateCount
 
 
-    global gpio0
-    gpio0.value(not gpio0.value())
+    global gpio26  #blink led
+    gpio26.value(not gpio26.value())
 
 
     if stateVar == PROCESS_IDLE:
@@ -98,8 +153,10 @@ def processSensorData():
 
                 #run or store for learning
                 if S.run_learning_game == True:
+                    log.log("SCORE: Run learning game capture")
                     stateVar = PROCESS_STORE
                 else:
+                    log.log("SCORE: Run game scoring")
                     stateVar = PROCESS_RUN
         else:
             stateVar = PROCESS_IDLE  
@@ -157,14 +214,174 @@ def processEmpty():
     
 def processAndStore():
     '''compress as data and time values - store into large buffer (gameHistory)'''
+    global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
     gpio1.value(1)
+
+    for x in range(2500):
+        
+        newValue = pullWithDelete()
+        if newValue != 0:
+            #print("C",gameHistoryIndex,segmentMS,newValue)
+            newValue = reverse_bits_16(newValue)
+            newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
+
+            if segmentMS > 20000 or newValue != lastValue:  
+                # store value and time
+                if gameHistoryIndex < (GAME_HIST_SIZE-6):
+                    gameHistory[gameHistoryIndex]=lastValue                                    
+                    gameHistoryTime[gameHistoryIndex]=segmentMS
+                    gameHistoryIndex += 1                    
+                    #print("!",lastValue,segmentMS, gameHistoryIndex)
+                else:
+                    print("FULL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")    
+
+                lastValue = newValue
+                segmentMS = 1
+
+            else:
+                # if newValue == lastValue:
+                segmentMS = segmentMS + 1
+        else:
+            break
 
     gpio1.value(0)
     return
 
 
 def processAndRun():
-    pass
+    '''pull data from ram buffer and feed to score module'''
+
+    for x in range(2500):
+            
+            newValue = pullWithDelete()
+            if newValue != 0:
+                #print("C",gameHistoryIndex,segmentMS,newValue)
+                newValue = reverse_bits_16(newValue)
+                newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
+                sensorToScore(newValue)
+
+            else:
+                break
+            
+    return
+    
+
+
+previousSensorValue=0
+filteredSensorValue=0
+previousFilteredSensorValue=0
+changeCounter = [0] *32
+#                player 1          player 2           player 3          player4
+#                1  
+#                | 10
+#                | | 100
+#                | | | 1000
+#                | | | |
+zeroThreshold = [3,1,1,1,1,9,9,9  ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9  ]
+oneThreshold =  [6,8,7,7,7,9,9,9  ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9  ]
+
+#scores stored as individual digits to make run time math simple and fast
+#sensorScores = [0] *4
+sensorScores = [array.array('B', [0]*5) for _ in range(4)]   #sensorScores[player0-3][digit0-4]
+
+
+score_map = [
+    (0, [0, 1, 2, 3, 4]),    # score[0]  bits 0-4
+    (1, [8, 9,10,11,12]),    # score[1]  bits 8-12
+    (2, [16,17,18,19,20]),   # score[2]  bits 16-20   
+    (3, [24,25,26,27,28])    # score[3]  bits 24-28
+]
+
+
+def sensorToScore(newSensorValue):
+    '''take raw sensor data (1x32bits) interpret to score - store score locally  '''
+    global previousSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
+    global gameHistoryIndex, previousFilteredSensorValue, score_map
+
+    filteredSensorValue = globals()['filteredSensorValue']
+
+
+    if newSensorValue==0:  #no reading
+        return
+    
+    #list out all the bits that need processed - for speed
+    for i in (0,1,2,3,4,8,9,10,11,12,16,17,18,19,20,24,25,26,27,28):
+        new_bit = (newSensorValue >> i) & 1
+        prev_bit = (previousSensorValue >> i) & 1
+
+        if new_bit == prev_bit:
+            changeCounter[i] += 1
+        else:
+            changeCounter[i] = 0 
+
+        if new_bit == 0:
+            if changeCounter[i] >= zeroThreshold[i]:
+                filteredSensorValue &= ~(1 << i)
+        else:
+            if changeCounter[i] >= oneThreshold[i]:
+                filteredSensorValue |= (1 << i)
+       
+    previousSensorValue = newSensorValue
+
+    #print("filtered bit value ",filteredSensorValue)
+
+    #now that we have filtered sensor data - use it to change scores...
+    for score_idx, bits in score_map:
+        for i, bit in enumerate(bits):
+            prev = (previousFilteredSensorValue >> bit) & 1
+            curr = (filteredSensorValue >> bit) & 1
+            if prev == 1 and curr == 0:
+                #print(" inrc: ",i)
+                if sensorScores[score_idx][i] >8:
+                    sensorScores[score_idx][i]=0
+                else:
+                    sensorScores[score_idx][i] += 1
+
+    previousFilteredSensorValue = filteredSensorValue
+
+
+    globals()['filteredSensorValue'] = filteredSensorValue
+
+
+
+
+
+def buildPrintableScores():
+    scores = []
+    for player in range(4):
+        score = 0
+        for digit in range(5):
+            score += sensorScores[player][digit] * (10 ** digit)
+
+        scores.append(score)
+    return tuple(scores)
+
+
+def replayStoredGame():
+    global previousSensorValue,filteredSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
+
+    index=0
+
+    print("SCORE: replay now",gameHistoryIndex)
+
+    for index in range(gameHistoryIndex):
+            sensor_value = gameHistory[index]
+            sample_count = gameHistoryTime[index]
+            if sample_count > 20:
+                sample_count=20
+            #print("send: val=",sensor_value,"  count=",sample_count)
+            for _ in range(sample_count):
+                sensorToScore(sensor_value)
+
+            #print("SCORE REPLAY", *buildPrintableScores())
+        
+    print("SCORE: replay DONE")
+    print("SCORE REPLAY", *buildPrintableScores())
+
+
+
+
+
 
 
 
@@ -236,7 +453,7 @@ def processAndRun():
             newValue = newValue & 0x0F            
             
             if segmentMS > 65533 or newValue != lastValue:
-                # store value and time
+                # store value and timel
                 if len(gameHistory) < 1000:
                     gameHistory.append(lastValue)
                     gameHistory.append(segmentMS)
@@ -258,11 +475,6 @@ def processAndRun():
     '''
 
 
-
-
-def plen():
-    global lastValue, segmentMS, gameHistory
-    return len(gameHistory)
 
 
 
@@ -557,16 +769,13 @@ def CheckForNewScores(nState=[0]):
 
         #if game_active_flag == True:
         if sensorRead.gameActive() == 1:
-            #if S.game_status["game_active"]==True:    #comes from IRQs above
             S.game_status["game_active"]=True
             print("SCORE: Game Start")
             nState[0] = 2
 
 
 
-    elif nState[0] == 2:  # waiting for game to end
-
-    
+    elif nState[0] == 2:  # waiting for game to end    
         #process data in storeage...
 
         print("SCORE: game end check ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
@@ -579,7 +788,18 @@ def CheckForNewScores(nState=[0]):
             # game over
             nState[0] = 1           
             log.log("SCORE: game end")
-                       
+
+
+            save_game_history()
+
+            #replay stored game - print out progress
+            #print("SCORE: REPLAY GAME DATA:xxx   history length=",gameHistoryIndex)
+            #replayStoredGame()
+
+
+
+
+            '''                       
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 for i in range(0, 4):
                     update_tournament({"initials": scores[i][0], "score": scores[i][1]})
@@ -589,5 +809,113 @@ def CheckForNewScores(nState=[0]):
 
             game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
             _place_game_in_claim_list(game)
+            '''
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def test_processAndStore():
+    """
+    Test processAndStore() by overriding pullWithDelete to provide controlled test data.
+    Prints what is stored in gameHistory and gameHistoryTime.
+    """
+
+    global gameHistory, gameHistoryTime, gameHistoryIndex, lastValue, segmentMS
+
+    # Backup the original pullWithDelete
+    original_pullWithDelete = pullWithDelete
+
+    # Helper to reset history
+    def reset_history():
+        global gameHistory, gameHistoryTime, gameHistoryIndex, lastValue, segmentMS
+        gameHistory = array.array('I', [0]*GAME_HIST_SIZE)
+        gameHistoryTime = array.array('H', [0]*GAME_HIST_SIZE)
+        gameHistoryIndex = 0
+        lastValue = 0
+        segmentMS = 1
+
+    print("Test 1: Same value many times (should result in one entry with long time)")
+    reset_history()
+    #test_values = [7<<12] * 55530  # 100 times the same value
+    def pull_same():
+        return (7<<12)  #test_values.pop(0) if test_values else 0
+    globals()['pullWithDelete'] = pull_same
+    
+    for x in range(30):
+        processAndStore()
+
+    print("gameHistoryIndex",gameHistoryIndex)
+    print("gameHistory:", list(gameHistory[:gameHistoryIndex]))
+    print("gameHistoryTime:", list(gameHistoryTime[:gameHistoryIndex]))
+
+    print("\nTest 2: Rapidly changing values (should result in many entries)")
+    reset_history()
+    test_values = [0x2300, 0x2400, 0xff00, 0x5500, 0x7600, 0x3200, 0x9900, 0x8900, 0x3400, 0x4300] * 10  # 10 cycles of 10 different values
+    def pull_rapid():
+        return test_values.pop(0) if test_values else 0
+    globals()['pullWithDelete'] = pull_rapid
+    processAndStore()
+    print("gameHistoryIndex",gameHistoryIndex)
+    print("gameHistory:", list(gameHistory[:gameHistoryIndex]))
+    print("gameHistoryTime:", list(gameHistoryTime[:gameHistoryIndex]))
+
+    # Restore original pullWithDelete
+    globals()['pullWithDelete'] = original_pullWithDelete
+
+
+
+def test_replay():
+  global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
+  global stateVar, stateCount
+
+  gameHistoryIndex=0
+
+  gameHistory[gameHistoryIndex]=0x0F
+  gameHistoryTime[gameHistoryIndex]=15
+  gameHistoryIndex+=1
+
+  gameHistory[gameHistoryIndex]=0x0E
+  gameHistoryTime[gameHistoryIndex]=18
+  gameHistoryIndex+=1
+
+  gameHistory[gameHistoryIndex]=0x0F
+  gameHistoryTime[gameHistoryIndex]=10
+  gameHistoryIndex+=1
+
+  gameHistory[gameHistoryIndex]=0x0F-2
+  gameHistoryTime[gameHistoryIndex]=18
+  gameHistoryIndex+=1
+
+  replayStoredGame()
+
+
+
+import time
+
+if __name__ == "__main__":
+    #test_processAndStore()
+    load_game_history()
+    #replayStoredGame()
+    
+    start = time.ticks_ms()
+    replayStoredGame()
+    elapsed = time.ticks_diff(time.ticks_ms(), start)
+    print("Replay execution time:", elapsed, "ms")
+    
+    #test_replay()

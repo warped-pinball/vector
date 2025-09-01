@@ -240,8 +240,8 @@ def calibratePwms():
 #this pin is the output from the PIO game active filter
 game_active_pin = Pin(15, Pin.OUT)   
 def gameActive():
-    return 0
-    #return game_active_pin.value()
+    #return 0
+    return game_active_pin.value()
 
 
 
