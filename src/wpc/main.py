@@ -43,7 +43,7 @@ def set_error_led():
 
 def bus_activity_fault_check():
     # Looking for bus activity via transitions - reset hold is not working?
-    pins = [machine.Pin(i, machine.Pin.IN) for i in range(6, 11)]  #changes made here specific to WPC hardware
+    pins = [machine.Pin(i, machine.Pin.IN) for i in range(6, 11)]  # changes made here specific to WPC hardware
     transitions = 0
     total_reads = 0
     start_time = time.ticks_us()
