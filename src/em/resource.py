@@ -50,6 +50,9 @@ def print_ram_section(start_addr=0x20080000, length=0x80):
     
 
 def go(details=False):
+    pass
+    return 
+
     stack_usage = micropython.stack_use()
     if details:
         print("stack use", stack_usage)

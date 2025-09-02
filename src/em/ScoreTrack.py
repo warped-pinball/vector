@@ -67,9 +67,12 @@ def reverse_bits_16(x):
 PROCESS_IDLE = 0
 PROCESS_START = 1
 PROCESS_STORE = 2
-PROCESS_RUN =3
+PROCESS_RUN = 3
+PROCESS_STORE_END = 4
+PROCESS_RUN_END = 5
 
-PROCESS_START_PAUSE = 3
+PROCESS_START_PAUSE = 8
+PROCESS_END_PAUSE = 5
 stateVar=0
 stateCount=0
 
@@ -79,9 +82,8 @@ gpio26.value(not gpio26.value())
 gpio1 = Pin(1, Pin.OUT)
 gpio1.value(not gpio1.value())
 
-S.run_learning_game = True
-
-
+#S.run_learning_game = True
+S.run_learning_game = False
 
 
 
@@ -105,7 +107,7 @@ def save_game_history(filename="game_history.dat"):
 
 
 
-def load_game_history(filename="game_history.dat"):
+def load_game_history(filename="game_history2.dat"):
     """Restore gameHistory, gameHistoryTime, and gameHistoryIndex from a file."""
     global gameHistory, gameHistoryTime, gameHistoryIndex
 
@@ -119,6 +121,15 @@ def load_game_history(filename="game_history.dat"):
             # Read gameHistoryTime values (each 2 bytes)
             for i in range(gameHistoryIndex):
                 gameHistoryTime[i] = int.from_bytes(f.read(2), "little")
+
+        '''
+        gameHistory[gameHistoryIndex] = 0
+        gameHistory[gameHistoryIndex + 1] = 0
+        gameHistoryTime[gameHistoryIndex] = 0
+        gameHistoryTime[gameHistoryIndex + 1] = 0
+        '''
+
+
         print(f"Game history loaded from {filename}")
     except Exception as e:
         print(f"Error loading game history: {e}")
@@ -137,18 +148,20 @@ def processSensorData():
     global gpio26  #blink led
     gpio26.value(not gpio26.value())
 
+    stateCount += 1
 
     if stateVar == PROCESS_IDLE:
         '''wait for game to start'''
         if sensorRead.gameActive() == 1:
             stateVar = PROCESS_START
+            stateCount=0
         else:
             processEmpty()
 
     elif stateVar == PROCESS_START:
         '''game start delay'''
-        if sensorRead.gameActive()==1:
-            stateCount += 1
+        if sensorRead.gameActive()==1:  
+            processEmpty()          
             if stateCount > PROCESS_START_PAUSE:
 
                 #run or store for learning
@@ -160,22 +173,36 @@ def processSensorData():
                     stateVar = PROCESS_RUN
         else:
             stateVar = PROCESS_IDLE  
+            stateCount = 0
 
 
     elif stateVar == PROCESS_STORE:
         #store data for learn
         processAndStore()
         if sensorRead.gameActive() == 0:
-            stateVar = PROCESS_IDLE  
+            stateVar = PROCESS_STORE_END  
+            stateCount = 0
 
+    elif stateVar == PROCESS_STORE_END:
+        #store data for learn
+        processAndStore()
+        if stateCount > PROCESS_END_PAUSE:
+            stateVar = PROCESS_IDLE  
+            stateCount = 0
 
     elif stateVar == PROCESS_RUN:
         #run data now - live score
         processAndRun()
         if sensorRead.gameActive() == 0:
+            stateVar = PROCESS_RUN_END  
+            stateCount = 0
+
+    elif stateVar == PROCESS_RUN_END:
+        #run data now - live score
+        processAndRun()
+        if stateCount > PROCESS_END_PAUSE:
             stateVar = PROCESS_IDLE  
-
-
+            stateCount = 0
 
 
 # Define the RAM as an array of 32-bit unsigned ints
@@ -210,7 +237,11 @@ def processEmpty():
         if pullWithDelete() == 0:        
             return
                 
-        
+       
+processEmpty()
+processEmpty()
+processEmpty()
+
     
 def processAndStore():
     '''compress as data and time values - store into large buffer (gameHistory)'''
@@ -248,21 +279,74 @@ def processAndStore():
     return
 
 
+#prevVal=0
 def processAndRun():
     '''pull data from ram buffer and feed to score module'''
+    start_time = time.ticks_ms()  # Start timer
+    print("process run")
 
-    for x in range(2500):
-            
-            newValue = pullWithDelete()
-            if newValue != 0:
-                #print("C",gameHistoryIndex,segmentMS,newValue)
-                newValue = reverse_bits_16(newValue)
-                newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
-                sensorToScore(newValue)
+    for x in range(1500):
+        # Use saved values from previous call if available
+        a = a_saved if 'a_saved' in globals() else pullWithDelete()
+        b = b_saved if 'b_saved' in globals() else pullWithDelete()
+        c = pullWithDelete()
 
-            else:
-                break
+        # If buffer runs out, save a and b for next call and return
+        if a == 0:
+            a_saved = None
+            b_saved = None
+            print(" processandRun: over  - - - ",x*2)
+            end_time = time.ticks_ms()
+            elapsed = time.ticks_diff(end_time, start_time)
+            print("processAndRun execution time:", elapsed, "ms")    
+            return
+        if b == 0:
+            a_saved = a
+            b_saved = None
+            print(" processandRun: over  - - - ",x*2)
+            end_time = time.ticks_ms()
+            elapsed = time.ticks_diff(end_time, start_time)
+            print("processAndRun execution time:", elapsed, "ms")    
+            return
+        if c == 0:
+            a_saved = a
+            b_saved = b
+            print(" processandRun: over  - - - ",x*2)
+            end_time = time.ticks_ms()
+            elapsed = time.ticks_diff(end_time, start_time)
+            print("processAndRun execution time:", elapsed, "ms")    
+            return
+
+        # Buffer is not empty, clear saved values
+        a_saved = None
+        b_saved = None
+
+    
+         
+        scrValue = (a|b) & (b|c)   #any two in a row low - output a low bit
+        chgValue = (a^b) | (b^c)   #any bit change - output a high bit
+
+        optSensorToScore(reverse_bits_16(scrValue) |0xFFF0 , reverse_bits_16(chgValue)&0x0F)
+
+        '''
+        if newValue != 0:
+            newValue = reverse_bits_16(newValue)
+            newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
+            sensorToScore(newValue)
+        else:                   
+            print(" processandRun: did ",x*2," records")
+            end_time = time.ticks_ms()
+            elapsed = time.ticks_diff(end_time, start_time)
+            print("processAndRun execution time:", elapsed, "ms")
             
+            return
+        '''
+
+    
+    print(" processandRun: over  - - - ",x*2)
+    end_time = time.ticks_ms()
+    elapsed = time.ticks_diff(end_time, start_time)
+    print("processAndRun execution time:", elapsed, "ms")    
     return
     
 
@@ -277,70 +361,118 @@ changeCounter = [0] *32
 #                | | 100
 #                | | | 1000
 #                | | | |
-zeroThreshold = [3,1,1,1,1,9,9,9  ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9  ]
-oneThreshold =  [6,8,7,7,7,9,9,9  ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9  ]
+zeroThreshold = [1,1,1,1,4,9,9,9  ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9  ]
+oneThreshold =  [5,5,5,5,4,9,9,9  ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9  ]
 
 #scores stored as individual digits to make run time math simple and fast
 #sensorScores = [0] *4
 sensorScores = [array.array('B', [0]*5) for _ in range(4)]   #sensorScores[player0-3][digit0-4]
 
-
+'''
 score_map = [
     (0, [0, 1, 2, 3, 4]),    # score[0]  bits 0-4
     (1, [8, 9,10,11,12]),    # score[1]  bits 8-12
     (2, [16,17,18,19,20]),   # score[2]  bits 16-20   
     (3, [24,25,26,27,28])    # score[3]  bits 24-28
 ]
+'''
 
+
+score_map = [
+    (0, [0, 1, 2, 3, 4])    # score[0]  bits 0-4
+   
+]   
 
 def sensorToScore(newSensorValue):
     '''take raw sensor data (1x32bits) interpret to score - store score locally  '''
     global previousSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
-    global gameHistoryIndex, previousFilteredSensorValue, score_map
+    global gameHistoryIndex, score_map
 
     filteredSensorValue = globals()['filteredSensorValue']
-
+    previousFilteredSensorValue = globals()['previousFilteredSensorValue']
 
     if newSensorValue==0:  #no reading
         return
     
-    #list out all the bits that need processed - for speed
-    for i in (0,1,2,3,4,8,9,10,11,12,16,17,18,19,20,24,25,26,27,28):
-        new_bit = (newSensorValue >> i) & 1
-        prev_bit = (previousSensorValue >> i) & 1
+    # Optimized bit processing for speed using local variables and reduced Python overhead
+    prevSensor = previousSensorValue
+    filtSensor = filteredSensorValue
+    changeCnt = changeCounter
+    zeroThr = zeroThreshold
+    oneThr = oneThreshold
 
-        if new_bit == prev_bit:
-            changeCounter[i] += 1
-        else:
-            changeCounter[i] = 0 
+    nsVal = newSensorValue
+
+    #for i in (0,1,2,3,4,8,9,10,11,12,16,17,18,19,20,24,25,26,27,28):
+    for i in (0,1,2,3,4): #,8,9,10,11,12):
+        new_bit = (nsVal >> i) & 1
+        prev_bit = (prevSensor >> i) & 1
+
+        cnt = changeCnt[i] + (new_bit == prev_bit)
+        changeCnt[i] = cnt if new_bit == prev_bit else 0
 
         if new_bit == 0:
-            if changeCounter[i] >= zeroThreshold[i]:
-                filteredSensorValue &= ~(1 << i)
+            if cnt >= zeroThr[i]:
+                filtSensor &= ~(1 << i)
         else:
-            if changeCounter[i] >= oneThreshold[i]:
-                filteredSensorValue |= (1 << i)
-       
-    previousSensorValue = newSensorValue
+            if cnt >= oneThr[i]:
+                filtSensor |= (1 << i)
 
-    #print("filtered bit value ",filteredSensorValue)
+    previousSensorValue = nsVal
+    filteredSensorValue = filtSensor
 
+    
     #now that we have filtered sensor data - use it to change scores...
+    # Fast score update using local variables and bitwise ops
+    pfsv = previousFilteredSensorValue
+    fsv = filteredSensorValue
+    ss = sensorScores
+
     for score_idx, bits in score_map:
+        s = ss[score_idx]
         for i, bit in enumerate(bits):
-            prev = (previousFilteredSensorValue >> bit) & 1
-            curr = (filteredSensorValue >> bit) & 1
+            prev = (pfsv >> bit) & 1
+            curr = (fsv >> bit) & 1
             if prev == 1 and curr == 0:
-                #print(" inrc: ",i)
-                if sensorScores[score_idx][i] >8:
-                    sensorScores[score_idx][i]=0
-                else:
-                    sensorScores[score_idx][i] += 1
+                v = s[i]
+                s[i] = 0 if v > 8 else v + 1
 
-    previousFilteredSensorValue = filteredSensorValue
+    previousFilteredSensorValue = fsv
+    
 
+    #print("new: {:032b}, filtered: {:032b}".format(newSensorValue, filteredSensorValue))
 
     globals()['filteredSensorValue'] = filteredSensorValue
+    globals()['previousFilteredSensorValue'] = previousFilteredSensorValue
+
+
+
+holdOffCount= [0]*32
+
+def optSensorToScore(scrValue,chgValue):
+    global holdOffCount
+
+    #count number times a bit in scrValue is zero
+
+    for score_idx, bits in score_map:
+        for i, bit in enumerate(bits):
+            #print("FFFFF ",i,bits)
+            #cycle for each bit - - - 
+            if ((scrValue>>bit)&1)==0 and holdOffCount[bit]==0:
+                #increment digit
+                v = sensorScores[score_idx][i]
+                sensorScores[score_idx][i] = 0 if v > 8 else v + 1
+                holdOffCount[bit] = 3
+
+            if ((chgValue>>bit)&1) == 1:
+                holdOffCount[bit] = 3
+            else:
+                if (holdOffCount[bit]>0):
+                    holdOffCount[bit] -= 1
+
+
+
+
 
 
 
@@ -357,12 +489,12 @@ def buildPrintableScores():
     return tuple(scores)
 
 
+
 def replayStoredGame():
     global previousSensorValue,filteredSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
 
     index=0
-
-    print("SCORE: replay now",gameHistoryIndex)
+    #print("SCORE: replay now",gameHistoryIndex)
 
     for index in range(gameHistoryIndex):
             sensor_value = gameHistory[index]
@@ -375,7 +507,7 @@ def replayStoredGame():
 
             #print("SCORE REPLAY", *buildPrintableScores())
         
-    print("SCORE: replay DONE")
+    #print("SCORE: replay DONE")
     print("SCORE REPLAY", *buildPrintableScores())
 
 
@@ -778,7 +910,11 @@ def CheckForNewScores(nState=[0]):
     elif nState[0] == 2:  # waiting for game to end    
         #process data in storeage...
 
-        print("SCORE: game end check ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
+        if S.run_learning_game == False:
+            print("SCORE: game end check - play mode                          SCORE=",*buildPrintableScores())
+            
+        else:
+            print("SCORE: game end check. learn mode ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
 
         if sensorRead.gameActive() == 0:
             print("SCORE: Game End")
@@ -904,18 +1040,60 @@ def test_replay():
 
   replayStoredGame()
 
-
-
 import time
 
+
+
 if __name__ == "__main__":
-    #test_processAndStore()
-    load_game_history()
-    #replayStoredGame()
-    
+
+    results = []
+
+
+    targetScore = 1166  # Set your correct score target here
+    fileName = "game_history.dat"
+
+    load_game_history(fileName)
     start = time.ticks_ms()
-    replayStoredGame()
-    elapsed = time.ticks_diff(time.ticks_ms(), start)
-    print("Replay execution time:", elapsed, "ms")
-    
-    #test_replay()
+
+    ZERORANGE = 6
+    ONESRANGE = 19
+
+    for z in range(ZERORANGE):
+        for one in range(ONESRANGE):
+
+            # Set all digits of zeroThreshold and oneThreshold to the same value
+            for d in range(5):
+                zeroThreshold[d] = z
+                oneThreshold[d] = one            
+
+            #reset score trackers
+            for player in range(4):
+                for digit in range(5):
+                    sensorScores[player][digit] = 0
+
+            print("Testing ", z*ONESRANGE+one, "from ", ONESRANGE*ZERORANGE)
+
+            replayStoredGame()
+            print("score digits=", [sensorScores[0][d] for d in range(5)], 
+                  " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
+                  " with setting=", z, one)
+
+            # Record z, one, and sensorScores[0][0:5] in results
+            results.append((z, one, [sensorScores[0][d] for d in range(5)]))
+
+            elapsed = time.ticks_diff(time.ticks_ms(), start)
+            print("Replay execution time:", elapsed, "ms")
+
+    # Print only results where any digit matches targetScore
+    print(f"Results (z, one, any digit == {targetScore}):")
+    for record in results:
+        print(record)
+
+    # Print z/one combinations for each digit place (1s, 10s, 100s, 1000s)
+    digit_places = [1, 10, 100, 1000]
+    for digit_index, digit_value in enumerate(digit_places):
+        print(f"\nCombinations for digit place {digit_value}:")
+        for record in results:
+            z, one, digits = record
+            if digits[digit_index] == targetScore // digit_value % 10:
+                print(f"z={z}, one={one}, digits={digits}")

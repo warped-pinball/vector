@@ -289,9 +289,9 @@ def calibrate():
 
 
     print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.9)
+    lowCalThres = int(lowCal*0.9)   #0.9
     lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.1)
+    highCalThres = int(highCal*1.1)  #1.1
     hiPwm.duty_u16(highCalThres)
     print("SENSOR: calibration thresholds:",lowCalThres,highCalThres)
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
