@@ -56,12 +56,12 @@ def spi_master_16bit():
     push(noblock)
 
     #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 21)
+    set(y, 19)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
 
-    nop()                   .side(0)   [3]
+    #nop()                   .side(0)   [3]
     wrap()
 
 

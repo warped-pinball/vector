@@ -82,57 +82,138 @@ gpio26.value(not gpio26.value())
 gpio1 = Pin(1, Pin.OUT)
 gpio1.value(not gpio1.value())
 
-#S.run_learning_game = True
-S.run_learning_game = False
+S.run_learning_game = True
+#S.run_learning_game = False
 
+
+
+gameover=False
 
 
 def save_game_history(filename="game_history.dat"):
-    """Save gameHistory, gameHistoryTime, and gameHistoryIndex to a file."""
+    """Save gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore to a file with section markers."""
     global gameHistory, gameHistoryTime, gameHistoryIndex
 
     try:
         with open(filename, "wb") as f:
-            # Write gameHistoryIndex as 4 bytes (little endian)
+            # Write a marker for the start of the file
+            f.write(b'GHDR')  # 4-byte marker: Game History Data Record
+
+            # Write actualScore as 4 bytes (placeholder, value 0 for now)
+            actualScore = 0
+            f.write(actualScore.to_bytes(4, "little"))
+
+            # Write a marker before gameHistoryIndex
+            f.write(b'GHIX')
             f.write(gameHistoryIndex.to_bytes(4, "little"))
-            # Write gameHistory values (each 4 bytes)
+
+            # Write a marker before gameHistory values
+            f.write(b'GHVL')
             for i in range(gameHistoryIndex):
                 f.write(gameHistory[i].to_bytes(4, "little"))
-            # Write gameHistoryTime values (each 2 bytes)
+
+            # Write a marker before gameHistoryTime values
+            f.write(b'GHTM')
             for i in range(gameHistoryIndex):
                 f.write(gameHistoryTime[i].to_bytes(2, "little"))
+
+            # Write a marker for end of file
+            f.write(b'GEND')
         print(f"Game history saved to {filename}")
     except Exception as e:
         print(f"Error saving game history: {e}")
 
 
 
-def load_game_history(filename="game_history2.dat"):
-    """Restore gameHistory, gameHistoryTime, and gameHistoryIndex from a file."""
+def load_game_history(filename="game_history.dat"):
+    """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore from a file with section markers."""
     global gameHistory, gameHistoryTime, gameHistoryIndex
 
     try:
         with open(filename, "rb") as f:
-            # Read gameHistoryIndex (4 bytes, little endian)
+            # Check start marker
+            if f.read(4) != b'GHDR':
+                raise ValueError("File marker GHDR not found")
+
+            # Read actualScore (4 bytes, little endian)
+            actualScore = int.from_bytes(f.read(4), "little")
+
+            # Check gameHistoryIndex marker
+            if f.read(4) != b'GHIX':
+                raise ValueError("File marker GHIX not found")
             gameHistoryIndex = int.from_bytes(f.read(4), "little")
-            # Read gameHistory values (each 4 bytes)
+
+            # Check gameHistory values marker
+            if f.read(4) != b'GHVL':
+                raise ValueError("File marker GHVL not found")
             for i in range(gameHistoryIndex):
                 gameHistory[i] = int.from_bytes(f.read(4), "little")
-            # Read gameHistoryTime values (each 2 bytes)
+
+            # Check gameHistoryTime values marker
+            if f.read(4) != b'GHTM':
+                raise ValueError("File marker GHTM not found")
             for i in range(gameHistoryIndex):
                 gameHistoryTime[i] = int.from_bytes(f.read(2), "little")
 
-        '''
-        gameHistory[gameHistoryIndex] = 0
-        gameHistory[gameHistoryIndex + 1] = 0
-        gameHistoryTime[gameHistoryIndex] = 0
-        gameHistoryTime[gameHistoryIndex + 1] = 0
-        '''
-
+            # Check end marker
+            if f.read(4) != b'GEND':
+                raise ValueError("File marker GEND not found")
 
         print(f"Game history loaded from {filename}")
     except Exception as e:
         print(f"Error loading game history: {e}")
+
+
+
+def print_game_history_file(filename="game_history.dat"):
+    """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScore."""
+    try:
+        with open(filename, "rb") as f:
+            # Check start marker
+            if f.read(4) != b'GHDR':
+                print("File marker GHDR not found")
+                return
+
+            # Read actualScore (4 bytes, little endian)
+            actualScore = int.from_bytes(f.read(4), "little")
+
+            # Check gameHistoryIndex marker
+            if f.read(4) != b'GHIX':
+                print("File marker GHIX not found")
+                return
+            gameHistoryIndex = int.from_bytes(f.read(4), "little")
+
+            # Check gameHistory values marker
+            if f.read(4) != b'GHVL':
+                print("File marker GHVL not found")
+                return
+            sensor_data = []
+            for i in range(gameHistoryIndex):
+                sensor_data.append(int.from_bytes(f.read(4), "little"))
+
+            # Check gameHistoryTime values marker
+            if f.read(4) != b'GHTM':
+                print("File marker GHTM not found")
+                return
+            time_data = []
+            for i in range(gameHistoryIndex):
+                time_data.append(int.from_bytes(f.read(2), "little"))
+
+            # Check end marker
+            if f.read(4) != b'GEND':
+                print("File marker GEND not found")
+                return
+
+            # Print header
+            print(f"GameHistory Length: {gameHistoryIndex}")
+            print(f"Actual Score: {actualScore}")
+            print(f"{'Index':>5} {'Sensor Data':>36} {'Time':>8}")
+            print("-" * 55)
+            for i in range(gameHistoryIndex):
+                print(f"{i:>5} {sensor_data[i]:032b} {time_data[i]:>8}")
+
+    except Exception as e:
+        print(f"Error reading game history file: {e}")
 
 
 
@@ -142,7 +223,7 @@ def processSensorData():
     ''' called each 1 or 2 seconds.  watch game active and decide when to operate on data
     coming in from sensor module -  either store for learning or process for live scores'''
     global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
-    global stateVar, stateCount
+    global stateVar, stateCount, gameover
 
 
     global gpio26  #blink led
@@ -179,7 +260,7 @@ def processSensorData():
     elif stateVar == PROCESS_STORE:
         #store data for learn
         processAndStore()
-        if sensorRead.gameActive() == 0:
+        if sensorRead.gameActive() == 0:          
             stateVar = PROCESS_STORE_END  
             stateCount = 0
 
@@ -188,6 +269,8 @@ def processSensorData():
         processAndStore()
         if stateCount > PROCESS_END_PAUSE:
             stateVar = PROCESS_IDLE  
+            processAndStoreWrapUp()
+            gameover = True
             stateCount = 0
 
     elif stateVar == PROCESS_RUN:
@@ -202,6 +285,7 @@ def processSensorData():
         processAndRun()
         if stateCount > PROCESS_END_PAUSE:
             stateVar = PROCESS_IDLE  
+            gameover = True
             stateCount = 0
 
 
@@ -250,9 +334,8 @@ def processAndStore():
 
     for x in range(2500):
         
-        newValue = pullWithDelete()
+        newValue = pullWithDelete()      
         if newValue != 0:
-            #print("C",gameHistoryIndex,segmentMS,newValue)
             newValue = reverse_bits_16(newValue)
             newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
 
@@ -279,11 +362,26 @@ def processAndStore():
     return
 
 
-#prevVal=0
+def processAndStoreWrapUp():
+    ''' call at gema over to wrap up the ram store history'''
+    global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
+
+    gameHistory[gameHistoryIndex]=lastValue                                    
+    gameHistoryTime[gameHistoryIndex]=segmentMS
+    gameHistoryIndex += 1               
+
+    print("stored last file data point wrap up - - -")
+
+
+
+
+
 def processAndRun():
     '''pull data from ram buffer and feed to score module'''
+    global holdOffCount
+
     start_time = time.ticks_ms()  # Start timer
-    print("process run")
+    #print("process run")
 
     for x in range(1500):
         # Use saved values from previous call if available
@@ -295,38 +393,29 @@ def processAndRun():
         if a == 0:
             a_saved = None
             b_saved = None
-            print(" processandRun: over  - - - ",x*2)
+            print(" aa  processandRun: over  - - - ",x*2)
             end_time = time.ticks_ms()
             elapsed = time.ticks_diff(end_time, start_time)
             print("processAndRun execution time:", elapsed, "ms")    
+            #print(holdOffCount)
             return
         if b == 0:
             a_saved = a
-            b_saved = None
-            print(" processandRun: over  - - - ",x*2)
-            end_time = time.ticks_ms()
-            elapsed = time.ticks_diff(end_time, start_time)
-            print("processAndRun execution time:", elapsed, "ms")    
+            b_saved = None           
             return
         if c == 0:
             a_saved = a
-            b_saved = b
-            print(" processandRun: over  - - - ",x*2)
-            end_time = time.ticks_ms()
-            elapsed = time.ticks_diff(end_time, start_time)
-            print("processAndRun execution time:", elapsed, "ms")    
+            b_saved = b           
             return
 
         # Buffer is not empty, clear saved values
         a_saved = None
         b_saved = None
 
-    
-         
         scrValue = (a|b) & (b|c)   #any two in a row low - output a low bit
         chgValue = (a^b) | (b^c)   #any bit change - output a high bit
 
-        optSensorToScore(reverse_bits_16(scrValue) |0xFFF0 , reverse_bits_16(chgValue)&0x0F)
+        optSensorToScore(reverse_bits_16(scrValue) |0xFFF0 , reverse_bits_16(chgValue) &0x000F)
 
         '''
         if newValue != 0:
@@ -342,13 +431,7 @@ def processAndRun():
             return
         '''
 
-    
-    print(" processandRun: over  - - - ",x*2)
-    end_time = time.ticks_ms()
-    elapsed = time.ticks_diff(end_time, start_time)
-    print("processAndRun execution time:", elapsed, "ms")    
-    return
-    
+  
 
 
 previousSensorValue=0
@@ -456,16 +539,15 @@ def optSensorToScore(scrValue,chgValue):
 
     for score_idx, bits in score_map:
         for i, bit in enumerate(bits):
-            #print("FFFFF ",i,bits)
             #cycle for each bit - - - 
             if ((scrValue>>bit)&1)==0 and holdOffCount[bit]==0:
                 #increment digit
                 v = sensorScores[score_idx][i]
                 sensorScores[score_idx][i] = 0 if v > 8 else v + 1
-                holdOffCount[bit] = 3
+                holdOffCount[bit] = 2
 
             if ((chgValue>>bit)&1) == 1:
-                holdOffCount[bit] = 3
+                holdOffCount[bit] = 2
             else:
                 if (holdOffCount[bit]>0):
                     holdOffCount[bit] -= 1
@@ -916,7 +998,8 @@ def CheckForNewScores(nState=[0]):
         else:
             print("SCORE: game end check. learn mode ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
 
-        if sensorRead.gameActive() == 0:
+        #if sensorRead.gameActive() == 0:
+        if gameover == True:
             print("SCORE: Game End")
             S.game_status["game_active"]=False
             #load scoes into scores[][]
@@ -925,7 +1008,7 @@ def CheckForNewScores(nState=[0]):
             nState[0] = 1           
             log.log("SCORE: game end")
 
-
+         
             save_game_history()
 
             #replay stored game - print out progress
