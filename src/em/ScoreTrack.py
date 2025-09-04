@@ -54,6 +54,100 @@ gameHistoryStatus=GAMEHIST_STATUS_EMPTY
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+MASK32 = 0xFFFFFFFF
+DEPTH = 16
+IDXMSK = 0x0F  # pointer wrap around - 16 samples
+
+# Circular buffer and pointer
+bit_buf = [0] * DEPTH
+bit_ptr = -1
+bit_count = 0
+
+# Masks for score and reset (all zeros initially)
+score_mask = [0] * DEPTH
+reset_mask = [0] * DEPTH
+
+# Score state
+scoreState = 0
+
+def set_score_mask(stage, mask):
+    score_mask[stage] = mask & MASK32
+
+def set_reset_mask(stage, mask):
+    reset_mask[stage] = mask & MASK32
+
+def reset_bit_filter(init_value=0):
+    global bit_buf, bit_ptr, bit_count, scoreState
+    iv = init_value & MASK32
+    bit_buf = [iv] * DEPTH
+    bit_ptr = -1
+    bit_count = 0
+    scoreState = 0
+
+def process_bit_filter(new_word):
+    global bit_buf, bit_ptr, scoreState
+    bit_ptr = (bit_ptr + 1) & IDXMSK
+    bit_buf[bit_ptr] = new_word & MASK32
+  
+
+    # Score detection
+    score_hits = 0
+    reset_hits = 0
+    
+    cumulative_low = ~bit_buf[bit_ptr] & MASK32
+    cumulative_high = bit_buf[bit_ptr] & MASK32
+
+    for i in range(1, 6):  # depth reduced for speed
+
+        cumulative_low &= ~bit_buf[(bit_ptr - i) & IDXMSK] 
+        score_hits |= cumulative_low & scoreState & score_mask[i]
+
+        cumulative_high &= bit_buf[(bit_ptr - i) & IDXMSK] & MASK32
+        reset_hits |= cumulative_high & (~scoreState) & reset_mask[i]
+       
+    scoreState &= ~score_hits
+    scoreState |= reset_hits
+    
+    return score_hits
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def reverse_bits_16(x):
     x = ((x & 0xAAAA) >> 1) | ((x & 0x5555) << 1)
     x = ((x & 0xCCCC) >> 2) | ((x & 0x3333) << 2)
@@ -82,11 +176,13 @@ gpio26.value(not gpio26.value())
 gpio1 = Pin(1, Pin.OUT)
 gpio1.value(not gpio1.value())
 
-S.run_learning_game = True
-#S.run_learning_game = False
+
+#switch to run normal or in file capture mode
+#S.run_learning_game = True
+S.run_learning_game = False
 
 
-
+#sync up just the end of game - capture last transitions.. 
 gameover=False
 
 
@@ -251,6 +347,7 @@ def processSensorData():
                     stateVar = PROCESS_STORE
                 else:
                     log.log("SCORE: Run game scoring")
+                    processEmpty()  
                     stateVar = PROCESS_RUN
         else:
             stateVar = PROCESS_IDLE  
@@ -374,6 +471,8 @@ def processAndStoreWrapUp():
 
 
 
+#import bitFilter as bf
+#bf_instance = bf.BitStreamFilter32()
 
 
 def processAndRun():
@@ -381,8 +480,25 @@ def processAndRun():
     global holdOffCount
 
     start_time = time.ticks_ms()  # Start timer
-    #print("process run")
 
+    for x in range(2500):
+        d = pullWithDelete()
+        if d==0:
+            end_time = time.ticks_ms()
+            elapsed = time.ticks_diff(end_time, start_time)
+            print("end   processAndRun execution time:", elapsed, "ms")
+            return
+        
+        process_bit_filter(d)
+        #bf_instance.process(d)
+ 
+    end_time = time.ticks_ms()
+    elapsed = time.ticks_diff(end_time, start_time)
+    print("2500   processAndRun execution time:", elapsed, "ms")
+    return
+
+
+    '''
     for x in range(1500):
         # Use saved values from previous call if available
         a = a_saved if 'a_saved' in globals() else pullWithDelete()
@@ -416,8 +532,13 @@ def processAndRun():
         chgValue = (a^b) | (b^c)   #any bit change - output a high bit
 
         optSensorToScore(reverse_bits_16(scrValue) |0xFFF0 , reverse_bits_16(chgValue) &0x000F)
+    '''
 
-        '''
+        
+
+
+
+    '''
         if newValue != 0:
             newValue = reverse_bits_16(newValue)
             newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
@@ -429,7 +550,7 @@ def processAndRun():
             print("processAndRun execution time:", elapsed, "ms")
             
             return
-        '''
+    '''
 
   
 
