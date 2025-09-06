@@ -5,28 +5,16 @@ import json
 import subprocess
 from typing import Dict, List
 
+from common import list_mpremote_devs, mpremote_exec
+
 
 def list_pico_ports(timeout: float = 5.0) -> List[str]:
     """Return a list of serial ports with connected Pico boards using mpremote.
 
     A timeout is used to prevent hanging if mpremote fails to respond.
     """
-    try:
-        result = subprocess.run(
-            ["mpremote", "devs"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=timeout,
-        )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return []
-    ports: List[str] = []
-    for line in result.stdout.strip().splitlines():
-        line = line.strip()
-        if line:
-            ports.append(line.split()[0])
-    return ports
+    # Delegate to common helper which already handles timeouts and parsing
+    return list_mpremote_devs(timeout=timeout)
 
 
 def detect_board_type(port: str, timeout: float = 5.0) -> str | None:
@@ -35,16 +23,10 @@ def detect_board_type(port: str, timeout: float = 5.0) -> str | None:
     Returns the board name, or ``None`` if detection fails or times out.
     """
     try:
-        result = subprocess.run(
-            [
-                "mpremote",
-                "connect",
-                port,
-                "exec",
-                "import systemConfig;print(systemConfig.vectorSystem)",
-            ],
+        result = mpremote_exec(
+            "import systemConfig;print(systemConfig.vectorSystem)",
+            connect=port,
             capture_output=True,
-            text=True,
             check=True,
             timeout=timeout,
         )
