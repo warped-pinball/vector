@@ -660,68 +660,69 @@ if (typeof window !== "undefined") {
 // Origin
 //
 
-// TODO update to use new wait for load js functions
-async function setupOriginIntegration() {
-  const button = await window.waitForElementById("link-origin-button");
+let originButton;
 
-  async function checkStatus() {
-    try {
-      const response = await window.smartFetch(
-        "/api/origin/status",
-        null,
-        false,
-      );
-      const data = await response.json();
-      if (data.linked) {
-        button.classList.remove("gold-pulse");
-        button.disabled = false;
-        button.textContent = "Connected, open in app";
-        button.onclick = () => window.open(data.claim_url, "_self");
-      } else {
-        button.classList.add("gold-pulse");
-        button.disabled = false;
-        button.textContent = "Connect to Warped Pinball Network";
-        button.onclick = enableOrigin;
-      }
-    } catch (e) {
-      console.error("Failed to get origin status", e);
-      button.disabled = false;
-      button.textContent = "Retry";
-      button.onclick = checkStatus;
-    }
+async function getOriginStatus() {
+  const response = await window.smartFetch("/api/origin/status", null, false);
+  if (!response.ok) {
+    throw new Error("status " + response.status);
   }
-
-  async function enableOrigin() {
-    button.classList.remove("gold-pulse");
-    button.disabled = true;
-    button.textContent = "Establishing Connection...";
-    try {
-      const response = await window.smartFetch(
-        "/api/origin/enable",
-        null,
-        true,
-      );
-      if (!response.ok) {
-        throw new Error("status " + response.status);
-      }
-      const data = await response.json();
-      button.classList.add("gold-pulse");
-      button.disabled = false;
-      button.textContent = "Claim this game";
-      button.onclick = () => window.open(data.claim_url, "_self");
-    } catch (e) {
-      console.error("Failed to enable origin", e);
-      alert("Failed to enable Origin");
-      button.classList.add("gold-pulse");
-      button.disabled = false;
-      button.textContent = "Connect to Warped Pinball Network";
-      button.onclick = enableOrigin;
-    }
-  }
-
-  await checkStatus();
+  return response.json();
 }
 
-setupOriginIntegration();
+function applyOriginStatus(status) {
+  originButton.classList.remove("gold-pulse");
+  originButton.disabled = false;
 
-// TODO make caim URL show up / work when claim pending
+  if (status.linked) {
+    originButton.textContent = "Connected to Warp Pinball Network";
+    originButton.onclick = () => {
+      if (status.claim_url) window.open(status.claim_url, "_self");
+    };
+  } else if (status.claim_url) {
+    originButton.classList.add("gold-pulse");
+    originButton.textContent = "Claim this machine";
+    originButton.onclick = () => window.open(status.claim_url, "_self");
+  } else {
+    originButton.classList.add("gold-pulse");
+    originButton.textContent = "Connect to Warp Pinball Network";
+    originButton.onclick = enableOrigin;
+  }
+}
+
+async function enableOrigin() {
+  originButton.classList.remove("gold-pulse");
+  originButton.disabled = true;
+  originButton.textContent = "Establishing Connection...";
+  try {
+    const response = await window.smartFetch("/api/origin/enable", null, true);
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    const data = await response.json();
+    applyOriginStatus(data);
+  } catch (e) {
+    console.error("Failed to enable origin", e);
+    alert("Failed to enable Origin");
+    originButton.classList.add("gold-pulse");
+    originButton.disabled = false;
+    originButton.textContent = "Connect to Warp Pinball Network";
+    originButton.onclick = enableOrigin;
+  }
+}
+
+async function initOriginIntegration() {
+  originButton = await window.waitForElementById("link-origin-button");
+  originButton.disabled = true;
+  try {
+    const status = await getOriginStatus();
+    applyOriginStatus(status);
+  } catch (e) {
+    console.error("Failed to get origin status", e);
+    originButton.disabled = false;
+    originButton.textContent = "Retry";
+    originButton.onclick = initOriginIntegration;
+  }
+}
+
+initOriginIntegration();
