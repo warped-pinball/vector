@@ -33,7 +33,8 @@ def run_python_script(
 
 
 def _mpremote_base_args(connect: Optional[str]) -> List[str]:
-    args: List[str] = ["mpremote"]
+    # Use the current interpreter to run mpremote as a module for cross-platform reliability
+    args: List[str] = [sys.executable, "-m", "mpremote"]
     if connect:
         args.extend(["connect", connect])
     return args
@@ -81,13 +82,7 @@ def mpremote_exec(
 def list_mpremote_devs(timeout: float = 5.0) -> List[str]:
     """Return a list of serial ports reported by `mpremote devs`."""
     try:
-        result = subprocess.run(
-            ["mpremote", "devs"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=timeout,
-        )
+        result = mpremote_run("devs", capture_output=True, check=True, timeout=timeout)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return []
 
