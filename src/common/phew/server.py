@@ -252,7 +252,7 @@ async def run_scheduled():
                 try:
                     t[0]()  # t[0] is func
                 except Exception as e:
-                    logging.error(f"Error running scheduled task: {e}")
+                    logging.error(f"Error running scheduled task: {str(t[0])} {e}")
 
                 # reschedule or remove tasks
                 if t[1] is None:  # t[1] is freq

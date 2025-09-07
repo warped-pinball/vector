@@ -91,6 +91,8 @@ def close_ws():
 
 
 def send(route: str, msg: str, sign: bool = True):
+    print("Sending", route, msg, "sign=" + str(sign))
+    
     global metadata
     if len(route) == 0 or "|" in route:
         raise Exception("Invalid route:", route)
@@ -126,6 +128,7 @@ def recv():
 
     try:
         resp = ws.recv()
+        print("Received", resp)
     except OSError:
         return  # no message to process
 
@@ -133,7 +136,7 @@ def recv():
         return
 
     if "|" not in resp:
-        raise Exception("Response missing signature")
+        raise Exception("Response missing signature: " + resp)
 
     body, signature = resp.rsplit("|", 1)
     result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
@@ -239,7 +242,7 @@ def handle_challenges(data):
 
 def status():
     if metadata.get("pending_claim"):
-        return {"linked": False, "claim_url": metadata["pending_claim"]["claim_url"]}
+        return {"linked": False, "claim_url": metadata["pending_claim"].get("claim_url", "claim_url_missing")}
 
     try:
         get_config()

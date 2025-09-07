@@ -903,7 +903,7 @@ def app_enable_origin(request):
     while (time() - start_time) < 10:
         recv()
         stat = status()
-        if stat["claim_url"]:
+        if stat.get("claim_url", False):
             return stat
         sleep(1)
 
