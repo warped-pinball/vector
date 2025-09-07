@@ -92,12 +92,11 @@ def close_ws():
 
 def send(route: str, msg: str, sign: bool = True):
     print("Sending", route, msg, "sign=" + str(sign))
-    
-    global metadata
+    global metadata, ws
     if len(route) == 0 or "|" in route:
         raise Exception("Invalid route:", route)
 
-    ws = open_ws()
+    open_ws()
 
     msg = route + "|" + msg
 
@@ -124,21 +123,26 @@ def send(route: str, msg: str, sign: bool = True):
 
 
 def recv():
-    ws = open_ws()
+    global ws
+    open_ws()
 
     try:
         resp = ws.recv()
         print("Received", resp)
     except OSError:
+        ws = None
+        open_ws()
         return  # no message to process
 
-    if resp is None:
+    if not resp:
+        ws = None
+        open_ws()
         return
 
-    if "|" not in resp:
-        raise Exception("Response missing signature: " + resp)
+    if b"|" not in resp:
+        raise Exception("Response missing signature: " + resp.decode())
 
-    body, signature = resp.rsplit("|", 1)
+    body, signature = resp.rsplit(b"|", 1)
     result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
     if result != "SHA-256":
