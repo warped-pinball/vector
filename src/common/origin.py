@@ -140,16 +140,19 @@ def recv():
         return
 
     if b"|" not in resp:
-        raise Exception("Response missing signature: " + resp.decode())
+        print("Response missing signature: " + resp.decode())
+        return
 
     body, signature = resp.rsplit(b"|", 1)
     result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
     if result != "SHA-256":
-        raise Exception("Origin server response signature invalid!")
+        print("Origin server response signature invalid!")
+        return
 
     if not body:
-        raise Exception("Response Route missing")
+        print("Response Route missing")
+        return
 
     route, body = body.decode().split("|", 1)
 
