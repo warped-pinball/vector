@@ -7,17 +7,17 @@ from curve25519 import generate_x25519_keypair
 from rsa.key import PublicKey
 from rsa.pkcs1 import verify
 from SPI_DataStore import read_record as ds_read_record
-from websocket_client import connect
+from mqtt_client import connect
 
 MAX_CHALLENGES = 10
 ORIGIN_URL = "https://origin-beta.doze.dev"
-ORIGIN_WS_URL = f"ws://{ORIGIN_URL}:8002/ws".replace("https://", "").replace("http://", "")  # TODO update port to 8001 for prod
+ORIGIN_MQTT_URL = f"mqtt://{ORIGIN_URL}:1883/origin".replace("https://", "").replace("http://", "")
 ORIGIN_PUBLIC_KEY = PublicKey(
     n=28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273,  # noqa
     e=65537,
 )
 
-ws = None
+mqtt = None
 metadata = {}
 
 
@@ -65,38 +65,36 @@ def is_claimed() -> bool:
     return config.get("id") and config.get("secret")
 
 
-def open_ws():
-    global ws
+def open_mqtt():
+    global mqtt
 
-    if ws is None:
-        ws = connect(ORIGIN_WS_URL)
+    if mqtt is None:
+        mqtt = connect(ORIGIN_MQTT_URL)
 
-    if ws is None:
-        raise Exception("Failed to open WebSocket connection")
+    if mqtt is None:
+        raise Exception("Failed to open MQTT connection")
 
-    return ws
+    return mqtt
 
 
-def close_ws():
-    """
-    Close the persistent websocket.
-    """
-    global ws
-    if ws is not None:
+def close_mqtt():
+    """Close the persistent MQTT connection."""
+    global mqtt
+    if mqtt is not None:
         try:
-            ws.close()
+            mqtt.close()
         except Exception:
             pass
-        ws = None
+        mqtt = None
 
 
 def send(route: str, msg: str, sign: bool = True):
     print("Sending", route, msg, "sign=" + str(sign))
-    global metadata, ws
+    global metadata, mqtt
     if len(route) == 0 or "|" in route:
         raise Exception("Invalid route:", route)
 
-    open_ws()
+    open_mqtt()
 
     msg = route + "|" + msg
 
@@ -116,27 +114,27 @@ def send(route: str, msg: str, sign: bool = True):
         msg += "|" + str(next_challenge)
         msg += "|" + str(hmac_sha256(config["secret"], msg))
 
-    ws.send(msg)
+    mqtt.send(msg)
 
     if sign and len(metadata.get("challenges", [])) < MAX_CHALLENGES / 4:
         send_request_challenges()
 
 
 def recv():
-    global ws
-    open_ws()
+    global mqtt
+    open_mqtt()
 
     try:
-        resp = ws.recv()
+        resp = mqtt.recv()
         print("Received", resp)
     except OSError:
-        ws = None
-        open_ws()
+        mqtt = None
+        open_mqtt()
         return  # no message to process
 
     if not resp:
-        ws = None
-        open_ws()
+        mqtt = None
+        open_mqtt()
         return
 
     if b"|" not in resp:
