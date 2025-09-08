@@ -13,13 +13,13 @@ rsa_pkcs1.verify = lambda body, sig, key: "SHA-256"
 sys.modules.setdefault("rsa.key", rsa_key)
 sys.modules.setdefault("rsa.pkcs1", rsa_pkcs1)
 sys.modules.setdefault("SPI_DataStore", types.SimpleNamespace(read_record=lambda *a, **k: {}))
-sys.modules.setdefault("websocket_client", types.SimpleNamespace(connect=lambda url: None))
+sys.modules.setdefault("mqtt_client", types.SimpleNamespace(connect=lambda url: None))
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 import common.origin as origin  # noqa: E402
 
 
-class DummyWS:
+class DummyMQTT:
     def __init__(self, recv_side_effect):
         self.recv_side_effect = recv_side_effect
         self.closed = False
@@ -37,36 +37,36 @@ class DummyWS:
 
 
 def test_recv_reconnects_on_empty(monkeypatch):
-    ws_instances = []
+    mqtt_instances = []
 
     def fake_connect(url):
-        ws = DummyWS(None)
-        ws_instances.append(ws)
-        return ws
+        mqtt = DummyMQTT(None)
+        mqtt_instances.append(mqtt)
+        return mqtt
 
     monkeypatch.setattr(origin, "connect", fake_connect)
 
-    origin.ws = None
+    origin.mqtt = None
     origin.recv()
 
-    assert len(ws_instances) == 2
-    assert not ws_instances[0].closed
-    assert origin.ws is ws_instances[1]
+    assert len(mqtt_instances) == 2
+    assert not mqtt_instances[0].closed
+    assert origin.mqtt is mqtt_instances[1]
 
 
 def test_recv_reconnects_on_oserror(monkeypatch):
-    ws_instances = []
+    mqtt_instances = []
 
     def fake_connect(url):
-        ws = DummyWS(OSError())
-        ws_instances.append(ws)
-        return ws
+        mqtt = DummyMQTT(OSError())
+        mqtt_instances.append(mqtt)
+        return mqtt
 
     monkeypatch.setattr(origin, "connect", fake_connect)
 
-    origin.ws = None
+    origin.mqtt = None
     origin.recv()
 
-    assert len(ws_instances) == 2
-    assert not ws_instances[0].closed
-    assert origin.ws is ws_instances[1]
+    assert len(mqtt_instances) == 2
+    assert not mqtt_instances[0].closed
+    assert origin.mqtt is mqtt_instances[1]
