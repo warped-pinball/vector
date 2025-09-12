@@ -7,11 +7,11 @@ from curve25519 import generate_x25519_keypair
 from rsa.key import PublicKey
 from rsa.pkcs1 import verify
 from SPI_DataStore import read_record as ds_read_record
-from mqtt_client import connect
+from mqtt import MqttAdapter
 
 MAX_CHALLENGES = 10
 ORIGIN_URL = "https://origin-beta.doze.dev"
-ORIGIN_MQTT_URL = f"mqtt://{ORIGIN_URL}:1883/origin".replace("https://", "").replace("http://", "")
+ORIGIN_MQTT_URL = f"mqtt://{ORIGIN_URL}:8002/origin".replace("https://", "").replace("http://", "")
 ORIGIN_PUBLIC_KEY = PublicKey(
     n=28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273,  # noqa
     e=65537,
@@ -65,104 +65,89 @@ def is_claimed() -> bool:
     return config.get("id") and config.get("secret")
 
 
-def open_mqtt():
-    global mqtt
-
-    if mqtt is None:
-        mqtt = connect(ORIGIN_MQTT_URL)
-
-    if mqtt is None:
-        raise Exception("Failed to open MQTT connection")
-
-    return mqtt
 
 
-def close_mqtt():
-    """Close the persistent MQTT connection."""
-    global mqtt
-    if mqtt is not None:
-        try:
-            mqtt.close()
-        except Exception:
-            pass
-        mqtt = None
+# def send(route: str, msg: str, sign: bool = True):
+#     print("Sending", route, msg, "sign=" + str(sign))
+#     global metadata, mqtt
+#     if len(route) == 0 or "|" in route:
+#         raise Exception("Invalid route:", route)
+
+#     open_mqtt()
+
+#     msg = route + "|" + msg
+
+#     if sign:
+#         next_challenge = metadata.get("challenges", [None]).pop(0)
+#         if not next_challenge:
+#             send_request_challenges()
+
+#         while next_challenge := metadata.get("challenges", [None]).pop(0):
+#             sleep(0.5)  # wait a moment for challenges to arrive
+#             recv()
+
+#         config = get_config()
+
+#         # Append HMAC fields if signing
+#         msg += "|" + str(config["id"])
+#         msg += "|" + str(next_challenge)
+#         msg += "|" + str(hmac_sha256(config["secret"], msg))
+
+#     mqtt.send(msg)
+
+#     if sign and len(metadata.get("challenges", [])) < MAX_CHALLENGES / 4:
+#         send_request_challenges()
 
 
-def send(route: str, msg: str, sign: bool = True):
-    print("Sending", route, msg, "sign=" + str(sign))
-    global metadata, mqtt
-    if len(route) == 0 or "|" in route:
-        raise Exception("Invalid route:", route)
+# def recv():
+#     global mqtt
+#     open_mqtt()
 
-    open_mqtt()
+#     try:
+#         resp = mqtt.recv()
+#         if not resp:
+#             return  # no message available
+#         print("Received", resp)
+#     except OSError:
+#         # Connection issue; try to reopen
+#         mqtt = None
+#         open_mqtt()
+#         return
 
-    msg = route + "|" + msg
+#     # resp is guaranteed truthy beyond this point
 
-    if sign:
-        next_challenge = metadata.get("challenges", [None]).pop(0)
-        if not next_challenge:
-            send_request_challenges()
+#     if b"|" not in resp:
+#         print("Response missing signature: " + resp.decode())
+#         return
 
-        while next_challenge := metadata.get("challenges", [None]).pop(0):
-            sleep(0.5)  # wait a moment for challenges to arrive
-            recv()
+#     body, signature = resp.rsplit(b"|", 1)
+#     result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
-        config = get_config()
+#     if result != "SHA-256":
+#         print("Origin server response signature invalid!")
+#         return
 
-        # Append HMAC fields if signing
-        msg += "|" + str(config["id"])
-        msg += "|" + str(next_challenge)
-        msg += "|" + str(hmac_sha256(config["secret"], msg))
+#     if not body:
+#         print("Response Route missing")
+#         return
 
-    mqtt.send(msg)
+#     route, body = body.decode().split("|", 1)
 
-    if sign and len(metadata.get("challenges", [])) < MAX_CHALLENGES / 4:
-        send_request_challenges()
+#     routes = {"handshake": handle_handshake, "claimed": handle_claimed, "challenges": handle_challenges}
 
-
-def recv():
-    global mqtt
-    open_mqtt()
-
-    try:
-        resp = mqtt.recv()
-        print("Received", resp)
-    except OSError:
-        mqtt = None
-        open_mqtt()
-        return  # no message to process
-
-    if not resp:
-        mqtt = None
-        open_mqtt()
-        return
-
-    if b"|" not in resp:
-        print("Response missing signature: " + resp.decode())
-        return
-
-    body, signature = resp.rsplit(b"|", 1)
-    result = verify(body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
-
-    if result != "SHA-256":
-        print("Origin server response signature invalid!")
-        return
-
-    if not body:
-        print("Response Route missing")
-        return
-
-    route, body = body.decode().split("|", 1)
-
-    routes = {"handshake": handle_handshake, "claimed": handle_claimed, "challenges": handle_challenges}
-
-    if route in routes:
-        routes[route](body)
-    else:
-        print("Received unknown route:", route)
+#     if route in routes:
+#         routes[route](body)
+#     else:
+#         print("Received unknown route:", route)
 
 
 def send_handshake_request():
+#     curl -X 'POST' \
+#   'https://origin-beta.doze.dev/api/v1/machines/handshake?client_public_key_bytes=public_key_bytes&game_title=fishtales' \
+#   -H 'accept: application/json' \
+#   -d ''
+
+
     # Generate X25519 keys
     priv, pub = generate_x25519_keypair()
 
@@ -171,11 +156,19 @@ def send_handshake_request():
     client_key_b64 = _b64encode(pub)
     msg = ujson.dumps({"client_key": client_key_b64, "game_title": game_title})
 
-    send("handshake", msg, sign=False)
+    import urequests
 
-    global metadata
+    response = urequests.post(
+        "https://origin-beta.doze.dev/api/v1/machines/handshake",
+        json={"client_key": client_key_b64, "game_title": game_title},
+    )
 
-    metadata["pending_handshake"] = {"private_key": priv}
+    if response.status_code != 200:
+        raise Exception("Handshake request failed")
+
+    data = response.json()
+    response.close()
+    #TODO extract the various fields from data and save in meta data / fram
 
 
 def send_request_challenges():
