@@ -169,6 +169,9 @@ def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge:
         "Content-Type": "application/json",
     }
 
+    if config.id is not None:
+        headers["X-Machine-ID"] = config.id
+
     if client_challenge is not None:
         headers["X-Client-Challenge"] = _b64encode(client_challenge)
 
