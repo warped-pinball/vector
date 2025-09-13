@@ -281,7 +281,7 @@ def create_schedule(ap_mode: bool = False):
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
-    from origin import recv as origin_recv
+    from origin import check_in
 
     #
     # one time tasks
@@ -330,8 +330,8 @@ def create_schedule(ap_mode: bool = False):
         # reconnect to wifi occasionally
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
 
-        # handle incoming messages from the origin server
-        schedule(origin_recv, 10000, 1000)
+        # Check for messages from origin every 10 seconds
+        schedule(check_in, 10000, 10000)
 
     restart_schedule()
 

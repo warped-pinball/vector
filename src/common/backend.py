@@ -894,22 +894,9 @@ def app_apply_update(request):
 #
 @add_route("/api/origin/enable", auth=True)
 def app_enable_origin(request):
-    from origin import recv, send_handshake_request, status
+    from origin import send_handshake_request
 
-    send_handshake_request()
-
-    # try to receive response and check status until claim url is available
-    start_time = time()
-    while (time() - start_time) < 10:
-        recv()
-        stat = status()
-        if stat.get("claim_url", False):
-            return stat
-        sleep(1)
-
-    # timeout after 10 seconds
-    return {"error": "Timeout waiting for claim URL"}
-
+    return send_handshake_request()
 
 @add_route("/api/origin/status")
 def app_origin_status(request):
