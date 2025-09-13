@@ -118,14 +118,14 @@ class Config():
 config = Config()
 
 
-def _b64decode(s: str) -> bytes:
+def _b64decode(s: str):
     return ubinascii.a2b_base64(s)
 
 
-def _b64encode(b: bytes) -> str:
+def _b64encode(b: bytes):
     return ubinascii.b2a_base64(b).decode().strip()
 
-def get_next_challenge() -> bytes:
+def get_next_challenge():
     next_challenge = metadata.get("challenges", [None]).pop(0)
     if not next_challenge:
         challenges = make_request("challenges", {"num": MAX_CHALLENGES}, sign=False)
@@ -138,7 +138,7 @@ def get_next_challenge() -> bytes:
         next_challenge = metadata.get("challenges", [None]).pop(0)
     return next_challenge
 
-def random_bytes(n: int) -> bytes:
+def random_bytes(n: int):
     from urandom import getrandbits
 
     output = getrandbits(8).to_bytes(1, "big")
@@ -146,7 +146,7 @@ def random_bytes(n: int) -> bytes:
         output += getrandbits(8).to_bytes(1, "big")
     return output
 
-def make_request(path: str, body: dict=None, sign: bool = True, validate: bool = True) -> dict:    
+def make_request(path: str, body: dict=None, sign: bool = True, validate: bool = True):    
     url = ORIGIN_URL.rstrip("/") + "/" + path.lstrip("/")
     
     if body is None:
@@ -164,7 +164,7 @@ def make_request(path: str, body: dict=None, sign: bool = True, validate: bool =
     
     return response.json()
 
-def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge: bytes=None) -> dict:
+def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge: bytes=None):
     headers = {
         "Content-Type": "application/json",
     }
@@ -181,9 +181,11 @@ def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge:
         next_challenge = get_next_challenge()
         headers["X-Signature"] = "v1=" + hmac_sha256(shared_secret, url.encode("utf-8") + next_challenge + body_bytes)
 
+    print("Sending request:", url, body_bytes, headers)
+
     return requests.post(url, data=body_bytes, headers=headers)
 
-def validate_response(response, client_challenge: bytes) -> None:
+def validate_response(response, client_challenge: bytes):
     if not response:
         raise Exception("Empty response is not valid")
     
@@ -204,10 +206,6 @@ def validate_response(response, client_challenge: bytes) -> None:
         raise Exception("Response signature invalid")
 
     return
-
-
-
-
 
 def send_handshake_request():
     # Generate X25519 keys
