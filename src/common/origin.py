@@ -44,20 +44,14 @@ class Config():
     #setter that ensures we have loaded first
     @id.setter
     def id(self, value):
-        if not self._loaded:
-            self.load_from_fram()
         self._id = value
     
     @secret.setter
     def secret(self, value):
-        if not self._loaded:
-            self.load_from_fram()
         self._secret = value
     
     @claim_url.setter
     def claim_url(self, value):
-        if not self._loaded:
-            self.load_from_fram()
         self._claim_url = value
 
     def read_from_fram(self):
@@ -153,9 +147,7 @@ def make_request(path: str, body: dict=None, sign: bool = True, validate: bool =
         body = {}
     
     # generate a random 32 byte challenge for the server if we need it
-    client_challenge = None
-    if sign or validate:
-        client_challenge = random_bytes(32)
+    client_challenge = random_bytes(32)
 
     response = send_request(url, ujson.dumps(body).encode("utf-8"), sign=sign, client_challenge=client_challenge)
 
@@ -169,14 +161,13 @@ def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge:
         "Content-Type": "application/json",
     }
 
-    if config.id is not None:
-        headers["X-Machine-ID"] = config.id
-
     if client_challenge is not None:
         headers["X-Client-Challenge"] = _b64encode(client_challenge)
 
     if sign:
         global config
+        if config.id is not None:
+            headers["X-Machine-ID"] = config.id
         shared_secret = config.secret
         next_challenge = get_next_challenge()
         headers["X-Signature"] = "v1=" + hmac_sha256(shared_secret, url.encode("utf-8") + next_challenge + body_bytes)
@@ -197,8 +188,8 @@ def validate_response(response, client_challenge: bytes):
 
     if not body:
         raise Exception("Response body is missing")
-
-    global config
+    
+    global config    
     shared_secret = config.secret
     result = verify(shared_secret + client_challenge + body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
@@ -215,19 +206,21 @@ def send_handshake_request():
     game_title = ds_read_record("configuration", 0)["gamename"]
     client_key_b64 = _b64encode(pub)
 
-    data = make_request("machines/handshake", {"client_public_key_b64": client_key_b64, "game_title": game_title}, sign=False)
+    data = make_request("machines/handshake", {"client_public_key_b64": client_key_b64, "game_title": game_title}, sign=False, validate=False)
 
     config.id = _b64decode(data.get("machine_id"))
     config.secret = priv.exchange(_b64decode(data.get("server_key")))
     config.claim_url = data.get("claim_url")
+    config._loaded = True
 
     return status()
 
 def check_in():
     global config
 
-    if not config.is_claimed():
-        return
+    #TODO figure out the right logic to use here
+    # if not config.is_claimed() and config.claim_url is None:
+    #     return
     
     data = make_request("machines/checkin")
     for msg in data.get("messages", []):
