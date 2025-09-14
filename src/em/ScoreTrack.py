@@ -99,26 +99,33 @@ def process_bit_filter(new_word):
     global bit_buf, bit_ptr, scoreState
     bit_ptr = (bit_ptr + 1) & IDXMSK
     bit_buf[bit_ptr] = new_word & MASK32
-  
 
-    # Score detection
     score_hits = 0
     reset_hits = 0
-    
-    cumulative_low = ~bit_buf[bit_ptr] & MASK32
-    cumulative_high = bit_buf[bit_ptr] & MASK32
 
-    for i in range(1, 6):  # depth reduced for speed
+    # Use local variables for speed
+    buf = bit_buf
+    ptr = bit_ptr
+    s_mask = score_mask
+    r_mask = reset_mask
+    s_state = scoreState
 
-        cumulative_low &= ~bit_buf[(bit_ptr - i) & IDXMSK] 
-        score_hits |= cumulative_low & scoreState & score_mask[i]
-
-        cumulative_high &= bit_buf[(bit_ptr - i) & IDXMSK] & MASK32
-        reset_hits |= cumulative_high & (~scoreState) & reset_mask[i]
-       
+    # Score detection (depth reduced for speed)
+    cumulative_low = ~buf[ptr] & MASK32
+    for i in range(1, 6):
+        idx = (ptr - i) & IDXMSK
+        cumulative_low &= ~buf[idx] & MASK32
+        score_hits |= cumulative_low & s_state & s_mask[i]
     scoreState &= ~score_hits
+
+    # Reset detection 
+    cumulative_high = buf[ptr] & MASK32
+    for i in range(1, 15):
+        idx = (ptr - i) & IDXMSK
+        cumulative_high &= buf[idx] & MASK32
+        reset_hits |= cumulative_high & (~scoreState) & r_mask[i]
     scoreState |= reset_hits
-    
+
     return score_hits
 
 
@@ -1077,6 +1084,8 @@ def update_tournament(new_entry):
     rec["index"] = nextIndex
     DataStore.write_record("tournament", rec, 0)
     return
+
+
 
 
 
