@@ -1,11 +1,11 @@
 import ubinascii
 import ujson
+import urequests as requests
 from backend import hmac_sha256
 from curve25519 import generate_x25519_keypair
 from rsa.key import PublicKey
 from rsa.pkcs1 import verify
 from SPI_DataStore import read_record as ds_read_record
-import urequests as requests
 
 MAX_CHALLENGES = 10
 ORIGIN_URL = "https://origin-beta.doze.dev/api/v1/"
@@ -15,14 +15,15 @@ ORIGIN_PUBLIC_KEY = PublicKey(
 )
 metadata = {}
 
-class Config():
+
+class Config:
     def __init__(self):
         self._loaded = False
         self._id = None
         self._secret = None
         self._claim_url = None
         self._claimed = None
-        
+
     @property
     def id(self):
         if not self._loaded:
@@ -41,15 +42,15 @@ class Config():
             self.load_from_fram()
         return self._claim_url
 
-    #setter that ensures we have loaded first
+    # setter that ensures we have loaded first
     @id.setter
     def id(self, value):
         self._id = value
-    
+
     @secret.setter
     def secret(self, value):
         self._secret = value
-    
+
     @claim_url.setter
     def claim_url(self, value):
         self._claim_url = value
@@ -65,33 +66,31 @@ class Config():
 
     def load_from_fram(self):
         record = self.read_from_fram()
-        
+
         try:
             self.validate(record)
         except Exception as e:
             print("Invalid config in fram, resetting:", e)
             return
-        
+
         self._id = record.get("id", None)
         self._secret = record.get("secret", None)
         self._loaded = True
 
     def save_to_fram(self):
         from SPI_DataStore import write_record as ds_write_record
+
         self.validate({"id": self._id, "secret": self._secret})
-        ds_write_record("cloud", 0, {
-            "id": _b64decode(self._id),
-            "secret": _b64decode(self._secret)
-        })
+        ds_write_record("cloud", 0, {"id": _b64decode(self._id), "secret": _b64decode(self._secret)})
 
     def validate(self, data):
         if not data.get("id") or not data.get("secret"):
             raise Exception("ID and secret must be set")
-        if data["id"] == _b64encode(bytes([0]*32)):
+        if data["id"] == _b64encode(bytes([0] * 32)):
             raise Exception("ID cannot be all zeros")
-        if data["secret"] == _b64encode(bytes([0]*32)):
+        if data["secret"] == _b64encode(bytes([0] * 32)):
             raise Exception("Secret cannot be all zeros")
-    
+
     def claimed(self):
         self._claimed = True
         self._claim_url = None
@@ -109,6 +108,7 @@ class Config():
                     self._claimed = False
         return self._claimed
 
+
 config = Config()
 
 
@@ -119,10 +119,11 @@ def _b64decode(s: str):
 def _b64encode(b: bytes):
     return ubinascii.b2a_base64(b).decode().strip()
 
+
 def get_next_challenge():
     next_challenge = metadata.get("challenges", [None]).pop(0)
     if not next_challenge:
-        challenges = make_request("challenges", {"num": MAX_CHALLENGES}, sign=False)
+        challenges = make_request("machines/challenges", {"num": MAX_CHALLENGES}, sign=False)
         if not challenges or "challenges" not in challenges:
             raise Exception("Invalid challenges response")
         encoded = challenges["challenges"]
@@ -132,6 +133,7 @@ def get_next_challenge():
         next_challenge = metadata.get("challenges", [None]).pop(0)
     return next_challenge
 
+
 def random_bytes(n: int):
     from urandom import getrandbits
 
@@ -140,12 +142,13 @@ def random_bytes(n: int):
         output += getrandbits(8).to_bytes(1, "big")
     return output
 
-def make_request(path: str, body: dict=None, sign: bool = True, validate: bool = True):    
+
+def make_request(path: str, body: dict = None, sign: bool = True, validate: bool = True):
     url = ORIGIN_URL.rstrip("/") + "/" + path.lstrip("/")
-    
+
     if body is None:
         body = {}
-    
+
     # generate a random 32 byte challenge for the server if we need it
     client_challenge = random_bytes(32)
 
@@ -153,10 +156,11 @@ def make_request(path: str, body: dict=None, sign: bool = True, validate: bool =
 
     if validate:
         validate_response(response, client_challenge)
-    
+
     return response.json()
 
-def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge: bytes=None):
+
+def send_request(url: str, body_bytes: bytes, sign: bool = True, client_challenge: bytes = None):
     headers = {
         "Content-Type": "application/json",
     }
@@ -170,26 +174,28 @@ def send_request(url: str, body_bytes: bytes, sign: bool=True, client_challenge:
             headers["X-Machine-ID"] = config.id
         shared_secret = config.secret
         next_challenge = get_next_challenge()
+        headers["X-Server-Challenge"] = _b64encode(next_challenge)
         headers["X-Signature"] = "v1=" + hmac_sha256(shared_secret, url.encode("utf-8") + next_challenge + body_bytes)
 
     print("Sending request:", url, body_bytes, headers)
 
     return requests.post(url, data=body_bytes, headers=headers)
 
+
 def validate_response(response, client_challenge: bytes):
     if not response:
         raise Exception("Empty response is not valid")
-    
+
     signature = response.headers.get("X-Signature", False)
     if not signature:
         raise Exception("Response missing signature")
-    
+
     body = response.content
 
     if not body:
         raise Exception("Response body is missing")
-    
-    global config    
+
+    global config
     shared_secret = config.secret
     result = verify(shared_secret + client_challenge + body, ubinascii.a2b_base64(signature.strip()), ORIGIN_PUBLIC_KEY)
 
@@ -197,6 +203,7 @@ def validate_response(response, client_challenge: bytes):
         raise Exception("Response signature invalid")
 
     return
+
 
 def send_handshake_request():
     # Generate X25519 keys
@@ -215,13 +222,14 @@ def send_handshake_request():
 
     return status()
 
+
 def check_in():
     global config
 
-    #TODO figure out the right logic to use here
+    # TODO figure out the right logic to use here
     # if not config.is_claimed() and config.claim_url is None:
     #     return
-    
+
     data = make_request("machines/checkin")
     for msg in data.get("messages", []):
         msg_type = msg.get("type", None)
@@ -231,12 +239,13 @@ def check_in():
         if msg_type == "claimed":
             config.claimed()
 
+
 def status():
     global config
 
     try:
         if config.is_claimed():
-            return {"linked": True}    
+            return {"linked": True}
         if config.claim_url is not None:
             return {"linked": False, "claim_url": config.claim_url}
         else:
