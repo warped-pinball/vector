@@ -69,17 +69,18 @@ MASK32 = 0xFFFFFFFF
 DEPTH = 16
 IDXMSK = 0x0F  # pointer wrap around - 16 samples
 
-# Circular buffer and pointer
-bit_buf = [0] * DEPTH
+# use array.array('I') so viper can access as ptr32 via memoryview
+bit_buf = array.array('I', [0] * DEPTH)
 bit_ptr = -1
-bit_count = 0
+score_mask = array.array('I', [0] * DEPTH)
+reset_mask = array.array('I', [0] * DEPTH)
+scoreState = 0  # int
 
-# Masks for score and reset (all zeros initially)
-score_mask = [0] * DEPTH
-reset_mask = [0] * DEPTH
+# create memoryviews
+bit_buf_mv = memoryview(bit_buf)
+score_mask_mv = memoryview(score_mask)
+reset_mask_mv = memoryview(reset_mask)
 
-# Score state
-scoreState = 0
 
 def set_score_mask(stage, mask):
     score_mask[stage] = mask & MASK32
@@ -95,40 +96,66 @@ def reset_bit_filter(init_value=0):
     bit_count = 0
     scoreState = 0
 
-def process_bit_filter(new_word):
-    global bit_buf, bit_ptr, scoreState
-    bit_ptr = (bit_ptr + 1) & IDXMSK
-    bit_buf[bit_ptr] = new_word & MASK32
 
+
+
+@micropython.viper
+def _viper_process(buf: ptr32, ptr: int, idxmsk: int, mask32: int, s_state: int, s_mask: ptr32, r_mask: ptr32) -> int:
+    """
+    Packed return (Python unpacks):
+      bits  0..31   -> score_hits
+      bits 32..63   -> reset_hits
+      bits 64..95   -> new_score_state
+    """
     score_hits = 0
     reset_hits = 0
 
-    # Use local variables for speed
-    buf = bit_buf
-    ptr = bit_ptr
-    s_mask = score_mask
-    r_mask = reset_mask
-    s_state = scoreState
-
-    # Score detection (depth reduced for speed)
-    cumulative_low = ~buf[ptr] & MASK32
-    for i in range(1, 6):
-        idx = (ptr - i) & IDXMSK
-        cumulative_low &= ~buf[idx] & MASK32
+    # Score detection: stages 1..5
+    cumulative_low = (~buf[ptr]) & mask32
+    i = 1
+    while i <= 5:
+        idx = (ptr - i) & idxmsk
+        cumulative_low &= (~buf[idx]) & mask32
         score_hits |= cumulative_low & s_state & s_mask[i]
-    scoreState &= ~score_hits
+        i += 1
 
-    # Reset detection 
-    cumulative_high = buf[ptr] & MASK32
-    for i in range(1, 15):
-        idx = (ptr - i) & IDXMSK
-        cumulative_high &= buf[idx] & MASK32
-        reset_hits |= cumulative_high & (~scoreState) & r_mask[i]
-    scoreState |= reset_hits
+    # clear score bits that were hit
+    s_state = s_state & (~score_hits & mask32)
+
+    # Reset detection: stages 1..14 (range(1,15))
+    cumulative_high = buf[ptr] & mask32
+    i = 1
+    while i <= 14:
+        idx = (ptr - i) & idxmsk
+        cumulative_high &= buf[idx] & mask32
+        reset_hits |= cumulative_high & (~s_state & mask32) & r_mask[i]
+        i += 1
+
+    # set reset hits into state
+    s_state |= reset_hits & mask32
+
+    # pack results into single int
+    out = (score_hits & mask32) | ((reset_hits & mask32) << 32) | ((s_state & mask32) << 64)
+    return out
+
+
+
+def process_bit_filter(new_word):
+    global bit_buf, bit_ptr, scoreState
+
+    #store incoming word in rotating bit_buf
+    bit_ptr = (bit_ptr + 1) & IDXMSK
+    bit_buf[bit_ptr] = new_word & MASK32
+
+    # call viper routine which returns packed result
+    packed = _viper_process(bit_buf_mv, bit_ptr, IDXMSK, MASK32, scoreState, score_mask_mv, reset_mask_mv)
+
+    # unpack
+    score_hits = int(packed & MASK32)
+    reset_hits = int((packed >> 32) & MASK32)
+    scoreState = int((packed >> 64) & MASK32)
 
     return score_hits
-
-
 
 
 
@@ -440,7 +467,7 @@ def processAndStore():
         
         newValue = pullWithDelete()      
         if newValue != 0:
-            newValue = reverse_bits_16(newValue)
+            #newValue = reverse_bits_16(newValue)
             newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
 
             if segmentMS > 20000 or newValue != lastValue:  
@@ -493,7 +520,7 @@ def processAndRun():
         if d==0:
             end_time = time.ticks_ms()
             elapsed = time.ticks_diff(end_time, start_time)
-            print("end   processAndRun execution time:", elapsed, "ms")
+            print("end ",x," processAndRun execution time:", elapsed, "ms")
             return
         
         process_bit_filter(d)
@@ -1253,14 +1280,14 @@ def test_replay():
 
   replayStoredGame()
 
-import time
+
 
 
 
 if __name__ == "__main__":
 
     results = []
-
+    import time
 
     targetScore = 1166  # Set your correct score target here
     fileName = "game_history.dat"

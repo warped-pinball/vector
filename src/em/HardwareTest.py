@@ -1,6 +1,12 @@
 import time
 from machine import Pin, SPI, PWM, Timer
 
+
+end_game = Pin(15, Pin.OUT)
+
+import sensorRead
+sensorRead.initialize()
+
 # Pin assignments for Raspberry Pi Pico W
 SPI_CLK_PIN = 6   # GP6 for SPI0 SCK
 SPI_MOSI_PIN = 7  # GP7 for SPI0 MOSI
@@ -10,11 +16,11 @@ LOAD_PIN = 8      # GP8 for LOAD (GPIO)
 SPI1_SCK_PIN = 10   # GP10 for SPI1 SCK
 SPI1_MOSI_PIN = 11  # GP11 for SPI1 MOSI
 SPI1_MISO_PIN = 12  # GP13 for SPI1 MISO
-#SPI1_LD = 13
-#SPI1_load_Pin = Pin(SPI1_LD, Pin.OUT)
+SPI1_LD = 13
+SPI1_load_Pin = Pin(SPI1_LD, Pin.OUT)
 
 # Initialize SPI0
-#spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
+spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
 
 # Initialize LOAD pin
 load = Pin(LOAD_PIN, Pin.OUT)
@@ -68,6 +74,8 @@ def setup_spi1():
     # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
     spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
         sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
+    
+    return spi1
     
 # Set up a timer to call the callback at 1kHz (every 1ms)
 #spi1_timer = Timer()
@@ -176,13 +184,13 @@ def process_spi1_buffer():
 
 
 
-def send_led_data(data: int):
+def send_led_data(data):
     """
     Send 16 bits of data to the LED driver via SPI0 and pulse the LOAD pin.
     :param data: 16-bit integer to send
     """
     # Convert to 2 bytes, MSB first
-    buf = data.to_bytes(2, 'big')
+    buf = data.to_bytes(3, 'big')
     spi.write(buf)
     # Pulse LOAD pin
     load.value(1)
@@ -207,14 +215,29 @@ def slow_pattern():
     spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
             sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
 
+    SEGMENTS = [
+        0x3F,  # 0
+        0x06,  # 1
+        0x5B,  # 2
+        0x4F,  # 3
+        0x66,  # 4
+        0x6D,  # 5
+        0x7D,  # 6
+        0x07,  # 7
+        0x7F,  # 8
+        0x6F,  # 9
+    ]
 
     patterns = [
-        0x0001, 0x0002, 0x0004, 0x0008,
-        0x0010, 0x0020, 0x0040, 0x0080,
-        0x0100, 0x0200, 0x0400, 0x0800,
-        0x1000, 0x2000, 0x4000, 0x8000,
-        0xFFFF, 0x0000
+        (SEGMENTS[0]<<16)|0x0001, (SEGMENTS[1]<<16)|0x0002, (SEGMENTS[2]<<16)|0x0004, (SEGMENTS[3]<<16)|0x0008,
+        (SEGMENTS[4]<<16)|0x0010, (SEGMENTS[5]<<16)|0x0020, (SEGMENTS[6]<<16)|0x0040, (SEGMENTS[7]<<16)|0x0080,
+        (SEGMENTS[8]<<16)|0x0100, (SEGMENTS[9]<<16)|0x0200, (SEGMENTS[0]<<16)|0x800400, (SEGMENTS[1]<<16)|0x800800,
+        (SEGMENTS[2]<<16)|0x801000, (SEGMENTS[3]<<16)|0x802000, (SEGMENTS[4]<<16)|0x804000, (SEGMENTS[5]<<16)|0x808000,
+        (SEGMENTS[6]<<16)|0x80FFFF, (SEGMENTS[7]<<16)|0x800000
     ]
+
+
+
     while True:
         for pat in patterns:
             send_led_data(pat)
@@ -222,6 +245,24 @@ def slow_pattern():
             time.sleep(1.2)
 
 def read_spi1_16bit_loop():
+
+
+
+
+    # Initialize SPI0
+    spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
+    # Initialize LOAD pin
+    load = Pin(LOAD_PIN, Pin.OUT)
+    load.value(0)
+    # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
+    spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
+            sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
+
+
+
+
+
+    spi1=setup_spi1()
     while True:
 
         SPI1_load_Pin.value(1)
@@ -230,13 +271,18 @@ def read_spi1_16bit_loop():
         # Read 2 bytes (16 bits) from SPI1
         buf = bytearray(2)
         spi1.readinto(buf)
-
-        time.sleep_us(100)
-        
+        #print("b->  ",buf)
+        time.sleep_us(100)        
         SPI1_load_Pin.value(0)
 
+        buf[0] = ~buf[0] & 0xFF   # invert only MSB, mask to 8 bits
         value = int.from_bytes(buf, 'big')
-        print(f"SPI1 read: 0x{value:04X}")
+        print(f"Inverted MSB only SPI read: 0x{value:04X}")
+
+
+        #value = int.from_bytes(buf, 'big')
+        #print(f"SPI1 read: 0x{value:04X}")
+        send_led_data(value)
         time.sleep(1)
 
 def test_switches():
@@ -244,8 +290,10 @@ def test_switches():
     down_pin = Pin(27, Pin.IN, Pin.PULL_UP)
     wifi_pin = Pin(22, Pin.IN, Pin.PULL_UP)
     led_pin = Pin(26, Pin.OUT)
-    start_button = Pin(21, Pin.IN)      # Active high
-    end_game = Pin(20, Pin.IN, Pin.PULL_UP)  # Active low
+
+   
+    global end_game
+    endgame_lastval = end_game.value()
 
     print("Testing switches on GPIO 28 (UP), 27 (DOWN), 22 (WIFI), 21 (START), 20 (END GAME)")
     while True:
@@ -258,10 +306,11 @@ def test_switches():
             led_pin.value(0)  # Actively pull LED low (turn on)
         else:
             led_pin.value(1)  # Turn LED off (high)
-        if start_button.value() == 1:
-            print("START_BUTTON PRESSED")
-        if end_game.value() == 0:
-            print("END_GAME PRESSED")
+        #if start_button.value() == 1:
+        #    print("Game_Over_")
+        if end_game.value() != endgame_lastval:
+            print("END GAME State Change, now=",end_game.value())
+            endgame_lastval = end_game.value()
         time.sleep(0.2)
 
 def pwm_ramp_test():
@@ -296,6 +345,8 @@ def calibrate_pwm_hi_low():
     steps = 100
     delay = 20 / steps  # ~20 seconds for full travel
 
+    spi1=setup_spi1()
+
     # --- HI calibration ---
     print("Starting HI calibration (LOW fixed at 0%)")
     last_lsb = None
@@ -307,6 +358,7 @@ def calibrate_pwm_hi_low():
     for i in range(steps + 1):
         hi_duty = int(65535 * (1 - i / steps))
         HI.duty_u16(hi_duty)
+        print(".",end='')
 
         # Read SPI1 16-bit value
         SPI1_load_Pin.value(1)
@@ -315,8 +367,9 @@ def calibrate_pwm_hi_low():
         spi1.readinto(buf)
         SPI1_load_Pin.value(0)
         value = int.from_bytes(buf, 'big')
-        reversed_value = reverse_bits_16(value)
-        lsb = reversed_value & 0x01
+        #reversed_value = reverse_bits_16(value)
+        #lsb = reversed_value & 0x01
+        lsb = value & 0x01
 
         if last_lsb is not None and lsb != last_lsb and not hi_found:
             print(f"HI calibration found at duty: {hi_duty} ({hi_duty/65535:.2%})")
@@ -337,6 +390,8 @@ def calibrate_pwm_hi_low():
         low_duty = int(65535 * (i / steps))
         LOW.duty_u16(low_duty)
 
+        print(".",end='')
+
         # Read SPI1 16-bit value
         SPI1_load_Pin.value(1)
         time.sleep_us(2)
@@ -344,8 +399,9 @@ def calibrate_pwm_hi_low():
         spi1.readinto(buf)
         SPI1_load_Pin.value(0)
         value = int.from_bytes(buf, 'big')
-        reversed_value = reverse_bits_16(value)
-        lsb = reversed_value & 0x01
+        #reversed_value = reverse_bits_16(value)
+        #lsb = reversed_value & 0x01
+        lsb = value & 0x01
 
         if last_lsb is not None and lsb != last_lsb and not low_found:
             print(f"LOW calibration found at duty: {low_duty} ({low_duty/65535:.2%})")
@@ -516,13 +572,15 @@ def main():
                 print("\nTest Switches stopped.")
         elif choice == '2':
 
-            import SensorReader
-            sensor = SensorReader()
-            d = sensor.pull_sensor_value()
-            print("  0x{:04X}".format(d))
+            #import SensorReader
+            #sensor = SensorReader()
+            #d = sensor.pull_sensor_value()
+            #print("  0x{:04X}".format(d))
 
             print("Running Calibrate PWM HI/LOW. Press Enter to continue after calibration.")
             calibrate_pwm_hi_low()
+
+            '''
             score = 0
             scoreDig = bytearray([0] * 8)
             print("Calibration done. You can now adjust score with keys: 0 (reset), + (add 10), - (subtract 10).")
@@ -554,7 +612,7 @@ def main():
                     break
                 else:
                     print("Invalid key. Use 0, +, -, or Enter.")
-
+            '''
         elif choice == '3':
             print("Running PWM Ramp Test. Press Ctrl+C to stop.")
             try:

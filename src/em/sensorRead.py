@@ -33,7 +33,7 @@ hiPwm = machine.PWM(machine.Pin(19))
 lowPwm = machine.PWM(machine.Pin(18))
 
 
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) #, autopush=True, push_thresh=16 )
+@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
 def spi_master_16bit():
     set(x, 15)                          #init first transfer bit length
 
@@ -52,7 +52,6 @@ def spi_master_16bit():
     set(pins, 0)             .side(0)
     set(x, 15)               .side(0) #bit length (-1)
 
-    #in_(pins, 16) 
     push(noblock)
 
     #Delay loop for pause between reads - set up for 1mS cycle
@@ -67,8 +66,57 @@ def spi_master_16bit():
 
 
 
+
+
+
+
+@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
+def spi_master_16bit_invert():
+   
+    wrap_target()
+
+    mov(isr,invert(null))
+
+    set(x, 7)                          #init first transfer bit length
+    set(pins, 1)             [7]        #set load pin high
+
+    label("MSbitloop")         
+    nop()                    .side(0)  [1]
+    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                    .side(1)   
+    nop()                    .side(1)  [1]    
+    jmp(x_dec, "MSbitloop")    .side(0)
+
+    mov(isr,invert(isr))
+    set(x, 7) 
+
+    label("LSbitloop")         
+    nop()                    .side(0)  [1]
+    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                    .side(1)   
+    nop()                    .side(1)  [1]    
+    jmp(x_dec, "LSbitloop")    .side(0)
+
+    set(pins, 0)             .side(0)
+    
+    push(noblock)
+
+    #Delay loop for pause between reads - set up for 1mS cycle
+    set(y, 19)
+    label("delay")
+    nop()                   [1]
+    jmp(y_dec, "delay")     [7]
+
+    wrap()
+
+
+
+
+
+
+
 # GAME active detector - - - first level filering
-INPUT_PIN = 20  # Input to sample
+INPUT_PIN = 21  # Input to sample  <- changed to gpio21 for version 2 pcb (switched with Aux input)
 OUTPUT_PIN = 17 # Output to set/clear
 machine.Pin(INPUT_PIN, machine.Pin.IN)
 @rp2.asm_pio(set_init=rp2.PIO.OUT_HIGH)
@@ -104,6 +152,7 @@ OUTPUT_GAME_ACTIVE_PIN = 15    #output on pin#15 to be picked up in mpython
 def drive_game_active_pin():
 
     wrap_target()
+   
     label("topg")       
     set(x, 30) 
 
@@ -118,7 +167,7 @@ def drive_game_active_pin():
 
     set(pins,1) 
     wrap()
-
+   
 
 smSpi = None
 
@@ -129,7 +178,9 @@ def initialize():
     dma_start()
 
     #state machine - for SPI read of coil sensors
-    smSpi = rp2.StateMachine(4, spi_master_16bit, freq=340000,
+    
+    #smSpi = rp2.StateMachine(4, spi_master_16bit, freq=340000,
+    smSpi = rp2.StateMachine(4, spi_master_16bit_invert, freq=340000,
         in_base=machine.Pin(PIO_MISO_PIN),
         sideset_base=machine.Pin(PIO_SCK_PIN),
         set_base=machine.Pin(PIO_CS_PIN)
@@ -139,12 +190,13 @@ def initialize():
     #give the analog PWM outputs a default
     hiPwm.freq(1000)
     lowPwm.freq(1000)
-    hiPwm.duty_u16(int(65535 * 0.8))   # 80% duty cycle
-    lowPwm.duty_u16(int(65535 * 0.2))  # 20% duty cycle
+    hiPwm.duty_u16(int(65535 * 0.55))   # 80% duty cycle
+    lowPwm.duty_u16(int(65535 * 0.45))  # 20% duty cycle
 
+    
     # Set up state machine for the game active detection
     sma = rp2.StateMachine(
-        5, sample_and_count, freq=100000,  
+        1, sample_and_count, freq=100000,  
         set_base=machine.Pin(OUTPUT_PIN),
         jmp_pin=machine.Pin(INPUT_PIN)           
     )
@@ -152,13 +204,13 @@ def initialize():
     
     # Set up state machine - game active filter
     smb = rp2.StateMachine(
-        6, drive_game_active_pin, freq=40000,  
+        2, drive_game_active_pin, freq=40000,  
         set_base=machine.Pin(OUTPUT_GAME_ACTIVE_PIN),
         jmp_pin=machine.Pin(OUTPUT_PIN),
         sideset_base=machine.Pin(0)
     )
     smb.active(1)
-
+    
 
 dma_sensor = None
 
@@ -261,9 +313,9 @@ def calibrate():
         # Check buffer for two LSBs clear
         v = readSensorRx()               
         if v is not None:
-            v = reverse_bits_16(v)
-            v = v & 0x0F
-            if (v & 0x03) == 0:  # Two LSBs clear
+            #v = reverse_bits_16(v)
+            #v = v & 0x0F
+            if (v & 3) == 3:  # Two LSBs
                 print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
                 lowCal=duty
                 break        
@@ -280,12 +332,12 @@ def calibrate():
         # Check buffer for two LSBs clear
         v = readSensorRx()   
         if v is not None:
-            v = reverse_bits_16(v)
-            v = v & 0x0F            
-        if (v & 0x03) == 0:  # Two LSBs clear               
-            print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
-            highCal=duty
-            break
+            #v = reverse_bits_16(v)
+            #v = v & 0x0F            
+            if (v & 3) == 3:  # Two LSBs               
+                print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
+                highCal=duty
+                break
 
 
     print("\nSENSOR: calibration complete:",lowCal,highCal)
@@ -301,11 +353,15 @@ def calibrate():
 if __name__ == "__main__":
 
     initialize()
-    calibratePwms()
+    #calibratePwms()
+
+    import ScoreTrack
 
     while True:
-        print("end")
-        time.sleep(2)
+        v = ScoreTrack.pullWithDelete()
+        print("V: 0x{:04X}".format(v) if v is not None else "V: None")
+        #print("ggggggggggggggggg")
+        time.sleep(0.5)
 
 
 
