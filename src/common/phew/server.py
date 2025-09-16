@@ -16,6 +16,7 @@ from SPI_Store import write_16_fram
 #from SPI_UpdateStore import tick as sflash_tick
 from USB_Comms import send_game_status
 
+
 from . import logging
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
@@ -299,11 +300,6 @@ def create_schedule(ap_mode: bool = False):
     # print out memory usage
     schedule(resource_go, 5000, 10000)
 
-    # initialize the fram
-    #schedule(sflash_driver_init, 200)
-
-    # initialize the sflash
-    #schedule(sflash_initialize, 700)
 
     #
     # reoccuring tasks
@@ -317,8 +313,6 @@ def create_schedule(ap_mode: bool = False):
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
 
-    # call serial flash tick every 1 second for ongoing erase operations
-    #schedule(sflash_tick, 1000, 4000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
