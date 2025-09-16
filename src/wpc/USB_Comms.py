@@ -1,7 +1,7 @@
 '''
     serial data via USB handler
     
-    IRQ for dincommng data
+    IRQ for incoming data
     call handler from system scheduler
     to send data - just print!    
 
