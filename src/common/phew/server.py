@@ -11,16 +11,15 @@ from ScoreTrack import (
     initialize_leaderboard,
 )
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
-from SPI_Store import sflash_driver_init, write_16_fram
-from SPI_UpdateStore import initialize as sflash_initialize
-from SPI_UpdateStore import tick as sflash_tick
+from SPI_Store import write_16_fram
+#from SPI_UpdateStore import initialize as sflash_initialize
+#from SPI_UpdateStore import tick as sflash_tick
 from USB_Comms import send_game_status
 
 from . import logging
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
-
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
@@ -301,10 +300,10 @@ def create_schedule(ap_mode: bool = False):
     schedule(resource_go, 5000, 10000)
 
     # initialize the fram
-    schedule(sflash_driver_init, 200)
+    #schedule(sflash_driver_init, 200)
 
     # initialize the sflash
-    schedule(sflash_initialize, 700)
+    #schedule(sflash_initialize, 700)
 
     #
     # reoccuring tasks
@@ -319,7 +318,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(CheckForNewScores, 15000, 5000)
 
     # call serial flash tick every 1 second for ongoing erase operations
-    schedule(sflash_tick, 1000, 4000)
+    #schedule(sflash_tick, 1000, 4000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
