@@ -18,7 +18,7 @@ poller = uselect.poll()
 poller.register(sys.stdin, uselect.POLLIN)
 
 def usb_data_handler(timer):
-    '''IRQ druiven,  gets bytes from usb serial port
+    '''IRQ driven,  gets bytes from usb serial port
         stash in global for main line to pick up
     '''
     global buffer, incoming_data
