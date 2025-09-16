@@ -65,6 +65,18 @@ def _get_ball_in_play():
     return 0
 
 
+def _get_player_up():
+    """Get the player up  (1-4) """
+    try:
+        if S.gdata.get("InPlay", {}).get("PlayerUp", 0) != 0:
+            adr = S.gdata["InPlay"]["PlayerUp"] 
+            player = shadowRam[adr]
+        return player
+    except:
+        pass
+    return 0
+
+
 def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
@@ -83,6 +95,10 @@ def game_report():
             _get_machine_score(3),
         ]
 
+
+        data["PlayerUp"] = _get_player_up()
+
+        
         '''
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:

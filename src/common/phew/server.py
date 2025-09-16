@@ -309,7 +309,7 @@ def create_schedule(ap_mode: bool = False):
     # reoccuring tasks
     #
 
-    schedule(send_game_status, 14000, 3000)
+    schedule(send_game_status, 14000, 1000)
 
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
