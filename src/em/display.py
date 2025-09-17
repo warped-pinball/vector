@@ -73,9 +73,8 @@ SEGMENTS = [
 sensorPattern=0x0000
 auxLED = False
 gameOverLED = True
-digitDisplay="192. 168. 1. 87 " #"012.789.345.567"
+digitDisplay=" " #"012.789.345.567"
 digitUpNext =0
-
 
 
 def displayUpdate():
@@ -150,6 +149,7 @@ def setSensorLeds(pattern):
 
 
 
+displayUpdate()
 
 
 

@@ -12,6 +12,7 @@ from machine import RTC,Timer,Pin
 import sensorRead
 import array
 import time
+import resource
 
 import displayMessage
 import SharedState as S
@@ -40,7 +41,14 @@ lastValue =0
 segmentMS =0
 
 
+# Diagnostics LED - for test only
+gpio26 = Pin(26, Pin.OUT)
+gpio26.value(not gpio26.value())
+gpio1 = Pin(1, Pin.OUT)
+gpio1.value(not gpio1.value())
 
+
+# Game History storage area and state machine defines
 GAME_HIST_SIZE = 10000
 gameHistory=array.array('I', [0]*GAME_HIST_SIZE)        #32 bit
 gameHistoryTime=array.array('H', [0]*GAME_HIST_SIZE)    #16 bit
@@ -51,20 +59,19 @@ GAMEHIST_STATUS_OVERFLOW=2
 gameHistoryStatus=GAMEHIST_STATUS_EMPTY
 
 
+# SCORE Digits for all 4 players - Initialize sensorScores[player][digit]
+sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
 
 
+'''
+Bit filter 
+    uses viper for speed, setup score and rest masks to adjust filtering
+    32 bit parallel capable (all input channels at once)
 
-
-
-
-
-
-
-
-
-
-
+    score_mask - sets # of samples ==1 to latch bit on
+    once on can only be unset by number of zeros defined in rest_mask
+'''
 MASK32 = 0xFFFFFFFF
 DEPTH = 16
 IDXMSK = 0x0F  # pointer wrap around - 16 samples
@@ -72,8 +79,8 @@ IDXMSK = 0x0F  # pointer wrap around - 16 samples
 # use array.array('I') so viper can access as ptr32 via memoryview
 bit_buf = array.array('I', [0] * DEPTH)
 bit_ptr = -1
-score_mask = array.array('I', [0] * DEPTH)
-reset_mask = array.array('I', [0] * DEPTH)
+score_mask = array.array('I', [0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
+reset_mask = array.array('I', [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
 scoreState = 0  # int
 
 # create memoryviews
@@ -82,80 +89,137 @@ score_mask_mv = memoryview(score_mask)
 reset_mask_mv = memoryview(reset_mask)
 
 
-def set_score_mask(stage, mask):
-    score_mask[stage] = mask & MASK32
-
-def set_reset_mask(stage, mask):
-    reset_mask[stage] = mask & MASK32
-
-def reset_bit_filter(init_value=0):
-    global bit_buf, bit_ptr, bit_count, scoreState
-    iv = init_value & MASK32
-    bit_buf = [iv] * DEPTH
-    bit_ptr = -1
-    bit_count = 0
-    scoreState = 0
-
-
-
-
 @micropython.viper
-def _viper_process(buf: ptr32, ptr: int, idxmsk: int, mask32: int, s_state: int, s_mask: ptr32, r_mask: ptr32) -> int:
+def _viper_process(buf: ptr32, ptr: int, idxmsk: int, s_state: int, s_mask: ptr32, r_mask: ptr32) -> int:
     """
-    Packed return (Python unpacks):
-      bits  0..31   -> score_hits
-      bits 32..63   -> reset_hits
-      bits 64..95   -> new_score_state
+    fast 32 bit wide digital stream filter.
+    set min width acceptable samples for ->1 and ->0 in s_mask (set mask) and r_mask(reset mask)
     """
-    score_hits = 0
-    reset_hits = 0
+    score_hits :int = 0
+    reset_hits :int = 0
 
-    # Score detection: stages 1..5
-    cumulative_low = (~buf[ptr]) & mask32
-    i = 1
-    while i <= 5:
-        idx = (ptr - i) & idxmsk
-        cumulative_low &= (~buf[idx]) & mask32
-        score_hits |= cumulative_low & s_state & s_mask[i]
-        i += 1
 
-    # clear score bits that were hit
-    s_state = s_state & (~score_hits & mask32)
+    # Score detection: stages 1..5 (unrolled for speed)
+    idx :int =ptr
+    cumulative_high = buf[idx]
+    # stage 1
+    idx = (idx -1) & idxmsk
+    cumulative_high &= buf[idx]
+    score_hits |= (cumulative_high & s_mask[1])
+    #print("i=",idx,"v=",cumulative_high,score_hits)
+
+    # stage 2
+    idx = (idx -1) & idxmsk
+    cumulative_high &= buf[idx]
+    score_hits |= cumulative_high & s_mask[2]
+    #print("i=",idx,"v=",cumulative_high,score_hits)
+
+    # stage 3
+    idx = (idx -1) & idxmsk
+    cumulative_high &= buf[idx]
+    score_hits |= cumulative_high & s_mask[3]
+    #print("i=",idx,"v=",cumulative_high,score_hits)
+
+    # stage 4
+    idx = (idx -1) & idxmsk
+    cumulative_high &= buf[idx]
+    score_hits |= cumulative_high & s_mask[4]
+    #print("i=",idx,"v=",cumulative_high,score_hits)
+
+    # stage 5
+    idx = (idx -1) & idxmsk
+    cumulative_high &= buf[idx]
+    score_hits |= cumulative_high & s_mask[5]
+
+    # set score bits that were hit  (enough 1's in a row means the s_state bit will be set)
+    s_state = s_state | score_hits
 
     # Reset detection: stages 1..14 (range(1,15))
-    cumulative_high = buf[ptr] & mask32
-    i = 1
-    while i <= 14:
-        idx = (ptr - i) & idxmsk
-        cumulative_high &= buf[idx] & mask32
-        reset_hits |= cumulative_high & (~s_state & mask32) & r_mask[i]
-        i += 1
+    # falling low when inactive, this is when it will be counted    
+    idx :int = ptr
+    cumulative_low = (~buf[idx]) & 0xFFFF
+  
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[1]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[2]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[3]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[4]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[5]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[6]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[7]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[8]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[9]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[10]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[11]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[12]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[13]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[14]
+
+    idx = (idx -1) & idxmsk
+    cumulative_low &= (~buf[idx]) & 0xFFFF
+    reset_hits |= cumulative_low & r_mask[15]
+
+    #print("reset hits=",hex(reset_hits))
 
     # set reset hits into state
-    s_state |= reset_hits & mask32
-
-    # pack results into single int
-    out = (score_hits & mask32) | ((reset_hits & mask32) << 32) | ((s_state & mask32) << 64)
-    return out
+    s_state &= (~reset_hits)
+    
+    # pack results into single int  
+    return s_state
 
 
 
 def process_bit_filter(new_word):
+    '''python (non-viper) for calling the bitfilter in _viper_process '''
     global bit_buf, bit_ptr, scoreState
 
     #store incoming word in rotating bit_buf
     bit_ptr = (bit_ptr + 1) & IDXMSK
-    bit_buf[bit_ptr] = new_word & MASK32
+    bit_buf[bit_ptr] = new_word  
 
-    # call viper routine which returns packed result
-    packed = _viper_process(bit_buf_mv, bit_ptr, IDXMSK, MASK32, scoreState, score_mask_mv, reset_mask_mv)
-
-    # unpack
-    score_hits = int(packed & MASK32)
-    reset_hits = int((packed >> 32) & MASK32)
-    scoreState = int((packed >> 64) & MASK32)
-
-    return score_hits
+    # call viper routine for filtering FAST!
+    scoreState = _viper_process(bit_buf_mv, bit_ptr, IDXMSK, scoreState, score_mask_mv, reset_mask_mv)
+    return scoreState
 
 
 
@@ -174,50 +238,6 @@ def process_bit_filter(new_word):
 
 
 
-
-
-
-
-
-
-
-
-def reverse_bits_16(x):
-    x = ((x & 0xAAAA) >> 1) | ((x & 0x5555) << 1)
-    x = ((x & 0xCCCC) >> 2) | ((x & 0x3333) << 2)
-    x = ((x & 0xF0F0) >> 4) | ((x & 0x0F0F) << 4)
-    x = ((x & 0xFF00) >> 8) | ((x & 0x00FF) << 8)
-    #x = x & 0x0F
-    return x
-
-
-
-PROCESS_IDLE = 0
-PROCESS_START = 1
-PROCESS_STORE = 2
-PROCESS_RUN = 3
-PROCESS_STORE_END = 4
-PROCESS_RUN_END = 5
-
-PROCESS_START_PAUSE = 8
-PROCESS_END_PAUSE = 5
-stateVar=0
-stateCount=0
-
-gpio26 = Pin(26, Pin.OUT)
-gpio26.value(not gpio26.value())
-
-gpio1 = Pin(1, Pin.OUT)
-gpio1.value(not gpio1.value())
-
-
-#switch to run normal or in file capture mode
-#S.run_learning_game = True
-S.run_learning_game = False
-
-
-#sync up just the end of game - capture last transitions.. 
-gameover=False
 
 
 def save_game_history(filename="game_history.dat"):
@@ -347,6 +367,27 @@ def print_game_history_file(filename="game_history.dat"):
 
 
 
+# Process Sensor Data state defines
+PROCESS_IDLE = 0
+PROCESS_START = 1
+PROCESS_STORE = 2
+PROCESS_RUN = 3
+PROCESS_STORE_END = 4
+PROCESS_RUN_END = 5
+
+PROCESS_START_PAUSE = 8
+PROCESS_END_PAUSE = 5
+stateVar=0
+stateCount=0
+
+
+#GLOBALS for process sensor data - - - 
+#switch to run normal or in file capture mode
+#S.run_learning_game = True
+S.run_learning_game = False
+
+#sync up just the end of game - capture last transitions.. 
+gameover=False
 
 #called from phew schedeuler 
 def processSensorData():
@@ -354,7 +395,6 @@ def processSensorData():
     coming in from sensor module -  either store for learning or process for live scores'''
     global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
     global stateVar, stateCount, gameover
-
 
     global gpio26  #blink led
     gpio26.value(not gpio26.value())
@@ -420,6 +460,8 @@ def processSensorData():
             stateCount = 0
 
 
+# This is the sensor ram buffer area (8k), data placed by PIO - pulled out here
+# 0x0000 is invalid data and used to mark empty space.
 # Define the RAM as an array of 32-bit unsigned ints
 import uctypes
 ram_bytes = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
@@ -427,7 +469,8 @@ bufferPointerIndex = 0
 SRAM_BIT_MASK = (SRAM_DATA_LENGTH-1)
 
 def pullWithDelete():
-    '''optimized for speed, 1000 calls approx = 50mS'''
+    '''pulls out one 32 bit value and erases the spot in ram
+       optimized for speed, 1000 calls approx = 50mS    '''
     global bufferPointerIndex
     offset = bufferPointerIndex   
     b0 = ram_bytes[offset]
@@ -446,7 +489,7 @@ def pullWithDelete():
 
 
 def processEmpty():
-    ''' pull and discard during gameActive is false'''
+    ''' pull and discard - used during gameActive == false'''
     global bufferPointerIndex, gpio1
     for x in range(2500):
         if pullWithDelete() == 0:        
@@ -467,7 +510,7 @@ def processAndStore():
         
         newValue = pullWithDelete()      
         if newValue != 0:
-            #newValue = reverse_bits_16(newValue)
+          
             newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
 
             if segmentMS > 20000 or newValue != lastValue:  
@@ -494,218 +537,63 @@ def processAndStore():
 
 
 def processAndStoreWrapUp():
-    ''' call at gema over to wrap up the ram store history'''
+    ''' call at game over to wrap up the ram store history'''
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
 
     gameHistory[gameHistoryIndex]=lastValue                                    
     gameHistoryTime[gameHistoryIndex]=segmentMS
     gameHistoryIndex += 1               
-
     print("stored last file data point wrap up - - -")
 
 
 
-#import bitFilter as bf
-#bf_instance = bf.BitStreamFilter32()
 
+
+last_sc = 0
 
 def processAndRun():
     '''pull data from ram buffer and feed to score module'''
-    global holdOffCount
+    global last_sc,sensorScores
 
     start_time = time.ticks_ms()  # Start timer
-
     for x in range(2500):
         d = pullWithDelete()
-        if d==0:
-            end_time = time.ticks_ms()
-            elapsed = time.ticks_diff(end_time, start_time)
-            print("end ",x," processAndRun execution time:", elapsed, "ms")
-            return
-        
-        process_bit_filter(d)
-        #bf_instance.process(d)
- 
+        if d == 0:
+            break
+
+        sc = process_bit_filter(d & 0x000F)
+
+        # increment digit score counters -
+        fallingEdge = last_sc & (~sc)
+        last_sc = sc
+
+        if fallingEdge & 0x01:
+            sensorScores[0][0] = sensorScores[0][0] + 1
+        if fallingEdge & 0x02:
+            sensorScores[0][1] = sensorScores[0][1] + 1
+        if fallingEdge & 0x04:
+            sensorScores[0][2] = sensorScores[0][2] + 1
+        if fallingEdge & 0x08:
+            sensorScores[0][3] = sensorScores[0][3] + 1
+        if fallingEdge & 0x10:
+            sensorScores[0][4] = sensorScores[0][4] + 1
+
+
+    sensorScores[0][0] = sensorScores[0][0] % 10   
+    sensorScores[0][1] = sensorScores[0][1] % 10   
+    sensorScores[0][2] = sensorScores[0][2] % 10   
+    sensorScores[0][3] = sensorScores[0][3] % 10   
+    sensorScores[0][4] = sensorScores[0][4] % 10       
     end_time = time.ticks_ms()
     elapsed = time.ticks_diff(end_time, start_time)
-    print("2500   processAndRun execution time:", elapsed, "ms")
+    print("samples=",x,"process And Run execution time:", elapsed, "ms")
+
+    print("scores=",buildPrintableScores(sensorScores))
+
+
     return
 
 
-    '''
-    for x in range(1500):
-        # Use saved values from previous call if available
-        a = a_saved if 'a_saved' in globals() else pullWithDelete()
-        b = b_saved if 'b_saved' in globals() else pullWithDelete()
-        c = pullWithDelete()
-
-        # If buffer runs out, save a and b for next call and return
-        if a == 0:
-            a_saved = None
-            b_saved = None
-            print(" aa  processandRun: over  - - - ",x*2)
-            end_time = time.ticks_ms()
-            elapsed = time.ticks_diff(end_time, start_time)
-            print("processAndRun execution time:", elapsed, "ms")    
-            #print(holdOffCount)
-            return
-        if b == 0:
-            a_saved = a
-            b_saved = None           
-            return
-        if c == 0:
-            a_saved = a
-            b_saved = b           
-            return
-
-        # Buffer is not empty, clear saved values
-        a_saved = None
-        b_saved = None
-
-        scrValue = (a|b) & (b|c)   #any two in a row low - output a low bit
-        chgValue = (a^b) | (b^c)   #any bit change - output a high bit
-
-        optSensorToScore(reverse_bits_16(scrValue) |0xFFF0 , reverse_bits_16(chgValue) &0x000F)
-    '''
-
-        
-
-
-
-    '''
-        if newValue != 0:
-            newValue = reverse_bits_16(newValue)
-            newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
-            sensorToScore(newValue)
-        else:                   
-            print(" processandRun: did ",x*2," records")
-            end_time = time.ticks_ms()
-            elapsed = time.ticks_diff(end_time, start_time)
-            print("processAndRun execution time:", elapsed, "ms")
-            
-            return
-    '''
-
-  
-
-
-previousSensorValue=0
-filteredSensorValue=0
-previousFilteredSensorValue=0
-changeCounter = [0] *32
-#                player 1          player 2           player 3          player4
-#                1  
-#                | 10
-#                | | 100
-#                | | | 1000
-#                | | | |
-zeroThreshold = [1,1,1,1,4,9,9,9  ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9   ,1,1,1,1,1,9,9,9  ]
-oneThreshold =  [5,5,5,5,4,9,9,9  ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9   ,7,7,7,7,7,9,9,9  ]
-
-#scores stored as individual digits to make run time math simple and fast
-#sensorScores = [0] *4
-sensorScores = [array.array('B', [0]*5) for _ in range(4)]   #sensorScores[player0-3][digit0-4]
-
-'''
-score_map = [
-    (0, [0, 1, 2, 3, 4]),    # score[0]  bits 0-4
-    (1, [8, 9,10,11,12]),    # score[1]  bits 8-12
-    (2, [16,17,18,19,20]),   # score[2]  bits 16-20   
-    (3, [24,25,26,27,28])    # score[3]  bits 24-28
-]
-'''
-
-
-score_map = [
-    (0, [0, 1, 2, 3, 4])    # score[0]  bits 0-4
-   
-]   
-
-def sensorToScore(newSensorValue):
-    '''take raw sensor data (1x32bits) interpret to score - store score locally  '''
-    global previousSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
-    global gameHistoryIndex, score_map
-
-    filteredSensorValue = globals()['filteredSensorValue']
-    previousFilteredSensorValue = globals()['previousFilteredSensorValue']
-
-    if newSensorValue==0:  #no reading
-        return
-    
-    # Optimized bit processing for speed using local variables and reduced Python overhead
-    prevSensor = previousSensorValue
-    filtSensor = filteredSensorValue
-    changeCnt = changeCounter
-    zeroThr = zeroThreshold
-    oneThr = oneThreshold
-
-    nsVal = newSensorValue
-
-    #for i in (0,1,2,3,4,8,9,10,11,12,16,17,18,19,20,24,25,26,27,28):
-    for i in (0,1,2,3,4): #,8,9,10,11,12):
-        new_bit = (nsVal >> i) & 1
-        prev_bit = (prevSensor >> i) & 1
-
-        cnt = changeCnt[i] + (new_bit == prev_bit)
-        changeCnt[i] = cnt if new_bit == prev_bit else 0
-
-        if new_bit == 0:
-            if cnt >= zeroThr[i]:
-                filtSensor &= ~(1 << i)
-        else:
-            if cnt >= oneThr[i]:
-                filtSensor |= (1 << i)
-
-    previousSensorValue = nsVal
-    filteredSensorValue = filtSensor
-
-    
-    #now that we have filtered sensor data - use it to change scores...
-    # Fast score update using local variables and bitwise ops
-    pfsv = previousFilteredSensorValue
-    fsv = filteredSensorValue
-    ss = sensorScores
-
-    for score_idx, bits in score_map:
-        s = ss[score_idx]
-        for i, bit in enumerate(bits):
-            prev = (pfsv >> bit) & 1
-            curr = (fsv >> bit) & 1
-            if prev == 1 and curr == 0:
-                v = s[i]
-                s[i] = 0 if v > 8 else v + 1
-
-    previousFilteredSensorValue = fsv
-    
-
-    #print("new: {:032b}, filtered: {:032b}".format(newSensorValue, filteredSensorValue))
-
-    globals()['filteredSensorValue'] = filteredSensorValue
-    globals()['previousFilteredSensorValue'] = previousFilteredSensorValue
-
-
-
-holdOffCount= [0]*32
-
-def optSensorToScore(scrValue,chgValue):
-    global holdOffCount
-
-    #count number times a bit in scrValue is zero
-
-    for score_idx, bits in score_map:
-        for i, bit in enumerate(bits):
-            #cycle for each bit - - - 
-            if ((scrValue>>bit)&1)==0 and holdOffCount[bit]==0:
-                #increment digit
-                v = sensorScores[score_idx][i]
-                sensorScores[score_idx][i] = 0 if v > 8 else v + 1
-                holdOffCount[bit] = 2
-
-            if ((chgValue>>bit)&1) == 1:
-                holdOffCount[bit] = 2
-            else:
-                if (holdOffCount[bit]>0):
-                    holdOffCount[bit] -= 1
 
 
 
@@ -715,14 +603,19 @@ def optSensorToScore(scrValue,chgValue):
 
 
 
-def buildPrintableScores():
+
+
+
+
+def buildPrintableScores(inputScoreDigits):
+    '''make score from digits in '''
     scores = []
     for player in range(4):
         score = 0
         for digit in range(5):
-            score += sensorScores[player][digit] * (10 ** digit)
+            score += inputScoreDigits[player][digit] * (10 ** digit)
 
-        scores.append(score)
+        scores.append(score * 10)
     return tuple(scores)
 
 
@@ -731,7 +624,7 @@ def replayStoredGame():
     global previousSensorValue,filteredSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
 
     index=0
-    #print("SCORE: replay now",gameHistoryIndex)
+    print("SCORE: replay now",gameHistoryIndex)
 
     for index in range(gameHistoryIndex):
             sensor_value = gameHistory[index]
@@ -745,103 +638,9 @@ def replayStoredGame():
             #print("SCORE REPLAY", *buildPrintableScores())
         
     #print("SCORE: replay DONE")
-    print("SCORE REPLAY", *buildPrintableScores())
+    print("SCORE REPLAY", *buildPrintableScores(sensorScores))
 
 
-
-
-
-
-
-
-    '''
-    if sensor.gameActive() == 1:
-
-        for i in range (400):
-
-            newValue = sensor.pop_buffer()  
-            if newValue is not None:
-                newValue = reverse_bits_16(newValue)
-                newValue = newValue & 0x0F     
-
-                if segmentMS > 2000 or newValue != lastValue:  
-                    # store value and time
-                    if gameHistoryIndex < (GAME_HIST_SIZE-6):
-                        gameHistory[gameHistoryIndex]=lastValue
-                        gameHistoryIndex += 1
-                        #gameHistory.append(lastValue)
-                        gameHistory[gameHistoryIndex]=segmentMS
-                        gameHistoryIndex += 1
-                        #gameHistory.append(segmentMS)
-                        print("!",lastValue,segmentMS, gameHistoryIndex)
-                    else:
-                        print("FULL")    
-
-                    lastValue = newValue
-                    segmentMS = 1
-
-                else:
-                    # if newValue == lastValue:
-                    segmentMS = segmentMS + 1
-
-
-
-    #for i in range(990):
-    #    newValue = sensor.pop_buffer()   
-        
-    return
-    
-
-    import SharedState as S
-    if S.game_status["game_active"] == False:
-        if len(gameHistory) > 0:
-            #gameHistory.clear()  # dump data in place            
-            sensor.clear_buffer()          
-
-    else:  # game is active       
-
-        for i in range(500):
-            newValue = sensor.pop_buffer()   
-
-
-        return
-
-
-
-
-
-        limit=5000
-        #print("!")
-        while True:
-            newValue = sensor.pop_buffer()                      
-            if newValue is None:
-                print("     none")
-                return
-            
-            newValue = reverse_bits_16(newValue)
-            newValue = newValue & 0x0F            
-            
-            if segmentMS > 65533 or newValue != lastValue:
-                # store value and timel
-                if len(gameHistory) < 1000:
-                    gameHistory.append(lastValue)
-                    gameHistory.append(segmentMS)
-                    print("!",lastValue,segmentMS)
-                else:
-                    print("FULL")    
-
-                lastValue = newValue
-                segmentMS = 1
-
-            else:
-                # if newValue == lastValue:
-                segmentMS = segmentMS + 1
-
-            limit = limit -1
-            if limit <0:
-                print("store data exit",sensor.buffer_length())
-                return
-    '''
 
 
 
@@ -1116,7 +915,7 @@ def update_tournament(new_entry):
 
 
 
-import resource
+
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
@@ -1150,7 +949,7 @@ def CheckForNewScores(nState=[0]):
         #process data in storeage...
 
         if S.run_learning_game == False:
-            print("SCORE: game end check - play mode                          SCORE=",*buildPrintableScores())
+            print("SCORE: game end check - play mode                 SCORE=",*buildPrintableScores(sensorScores))
             
         else:
             print("SCORE: game end check. learn mode ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
@@ -1164,9 +963,8 @@ def CheckForNewScores(nState=[0]):
             # game over
             nState[0] = 1           
             log.log("SCORE: game end")
-
          
-            save_game_history()
+            #save_game_history()
 
             #replay stored game - print out progress
             #print("SCORE: REPLAY GAME DATA:xxx   history length=",gameHistoryIndex)
@@ -1283,9 +1081,93 @@ def test_replay():
 
 
 
-
 if __name__ == "__main__":
 
+    # 'manual' test of bit filters
+    i=0
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+   
+
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1    
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1    
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1    
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+    
+
+
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+    s=0x0203
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+
+
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+    s=0
+    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
+    print(" ")
+    i=i+1
+
+
+
+
+
+
+
+
+
+    '''
     results = []
     import time
 
@@ -1319,7 +1201,7 @@ if __name__ == "__main__":
                   " with setting=", z, one)
 
             # Record z, one, and sensorScores[0][0:5] in results
-            results.append((z, one, [sensorScores[0][d] for d in range(5)]))
+            results.append((z, one, [sensorScores[0][d] for d in range(5]]))
 
             elapsed = time.ticks_diff(time.ticks_ms(), start)
             print("Replay execution time:", elapsed, "ms")
@@ -1337,3 +1219,4 @@ if __name__ == "__main__":
             z, one, digits = record
             if digits[digit_index] == targetScore // digit_value % 10:
                 print(f"z={z}, one={one}, digits={digits}")
+    '''

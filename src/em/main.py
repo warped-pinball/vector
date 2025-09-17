@@ -14,16 +14,18 @@ import time
 import faults
 import GameDefsLoad
 import machine
-
 import uctypes
+
+import display
 
 from logger import logger_instance
 from systemConfig import SystemVersion
 
 import sensorRead
-
 sensorRead.initialize()
 sensorRead.calibrate()
+
+
 
 Log = logger_instance
 # other gen I/O pin inits
