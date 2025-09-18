@@ -685,7 +685,7 @@ function applyOriginStatus(status) {
     originButton.onclick = () => window.open(status.claim_url, "_self");
   } else {
     originButton.classList.add("gold-pulse");
-    originButton.textContent = "Connect to Warp Pinball Network";
+    originButton.textContent = "Connect to Warped Pinball Network";
     originButton.onclick = enableOrigin;
   }
 }
@@ -706,7 +706,7 @@ async function enableOrigin() {
     alert("Failed to enable Origin");
     originButton.classList.add("gold-pulse");
     originButton.disabled = false;
-    originButton.textContent = "Connect to Warp Pinball Network";
+    originButton.textContent = "Connect to Warped Pinball Network";
     originButton.onclick = enableOrigin;
   }
 }
