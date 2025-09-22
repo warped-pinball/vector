@@ -77,10 +77,23 @@ digitDisplay=" " #"012.789.345.567"
 digitUpNext =0
 
 
+
+lastSendValue=0x0000
+def _sendToHardware(tx32):
+    global lastSendValue
+    lastSendValue=tx32
+    try:
+        _sm_display.put(tx32)
+    except Exception:
+        pass
+
+
+
+
 def displayUpdate():
     '''build pattern and queue single 32-bit word to PIO state machine'''
     global sensorPattern, auxLED, gameOverLED, digitDisplay,digitUpNext
-
+    
     # sensorPattern is 16-bit
     low_byte = sensorPattern & 0x1F
     mid_byte = (sensorPattern >> 8) & 0x1F
@@ -119,7 +132,8 @@ def displayUpdate():
 
     # Queue to PIO (non-blocking if FIFO has space)
     try:
-        _sm_display.put(tx32)
+        _sendToHardware(tx32)
+        #_sm_display.put(tx32)
     except Exception:
         # If FIFO full, skip this update (or handle retry logic)
         pass
@@ -145,10 +159,12 @@ def setSensorLeds(pattern):
     '''add on bits to sensor pattern leds - will cause led to BLINK ONLY'''
     global sensorPattern
     sensorPattern = sensorPattern | pattern
+    #try pushing this right out to display
+    #displayUpdate()
 
 
 
-
+#power up clear the display to reduce power
 displayUpdate()
 
 

@@ -55,7 +55,7 @@ def spi_master_16bit():
     push(noblock)
 
     #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 19)
+    set(y, 2)   # set(y, 19)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
@@ -101,8 +101,8 @@ def spi_master_16bit_invert():
     
     push(noblock)
 
-    #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 19)
+    #Delay loop for pause between reads - set up for 0.775mS cycle
+    set(y, 11)     # set(y, 19)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
@@ -296,16 +296,28 @@ def gameActive():
     return game_active_pin.value()
 
 
+lowCalThres=32000
+highCalThres=32000
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm
+    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
 
-    for duty in range(0, 65536, 256):  # Ramp in steps of 256 for speed        
+    print("Sensor Read - Calibrate sensor circuit")
+    lowPwm.duty_u16(20000)
+    hiPwm.duty_u16(65535-20000)
+    time.sleep(0.4)  
+    clearSensorRx()
+    time.sleep(0.1)  
+    v = readSensorRx()   
+    if (v&0x03) != 0:
+        print("sensor cal fault")
+
+    for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed        
         print(".",end="")
         lowPwm.duty_u16(duty)
         clearSensorRx()
-        time.sleep(0.08)  
+        time.sleep(0.1)  
       
         lowCal=0
         highCal=0
@@ -313,8 +325,6 @@ def calibrate():
         # Check buffer for two LSBs clear
         v = readSensorRx()               
         if v is not None:
-            #v = reverse_bits_16(v)
-            #v = v & 0x0F
             if (v & 3) == 3:  # Two LSBs
                 print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
                 lowCal=duty
@@ -323,7 +333,7 @@ def calibrate():
 
     lowPwm.duty_u16(int(0))
     time.sleep(0.1)
-    for duty in range(65535, -1, -256):             
+    for duty in range(65535-20000, 19999, -256):
         print(".",end="")
         hiPwm.duty_u16(duty)
         clearSensorRx()        
@@ -331,9 +341,7 @@ def calibrate():
 
         # Check buffer for two LSBs clear
         v = readSensorRx()   
-        if v is not None:
-            #v = reverse_bits_16(v)
-            #v = v & 0x0F            
+        if v is not None:        
             if (v & 3) == 3:  # Two LSBs               
                 print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
                 highCal=duty
@@ -341,19 +349,37 @@ def calibrate():
 
 
     print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.9)   #0.9
+    lowCalThres = int(lowCal*0.88)   #0.9
     lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.1)  #1.1
+    highCalThres = int(highCal*1.12)  #1.1
     hiPwm.duty_u16(highCalThres)
     print("SENSOR: calibration thresholds:",lowCalThres,highCalThres)
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
+
+
+
+def sensitivityChange(dir):
+    '''sensitivy adjust - up=1 so more sensitive'''
+    global lowCalThres,highCalThres
+    if dir==1:
+        if int(highCalThres*0.98) > int(lowCalThres*1.02):
+            highCalThres=int(highCalThres*0.98)
+            lowCalThres=int(lowCalThres*1.02)
+    else:
+        if int(highCalThres*1.02) < 55000 :
+            highCalThres=int(highCalThres*1.02)
+            lowCalThres=int(lowCalThres*0.98)
+
+    lowPwm.duty_u16(lowCalThres)
+    hiPwm.duty_u16(highCalThres)
+    print("low pwm=",lowCalThres,"  high pwm=",highCalThres)
+
 
 
 #test
 if __name__ == "__main__":
 
     initialize()
-    #calibratePwms()
 
     import ScoreTrack
 

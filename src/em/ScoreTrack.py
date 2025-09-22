@@ -13,8 +13,9 @@ import sensorRead
 import array
 import time
 import resource
+from ScoreTrackFilter_viper import _viper_process
 
-import displayMessage
+import display
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -53,6 +54,7 @@ GAME_HIST_SIZE = 10000
 gameHistory=array.array('I', [0]*GAME_HIST_SIZE)        #32 bit
 gameHistoryTime=array.array('H', [0]*GAME_HIST_SIZE)    #16 bit
 gameHistoryIndex=0
+actualScore=0
 GAMEHIST_STATUS_EMPTY=0
 GAMEHIST_STATUS_DONE=1
 GAMEHIST_STATUS_OVERFLOW=2
@@ -60,9 +62,21 @@ gameHistoryStatus=GAMEHIST_STATUS_EMPTY
 
 
 # SCORE Digits for all 4 players - Initialize sensorScores[player][digit]
-sensorScores = [[0 for _ in range(6)] for _ in range(4)]
+sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 
 
+
+#config stuff to be sent to UI:
+actualScoreFromLastGame = None
+#actualScoreFromLastGame = 6884
+
+# global file selector: 0..4 supported
+fileNumber = 3  # change this to select which game_historyN.dat to use (0..4)
+
+#GLOBALS for process sensor data - - - 
+#switch to run normal or in file capture mode
+#S.run_learning_game = True
+S.run_learning_game = False
 
 '''
 Bit filter 
@@ -79,134 +93,101 @@ IDXMSK = 0x0F  # pointer wrap around - 16 samples
 # use array.array('I') so viper can access as ptr32 via memoryview
 bit_buf = array.array('I', [0] * DEPTH)
 bit_ptr = -1
-score_mask = array.array('I', [0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
-reset_mask = array.array('I', [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
+score_mask = array.array('I', [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
+reset_mask = array.array('I', [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF] )
 scoreState = 0  # int
 
-# create memoryviews
+# carryThresholds (timing) as a 4x4x2 array [player][digit][low,high]
+carryThresholds = [[[12, 28] for _ in range(4)] for _ in range(4)]
+
+#this needs set fo rthe numbe rof players and number of score reels on the game
+sensorBitMask = 0x0000F0
+
+digitsPerPlayer=1
+
+# create memoryviews - to send to viper function
 bit_buf_mv = memoryview(bit_buf)
 score_mask_mv = memoryview(score_mask)
 reset_mask_mv = memoryview(reset_mask)
 
-
-@micropython.viper
-def _viper_process(buf: ptr32, ptr: int, idxmsk: int, s_state: int, s_mask: ptr32, r_mask: ptr32) -> int:
+def initialize():
     """
-    fast 32 bit wide digital stream filter.
-    set min width acceptable samples for ->1 and ->0 in s_mask (set mask) and r_mask(reset mask)
+    Build sensorBitMask from digitsPerPlayer and numberOfPlayers.
     """
-    score_hits :int = 0
-    reset_hits :int = 0
+    global sensorBitMask,digitsPerPlayer
 
+    # safely read config (provide defaults)
+    digitsPerPlayer = int(S.gdata.get("digitsPerPlayer", 1))
+    players = int(S.gdata.get("numberOfPlayers", 1))
 
-    # Score detection: stages 1..5 (unrolled for speed)
-    idx :int =ptr
-    cumulative_high = buf[idx]
-    # stage 1
-    idx = (idx -1) & idxmsk
-    cumulative_high &= buf[idx]
-    score_hits |= (cumulative_high & s_mask[1])
-    #print("i=",idx,"v=",cumulative_high,score_hits)
+    # base byte for player0 (LSB)
+    base_byte = (1 << digitsPerPlayer) - 1
+    base_byte &= 0x000000FF
 
-    # stage 2
-    idx = (idx -1) & idxmsk
-    cumulative_high &= buf[idx]
-    score_hits |= cumulative_high & s_mask[2]
-    #print("i=",idx,"v=",cumulative_high,score_hits)
+    sb = base_byte
+    if players >= 2:
+        sb |= (base_byte << 8)
+    if players >= 3:
+        sb |= (base_byte << 16)
+    if players >= 4:
+        sb |= (base_byte << 24)
 
-    # stage 3
-    idx = (idx -1) & idxmsk
-    cumulative_high &= buf[idx]
-    score_hits |= cumulative_high & s_mask[3]
-    #print("i=",idx,"v=",cumulative_high,score_hits)
-
-    # stage 4
-    idx = (idx -1) & idxmsk
-    cumulative_high &= buf[idx]
-    score_hits |= cumulative_high & s_mask[4]
-    #print("i=",idx,"v=",cumulative_high,score_hits)
-
-    # stage 5
-    idx = (idx -1) & idxmsk
-    cumulative_high &= buf[idx]
-    score_hits |= cumulative_high & s_mask[5]
-
-    # set score bits that were hit  (enough 1's in a row means the s_state bit will be set)
-    s_state = s_state | score_hits
-
-    # Reset detection: stages 1..14 (range(1,15))
-    # falling low when inactive, this is when it will be counted    
-    idx :int = ptr
-    cumulative_low = (~buf[idx]) & 0xFFFF
-  
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[1]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[2]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[3]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[4]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[5]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[6]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[7]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[8]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[9]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[10]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[11]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[12]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[13]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[14]
-
-    idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
-    reset_hits |= cumulative_low & r_mask[15]
-
-    #print("reset hits=",hex(reset_hits))
-
-    # set reset hits into state
-    s_state &= (~reset_hits)
+    sensorBitMask = sb
     
-    # pack results into single int  
-    return s_state
+    print("init sensor bit mask =",sensorBitMask,"digits",digitsPerPlayer,"players",players)
 
+
+def setScoreMask(bit, scoreDepth, resetDepth):
+    """Set a single bit across score_mask and reset_mask.
+
+    Parameters:
+      bit         - bit number 0..31 to modify
+      scoreDepth  - number of earliest stages (0..DEPTH) that should have the bit cleared;
+                    all later stages will have the bit set.
+      resetDepth  - same semantics for reset_mask
+    """
+    global score_mask, reset_mask
+
+    if not (0 <= bit < 32):
+        raise ValueError("bit out of range 0..31")
+    if not (0 <= scoreDepth <= DEPTH):
+        raise ValueError("scoreDepth out of range 0..{}".format(DEPTH))
+    if not (0 <= resetDepth <= DEPTH):
+        raise ValueError("resetDepth out of range 0..{}".format(DEPTH))
+
+    mask = 1 << bit
+    inv = ~mask & MASK32
+
+    # apply to all stages: first scoreDepth entries clear the bit, remaining set the bit
+    for i in range(DEPTH):
+        if i < scoreDepth:
+            score_mask[i] &= inv
+        else:
+            score_mask[i] |= mask
+
+        if i < resetDepth:
+            reset_mask[i] &= inv
+        else:
+            reset_mask[i] |= mask
+
+
+
+def print_masks():
+    """Print score_mask and reset_mask in hex and grouped binary."""   
+    global score_mask, reset_mask, DEPTH
+
+    def grp32(x):
+        b = "{:032b}".format(x)
+        return " ".join(b[i:i+4] for i in range(0, 32, 4))
+
+    print("Stage ScoreMask     ScoreBin                                 ResetMask    ResetBin")
+    print("-----  -----------  --------------------------------         -----------  --------------------------------")
+    for i in range(DEPTH):
+        s = int(score_mask[i]) & MASK32
+        r = int(reset_mask[i]) & MASK32
+        print(f"{i:5d}  0x{s:08X}  {grp32(s)}  0x{r:08X}  {grp32(r)}")
+
+  
 
 
 def process_bit_filter(new_word):
@@ -235,37 +216,59 @@ def process_bit_filter(new_word):
 
 
 
+def game_history_filename(number=None):
+    """Return filename for a given file number; uses global fileNumber when None."""
+    if number is None:
+        number = fileNumber
+    return "game_history{}.dat".format(int(number) & 0xFF)
 
+def add_actual_score_to_file(filename=None, actualScore=0):
+    """Overwrite the 4-byte actualScore field in an existing game history file
+    without changing any other bytes. Validates the start marker first.
+    If filename is None the global fileNumber is used."""
+    if filename is None:
+        filename = game_history_filename()
+    try:
+        with open(filename, "r+b") as f:
+            hdr = f.read(4)
+            if hdr != b'GHDR':
+                raise ValueError("Invalid file: GHDR marker not found")
+            # actualScore lives immediately after the GHDR marker (bytes 4..7)
+            f.seek(4)
+            f.write(int(actualScore).to_bytes(4, "little"))
+        print(f"Wrote actualScore={actualScore} to {filename}")
+    except Exception as e:
+        print("Error updating actualScore:", e)
 
+def save_game_history(filename=None):
+    """Save gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore to a file with section markers.
+    If filename is None the global fileNumber is used."""
+    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScore
 
-
-
-def save_game_history(filename="game_history.dat"):
-    """Save gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore to a file with section markers."""
-    global gameHistory, gameHistoryTime, gameHistoryIndex
+    if filename is None:
+        filename = game_history_filename()
 
     try:
         with open(filename, "wb") as f:
             # Write a marker for the start of the file
             f.write(b'GHDR')  # 4-byte marker: Game History Data Record
 
-            # Write actualScore as 4 bytes (placeholder, value 0 for now)
-            actualScore = 0
-            f.write(actualScore.to_bytes(4, "little"))
+            # Write actualScore as 4 bytes
+            f.write(int(actualScore).to_bytes(4, "little"))
 
             # Write a marker before gameHistoryIndex
             f.write(b'GHIX')
-            f.write(gameHistoryIndex.to_bytes(4, "little"))
+            f.write(int(gameHistoryIndex).to_bytes(4, "little"))
 
             # Write a marker before gameHistory values
             f.write(b'GHVL')
             for i in range(gameHistoryIndex):
-                f.write(gameHistory[i].to_bytes(4, "little"))
+                f.write(int(gameHistory[i]).to_bytes(4, "little"))
 
             # Write a marker before gameHistoryTime values
             f.write(b'GHTM')
             for i in range(gameHistoryIndex):
-                f.write(gameHistoryTime[i].to_bytes(2, "little"))
+                f.write(int(gameHistoryTime[i]).to_bytes(2, "little"))
 
             # Write a marker for end of file
             f.write(b'GEND')
@@ -273,11 +276,13 @@ def save_game_history(filename="game_history.dat"):
     except Exception as e:
         print(f"Error saving game history: {e}")
 
+def load_game_history(filename=None):
+    """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore from a file with section markers.
+    If filename is None the global fileNumber is used."""
+    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScore
 
-
-def load_game_history(filename="game_history.dat"):
-    """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore from a file with section markers."""
-    global gameHistory, gameHistoryTime, gameHistoryIndex
+    if filename is None:
+        filename = game_history_filename()
 
     try:
         with open(filename, "rb") as f:
@@ -313,10 +318,12 @@ def load_game_history(filename="game_history.dat"):
     except Exception as e:
         print(f"Error loading game history: {e}")
 
+def print_game_history_file(filename=None):
+    """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScore.
+    If filename is None the global fileNumber is used."""
+    if filename is None:
+        filename = game_history_filename()
 
-
-def print_game_history_file(filename="game_history.dat"):
-    """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScore."""
     try:
         with open(filename, "rb") as f:
             # Check start marker
@@ -355,9 +362,10 @@ def print_game_history_file(filename="game_history.dat"):
                 return
 
             # Print header
+            print(f"GameHistory File: {filename}")
             print(f"GameHistory Length: {gameHistoryIndex}")
             print(f"Actual Score: {actualScore}")
-            print(f"{'Index':>5} {'Sensor Data':>36} {'Time':>8}")
+            print(f"{'Index':>5} {'Sensor Data':>26} {'Time':>12}")
             print("-" * 55)
             for i in range(gameHistoryIndex):
                 print(f"{i:>5} {sensor_data[i]:032b} {time_data[i]:>8}")
@@ -381,10 +389,6 @@ stateVar=0
 stateCount=0
 
 
-#GLOBALS for process sensor data - - - 
-#switch to run normal or in file capture mode
-#S.run_learning_game = True
-S.run_learning_game = False
 
 #sync up just the end of game - capture last transitions.. 
 gameover=False
@@ -431,7 +435,7 @@ def processSensorData():
     elif stateVar == PROCESS_STORE:
         #store data for learn
         processAndStore()
-        if sensorRead.gameActive() == 0:          
+        if sensorRead.gameActive() == 0:              
             stateVar = PROCESS_STORE_END  
             stateCount = 0
 
@@ -447,7 +451,7 @@ def processSensorData():
     elif stateVar == PROCESS_RUN:
         #run data now - live score
         processAndRun()
-        if sensorRead.gameActive() == 0:
+        if sensorRead.gameActive() == 0:           
             stateVar = PROCESS_RUN_END  
             stateCount = 0
 
@@ -494,11 +498,10 @@ def processEmpty():
     for x in range(2500):
         if pullWithDelete() == 0:        
             return
-                
-       
-processEmpty()
-processEmpty()
-processEmpty()
+
+#empty out buffer on power up                
+for _ in range(5):       
+    processEmpty()
 
     
 def processAndStore():
@@ -506,12 +509,11 @@ def processAndStore():
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
     gpio1.value(1)
 
-    for x in range(2500):
-        
+    #called 1 per second, will process up to 2.5 seconds woth of data
+    for x in range(2500):        
         newValue = pullWithDelete()      
-        if newValue != 0:
-          
-            newValue = newValue & 0x0F          #for now only player 1 - needs to be confiuguratble
+        if newValue != 0:          
+            newValue = newValue & sensorBitMask         
 
             if segmentMS > 20000 or newValue != lastValue:  
                 # store value and time
@@ -521,75 +523,190 @@ def processAndStore():
                     gameHistoryIndex += 1                    
                     #print("!",lastValue,segmentMS, gameHistoryIndex)
                 else:
-                    print("FULL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")    
+                    print("SCORE: capture game, data store overflow")    
 
                 lastValue = newValue
                 segmentMS = 1
-
             else:
                 # if newValue == lastValue:
                 segmentMS = segmentMS + 1
         else:
             break
 
-    gpio1.value(0)
+    #put a numeral up on the board display - x10% full
+    ascii_char = chr((gameHistoryIndex // 1000) + 48) 
+    display.setDigitDisplay(str(ascii_char))
+    
     return
 
 
 def processAndStoreWrapUp():
-    ''' call at game over to wrap up the ram store history'''
+    ''' call at game over to wrap up the ram store history, need to store return to zero'''
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
 
     gameHistory[gameHistoryIndex]=lastValue                                    
     gameHistoryTime[gameHistoryIndex]=segmentMS
     gameHistoryIndex += 1               
-    print("stored last file data point wrap up - - -")
+    print("SCORE: captire game, stored last file data point wrap up")
 
 
 
 
 
 last_sc = 0
+onesTimeCnt = 0
+tensTimeCnt = 0
+carryCount = [0] * 32
 
 def processAndRun():
-    '''pull data from ram buffer and feed to score module'''
-    global last_sc,sensorScores
-
+    '''pull data from ram buffer and feed to score module - for active game running'''
+    global last_sc,sensorScores,onesTimeCnt,tensTimeCnt,carryThresholds
+    allActivesChannels=0
+    
     start_time = time.ticks_ms()  # Start timer
     for x in range(2500):
         d = pullWithDelete()
         if d == 0:
-            break
+            break  #end of buffer data
 
-        sc = process_bit_filter(d & 0x000F)
+        sc = process_bit_filter(d & sensorBitMask)
 
-        # increment digit score counters -
-        fallingEdge = last_sc & (~sc)
+        # keep all channels that go active for led display
+        allActivesChannels = allActivesChannels | sc
+
+        # Detect rising edges on all 32 bits at once
+        risingEdge = (~last_sc) & sc
+      
+
+        # increment digits based on risingEdge - count over laps for carry corrections - no loops for speed
+        #PLR1-ONES
+        if risingEdge & 0x00000001:
+            sensorScores[0][0] = sensorScores[0][0] + 1     #inc score
+            carryCount[0] = 0
+        if sc&0x01 == 0x01:
+            carryCount[0]=carryCount[0]+1
+        #PLR1-TENS
+        if risingEdge & 0x00000002:
+            sensorScores[0][1] = sensorScores[0][1] + 1     #inc score
+            if carryCount[0]>carryThresholds[0][0][0] and carryCount[0]<carryThresholds[0][0][1]:
+                sensorScores[0][0] = 0                      #carry correction
+            carryCount[1] = 0
+        if sc&0x02 == 0x02:
+            carryCount[1]=carryCount[1]+1
+        #PLR1-HUNDERDS
+        if risingEdge & 0x00000004:
+            sensorScores[0][2] = sensorScores[0][2] + 1     #inc score
+            if carryCount[1]>carryThresholds[0][1][0] and carryCount[1]<carryThresholds[0][1][1]:
+                sensorScores[0][1] = 0                      #carry correction
+            carryCount[2]=0
+        if sc&0x04 == 0x04:
+            carryCount[2]=carryCount[2]+1
+        #PLR1-THOUSANDS
+        if risingEdge & 0x00000008:
+            sensorScores[0][3] = sensorScores[0][3] + 1     #inc score
+            if carryCount[2]>carryThresholds[0][2][0] and carryCount[2]<carryThresholds[0][2][1]:
+                sensorScores[0][2] = 0                      #carry correction
+            carryCount[3]=0
+        if sc&0x08 == 0x08:
+            carryCount[3]=carryCount[3]+1            
+        #PLR1-TEN THOUSAND   
+        if risingEdge & 0x00000010:
+            sensorScores[0][4] = sensorScores[0][4] + 1     #inc score
+            if carryCount[3]>carryThresholds[0][3][0] and carryCount[3]<carryThresholds[0][3][1]:
+                sensorScores[0][3] = 0    
+
+
+
+        #player 2
+          #PLR2-ONES
+        if risingEdge & 0x00000100:
+            sensorScores[1][0] = sensorScores[1][0] + 1  #inc score
+            carryCount[8] = 0
+        if sc&0x0100 == 0x0100:
+            carryCount[8]=carryCount[8]+1
+        #PLR2-TENS
+        if risingEdge & 0x00000200:
+            sensorScores[1][1] = sensorScores[1][1] + 1     #inc score
+            if carryCount[8]>carryThresholds[1][0][0] and carryCount[8]<carryThresholds[1][0][1]:
+                sensorScores[1][0] = 0                      #carry correction
+            carryCount[9] = 0
+        if sc&0x0200 == 0x0200:
+            carryCount[9]=carryCount[9]+1
+        #PLR2-HUNDERDS
+        if risingEdge & 0x00000400:
+            sensorScores[1][2] = sensorScores[1][2] + 1     #inc score
+            if carryCount[9]>carryThresholds[1][1][0] and carryCount[9]<carryThresholds[1][1][1]:
+                sensorScores[1][1] = 0                      #carry correction
+            carryCount[10]=0
+        if sc&0x0400 == 0x0400:
+            carryCount[10]=carryCount[10]+1
+        #PLR2-THOUSANDS
+        if risingEdge & 0x00000800:
+            sensorScores[1][3] = sensorScores[1][3] + 1     #inc score
+            if carryCount[10]>carryThresholds[1][2][0] and carryCount[10]<carryThresholds[1][2][1]:
+                sensorScores[1][2] = 0                      #carry correction
+            carryCount[11]=0
+        if sc&0x0800 == 0x0800:
+            carryCount[11]=carryCount[11]+1            
+        #PLR2-TEN THOUSAND   
+        if risingEdge & 0x00001000:
+            sensorScores[1][4] = sensorScores[1][4] + 1     #inc score
+            if carryCount[11]>carryThresholds[1][3][0] and carryCount[11]<carryThresholds[1][3][1]:
+                sensorScores[1][3] = 0    
+
+       
+
+        #player 3
+        if risingEdge & 0x00010000:
+            sensorScores[2][0] = sensorScores[2][0] + 1
+        if risingEdge & 0x00020000:
+            sensorScores[2][1] = sensorScores[2][1] + 1
+        if risingEdge & 0x00040000:
+            sensorScores[2][2] = sensorScores[2][2] + 1
+        if risingEdge & 0x00080000:
+            sensorScores[2][3] = sensorScores[2][3] + 1
+        if risingEdge & 0x00100000:
+            sensorScores[2][4] = sensorScores[2][4] + 1
+
+        #player 4
+        if risingEdge & 0x01000000:
+            sensorScores[3][0] = sensorScores[3][0] + 1
+        if risingEdge & 0x02000000:
+            sensorScores[3][1] = sensorScores[3][1] + 1
+        if risingEdge & 0x04000000:
+            sensorScores[3][2] = sensorScores[3][2] + 1
+        if risingEdge & 0x08000000:
+            sensorScores[3][3] = sensorScores[3][3] + 1
+        if risingEdge & 0x10000000:
+            sensorScores[3][4] = sensorScores[3][4] + 1
+
         last_sc = sc
 
-        if fallingEdge & 0x01:
-            sensorScores[0][0] = sensorScores[0][0] + 1
-        if fallingEdge & 0x02:
-            sensorScores[0][1] = sensorScores[0][1] + 1
-        if fallingEdge & 0x04:
-            sensorScores[0][2] = sensorScores[0][2] + 1
-        if fallingEdge & 0x08:
-            sensorScores[0][3] = sensorScores[0][3] + 1
-        if fallingEdge & 0x10:
-            sensorScores[0][4] = sensorScores[0][4] + 1
 
+    #send to display
+    display.setSensorLeds(allActivesChannels&0x000F)
+    print ("channels - ",allActivesChannels&0x000F)
 
-    sensorScores[0][0] = sensorScores[0][0] % 10   
-    sensorScores[0][1] = sensorScores[0][1] % 10   
-    sensorScores[0][2] = sensorScores[0][2] % 10   
-    sensorScores[0][3] = sensorScores[0][3] % 10   
-    sensorScores[0][4] = sensorScores[0][4] % 10       
+    #10->0 truncate, except let last one acculmulate
+    if digitsPerPlayer > 0:
+        for i in (0,1,2,3):
+            sensorScores[i][0] %= 10
+        if digitsPerPlayer > 1:
+            for i in (0,1,2,3):
+                sensorScores[i][1] %= 10
+            if digitsPerPlayer > 2:
+                for i in (0,1,2,3):
+                    sensorScores[i][2] %= 10
+                if digitsPerPlayer >3:
+                    for i in range(4):
+                        sensorScores[i][3] %= 10  
+    #if there is a fifth reel let it overflow and keep counting              
+
     end_time = time.ticks_ms()
     elapsed = time.ticks_diff(end_time, start_time)
     print("samples=",x,"process And Run execution time:", elapsed, "ms")
 
-    print("scores=",buildPrintableScores(sensorScores))
-
+    print("scores=",getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
 
     return
 
@@ -605,40 +722,120 @@ def processAndRun():
 
 
 
+def getPlayerScore(player):
+    """
+    Return the PRINTABLE score for the requested player index (0..3).
+    """
+    try:
+        multiplier = int(S.gdata.get("scoreMultiplier", 10))
+    except Exception:
+        print("^^^^^NO MULTIPLIER   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        multiplier = 1
+
+    score = 0
+    for digit in range(5):
+        score += sensorScores[player][digit] * (10 ** digit)
+
+    score = score * multiplier
+    
+    return score
 
 
-def buildPrintableScores(inputScoreDigits):
-    '''make score from digits in '''
-    scores = []
-    for player in range(4):
-        score = 0
-        for digit in range(5):
-            score += inputScoreDigits[player][digit] * (10 ** digit)
+def replayStoredGame(quiet=False):
+    ''' replay a stored game and report out scores'''
+    global sensorScores
 
-        scores.append(score * 10)
-    return tuple(scores)
-
-
-
-def replayStoredGame():
-    global previousSensorValue,filteredSensorValue,changeCounter,zeroThreshold,oneThreshold,sensorScores
+    sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
     index=0
-    print("SCORE: replay now",gameHistoryIndex)
+    last_one = 0
+    tensCarrytime = 0
+    tensCarryActive= False
+    prn=0
+    onesTimeCount=0
+
+    print("SCORE: replaying now, length=",gameHistoryIndex)
 
     for index in range(gameHistoryIndex):
             sensor_value = gameHistory[index]
             sample_count = gameHistoryTime[index]
             if sample_count > 20:
                 sample_count=20
-            #print("send: val=",sensor_value,"  count=",sample_count)
-            for _ in range(sample_count):
-                sensorToScore(sensor_value)
 
-            #print("SCORE REPLAY", *buildPrintableScores())
+            if quiet==False:    
+                print("send: val=",sensor_value,"  count=",sample_count)
+            
+            for _ in range(sample_count):              
+                sc = process_bit_filter(sensor_value & 0x000F)
+
+                '''
+                if sc&0x01:
+                    prn=10
+                if prn>0:
+                    prn=prn-1    
+                    print(f"{index:>5} {sensor_value:04b} {sc:04b}")
+                '''
+
+                # increment digit score counters -
+                #fallingEdge = last_one & (~sc)
+                risingEdge = (~last_one) & sc
+                last_one = sc
+
+
+                #roll over 1->10 detect
+                if risingEdge&0x01 == 0x01:
+                    onesTimeCount=0                      
+                if sc&0x01 == 0x01:
+                    onesTimeCount=onesTimeCount+1                   
+                    if risingEdge&0x02 == 0x02:
+                        if onesTimeCount>5 and onesTimeCount<74:
+                            print("------------------player 1 digit ONES rollover. duration=",onesTimeCount,"score plr1=",sensorScores[0])
+                            if not (3 <= sensorScores[0][0] <= 7):
+                                sensorScores[0][0] = 0
+
+
+                #roll over 10->100 detect
+                if risingEdge&0x02 == 0x02:
+                    tensTimeCount=0                      
+                if sc&0x02 == 0x02:
+                    tensTimeCount=tensTimeCount+1                   
+                    if risingEdge&0x04 == 0x04:
+                        if tensTimeCount>5 and tensTimeCount<74:
+                            print("----------------------------player 1 digit TENS rollover. duration=",tensTimeCount,"score plr1=",sensorScores[0])
+                            #sensorScores[0][1]=0
+
+
+
+                if risingEdge & 0x01:
+                    sensorScores[0][0] = sensorScores[0][0] + 1
+                    if sensorScores[0][0] == 10:
+                        print("----------------------------------------------player 1 ONES inc to 10")
+
+                if risingEdge & 0x02:
+                    sensorScores[0][1] = sensorScores[0][1] + 1
+                    if sensorScores[0][1] == 10:
+                        print("---------------------------------------------------------player 1 TENS inc to 100")
+
+                if risingEdge & 0x04:
+                    sensorScores[0][2] = sensorScores[0][2] + 1
+                if risingEdge & 0x08:
+                    sensorScores[0][3] = sensorScores[0][3] + 1
+                if risingEdge & 0x10:
+                    sensorScores[0][4] = sensorScores[0][4] + 1
+   
+
+            sensorScores[0][0] = sensorScores[0][0] % 10   
+            sensorScores[0][1] = sensorScores[0][1] % 10   
+            sensorScores[0][2] = sensorScores[0][2] % 10   
+            sensorScores[0][3] = sensorScores[0][3] % 10   
+            sensorScores[0][4] = sensorScores[0][4] % 10       
+
+            if quiet==False:    
+                print("SCORE REPLAY: ", getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
         
-    #print("SCORE: replay DONE")
-    print("SCORE REPLAY", *buildPrintableScores(sensorScores))
+    if quiet==False:    
+        print("SCORE: replay DONE")
+        print("SCORE REPLAY results -> ",  getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
 
 
 
@@ -920,7 +1117,7 @@ def update_tournament(new_entry):
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
-    global gameHistory
+    global gameHistory,sensorScores,gameover
 
     resource.go()
 
@@ -939,6 +1136,7 @@ def CheckForNewScores(nState=[0]):
 
         #if game_active_flag == True:
         if sensorRead.gameActive() == 1:
+            gameover = False
             S.game_status["game_active"]=True
             print("SCORE: Game Start")
             nState[0] = 2
@@ -949,14 +1147,14 @@ def CheckForNewScores(nState=[0]):
         #process data in storeage...
 
         if S.run_learning_game == False:
-            print("SCORE: game end check - play mode                 SCORE=",*buildPrintableScores(sensorScores))
+            print("SCORE: game end check - play mode                 SCORE=",getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
             
         else:
             print("SCORE: game end check. learn mode ",  sensorRead.depthSensorRx() ,  gameHistoryIndex  )
 
         #if sensorRead.gameActive() == 0:
         if gameover == True:
-            print("SCORE: Game End")
+            print("SCORE: Game End 76")
             S.game_status["game_active"]=False
             #load scoes into scores[][]
 
@@ -964,7 +1162,12 @@ def CheckForNewScores(nState=[0]):
             nState[0] = 1           
             log.log("SCORE: game end")
          
-            #save_game_history()
+            if S.run_learning_game == True:
+                print("End of game - learning game- save and print")
+                save_game_history()
+                print_game_history_file()
+
+            sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
             #replay stored game - print out progress
             #print("SCORE: REPLAY GAME DATA:xxx   history length=",gameHistoryIndex)
@@ -1054,169 +1257,147 @@ def test_processAndStore():
 
 
 
-def test_replay():
-  global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
-  global stateVar, stateCount
-
-  gameHistoryIndex=0
-
-  gameHistory[gameHistoryIndex]=0x0F
-  gameHistoryTime[gameHistoryIndex]=15
-  gameHistoryIndex+=1
-
-  gameHistory[gameHistoryIndex]=0x0E
-  gameHistoryTime[gameHistoryIndex]=18
-  gameHistoryIndex+=1
-
-  gameHistory[gameHistoryIndex]=0x0F
-  gameHistoryTime[gameHistoryIndex]=10
-  gameHistoryIndex+=1
-
-  gameHistory[gameHistoryIndex]=0x0F-2
-  gameHistoryTime[gameHistoryIndex]=18
-  gameHistoryIndex+=1
-
-  replayStoredGame()
-
 
 
 
 if __name__ == "__main__":
 
-    # 'manual' test of bit filters
-    i=0
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
+
+
+    if actualScoreFromLastGame != None:
+        add_actual_score_to_file(filename=None, actualScore=actualScoreFromLastGame)
+   
+    else:
    
 
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1    
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1    
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1    
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-    
+        def print_score_reset_ranges(results, score_range, reset_range, targetScore):
+            """
+            Analyze `results` entries (scorebits, resetbits, digits-list) and print
+            for each digit index the reset-bit ranges that produce the target digit.
+            results: list of (scorebits, resetbits, digits)
+            score_range, reset_range: iterables used when producing results (kept order)
+            targetScore: full integer score used to pick expected digit per place
+            """
+            def compress_ranges(sorted_vals):
+                """Compress sorted list of ints into list of (start,end) ranges."""
+                if not sorted_vals:
+                    return []
+                ranges = []
+                start = prev = sorted_vals[0]
+                for v in sorted_vals[1:]:
+                    if v == prev + 1:
+                        prev = v
+                    else:
+                        ranges.append((start, prev))
+                        start = prev = v
+                ranges.append((start, prev))
+                return ranges
 
+            score_list = list(score_range)
+            reset_list = list(reset_range)
 
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
+            # Build lookup: (scorebits, resetbits) -> digits
+            lookup = {}
+            for sb, rb, digits in results:
+                lookup[(sb, rb)] = digits
 
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-    s=0x0203
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-
-
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-    s=0
-    print("Step=",i," val=",hex(s)," out=",process_bit_filter(s))
-    print(" ")
-    i=i+1
-
-
-
-
-
-
-
-
-
-    '''
-    results = []
-    import time
-
-    targetScore = 1166  # Set your correct score target here
-    fileName = "game_history.dat"
-
-    load_game_history(fileName)
-    start = time.ticks_ms()
-
-    ZERORANGE = 6
-    ONESRANGE = 19
-
-    for z in range(ZERORANGE):
-        for one in range(ONESRANGE):
-
-            # Set all digits of zeroThreshold and oneThreshold to the same value
+            # Compute expected digit per digit index from targetScore
+            expected = []
             for d in range(5):
-                zeroThreshold[d] = z
-                oneThreshold[d] = one            
+                expected.append((targetScore // (10 ** d)) % 10)
 
-            #reset score trackers
-            for player in range(4):
-                for digit in range(5):
-                    sensorScores[player][digit] = 0
+            for digit_index in range(5):
+                exp = expected[digit_index]
+                print(f"\nDigit {digit_index} (place {10**digit_index}), expected={exp}:")
+                any_found = False
+                for sb in score_list:
+                    ok_resets = []
+                    for rb in reset_list:
+                        digits = lookup.get((sb, rb))
+                        if digits is not None and digits[digit_index] == exp:
+                            ok_resets.append(rb)
+                    if ok_resets:
+                        any_found = True
+                        ranges = compress_ranges(sorted(ok_resets))
+                        ranges_str = ", ".join(f"{a}" if a==b else f"{a}-{b}" for (a,b) in ranges)
+                        print(f"  scorebits={sb:2d}: resetbits -> {ranges_str}")
+                if not any_found:
+                    print("  (no combinations found)")
 
-            print("Testing ", z*ONESRANGE+one, "from ", ONESRANGE*ZERORANGE)
+            # Example usage (uncomment/run after results populated):
+            # print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScore)
 
-            replayStoredGame()
-            print("score digits=", [sensorScores[0][d] for d in range(5)], 
-                  " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
-                  " with setting=", z, one)
+        
+        results = []
+        import time
 
-            # Record z, one, and sensorScores[0][0:5] in results
-            results.append((z, one, [sensorScores[0][d] for d in range(5]]))
 
-            elapsed = time.ticks_diff(time.ticks_ms(), start)
-            print("Replay execution time:", elapsed, "ms")
+        load_game_history()
+        targetScore = actualScore  # Load target score from the game file
+        print("loaded actual score= ", targetScore)
 
-    # Print only results where any digit matches targetScore
-    print(f"Results (z, one, any digit == {targetScore}):")
-    for record in results:
-        print(record)
+        start = time.ticks_ms()
 
-    # Print z/one combinations for each digit place (1s, 10s, 100s, 1000s)
-    digit_places = [1, 10, 100, 1000]
-    for digit_index, digit_value in enumerate(digit_places):
-        print(f"\nCombinations for digit place {digit_value}:")
-        for record in results:
-            z, one, digits = record
-            if digits[digit_index] == targetScore // digit_value % 10:
-                print(f"z={z}, one={one}, digits={digits}")
-    '''
+      
+        SCORE_RANGE = (2,3,4,5,6,7,8,9)
+        RESET_RANGE = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14)
+
+        SCORE_RANGE = (5,6,7,8,9)
+        RESET_RANGE = (6,9,12,15)
+
+        '''
+        #single run - 
+        s=5
+        r=4
+        for bit in range(10): 
+            setScoreMask(bit, s, r)
+
+        replayStoredGame(True)
+
+        print("score digits=", [sensorScores[0][d] for d in range(5)], 
+                    " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
+                    " with setting=", s, r)
+        '''
+
+
+        
+        for scorebits in SCORE_RANGE:
+            for resetbits in RESET_RANGE:
+
+                # Set all digits of score mask the same
+                for bit in range(10):
+                    setScoreMask(bit, scorebits, resetbits)
+
+                print("Testing: scorebits=",scorebits," resetbits=",resetbits)
+                replayStoredGame(True)
+
+                print("score digits=", [sensorScores[0][d] for d in range(5)], 
+                    " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
+                    " with setting=", scorebits, resetbits)
+
+                # Record z, one, and sensorScores[0][0:5] in results
+                results.append((scorebits, resetbits, [sensorScores[0][d] for d in range(5)]))
+
+                elapsed = time.ticks_diff(time.ticks_ms(), start)
+                print("Replay execution time:", elapsed, "ms")
+        
+
+        '''
+        # Print set/reset combinations for each digit place (1s, 10s, 100s, 1000s, 10000s)
+        digit_places = [1, 10, 100, 1000]
+        print("Taget Score = ",targetScore)
+        for digit_index, digit_value in enumerate(digit_places):
+            print(f"\nCombinations for digit place {digit_value}:")
+            for record in results:
+                scoreb, resetb, digits = record
+                if digits[digit_index] == targetScore // digit_value % 10:
+                    print(f"scorebits={scoreb}, resetbits={resetb}, digits={digits}")
+        '''
+
+        elapsed = time.ticks_diff(time.ticks_ms(), start)
+        print("\nReplay execution time:", elapsed/1000, "s")
+
+
+        print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScore)
+
+

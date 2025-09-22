@@ -11,6 +11,7 @@ from ScoreTrack import (
     initialize_leaderboard,
     processSensorData
 )
+from display import displayUpdate
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import sflash_driver_init, write_16_fram
 #from SPI_UpdateStore import initialize as sflash_initialize
@@ -285,6 +286,9 @@ def create_schedule(ap_mode: bool = False):
     from displayMessage import refresh
     from GameStatus import poll_fast
 
+   
+
+    
     #
     # one time tasks
     #
@@ -304,7 +308,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(sflash_driver_init, 200)
 
     # initialize the sflash
-    # schedule(sflash_initialize, 700)
+  
 
     #
     # reoccuring tasks
@@ -323,6 +327,7 @@ def create_schedule(ap_mode: bool = False):
     #EM store snsor data in ram
     schedule(processSensorData, 1000, 1000)
 
+    schedule(displayUpdate, 4000, 500)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):

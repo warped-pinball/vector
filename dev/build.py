@@ -85,6 +85,20 @@ class Builder:
                 dest_file = os.path.join(dest_dir, file)
                 shutil.copy2(src_file, dest_file)
 
+        # Ensure any source files whose base name ends with "viper" are copied
+        # into the build tree in their original .py form (unmodified).
+        for root, dirs, files in os.walk(self.source_dir):
+            rel_root = os.path.relpath(root, self.source_dir)
+            for file in files:
+                if file.lower().endswith("viper.py"):
+                    src_file = os.path.join(root, file)
+                    # place in same relative location under build_dir
+                    dest_dir = os.path.join(self.build_dir, rel_root)
+                    if not os.path.exists(dest_dir):
+                        os.makedirs(dest_dir)
+                    dest_file = os.path.join(dest_dir, file)
+                    shutil.copy2(src_file, dest_file)
+
     @step_report
     def compile_py_files(self):
         """Compile .py files to .mpy bytecode, handling boot.py and main.py specially."""
@@ -98,7 +112,13 @@ class Builder:
 
         for root, dirs, files in os.walk(self.build_dir):
             for file in files:
+                # skip Python files whose base name ends with "viper"
                 if file.endswith(".py"):
+                    name_noext = os.path.splitext(file)[0]
+                    if name_noext.lower().endswith("viper"):
+                        # leave the .py file in place and skip compiling
+                        print(f"Skipping viper file: {os.path.join(root, file)}")
+                        continue
                     py_file = os.path.join(root, file)
                     cmd = f"{MPY_CROSS} -O3 {py_file}"
                     result = subprocess.run(cmd, shell=True)

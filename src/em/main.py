@@ -1,6 +1,6 @@
 # WPC
 
-# This file is part of the Warped Pinball SYS11Wifi Project.
+# This file is part of the Warped Pinball SYS-EM Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
@@ -11,21 +11,25 @@
 import resource
 import time
 
-import faults
-import GameDefsLoad
-import machine
-import uctypes
-
-import display
-
-from logger import logger_instance
-from systemConfig import SystemVersion
-
 import sensorRead
 sensorRead.initialize()
 sensorRead.calibrate()
 
 
+import faults
+import GameDefsLoad
+import machine
+import uctypes
+import adjustButtons
+
+from logger import logger_instance
+from systemConfig import SystemVersion
+
+
+import display
+import GameStatus
+import ScoreTrack
+import SharedState as S
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -37,6 +41,7 @@ LED_Out = machine.Pin(26, machine.Pin.OUT)
 timer = machine.Timer()
 led_board = None
 
+adjustButtons.init_buttons()
 
 def error_toggle(timer):
     led_board.toggle()
@@ -107,8 +112,7 @@ print("Main: AP mode = ", ap_mode)
 
 
 
-import GameStatus
-import ScoreTrack
+
 
 
 '''
@@ -126,6 +130,14 @@ if not ap_mode:
     GameDefsLoad.go()
 else:
     GameDefsLoad.go(safe_mode=True)
+
+
+# Add these entries to S.gdata
+S.gdata["numberOfPlayers"] = 2
+S.gdata["digitsPerPlayer"] = 4
+S.gdata["scoreMultiplier"] = 10
+
+ScoreTrack.initialize()
 
 resource.go(True)
 

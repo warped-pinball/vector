@@ -10,8 +10,12 @@ update_load_result = None
 # install fault flag
 faults = []
 
-# game data  (speicifc title data)
-gdata = {}
+# game data  (specific title data)
+gdata = {
+    "numberOfPlayers": 2,
+    "digitsPerPlayer": 4,
+    "scoreMultiplier": 10
+}
 
 # game status
 game_status = {}
