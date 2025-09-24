@@ -54,7 +54,8 @@ GAME_HIST_SIZE = 10000
 gameHistory=array.array('I', [0]*GAME_HIST_SIZE)        #32 bit
 gameHistoryTime=array.array('H', [0]*GAME_HIST_SIZE)    #16 bit
 gameHistoryIndex=0
-actualScore=0
+#actualScore=0
+actualScores = [0, 0, 0, 0]
 GAMEHIST_STATUS_EMPTY=0
 GAMEHIST_STATUS_DONE=1
 GAMEHIST_STATUS_OVERFLOW=2
@@ -68,15 +69,15 @@ sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 
 #config stuff to be sent to UI:
 actualScoreFromLastGame = None
-#actualScoreFromLastGame = 6884
+#actualScoreFromLastGame = [ 4053, 0,0,0]
 
 # global file selector: 0..4 supported
 fileNumber = 3  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
-#S.run_learning_game = True
-S.run_learning_game = False
+S.run_learning_game = True
+#S.run_learning_game = False
 
 '''
 Bit filter 
@@ -101,7 +102,7 @@ scoreState = 0  # int
 carryThresholds = [[[12, 28] for _ in range(4)] for _ in range(4)]
 
 #this needs set fo rthe numbe rof players and number of score reels on the game
-sensorBitMask = 0x0000F0
+sensorBitMask = 0x0000F0F
 
 digitsPerPlayer=1
 
@@ -222,28 +223,33 @@ def game_history_filename(number=None):
         number = fileNumber
     return "game_history{}.dat".format(int(number) & 0xFF)
 
-def add_actual_score_to_file(filename=None, actualScore=0):
-    """Overwrite the 4-byte actualScore field in an existing game history file
-    without changing any other bytes. Validates the start marker first.
+def add_actual_score_to_file(filename=None, actualScores=[0,0,0,0]):
+    """Overwrite the 4 actualScores (4 bytes each) in an existing game history file.
+    actualScores should be a list or tuple of 4 integers.
     If filename is None the global fileNumber is used."""
     if filename is None:
-        filename = game_history_filename()
+        filename = game_history_filename()   
+    if len(actualScores) != 4:
+        raise ValueError("actualScores must have exactly 4 entries")
     try:
         with open(filename, "r+b") as f:
             hdr = f.read(4)
             if hdr != b'GHDR':
                 raise ValueError("Invalid file: GHDR marker not found")
-            # actualScore lives immediately after the GHDR marker (bytes 4..7)
+            # actualScores live immediately after the GHDR marker (bytes 4..19)
             f.seek(4)
-            f.write(int(actualScore).to_bytes(4, "little"))
-        print(f"Wrote actualScore={actualScore} to {filename}")
+            for score in actualScores:
+                f.write(int(score).to_bytes(4, "little"))
+        print(f"Wrote actualScores={actualScores} to {filename}")
     except Exception as e:
-        print("Error updating actualScore:", e)
+        print("Error updating actualScores:", e)
+
 
 def save_game_history(filename=None):
-    """Save gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore to a file with section markers.
-    If filename is None the global fileNumber is used."""
-    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScore
+    """Save gameHistory, gameHistoryTime, gameHistoryIndex, and actualScores (4 players) to a file with section markers.
+    If filename is None the global fileNumber is used.
+    At the end, append S.gdata as a human-readable text block (for diagnostics only)."""
+    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScores
 
     if filename is None:
         filename = game_history_filename()
@@ -253,8 +259,9 @@ def save_game_history(filename=None):
             # Write a marker for the start of the file
             f.write(b'GHDR')  # 4-byte marker: Game History Data Record
 
-            # Write actualScore as 4 bytes
-            f.write(int(actualScore).to_bytes(4, "little"))
+            # Write four player scores as 4 bytes each (player0..player3)
+            for i in range(4):
+                f.write(int(actualScores[i] & 0xFFFFFFFF).to_bytes(4, "little"))
 
             # Write a marker before gameHistoryIndex
             f.write(b'GHIX')
@@ -272,14 +279,21 @@ def save_game_history(filename=None):
 
             # Write a marker for end of file
             f.write(b'GEND')
+
+            # --- Append S.gdata as human-readable text ---
+            f.write(b'\n--- S.gdata dump ---\n')
+            for k, v in S.gdata.items():
+                f.write(f"{k}: {v}\n".encode())
+            f.write(b'--- END S.gdata ---\n')
+
         print(f"Game history saved to {filename}")
     except Exception as e:
         print(f"Error saving game history: {e}")
 
 def load_game_history(filename=None):
-    """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScore from a file with section markers.
+    """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScores from a file with section markers.
     If filename is None the global fileNumber is used."""
-    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScore
+    global gameHistory, gameHistoryTime, gameHistoryIndex, actualScores
 
     if filename is None:
         filename = game_history_filename()
@@ -290,8 +304,12 @@ def load_game_history(filename=None):
             if f.read(4) != b'GHDR':
                 raise ValueError("File marker GHDR not found")
 
-            # Read actualScore (4 bytes, little endian)
-            actualScore = int.from_bytes(f.read(4), "little")
+            # Read four player scores (4 * 4 bytes, little endian)
+            scores_bytes = f.read(16)
+            if len(scores_bytes) < 16:
+                scores_bytes = scores_bytes.ljust(16, b"\0")
+            actualScores = [int.from_bytes(scores_bytes[i*4:(i+1)*4], "little") for i in range(4)]
+           
 
             # Check gameHistoryIndex marker
             if f.read(4) != b'GHIX':
@@ -314,12 +332,12 @@ def load_game_history(filename=None):
             if f.read(4) != b'GEND':
                 raise ValueError("File marker GEND not found")
 
-        print(f"Game history loaded from {filename}")
+        print(f"Game history loaded from {filename}  actualScores={actualScores}")
     except Exception as e:
         print(f"Error loading game history: {e}")
 
 def print_game_history_file(filename=None):
-    """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScore.
+    """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScores.
     If filename is None the global fileNumber is used."""
     if filename is None:
         filename = game_history_filename()
@@ -331,8 +349,11 @@ def print_game_history_file(filename=None):
                 print("File marker GHDR not found")
                 return
 
-            # Read actualScore (4 bytes, little endian)
-            actualScore = int.from_bytes(f.read(4), "little")
+            # Read four player scores (4 * 4 bytes, little endian)
+            scores_bytes = f.read(16)
+            if len(scores_bytes) < 16:
+                scores_bytes = scores_bytes.ljust(16, b"\0")
+            scores = [int.from_bytes(scores_bytes[i*4:(i+1)*4], "little") for i in range(4)]
 
             # Check gameHistoryIndex marker
             if f.read(4) != b'GHIX':
@@ -364,7 +385,7 @@ def print_game_history_file(filename=None):
             # Print header
             print(f"GameHistory File: {filename}")
             print(f"GameHistory Length: {gameHistoryIndex}")
-            print(f"Actual Score: {actualScore}")
+            print(f"Actual Scores: {scores}")
             print(f"{'Index':>5} {'Sensor Data':>26} {'Time':>12}")
             print("-" * 55)
             for i in range(gameHistoryIndex):
@@ -554,30 +575,15 @@ def processAndStoreWrapUp():
 
 
 last_sc = 0
-onesTimeCnt = 0
-tensTimeCnt = 0
 carryCount = [0] * 32
 
-def processAndRun():
-    '''pull data from ram buffer and feed to score module - for active game running'''
-    global last_sc,sensorScores,onesTimeCnt,tensTimeCnt,carryThresholds
-    allActivesChannels=0
-    
-    start_time = time.ticks_ms()  # Start timer
-    for x in range(2500):
-        d = pullWithDelete()
-        if d == 0:
-            break  #end of buffer data
 
-        sc = process_bit_filter(d & sensorBitMask)
+def processRisingEdge(sc,risingEdge):
+    '''process rising edge and increment sensor Scores as needed
+       used by run and replay stored game...                '''
+    global last_sc,sensorScores,carryThresholds
 
-        # keep all channels that go active for led display
-        allActivesChannels = allActivesChannels | sc
-
-        # Detect rising edges on all 32 bits at once
-        risingEdge = (~last_sc) & sc
-      
-
+    if (1):
         # increment digits based on risingEdge - count over laps for carry corrections - no loops for speed
         #PLR1-ONES
         if risingEdge & 0x00000001:
@@ -654,32 +660,31 @@ def processAndRun():
             if carryCount[11]>carryThresholds[1][3][0] and carryCount[11]<carryThresholds[1][3][1]:
                 sensorScores[1][3] = 0    
 
-       
+       #ADD Player 3
 
-        #player 3
-        if risingEdge & 0x00010000:
-            sensorScores[2][0] = sensorScores[2][0] + 1
-        if risingEdge & 0x00020000:
-            sensorScores[2][1] = sensorScores[2][1] + 1
-        if risingEdge & 0x00040000:
-            sensorScores[2][2] = sensorScores[2][2] + 1
-        if risingEdge & 0x00080000:
-            sensorScores[2][3] = sensorScores[2][3] + 1
-        if risingEdge & 0x00100000:
-            sensorScores[2][4] = sensorScores[2][4] + 1
+       #ADD Player 4
 
-        #player 4
-        if risingEdge & 0x01000000:
-            sensorScores[3][0] = sensorScores[3][0] + 1
-        if risingEdge & 0x02000000:
-            sensorScores[3][1] = sensorScores[3][1] + 1
-        if risingEdge & 0x04000000:
-            sensorScores[3][2] = sensorScores[3][2] + 1
-        if risingEdge & 0x08000000:
-            sensorScores[3][3] = sensorScores[3][3] + 1
-        if risingEdge & 0x10000000:
-            sensorScores[3][4] = sensorScores[3][4] + 1
 
+
+def processAndRun():
+    '''pull data from ram buffer and feed to score module - for active game running'''
+    global last_sc,sensorScores,carryThresholds
+    allActivesChannels=0
+    
+    start_time = time.ticks_ms()  # Start timer
+    for x in range(2500):
+        d = pullWithDelete()
+        if d == 0:
+            break  #end of buffer data
+
+        sc = process_bit_filter(d & sensorBitMask)
+
+        # keep all channels that go active for led display
+        allActivesChannels = allActivesChannels | sc
+
+        # Detect rising edges on all 32 bits at once
+        risingEdge = (~last_sc) & sc
+        processRisingEdge(sc,risingEdge)
         last_sc = sc
 
 
@@ -766,18 +771,9 @@ def replayStoredGame(quiet=False):
                 print("send: val=",sensor_value,"  count=",sample_count)
             
             for _ in range(sample_count):              
-                sc = process_bit_filter(sensor_value & 0x000F)
+                sc = process_bit_filter(sensor_value & 0x000F)             
 
-                '''
-                if sc&0x01:
-                    prn=10
-                if prn>0:
-                    prn=prn-1    
-                    print(f"{index:>5} {sensor_value:04b} {sc:04b}")
-                '''
-
-                # increment digit score counters -
-                #fallingEdge = last_one & (~sc)
+                # edge detection
                 risingEdge = (~last_one) & sc
                 last_one = sc
 
@@ -824,11 +820,20 @@ def replayStoredGame(quiet=False):
                     sensorScores[0][4] = sensorScores[0][4] + 1
    
 
-            sensorScores[0][0] = sensorScores[0][0] % 10   
-            sensorScores[0][1] = sensorScores[0][1] % 10   
-            sensorScores[0][2] = sensorScores[0][2] % 10   
-            sensorScores[0][3] = sensorScores[0][3] % 10   
-            sensorScores[0][4] = sensorScores[0][4] % 10       
+            #10->0 truncate, except let last one acculmulate
+            if digitsPerPlayer > 0:
+                for i in (0,1,2,3):
+                    sensorScores[i][0] %= 10
+                if digitsPerPlayer > 1:
+                    for i in (0,1,2,3):
+                        sensorScores[i][1] %= 10
+                    if digitsPerPlayer > 2:
+                        for i in (0,1,2,3):
+                            sensorScores[i][2] %= 10
+                        if digitsPerPlayer >3:
+                            for i in range(4):
+                                sensorScores[i][3] %= 10  
+            #if there is a fifth reel let it overflow and keep counting              
 
             if quiet==False:    
                 print("SCORE REPLAY: ", getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
@@ -1169,10 +1174,7 @@ def CheckForNewScores(nState=[0]):
 
             sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
-            #replay stored game - print out progress
-            #print("SCORE: REPLAY GAME DATA:xxx   history length=",gameHistoryIndex)
-            #replayStoredGame()
-
+        
 
 
 
@@ -1265,7 +1267,7 @@ if __name__ == "__main__":
 
 
     if actualScoreFromLastGame != None:
-        add_actual_score_to_file(filename=None, actualScore=actualScoreFromLastGame)
+        add_actual_score_to_file(filename=None, actualScores=actualScoreFromLastGame)
    
     else:
    
@@ -1304,7 +1306,7 @@ if __name__ == "__main__":
             # Compute expected digit per digit index from targetScore
             expected = []
             for d in range(5):
-                expected.append((targetScore // (10 ** d)) % 10)
+                expected.append((targetScores[0] // (10 ** d)) % 10)
 
             for digit_index in range(5):
                 exp = expected[digit_index]
@@ -1325,7 +1327,7 @@ if __name__ == "__main__":
                     print("  (no combinations found)")
 
             # Example usage (uncomment/run after results populated):
-            # print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScore)
+            # print_score_reset_ranges(results, SCORE_RANGE, targetScore)
 
         
         results = []
@@ -1333,8 +1335,8 @@ if __name__ == "__main__":
 
 
         load_game_history()
-        targetScore = actualScore  # Load target score from the game file
-        print("loaded actual score= ", targetScore)
+        targetScores = actualScores  # Load target score from the game file
+        print("loaded actual score= ", targetScores)
 
         start = time.ticks_ms()
 
@@ -1345,19 +1347,7 @@ if __name__ == "__main__":
         SCORE_RANGE = (5,6,7,8,9)
         RESET_RANGE = (6,9,12,15)
 
-        '''
-        #single run - 
-        s=5
-        r=4
-        for bit in range(10): 
-            setScoreMask(bit, s, r)
-
-        replayStoredGame(True)
-
-        print("score digits=", [sensorScores[0][d] for d in range(5)], 
-                    " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
-                    " with setting=", s, r)
-        '''
+       
 
 
         
@@ -1378,8 +1368,8 @@ if __name__ == "__main__":
                 # Record z, one, and sensorScores[0][0:5] in results
                 results.append((scorebits, resetbits, [sensorScores[0][d] for d in range(5)]))
 
-                elapsed = time.ticks_diff(time.ticks_ms(), start)
-                print("Replay execution time:", elapsed, "ms")
+                #elapsed = time.ticks_diff(time.ticks_ms(), start)
+                #print("Replay execution time:", elapsed, "ms")
         
 
         '''
@@ -1398,6 +1388,6 @@ if __name__ == "__main__":
         print("\nReplay execution time:", elapsed/1000, "s")
 
 
-        print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScore)
+        print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScores)
 
 

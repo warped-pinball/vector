@@ -325,7 +325,7 @@ def create_schedule(ap_mode: bool = False):
 
 
     #EM store snsor data in ram
-    schedule(processSensorData, 1000, 1000)
+    schedule(processSensorData, 1000, 800)
 
     schedule(displayUpdate, 4000, 500)
 

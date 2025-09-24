@@ -17,6 +17,8 @@ import time
 
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
+from logger import logger_instance
+Log = logger_instance
 
 # Pin assignments
 PIO_MISO_PIN = 12  
@@ -230,7 +232,7 @@ def dma_start():
    
     # DMA channel assignment (we can use any channel in this case)
     DMA_SENSOR = a.channel 
-    print("SENSOR: using DMA channel: ",DMA_SENSOR)
+    Log.log(f"SENSOR: using DMA channel: {DMA_SENSOR}")
 
     #uctypes struct for registers
     dma_sensor = dma_d.DMA_CHANS[DMA_SENSOR]   
@@ -303,7 +305,7 @@ def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
     global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
 
-    print("Sensor Read - Calibrate sensor circuit")
+    print("SENSOR: Calibrate sensor circuit")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
     time.sleep(0.4)  
@@ -311,7 +313,7 @@ def calibrate():
     time.sleep(0.1)  
     v = readSensorRx()   
     if (v&0x03) != 0:
-        print("sensor cal fault")
+        Log.log("SENSOR: sensor cal fault")
 
     for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed        
         print(".",end="")
@@ -348,12 +350,12 @@ def calibrate():
                 break
 
 
-    print("\nSENSOR: calibration complete:",lowCal,highCal)
+    #print("\nSENSOR: calibration complete:",lowCal,highCal)
     lowCalThres = int(lowCal*0.88)   #0.9
     lowPwm.duty_u16(lowCalThres)
     highCalThres = int(highCal*1.12)  #1.1
     hiPwm.duty_u16(highCalThres)
-    print("SENSOR: calibration thresholds:",lowCalThres,highCalThres)
+    Log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
 
 
@@ -372,7 +374,7 @@ def sensitivityChange(dir):
 
     lowPwm.duty_u16(lowCalThres)
     hiPwm.duty_u16(highCalThres)
-    print("low pwm=",lowCalThres,"  high pwm=",highCalThres)
+    Log.log("SENSOR: set thresholds low=",lowCalThres,"high=",highCalThres)
 
 
 

@@ -96,7 +96,7 @@ def clear_ram_section(start_addr=0x20080000, length=0x20):
 
 print("\n\n")
 print("  Warped Pinball :: System EM")
-Log.log(f"          Version WPC {SystemVersion}")
+Log.log(f"          Version EM {SystemVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
