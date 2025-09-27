@@ -368,14 +368,19 @@ def request(
 
             if not MICROPY:
                 sf.flush()
+                # Set a default timeout of 8 seconds if not specified
+                if timeout is None:
+                    sock.settimeout(8)
+                else:
+                    sock.settimeout(timeout)
 
-            resp = response_class(sock, sf, save_headers=save_headers)
-            line = b""
-            while True:
-                line += sf.read(1)
+                resp = response_class(sock, sf, save_headers=save_headers)
+                line = b""
+                while True:
+                    line += sf.read(1)
 
-                if line.endswith(b"\r\n") or len(line) > MAX_READ_SIZE:
-                    break
+                    if line.endswith(b"\r\n") or len(line) > MAX_READ_SIZE:
+                        break
 
             # print("Response: %s" % l.decode("ascii"))
             line = line.split(None, 2)
