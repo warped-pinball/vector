@@ -284,7 +284,7 @@ def request(
     response_class=Response,
     save_headers=False,
     max_redirects=1,
-    timeout=None,
+    timeout=30,
     ssl_context=None,
 ):
     if auth:
