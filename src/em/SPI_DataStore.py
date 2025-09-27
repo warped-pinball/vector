@@ -138,7 +138,7 @@ def serialize(record, structure_name):
         #   B : players
         #   B : digits
         #   I : multiplier
-        # 40s : filtermasks (40 bytes)
+        # 64s : filtermasks (64 bytes)   <-- updated to 64 bytes total (32 score + 32 reset)
         # 32s : carrythresholds (32 bytes)
         #   I : sensorlevels[0]
         #   I : sensorlevels[1]
@@ -153,23 +153,21 @@ def serialize(record, structure_name):
 
         fm = record.get("filtermasks", None)
         if isinstance(fm, (bytes, bytearray)):
-            fm_bytes = bytes(fm)[:40].ljust(40, b"\0")
+            fm_bytes = bytes(fm)[:64].ljust(64, b"\0")
         else:
-            fm_bytes = bytes(40)  # default zeros; ignore nested iterables
+            fm_bytes = bytes(64)  # default zeros; now 64 bytes total
 
         ct = record.get("carrythresholds", None)
         if isinstance(ct, (bytes, bytearray)):
             ct_bytes = bytes(ct)[:32].ljust(32, b"\0")
         else:
-            ct_bytes = bytes(32)  # default zeros; ignore nested iterables
+            ct_bytes = bytes(32)  # default zeros; 32 bytes total
 
         sl = record.get("sensorlevels", None)
         if isinstance(sl, (bytes, bytearray)) and len(sl) >= 8:
-            # interpret first two 4-byte little-endian ints if provided as bytes
             s0 = int.from_bytes(sl[0:4], "little")
             s1 = int.from_bytes(sl[4:8], "little")
         else:
-            # accept list/tuple as fallback but keep simple ints otherwise
             if isinstance(sl, (list, tuple)) and len(sl) >= 2:
                 s0 = int(sl[0]) & 0xFFFFFFFF
                 s1 = int(sl[1]) & 0xFFFFFFFF
@@ -177,7 +175,7 @@ def serialize(record, structure_name):
                 s0 = int(record.get("sensorlevels", [0, 0])[0]) & 0xFFFFFFFF
                 s1 = int(record.get("sensorlevels", [0, 0])[1]) & 0xFFFFFFFF
 
-        packed = struct.pack("<40sBBI40s32sII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1)
+        packed = struct.pack("<40sBBI64s32sII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -280,7 +278,7 @@ def deserialize(data, structure_name):
     elif structure_name == "EMData":
         try:
             name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1 = struct.unpack(
-                "<40sBBI40s32sII", data
+                "<40sBBI64s32sII", data
             )
             return {
                 "gamename": name.decode().rstrip("\0"),
@@ -298,7 +296,7 @@ def deserialize(data, structure_name):
                 "players": 1,
                 "digits": 1,
                 "multiplier": 0,
-                "filtermasks": bytes(40),
+                "filtermasks": bytes(64),
                 "carrythresholds": bytes(32),
                 "sensorlevels": [0, 0],
             }
@@ -330,8 +328,8 @@ def blankStruct(structure_name):
             "players": 1,
             "digits": 1,
             "multiplier": 1,
-            "filtermasks": bytes(40),
-            "carrythresholds": bytes(32),
+            "filtermasks": bytes(64),          # default to 64 bytes
+            "carrythresholds": bytes(32),      # default to 32 bytes
             "sensorlevels": [0, 0],
         }
     structure = memory_map[structure_name]
@@ -360,7 +358,7 @@ def blankAll():
     blankStruct("configuration")
     blankStruct("extras")
     blankStruct("EMData")
-    record1 = {"version": "Map Ver: 1.0"}
+    record1 = {"version": "Map Ver: EM1.0"}
     write_record("MapVersion", record1, index=0)
 
 
@@ -376,7 +374,7 @@ if __name__ == "__main__":
 
     blankAll()
 
-    record1 = {"version": "Map Ver: 1.0"}
+    record1 = {"version": "Map Ver: EM1.0"}
     write_record("MapVersion", record1, index=0)
 
     print("\n\n")
