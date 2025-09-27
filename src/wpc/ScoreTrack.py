@@ -154,7 +154,7 @@ def _read_machine_score(UseHighScores = True):
 
             # Calculate the maximum fake score (all BCD bytes set to 0x99)
             max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
-            if high_scores[0][1] < 1000 or high_scores[0][1]>=max_fake_score:    #if left over max score from reboot - do not keep it
+            if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:    #if left over max score from reboot - do not keep it
                 high_scores[0][1] = 0
 
 
