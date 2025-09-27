@@ -219,23 +219,22 @@ class Builder:
 
     @step_report
     def zip_files(self):
-        """gzip all files in build/web subdirectories (but not build/web itself)."""
-        print("Zipping files in subdirectories...")
+        """gzip applicable files in build/web."""
+        print("Zipping web files...")
         web_dir = os.path.join(self.build_dir, "web")
         if not os.path.isdir(web_dir):
             print("No 'web' directory found; skipping zip step.")
             return
 
-        # zip each subdirectory (e.g. web/css, web/js, web/svg, etc.)
-        for item in os.listdir(web_dir):
-            item_path = os.path.join(web_dir, item)
-            if os.path.isdir(item_path):
-                self.gzip_directory(item_path)
+        self.gzip_directory(web_dir)
 
     def gzip_directory(self, directory):
         print(f"Gzipping files in {directory}...")
         for root, dirs, files in os.walk(directory):
             for file in files:
+                if file.endswith(".gz"):
+                    # Skip existing gzip files
+                    continue
                 file_path = os.path.join(root, file)
                 with open(file_path, "rb") as f:
                     content = f.read()
@@ -264,8 +263,15 @@ def main():
     parser = argparse.ArgumentParser(description="Build the project into a specified build directory.")
     parser.add_argument("--build-dir", default=BUILD_DIR_DEFAULT, help="Path to the build directory")
     parser.add_argument("--source-dir", default=SOURCE_DIR_DEFAULT, help="Path to the source directory")
-    parser.add_argument("--target_hardware", default="sys11", help="Target system for the build (e.g., sys11, wpc, em, etc.)")
+    parser.add_argument(
+        "--target_hardware",
+        default="sys11",
+        help="Target system for the build (e.g., sys11, wpc, em, etc.)",
+    )
     args = parser.parse_args()
+
+    if args.build_dir == BUILD_DIR_DEFAULT:
+        args.build_dir = os.path.join(args.build_dir, args.target_hardware)
 
     builder = Builder(args.build_dir, args.source_dir, args.target_hardware)
 

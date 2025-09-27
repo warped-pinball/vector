@@ -6,6 +6,7 @@ from time import sleep, time
 
 import faults
 import Pico_Led
+import SharedState as S
 import uctypes
 from ls import ls
 from machine import RTC
@@ -117,6 +118,7 @@ def get_content_type(file_path):
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".gif": "image/gif",
+        ".svg": "image/svg+xml",
         ".gz": "application/gzip",
     }
     for extension, content_type in content_type_mapping.items():
@@ -126,43 +128,49 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
-    # Compute ETag incrementally to save memory
+    is_gz = file_path.endswith(".gz")
+    served_path = file_path[:-3] if is_gz else file_path
+
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
             buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                buff[0:] = f.read(1024)
                 if not buff:
                     break
                 hasher.update(buff)
         etag = hexlify(hasher.digest()[:8]).decode()
     except Exception as e:
         print(f"Failed to calculate ETag for {file_path}: {e}")
-        etag = random_hex(8)  # Fallback to a random ETag
+        etag = random_hex(8)
 
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
             buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)  # Read in 1KB chunks
+                buff[0:] = f.read(1024)
                 if not buff:
                     break
                 yield buff
         gc_collect()
 
     def file_handler(request):
-        # Check for conditional request
         if request.headers.get("if-none-match") == etag:
-            return "", 304, {"ETag": etag}  # Tell the browser to use it's cached copy
+            return "", 304, {"ETag": etag}
 
         headers = {
-            "Content-Type": get_content_type(file_path),
+            "Content-Type": get_content_type(served_path),
             "Connection": "close",
-            "Cache-Control": "public, max-age=31536000, immutable",  # Cache for 1 year, immutable
+            "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        if is_gz:
+            if served_path.endswith(".svg"):
+                headers["Content-Type"] = "application/gzip"
+            else:
+                headers["Content-Encoding"] = "gzip"
         return file_stream_generator(), 200, headers
 
     return route_wrapper(file_handler)
@@ -341,10 +349,13 @@ def check_password(request):
 # Static File Server
 #
 for file_path in ls("web"):
-    route = file_path[3:]  # This should give '/index.html' for 'web/index.html'
-    phew_add_route(route, create_file_handler(file_path))
+    route = file_path[3:]
+    if file_path.endswith(".gz"):
+        route = route[:-3]
+    handler = create_file_handler(file_path)
+    phew_add_route(route, handler)
     if route == "/index.html":
-        phew_add_route("/", create_file_handler(file_path))
+        phew_add_route("/", handler)
 
 
 #
@@ -680,6 +691,39 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/time/midnight_madness_available")
+def app_midnightMadnessAvailable(request):
+    if S.gdata["GameInfo"].get("Clock") == "MM":
+        return {"available": True}
+    else:
+        return {"available": False}
+
+
+@add_route("/api/time/get_midnight_madness")
+def app_getMidnightMadness(request):
+    record = ds_read_record("extras", 0)
+    return {
+        "enabled": record.get("WPCTimeOn", False),
+        "always": record.get("MM_Always", False),
+    }
+
+
+@add_route("/api/time/set_midnight_madness", auth=True)
+def app_setMidnightMadness(request):
+    data = request.data
+    info = ds_read_record("extras", 0)
+    info["MM_Always"] = bool(data["always"])
+    info["WPCTimeOn"] = bool(data["enabled"])
+    ds_write_record("extras", info, 0)
+
+
+@add_route("/api/time/trigger_midnight_madness")
+def app_triggerMidnightMadness(request):
+    import Time
+
+    Time.trigger_midnight_madness()
+
+
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     import reset_control
@@ -743,9 +787,9 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/network/peers")
 def app_getPeers(request):
-    from discovery import known_devices
+    from discovery import get_peer_map
 
-    return known_devices
+    return get_peer_map()
 
 
 #
@@ -815,7 +859,7 @@ def app_updates_available(request):
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
-    resp = get(updatesURL)
+    resp = get(updatesURL, timeout=10)
 
     try:
         data = resp.json()
@@ -896,7 +940,6 @@ def connect_to_wifi(initialize=False):
     if phew_is_connected() and not initialize:
         return True
 
-    from discovery import setup as discovery_setup
     from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
@@ -915,7 +958,6 @@ def connect_to_wifi(initialize=False):
             # TODO remove ip address args and move to scheduler
             writeIP(ip_address)
             init_display(ip_address)
-            discovery_setup()
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults

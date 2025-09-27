@@ -18,9 +18,22 @@ OUTPUT_FILE = "update.json"
 
 hardware_configs = {
     "sys11": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.24.1", "1.23.0-preview"]},
-    "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0"]},
+    "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0", "1.26.0-preview"]},
     "em": {"supported_hardware": [], "micropython_versions": []},  # TODO fill this in when hardware finalized
 }
+
+
+def resolve_build_dir(build_dir: Optional[str], target_hardware: str) -> str:
+    """Return the build directory for *target_hardware*.
+
+    ``build_dir`` may point to the root ``build`` directory. In that case the
+    hardware-specific subdirectory is appended automatically.
+    """
+
+    path = Path(build_dir) if build_dir else Path(BUILD_DIR) / target_hardware
+    if path.name == BUILD_DIR:
+        path = path / target_hardware
+    return str(path)
 
 
 def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> str:
@@ -142,6 +155,11 @@ def build_update_file(
     3) Finally one line containing {"sha256": "...", "signature": "..."} at the bottom.
     """
 
+    build_dir_path = Path(build_dir)
+    subdirs = {p.name for p in build_dir_path.iterdir() if p.is_dir()}
+    if any(name in hardware_configs for name in subdirs):
+        raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
+
     # 1) Build top-level metadata as a single line
     hardware_metadata = hardware_configs.get(target_hardware, {})
     if not hardware_metadata:
@@ -195,14 +213,28 @@ def build_update_file(
 
 def main():
     parser = argparse.ArgumentParser(description="Build single-line-per-file update file with minimal overhead.")
-    parser.add_argument("--build-dir", default=BUILD_DIR, help="Path to the build directory.")
+    parser.add_argument(
+        "--build-dir",
+        help="Path to the build directory (defaults to build/<target_hardware>).",
+    )
     parser.add_argument("--output", default=OUTPUT_FILE, help="Path to the output file.")
     parser.add_argument("--version", help="Version string (e.g., '0.3.0')", required=True)
-    parser.add_argument("--target_hardware", default="sys11", help="Target system for the update (e.g., sys11, wpc, em, etc.)")
+    parser.add_argument(
+        "--target_hardware",
+        default="sys11",
+        help="Target system for the update (e.g., sys11, wpc, em, etc.)",
+    )
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
     args = parser.parse_args()
 
-    build_update_file(build_dir=args.build_dir, output_file=args.output, version=args.version, private_key_path=args.private_key, target_hardware=args.target_hardware)
+    build_dir = resolve_build_dir(args.build_dir, args.target_hardware)
+    build_update_file(
+        build_dir=build_dir,
+        output_file=args.output,
+        version=args.version,
+        private_key_path=args.private_key,
+        target_hardware=args.target_hardware,
+    )
 
 
 if __name__ == "__main__":
