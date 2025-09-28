@@ -117,11 +117,18 @@ sensorBitMask = 0x0000F0F
 digitsPerPlayer=1
 
 
+
 def initialize():
     """
     Initialize score tracking configuration from S.gdata.
     """
     global sensorBitMask, digitsPerPlayer, carryThresholds
+
+
+    #from phew.server import schedule
+    #schedule(processSensorData, 1000, 800)
+
+
 
     # required config values
     digitsPerPlayer = int(S.gdata["digitsPerPlayer"])
@@ -523,6 +530,8 @@ def processSensorData():
     global gpio26  #blink led
 
     global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
+
+    print("&")
 
     gpio26.value(not gpio26.value())
 
@@ -1205,8 +1214,6 @@ def update_tournament(new_entry):
     rec["index"] = nextIndex
     DataStore.write_record("tournament", rec, 0)
     return
-
-
 
 
 

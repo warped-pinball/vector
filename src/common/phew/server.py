@@ -8,8 +8,7 @@ from machine import RTC
 from ScoreTrack import (
     CheckForNewScores,
     check_for_machine_high_scores,
-    initialize_leaderboard,
-    processSensorData
+    initialize_leaderboard
 )
 from display import displayUpdate
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
@@ -174,7 +173,7 @@ async def _handle_request(reader, writer):
 def add_route(path, handler):
     global _routes
     if path in _routes:
-        raise ValueError(f"Route already exists: {path}")
+        raise ValueError(f"Route already exists: {path} {handler}")
     _routes[path] = handler
 
 
@@ -310,7 +309,7 @@ def create_schedule(ap_mode: bool = False):
     #schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
-    schedule(CheckForNewScores, 15000, 5000)
+    #schedule(CheckForNewScores, 15000, 5000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
