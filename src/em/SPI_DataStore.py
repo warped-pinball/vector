@@ -72,6 +72,7 @@ def write_record(structure_name, record, index=0, set=0):
     try:
         structure = memory_map[structure_name]
         start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
+        #print(structure,"R",  record)
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
@@ -138,30 +139,35 @@ def serialize(record, structure_name):
         #   B : players
         #   B : digits
         #   I : multiplier
-        # 64s : filtermasks (64 bytes)   <-- updated to 64 bytes total (32 score + 32 reset)
+        # 64s : filtermasks (64 bytes)
         # 32s : carrythresholds (32 bytes)
         #   I : sensorlevels[0]
         #   I : sensorlevels[1]
+        #   I : startpause
+        #   I : endpause
         name = record.get("gamename", "")
         if not isinstance(name, (bytes, bytearray)):
             name = str(name).encode()
-        name = name[:40].ljust(40, b"\0")
+        # Ensure name is bytes, pad or truncate to 40 bytes
+        if len(name) < 40:
+            name = name + b"\0" * (40 - len(name))
+        else:
+            name = name[:40]
 
         players = int(record.get("players", 1)) & 0xFF
         digits = int(record.get("digits", 1)) & 0xFF
         multiplier = int(record.get("multiplier", 0)) & 0xFFFFFFFF
-
         fm = record.get("filtermasks", None)
         if isinstance(fm, (bytes, bytearray)):
-            fm_bytes = bytes(fm)[:64].ljust(64, b"\0")
+            fm_bytes = bytes(fm)[:64]
         else:
-            fm_bytes = bytes(64)  # default zeros; now 64 bytes total
+            fm_bytes = bytes(64)
 
         ct = record.get("carrythresholds", None)
         if isinstance(ct, (bytes, bytearray)):
-            ct_bytes = bytes(ct)[:32].ljust(32, b"\0")
+            ct_bytes = bytes(ct)[:32]
         else:
-            ct_bytes = bytes(32)  # default zeros; 32 bytes total
+            ct_bytes = bytes(32)
 
         sl = record.get("sensorlevels", None)
         if isinstance(sl, (bytes, bytearray)) and len(sl) >= 8:
@@ -175,7 +181,10 @@ def serialize(record, structure_name):
                 s0 = int(record.get("sensorlevels", [0, 0])[0]) & 0xFFFFFFFF
                 s1 = int(record.get("sensorlevels", [0, 0])[1]) & 0xFFFFFFFF
 
-        packed = struct.pack("<40sBBI64s32sII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1)
+        startpause = int(record.get("startpause", 0)) & 0xFFFFFFFF
+        endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF      
+
+        packed = struct.pack("<40sBBI64s32sIIII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -277,9 +286,8 @@ def deserialize(data, structure_name):
             }
     elif structure_name == "EMData":
         try:
-            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1 = struct.unpack(
-                "<40sBBI64s32sII", data
-            )
+            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)
+            print("EM Data Restored ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",startpause,endpause)
             return {
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),
@@ -288,9 +296,11 @@ def deserialize(data, structure_name):
                 "filtermasks": bytes(fm_bytes),
                 "carrythresholds": bytes(ct_bytes),
                 "sensorlevels": [int(s0), int(s1)],
+                "startpause": int(startpause),
+                "endpause": int(endpause),
             }
         except Exception:
-            Log.log("DATSTORE: fault EMData")
+            Log.log("DATSTORE: fault EMData-------------------------------------------")
             return {
                 "gamename": "",
                 "players": 1,
@@ -299,6 +309,8 @@ def deserialize(data, structure_name):
                 "filtermasks": bytes(64),
                 "carrythresholds": bytes(32),
                 "sensorlevels": [0, 0],
+                "startpause": 5,
+                "endpause": 9,
             }
     else:
         raise ValueError("Unknown structure name")
@@ -323,14 +335,19 @@ def blankStruct(structure_name):
     }
     # default EMData
     if structure_name == "EMData":
+        # Fill filtermasks and carrythresholds with incrementing counts
+        filtermasks = bytes([i % 256 for i in range(64)])
+        carrythresholds = bytes([i % 256 for i in range(32)])
         fake_entry = {
-            "gamename": "Enter Game Name",
+            "gamename": "EM Game",
             "players": 1,
-            "digits": 1,
+            "digits": 4,
             "multiplier": 1,
-            "filtermasks": bytes(64),          # default to 64 bytes
-            "carrythresholds": bytes(32),      # default to 32 bytes
+            "filtermasks": filtermasks,
+            "carrythresholds": carrythresholds,
             "sensorlevels": [0, 0],
+            "startpause": 8,
+            "endpause": 5,
         }
     structure = memory_map[structure_name]
     if "sets" in structure:
@@ -340,6 +357,7 @@ def blankStruct(structure_name):
     else:
         for i in range(structure["count"]):
             write_record(structure_name, fake_entry, i)
+
     Log.log(f"DATST: blank {structure_name}")
 
 
@@ -383,3 +401,7 @@ if __name__ == "__main__":
 
     readver = read_record("MapVersion", index=0)
     print("read ver string=", readver["version"])
+
+    # Read back the EMData structure and print it
+    emdata = read_record("EMData", index=0)
+    print("EMData readback:", emdata)

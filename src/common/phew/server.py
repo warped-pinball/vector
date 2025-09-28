@@ -168,7 +168,7 @@ async def _handle_request(reader, writer):
 def add_route(path, handler):
     global _routes
     if path in _routes:
-        raise ValueError(f"Route already exists: {path} {handler}")
+        raise ValueError(f"Route already exists: {path}")
     _routes[path] = handler
 
 
@@ -213,7 +213,7 @@ def copy_to_fram():
     MemIndex += 16
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
-        # print("FRAM: cycle complete")
+        print("FRAM: cycle complete")
         led_board.toggle()
 
 

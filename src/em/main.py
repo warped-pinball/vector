@@ -1,4 +1,4 @@
-# WPC
+# EM
 
 # This file is part of the Warped Pinball SYS-EM Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/

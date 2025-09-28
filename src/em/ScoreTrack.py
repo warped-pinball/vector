@@ -15,7 +15,7 @@ import time
 import resource
 from ScoreTrackFilter_viper import _viper_process
 
-import display
+import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -63,6 +63,9 @@ GAMEHIST_STATUS_DONE=1
 GAMEHIST_STATUS_OVERFLOW=2
 gameHistoryStatus=GAMEHIST_STATUS_EMPTY
 
+# default pauses (can be overridden from EMData/S.gdata in _loadState)
+PROCESS_START_PAUSE = 8
+PROCESS_END_PAUSE = 5
 
 # SCORE Digits for all 4 players - Initialize sensorScores[player][digit]
 sensorScores = [[0 for _ in range(8)] for _ in range(4)]
@@ -120,20 +123,34 @@ digitsPerPlayer=1
 
 def initialize():
     """
+    one time power up Initialize
+    """ 
+    from phew.server import schedule
+    schedule(processSensorData, 1000, 800)
+
+    _loadState()
+
+    #from displayMessage import init
+    displayMessage.init()
+
+
+def _loadState():
+    """
     Initialize score tracking configuration from S.gdata.
     """
     global sensorBitMask, digitsPerPlayer, carryThresholds
-
-
-    #from phew.server import schedule
-    #schedule(processSensorData, 1000, 800)
-
-
+    global PROCESS_START_PAUSE, PROCESS_END_PAUSE
 
     # required config values
     digitsPerPlayer = int(S.gdata["digitsPerPlayer"])
     players = int(S.gdata["numberOfPlayers"])
-   
+
+    # load start/end pause values from configuration (EMData -> S.gdata)
+    # keys are "startpause" and "endpause"; fall back to current defaults if missing
+    PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
+    PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
+    print("SCORE: pauses= ",PROCESS_START_PAUSE,PROCESS_END_PAUSE)
+  
     # build sensorBitMask - single 32 bit word
     base_byte = (1 << digitsPerPlayer) - 1
     base_byte &= 0xFF
@@ -172,14 +189,12 @@ def initialize():
         setScoreMask(ch, scoreDepth, resetDepth)
 
     print("ScoreTrack initialized: players=%d digits=%d sensorMask=0x%08X" % (players, digitsPerPlayer, sensorBitMask))
+    print("ScoreTrack pauses: startpause=%d endpause=%d" % (PROCESS_START_PAUSE, PROCESS_END_PAUSE))
 
 
 
-
-
-
-def saveState():
-    """Read EMData, replace filtermasks and carrythresholds with current globals, and write back."""
+def _saveState():
+    """store working congi back to SPI_DataStore"""
     try:
         em = DataStore.read_record("EMData")
     except Exception as e:
@@ -207,13 +222,14 @@ def saveState():
             pos += 2
     em["carrythresholds"] = bytes(ct)
 
+    em["startpause"] = int(PROCESS_START_PAUSE)
+    em["endpause"] = int(PROCESS_END_PAUSE)
+  
     try:
         DataStore.write_record("EMData", em)
         print("EMData updated from globals (filtermasks, carrythresholds).")
     except Exception as e:
         print("Error writing EMData:", e)
-
-
 
 
 
@@ -230,11 +246,14 @@ def setScoreMask(bit, scoreDepth, resetDepth):
     global score_mask, reset_mask, scoreDepths, resetDepths
 
     if not (0 <= bit < 32):
-        raise ValueError("bit out of range 0..31")
+        log.log("SCORE: bit - out of range 0..31")
+        bit=0
     if not (0 <= scoreDepth <= DEPTH):
-        raise ValueError("scoreDepth out of range 0..{}".format(DEPTH))
+        log.log(f"scoreDepth out of range 0..{scoreDepth}")
+        scoreDepth=0
     if not (0 <= resetDepth <= DEPTH):
-        raise ValueError("resetDepth out of range 0..{}".format(DEPTH))
+        log.log(f"resetDepth out of range 0..{resetDepth}")
+        resetDepth=0
 
     # store configured depths for external inspection
     scoreDepths[bit] = int(scoreDepth)
@@ -257,7 +276,7 @@ def setScoreMask(bit, scoreDepth, resetDepth):
 
 
 
-def print_masks():
+def printMasks():
     """Print score_mask and reset_mask in hex and grouped binary, plus carryThresholds by player/digit."""
     global score_mask, reset_mask, DEPTH, carryThresholds
 
@@ -283,7 +302,7 @@ def print_masks():
 
 
 
-def process_bit_filter(new_word):
+def processBitFilter(new_word):
     '''python (non-viper) for calling the bitfilter in _viper_process '''
     global bit_buf, bit_ptr, scoreState
 
@@ -381,9 +400,7 @@ def save_game_history(filename=None):
             f.write(b'--- END S.gdata ---\n')
 
         print(f"Game history saved to {filename}")
-
-        # optionally free after saving to reclaim RAM
-        # free_game_history()
+       
 
     except Exception as e:
         print(f"Error saving game history: {e}")
@@ -511,8 +528,7 @@ PROCESS_RUN = 3
 PROCESS_STORE_END = 4
 PROCESS_RUN_END = 5
 
-PROCESS_START_PAUSE = 8
-PROCESS_END_PAUSE = 5
+
 stateVar=0
 stateCount=0
 
@@ -531,7 +547,6 @@ def processSensorData():
 
     global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
 
-    print("&")
 
     gpio26.value(not gpio26.value())
 
@@ -546,15 +561,22 @@ def processSensorData():
             processEmpty()
 
     elif stateVar == PROCESS_START:
-        '''game start delay'''
+        '''game start delay - wait for score reset to happen
+        -make smarted in the future?  wait fro a few seconds and more if signal detected....'''
+        
         if sensorRead.gameActive()==1:  
             processEmpty()          
+            lastValue = sensorBitMask   #init lastValue (alll ones) since scores are incremented on falling edges
+
             if stateCount > PROCESS_START_PAUSE:
 
                 #run or store for learning
                 if S.run_learning_game == True:
                     log.log("SCORE: Run learning game capture")
                     stateVar = PROCESS_STORE
+                    alloc_game_history()
+                    if gameHistory is None or gameHistoryTime is None:
+                        log.log("SCORE: game history alloc fault")
                 else:
                     log.log("SCORE: Run game scoring")
                     processEmpty()  
@@ -578,6 +600,7 @@ def processSensorData():
             stateVar = PROCESS_IDLE  
             processAndStoreWrapUp()
             gameover = True
+            displayMessage.setCaptureModeDigit(-1)
             stateCount = 0
 
     elif stateVar == PROCESS_RUN:
@@ -657,9 +680,7 @@ def processAndStore():
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
     gpio1.value(1)
 
-    # if we want to capture learning games, allocate buffer on first use
-    if S.run_learning_game:
-        alloc_game_history()
+    allActivesChannels=0
 
     # safe-guard: if not allocated, just discard (no storage)
     if gameHistory is None:
@@ -668,16 +689,17 @@ def processAndStore():
             if pullWithDelete() == 0:
                 break
         # update display progress same as before (show 0)
-        display.setDigitDisplay("0")
+        displayMessage.setCaptureModeDigit(-1)
         return
 
-    #called 1 per second, will process up to 2.5 seconds woth of data
+    #called ~~1 per second or more , will process up to 2.5 seconds worth of data
     for x in range(2500):
         newValue = pullWithDelete()
         if newValue != 0:
             newValue = newValue & sensorBitMask
+            allActivesChannels = allActivesChannels | newValue
 
-            if segmentMS > 20000 or newValue != lastValue:
+            if segmentMS > 40000 or newValue != lastValue:
                 # store value and time
                 if gameHistoryIndex < (GAME_HIST_SIZE-6):
                     gameHistory[gameHistoryIndex]=lastValue
@@ -689,14 +711,14 @@ def processAndStore():
                 lastValue = newValue
                 segmentMS = 1
             else:
-                # if newValue == lastValue:
                 segmentMS = segmentMS + 1
         else:
             break
 
-    #put a numeral up on the board display - x10% full
-    ascii_char = chr((gameHistoryIndex // 1000) + 48) if gameHistoryIndex else "0"
-    display.setDigitDisplay(str(ascii_char))
+    displayMessage.setSensorLeds(allActivesChannels)
+
+    #put a numeral up on the board display - x10% full    
+    displayMessage.setCaptureModeDigit(gameHistoryIndex // 1000)
 
     return
 
@@ -820,7 +842,7 @@ def processAndRun():
         if d == 0:
             break  #end of buffer data
 
-        sc = process_bit_filter(d & sensorBitMask)
+        sc = processBitFilter(d & sensorBitMask)
 
         # keep all channels that go active for led display
         allActivesChannels = allActivesChannels | sc
@@ -831,8 +853,8 @@ def processAndRun():
         last_sc = sc
 
     #send to display green digit leds
-    display.setSensorLeds(allActivesChannels&0x000F)
-    print ("channels - ",allActivesChannels&0x000F)
+    displayMessage.setSensorLeds(allActivesChannels&0x000F)
+    #print ("channels - ",allActivesChannels&0x000F)
 
     #10->0 truncate, except let last one acculmulate
     if digitsPerPlayer > 0:
@@ -915,7 +937,7 @@ def replayStoredGame(quiet=False):
                 print("send: val=",sensor_value,"  count=",sample_count)
             
             for _ in range(sample_count):              
-                sc = process_bit_filter(sensor_value & 0x000F)    
+                sc = processBitFilter(sensor_value & 0x000F)    
 
                 # edge detection
                 risingEdge = (~last_sc) & sc
@@ -1271,6 +1293,7 @@ def CheckForNewScores(nState=[0]):
                 print("End of game - learning game- save and print")
                 save_game_history()
                 print_game_history_file()
+                free_game_history()
 
             sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
@@ -1440,7 +1463,7 @@ if __name__ == "__main__":
         print("loaded actual score= ", targetScores)
         print("digits per player=", digitsPerPlayer)
         print("carryThresholds before=", carryThresholds)
-        print_masks()
+        printMasks()
         # Set all carry thresholds to 255
         
         for player in range(4):
@@ -1450,7 +1473,7 @@ if __name__ == "__main__":
         
         
         print("carryThresholds after=")
-        print_masks()
+        printMasks()
 
 
         start = time.ticks_ms()

@@ -1,7 +1,7 @@
 # BitStreamFilter32: 32-bit, 16-deep zero-run filter with per-stage masks.
 
 '''
-this "filter" is setup to be super fast with full 32 bit streams
+this "filter" is setup to be super fast with full 32 parallel bit streams
 
 after init setup the number of samples required for a score increment
 and also the number of idle samples to reset for the next score (hold off)

@@ -1,4 +1,4 @@
-# This file is part of the Warped Pinball WPC-Wifi Project.
+# This file is part of the Warped Pinball SYSEM-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 '''
