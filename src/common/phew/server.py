@@ -8,9 +8,8 @@ from machine import RTC
 from ScoreTrack import (
     CheckForNewScores,
     check_for_machine_high_scores,
-    initialize_leaderboard
+    initialize_leaderboard,
 )
-
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
 
@@ -173,7 +172,7 @@ async def _handle_request(reader, writer):
 def add_route(path, handler):
     global _routes
     if path in _routes:
-        raise ValueError(f"Route already exists: {path} {handler}")
+        raise ValueError(f"Route already exists: {path}")
     _routes[path] = handler
 
 
@@ -218,7 +217,7 @@ def copy_to_fram():
     MemIndex += 16
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
-        #print("FRAM: cycle complete")
+        print("FRAM: cycle complete")
         led_board.toggle()
 
 
@@ -283,9 +282,6 @@ def create_schedule(ap_mode: bool = False):
     from displayMessage import refresh
     from GameStatus import poll_fast
 
-   
-
-    
     #
     # one time tasks
     #
@@ -306,7 +302,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     # update the game status every 0.25 second
-    #schedule(poll_fast, 15000, 250)
+    schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
