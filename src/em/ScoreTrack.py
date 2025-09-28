@@ -142,8 +142,8 @@ def _loadState():
     global PROCESS_START_PAUSE, PROCESS_END_PAUSE
 
     # required config values
-    digitsPerPlayer = int(S.gdata["digitsPerPlayer"])
-    players = int(S.gdata["numberOfPlayers"])
+    digitsPerPlayer = int(S.gdata["digits"])
+    players = int(S.gdata["players"])
 
     # load start/end pause values from configuration (EMData -> S.gdata)
     # keys are "startpause" and "endpause"; fall back to current defaults if missing

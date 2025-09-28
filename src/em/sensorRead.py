@@ -14,11 +14,12 @@ import machine
 import Dma_Registers_RP2350 as dma_d
 from machine import Pin
 import time
+import SharedState as S
 
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 from logger import logger_instance
-Log = logger_instance
+log = logger_instance
 
 # Pin assignments
 PIO_MISO_PIN = 12  
@@ -232,7 +233,7 @@ def dma_start():
    
     # DMA channel assignment (we can use any channel in this case)
     DMA_SENSOR = a.channel 
-    Log.log(f"SENSOR: using DMA channel: {DMA_SENSOR}")
+    log.log(f"SENSOR: using DMA channel: {DMA_SENSOR}")
 
     #uctypes struct for registers
     dma_sensor = dma_d.DMA_CHANS[DMA_SENSOR]   
@@ -281,15 +282,6 @@ def reverse_bits_16(x):
     #x = x & 0x0F
     return x
 
-def calibratePwms():
-    import time
-    lowCal=0
-    highCal=65535
-
-    hiPwm.duty_u16(int(65535))   # HI at 100%
-    lowPwm.duty_u16(int(0))      # LOW at 0%
-    time.sleep(0.1)
-
 
 #this pin is the output from the PIO game active filter
 game_active_pin = Pin(15, Pin.OUT)   
@@ -304,6 +296,15 @@ def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
     global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
 
+    #check existing cal from spi datastore
+    cal_high = S.gdata.get("sensorlevels")[1]
+    cal_low = S.gdata.get("sensorlevels")[0]
+    if (cal_high>20000  and   cal_low<(65535-20000) ):
+        log.log("SENSOR: sensor calibration restored")
+        lowPwm.duty_u16(cal_low)
+        hiPwm.duty_u16(cal_high)
+        return
+
     print("SENSOR: Calibrate sensor circuit")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
@@ -312,7 +313,7 @@ def calibrate():
     time.sleep(0.1)  
     v = readSensorRx()   
     if (v&0x03) != 0:
-        Log.log("SENSOR: sensor cal fault")
+        log.log("SENSOR: sensor cal fault")
 
     for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed        
         print(".",end="")
@@ -354,7 +355,7 @@ def calibrate():
     lowPwm.duty_u16(lowCalThres)
     highCalThres = int(highCal*1.12)  #1.1
     hiPwm.duty_u16(highCalThres)
-    Log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
+    log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
 
 
@@ -373,7 +374,7 @@ def sensitivityChange(dir):
 
     lowPwm.duty_u16(lowCalThres)
     hiPwm.duty_u16(highCalThres)
-    Log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
+    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
 
 
 

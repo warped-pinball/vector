@@ -13,7 +13,6 @@ import time
 
 import sensorRead
 sensorRead.initialize()
-sensorRead.calibrate()
 
 
 import faults
@@ -131,11 +130,7 @@ if not ap_mode:
 else:
     GameDefsLoad.go(safe_mode=True)
 
-
-# Add these entries to S.gdata
-S.gdata["numberOfPlayers"] = 2
-S.gdata["digitsPerPlayer"] = 4
-S.gdata["scoreMultiplier"] = 10
+sensorRead.calibrate()
 
 ScoreTrack.initialize()
 
