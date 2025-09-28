@@ -113,9 +113,46 @@ async function populate_previous_ip() {
   ip_link.href = previous_ip;
 }
 
+async function build_em_machine_name_input(features) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = "em_machine_name";
+  input.name = "em_machine_name";
+  input.placeholder = "Enter machine name";
+  input.autocomplete = "off";
+  input.maxLength = features.max_machine_name_length || 16;
+
+  const placeholder = document.getElementById(
+    "game_config_select_placeholder",
+  );
+  placeholder.replaceWith(input);
+
+  try {
+    const response_active = await fetch("/api/game/active_config");
+    if (response_active.ok) {
+      const active_config = await response_active.json();
+      if (active_config.active_config) {
+        input.value = active_config.active_config;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load existing machine name", error);
+  }
+}
+
 async function populate_configure_modal() {
+  const features = await window.getSystemFeatures();
   build_ssid_select();
-  build_game_config_select();
+  if (features.requires_game_config) {
+    build_game_config_select();
+  } else {
+    await build_em_machine_name_input(features);
+    const help = document.getElementById("game-config-help");
+    if (help) {
+      help.textContent =
+        "Enter the name of the electromechanical machine this Vector will score keep for.";
+    }
+  }
   populate_previous_ip();
 }
 
@@ -140,6 +177,7 @@ async function configure_check() {
 configure_check();
 
 async function set_vector_config() {
+  const features = await window.getSystemFeatures();
   // save the other configuration options
   // ssid select
   const ssid = window.getDropDownValue("ssid_select");
@@ -149,7 +187,21 @@ async function set_vector_config() {
   const vector_password = document.querySelector(
     'input[name="vector_password"]',
   ).value;
-  const game_config = window.getDropDownValue("game_config_select");
+
+  let game_config = null;
+  let machine_name = null;
+
+  if (features.requires_game_config) {
+    game_config = window.getDropDownValue("game_config_select");
+  } else {
+    const machineInput = document.getElementById("em_machine_name");
+    machine_name = machineInput ? machineInput.value.trim() : "";
+    if (!machine_name) {
+      alert("Please enter a machine name before saving the configuration.");
+      return null;
+    }
+    game_config = machine_name;
+  }
 
   data = {
     ssid: ssid,
@@ -157,6 +209,10 @@ async function set_vector_config() {
     vector_password: vector_password,
     game_config_filename: game_config,
   };
+
+  if (!features.requires_game_config) {
+    data.em_machine_name = machine_name;
+  }
 
   // send a POST with the selected configuration
   // auth is not required because this route is only available in AP mode
@@ -172,6 +228,10 @@ async function set_vector_config() {
 async function save_configuration() {
   // save the vector configuration
   let response_vector = await set_vector_config();
+
+  if (!response_vector) {
+    return;
+  }
 
   if (!response_vector.status == 200) {
     alert("Error saving vector configuration; Try again");

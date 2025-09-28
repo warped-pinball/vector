@@ -17,6 +17,8 @@ from SPI_DataStore import read_record as ds_read_record
 from SPI_DataStore import write_record as ds_write_record
 from ujson import dumps as json_dumps
 
+from system_features import get_system_features
+
 #
 # Constants
 #
@@ -370,6 +372,11 @@ def app_reboot_game(request):
     sleep(2)
     reset_control.release(True)
     phew_restart_schedule()
+
+
+@add_route("/api/system/features")
+def app_system_features(request):
+    return get_system_features()
 
 
 @add_route("/api/game/name")
@@ -892,12 +899,32 @@ def app_apply_update(request):
 #
 # APP mode route of AP mode only routes
 #
+def register_system_specific_routes(mode):
+    try:
+        from systemConfig import vectorSystem  # type: ignore
+    except Exception:
+        vectorSystem = "unknown"
+
+    if vectorSystem == "em":
+        try:
+            from em import backend_routes as em_backend_routes  # type: ignore
+
+            if mode == "app":
+                em_backend_routes.register_app_routes(add_route)
+            elif mode == "ap":
+                em_backend_routes.register_ap_routes(add_route)
+        except Exception as e:
+            print(f"Failed to register EM specific routes: {e}")
+
+
 def add_app_mode_routes():
     """Routes only available in app mode"""
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
         return {"in_ap_mode": False}
+
+    register_system_specific_routes("app")
 
 
 #
@@ -913,13 +940,23 @@ def add_ap_mode_routes():
     @add_route("/api/settings/set_vector_config")
     def app_setWifi(request):
         """Set the wifi SSID and password"""
-        from GameDefsLoad import list_game_configs
-
-        all_game_configs = list_game_configs().keys()
-
+        features = get_system_features()
         data = request.data
-        if data["game_config_filename"] not in all_game_configs:
-            return f"Invalid game config filename {data['game_config_filename']}", 400
+
+        machine_name = data.get("em_machine_name", "").strip()
+        game_config_filename = data.get("game_config_filename", "")
+
+        if features.get("requires_game_config", True):
+            from GameDefsLoad import list_game_configs
+
+            all_game_configs = list(list_game_configs().keys())
+            if game_config_filename not in all_game_configs:
+                return f"Invalid game config filename {game_config_filename}", 400
+        else:
+            if not machine_name:
+                return "A machine name is required for EM installations", 400
+            max_length = int(features.get("max_machine_name_length", 16))
+            game_config_filename = machine_name[:max_length]
 
         ds_write_record(
             "configuration",
@@ -927,11 +964,13 @@ def add_ap_mode_routes():
                 "ssid": data["ssid"],
                 "password": data["wifi_password"],
                 "Gpassword": data["vector_password"],
-                "gamename": data["game_config_filename"],
+                "gamename": game_config_filename,
             },
         )
 
         Pico_Led.off()
+
+    register_system_specific_routes("ap")
 
 
 def connect_to_wifi(initialize=False):

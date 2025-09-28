@@ -97,10 +97,10 @@
       </label>
     </fieldset>
   </section>
-  <section>
+  <section id="score-claim-section">
     <h3>Score Claim Methods</h3>
     <fieldset id="score-claim-methods">
-      <label>
+      <label id="on-machine-row">
         <input
           id="on-machine-toggle"
           type="checkbox"
@@ -152,7 +152,7 @@
       </button>
     </fieldset>
   </section>
-  <section>
+  <section id="adjustments-section">
     <h3>Adjustments Profiles</h3>
     <div id="adjustments-not-supported" class="hide">
       Adjustment profiles are not yet supported for this game or rom. If you
@@ -244,7 +244,44 @@
       </div>
     </div>
   </section>
-  <section>
+  <section id="em-calibration-section" class="hide">
+    <h3>Electromechanical Calibration</h3>
+    <p>
+      <strong>Score reels:</strong>
+      <span id="em-score-reel-count">0</span>
+    </p>
+    <div class="grid">
+      <div>
+        <button id="em-capture-button">Capture Calibration Game</button>
+      </div>
+      <div>
+        <p>
+          Record a game to let Vector observe the score reel pulses while you
+          play.
+        </p>
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <button id="em-learning-button" class="secondary" disabled>
+          Start Learning Process
+        </button>
+      </div>
+      <div>
+        <p>
+          Once you have captured calibration games, start the learning process
+          to analyse them.
+        </p>
+        <p id="em-learning-status"></p>
+      </div>
+    </div>
+    <div>
+      <h4>Calibration Games</h4>
+      <p id="em-calibration-empty">No calibration games captured yet.</p>
+      <ol id="em-calibration-list"></ol>
+    </div>
+  </section>
+  <section id="show-ip-section">
     <h3>Miscellaneous</h3>
     <fieldset>
       <label>
@@ -392,7 +429,11 @@
   </section>
   <section>
     <h3>Debug</h3>
-    <button class="secondary" onclick="downloadMemorySnapshot()">
+    <button
+      class="secondary"
+      id="download-memory-snapshot-button"
+      onclick="downloadMemorySnapshot()"
+    >
       Download Memory Snapshot
     </button>
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>

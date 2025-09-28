@@ -2,6 +2,8 @@
 // Generic / Utility functions
 //
 
+let systemFeatures = null;
+
 async function confirm_auth_get(url, purpose) {
   await confirmAction(purpose, async () => {
     const response = await window.smartFetch(url, null, true);
@@ -72,29 +74,42 @@ async function getScoreClaimMethods() {
   );
   const data = await response.json();
 
-  const onMachineToggle = await window.waitForElementById("on-machine-toggle");
+  const onMachineRow = document.getElementById("on-machine-row");
+  let onMachineToggle = null;
+  if (systemFeatures && systemFeatures.supports_on_machine_claims) {
+    onMachineToggle = await window.waitForElementById("on-machine-toggle");
+    onMachineToggle.checked = data["on-machine"];
+    onMachineToggle.disabled = false;
+  } else if (onMachineRow) {
+    onMachineRow.classList.add("hide");
+  }
+
   const webUIToggle = await window.waitForElementById("web-ui-toggle");
-
-  onMachineToggle.checked = data["on-machine"];
-  onMachineToggle.disabled = false;
-
   webUIToggle.checked = data["web-ui"];
   webUIToggle.disabled = false;
 
-  // Helper function to add event listener to claim method toggle
-  function addClaimMethodToggleListener(toggle) {
-    toggle.addEventListener("change", async () => {
-      const data = {
-        "on-machine": onMachineToggle.checked ? 1 : 0,
-        "web-ui": webUIToggle.checked ? 1 : 0,
-      };
-      await window.smartFetch("/api/settings/set_claim_methods", data, true);
-    });
+  function buildClaimMethodPayload() {
+    const payload = {};
+    if (systemFeatures && systemFeatures.supports_on_machine_claims && onMachineToggle) {
+      payload["on-machine"] = onMachineToggle.checked ? 1 : 0;
+    }
+    if (!systemFeatures || systemFeatures.supports_web_ui_claims !== false) {
+      payload["web-ui"] = webUIToggle.checked ? 1 : 0;
+    }
+    return payload;
   }
 
-  // Apply listener to both toggles
-  addClaimMethodToggleListener(onMachineToggle);
-  addClaimMethodToggleListener(webUIToggle);
+  const toggles = [webUIToggle];
+  if (onMachineToggle) {
+    toggles.push(onMachineToggle);
+  }
+
+  toggles.forEach((toggle) => {
+    toggle.addEventListener("change", async () => {
+      const payload = buildClaimMethodPayload();
+      await window.smartFetch("/api/settings/set_claim_methods", payload, true);
+    });
+  });
 }
 
 async function getShowIP() {
@@ -181,10 +196,72 @@ async function initMidnightMadness() {
 }
 
 if (typeof window !== "undefined") {
-  tournamentModeToggle();
-  getScoreClaimMethods();
-  getShowIP();
-  initMidnightMadness();
+  const emState = {
+    scoreReels: 0,
+    pendingCaptureId: null,
+    calibrationGames: [],
+  };
+
+  async function initAdmin() {
+    try {
+      systemFeatures = await window.getSystemFeatures();
+    } catch (error) {
+      console.error("Failed to load system features", error);
+      systemFeatures = {};
+    }
+
+    tournamentModeToggle();
+
+    if (
+      systemFeatures.supports_on_machine_claims === false &&
+      systemFeatures.supports_web_ui_claims === false
+    ) {
+      const scoreClaimSection = document.getElementById("score-claim-section");
+      if (scoreClaimSection) {
+        scoreClaimSection.classList.add("hide");
+      }
+    } else {
+      getScoreClaimMethods();
+    }
+
+    if (systemFeatures.supports_show_ip_on_machine) {
+      getShowIP();
+    } else {
+      const showIpSection = document.getElementById("show-ip-section");
+      if (showIpSection) {
+        showIpSection.classList.add("hide");
+      }
+    }
+
+    initMidnightMadness();
+
+    if (systemFeatures.supports_adjustment_profiles) {
+      populateAdjustmentProfiles();
+    } else {
+      const adjustmentsSection = document.getElementById("adjustments-section");
+      if (adjustmentsSection) {
+        adjustmentsSection.classList.add("hide");
+      }
+    }
+
+    if (systemFeatures.supports_memory_snapshot === false) {
+      const snapshotButton = document.getElementById(
+        "download-memory-snapshot-button",
+      );
+      if (snapshotButton) {
+        snapshotButton.classList.add("hide");
+      }
+    }
+
+    if (systemFeatures.supports_em_calibration) {
+      await initEmCalibration();
+    } else {
+      const emSection = document.getElementById("em-calibration-section");
+      if (emSection) {
+        emSection.classList.add("hide");
+      }
+    }
+  }
 
   //
   // Adjustment Profiles
@@ -244,8 +321,6 @@ if (typeof window !== "undefined") {
       });
     }
   }
-
-  populateAdjustmentProfiles();
 
   async function setProfileName(index) {
     const input = document.getElementById(`name-profile-${index}`);
@@ -328,6 +403,319 @@ if (typeof window !== "undefined") {
       callback,
       populateAdjustmentProfiles, // if we cancel we need to reset the selected / active profile
     );
+  }
+
+  //
+  // Electromechanical Calibration
+  //
+
+  async function refreshEmCalibration() {
+    try {
+      const response = await window.smartFetch(
+        "/api/em/status",
+        null,
+        false,
+      );
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`);
+      }
+      const data = await response.json();
+
+      const defaultReels =
+        (systemFeatures && systemFeatures.default_score_reels) || 0;
+      emState.scoreReels = data.score_reels || defaultReels;
+      emState.calibrationGames = data.calibration_games || [];
+
+      const reelCountElement = document.getElementById("em-score-reel-count");
+      if (reelCountElement) {
+        reelCountElement.textContent = emState.scoreReels || defaultReels;
+      }
+
+      const list = document.getElementById("em-calibration-list");
+      const emptyMessage = document.getElementById("em-calibration-empty");
+      if (list) {
+        list.innerHTML = "";
+        if (emState.calibrationGames.length === 0) {
+          if (emptyMessage) {
+            emptyMessage.classList.remove("hide");
+          }
+        } else {
+          if (emptyMessage) {
+            emptyMessage.classList.add("hide");
+          }
+          emState.calibrationGames.forEach((game, index) => {
+            const item = document.createElement("li");
+            const scores = Array.isArray(game.scores)
+              ? game.scores.join(", ")
+              : game.scores || "-";
+            let description = `Game ${index + 1}: ${scores}`;
+            if (game.saved_at) {
+              const savedDate = new Date(game.saved_at * 1000);
+              if (!Number.isNaN(savedDate.getTime())) {
+                description += ` — Saved ${savedDate.toLocaleString()}`;
+              }
+            }
+            item.textContent = description;
+            list.appendChild(item);
+          });
+        }
+      }
+
+      const captureButton = document.getElementById("em-capture-button");
+      if (captureButton) {
+        const maxGames =
+          (systemFeatures && systemFeatures.max_calibration_games) || 4;
+        captureButton.disabled =
+          emState.calibrationGames.length >= maxGames;
+      }
+
+      const learningButton = document.getElementById("em-learning-button");
+      if (learningButton) {
+        learningButton.disabled = emState.calibrationGames.length === 0;
+      }
+    } catch (error) {
+      console.error("Failed to refresh EM calibration status", error);
+    }
+  }
+
+  function openEmScoreEntryModal(captureId) {
+    const modal = document.getElementById("em-score-entry-modal");
+    const container = document.getElementById("em-score-inputs");
+    if (!modal || !container) {
+      return;
+    }
+
+    container.innerHTML = "";
+    const reelCount =
+      emState.scoreReels ||
+      (systemFeatures && systemFeatures.default_score_reels) ||
+      0;
+
+    for (let i = 0; i < reelCount; i++) {
+      const label = document.createElement("label");
+      label.htmlFor = `em-score-input-${i}`;
+      label.textContent = `Reel ${i + 1}`;
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "1";
+      input.id = `em-score-input-${i}`;
+      input.name = `reel-${i}`;
+      input.required = true;
+
+      container.appendChild(label);
+      container.appendChild(input);
+    }
+
+    emState.pendingCaptureId = captureId;
+    modal.showModal();
+  }
+
+  function closeEmScoreEntryModal() {
+    const modal = document.getElementById("em-score-entry-modal");
+    if (modal && modal.open) {
+      modal.close();
+    }
+    emState.pendingCaptureId = null;
+  }
+
+  async function handleEmCapture() {
+    const modal = document.getElementById("em-capture-progress-modal");
+    const progressBar = document.getElementById("em-capture-progress");
+    const statusText = document.getElementById("em-capture-status");
+    const closeButton = document.getElementById("em-capture-close-button");
+
+    if (!modal || !progressBar || !statusText || !closeButton) {
+      console.warn("EM capture UI is missing expected elements.");
+      return;
+    }
+
+    progressBar.value = 0;
+    statusText.textContent = "Preparing to capture…";
+    closeButton.disabled = true;
+    modal.showModal();
+
+    function processUpdate(update) {
+      if (typeof update.progress === "number") {
+        progressBar.value = update.progress;
+      }
+      if (update.message) {
+        statusText.textContent = update.message;
+      }
+      if (update.status === "awaiting_score") {
+        closeButton.disabled = false;
+        modal.close();
+        openEmScoreEntryModal(update.capture_id);
+      }
+    }
+
+    try {
+      const response = await window.smartFetch(
+        "/api/em/calibration/start_capture",
+        {},
+        true,
+      );
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+          processUpdate(JSON.parse(line));
+        }
+      }
+
+      if (buffer.trim()) {
+        processUpdate(JSON.parse(buffer.trim()));
+      }
+    } catch (error) {
+      console.error("Failed to capture calibration game", error);
+      statusText.textContent = `Capture failed: ${error.message || error}`;
+      closeButton.disabled = false;
+      return;
+    }
+
+    closeButton.disabled = false;
+  }
+
+  async function submitEmScoreForm(event) {
+    event.preventDefault();
+    if (!emState.pendingCaptureId) {
+      alert("There is no captured game to save yet.");
+      return;
+    }
+
+    const scores = [];
+    const reelCount =
+      emState.scoreReels ||
+      (systemFeatures && systemFeatures.default_score_reels) ||
+      0;
+
+    for (let i = 0; i < reelCount; i++) {
+      const input = document.getElementById(`em-score-input-${i}`);
+      if (!input) {
+        continue;
+      }
+      const value = parseInt(input.value, 10);
+      if (Number.isNaN(value)) {
+        alert("Please enter a value for each score reel.");
+        return;
+      }
+      scores.push(value);
+    }
+
+    try {
+      const response = await window.smartFetch(
+        "/api/em/calibration/save_game",
+        {
+          capture_id: emState.pendingCaptureId,
+          scores,
+        },
+        true,
+      );
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`);
+      }
+
+      await response.json();
+      closeEmScoreEntryModal();
+      await refreshEmCalibration();
+    } catch (error) {
+      console.error("Failed to save calibration game", error);
+      alert("Unable to save calibration game. Please try again.");
+    }
+  }
+
+  async function initEmCalibration() {
+    const section = document.getElementById("em-calibration-section");
+    if (!section) {
+      return;
+    }
+
+    section.classList.remove("hide");
+
+    const captureButton = document.getElementById("em-capture-button");
+    const closeButton = document.getElementById("em-capture-close-button");
+    const scoreForm = document.getElementById("em-score-entry-form");
+    const cancelButton = document.getElementById("em-score-entry-cancel");
+    const learningButton = document.getElementById("em-learning-button");
+    const learningStatus = document.getElementById("em-learning-status");
+    const progressModal = document.getElementById(
+      "em-capture-progress-modal",
+    );
+
+    if (captureButton) {
+      captureButton.addEventListener("click", async () => {
+        await handleEmCapture();
+      });
+    }
+
+    if (closeButton) {
+      closeButton.addEventListener("click", () => {
+        if (progressModal && progressModal.open) {
+          progressModal.close();
+        }
+      });
+    }
+
+    if (scoreForm) {
+      scoreForm.addEventListener("submit", submitEmScoreForm);
+    }
+
+    if (cancelButton) {
+      cancelButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        closeEmScoreEntryModal();
+      });
+    }
+
+    if (learningButton) {
+      learningButton.addEventListener("click", async () => {
+        try {
+          const response = await window.smartFetch(
+            "/api/em/calibration/start_learning",
+            {},
+            true,
+          );
+          if (!response.ok) {
+            throw new Error(`status ${response.status}`);
+          }
+          const result = await response.json();
+          if (learningStatus) {
+            const timestamp = result.timestamp
+              ? new Date(result.timestamp * 1000)
+              : null;
+            const formatted =
+              timestamp && !Number.isNaN(timestamp.getTime())
+                ? timestamp.toLocaleString()
+                : "just now";
+            learningStatus.textContent = `Learning started with ${result.games_available} calibration game(s) (${formatted}).`;
+          } else {
+            alert("Learning process started.");
+          }
+        } catch (error) {
+          console.error("Failed to start learning process", error);
+          alert("Unable to start the learning process. Please try again.");
+        }
+      });
+    }
+
+    await refreshEmCalibration();
   }
 
   //
@@ -640,6 +1028,7 @@ if (typeof window !== "undefined") {
     }
   }
 
+  initAdmin();
   checkForUpdates();
   window.applyUpdate = applyUpdate;
 

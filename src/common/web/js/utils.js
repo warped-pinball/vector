@@ -41,3 +41,19 @@ async function fetchGzip(url) {
 }
 
 window.fetchGzip = fetchGzip;
+
+let cachedSystemFeatures = null;
+
+async function getSystemFeatures() {
+  if (cachedSystemFeatures) {
+    return cachedSystemFeatures;
+  }
+  const response = await fetch("/api/system/features");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch system features: ${response.status}`);
+  }
+  cachedSystemFeatures = await response.json();
+  return cachedSystemFeatures;
+}
+
+window.getSystemFeatures = getSystemFeatures;

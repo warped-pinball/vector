@@ -119,7 +119,7 @@
             aria-label="Pinball Admin Password"
           />
 
-          <p>
+          <p id="game-config-help">
             Please <mark>double check your game and ROM version</mark> If you
             are unsure, do not guess. If you have a ROM that is not listed we
             may be able to add it for you.
@@ -200,6 +200,30 @@
             </button>
             <button id="password_save_button">Login</button>
           </footer>
+        </article>
+      </dialog>
+      <dialog id="em-capture-progress-modal">
+        <article>
+          <h3>Capturing Calibration Game</h3>
+          <p id="em-capture-status">Preparing to capture…</p>
+          <progress id="em-capture-progress" value="0" max="100"></progress>
+          <footer>
+            <button id="em-capture-close-button" disabled>Close</button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="em-score-entry-modal">
+        <article>
+          <h3>Enter Calibration Game Score</h3>
+          <form id="em-score-entry-form">
+            <div id="em-score-inputs" class="grid"></div>
+            <footer>
+              <button class="secondary" id="em-score-entry-cancel">
+                Cancel
+              </button>
+              <button type="submit">Save Scores</button>
+            </footer>
+          </form>
         </article>
       </dialog>
       <dialog id="confirm-modal">

@@ -108,29 +108,41 @@ def go(safe_mode=False):
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
 
     data = safe_defaults.copy()
+    vectorSystem = "unknown"
     try:
-        from systemConfig import vectorSystem
-        if vectorSystem == "wpc":            
+        from systemConfig import vectorSystem as _vectorSystem
+
+        vectorSystem = _vectorSystem
+        if vectorSystem == "wpc":
             data["Memory"] = safe_defaults_wpc["Memory"].copy()
     except Exception as e:
         Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")
 
     if not safe_mode:
         try:
-            config_filename = SPI_DataStore.read_record("configuration", 0)["gamename"]
-            Log.log(f"Loading game config {config_filename}")
-            all_configs = list_game_configs()
+            record = SPI_DataStore.read_record("configuration", 0)
+            config_filename = record["gamename"]
 
-            if config_filename not in all_configs.keys():
-                faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
-                data = safe_defaults
+            if vectorSystem == "em":
+                if config_filename:
+                    data["GameInfo"]["GameName"] = config_filename
             else:
-                config_data = find_config_in_file(config_filename)
-                if config_data:
-                    data = config_data
-                else:
-                    faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
+                Log.log(f"Loading game config {config_filename}")
+                all_configs = list_game_configs()
+
+                if config_filename not in all_configs.keys():
+                    faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
                     data = safe_defaults
+                else:
+                    config_data = find_config_in_file(config_filename)
+                    if config_data:
+                        data = config_data
+                    else:
+                        faults.raise_fault(
+                            faults.CONF01,
+                            f"Error loading game config {config_filename}",
+                        )
+                        data = safe_defaults
 
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
