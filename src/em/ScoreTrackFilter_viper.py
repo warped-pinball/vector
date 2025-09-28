@@ -1,3 +1,6 @@
+# This file is part of the Warped Pinball SYSEM-Wifi Project.
+# https://creativecommons.org/licenses/by-nc/4.0/
+# This work is licensed under CC BY-NC 4.0
 '''  bit filter for score track on EM games
 
     uses viper - so isolated from ScoreTrack

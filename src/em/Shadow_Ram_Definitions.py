@@ -1,9 +1,9 @@
-# This file is part of the Warped Pinball SYS11Wifi Project.
+# This file is part of the Warped Pinball SYSEM-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
 EM - there is no shadow ram ~~~~~~~~~ or is there?
-now it is sensor buffer
+now it is the coil sensor buffer
 
 """
 

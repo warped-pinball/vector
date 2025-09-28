@@ -10,7 +10,7 @@ from ScoreTrack import (
     check_for_machine_high_scores,
     initialize_leaderboard
 )
-from display import displayUpdate
+
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
 
@@ -309,7 +309,7 @@ def create_schedule(ap_mode: bool = False):
     #schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
-    #schedule(CheckForNewScores, 15000, 5000)
+    schedule(CheckForNewScores, 15000, 5000)
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):

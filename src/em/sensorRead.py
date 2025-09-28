@@ -294,7 +294,6 @@ def calibratePwms():
 #this pin is the output from the PIO game active filter
 game_active_pin = Pin(15, Pin.OUT)   
 def gameActive():
-    #return 0
     return game_active_pin.value()
 
 
@@ -374,7 +373,7 @@ def sensitivityChange(dir):
 
     lowPwm.duty_u16(lowCalThres)
     hiPwm.duty_u16(highCalThres)
-    Log.log("SENSOR: set thresholds low=",lowCalThres,"high=",highCalThres)
+    Log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
 
 
 

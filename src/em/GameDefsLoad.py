@@ -1,4 +1,4 @@
-# This file is part of the Warped Pinball SYSEM Wifi Project.
+# This file is part of the Warped Pinball SYSEM-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
@@ -49,6 +49,9 @@ def go(safe_mode=False):
         print(f"Game Name: {em_data.get('gamename', 'Unknown')}")
         print(f"Players: {em_data.get('players', 'Unknown')}")
         print(f"Digits: {em_data.get('digits', 'Unknown')}")
+        print(f"Start Pause: {em_data.get('startpause', 'Unknown')}")
+        print(f"End Pause: {em_data.get('endpause', 'Unknown')}")
+
         print("-" * 40)
 
         # Print filtermasks grid
