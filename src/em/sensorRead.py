@@ -300,9 +300,11 @@ def calibrate():
     cal_high = S.gdata.get("sensorlevels")[1]
     cal_low = S.gdata.get("sensorlevels")[0]
     if (cal_high>20000  and   cal_low<(65535-20000) ):
-        log.log("SENSOR: sensor calibration restored")
+        log.log(f"SENSOR: sensor calibration restored:  cal_low={cal_low}, cal_high={cal_high}")
         lowPwm.duty_u16(cal_low)
+        lowCalThres=cal_low
         hiPwm.duty_u16(cal_high)
+        highCalThres=cal_high
         return
 
     print("SENSOR: Calibrate sensor circuit")
@@ -375,6 +377,11 @@ def sensitivityChange(dir):
     lowPwm.duty_u16(lowCalThres)
     hiPwm.duty_u16(highCalThres)
     log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
+
+    import SPI_DataStore as DataStore
+    S.gdata.get("sensorlevels")[1] = highCalThres
+    S.gdata.get("sensorlevels")[0] = lowCalThres
+    DataStore.write_record("EMData", S.gdata)
 
 
 
