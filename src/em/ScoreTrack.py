@@ -73,10 +73,10 @@ sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 
 #config stuff to be sent to UI:
 actualScoreFromLastGame = None
-#actualScoreFromLastGame = [ 6323, 0,0,0]
+#actualScoreFromLastGame = [ 2193, 0,0,0]
 
 # global file selector: 0..4 supported
-fileNumber = 3  # change this to select which game_historyN.dat to use (0..4)
+fileNumber = 2  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
@@ -194,7 +194,7 @@ def _loadState():
 
 
 def _saveState():
-    """store working congi back to SPI_DataStore"""
+    """store working config back to SPI_DataStore"""
     try:
         em = DataStore.read_record("EMData")
     except Exception as e:
@@ -208,7 +208,7 @@ def _saveState():
         r = int(resetDepths[ch]) & 0xFF
         fm[ch * 2] = s
         fm[ch * 2 + 1] = r
-    em["filtermasks"] = bytes(fm)
+    S.gdata["filtermasks"] = bytes(fm)
 
     # Build 32-byte carrythresholds: players 0..3, digit 0..3, two 1-byte values (low, high)
     ct = bytearray(32)
@@ -220,13 +220,14 @@ def _saveState():
             ct[pos] = low
             ct[pos + 1] = high
             pos += 2
-    em["carrythresholds"] = bytes(ct)
+    S.gdata["carrythresholds"] = bytes(ct)
 
-    em["startpause"] = int(PROCESS_START_PAUSE)
-    em["endpause"] = int(PROCESS_END_PAUSE)
+    S.gdata["startpause"] = int(PROCESS_START_PAUSE)
+    S.gdata["endpause"] = int(PROCESS_END_PAUSE)
   
     try:
-        DataStore.write_record("EMData", em)
+        #DataStore.write_record("EMData", em)
+        DataStore.write_record("EMData", S.gdata) #  <<< could just do this way - 
         print("EMData updated from globals (filtermasks, carrythresholds).")
     except Exception as e:
         print("Error writing EMData:", e)
@@ -351,7 +352,7 @@ def add_actual_score_to_file(filename=None, actualScores=[0,0,0,0]):
             f.seek(4)
             for score in actualScores:
                 f.write(int(score).to_bytes(4, "little"))
-        print(f"Wrote actualScores={actualScores} to {filename}")
+        print(f"\n\nWrote actualScores = {actualScores} to {filename}")
     except Exception as e:
         print("Error updating actualScores:", e)
 
@@ -412,6 +413,9 @@ def load_game_history(filename=None):
     if filename is None:
         filename = game_history_filename()
 
+    alloc_game_history()
+    print("opening file ",filename)
+
     try:
         with open(filename, "rb") as f:
             if f.read(4) != b'GHDR':
@@ -434,8 +438,7 @@ def load_game_history(filename=None):
                 raise ValueError("File marker GHVL not found")
 
             # allocate arrays if we need to actually load samples
-            if gameHistoryIndex > 0:
-                alloc_game_history()
+            if gameHistoryIndex > 0:                
                 for i in range(gameHistoryIndex):
                     gameHistory[i] = int.from_bytes(f.read(4), "little")
             else:
@@ -459,6 +462,7 @@ def load_game_history(filename=None):
         print(f"Game history loaded from {filename}  actualScores={actualScores}")
     except Exception as e:
         print(f"Error loading game history: {e}")
+
 
 def print_game_history_file(filename=None):
     """Print the contents of a gameHistory file: sensor data (binary), time (decimal), index, and actualScores.
@@ -1292,7 +1296,7 @@ def CheckForNewScores(nState=[0]):
             if S.run_learning_game == True:
                 print("End of game - learning game- save and print")
                 save_game_history()
-                print_game_history_file()
+                #print_game_history_file()
                 free_game_history()
 
             sensorScores = [[0 for _ in range(6)] for _ in range(4)]
@@ -1386,6 +1390,10 @@ def test_processAndStore():
 
 
 if __name__ == "__main__":
+
+    #must load game data
+    import GameDefsLoad
+    GameDefsLoad.go()
 
     initialize()
 
