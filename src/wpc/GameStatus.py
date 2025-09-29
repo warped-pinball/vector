@@ -77,8 +77,11 @@ def _get_player_up():
     return 0
 
 
+count=0
+
 def game_report():
     """Generate a report of the current game status, return dict"""
+    global count
     data = {}
     try:
         data["BallInPlay"] = _get_ball_in_play()
@@ -95,10 +98,14 @@ def game_report():
             _get_machine_score(3),
         ]
 
-
         data["PlayerUp"] = _get_player_up()
 
-        
+        count=(count+1)%20
+        if count==0:
+            from ScoreTrack import top_scores
+            data["Leaders"] = top_scores
+
+
         '''
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
