@@ -108,7 +108,7 @@ def setSensorLeds(pattern):
     sensorPattern = sensorPattern | pattern
 
 
-def setlearnModeDigit(d):
+def setLearnModeDigit(d):
     global learnModeCounter
     if isinstance(d, int) and 0 <= d <= 9:
         learnModeCounter = d
@@ -174,7 +174,6 @@ def displayUpdate():
         _sendToHardware(lastSendValue & 0x00FFFFFF)
         return
   
-
     # sensorPattern is 16-bit
     low_byte = sensorPattern & 0x1F
     mid_byte = (sensorPattern >> 8) & 0x1F

@@ -24,8 +24,6 @@ import adjustButtons
 from logger import logger_instance
 from systemConfig import SystemVersion
 
-
-import display
 import GameStatus
 import ScoreTrack
 import SharedState as S
