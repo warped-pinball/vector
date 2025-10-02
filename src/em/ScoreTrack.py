@@ -751,41 +751,55 @@ carryCount = [0] * 32
 
 def processRisingEdge(sc,risingEdge):
     '''process rising edge and increment sensor Scores as needed
-       used by run and replay stored game...                '''
-    global last_sc,sensorScores,carryThresholds
+       used by run and replay stored game... 
+       sc is sensor state (32 bit)
+       rising edge bit=1 for single cycle on rising edge    '''
+    global last_sc,sensorScores,carryThresholds,carryCount
 
     if (1):
         # increment digits based on risingEdge - count over laps for carry corrections - no loops for speed
         #PLR1-ONES
         if risingEdge & 0x00000001:
             sensorScores[0][0] = sensorScores[0][0] + 1     #inc score
-            carryCount[0] = 0
+            #carryCount[0] = 0
         if sc&0x01 == 0x01:
             carryCount[0]=carryCount[0]+1
+        else:
+            carryCount[0]=0
+
         #PLR1-TENS
         if risingEdge & 0x00000002:
             sensorScores[0][1] = sensorScores[0][1] + 1     #inc score
             if carryCount[0]>carryThresholds[0][0][0] and carryCount[0]<carryThresholds[0][0][1]:
                 sensorScores[0][0] = 0                      #carry correction
-            carryCount[1] = 0
+            #carryCount[1] = 0
         if sc&0x02 == 0x02:
             carryCount[1]=carryCount[1]+1
+        else:
+            carryCount[1]=0
+
         #PLR1-HUNDERDS
         if risingEdge & 0x00000004:
             sensorScores[0][2] = sensorScores[0][2] + 1     #inc score
             if carryCount[1]>carryThresholds[0][1][0] and carryCount[1]<carryThresholds[0][1][1]:
                 sensorScores[0][1] = 0                      #carry correction
-            carryCount[2]=0
+            #carryCount[2]=0
         if sc&0x04 == 0x04:
             carryCount[2]=carryCount[2]+1
+        else:
+            carryCount[2]=0
+
         #PLR1-THOUSANDS
         if risingEdge & 0x00000008:
             sensorScores[0][3] = sensorScores[0][3] + 1     #inc score
             if carryCount[2]>carryThresholds[0][2][0] and carryCount[2]<carryThresholds[0][2][1]:
                 sensorScores[0][2] = 0                      #carry correction
-            carryCount[3]=0
+            #carryCount[3]=0
         if sc&0x08 == 0x08:
-            carryCount[3]=carryCount[3]+1            
+            carryCount[3]=carryCount[3]+1     
+        else:
+            carryCount[3]=0  
+
         #PLR1-TEN THOUSAND   
         if risingEdge & 0x00000010:
             sensorScores[0][4] = sensorScores[0][4] + 1     #inc score
@@ -915,10 +929,11 @@ def getPlayerScore(player):
     
     return score
 
+carry_measurements=[]
 
-def replayStoredGame(quiet=False):
+def replayStoredGame(quiet=False,carryDiag=False):
     ''' replay a stored game and report out scores'''
-    global sensorScores,last_sc
+    global sensorScores,last_sc,carry_measurements
 
     sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
@@ -948,7 +963,19 @@ def replayStoredGame(quiet=False):
                 # edge detection
                 risingEdge = (~last_sc) & sc
                 processRisingEdge(sc,risingEdge)
-                last_sc = sc           
+                last_sc = sc
+
+            '''during replay measure carry counts.... 
+                not included in processRisingEdge for run time speed   '''
+            if carryDiag == True:
+                for player in range(4):
+                    for digit in range(1, 4):  # only digits with a previous digit                        
+                        if sensorScores[player][digit] == 10:
+                            # carryCount index mapping: player blocks of 8 (0,8,16,24)
+                            idx = player * 8 + (digit - 1)
+                            if int(carryCount[idx]) > 1:
+                                carry_measurements.append((player, digit, int(carryCount[idx])))
+                                print("   carry count report            ",player, digit, carryCount[idx])                    
 
             #10->0 truncate, except let last one acculmulate
             if digitsPerPlayer > 0:
@@ -1457,6 +1484,61 @@ def pick_best_settings_from_results(good):
     return chosen
 
 
+def sort_out_carry_digits_and_apply():
+    """Process carry_measurements, ignore counts < 4, group by (player,digit).
+    If a group has 2+ samples compute low = floor(min*0.9), high = ceil(max*1.1)
+    and store into carryThresholds[player][digit] = [low, high]."""
+    global carry_measurements, carryThresholds
+
+    if not carry_measurements:
+        print("LEARN: no carry measurements")
+        return
+
+    # filter out low-count noise
+    filtered = [(p, d, c) for (p, d, c) in carry_measurements if int(c) >= 4]
+    if not filtered:
+        log.log("LEARN: no carry measurements >=4")
+        return
+
+    # group counts by (player,digit)
+    groups = {}
+    for p, d, c in filtered:
+        groups.setdefault((p, d), []).append(int(c))
+
+    print("groups ",groups)    
+
+    applied = []
+    for (p, d), counts in groups.items():
+        if len(counts) < 2:
+            # require at least two measurements to be confident
+            continue
+        minc = min(counts)
+        maxc = max(counts)
+        low = int(minc*0.9)
+        high = int(maxc * 1.1)
+        # store computed thresholds
+        carryThresholds[p][d][0] = low
+        carryThresholds[p][d][1] = high
+        applied.append((p, d, low, high, sorted(counts)))
+
+    if applied:
+        print("LEARN: applied carryThresholds (player,digit,low,high,counts):")
+        for entry in applied:
+            print("  ", entry)      
+    else:
+        print("LEARN: no grouped carry measurements found to apply")
+
+
+
+
+#import time
+from machine import Timer
+display_timer = Timer(-1) 
+from displayMessage import displayUpdate
+def dis(r):
+    displayUpdate()
+display_timer.init(mode=Timer.PERIODIC, period=700, callback=dis)
+
 
 def learnModeProcessNow():
     ''' the BIG learn mode - process all files data and set all filter and score parameters'''
@@ -1477,10 +1559,10 @@ def learnModeProcessNow():
         log.log("LEARN: low file count")
 
     # init display count down to finish
-    from displayMessage import setLearnModeDigit,displayUpdate
+    from displayMessage import setLearnModeDigit
     displayCounter=9
     setLearnModeDigit(displayCounter)
-    displayUpdate()
+    
 
     # process each file for filter counts
     SCORE_RANGE = (3,4,5,6,7,8)
@@ -1521,15 +1603,14 @@ def learnModeProcessNow():
                 if downCount >= downDelta:
                     downCount=0
                     displayCounter = displayCounter -1
-                    setLearnModeDigit(displayCounter)
-                    displayUpdate()
+                    setLearnModeDigit(displayCounter)                
 
                 # Set all digits of score mask the same
                 for bit in range(10):
                     setScoreMask(bit, scorebits, resetbits)
 
                 print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
-                replayStoredGame(True)
+                replayStoredGame(quiet=True,carryDiag=False)
 
                 print("score digits=", [sensorScores[0][d] for d in range(5)],
                 " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),
@@ -1554,18 +1635,52 @@ def learnModeProcessNow():
         print("Dig:",k,p[k])
     print("\n")
 
-    #if a digit has no solutions - try womthing??
+    #if a digit has no solutions - try somthing??  carry over??
+
+   
+
 
     # make picks for best settings (with out carry yet - -)
     q=pick_best_settings_from_results(p)
     print(q)
 
+    #set the scorebits and reset bits
+    for digit, (scorebits, resetbits) in q.items():
+        print(digit, scorebits, resetbits)
+        setScoreMask(digit, scorebits, resetbits)
+    printMasks()
+
     # process files looking for carry/rollover settings
+    for file_info in fileList:
+        filename = file_info[0]
+        # Extract file number from filename (expects format "game_historyN.dat")
+        try:
+            fileNumber = int(filename.replace("game_history", "").replace(".dat", ""))
+        except ValueError:
+            print(f"LEARN: Could not extract file number from {filename}")
+            continue
 
+        load_game_history()
+        targetScoreDigits = breakScoreIntoDigits(actualScores)       
+        # Now targetScoreDigits[player][digit] matches sensorScores[player][digit]
 
+        print(f"\nProcessing file for carry settings: {filename} (fileNumber={fileNumber})")
+        print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
+        replayStoredGame(quiet=True,carryDiag=True)
 
-    # take all results into account and find settings for game - save to fram
+    print("All carry measurements (player,digit,count) ",carry_measurements)
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
 
+    #sort out carry digits...
+    sort_out_carry_digits_and_apply()
+    printMasks()
+
+    # - save to fram
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+    _saveState()
+    log.log("LEARN: done")
 
 
 
@@ -1707,7 +1822,9 @@ if __name__ == "__main__":
         results = []
         import time
 
-        learnModeProcessNow()
+        #learnModeProcessNow()
+
+        printMasks()
 
         '''
         load_game_history()
