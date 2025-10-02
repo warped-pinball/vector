@@ -1530,19 +1530,24 @@ def sort_out_carry_digits_and_apply():
 
 
 
-
-#import time
+#timer stuff to keep the digit display going during learn mode only
 from machine import Timer
 display_timer = Timer(-1) 
 from displayMessage import displayUpdate
 def dis(r):
     displayUpdate()
-display_timer.init(mode=Timer.PERIODIC, period=700, callback=dis)
+def startTimer():    
+    display_timer.init(mode=Timer.PERIODIC, period=700, callback=dis)
+def stopTimer():
+    display_timer.deinit()
+    del globals()['display_timer']
 
 
 def learnModeProcessNow():
     ''' the BIG learn mode - process all files data and set all filter and score parameters'''
     global actualScores,fileNumber
+
+    startTimer()
 
     # count up the files and work to be done
     fileList = findDataFiles()
@@ -1628,6 +1633,9 @@ def learnModeProcessNow():
 
         print("\n\n",results,"\n\n")
 
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+
     # find good reset bits asnd score bits settings
     p=find_good_combinations_per_digit(results)
     # print out the results per digit..
@@ -1635,14 +1643,37 @@ def learnModeProcessNow():
         print("Dig:",k,p[k])
     print("\n")
 
-    #if a digit has no solutions - try somthing??  carry over??
-
-   
-
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
 
     # make picks for best settings (with out carry yet - -)
     q=pick_best_settings_from_results(p)
     print(q)
+
+    #if a digit has no solutions - try somthing??  carry over??
+    missing_digits = []
+    for d in range(5):
+        if not p.get(d): 
+            missing_digits.append(d)
+
+    if missing_digits:
+        log.log(f"LEARN: missing digits {missing_digits}")
+        # Compute average scorebits and resetbits from existing good digits
+        all_good_pairs = [pair for digit in p if p[digit] for pair in p[digit]]
+        if all_good_pairs:
+            avg_scorebits = int(sum(sb for sb, _ in all_good_pairs) / len(all_good_pairs))
+            avg_resetbits = int(sum(rb for _, rb in all_good_pairs) / len(all_good_pairs))
+        else:
+            avg_scorebits = 5  # fallback default
+            avg_resetbits = 9  # fallback default
+
+        # Fill in missing digits with the average values
+        for d in missing_digits:
+            p[d] = [(avg_scorebits, avg_resetbits)]
+            log.log(f"Digit {d}: filled with average ({avg_scorebits}, {avg_resetbits})")
+
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
 
     #set the scorebits and reset bits
     for digit, (scorebits, resetbits) in q.items():
@@ -1677,13 +1708,10 @@ def learnModeProcessNow():
     printMasks()
 
     # - save to fram
-    displayCounter = displayCounter -1
-    setLearnModeDigit(displayCounter)
     _saveState()
     log.log("LEARN: done")
 
-
-
+    stopTimer()
 
 
 
@@ -1822,7 +1850,7 @@ if __name__ == "__main__":
         results = []
         import time
 
-        #learnModeProcessNow()
+        learnModeProcessNow()
 
         printMasks()
 
