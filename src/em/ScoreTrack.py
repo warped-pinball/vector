@@ -81,8 +81,8 @@ fileNumber = 1  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
-S.run_learning_game = True
-#S.run_learning_game = False
+#S.run_learning_game = True
+S.run_learning_game = False
 
 '''
 Bit filter 
@@ -864,6 +864,8 @@ def processAndRun():
 
         sc = processBitFilter(d & sensorBitMask)
 
+        #print("bit mask",sensorBitMask," digits pp",digitsPerPlayer)
+
         # keep all channels that go active for led display
         allActivesChannels = allActivesChannels | sc
 
@@ -873,7 +875,7 @@ def processAndRun():
         last_sc = sc
 
     #send to display green digit leds
-    displayMessage.setSensorLeds(allActivesChannels&0x000F)
+    displayMessage.setSensorLeds(allActivesChannels)
     #print ("channels - ",allActivesChannels&0x000F)
 
     #10->0 truncate, except let last one acculmulate
