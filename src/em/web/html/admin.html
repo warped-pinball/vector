@@ -83,50 +83,33 @@
   <section>
     <h3>Game Configuration</h3>
     <fieldset id="game-configuration">
-      <div
-        style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap"
-      >
-        <div style="display: flex; flex-direction: column">
+      <div class="grid">
+        <div>
           <label for="game-name"><b>Game Name:</b></label>
           <input id="game-name" type="text" placeholder="Game name" />
         </div>
-        <div style="display: flex; flex-direction: column">
+        <div>
           <label for="total-players"><b>Total Players:</b></label>
-          <input
-            id="total-players"
-            type="number"
-            min="1"
-            value="4"
-            style="width: 5rem"
-          />
+          <input id="total-players" type="number" min="1" value="4" />
         </div>
-        <div style="display: flex; flex-direction: column">
+        <div>
           <label for="score-reels"><b>Score Reels per Player:</b></label>
-          <input
-            id="score-reels"
-            type="number"
-            min="1"
-            value="1"
-            style="width: 5rem"
-          />
+          <input id="score-reels" type="number" min="1" value="1" />
         </div>
-        <div style="display: flex; flex-direction: column">
-          <label for="dead-reels"><b>Dead / Static Reels:</b></label>
-          <input
-            id="dead-reels"
-            type="number"
-            min="0"
-            value="0"
-            style="width: 5rem"
-          />
+        <div>
+          <label for="dummy-reels"><b>Dummy Reels:</b></label>
+          <input id="dummy-reels" type="number" min="0" value="0" />
         </div>
       </div>
     </fieldset>
     <div style="margin-top: 1rem">
-      <button id="record-calibration" onclick="startRecordingCalibration()">
+      <button
+        id="record-calibration"
+        onclick="window.startRecordingCalibration()"
+      >
         Record Calibration Game
       </button>
-      <button id="start-learning" onclick="startLearningProcess()">
+      <button id="start-learning" onclick="window.startLearningProcess()">
         Start Learning Process
       </button>
     </div>
@@ -201,13 +184,7 @@
     <h3>Score Claim Methods</h3>
     <fieldset id="score-claim-methods">
       <label>
-        <input
-          id="web-ui-toggle"
-          type="checkbox"
-          role="switch"
-          name="web"
-          disabled
-        />
+        <input id="web-ui-toggle" type="checkbox" role="switch" name="web" />
         <b>Web Interface:</b> for a short time after playing; players may claim
         scores via web interface
       </label>

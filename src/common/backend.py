@@ -979,6 +979,14 @@ def connect_to_wifi(initialize=False):
     return False
 
 
+# TODO make this conditional
+try:
+    # This import must be after the add_route function is defined at minimum
+    import em_routes #noqa: F401
+except Exception as e:
+    print(f"Error importing em_routes: {e}")
+
+
 def go(ap_mode):
     """Start the server and run the main loop"""
     # Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
