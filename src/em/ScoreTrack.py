@@ -81,8 +81,8 @@ fileNumber = 1  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
-#S.run_learning_game = True
-S.run_learning_game = False
+S.run_learning_game = True
+#S.run_learning_game = False
 
 '''
 Bit filter 
@@ -189,7 +189,7 @@ def _loadState():
         # set per-channel masks
         setScoreMask(ch, scoreDepth, resetDepth)
 
-    print("ScoreTrack initialized: players=%d digits=%d sensorMask=0x%08X" % (players, digitsPerPlayer, sensorBitMask))
+    log.log(f"ScoreTrack initialized: players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X}")
     print("ScoreTrack pauses: startpause=%d endpause=%d" % (PROCESS_START_PAUSE, PROCESS_END_PAUSE))
 
 
@@ -222,7 +222,6 @@ def _saveState():
             ct[pos + 1] = high
             pos += 2
     S.gdata["carrythresholds"] = bytes(ct)
-
     S.gdata["startpause"] = int(PROCESS_START_PAUSE)
     S.gdata["endpause"] = int(PROCESS_END_PAUSE)
   
@@ -694,6 +693,7 @@ def processAndStore():
         for x in range(2500):
             if pullWithDelete() == 0:
                 break
+        print("Capture Game -  setup")    
         # update display progress same as before (show 0)
         displayMessage.setCaptureModeDigit(-1)
         return
@@ -726,6 +726,7 @@ def processAndStore():
     #put a numeral up on the board display - x10% full    
     displayMessage.setCaptureModeDigit(gameHistoryIndex // 1000)
 
+    #print("chk")
     return
 
 
@@ -864,8 +865,6 @@ def processAndRun():
 
         sc = processBitFilter(d & sensorBitMask)
 
-        #print("bit mask",sensorBitMask," digits pp",digitsPerPlayer)
-
         # keep all channels that go active for led display
         allActivesChannels = allActivesChannels | sc
 
@@ -876,7 +875,6 @@ def processAndRun():
 
     #send to display green digit leds
     displayMessage.setSensorLeds(allActivesChannels)
-    #print ("channels - ",allActivesChannels&0x000F)
 
     #10->0 truncate, except let last one acculmulate
     if digitsPerPlayer > 0:
@@ -1553,29 +1551,28 @@ def learnModeProcessNow():
 
     # count up the files and work to be done
     fileList = findDataFiles()
-    print("\n\nLearn Mode Files List= ", fileList)
+    log.log(f"\nLearn Mode Files={fileList}")
 
     # Sum all sample_counts
     total_samples = sum(sample_count for _, sample_count in fileList)
     print("Total sample count across all files:", total_samples)
 
     # issue warnings about missing scores or not enough data?
-    if total_samples<10000:
+    if total_samples<8000:
         log.log("LEARN: low sample count")
     if len(fileList) < 2:
-        log.log("LEARN: low file count")
+        print("LEARN: low file count")
 
     # init display count down to finish
     from displayMessage import setLearnModeDigit
     displayCounter=9
-    setLearnModeDigit(displayCounter)
-    
+    setLearnModeDigit(displayCounter)    
 
     # process each file for filter counts
-    SCORE_RANGE = (3,4,5,6,7,8)
+    SCORE_RANGE = (3,4,5,6,7,8,9)
     RESET_RANGE = (6,9,15)        
 
-    # disable carry threshold
+    # disable all carry thresholds
     for player in range(4):
         for digit in range(4):
             carryThresholds[player][digit][0] = 99
@@ -1619,21 +1616,32 @@ def learnModeProcessNow():
                 print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
                 replayStoredGame(quiet=True,carryDiag=False)
 
-                print("score digits=", [sensorScores[0][d] for d in range(5)],
-                " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),
-                " with setting=", scorebits, resetbits)
+                print("score digits p0=", [sensorScores[0][d] for d in range(5)],
+                      " full score p0=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),
+                      "score digits p1=", [sensorScores[1][d] for d in range(5)],
+                      " full score p1=", sum(sensorScores[1][d] * (10 ** d) for d in range(5)),
+                      " with setting=", scorebits, resetbits)
 
-                # Compare each digit in sensorScores[0][0:5] with targetScoreDigits[0][0:5]
-                digit_matches = [sensorScores[0][d] == targetScoreDigits[0][d] for d in range(5) ]
-                # Record scorebits, resetbits, digits, and digit_matches in results
+                # Compare each digit in sensorScores
+                digit_matches_p0 = [sensorScores[0][d] == targetScoreDigits[0][d] for d in range(5)]
+                digit_matches_p1 = [sensorScores[1][d] == targetScoreDigits[1][d] for d in range(5)]
+                # Record scorebits, resetbits, digits, and digit_matches for both players in results
                 results.append({
                     "scorebits": scorebits,
                     "resetbits": resetbits,
-                    "digits": [sensorScores[0][d] for d in range(5)],
-                    "digit_matches": digit_matches
+                    "digits_p0": [sensorScores[0][d] for d in range(5)],
+                    "digit_matches_p0": digit_matches_p0,
+                    "digits_p1": [sensorScores[1][d] for d in range(5)],
+                    "digit_matches_p1": digit_matches_p1
                 })
 
-        print("\n\n",results,"\n\n")
+        # Print results in a more readable format
+        print("\nResults summary:")
+        for idx, rec in enumerate(results):
+            print(f"  [{idx}] scorebits={rec['scorebits']}, resetbits={rec['resetbits']}, "
+              f"digits_p0={rec['digits_p0']}, digit_matches_p0={rec['digit_matches_p0']}, "
+              f"digits_p1={rec['digits_p1']}, digit_matches_p1={rec['digit_matches_p1']}")
+        print()
 
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
@@ -1922,11 +1930,5 @@ if __name__ == "__main__":
                     print(f"scorebits={scoreb}, resetbits={resetb}, digits={digits}")
         '''
 
-
-        #elapsed = time.ticks_diff(time.ticks_ms(), start)
-        #print("\nReplay execution time:", elapsed/1000, "s")
-
-
-        #print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScores)
 
 
