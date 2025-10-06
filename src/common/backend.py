@@ -267,7 +267,7 @@ def require_auth(handler):
         global challenges
 
         def deny_access(reason):
-            msg = json_dumps({"error": "reason"}), 401, "application/json"
+            msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
             print(request.headers)
             return msg
@@ -982,7 +982,7 @@ def connect_to_wifi(initialize=False):
 # TODO make this conditional
 try:
     # This import must be after the add_route function is defined at minimum
-    import em_routes #noqa: F401
+    import em_routes  # noqa: F401
 except Exception as e:
     print(f"Error importing em_routes: {e}")
 

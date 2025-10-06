@@ -84,6 +84,9 @@ async function initSetupUI() {
       try {
         localStorage.setItem("game_config", JSON.stringify(data));
       } catch (e) {}
+      // show save button when user changes any config input
+      const saveBtn = document.getElementById("save-game-config");
+      if (saveBtn) saveBtn.style.display = "";
     });
   });
 
@@ -100,61 +103,190 @@ async function initSetupUI() {
   } catch (e) {}
 }
 
+// Configurable threshold for switching messages (percent)
+// Change this value to adjust when the UI prompts the user to allow the ball to drain
+const CALIBRATION_MESSAGE_THRESHOLD = 80;
+// Minimum number of recorded games required to allow starting the learning process
+const CALIBRATION_MIN_GAMES_REQUIRED = 1;
+
+// Save game configuration to server (calls existing endpoint if available)
+async function saveGameConfig() {
+  const data = {
+    name: document.getElementById("game-name").value,
+    players: parseInt(document.getElementById("total-players").value, 10) || 1,
+    reels_per_player:
+      parseInt(document.getElementById("score-reels").value, 10) || 1,
+    dummy_reels:
+      parseInt(document.getElementById("dummy-reels").value, 10) || 0,
+  };
+
+  try {
+    const resp = await window.smartFetch("/api/em/set_config", data, true);
+    if (!resp.ok) throw new Error("save failed");
+    alert("Game configuration saved");
+    const saveBtn = document.getElementById("save-game-config");
+    if (saveBtn) saveBtn.style.display = "none";
+  } catch (e) {
+    console.error("Failed to save game configuration", e);
+    alert("Failed to save game configuration");
+  }
+}
+
+// Delete all calibration games (calls API and refreshes UI)
+window.deleteCalibrationGames = async function () {
+  await confirmAction("delete all stored calibration games", async () => {
+    try {
+      const resp = await window.smartFetch(
+        "/api/em/delete_calibration_games",
+        null,
+        true,
+      );
+      if (!resp.ok) throw new Error("delete failed");
+      alert("Calibration games deleted");
+      refreshRecordedGamesCount();
+    } catch (e) {
+      console.error("Failed to delete calibration games", e);
+      alert("Failed to delete calibration games");
+    }
+  });
+};
+
+// Fetch recorded games count and update the UI. Enables start button only when count === total
+async function refreshRecordedGamesCount() {
+  try {
+    const resp = await window.smartFetch(
+      "/api/em/recorded_games_count",
+      null,
+      false,
+    );
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const status = document.getElementById("recorded-games-status");
+    const startBtn = document.getElementById("start-learning");
+    if (status)
+      status.textContent = `Recorded: ${data.count || 0}/${data.total || 4}`;
+    if (startBtn) {
+      // enable start when at least the minimum number of games have been recorded
+      if ((data.count || 0) >= CALIBRATION_MIN_GAMES_REQUIRED) {
+        startBtn.disabled = false;
+      } else {
+        startBtn.disabled = true;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to refresh recorded games count", e);
+  }
+}
+
 // Start recording a calibration game - opens modal and streams progress
 window.startRecordingCalibration = async function () {
   const modal = await showModal("calibration-modal");
-  const log = document.getElementById("calibration-log");
+  const rawLog = document.getElementById("calibration-log");
+  const message = document.getElementById("calibration-message");
   const progress = document.getElementById("calibration-progress");
   const results = document.getElementById("calibration-results");
+  const endBtn = document.getElementById("end-calibration-game");
+
+  // Use global threshold constant
 
   // reset UI
-  if (log) log.textContent = "";
+  if (rawLog) rawLog.textContent = "";
+  if (message) message.textContent = "Keep going";
   if (progress) progress.value = 0;
   if (results) results.style.display = "none";
+
+  // We'll need to allow the user to manually end the calibration. Keep a flag and a reader reference.
+  let reader = null;
+  let stopRequested = false;
+
+  // wire end button to stop the stream and show results
+  if (endBtn) {
+    endBtn.onclick = async () => {
+      stopRequested = true;
+      // close the stream by canceling reader if active
+      try {
+        if (reader) await reader.cancel();
+      } catch (e) {
+        // ignore
+      }
+      // Request final scores form from server (or show whatever we've received so far)
+      // For now we'll try to fetch a final payload from the server via a separate endpoint if available
+      // Fallback: show the results form with empty payload
+      buildScoresForm([]);
+      if (results) results.style.display = "block";
+      // refresh recorded games count after user ends
+      refreshRecordedGamesCount();
+    };
+  }
 
   try {
     const resp = await window.smartFetch(
       "/api/em/record_calibration_game",
       null,
-      false,
+      true,
     );
     if (!resp.ok) {
       alert("Failed to start calibration recording");
       return;
     }
 
-    const reader = resp.body.getReader();
+    reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let done = false;
-    while (!done) {
+    while (!done && !stopRequested) {
       const { value, done: d } = await reader.read();
       done = d;
       if (value) {
         const chunk = decoder.decode(value, { stream: true });
-        if (log) log.textContent += chunk;
-        const lines = chunk
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean);
-        for (const line of lines) {
+        // keep raw JSON in hidden log for debugging
+        if (rawLog) rawLog.textContent += chunk;
+
+        // Handle concatenated JSON objects like: {"progress":10}{"progress":20}
+        let msgs = chunk.split("}{");
+        for (let i = 0; i < msgs.length; i++) {
+          if (i !== 0) msgs[i] = "{" + msgs[i];
+          if (i !== msgs.length - 1) msgs[i] = msgs[i] + "}";
+        }
+
+        for (const s of msgs) {
+          const line = s.trim();
+          if (!line) continue;
           try {
             const msg = JSON.parse(line);
-            if (msg.percent && progress) progress.value = msg.percent;
-            if (msg.log && log) log.textContent += "\n" + msg.log;
+            // support both 'progress' and 'percent' keys
+            const pct =
+              msg.percent != null
+                ? msg.percent
+                : msg.progress != null
+                ? msg.progress
+                : null;
+            if (pct != null && progress) progress.value = pct;
+            // update static message based on threshold
+            if (pct != null && message) {
+              if (pct >= CALIBRATION_MESSAGE_THRESHOLD) {
+                message.textContent = "Allow your ball to drain";
+              } else {
+                message.textContent = "Keep going";
+              }
+            }
+            if (msg.log && rawLog) rawLog.textContent += "\n" + msg.log;
             if (msg.complete) {
               buildScoresForm(msg.payload || []);
               if (results) results.style.display = "block";
+              // refresh recorded games count after a game has been recorded
+              refreshRecordedGamesCount();
             }
           } catch (e) {
             // not json, ignore
           }
         }
-        if (log) log.scrollTop = log.scrollHeight;
       }
     }
   } catch (e) {
-    console.error("Calibration recording failed:", e);
-    alert("Calibration recording failed.");
+    if (!stopRequested) {
+      console.error("Calibration recording failed:", e);
+      alert("Calibration recording failed.");
+    }
   }
 };
 
@@ -239,6 +371,8 @@ async function saveCalibrationScores() {
     if (!resp.ok) throw new Error("save failed");
     alert("Calibration scores saved");
     document.getElementById("calibration-modal").close();
+    // refresh recorded games count after saving
+    refreshRecordedGamesCount();
   } catch (e) {
     console.error("Failed to save calibration scores", e);
     alert("Failed to save calibration scores");
@@ -317,6 +451,18 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 initSetupUI();
+// populate recorded games status on load
+refreshRecordedGamesCount();
+
+// wire save button
+const saveGameConfigBtn = document.getElementById("save-game-config");
+if (saveGameConfigBtn) {
+  saveGameConfigBtn.style.display = "none";
+  saveGameConfigBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    await saveGameConfig();
+  });
+}
 
 //
 // Actions

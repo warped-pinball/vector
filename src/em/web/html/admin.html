@@ -109,8 +109,31 @@
       >
         Record Calibration Game
       </button>
-      <button id="start-learning" onclick="window.startLearningProcess()">
+      <span
+        id="recorded-games-status"
+        style="margin-left: 1rem; font-weight: bold"
+        >Recorded: 0/4</span
+      >
+      <button id="save-game-config" style="margin-left: 1rem; display: none">
+        Save Game Config
+      </button>
+    </div>
+
+    <div style="margin-top: 0.5rem">
+      <button
+        id="start-learning"
+        onclick="window.startLearningProcess()"
+        disabled
+      >
         Start Learning Process
+      </button>
+      <button
+        id="delete-calibration-games"
+        class="danger"
+        style="margin-left: 1rem"
+        onclick="window.deleteCalibrationGames()"
+      >
+        Delete Calibration Games
       </button>
     </div>
   </section>
@@ -127,6 +150,7 @@
           progress.</b
         >
       </p>
+      <!-- Hidden raw log (kept for debug) -->
       <code
         id="calibration-log"
         style="
@@ -137,12 +161,33 @@
           padding-bottom: 1em;
         "
       ></code>
+
+      <!-- User-facing static message that changes with progress -->
+      <div
+        id="calibration-message"
+        style="
+          width: 100%;
+          height: 160px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+        "
+      >
+        Keep going
+      </div>
       <progress
         id="calibration-progress"
         value="0"
         max="100"
         style="width: 100%"
       ></progress>
+
+      <div style="margin-top: 0.5rem">
+        <button id="end-calibration-game">
+          End Calibration & Record Scores
+        </button>
+      </div>
 
       <div id="calibration-results" style="display: none; margin-top: 1rem">
         <h3>Enter Scores for Calibration Game</h3>
