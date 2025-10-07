@@ -72,5 +72,6 @@ def reset():
     fram.write_all_fram_now()
 
 def blank_ram():
-    for i in range(2048):
+    # blank the entire ram_access buffer rather than a fixed 2048 bytes
+    for i in range(len(ram_access)):
         ram_access[i] = 0

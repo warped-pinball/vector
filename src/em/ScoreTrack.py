@@ -16,6 +16,7 @@ import resource
 from ScoreTrackFilter_viper import _viper_process
 
 import displayMessage
+import os
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -56,7 +57,7 @@ GAME_HIST_SIZE = 10000
 gameHistory = None             # allocate lazily when capturing learning game
 gameHistoryTime = None         # allocate lazily
 gameHistoryIndex = 0
-#actualScore=0
+
 actualScores = [0, 0, 0, 0]
 GAMEHIST_STATUS_EMPTY=0
 GAMEHIST_STATUS_DONE=1
@@ -73,10 +74,10 @@ sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 
 #config stuff to be sent to UI:
 actualScoreFromLastGame = None
-#actualScoreFromLastGame = [ 2193, 0,0,0]
+#actualScoreFromLastGame = [ 5248, 0,0,0]
 
 # global file selector: 0..4 supported
-fileNumber = 2  # change this to select which game_historyN.dat to use (0..4)
+fileNumber = 1  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
@@ -401,10 +402,10 @@ def save_game_history(filename=None):
             f.write(b'--- END S.gdata ---\n')
 
         print(f"Game history saved to {filename}")
-       
 
     except Exception as e:
         print(f"Error saving game history: {e}")
+
 
 def load_game_history(filename=None):
     """Restore gameHistory, gameHistoryTime, gameHistoryIndex, and actualScores from a file with section markers."""
@@ -426,6 +427,7 @@ def load_game_history(filename=None):
             if len(scores_bytes) < 16:
                 scores_bytes = scores_bytes.ljust(16, b"\0")
             actualScores = [int.from_bytes(scores_bytes[i*4:(i+1)*4], "little") for i in range(4)]
+            print("LOAD ACTIA\\UAL SCORE - ",actualScores)
            
 
             # locate GHIX marker
@@ -737,7 +739,7 @@ def processAndStoreWrapUp():
     gameHistory[gameHistoryIndex]=lastValue
     gameHistoryTime[gameHistoryIndex]=segmentMS
     gameHistoryIndex += 1
-    print("SCORE: capture game, stored last file data point wrap up")
+    log.log("SCORE: capture game, stored last file data point wrap up")
 
 
 
@@ -749,41 +751,55 @@ carryCount = [0] * 32
 
 def processRisingEdge(sc,risingEdge):
     '''process rising edge and increment sensor Scores as needed
-       used by run and replay stored game...                '''
-    global last_sc,sensorScores,carryThresholds
+       used by run and replay stored game... 
+       sc is sensor state (32 bit)
+       rising edge bit=1 for single cycle on rising edge    '''
+    global last_sc,sensorScores,carryThresholds,carryCount
 
     if (1):
         # increment digits based on risingEdge - count over laps for carry corrections - no loops for speed
         #PLR1-ONES
         if risingEdge & 0x00000001:
             sensorScores[0][0] = sensorScores[0][0] + 1     #inc score
-            carryCount[0] = 0
+            #carryCount[0] = 0
         if sc&0x01 == 0x01:
             carryCount[0]=carryCount[0]+1
+        else:
+            carryCount[0]=0
+
         #PLR1-TENS
         if risingEdge & 0x00000002:
             sensorScores[0][1] = sensorScores[0][1] + 1     #inc score
             if carryCount[0]>carryThresholds[0][0][0] and carryCount[0]<carryThresholds[0][0][1]:
                 sensorScores[0][0] = 0                      #carry correction
-            carryCount[1] = 0
+            #carryCount[1] = 0
         if sc&0x02 == 0x02:
             carryCount[1]=carryCount[1]+1
+        else:
+            carryCount[1]=0
+
         #PLR1-HUNDERDS
         if risingEdge & 0x00000004:
             sensorScores[0][2] = sensorScores[0][2] + 1     #inc score
             if carryCount[1]>carryThresholds[0][1][0] and carryCount[1]<carryThresholds[0][1][1]:
                 sensorScores[0][1] = 0                      #carry correction
-            carryCount[2]=0
+            #carryCount[2]=0
         if sc&0x04 == 0x04:
             carryCount[2]=carryCount[2]+1
+        else:
+            carryCount[2]=0
+
         #PLR1-THOUSANDS
         if risingEdge & 0x00000008:
             sensorScores[0][3] = sensorScores[0][3] + 1     #inc score
             if carryCount[2]>carryThresholds[0][2][0] and carryCount[2]<carryThresholds[0][2][1]:
                 sensorScores[0][2] = 0                      #carry correction
-            carryCount[3]=0
+            #carryCount[3]=0
         if sc&0x08 == 0x08:
-            carryCount[3]=carryCount[3]+1            
+            carryCount[3]=carryCount[3]+1     
+        else:
+            carryCount[3]=0  
+
         #PLR1-TEN THOUSAND   
         if risingEdge & 0x00000010:
             sensorScores[0][4] = sensorScores[0][4] + 1     #inc score
@@ -913,10 +929,11 @@ def getPlayerScore(player):
     
     return score
 
+carry_measurements=[]
 
-def replayStoredGame(quiet=False):
+def replayStoredGame(quiet=False,carryDiag=False):
     ''' replay a stored game and report out scores'''
-    global sensorScores,last_sc
+    global sensorScores,last_sc,carry_measurements
 
     sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
@@ -946,7 +963,19 @@ def replayStoredGame(quiet=False):
                 # edge detection
                 risingEdge = (~last_sc) & sc
                 processRisingEdge(sc,risingEdge)
-                last_sc = sc           
+                last_sc = sc
+
+            '''during replay measure carry counts.... 
+                not included in processRisingEdge for run time speed   '''
+            if carryDiag == True:
+                for player in range(4):
+                    for digit in range(1, 4):  # only digits with a previous digit                        
+                        if sensorScores[player][digit] == 10:
+                            # carryCount index mapping: player blocks of 8 (0,8,16,24)
+                            idx = player * 8 + (digit - 1)
+                            if int(carryCount[idx]) > 1:
+                                carry_measurements.append((player, digit, int(carryCount[idx])))
+                                print("   carry count report            ",player, digit, carryCount[idx])                    
 
             #10->0 truncate, except let last one acculmulate
             if digitsPerPlayer > 0:
@@ -1242,9 +1271,6 @@ def update_tournament(new_entry):
     return
 
 
-
-
-
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
@@ -1303,8 +1329,6 @@ def CheckForNewScores(nState=[0]):
 
         
 
-
-
             '''                       
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 for i in range(0, 4):
@@ -1322,12 +1346,372 @@ def CheckForNewScores(nState=[0]):
 
 
 
+def findDataFiles():
+    """
+    Discover game_history files that contain at least one non-zero score.
+    Returns a sorted list of tuples: (filename, sample_count, data_bytes)
+      - sample_count: number of GHVL samples stored (gameHistoryIndex)
+      - data_bytes: total bytes used by GHVL+GHTM (sample_count*4 + sample_count*2)
+    """
+    files = []
+    try:
+        for name in os.listdir():
+            if not (name.startswith("game_history") and name.endswith(".dat")):
+                continue
+            try:
+                print(name)
+                with open(name, "rb") as f:
+                    if f.read(4) != b"GHDR":
+                        continue
+
+                    # read four player scores (16 bytes)
+                    scores_bytes = f.read(16)
+                    if len(scores_bytes) < 16:
+                        continue
+                    scores = [int.from_bytes(scores_bytes[i*4:(i+1)*4], "little") for i in range(4)]
+
+                    if not any(s != 0 for s in scores):
+                        log.log("LEARN: File Empty Score")
+                        continue
+
+                    # read next marker; expect GHIX then 4-byte index
+                    marker = f.read(4)
+                    sample_count = 0
+                    if marker == b"GHIX":
+                        sample_count = int.from_bytes(f.read(4), "little")
+                    else:
+                        # try to find GHIX by scanning forward a bit (robustness)
+                        f.seek(-4, 1)
+                        data = f.read(256)  # small scan window
+                        idx = data.find(b"GHIX")
+                        if idx != -1 and idx + 4 + 4 <= len(data):
+                            sample_count = int.from_bytes(data[idx+4:idx+8], "little")
+                        else:
+                            # fallback: leave sample_count as 0
+                            sample_count = 0
+
+                    files.append((name, sample_count))
+
+            except OSError:
+                # ignore unreadable / transient files
+                continue
+    except OSError:
+        log.log("LEARN: file discovery fault")
+        return []
+
+    files.sort()
+    return files
+
+
+def breakScoreIntoDigits(targetScores):
+    # Break down targetScores [1,2,3,4] into digits for direct comparison with sensorScores
+    targetScoreDigits = []
+    for score in targetScores:
+        digits = []
+        temp = score
+        for d in range(5):
+            digits.append(temp % 10)
+            temp //= 10
+        targetScoreDigits.append(digits)
+    return targetScoreDigits
+    
+
+
+def find_good_combinations_per_digit(results):
+    """
+    Analyze `results` (list of dict with keys 'scorebits','resetbits','digit_matches')
+    and return a dict mapping each digit index (0..4) to a sorted list of unique
+    (scorebits, resetbits) tuples that produced a True match for that digit.
+    """
+    good = {d: [] for d in range(5)}
+    if not results:
+        return good
+
+    for rec in results:
+        sb = rec.get("scorebits")
+        rb = rec.get("resetbits")
+        dm = rec.get("digit_matches") or []
+        for d in range(min(5, len(dm))):
+            if dm[d]:
+                good[d].append((int(sb), int(rb)))
+
+    # deduplicate and sort each list
+    for d in good:
+        good[d] = sorted(set(good[d]), key=lambda x: (x[0], x[1]))
+
+    return good
+
+
+def pick_best_settings_from_results(good):
+    """
+    For each digit (0..4) pick one (scorebits, resetbits) pair from the valid matches
+    that is closest to the average of the matching pairs.
+
+    - results: list of dicts with keys "scorebits","resetbits","digit_matches"
+    - Returns: dict digit -> (scorebits, resetbits)
+    - Also applies the chosen setting by calling setScoreMask(digit, scorebits, resetbits)
+      (assumes digit -> bit mapping is digit index).
+    """
+    # collect valid pairs per digit
+    chosen = {}
+
+    for d in sorted(good.keys()):
+        pairs = good[d]
+        if not pairs:
+            # no valid pairs for this digit
+            continue
+
+        # compute average (mean) of scorebits and resetbits
+        avg_sb = sum(sb for sb, _ in pairs) / len(pairs)
+        avg_rb = sum(rb for _, rb in pairs) / len(pairs)
+
+        # choose the actual pair (from the valid set) closest to the average
+        def distance(pair):
+            sb, rb = pair
+            # primary metric: squared Euclidean distance; tie-breaks prefer closer sb then rb
+            return ((sb - avg_sb) ** 2 + (rb - avg_rb) ** 2, abs(sb - avg_sb), abs(rb - avg_rb))
+
+        best = min(pairs, key=distance)
+        chosen[d] = (int(best[0]), int(best[1]))
+
+    # apply chosen settings (map digit -> bit using same index)
+    for d, (sb, rb) in chosen.items():
+        try:
+            setScoreMask(d, sb, rb)
+        except Exception as e:
+            print(f"Error applying mask for digit {d}: {e}")
+
+    return chosen
+
+
+def sort_out_carry_digits_and_apply():
+    """Process carry_measurements, ignore counts < 4, group by (player,digit).
+    If a group has 2+ samples compute low = floor(min*0.9), high = ceil(max*1.1)
+    and store into carryThresholds[player][digit] = [low, high]."""
+    global carry_measurements, carryThresholds
+
+    if not carry_measurements:
+        print("LEARN: no carry measurements")
+        return
+
+    # filter out low-count noise
+    filtered = [(p, d, c) for (p, d, c) in carry_measurements if int(c) >= 4]
+    if not filtered:
+        log.log("LEARN: no carry measurements >=4")
+        return
+
+    # group counts by (player,digit)
+    groups = {}
+    for p, d, c in filtered:
+        groups.setdefault((p, d), []).append(int(c))
+
+    print("groups ",groups)    
+
+    applied = []
+    for (p, d), counts in groups.items():
+        if len(counts) < 2:
+            # require at least two measurements to be confident
+            continue
+        minc = min(counts)
+        maxc = max(counts)
+        low = int(minc*0.9)
+        high = int(maxc * 1.1)
+        # store computed thresholds
+        carryThresholds[p][d][0] = low
+        carryThresholds[p][d][1] = high
+        applied.append((p, d, low, high, sorted(counts)))
+
+    if applied:
+        print("LEARN: applied carryThresholds (player,digit,low,high,counts):")
+        for entry in applied:
+            print("  ", entry)      
+    else:
+        print("LEARN: no grouped carry measurements found to apply")
 
 
 
+#timer stuff to keep the digit display going during learn mode only
+from machine import Timer
+display_timer = Timer(-1) 
+from displayMessage import displayUpdate
+def dis(r):
+    displayUpdate()
+def startTimer():    
+    display_timer.init(mode=Timer.PERIODIC, period=700, callback=dis)
+def stopTimer():
+    display_timer.deinit()
+    del globals()['display_timer']
 
 
+def learnModeProcessNow():
+    ''' the BIG learn mode - process all files data and set all filter and score parameters'''
+    global actualScores,fileNumber
 
+    startTimer()
+
+    # count up the files and work to be done
+    fileList = findDataFiles()
+    print("\n\nLearn Mode Files List= ", fileList)
+
+    # Sum all sample_counts
+    total_samples = sum(sample_count for _, sample_count in fileList)
+    print("Total sample count across all files:", total_samples)
+
+    # issue warnings about missing scores or not enough data?
+    if total_samples<10000:
+        log.log("LEARN: low sample count")
+    if len(fileList) < 2:
+        log.log("LEARN: low file count")
+
+    # init display count down to finish
+    from displayMessage import setLearnModeDigit
+    displayCounter=9
+    setLearnModeDigit(displayCounter)
+    
+
+    # process each file for filter counts
+    SCORE_RANGE = (3,4,5,6,7,8)
+    RESET_RANGE = (6,9,15)        
+
+    # disable carry threshold
+    for player in range(4):
+        for digit in range(4):
+            carryThresholds[player][digit][0] = 99
+            carryThresholds[player][digit][1] = 99
+
+    #setup digit countdown
+    downDelta=(len(fileList) * len(SCORE_RANGE) * len(RESET_RANGE))//5
+    downCount = 0
+
+    # Loop over each file in fileList, set fileNumber to the number in the filename
+    for file_info in fileList:
+        filename = file_info[0]
+        # Extract file number from filename (expects format "game_historyN.dat")
+        try:
+            fileNumber = int(filename.replace("game_history", "").replace(".dat", ""))
+        except ValueError:
+            print(f"LEARN: Could not extract file number from {filename}")
+            continue
+
+        load_game_history()
+        targetScoreDigits = breakScoreIntoDigits(actualScores)       
+        # Now targetScoreDigits[player][digit] matches sensorScores[player][digit]
+
+        print(f"\nProcessing file: {filename} (fileNumber={fileNumber})")
+        print("loaded actual score= ", actualScores,targetScoreDigits)
+        print("digits per player=", digitsPerPlayer)
+        print("carryThresholds before=", carryThresholds)
+        for scorebits in SCORE_RANGE:
+            for resetbits in RESET_RANGE:
+                # count down
+                downCount = downCount +1
+                if downCount >= downDelta:
+                    downCount=0
+                    displayCounter = displayCounter -1
+                    setLearnModeDigit(displayCounter)                
+
+                # Set all digits of score mask the same
+                for bit in range(10):
+                    setScoreMask(bit, scorebits, resetbits)
+
+                print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
+                replayStoredGame(quiet=True,carryDiag=False)
+
+                print("score digits=", [sensorScores[0][d] for d in range(5)],
+                " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),
+                " with setting=", scorebits, resetbits)
+
+                # Compare each digit in sensorScores[0][0:5] with targetScoreDigits[0][0:5]
+                digit_matches = [sensorScores[0][d] == targetScoreDigits[0][d] for d in range(5) ]
+                # Record scorebits, resetbits, digits, and digit_matches in results
+                results.append({
+                    "scorebits": scorebits,
+                    "resetbits": resetbits,
+                    "digits": [sensorScores[0][d] for d in range(5)],
+                    "digit_matches": digit_matches
+                })
+
+        print("\n\n",results,"\n\n")
+
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+
+    # find good reset bits asnd score bits settings
+    p=find_good_combinations_per_digit(results)
+    # print out the results per digit..
+    for k in p:
+        print("Dig:",k,p[k])
+    print("\n")
+
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+
+    # make picks for best settings (with out carry yet - -)
+    q=pick_best_settings_from_results(p)
+    print(q)
+
+    #if a digit has no solutions - try somthing??  carry over??
+    missing_digits = []
+    for d in range(5):
+        if not p.get(d): 
+            missing_digits.append(d)
+
+    if missing_digits:
+        log.log(f"LEARN: missing digits {missing_digits}")
+        # Compute average scorebits and resetbits from existing good digits
+        all_good_pairs = [pair for digit in p if p[digit] for pair in p[digit]]
+        if all_good_pairs:
+            avg_scorebits = int(sum(sb for sb, _ in all_good_pairs) / len(all_good_pairs))
+            avg_resetbits = int(sum(rb for _, rb in all_good_pairs) / len(all_good_pairs))
+        else:
+            avg_scorebits = 5  # fallback default
+            avg_resetbits = 9  # fallback default
+
+        # Fill in missing digits with the average values
+        for d in missing_digits:
+            p[d] = [(avg_scorebits, avg_resetbits)]
+            log.log(f"Digit {d}: filled with average ({avg_scorebits}, {avg_resetbits})")
+
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+
+    #set the scorebits and reset bits
+    for digit, (scorebits, resetbits) in q.items():
+        print(digit, scorebits, resetbits)
+        setScoreMask(digit, scorebits, resetbits)
+    printMasks()
+
+    # process files looking for carry/rollover settings
+    for file_info in fileList:
+        filename = file_info[0]
+        # Extract file number from filename (expects format "game_historyN.dat")
+        try:
+            fileNumber = int(filename.replace("game_history", "").replace(".dat", ""))
+        except ValueError:
+            print(f"LEARN: Could not extract file number from {filename}")
+            continue
+
+        load_game_history()
+        targetScoreDigits = breakScoreIntoDigits(actualScores)       
+        # Now targetScoreDigits[player][digit] matches sensorScores[player][digit]
+
+        print(f"\nProcessing file for carry settings: {filename} (fileNumber={fileNumber})")
+        print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
+        replayStoredGame(quiet=True,carryDiag=True)
+
+    print("All carry measurements (player,digit,count) ",carry_measurements)
+    displayCounter = displayCounter -1
+    setLearnModeDigit(displayCounter)
+
+    #sort out carry digits...
+    sort_out_carry_digits_and_apply()
+    printMasks()
+
+    # - save to fram
+    _saveState()
+    log.log("LEARN: done")
+
+    stopTimer()
 
 
 
@@ -1394,6 +1778,8 @@ if __name__ == "__main__":
     #must load game data
     import GameDefsLoad
     GameDefsLoad.go()
+
+    print(S.gdata)
 
     initialize()
 
@@ -1464,7 +1850,11 @@ if __name__ == "__main__":
         results = []
         import time
 
+        learnModeProcessNow()
 
+        printMasks()
+
+        '''
         load_game_history()
         targetScores = actualScores  # Load target score from the game file
 
@@ -1493,7 +1883,7 @@ if __name__ == "__main__":
         SCORE_RANGE = (3,4,5,6,7,8)
         RESET_RANGE = (6,9,15)
 
-       
+        
 
 
         
@@ -1516,7 +1906,7 @@ if __name__ == "__main__":
 
                 #elapsed = time.ticks_diff(time.ticks_ms(), start)
                 #print("Replay execution time:", elapsed, "ms")
-        
+        '''
 
         '''
         # Print set/reset combinations for each digit place (1s, 10s, 100s, 1000s, 10000s)
@@ -1530,10 +1920,11 @@ if __name__ == "__main__":
                     print(f"scorebits={scoreb}, resetbits={resetb}, digits={digits}")
         '''
 
-        elapsed = time.ticks_diff(time.ticks_ms(), start)
-        print("\nReplay execution time:", elapsed/1000, "s")
+
+        #elapsed = time.ticks_diff(time.ticks_ms(), start)
+        #print("\nReplay execution time:", elapsed/1000, "s")
 
 
-        print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScores)
+        #print_score_reset_ranges(results, SCORE_RANGE, RESET_RANGE, targetScores)
 
 

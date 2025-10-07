@@ -16,6 +16,7 @@ from machine import Pin
 import time
 import SharedState as S
 
+import uctypes
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 from logger import logger_instance
@@ -178,6 +179,11 @@ def initialize():
     global smSpi,lowPwm,hiPwm
 
     print("SENSOR: setup sensor read DMA / PIO")
+
+    ram_bytes = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    for i in range(SRAM_DATA_LENGTH):
+        ram_bytes[i] = 0
+
     dma_start()
 
     #state machine - for SPI read of coil sensors
