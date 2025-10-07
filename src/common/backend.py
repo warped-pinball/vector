@@ -979,7 +979,6 @@ def connect_to_wifi(initialize=False):
     return False
 
 
-# TODO make this conditional
 try:
     # This import must be after the add_route function is defined at minimum
     import em_routes  # noqa: F401
