@@ -49,18 +49,29 @@ async function showModal(id) {
 // Initialize Setup UI values and listeners
 async function initSetupUI() {
   // load existing settings if the API exists
+  let serverCfgLoaded = false;
   try {
-    const resp = await window.smartFetch("/api/em/config", null, false);
+    const resp = await window.smartFetch("/api/em/get_config", null, false);
     if (resp.ok) {
       const cfg = await resp.json();
       const name = document.getElementById("game-name");
       const players = document.getElementById("total-players");
       const reels = document.getElementById("score-reels");
       const dummy = document.getElementById("dummy-reels");
-      if (name && cfg.name) name.value = cfg.name;
-      if (players && cfg.total_players) players.value = cfg.total_players;
-      if (reels && cfg.score_reels) reels.value = cfg.score_reels;
-      if (dummy && cfg.dummy_reels) dummy.value = cfg.dummy_reels;
+      // support both server field names
+      if (name && (cfg.name || cfg.game_name)) {
+        name.value = cfg.name || cfg.game_name || "";
+      }
+      if (players && (cfg.total_players != null || cfg.players != null)) {
+        // server may return 'players' or 'total_players'
+        players.value = Number(cfg.total_players ?? cfg.players) || 0;
+      }
+      if (reels && (cfg.score_reels != null || cfg.reels_per_player != null)) {
+        reels.value = Number(cfg.score_reels ?? cfg.reels_per_player) || 0;
+      }
+      if (dummy && cfg.dummy_reels != null)
+        dummy.value = Number(cfg.dummy_reels) || 0;
+      serverCfgLoaded = true;
     }
   } catch (e) {
     // ignore if endpoint not available
@@ -90,10 +101,10 @@ async function initSetupUI() {
     });
   });
 
-  // populate from localStorage if available
+  // populate from localStorage if available and server did not provide config
   try {
     const stored = JSON.parse(localStorage.getItem("game_config") || "null");
-    if (stored) {
+    if (stored && !serverCfgLoaded) {
       document.getElementById("game-name").value = stored.name || "";
       document.getElementById("total-players").value =
         stored.total_players || 1;
@@ -123,7 +134,6 @@ async function saveGameConfig() {
   try {
     const resp = await window.smartFetch("/api/em/set_config", data, true);
     if (!resp.ok) throw new Error("save failed");
-    alert("Game configuration saved");
     const saveBtn = document.getElementById("save-game-config");
     if (saveBtn) saveBtn.style.display = "none";
   } catch (e) {
@@ -142,7 +152,6 @@ window.deleteCalibrationGames = async function () {
         true,
       );
       if (!resp.ok) throw new Error("delete failed");
-      alert("Calibration games deleted");
       refreshRecordedGamesCount();
     } catch (e) {
       console.error("Failed to delete calibration games", e);
@@ -195,6 +204,18 @@ window.startRecordingCalibration = async function () {
   if (progress) progress.value = 0;
   if (results) results.style.display = "none";
 
+  // Ensure header, paragraph and end button are visible for a new recording
+  try {
+    const modalHeader = modal.querySelector("header");
+    const modalPara = modal.querySelector("article > p");
+    if (modalHeader) modalHeader.style.display = "";
+    if (modalPara) modalPara.style.display = "";
+    if (endBtn) endBtn.style.display = "";
+    if (message) message.style.display = "";
+    if (progress) progress.style.display = "";
+    if (rawLog) rawLog.style.display = "none"; // keep raw log hidden by default
+  } catch (e) {}
+
   // We'll need to allow the user to manually end the calibration. Keep a flag and a reader reference.
   let reader = null;
   let stopRequested = false;
@@ -212,7 +233,11 @@ window.startRecordingCalibration = async function () {
       // Request final scores form from server (or show whatever we've received so far)
       // For now we'll try to fetch a final payload from the server via a separate endpoint if available
       // Fallback: show the results form with empty payload
-      buildScoresForm([]);
+      await buildScoresForm([]);
+      // hide the recording UI parts since recording is finished
+      if (message) message.style.display = "none";
+      if (progress) progress.style.display = "none";
+      if (rawLog) rawLog.style.display = "none";
       if (results) results.style.display = "block";
       // refresh recorded games count after user ends
       refreshRecordedGamesCount();
@@ -271,7 +296,11 @@ window.startRecordingCalibration = async function () {
             }
             if (msg.log && rawLog) rawLog.textContent += "\n" + msg.log;
             if (msg.complete) {
-              buildScoresForm(msg.payload || []);
+              await buildScoresForm(msg.payload || []);
+              // hide the recording UI parts since recording is finished
+              if (message) message.style.display = "none";
+              if (progress) progress.style.display = "none";
+              if (rawLog) rawLog.style.display = "none";
               if (results) results.style.display = "block";
               // refresh recorded games count after a game has been recorded
               refreshRecordedGamesCount();
@@ -290,48 +319,89 @@ window.startRecordingCalibration = async function () {
   }
 };
 
-function buildScoresForm(payloadScores) {
-  const totalPlayers =
+async function buildScoresForm(payloadScores) {
+  // Try to load server-side config if available; otherwise fall back to inputs
+  let totalPlayers =
     parseInt(document.getElementById("total-players").value, 10) || 1;
-  const reelsPerPlayer =
+  let reelsPerPlayer =
     parseInt(document.getElementById("score-reels").value, 10) || 1;
-  const dummyReels =
+  let dummyReels =
     parseInt(document.getElementById("dummy-reels").value, 10) || 0;
+
+  try {
+    const resp = await window.smartFetch("/api/em/get_config", null, false);
+    if (resp && resp.ok) {
+      const cfg = await resp.json();
+      if (cfg.players != null)
+        totalPlayers = Number(cfg.players) || totalPlayers;
+      if (cfg.reels_per_player != null)
+        reelsPerPlayer = Number(cfg.reels_per_player) || reelsPerPlayer;
+      if (cfg.dummy_reels != null)
+        dummyReels = Number(cfg.dummy_reels) || dummyReels;
+    }
+  } catch (e) {
+    // ignore — use existing DOM values
+  }
 
   const form = document.getElementById("calibration-scores-form");
   form.innerHTML = "";
 
+  // Show instruction under the heading
+  const instr = document.getElementById("calibration-instructions");
+  if (instr) {
+    instr.textContent = `Enter full scores for each player. Include dummy reel zeros where appropriate (dummy reels: ${dummyReels}).`;
+    instr.style.display = "block";
+  }
+
+  // Prefill inputs with zeros equal to reelsPerPlayer + dummyReels
+  const prefillCount = reelsPerPlayer + dummyReels;
+
   for (let p = 0; p < totalPlayers; p++) {
     const playerDiv = document.createElement("div");
     playerDiv.style.marginBottom = "0.5rem";
-    const title = document.createElement("div");
-    title.textContent = `Player ${p + 1}`;
-    playerDiv.appendChild(title);
 
-    const playerScores = (payloadScores[p] && payloadScores[p].slice()) || [];
+    // Only create a single label + input per player (remove duplicate title element)
+    const label = document.createElement("label");
+    label.textContent = `Player ${p + 1}: `;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = `comma-separated reel values (e.g. 10,0,0) or concatenated digits for zeros (e.g. 000)`;
 
-    for (let r = 0; r < reelsPerPlayer; r++) {
-      const idx = r;
-      const label = document.createElement("label");
-      label.textContent = `Reel ${r + 1}: `;
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.value = playerScores[idx] != null ? playerScores[idx] : 0;
-      input.style.width = "8rem";
-      input.name = `player-${p}-reel-${r}`;
-      label.appendChild(input);
-      playerDiv.appendChild(label);
+    // If payloadScores was provided and contains this player's values, use them; otherwise prefill zeros
+    const existingVals =
+      (payloadScores && payloadScores[p] && payloadScores[p].slice()) || [];
+    if (existingVals.length) {
+      input.value = existingVals.join(",");
+    } else {
+      // Prefill as undelimited zeros (e.g. "000") per UX request
+      input.value = new Array(prefillCount).fill(0).join("");
     }
 
-    if (dummyReels > 0) {
-      const dummyDiv = document.createElement("div");
-      dummyDiv.textContent = `Dummy reels: ${dummyReels} (will be padded with zeros)`;
-      playerDiv.appendChild(dummyDiv);
-    }
+    input.style.width = "18rem";
+    input.name = `player-${p}-reel-values`;
+    label.appendChild(input);
+    playerDiv.appendChild(label);
 
     form.appendChild(playerDiv);
   }
+
+  // hide pre-recording UI so the modal effectively becomes the score-entry modal
+  try {
+    const modal = document.getElementById("calibration-modal");
+    const modalHeader = modal.querySelector("header");
+    const modalPara = modal.querySelector("article > p");
+    const endBtn = document.getElementById("end-calibration-game");
+    if (modalHeader) modalHeader.style.display = "none";
+    if (modalPara) modalPara.style.display = "none";
+    if (endBtn) endBtn.style.display = "none";
+    // also hide progress and message elements
+    const message = document.getElementById("calibration-message");
+    const progress = document.getElementById("calibration-progress");
+    const rawLog = document.getElementById("calibration-log");
+    if (message) message.style.display = "none";
+    if (progress) progress.style.display = "none";
+    if (rawLog) rawLog.style.display = "none";
+  } catch (e) {}
 
   const saveBtn = document.getElementById("save-calibration-scores");
   if (saveBtn) {
@@ -343,21 +413,64 @@ function buildScoresForm(payloadScores) {
 }
 
 async function saveCalibrationScores() {
-  const totalPlayers =
+  // Prefer server-provided config (players/reels/dummy) if available
+  let totalPlayers =
     parseInt(document.getElementById("total-players").value, 10) || 1;
-  const reelsPerPlayer =
+  let reelsPerPlayer =
     parseInt(document.getElementById("score-reels").value, 10) || 1;
-  const dummyReels =
+  let dummyReels =
     parseInt(document.getElementById("dummy-reels").value, 10) || 0;
+  try {
+    const resp = await window.smartFetch("/api/em/get_config", null, false);
+    if (resp && resp.ok) {
+      const cfg = await resp.json();
+      if (cfg.players != null)
+        totalPlayers = Number(cfg.players) || totalPlayers;
+      if (cfg.reels_per_player != null)
+        reelsPerPlayer = Number(cfg.reels_per_player) || reelsPerPlayer;
+      if (cfg.dummy_reels != null)
+        dummyReels = Number(cfg.dummy_reels) || dummyReels;
+    }
+  } catch (e) {
+    // ignore and use DOM values
+  }
 
   const scores = [];
   for (let p = 0; p < totalPlayers; p++) {
-    const playerScores = [];
-    for (let r = 0; r < reelsPerPlayer; r++) {
-      const el = document.querySelector(`input[name="player-${p}-reel-${r}"]`);
-      const v = el ? parseInt(el.value, 10) || 0 : 0;
-      playerScores.push(v);
+    const el = document.querySelector(`input[name="player-${p}-reel-values"]`);
+    const raw = el ? el.value.trim() : "";
+    let vals = [];
+    if (raw.length > 0) {
+      // Support multiple input styles:
+      // - comma-separated: "10,0,0"
+      // - space-separated: "10 0 0"
+      // - undelimited digits (useful for zeros prefills): "000" -> [0,0,0]
+      if (raw.indexOf(",") !== -1) {
+        vals = raw.split(",").map((s) => parseInt(s.trim(), 10) || 0);
+      } else if (/\s/.test(raw)) {
+        vals = raw.split(/\s+/).map((s) => parseInt(s.trim(), 10) || 0);
+      } else if (/^\d+$/.test(raw) && raw.length >= 1) {
+        // If the user entered a pure digit string and its length equals the
+        // expected number of reels (including dummy), treat each character
+        // as a separate digit value (e.g. "000" -> [0,0,0]). Otherwise
+        // interpret as a single numeric value.
+        if (raw.length === reelsPerPlayer + dummyReels) {
+          vals = raw.split("").map((c) => parseInt(c, 10) || 0);
+        } else {
+          const n = parseInt(raw, 10);
+          if (!isNaN(n)) vals = [n];
+        }
+      } else {
+        // fallback: try comma split anyway
+        vals = raw.split(",").map((s) => parseInt(s.trim(), 10) || 0);
+      }
     }
+    // Ensure we have reelsPerPlayer values; if fewer, pad with zeros; if more, truncate
+    const playerScores = [];
+    for (let i = 0; i < reelsPerPlayer; i++) {
+      playerScores.push(i < vals.length ? vals[i] : 0);
+    }
+    // append dummy reel zeros
     for (let d = 0; d < dummyReels; d++) playerScores.push(0);
     scores.push(playerScores);
   }
@@ -369,7 +482,6 @@ async function saveCalibrationScores() {
       true,
     );
     if (!resp.ok) throw new Error("save failed");
-    alert("Calibration scores saved");
     document.getElementById("calibration-modal").close();
     // refresh recorded games count after saving
     refreshRecordedGamesCount();
@@ -380,6 +492,13 @@ async function saveCalibrationScores() {
 }
 
 window.startLearningProcess = async function () {
+  // Show modal and stream progress
+  const modal = await showModal("learning-modal");
+  const log = document.getElementById("learning-log");
+  const progress = document.getElementById("learning-progress");
+  if (log) log.textContent = "";
+  if (progress) progress.value = 0;
+
   try {
     const resp = await window.smartFetch(
       "/api/em/start_learning_process",
@@ -387,10 +506,49 @@ window.startLearningProcess = async function () {
       true,
     );
     if (!resp.ok) throw new Error("learn start failed");
-    alert("Learning process started");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+    while (!done) {
+      const { value, done: d } = await reader.read();
+      done = d;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        if (log) log.textContent += chunk;
+        // handle concatenated JSON objects
+        let msgs = chunk.split("}{");
+        for (let i = 0; i < msgs.length; i++) {
+          if (i !== 0) msgs[i] = "{" + msgs[i];
+          if (i !== msgs.length - 1) msgs[i] = msgs[i] + "}";
+        }
+        for (const s of msgs) {
+          const line = s.trim();
+          if (!line) continue;
+          try {
+            const obj = JSON.parse(line);
+            const pct =
+              obj.percent != null
+                ? obj.percent
+                : obj.progress != null
+                ? obj.progress
+                : null;
+            if (pct != null && progress) progress.value = pct;
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    }
+    // close modal when done
+    if (modal) modal.close();
+    refreshRecordedGamesCount();
   } catch (e) {
     console.error("Failed to start learning process", e);
     alert("Failed to start learning process");
+    try {
+      if (modal) modal.close();
+    } catch (err) {}
   }
 };
 

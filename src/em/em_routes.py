@@ -3,13 +3,37 @@ from backend import add_route
 
 @add_route("/api/em/set_config", auth=True)
 def em_config(request):
+    # Coerce and validate incoming values. client may send numbers rather than strings
+    name = request.data.get("name")
+    if name is None:
+        name = ""
+    else:
+        name = str(name).strip()
+
+    try:
+        players = int(request.data.get("players") or 0)
+    except Exception:
+        players = 0
+
+    try:
+        reels_per_player = int(request.data.get("reels_per_player") or 0)
+    except Exception:
+        reels_per_player = 0
+
+    try:
+        dummy_reels = int(request.data.get("dummy_reels") or 0)
+    except Exception:
+        dummy_reels = 0
+
     config = {
-        "name": request.data.get("name").strip(),
-        "players": int(request.data.get("players").strip()),
-        "reels_per_player": int(request.data.get("reels_per_player").strip()),
-        "dummy_reels": int(request.data.get("dummy_reels").strip()),
+        "name": name,
+        "players": players,
+        "reels_per_player": reels_per_player,
+        "dummy_reels": dummy_reels,
     }
+
     # TODO store in fram
+    return
 
 
 @add_route("/api/em/get_config")
@@ -48,15 +72,16 @@ def final_calibration_game_scores(request):
 
 @add_route("/api/em/start_learning_process", auth=True)
 def start_learning_process(request):
+    import json
     import time
 
     # TODO actually start the learning process and report progress
     target = 20
 
     for i in range(target):
-        yield {"progress": (i + 1) / target * 100}
+        yield json.dumps({"progress": int((i + 1) / target * 100)})
         time.sleep(1)
-    return {"status": "done"}
+    return json.dumps({"status": "done"})
 
 
 @add_route("/api/em/recorded_games_count")

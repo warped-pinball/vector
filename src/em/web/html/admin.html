@@ -101,7 +101,11 @@
           <input id="dummy-reels" type="number" min="0" value="0" />
         </div>
       </div>
+      <button id="save-game-config" style="margin-left: 1rem; display: none">
+        Save Game Config
+      </button>
     </fieldset>
+    <h3>Calibration</h3>
     <div style="margin-top: 1rem">
       <button
         id="record-calibration"
@@ -112,11 +116,9 @@
       <span
         id="recorded-games-status"
         style="margin-left: 1rem; font-weight: bold"
-        >Recorded: 0/4</span
       >
-      <button id="save-game-config" style="margin-left: 1rem; display: none">
-        Save Game Config
-      </button>
+        Recorded: 0/4
+      </span>
     </div>
 
     <div style="margin-top: 0.5rem">
@@ -150,10 +152,12 @@
           progress.</b
         >
       </p>
+
       <!-- Hidden raw log (kept for debug) -->
       <code
         id="calibration-log"
         style="
+          display: none;
           width: 100%;
           height: 160px;
           overflow: auto;
@@ -176,6 +180,7 @@
       >
         Keep going
       </div>
+
       <progress
         id="calibration-progress"
         value="0"
@@ -191,6 +196,10 @@
 
       <div id="calibration-results" style="display: none; margin-top: 1rem">
         <h3>Enter Scores for Calibration Game</h3>
+        <div
+          id="calibration-instructions"
+          style="margin-top: 0.5rem; font-style: italic; display: none"
+        ></div>
         <form id="calibration-scores-form">
           <!-- dynamically filled -->
         </form>
@@ -443,5 +452,34 @@
       "
     ></code>
     <progress id="update-progress-bar" value="0" max="100" />
+  </article>
+</dialog>
+
+<!-- Learning modal (shows progress while processing calibration games) -->
+<dialog id="learning-modal">
+  <article>
+    <header>
+      <h2>Processing Calibration Games</h2>
+    </header>
+    <p>
+      <b>Please wait while your calibration games are processed.</b>
+    </p>
+    <code
+      id="learning-log"
+      style="
+        display: none;
+        width: 100%;
+        height: 120px;
+        overflow: auto;
+        white-space: pre-wrap;
+        padding-bottom: 1em;
+      "
+    ></code>
+    <progress
+      id="learning-progress"
+      value="0"
+      max="100"
+      style="width: 100%"
+    ></progress>
   </article>
 </dialog>
