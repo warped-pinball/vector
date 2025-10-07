@@ -78,6 +78,143 @@
 </style>
 
 <div style="text-align: left">
+  <h2>Setup</h2>
+  <hr />
+  <section>
+    <h3>Game Configuration</h3>
+    <fieldset id="game-configuration">
+      <div class="grid">
+        <div>
+          <label for="game-name"><b>Game Name:</b></label>
+          <input id="game-name" type="text" placeholder="Game name" />
+        </div>
+        <div>
+          <label for="total-players"><b>Total Players:</b></label>
+          <input id="total-players" type="number" min="1" value="4" />
+        </div>
+        <div>
+          <label for="score-reels"><b>Score Reels per Player:</b></label>
+          <input id="score-reels" type="number" min="1" value="1" />
+        </div>
+        <div>
+          <label for="dummy-reels"><b>Dummy Reels:</b></label>
+          <input id="dummy-reels" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <button id="save-game-config" style="margin-left: 1rem; display: none">
+        Save Game Config
+      </button>
+    </fieldset>
+    <h3>Calibration</h3>
+    <div style="margin-top: 1rem">
+      <button
+        id="record-calibration"
+        onclick="window.startRecordingCalibration()"
+      >
+        Record Calibration Game
+      </button>
+      <span
+        id="recorded-games-status"
+        style="margin-left: 1rem; font-weight: bold"
+      >
+        Recorded: 0/4
+      </span>
+    </div>
+
+    <div style="margin-top: 0.5rem">
+      <button
+        id="start-learning"
+        onclick="window.startLearningProcess()"
+        disabled
+      >
+        Start Learning Process
+      </button>
+      <button
+        id="delete-calibration-games"
+        class="danger"
+        style="margin-left: 1rem"
+        onclick="window.deleteCalibrationGames()"
+      >
+        Delete Calibration Games
+      </button>
+    </div>
+  </section>
+
+  <!-- Calibration modal (shows streaming progress, then score input form) -->
+  <dialog id="calibration-modal">
+    <article>
+      <header>
+        <h2>Recording Calibration - Please play the game</h2>
+      </header>
+      <p>
+        <b
+          >Do not close this window or disconnect while recording is in
+          progress.</b
+        >
+      </p>
+
+      <!-- Hidden raw log (kept for debug) -->
+      <code
+        id="calibration-log"
+        style="
+          display: none;
+          width: 100%;
+          height: 160px;
+          overflow: auto;
+          white-space: pre-wrap;
+          padding-bottom: 1em;
+        "
+      ></code>
+
+      <!-- User-facing static message that changes with progress -->
+      <div
+        id="calibration-message"
+        style="
+          width: 100%;
+          height: 160px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+        "
+      >
+        Keep going
+      </div>
+
+      <progress
+        id="calibration-progress"
+        value="0"
+        max="100"
+        style="width: 100%"
+      ></progress>
+
+      <div style="margin-top: 0.5rem">
+        <button id="end-calibration-game">
+          End Calibration & Record Scores
+        </button>
+      </div>
+
+      <div id="calibration-results" style="display: none; margin-top: 1rem">
+        <h3>Enter Scores for Calibration Game</h3>
+        <div
+          id="calibration-instructions"
+          style="margin-top: 0.5rem; font-style: italic; display: none"
+        ></div>
+        <form id="calibration-scores-form">
+          <!-- dynamically filled -->
+        </form>
+        <div style="margin-top: 0.5rem">
+          <button id="save-calibration-scores">Save Calibration Scores</button>
+          <button
+            onclick="document.getElementById('calibration-modal').close();"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </article>
+  </dialog>
+
   <h2>Settings</h2>
   <hr />
   <section>
@@ -101,170 +238,12 @@
     <h3>Score Claim Methods</h3>
     <fieldset id="score-claim-methods">
       <label>
-        <input
-          id="on-machine-toggle"
-          type="checkbox"
-          role="switch"
-          name="on-machine"
-          disabled
-        />
-        <b>On-Machine:</b> triggers high score every game to collect players
-        initials (Only for machines where players can enter initials)
-      </label>
-      <label>
-        <input
-          id="web-ui-toggle"
-          type="checkbox"
-          role="switch"
-          name="web"
-          disabled
-        />
+        <input id="web-ui-toggle" type="checkbox" role="switch" name="web" />
         <b>Web Interface:</b> for a short time after playing; players may claim
         scores via web interface
       </label>
     </fieldset>
   </section>
-  <section id="midnight-madness-section" class="hide">
-    <h3>Midnight Madness</h3>
-    <fieldset id="midnight-madness-controls">
-      <label>
-        <input
-          id="midnight-madness-enable-toggle"
-          type="checkbox"
-          role="switch"
-          name="midnight-madness-enable"
-          disabled
-        />
-        <b>Enable Midnight Madness:</b> allow midnight madness features
-      </label>
-      <label>
-        <input
-          id="midnight-madness-always-toggle"
-          type="checkbox"
-          role="switch"
-          name="midnight-madness-always"
-          disabled
-        />
-        <b>Always Trigger:</b> start midnight madness every game
-      </label>
-      <button id="midnight-madness-now-button" disabled>
-        Trigger Midnight Madness Now
-      </button>
-    </fieldset>
-  </section>
-  <section>
-    <h3>Adjustments Profiles</h3>
-    <div id="adjustments-not-supported" class="hide">
-      Adjustment profiles are not yet supported for this game or rom. If you
-      would like, you can
-      <a href="https://github.com/warped-pinball/vector/issues/new/choose"
-        >open an issue on our github</a
-      >
-      and we will priorotize adding it.
-    </div>
-    <div class="grid">
-      <div>
-        <fieldset>
-          <div class="profile-row">
-            <input
-              id="restore-profile-0"
-              name="profile"
-              type="radio"
-              disabled
-            />
-            <input
-              id="name-profile-0"
-              type="text"
-              placeholder="Name profile 1"
-              disabled
-            />
-            <button id="capture-profile-0" disabled>Capture Profile</button>
-          </div>
-          <div class="profile-row">
-            <input
-              id="restore-profile-1"
-              name="profile"
-              type="radio"
-              disabled
-            />
-            <input
-              id="name-profile-1"
-              type="text"
-              placeholder="Name profile 2"
-              disabled
-            />
-            <button id="capture-profile-1" disabled>Capture Profile</button>
-          </div>
-          <div class="profile-row">
-            <input
-              id="restore-profile-2"
-              name="profile"
-              type="radio"
-              disabled
-            />
-            <input
-              id="name-profile-2"
-              type="text"
-              placeholder="Name profile 3"
-              disabled
-            />
-            <button id="capture-profile-2" disabled>Capture Profile</button>
-          </div>
-          <div class="profile-row">
-            <input
-              id="restore-profile-3"
-              name="profile"
-              type="radio"
-              disabled
-            />
-            <input
-              id="name-profile-3"
-              type="text"
-              placeholder="Name profile 4"
-              disabled
-            />
-            <button id="capture-profile-3" disabled>Capture Profile</button>
-          </div>
-        </fieldset>
-      </div>
-      <div>
-        <p>
-          Save your games adjustments in a profile to easilly switch between
-          setups. For example "Free to play" and "Tournament"
-        </p>
-        <p>
-          Configure profiles by setting adjustments on the machine normally.
-          Then click the "Capture Profile" button.
-        </p>
-        <p>
-          To restore your game to the adjustments saved in a profile; select the
-          corresponding radio button and confirm your selection. Your game will
-          reboot with the adjustments applied
-        </p>
-      </div>
-    </div>
-  </section>
-  <section>
-    <h3>Miscellaneous</h3>
-    <fieldset>
-      <label>
-        <input
-          id="show-ip-toggle"
-          type="checkbox"
-          role="switch"
-          name="show-ip"
-          disabled
-        />
-        <b>Show IP on machine</b> When enabled, vector will display its IP
-        address on the game display occasionally.
-        <i
-          >If your IP address changes, you can view it in AP mode by rebooting
-          while holding the small button <u>not</u> labeled BOOTSEL</i
-        >
-      </label>
-    </fieldset>
-  </section>
-
   <h2>Actions</h2>
   <hr />
   <section>
@@ -283,7 +262,7 @@
   <section>
     <div class="grid">
       <div>
-        <button id="update-button" onclick="window.customUpdate()">
+        <button id="upload-dev-build-button" onclick="window.customUpdate()">
           Upload Developer Build
         </button>
       </div>
@@ -343,22 +322,7 @@
         </p>
       </div>
     </div>
-    <div class="grid">
-      <div>
-        <button
-          class="danger"
-          onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')"
-        >
-          Reboot Pinball Machine
-        </button>
-      </div>
-      <div>
-        <p>
-          Power Cycle the Pinball Machine. This does not check for and will
-          erase currently running games
-        </p>
-      </div>
-    </div>
+    <!-- Reboot button removed for EM builds -->
     <div class="grid">
       <div>
         <button onclick="localStorage.clear(); window.location.reload();">
@@ -392,9 +356,7 @@
   </section>
   <section>
     <h3>Debug</h3>
-    <button class="secondary" onclick="downloadMemorySnapshot()">
-      Download Memory Snapshot
-    </button>
+    <!-- Memory snapshot download removed for EM builds -->
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
   </section>
   <section>
@@ -490,5 +452,34 @@
       "
     ></code>
     <progress id="update-progress-bar" value="0" max="100" />
+  </article>
+</dialog>
+
+<!-- Learning modal (shows progress while processing calibration games) -->
+<dialog id="learning-modal">
+  <article>
+    <header>
+      <h2>Processing Calibration Games</h2>
+    </header>
+    <p>
+      <b>Please wait while your calibration games are processed.</b>
+    </p>
+    <code
+      id="learning-log"
+      style="
+        display: none;
+        width: 100%;
+        height: 120px;
+        overflow: auto;
+        white-space: pre-wrap;
+        padding-bottom: 1em;
+      "
+    ></code>
+    <progress
+      id="learning-progress"
+      value="0"
+      max="100"
+      style="width: 100%"
+    ></progress>
   </article>
 </dialog>
