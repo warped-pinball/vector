@@ -827,7 +827,7 @@ async function checkForUpdates() {
       updateButton.textContent = `Update to ${data["version"]}`;
 
       // get the url for the update.json asset and add an event listener to the button
-      update_url = data["url"];
+      const update_url = data["url"];
 
       // define the call back function to apply the update
       const callback = async () => {
