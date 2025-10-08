@@ -1636,13 +1636,15 @@ def learnModeProcessNow():
                 })
 
         # Print results in a more readable format
+        '''
         print("\nResults summary:")
         for idx, rec in enumerate(results):
             print(f"  [{idx}] scorebits={rec['scorebits']}, resetbits={rec['resetbits']}, "
               f"digits_p0={rec['digits_p0']}, digit_matches_p0={rec['digit_matches_p0']}, "
               f"digits_p1={rec['digits_p1']}, digit_matches_p1={rec['digit_matches_p1']}")
         print()
-
+        '''
+        
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
 
