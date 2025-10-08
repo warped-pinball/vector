@@ -754,6 +754,49 @@ window.downloadScores = async function () {
   console.log("Scores download initiated.");
 };
 
+// Download Diagnostic Data
+window.downloadDiagnostics = async function () {
+  console.log("Downloading diagnostics...");
+  try {
+    const resp = await window.smartFetch("/api/em/diagnostics", null, true);
+    if (!resp) throw new Error("No response");
+
+    // The backend returns plain text. If resp is a Response-like object try text(),
+    // otherwise treat it as a direct string.
+    let content = "";
+    try {
+      // Some environments return a Response instance
+      if (resp.text) {
+        content = await resp.text();
+      } else if (typeof resp === "string") {
+        content = resp;
+      } else {
+        content = JSON.stringify(resp, null, 2);
+      }
+    } catch (e) {
+      // fallback
+      content = String(resp);
+    }
+
+    const filename =
+      "diagnostics_" + new Date().toISOString().split("T")[0] + ".txt";
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Diagnostics download initiated.");
+  } catch (e) {
+    console.error("Failed to download diagnostics:", e);
+    alert("Failed to download diagnostics.");
+  }
+};
+
 //
 // Updates
 //
