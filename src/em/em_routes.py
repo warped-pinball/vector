@@ -101,3 +101,10 @@ def delete_calibration_games(request):
     """Delete all stored calibration games. Stub implementation returns success."""
     # TODO: actually remove stored calibration games from persistent storage
     return {"status": "deleted"}
+
+
+@add_route("/api/em/diagnostics")
+def diagnostics(request):
+    """Return a static diagnostics text payload for download/testing."""
+    payload = "Vector Diagnostic Data\n" "----------------------\n" "Status: OK\n" "Uptime: unknown\n" "Version: dev\n" "Notes: placeholder diagnostics output\n"
+    return payload
