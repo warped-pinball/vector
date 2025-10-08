@@ -382,6 +382,7 @@ def app_game_name(request):
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
     return {"active_config": ds_read_record("configuration", 0)["gamename"]}
+    # TODO make this use configured game name on EM
 
 
 @add_route("/api/game/configs_list")
