@@ -376,6 +376,12 @@ def app_reboot_game(request):
 def app_game_name(request):
     import SharedState
 
+    try:
+        if SharedState.gdata["GameInfo"]["System"] == "EM":
+            return {"game_name": SharedState.gdata["GameInfo"]["GameName"]}, 200  # TODO redirect to where game name is stored
+    except Exception:
+        pass
+
     return SharedState.gdata["GameInfo"]["GameName"], 200
 
 
