@@ -156,7 +156,7 @@ def serialize(record, structure_name):
 
         players = int(record.get("players", 1)) & 0xFF
         digits = int(record.get("digits", 1)) & 0xFF
-        multiplier = int(record.get("multiplier", 0)) & 0xFFFFFFFF
+        multiplier = int(record.get("dummy_reels", 0)) & 0xFFFFFFFF
         fm = record.get("filtermasks", None)
         if isinstance(fm, (bytes, bytearray)):
             fm_bytes = bytes(fm)[:64]
@@ -292,7 +292,7 @@ def deserialize(data, structure_name):
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),
                 "digits": int(digits),
-                "multiplier": int(multiplier),
+                "dummy_reels": int(multiplier),
                 "filtermasks": bytes(fm_bytes),
                 "carrythresholds": bytes(ct_bytes),
                 "sensorlevels": [int(s0), int(s1)],
@@ -305,7 +305,7 @@ def deserialize(data, structure_name):
                 "gamename": "",
                 "players": 1,
                 "digits": 1,
-                "multiplier": 0,
+                "dummy_reels": 0,
                 "filtermasks": bytes(64),
                 "carrythresholds": bytes(32),
                 "sensorlevels": [0, 0],
@@ -342,7 +342,7 @@ def blankStruct(structure_name):
             "gamename": "EM Game",
             "players": 1,
             "digits": 4,
-            "multiplier": 1,
+            "dummy_reels": 0,
             "filtermasks": filtermasks,
             "carrythresholds": carrythresholds,
             "sensorlevels": [0, 0],

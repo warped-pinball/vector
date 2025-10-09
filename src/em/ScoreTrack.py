@@ -129,13 +129,13 @@ def initialize():
     from phew.server import schedule
     schedule(processSensorData, 1000, 800)
 
-    _loadState()
+    loadState()
 
     #from displayMessage import init
     displayMessage.init()
 
 
-def _loadState():
+def loadState():
     """
     Initialize score tracking configuration from S.gdata.
     """
@@ -194,7 +194,7 @@ def _loadState():
 
 
 
-def _saveState():
+def saveState():
     """store working config back to SPI_DataStore"""
     try:
         em = DataStore.read_record("EMData")
@@ -916,9 +916,8 @@ def getPlayerScore(player):
     Return the PRINTABLE score for the requested player index (0..3).
     """
     try:
-        multiplier = int(S.gdata.get("scoreMultiplier", 10))
-    except Exception:
-        print("^^^^^NO MULTIPLIER   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        multiplier = 10 ** int(S.gdata.get("dummy_reels", 0))
+    except Exception:        
         multiplier = 1
 
     score = 0
@@ -1720,7 +1719,7 @@ def learnModeProcessNow():
     printMasks()
 
     # - save to fram
-    _saveState()
+    saveState()
     log.log("LEARN: done")
 
     stopTimer()

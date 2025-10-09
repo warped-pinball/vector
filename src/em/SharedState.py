@@ -14,7 +14,7 @@ faults = []
 gdata = {
     "numberOfPlayers": 2,
     "digitsPerPlayer": 4,
-    "scoreMultiplier": 10
+    "dummy_reels": 0
 }
 
 # game status
