@@ -859,7 +859,7 @@ def app_updates_available(request):
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
-    resp = get(updatesURL)
+    resp = get(updatesURL, timeout=10)
 
     try:
         data = resp.json()
