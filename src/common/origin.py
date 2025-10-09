@@ -1,3 +1,5 @@
+import gc
+
 import ubinascii
 import ujson
 import urequests as requests
@@ -13,6 +15,8 @@ ORIGIN_PUBLIC_KEY = PublicKey(
     e=65537,
 )
 challenges = []  # queue of server-provided challenges
+gamestate_buffer = ""
+first_push_game_time = None
 
 
 def _b64decode(s: str):
@@ -99,6 +103,9 @@ class Config:
             },
         )
 
+    def is_enabled(self):
+        return self.id_bytes is not None and self.secret_bytes is not None
+
 
 config = Config()
 
@@ -127,12 +134,22 @@ def random_bytes(n: int):
 
 def make_request(path: str, body: dict = None, sign: bool = True, validate: bool = True):
     if body is None:
-        body = {}
+        body = b""
+
+    if isinstance(body, dict):
+        body = ujson.dumps(body).encode("utf-8")
+    elif isinstance(body, str):
+        body = body.encode("utf-8")
+    elif isinstance(body, bytes):
+        pass
+    else:
+        raise ValueError("Invalid body type: {}".format(type(body)))
 
     # generate a random 32 byte challenge for the server if we need it
     client_challenge = random_bytes(32)
 
-    response = send_request(path, ujson.dumps(body).encode("utf-8"), sign=sign, client_challenge=client_challenge)
+    gc.collect()
+    response = send_request(path, body, sign=sign, client_challenge=client_challenge)
 
     if validate:
         validate_response(response, client_challenge)
@@ -185,6 +202,7 @@ def validate_response(response, client_challenge: bytes):
     shared_secret = config.secret_bytes
     print("Validating response:", body, signature)
 
+    gc.collect()
     result = verify(shared_secret + client_challenge + body, _b64decode(signature), ORIGIN_PUBLIC_KEY)
 
     if result != "SHA-256":
@@ -239,7 +257,40 @@ def send_handshake_request():
 
 
 def status():
-    if config.id_bytes is None or config.secret_bytes is None:
+    if not config.is_enabled():
         return {"is_claimed": None, "claim_url": None, "username": None}
 
     return make_request("api/v1/machines/claim_status", sign=True, validate=True)
+
+
+def push_game_state(game_time, scores, ball_in_play):
+    global gamestate_buffer, first_push_game_time
+
+    print("Pushing game state:", game_time, scores, ball_in_play)
+    print(gamestate_buffer)
+
+    current_state = f"{game_time},{','.join(map(str, scores))},{ball_in_play}"
+    if gamestate_buffer:
+        # get last state to avoid duplicates
+        last_state = gamestate_buffer.split("|")[-1] if gamestate_buffer else None
+
+        # check if they match (except for game time)
+        if last_state.split(",")[1:] == current_state.split(",")[1:]:
+            return
+        else:
+            current_state = "|" + current_state
+
+    gamestate_buffer += current_state
+    if first_push_game_time is None:
+        first_push_game_time = game_time
+
+    # if there are less than 10 states or it's been less than 3 seconds since the first state, don't push yet
+    if gamestate_buffer.count("|") < 10 and game_time - first_push_game_time < 3000:
+        return
+
+    try:
+        make_request("api/v1/machines/game_states", gamestate_buffer, sign=True, validate=False)
+        gamestate_buffer = ""
+    except Exception as e:
+        print("Error pushing game states:", e)
+        gamestate_buffer = ""
