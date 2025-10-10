@@ -8,10 +8,7 @@
 import socket
 from random import choice
 
-try:  # MicroPython may lack the ``typing`` module
-    from typing import Generator, Iterable, Optional, Tuple
-except ImportError:  # pragma: no cover - fallback for MicroPython
-    Generator = Iterable = Optional = Tuple = None  # type: ignore
+from micropython import const
 
 
 class MessageType:
@@ -25,14 +22,14 @@ class MessageType:
 
 
 # UDP port used for discovery traffic
-DISCOVERY_PORT = 37020
+_DISCOVERY_PORT = const(37020)
 
 # Refresh known devices every 10 minutes
-DISCOVER_REFRESH = 600
+_DISCOVER_REFRESH = const(600)
 
 # Limit list sizes and names to avoid memory abuse
-MAXIMUM_KNOWN_DEVICES = 50
-MAX_NAME_LENGTH = 32
+_MAXIMUM_KNOWN_DEVICES = const(50)
+_MAX_NAME_LENGTH = const(32)
 
 # Storage for known devices.  Each entry is a bytes object where the first four
 # bytes are the IP address bytes and the remainder is the game name.
@@ -51,34 +48,34 @@ class DiscoveryMessage:
 
     __slots__ = ("type", "name", "peers", "ip")
 
-    def __init__(self, mtype: int, name: Optional[bytes] = None, peers: Optional[Iterable[Tuple[str, str]]] = None, ip: Optional[bytes] = None) -> None:
+    def __init__(self, mtype, name=None, peers=None, ip=None):
         self.type = mtype
         self.name = name
         self.peers = peers
         self.ip = ip
 
     @classmethod
-    def hello(cls, name: bytes) -> "DiscoveryMessage":
+    def hello(cls, name):
         return cls(MessageType.HELLO, name=name)
 
     @classmethod
-    def full(cls, peers: Iterable[bytes]) -> "DiscoveryMessage":
+    def full(cls, peers):
         return cls(MessageType.FULL, peers=peers)
 
     @classmethod
-    def ping(cls) -> "DiscoveryMessage":
+    def ping(cls):
         return cls(MessageType.PING)
 
     @classmethod
-    def pong(cls) -> "DiscoveryMessage":
+    def pong(cls):
         return cls(MessageType.PONG)
 
     @classmethod
-    def offline(cls, ip: bytes) -> "DiscoveryMessage":
+    def offline(cls, ip):
         return cls(MessageType.OFFLINE, ip=ip)
 
     # ------------------------------------------------------------------ display
-    def __repr__(self) -> str:  # pragma: no cover - trivial
+    def __repr__(self):  # pragma: no cover - trivial
         tname = {
             MessageType.HELLO: "HELLO",
             MessageType.FULL: "FULL",
@@ -96,16 +93,16 @@ class DiscoveryMessage:
         return f"<DiscoveryMessage {tname}>"
 
     # ------------------------------------------------------------------ encoding
-    def encode(self) -> bytes:
+    def encode(self):
         if self.type == MessageType.HELLO and self.name is not None:
-            name_bytes = self.name[:MAX_NAME_LENGTH]
+            name_bytes = self.name[:_MAX_NAME_LENGTH]
             return bytes([MessageType.HELLO, len(name_bytes)]) + name_bytes
 
         if self.type == MessageType.FULL and self.peers is not None:
             peers_list = list(self.peers)
             parts = [bytes([MessageType.FULL, len(peers_list)])]
             for ip_bytes, name in peers_list:
-                name_bytes = name[:MAX_NAME_LENGTH]
+                name_bytes = name[:_MAX_NAME_LENGTH]
                 parts.append(ip_bytes + bytes([len(name_bytes)]) + name_bytes)
             return b"".join(parts)
 
@@ -122,7 +119,7 @@ class DiscoveryMessage:
 
     # ------------------------------------------------------------------ decoding
     @staticmethod
-    def decode(data: bytes):
+    def decode(data):
         if not data:
             return None
         mtype = data[0]
@@ -170,30 +167,30 @@ class DiscoveryMessage:
         raise ValueError(f"Unknown message type {mtype} in data: {data}")
 
 
-def ip_to_bytes(ip_str: str) -> bytes:
+def ip_to_bytes(ip_str):
     return bytes(int(part) for part in ip_str.split("."))
 
 
-def bytes_to_ip(ip_bytes: bytes) -> str:
+def bytes_to_ip(ip_bytes):
     return ".".join(str(b) for b in ip_bytes)
 
 
-def _get_local_ip_bytes() -> bytes:
+def _get_local_ip_bytes():
     from phew import get_ip_address
 
     return ip_to_bytes(get_ip_address())
 
 
-def _get_local_name_bytes() -> bytes:
+def _get_local_name_bytes():
     """Retrieve this board's game name, truncated to the max length."""
     from SharedState import gdata
 
-    str_name = gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH]
+    str_name = gdata["GameInfo"]["GameName"][:_MAX_NAME_LENGTH]
 
     return str_name.encode("utf-8")
 
 
-def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
+def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     print(f"DISCOVERY:Sending message to {addr}: {msg}")
 
     global send_sock
@@ -204,12 +201,12 @@ def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_POR
     send_sock.sendto(msg.encode(), addr)
 
 
-def broadcast_hello() -> None:
+def broadcast_hello():
     """Broadcast that this device has joined the network."""
     _send(DiscoveryMessage.hello(_get_local_name_bytes()))
 
 
-def broadcast_full_list() -> None:
+def broadcast_full_list():
     """Broadcast the full list of known devices."""
     global known_devices
     local_ip_bytes = _get_local_ip_bytes()
@@ -217,7 +214,7 @@ def broadcast_full_list() -> None:
     _send(DiscoveryMessage.full(peers))
 
 
-def registry_ip_bytes() -> bytes:
+def registry_ip_bytes():
     # find the minimum known device IP
     global known_devices
     if not known_devices:
@@ -227,12 +224,12 @@ def registry_ip_bytes() -> bytes:
     return min(d[:4] for d in known_devices + [_get_local_ip_bytes()])
 
 
-def is_registry() -> bool:
+def is_registry():
     """Return True if this device is the registry (lowest IP) in ``known_devices``."""
     return registry_ip_bytes() == _get_local_ip_bytes()
 
 
-def _add_or_update(ip_bytes: bytes, name: str) -> None:
+def _add_or_update(ip_bytes, name):
     """Insert or update a peer keeping ``known_devices`` sorted."""
     global known_devices
     print(f"DISCOVERY: Adding/updating device {bytes_to_ip(ip_bytes)} with name {name.decode('utf-8', 'ignore')}")
@@ -247,10 +244,10 @@ def _add_or_update(ip_bytes: bytes, name: str) -> None:
             known_devices[i] = entry
             return
         if peer_ip > ip_bytes:
-            if len(known_devices) < MAXIMUM_KNOWN_DEVICES:
+            if len(known_devices) < _MAXIMUM_KNOWN_DEVICES:
                 known_devices.insert(i, entry)
             return
-    if len(known_devices) < MAXIMUM_KNOWN_DEVICES:
+    if len(known_devices) < _MAXIMUM_KNOWN_DEVICES:
         known_devices.append(entry)
 
 
@@ -264,7 +261,7 @@ def registry_should_broadcast():
     #     pending_ping = registry_ip_bytes()
 
 
-def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
+def handle_message(msg, ip_str):
     """Handle an incoming message from ``ip_str``."""
     print(f"DISCOVERY: Received message from {ip_str}: {msg}")
     global pending_ping, known_devices
@@ -275,7 +272,7 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
         pending_ping = None
 
     if msg.type == MessageType.HELLO and msg.name is not None:
-        name = msg.name[:MAX_NAME_LENGTH]
+        name = msg.name[:_MAX_NAME_LENGTH]
         _add_or_update(ip_bytes, name)
         registry_should_broadcast()
     elif msg.type == MessageType.OFFLINE and msg.ip is not None:
@@ -288,7 +285,7 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
             # known_devices = [d for d in known_devices if not d.startswith(off_ip)]
 
             # ping the supposedly offline device
-            _send(DiscoveryMessage.ping(), (bytes_to_ip(off_ip), DISCOVERY_PORT))
+            _send(DiscoveryMessage.ping(), (bytes_to_ip(off_ip), _DISCOVERY_PORT))
             pending_ping = off_ip
 
         # expect the registry to re-broadcast the full list
@@ -297,11 +294,11 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
     elif msg.type == MessageType.FULL and msg.peers is not None:
         found_self = False
         for ip_bytes_peer, name in msg.peers:
-            name = name[:MAX_NAME_LENGTH]
+            name = name[:_MAX_NAME_LENGTH]
             if ip_bytes_peer == _get_local_ip_bytes():
                 found_self = True
             _add_or_update(ip_bytes_peer, name)
-        if not found_self and len(known_devices) < MAXIMUM_KNOWN_DEVICES:
+        if not found_self and len(known_devices) < _MAXIMUM_KNOWN_DEVICES:
             broadcast_hello()
         return
     elif ip_bytes not in [d[:4] for d in known_devices]:
@@ -312,7 +309,7 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
             broadcast_hello()
 
     if msg.type == MessageType.PING:
-        _send(DiscoveryMessage.pong(), (ip_str, DISCOVERY_PORT))
+        _send(DiscoveryMessage.pong(), (ip_str, _DISCOVERY_PORT))
         return
 
     # if msg.type == MessageType.PONG:
@@ -321,14 +318,14 @@ def handle_message(msg: DiscoveryMessage, ip_str: str) -> None:
     #     return
 
 
-def listen() -> None:
+def listen():
     """Check for any incoming discovery packets. Non-blocking."""
 
     global recv_sock
     if not recv_sock:
         recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        recv_sock.bind(("0.0.0.0", DISCOVERY_PORT))
+        recv_sock.bind(("0.0.0.0", _DISCOVERY_PORT))
         recv_sock.settimeout(0)
 
     while True:
@@ -356,7 +353,7 @@ def listen() -> None:
                 print(f"DISCOVERY: Error decoding message {main_e} tried fallback: {fallback_e}")
 
 
-def get_peer_map() -> dict:
+def get_peer_map():
     """Return mapping of known devices keyed by IP string."""
     global known_devices
 
@@ -368,7 +365,7 @@ def get_peer_map() -> dict:
     return peers
 
 
-def ping_random_peer() -> None:
+def ping_random_peer():
     """Ping a random peer and mark previous one offline if it didn't respond."""
 
     global pending_ping, known_devices
@@ -389,5 +386,5 @@ def ping_random_peer() -> None:
         return
 
     ip_bytes = choice(known_devices)[:4]
-    _send(DiscoveryMessage.ping(), (bytes_to_ip(ip_bytes), DISCOVERY_PORT))
+    _send(DiscoveryMessage.ping(), (bytes_to_ip(ip_bytes), _DISCOVERY_PORT))
     pending_ping = ip_bytes

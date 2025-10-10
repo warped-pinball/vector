@@ -5,15 +5,16 @@ import ujson
 import urequests as requests
 from backend import hmac_sha256
 from curve25519 import generate_x25519_keypair
+from micropython import const
 from rsa.key import PublicKey
 from rsa.pkcs1 import verify
 
-MAX_CHALLENGES = 10
-ORIGIN_URL = "https://origin-beta.doze.dev/"
-ORIGIN_PUBLIC_KEY = PublicKey(
-    n=28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273,  # noqa
-    e=65537,
+_MAX_CHALLENGES = const(10)
+_ORIGIN_URL = const("https://origin-beta.doze.dev/")
+_ORIGIN_PUBLIC_KEY_N = const(
+    28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273  # noqa
 )
+_ORIGIN_PUBLIC_KEY_E = const(65537)
 challenges = []  # queue of server-provided challenges
 gamestate_buffer = ""
 first_push_game_time = None
@@ -113,13 +114,13 @@ config = Config()
 def get_next_challenge():
     global challenges
     if len(challenges) < 1:
-        data = make_request("api/v1/machines/challenges", {"n": MAX_CHALLENGES}, sign=False)
+        data = make_request("api/v1/machines/challenges", {"n": _MAX_CHALLENGES}, sign=False)
         if not data or "challenges" not in data:
             raise Exception("Invalid challenges response")
         encoded = data["challenges"]
         if not isinstance(encoded, list):
             raise Exception("Invalid challenges format")
-        challenges = [_b64decode(c) for c in encoded[:MAX_CHALLENGES] if c]
+        challenges = [_b64decode(c) for c in encoded[:_MAX_CHALLENGES] if c]
     return challenges.pop(0)
 
 
@@ -160,7 +161,7 @@ def make_request(path: str, body: dict = None, sign: bool = True, validate: bool
 
 
 def send_request(path: str, body_bytes: bytes, sign: bool = True, client_challenge: bytes = None):
-    url = ORIGIN_URL.rstrip("/") + "/" + path.lstrip("/")
+    url = _ORIGIN_URL.rstrip("/") + "/" + path.lstrip("/")
 
     print("Preparing request:", url, body_bytes)
     headers = {
@@ -203,7 +204,8 @@ def validate_response(response, client_challenge: bytes):
     print("Validating response:", body, signature)
 
     gc.collect()
-    result = verify(shared_secret + client_challenge + body, _b64decode(signature), ORIGIN_PUBLIC_KEY)
+    origin_public_key = PublicKey(n=_ORIGIN_PUBLIC_KEY_N, e=_ORIGIN_PUBLIC_KEY_E)
+    result = verify(shared_secret + client_challenge + body, _b64decode(signature), origin_public_key)
 
     if result != "SHA-256":
         raise Exception("Response signature invalid")
