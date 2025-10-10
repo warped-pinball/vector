@@ -1,13 +1,7 @@
 import gc
 
-import ubinascii
-import ujson
-import urequests as requests
 from backend import hmac_sha256
-from curve25519 import generate_x25519_keypair
 from micropython import const
-from rsa.key import PublicKey
-from rsa.pkcs1 import verify
 
 _MAX_CHALLENGES = const(10)
 _ORIGIN_URL = const("https://origin-beta.doze.dev/")
@@ -21,11 +15,15 @@ first_push_game_time = None
 
 
 def _b64decode(s: str):
-    return ubinascii.a2b_base64(s)
+    from ubinascii import a2b_base64
+
+    return a2b_base64(s)
 
 
 def _b64encode(b: bytes):
-    return ubinascii.b2a_base64(b).decode().strip()
+    from ubinascii import b2a_base64
+
+    return b2a_base64(b).decode().strip()
 
 
 class Config:
@@ -138,7 +136,9 @@ def make_request(path: str, body: dict = None, sign: bool = True, validate: bool
         body = b""
 
     if isinstance(body, dict):
-        body = ujson.dumps(body).encode("utf-8")
+        from ujson import dumps
+
+        body = dumps(body).encode("utf-8")
     elif isinstance(body, str):
         body = body.encode("utf-8")
     elif isinstance(body, bytes):
@@ -183,11 +183,16 @@ def send_request(path: str, body_bytes: bytes, sign: bool = True, client_challen
         headers["X-Signature"] = "v1=" + hmac_b64
 
     print("Sending request:", url, body_bytes, headers)
+    gc.collect()
+    from urequests import post
 
-    return requests.post(url, data=body_bytes, headers=headers)
+    return post(url, data=body_bytes, headers=headers)
 
 
 def validate_response(response, client_challenge: bytes):
+    from rsa.key import PublicKey
+    from rsa.pkcs1 import verify
+
     if not response:
         raise Exception("Empty response is not valid")
 
@@ -214,6 +219,7 @@ def validate_response(response, client_challenge: bytes):
 
 
 def send_handshake_request():
+    from curve25519 import generate_x25519_keypair
     from SPI_DataStore import read_record as ds_read_record
 
     # Generate X25519 keys
