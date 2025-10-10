@@ -89,25 +89,37 @@ def record_calibration_game(request):
 
 @add_route("/api/em/set_calibration_scores", auth=True)
 def final_calibration_game_scores(request):
-    # scores come in like: {'scores': [[1], [2], [3333]]}
     scores_in = (request.data or {}).get("scores", [])
-    flat = []
-    for item in scores_in:
-        # take first value of each inner list/tuple, else 0
-        if isinstance(item, (list, tuple)) and item:
-            flat.append(int(item[0]))
+    log.log(f"EMCAL: raw score entry {scores_in}")
+
+    def to_int(v):
+        try:
+            return int(v)
+        except Exception:
+            return 0
+
+    # compose each inner list of digits into an integer
+    composed = []
+    for series in scores_in:
+        n = 0
+        if isinstance(series, (list, tuple)):
+            for d in series:
+                n = n * 10 + to_int(d)
         else:
-            flat.append(int(item or 0))
-        if len(flat) == 4:
+            n = to_int(series)
+        composed.append(n)
+        if len(composed) == 4:
             break
-    while len(flat) < 4:
-        flat.append(0)
 
-    log.log(f"EMCAL: score save {flat}")
+    # pad to 4 scores
+    while len(composed) < 4:
+        composed.append(0)
+
+    log.log(f"EMCAL: score save {composed}")
     from ScoreTrack import add_actual_score_to_file
-    add_actual_score_to_file(filename=None, actualScores=tuple(flat))
+    add_actual_score_to_file(filename=None, actualScores=tuple(composed))
 
-    return {"status": "ok", "scores": flat}
+    return {"status": "ok", "scores": composed}
    
 
 
@@ -115,11 +127,14 @@ def final_calibration_game_scores(request):
 @add_route("/api/em/start_learning_process", auth=True)
 def start_learning_process(request):
     # TODO actually start the learning process and report progress
-    target = 20
+    #target = 20
 
-    for i in range(target):
-        yield json.dumps({"progress": int((i + 1) / target * 100)})
-        time.sleep(1)
+    from ScoreTrack import learnModeProcessNow
+    learnModeProcessNow()
+
+    #for i in range(target):
+    #    yield json.dumps({"progress": int((i + 1) / target * 100)})
+    #    time.sleep(1)
     return json.dumps({"status": "done"})
 
 

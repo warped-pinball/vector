@@ -338,13 +338,22 @@ def game_history_filename(number=None):
     return "game_history{}.dat".format(int(number) & 0xFF)
 
 def add_actual_score_to_file(filename=None, actualScores=[0,0,0,0]):
-    """Overwrite the 4 actualScores (4 bytes each) in an existing game history file.
-    actualScores should be a list or tuple of 4 integers.
-    If filename is None the global fileNumber is used."""
+    """Overwrite the 4 actualScores (4 bytes each) in an existing game history file """
     if filename is None:
         filename = game_history_filename()   
-    if len(actualScores) != 4:
-        raise ValueError("actualScores must have exactly 4 entries")
+
+    print("################### incomming scores",actualScores)
+
+    actualScores = list(actualScores)
+    while len(actualScores) < 4:
+        actualScores.append(0)
+
+    dummy_reels = int(S.gdata.get("dummy_reels", 0))
+    if dummy_reels > 0:
+        scale = 10 ** dummy_reels
+        for i in range(4):
+            actualScores[i] = int(int(actualScores[i]) // scale)
+    
     try:
         with open(filename, "r+b") as f:
             hdr = f.read(4)
@@ -1561,6 +1570,7 @@ def learnModeProcessNow():
     global actualScores,fileNumber
 
     startTimer()
+    results = []
 
     # count up the files and work to be done
     fileList = findDataFiles()
@@ -1602,7 +1612,7 @@ def learnModeProcessNow():
         try:
             fileNumber = int(filename.replace("game_history", "").replace(".dat", ""))
         except ValueError:
-            print(f"LEARN: Could not extract file number from {filename}")
+            log.log(f"LEARN: Could not extract file number from {filename}")
             continue
 
         load_game_history()
@@ -1648,15 +1658,13 @@ def learnModeProcessNow():
                     "digit_matches_p1": digit_matches_p1
                 })
 
-        # Print results in a more readable format
-        '''
+        # Print results in a more readable format            
         print("\nResults summary:")
         for idx, rec in enumerate(results):
-            print(f"  [{idx}] scorebits={rec['scorebits']}, resetbits={rec['resetbits']}, "
-              f"digits_p0={rec['digits_p0']}, digit_matches_p0={rec['digit_matches_p0']}, "
-              f"digits_p1={rec['digits_p1']}, digit_matches_p1={rec['digit_matches_p1']}")
+            print("  [{}] scorebits={}, resetbits={}, digits_p0={}, digit_matches_p0={}, digits_p1={}, digit_matches_p1={}".format(
+                idx, rec['scorebits'], rec['resetbits'], rec['digits_p0'], rec['digit_matches_p0'], rec['digits_p1'], rec['digit_matches_p1']))
         print()
-        '''
+    
         
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)

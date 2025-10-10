@@ -365,17 +365,26 @@ async function buildScoresForm(payloadScores) {
     label.textContent = `Player ${p + 1}: `;
     const input = document.createElement("input");
     input.type = "text";
-    input.placeholder = `comma-separated reel values (e.g. 10,0,0) or concatenated digits for zeros (e.g. 000)`;
+    input.inputMode = "numeric";
+    input.pattern = "[0-9]*";
+    input.placeholder = `enter ${prefillCount} digits (numbers only)`;
 
     // If payloadScores was provided and contains this player's values, use them; otherwise prefill zeros
     const existingVals =
       (payloadScores && payloadScores[p] && payloadScores[p].slice()) || [];
     if (existingVals.length) {
-      input.value = existingVals.join(",");
+      // show as contiguous digits (no commas)
+      input.value = existingVals.join("");
     } else {
-      // Prefill as undelimited zeros (e.g. "000") per UX request
-      input.value = new Array(prefillCount).fill(0).join("");
+      // Start empty; user can enter fewer than expected digits without padding
+      input.value = "";
     }
+
+    // enforce digits only and max length
+    input.addEventListener("input", () => {
+      const maxLen = prefillCount;
+      input.value = input.value.replace(/\D+/g, "").slice(0, maxLen);
+    });
 
     input.style.width = "18rem";
     input.name = `player-${p}-reel-values`;
@@ -435,50 +444,23 @@ async function saveCalibrationScores() {
     // ignore and use DOM values
   }
 
-  const scores = [];
+  const scores = [];           // final integers, one per player
+  const expected = reelsPerPlayer + dummyReels;
+
   for (let p = 0; p < totalPlayers; p++) {
     const el = document.querySelector(`input[name="player-${p}-reel-values"]`);
-    const raw = el ? el.value.trim() : "";
-    let vals = [];
-    if (raw.length > 0) {
-      // Support multiple input styles:
-      // - comma-separated: "10,0,0"
-      // - space-separated: "10 0 0"
-      // - undelimited digits (useful for zeros prefills): "000" -> [0,0,0]
-      if (raw.indexOf(",") !== -1) {
-        vals = raw.split(",").map((s) => parseInt(s.trim(), 10) || 0);
-      } else if (/\s/.test(raw)) {
-        vals = raw.split(/\s+/).map((s) => parseInt(s.trim(), 10) || 0);
-      } else if (/^\d+$/.test(raw) && raw.length >= 1) {
-        // If the user entered a pure digit string and its length equals the
-        // expected number of reels (including dummy), treat each character
-        // as a separate digit value (e.g. "000" -> [0,0,0]). Otherwise
-        // interpret as a single numeric value.
-        if (raw.length === reelsPerPlayer + dummyReels) {
-          vals = raw.split("").map((c) => parseInt(c, 10) || 0);
-        } else {
-          const n = parseInt(raw, 10);
-          if (!isNaN(n)) vals = [n];
-        }
-      } else {
-        // fallback: try comma split anyway
-        vals = raw.split(",").map((s) => parseInt(s.trim(), 10) || 0);
-      }
-    }
-    // Ensure we have reelsPerPlayer values; if fewer, pad with zeros; if more, truncate
-    const playerScores = [];
-    for (let i = 0; i < reelsPerPlayer; i++) {
-      playerScores.push(i < vals.length ? vals[i] : 0);
-    }
-    // append dummy reel zeros
-    for (let d = 0; d < dummyReels; d++) playerScores.push(0);
-    scores.push(playerScores);
+    const raw = (el ? el.value : "").replace(/\D+/g, "").slice(0, expected);
+    // build digits array
+    let digits = raw.split("").map((c) => c.charCodeAt(0) - 48);
+    // compose into one integer
+    const value = digits.reduce((n, d) => n * 10 + (d | 0), 0);
+    scores.push(value);
   }
 
   try {
     const resp = await window.smartFetch(
       "/api/em/set_calibration_scores",
-      { scores: scores },
+      { scores: scores },   // now [12340, 45670, ...]
       true,
     );
     if (!resp.ok) throw new Error("save failed");
