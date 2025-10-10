@@ -4,7 +4,6 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
-import faults
 import Pico_Led
 import SharedState as S
 import uctypes
@@ -963,6 +962,14 @@ def connect_to_wifi(initialize=False):
         return True
 
     from displayMessage import init as init_display
+    from faults import (
+        ALL_WIFI,
+        WIFI01,
+        WIFI02,
+        clear_fault,
+        fault_is_raised,
+        raise_fault,
+    )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
 
@@ -983,8 +990,8 @@ def connect_to_wifi(initialize=False):
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults
-            if faults.fault_is_raised(faults.ALL_WIFI):
-                faults.clear_fault(faults.ALL_WIFI)
+            if fault_is_raised(ALL_WIFI):
+                clear_fault(ALL_WIFI)
 
             return True
 
@@ -994,10 +1001,10 @@ def connect_to_wifi(initialize=False):
     networks = scanwifi.scan_wifi2()
     for network in networks:
         if network["ssid"] == ssid:
-            faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+            raise_fault(WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
             return False
 
-    faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
+    raise_fault(WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
 
 

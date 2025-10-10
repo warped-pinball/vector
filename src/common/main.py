@@ -9,11 +9,11 @@
 import resource
 import time
 
-import faults
-import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
 import reset_control
+from faults import HDWR01, HDWR02, SFTW01, raise_fault
+from GameDefsLoad import go as GameDefsLoadGo
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
@@ -77,7 +77,7 @@ def adr_activity_ok():
             return True
         time.sleep_ms(100)
 
-    faults.raise_fault(faults.HDWR02)
+    raise_fault(HDWR02)
     return False
 
 
@@ -122,16 +122,16 @@ ap_mode = check_ap_button()
 bus_activity_fault = bus_activity_fault_check()
 if bus_activity_fault:
     set_error_led()
-    faults.raise_fault(faults.HDWR01)
+    raise_fault(HDWR01)
     print("Main: Bus Activity fault detected !!")
     Log.log("Main: Reset Circuit fault detected !!")
 
 # load up Game Definitions
 
 if not bus_activity_fault and not ap_mode:
-    GameDefsLoad.go()
+    GameDefsLoadGo()
 else:
-    GameDefsLoad.go(safe_mode=True)
+    GameDefsLoadGo(safe_mode=True)
 
 if not bus_activity_fault:
     MemoryMain.go()
@@ -148,4 +148,4 @@ from backend import go  # noqa
 Log.log("MAIN: Launching Wifi")
 go(ap_mode)
 Log.log("MAIN: drop through fault")
-faults.raise_fault(faults.SFTW01)
+raise_fault(SFTW01)

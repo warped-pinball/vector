@@ -268,9 +268,6 @@ def status():
 def push_game_state(game_time, scores, ball_in_play):
     global gamestate_buffer, first_push_game_time
 
-    print("Pushing game state:", game_time, scores, ball_in_play)
-    print(gamestate_buffer)
-
     current_state = f"{game_time},{','.join(map(str, scores))},{ball_in_play}"
     if gamestate_buffer:
         # get last state to avoid duplicates
