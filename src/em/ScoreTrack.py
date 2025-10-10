@@ -81,8 +81,8 @@ fileNumber = 1  # change this to select which game_historyN.dat to use (0..4)
 
 #GLOBALS for process sensor data - - - 
 #switch to run normal or in file capture mode
-S.run_learning_game = True
-#S.run_learning_game = False
+#S.run_learning_game = True
+S.run_learning_game = False
 
 '''
 Bit filter 
@@ -133,6 +133,8 @@ def initialize():
 
     #from displayMessage import init
     displayMessage.init()
+
+    S.game_status["game_active"]=False
 
 
 def loadState():
@@ -605,6 +607,13 @@ def processSensorData():
             stateVar = PROCESS_IDLE  
             processAndStoreWrapUp()
             gameover = True
+            S.run_learning_game = False
+
+            print("End of game - learning game- save and print")
+            save_game_history()
+            #print_game_history_file()
+            free_game_history()
+
             displayMessage.setCaptureModeDigit(-1)
             stateCount = 0
 
@@ -680,9 +689,11 @@ def free_game_history():
     gameHistoryIndex = 0
     gc.collect()
 
+storeCalibrationGameProgress=0
+
 def processAndStore():
     '''compress as data and time values - store into large buffer (gameHistory)'''
-    global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
+    global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex, storeCalibrationGameProgress
     gpio1.value(1)
 
     allActivesChannels=0
@@ -725,6 +736,7 @@ def processAndStore():
 
     #put a numeral up on the board display - x10% full    
     displayMessage.setCaptureModeDigit(gameHistoryIndex // 1000)
+    storeCalibrationGameProgress = (gameHistoryIndex // 100)
 
     #print("chk")
     return
@@ -1318,11 +1330,13 @@ def CheckForNewScores(nState=[0]):
             nState[0] = 1           
             log.log("SCORE: game end")
          
+            '''
             if S.run_learning_game == True:
                 print("End of game - learning game- save and print")
                 save_game_history()
                 #print_game_history_file()
                 free_game_history()
+            '''
 
             sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 

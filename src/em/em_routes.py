@@ -1,12 +1,16 @@
 from backend import add_route
 import SharedState as S
 import os
+
 try:
     import ujson as json
 except Exception:
     import json
+
 import time
 
+from logger import logger_instance
+log = logger_instance
 
 @add_route("/api/em/set_config", auth=True)
 def em_config(request):
@@ -50,16 +54,37 @@ def get_em_config(request):
 
 @add_route("/api/em/record_calibration_game", auth=True)
 def record_calibration_game(request):
-    # TODO actually record the game and report progress
-    target = 10
+    """
+    Find the first game_history<N>.dat (1..4) file that does NOT exist.
+    Set ScoreTrack.fileNumber = N (1..4). If all exist, return an error.
+    No placeholder file is created here.
+    """
+    import ScoreTrack
+    ScoreTrack.storeCalibrationGameProgress=0
 
+    try:
+        # use check_files() to see which slots exist
+        info = check_files()
+        exists = info.get("exists", [False, False, False, False])
 
+        for idx, present in enumerate(exists, start=1):
+            if not present:
+                ScoreTrack.fileNumber = idx
+                break
 
+        log.log(f"EMCAL: store file num: {idx}")
+        S.run_learning_game = True
 
-    for i in range(target):
-        yield json.dumps({"progress": (i + 1) / target * 100})
-        time.sleep(1)
-    return json.dumps({"status": "done"})
+        while (S.run_learning_game == True):
+            print("&", end="")
+            yield json.dumps({"progress": ScoreTrack.storeCalibrationGameProgress})
+            time.sleep(0.5)
+       
+        return {"status": "ok"}
+
+    except Exception as e:
+        S.run_learning_game = False
+        return {"status": "error", "error": str(e)}, 500
 
 
 @add_route("/api/em/set_calibration_scores", auth=True)
@@ -78,9 +103,7 @@ def final_calibration_game_scores(request):
     while len(flat) < 4:
         flat.append(0)
 
-    print("score save ))))))))))))))))))))))))) ",flat)
-
-    # pass a simple 4-int tuple
+    log.log(f"EMCAL: score save {flat}")
     from ScoreTrack import add_actual_score_to_file
     add_actual_score_to_file(filename=None, actualScores=tuple(flat))
 
@@ -100,23 +123,34 @@ def start_learning_process(request):
     return json.dumps({"status": "done"})
 
 
+
+
+
 @add_route("/api/em/recorded_games_count")
 def recorded_games_count(request):
-    """Return how many calibration game files exist.
-    Counts files named game_history*.txt in the root directory.
+    return check_files()
+
+def check_files():   
     """
+    Check for game_history1.dat .. game_history4.dat return boolean array of their existence.
+    """ 
     try:
-        cnt = 0
-        for name in os.listdir("/"):
-            if name.startswith("game_history") and name.endswith(".txt"):
-                cnt += 1
+        try:
+            names = set(os.listdir("/"))
+        except Exception:
+            names = set(os.listdir())
 
-        print(" game count recorded game coutn  = = = = = ",cnt)
+        exists = []
+        for idx in range(1, 5):
+            fname = f"game_history{idx}.dat"
+            exists.append(fname in names)
 
-        return {"count": cnt}
+        #print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: ",exists,sum(1 for x in exists if x) )
+        return {"exists": exists, "count": sum(1 for x in exists if x)}
+    
     except Exception as e:
-        print("recorded_games_count error:", e)
-        return {"count": 0, "error": str(e)}
+        log.log(f"EMCAL: recorded_games_count error: {e}")
+        return {"exists": [False, False, False, False], "count": 0, "error": str(e)}
 
 
 @add_route("/api/em/delete_calibration_games", auth=True)
@@ -136,8 +170,8 @@ def delete_calibration_games(request):
                     except Exception:
                         pass
         except Exception:
-            pass
-    print("------------------------status deleted files", deleted_files)
+            pass    
+    log.log("EMCAL: delete calibration files")
     return json.dumps({"status": "deleted"})
 
 
@@ -146,30 +180,21 @@ def delete_calibration_games(request):
 @add_route("/api/em/diagnostics")
 def diagnostics(request):
     """
-    Stream diagnostic data similar to get_logs_stream() but for game history files.
-    Streams the contents of any existing files named:
-        game_history1, game_history2, game_history3, game_history4
-    (no extension, per request)
-    Each file is preceded by a header line and separated by blank lines.
+    Stream diagnostic data - game history files.   
     """
     import os
 
-    candidate_files = ["game_history1", "game_history2", "game_history3", "game_history4"]
-    existing = []
-    try:
-        root_list = os.listdir("/")
-    except Exception:
-        root_list = []
-    for name in candidate_files:
-        if name in root_list:
-            existing.append("/" + name)
+    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]       
+    info = check_files()
+    exists = info.get("exists", [False, False, False, False])
+    existing = ["/" + name for name, present in zip(candidate_files, exists) if present]
 
     def _stream():
         if not existing:
             yield "No game_history* files found.\n"
             return
 
-        yield "Vector Diagnostics - Game History Dump\n"
+        yield "Vector EM Diagnostics - Game History Dump\n"
         yield "Files: " + ", ".join(existing) + "\n"
         yield "----------------------------------------\n"
 
@@ -182,11 +207,11 @@ def diagnostics(request):
                         if not chunk:
                             break
                         # convert to str safely
-                        try:
-                            yield chunk.decode("utf-8", "ignore")
-                        except Exception:
-                            # fallback hex representation if undecodable
-                            yield chunk.hex() + "\n"
+                        #try:
+                        #    yield chunk.decode("utf-8", "ignore")
+                        #except Exception:
+                        # fallback hex representation if undecodable
+                        yield chunk.hex() + "\n"
             except Exception as e:
                 yield f"[ERROR reading {path}: {e}]\n"
             yield f"\n==== END {path} ====\n"
