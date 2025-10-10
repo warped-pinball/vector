@@ -37,7 +37,6 @@ known_devices = []
 
 # Sockets are created lazily
 recv_sock = None
-send_sock = None
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
@@ -192,12 +191,8 @@ def _get_local_name_bytes():
 
 def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     print(f"DISCOVERY:Sending message to {addr}: {msg}")
-
-    global send_sock
-    if not send_sock:
-        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
+    send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     send_sock.sendto(msg.encode(), addr)
 
 

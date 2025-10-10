@@ -284,7 +284,7 @@ def push_game_state(game_time, scores, ball_in_play):
         first_push_game_time = game_time
 
     # if there are less than 10 states or it's been less than 3 seconds since the first state, don't push yet
-    if gamestate_buffer.count("|") < 10 and game_time - first_push_game_time < 3000:
+    if gamestate_buffer.count("|") < 4 and game_time - first_push_game_time < 3000:
         return
 
     try:
