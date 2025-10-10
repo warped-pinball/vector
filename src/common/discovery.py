@@ -186,6 +186,7 @@ def _get_local_ip_bytes() -> bytes:
 
 def _get_local_name_bytes() -> bytes:
     """Retrieve this board's game name, truncated to the max length."""
+    # TODO use the backend function to implemnent this
     from SharedState import gdata
 
     str_name = gdata["GameInfo"]["GameName"][:MAX_NAME_LENGTH]
