@@ -580,39 +580,6 @@ def main():
             print("Running Calibrate PWM HI/LOW. Press Enter to continue after calibration.")
             calibrate_pwm_hi_low()
 
-            '''
-            score = 0
-            scoreDig = bytearray([0] * 8)
-            print("Calibration done. You can now adjust score with keys: 0 (reset), + (add 10), - (subtract 10).")
-            while True:
-                process_spi1_buffer()
-
-                key = input("Score adjust (0/+/-)")
-                if key == '0':
-                    score = 0
-                    scoreDig = bytearray([0] * 8)
-                    print("Score reset to 0.")
-                elif key == '+':
-                    score += 10
-                    # Optionally update scoreDig[1] for 10s digit
-                    if scoreDig[0] == 9:
-                        scoreDig[0] = 0
-                    else:
-                        scoreDig[0] += 1
-                    print(f"Score incremented to {score}.")
-                elif key == '-':
-                    score -= 10
-                    # Optionally update scoreDig[1] for 10s digit
-                    if scoreDig[0] == 0:
-                        scoreDig[0] = 9
-                    else:
-                        scoreDig[0] -= 1
-                    print(f"Score decremented to {score}.")
-                elif key == '':
-                    break
-                else:
-                    print("Invalid key. Use 0, +, -, or Enter.")
-            '''
         elif choice == '3':
             print("Running PWM Ramp Test. Press Ctrl+C to stop.")
             try:

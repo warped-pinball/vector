@@ -12,10 +12,10 @@ import faults
 import SharedState
 import SPI_DataStore
 from logger import logger_instance
-
 Log = logger_instance
 
-safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "multiplier": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "sensorlevels": [0, 0]}
+
+safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "dummy_reels": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "startpause": 5,"endpause":5,"sensorlevels": [0, 0]}
 
 
 def parse_config_line(line):
@@ -69,62 +69,22 @@ def list_game_configs():
     return configs
 
 
-def go(safe_mode=False):
+def go(safe_mode=False):  
     """for EM game just load from SPI_DataStore"""
-    Log.log(f"Loading EM game definition with safe mode set to {safe_mode}")
+    Log.log(f"Loading EM definition, safe mode ={safe_mode}")
 
     try:
         em_data = SPI_DataStore.read_record("EMData", 0)
         SharedState.gdata = em_data
-        Log.log("Loaded EMData from SPI_DataStore into SharedState.gdata")
 
-        # Copy em_data["gamename"] to SharedState.gdata["GameInfo"]["GameName"]
-        if "GameInfo" not in SharedState.gdata:
+        if not isinstance(SharedState.gdata.get("GameInfo"), dict):
             SharedState.gdata["GameInfo"] = {}
-        SharedState.gdata["GameInfo"]["GameName"] = em_data.get("gamename", "Unknown")
-
-        # Print out main game info
-        print(f"Game Name: {em_data.get('gamename', 'Unknown')}")
-        print(f"Players: {em_data.get('players', 'Unknown')}")
-        print(f"Digits: {em_data.get('digits', 'Unknown')}")
-        print(f"Start Pause: {em_data.get('startpause', 'Unknown')}")
-        print(f"End Pause: {em_data.get('endpause', 'Unknown')}")
-
-        print("-" * 40)
-
-        # Print filtermasks grid
-        filtermasks = em_data.get("filtermasks", bytes(40))
-        players = em_data.get("players", 1)
-        digits = em_data.get("digits", 1)
-        print("Filter Masks:")
-        for p in range(players):
-            row = []
-            for d in range(digits):
-                idx = p * digits + d
-            if idx < len(filtermasks):
-                row.append(f"{filtermasks[idx]:02x}")
-            else:
-                row.append("--")
-            print(f"Player {p + 1}: " + " ".join(row))
-        print("-" * 40)
-
-        # Print carrythresholds grid
-        carrythresholds = em_data.get("carrythresholds", bytes(32))
-        print("Carry Thresholds:")
-        for p in range(players):
-            row = []
-            for d in range(digits):
-                idx = p * digits + d
-            if idx < len(carrythresholds):
-                row.append(f"{carrythresholds[idx]:02x}")
-            else:
-                row.append("--")
-            print(f"Player {p + 1}: " + " ".join(row))
-        print("-" * 40)
+        SharedState.gdata["GameInfo"]["System"] = "EM"
+        SharedState.gdata["GameInfo"]["GameName"] = em_data["gamename"]
+        print("Loaded EMData from SPI_DataStore")
 
     except Exception as e:
-        Log.log(f"Error loading EMData: {e}")
-        Log.log("Using safe defaults")
+        Log.log(f"Error loading EMData: {e}")        
         faults.raise_fault(faults.CONF00)
         SharedState.gdata = safe_defaults
         print("Using safe defaults:", safe_defaults)

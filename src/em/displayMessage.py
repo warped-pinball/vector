@@ -6,7 +6,6 @@ display message for EM machines
 
 handles on board displays only - LEDs for all the inputs
   and the single digit 7 segment for IP address, learn mode counts
-
 """
 import time
 from machine import Pin
@@ -64,7 +63,6 @@ SEGMENTS = [
 def fixAdjustmentChecksum():   
     pass
 
-
 def setipAddress(ipAddress):
     """call to set the ip address to be displayed
     at powerup
@@ -79,8 +77,6 @@ def setipAddress(ipAddress):
     log.log(f"MSG: init ip address {ipAddress}")
     return
 
-
-
 def init(ipAddress=""):
     if isinstance(ipAddress, str) and len(ipAddress) > 3:
         setipAddress(ipAddress)
@@ -88,12 +84,9 @@ def init(ipAddress=""):
     from phew.server import schedule
     schedule(displayUpdate, 1000, 500)
 
-
-
+#keep - compatiblewith server.py in common
 def refresh():
     return
-
-
 
 def setAuxLeds(aux,gameOver):
     '''add on special aux/go bits to sensor pattern leds'''
@@ -101,12 +94,10 @@ def setAuxLeds(aux,gameOver):
     auxLED = bool(aux)
     gameOverLED = bool(gameOver)
 
-
 def setSensorLeds(pattern):
     '''add on bits to sensor pattern leds - will cause led to BLINK ONLY'''
     global sensorPattern
     sensorPattern = sensorPattern | pattern
-
 
 def setLearnModeDigit(d):
     global learnModeCounter
@@ -114,7 +105,6 @@ def setLearnModeDigit(d):
         learnModeCounter = d
     else:
         learnModeCounter = -1
-
 
 def setCaptureModeDigit(d):
     global captureModeCounter
@@ -219,12 +209,14 @@ def displayUpdate():
         # If FIFO full, skip this update (or handle retry logic)
         pass
 
-
-
-
-
 #power up clear the display to reduce power
 displayUpdate()
+
+
+
+
+
+
 
 #test
 if __name__ == "__main__":   

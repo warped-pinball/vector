@@ -384,12 +384,12 @@ def sensitivityChange(dir):
     hiPwm.duty_u16(highCalThres)
     log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
 
-    import SPI_DataStore as DataStore
+    #import SPI_DataStore as DataStore
     S.gdata.get("sensorlevels")[1] = highCalThres
     S.gdata.get("sensorlevels")[0] = lowCalThres
-    DataStore.write_record("EMData", S.gdata)
-
-
+    #DataStore.write_record("EMData", S.gdata)
+    from ScoreTrack import saveState
+    saveState()
 
 #test
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ def _get_machine_score(player):
     """get score  from scoretrack module"""    
     return ScoreTrack.getPlayerScore(player)
 
-
 def _get_ball_in_play():
     """Get the ball in play number. 0 if game over."""    
     return 1        
@@ -32,7 +31,7 @@ def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
     try:
-        data["BallInPlay"] = _get_ball_in_play()
+        #data["BallInPlay"] = _get_ball_in_play()
 
         data["GameActive"]=S.game_status["game_active"]
        

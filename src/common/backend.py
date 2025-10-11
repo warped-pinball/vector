@@ -375,18 +375,15 @@ def app_reboot_game(request):
 @add_route("/api/game/name")
 def app_game_name(request):
     import SharedState
-
-    try:
-        if SharedState.gdata["GameInfo"]["System"] == "EM":
-            return {"game_name": SharedState.gdata["GameInfo"]["GameName"]}, 200  # TODO redirect to where game name is stored
-    except Exception:
-        pass
-
     return SharedState.gdata["GameInfo"]["GameName"], 200
 
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
+    import SharedState
+    if SharedState.gdata["GameInfo"]["System"] == "EM":
+        return {"active_config": SharedState.gdata["GameInfo"]["GameName"]}
+
     return {"active_config": ds_read_record("configuration", 0)["gamename"]}
     # TODO make this use configured game name on EM
 

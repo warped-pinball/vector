@@ -286,8 +286,7 @@ def deserialize(data, structure_name):
             }
     elif structure_name == "EMData":
         try:
-            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)
-            print("EM Data Restored ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",startpause,endpause)
+            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)            
             return {
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),
@@ -300,7 +299,7 @@ def deserialize(data, structure_name):
                 "endpause": int(endpause),
             }
         except Exception:
-            Log.log("DATSTORE: fault EMData-------------------------------------------")
+            Log.log("DATSTORE: fault EMData Load")
             return {
                 "gamename": "",
                 "players": 1,

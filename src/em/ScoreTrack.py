@@ -1,4 +1,4 @@
-# This file is part of the Warped Pinball SYS11Wifi Project.
+# This file is part of the Warped Pinball SYSEM-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
@@ -21,6 +21,7 @@ import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 log = logger_instance
+import gc
 
 rtc = RTC()
 top_scores = []
@@ -42,15 +43,10 @@ recent_scores = [
 lastValue =0
 segmentMS =0
 
-
-# Diagnostics LED - for test only
-gpio26 = Pin(26, Pin.OUT)
-gpio26.value(not gpio26.value())
-gpio1 = Pin(1, Pin.OUT)
-gpio1.value(not gpio1.value())
-
-
-import gc
+# Diagnostics #gpio26 = Pin(26, Pin.OUT)
+#gpio26.value(not gpio26.value())
+#gpio1 = Pin(1, Pin.OUT)
+#gpio1.value(not gpio1.value())
 
 # Game History storage area and state machine defines
 GAME_HIST_SIZE = 10000
@@ -68,9 +64,10 @@ gameHistoryStatus=GAMEHIST_STATUS_EMPTY
 PROCESS_START_PAUSE = 8
 PROCESS_END_PAUSE = 5
 
+gameover=False
+
 # SCORE Digits for all 4 players - Initialize sensorScores[player][digit]
 sensorScores = [[0 for _ in range(8)] for _ in range(4)]
-
 
 #config stuff to be sent to UI:
 actualScoreFromLastGame = None
@@ -130,11 +127,29 @@ def initialize():
     schedule(processSensorData, 1000, 800)
 
     loadState()
-
     #from displayMessage import init
     displayMessage.init()
-
     S.game_status["game_active"]=False
+
+
+def buildSensorBitMask():
+    # build sensorBitMask used in sensor reads - single 32 bit word from players and digits
+    global sensorBitMask
+
+    digitsPerPlayer = int(S.gdata["digits"])
+    players = int(S.gdata["players"])
+
+    base_byte = (1 << digitsPerPlayer) - 1
+    base_byte &= 0xFF
+    sb = base_byte
+    if players >= 2:
+        sb |= (base_byte << 8)
+    if players >= 3:
+        sb |= (base_byte << 16)
+    if players >= 4:
+        sb |= (base_byte << 24)
+    sensorBitMask = sb
+    print("SENSOR BIT MASK SET" ,sb)
 
 
 def loadState():
@@ -154,18 +169,8 @@ def loadState():
     PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
     print("SCORE: pauses= ",PROCESS_START_PAUSE,PROCESS_END_PAUSE)
   
-    # build sensorBitMask - single 32 bit word
-    base_byte = (1 << digitsPerPlayer) - 1
-    base_byte &= 0xFF
-    sb = base_byte
-    if players >= 2:
-        sb |= (base_byte << 8)
-    if players >= 3:
-        sb |= (base_byte << 16)
-    if players >= 4:
-        sb |= (base_byte << 24)
-    sensorBitMask = sb
-
+    buildSensorBitMask()
+   
     # carryThresholds (4 players * 4 digits * 2 values (1 byte each))
     ct_blob = S.gdata["carrythresholds"]
     if not isinstance(ct_blob, (bytes, bytearray)) or len(ct_blob) != 32:
@@ -178,7 +183,6 @@ def loadState():
             high = b[pos]; pos += 1
             carryThresholds[p][d][0] = int(low)
             carryThresholds[p][d][1] = int(high)
-
 
     # filtermasks 64 bytes: (scoreDepth, resetDepth) for channels 0..31
     fm_blob = S.gdata["filtermasks"]
@@ -194,16 +198,12 @@ def loadState():
     log.log(f"ScoreTrack initialized: players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X}")
     print("ScoreTrack pauses: startpause=%d endpause=%d" % (PROCESS_START_PAUSE, PROCESS_END_PAUSE))
 
+    print ("LOAD",S.gdata)
+
 
 
 def saveState():
     """store working config back to SPI_DataStore"""
-    try:
-        em = DataStore.read_record("EMData")
-    except Exception as e:
-        print("Error reading EMData:", e)
-        return
-    
     # Build 64-byte filtermasks: for channel 0..31 store (scoreDepth, resetDepth)
     fm = bytearray(64)
     for ch in range(32):
@@ -222,15 +222,21 @@ def saveState():
             high = int(carryThresholds[p][d][1]) & 0xFF
             ct[pos] = low
             ct[pos + 1] = high
-            pos += 2
+            pos += 2            
     S.gdata["carrythresholds"] = bytes(ct)
+
     S.gdata["startpause"] = int(PROCESS_START_PAUSE)
     S.gdata["endpause"] = int(PROCESS_END_PAUSE)
-  
+    S.gdata["GameInfo"]["GameName"] = S.gdata["gamename"]
+    buildSensorBitMask()
+
     try:
-        #DataStore.write_record("EMData", em)
-        DataStore.write_record("EMData", S.gdata) #  <<< could just do this way - 
-        print("EMData updated from globals (filtermasks, carrythresholds).")
+        #c=DataStore.read_record("configuration")
+        #c["gamename"] =  S.gdata["gamename"]
+        #DataStore.write_record("configuration",0)
+
+        DataStore.write_record("EMData", S.gdata)  
+        print("EMData updated from globals (filtermasks, carrythresholds).",S.gdata)
     except Exception as e:
         print("Error writing EMData:", e)
 
@@ -240,6 +246,7 @@ def saveState():
 
 def setScoreMask(bit, scoreDepth, resetDepth):
     """Set a single bit across score_mask and reset_mask.
+            masks are used in high speed filter (viper function)
     Parameters:
       bit         - bit number 0..31 to modify
       scoreDepth  - number of earliest stages (0..DEPTH) that should have the bit cleared;
@@ -304,7 +311,6 @@ def printMasks():
 
 
 
-
 def processBitFilter(new_word):
     '''python (non-viper) for calling the bitfilter in _viper_process '''
     global bit_buf, bit_ptr, scoreState
@@ -319,18 +325,6 @@ def processBitFilter(new_word):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def game_history_filename(number=None):
     """Return filename for a given file number; uses global fileNumber when None."""
     if number is None:
@@ -342,8 +336,7 @@ def add_actual_score_to_file(filename=None, actualScores=[0,0,0,0]):
     if filename is None:
         filename = game_history_filename()   
 
-    print("################### incomming scores",actualScores)
-
+    #print("################### incomming scores",actualScores)
     actualScores = list(actualScores)
     while len(actualScores) < 4:
         actualScores.append(0)
@@ -547,24 +540,12 @@ PROCESS_RUN_END = 5
 
 stateVar=0
 stateCount=0
-
-
-
-#sync up just the end of game - capture last transitions.. 
-gameover=False
-
 #called from phew schedeuler 
 def processSensorData():
     ''' called each 1 or 2 seconds.  watch game active and decide when to operate on data
-    coming in from sensor module -  either store for learning or process for live scores'''
-    # removed unused globals: lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
+    coming in from sensor module -  either store for learning or process for live scores'''    
     global stateVar, stateCount, gameover
-    global gpio26  #blink led
-
     global lastValue, segmentMS, gameHistory,gameHistoryTime,gameHistoryIndex
-
-
-    gpio26.value(not gpio26.value())
 
     stateCount += 1
 
@@ -677,7 +658,6 @@ def pullWithDelete():
 
 def processEmpty():
     ''' pull and discard - used during gameActive == false'''
-    # removed unused globals: bufferPointerIndex, gpio1
     for x in range(2500):
         if pullWithDelete() == 0:        
             return
@@ -708,7 +688,6 @@ storeCalibrationGameProgress=0
 def processAndStore():
     '''compress as data and time values - store into large buffer (gameHistory)'''
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex, storeCalibrationGameProgress
-    gpio1.value(1)
 
     allActivesChannels=0
 
@@ -788,7 +767,6 @@ def processRisingEdge(sc,risingEdge):
         #PLR1-ONES
         if risingEdge & 0x00000001:
             sensorScores[0][0] = sensorScores[0][0] + 1     #inc score
-            #carryCount[0] = 0
         if sc&0x01 == 0x01:
             carryCount[0]=carryCount[0]+1
         else:
@@ -798,8 +776,7 @@ def processRisingEdge(sc,risingEdge):
         if risingEdge & 0x00000002:
             sensorScores[0][1] = sensorScores[0][1] + 1     #inc score
             if carryCount[0]>carryThresholds[0][0][0] and carryCount[0]<carryThresholds[0][0][1]:
-                sensorScores[0][0] = 0                      #carry correction
-            #carryCount[1] = 0
+                sensorScores[0][0] = 0                      #carry correction            
         if sc&0x02 == 0x02:
             carryCount[1]=carryCount[1]+1
         else:
@@ -810,7 +787,6 @@ def processRisingEdge(sc,risingEdge):
             sensorScores[0][2] = sensorScores[0][2] + 1     #inc score
             if carryCount[1]>carryThresholds[0][1][0] and carryCount[1]<carryThresholds[0][1][1]:
                 sensorScores[0][1] = 0                      #carry correction
-            #carryCount[2]=0
         if sc&0x04 == 0x04:
             carryCount[2]=carryCount[2]+1
         else:
@@ -836,36 +812,44 @@ def processRisingEdge(sc,risingEdge):
 
 
         #player 2
-          #PLR2-ONES
+        #PLR2-ONES
         if risingEdge & 0x00000100:
-            sensorScores[1][0] = sensorScores[1][0] + 1  #inc score
-            carryCount[8] = 0
+            sensorScores[1][0] = sensorScores[1][0] + 1  #inc score            
         if sc&0x0100 == 0x0100:
             carryCount[8]=carryCount[8]+1
+        else:
+            carryCount[8] = 0
+
         #PLR2-TENS
         if risingEdge & 0x00000200:
             sensorScores[1][1] = sensorScores[1][1] + 1     #inc score
             if carryCount[8]>carryThresholds[1][0][0] and carryCount[8]<carryThresholds[1][0][1]:
-                sensorScores[1][0] = 0                      #carry correction
-            carryCount[9] = 0
+                sensorScores[1][0] = 0                      #carry correction          
         if sc&0x0200 == 0x0200:
             carryCount[9]=carryCount[9]+1
+        else:
+            carryCount[9] = 0 
+
         #PLR2-HUNDERDS
         if risingEdge & 0x00000400:
             sensorScores[1][2] = sensorScores[1][2] + 1     #inc score
             if carryCount[9]>carryThresholds[1][1][0] and carryCount[9]<carryThresholds[1][1][1]:
-                sensorScores[1][1] = 0                      #carry correction
-            carryCount[10]=0
+                sensorScores[1][1] = 0                      #carry correction            
         if sc&0x0400 == 0x0400:
             carryCount[10]=carryCount[10]+1
+        else: 
+            carryCount[10]=0
+
         #PLR2-THOUSANDS
         if risingEdge & 0x00000800:
             sensorScores[1][3] = sensorScores[1][3] + 1     #inc score
             if carryCount[10]>carryThresholds[1][2][0] and carryCount[10]<carryThresholds[1][2][1]:
-                sensorScores[1][2] = 0                      #carry correction
-            carryCount[11]=0
+                sensorScores[1][2] = 0                      #carry correction           
         if sc&0x0800 == 0x0800:
-            carryCount[11]=carryCount[11]+1            
+            carryCount[11]=carryCount[11]+1    
+        else:
+            carryCount[11]=0
+
         #PLR2-TEN THOUSAND   
         if risingEdge & 0x00001000:
             sensorScores[1][4] = sensorScores[1][4] + 1     #inc score
@@ -958,7 +942,7 @@ carry_measurements=[]
 
 def replayStoredGame(quiet=False,carryDiag=False):
     ''' replay a stored game and report out scores'''
-    global sensorScores,last_sc,carry_measurements
+    global sensorScores,last_sc,carry_measurements,carryCount
 
     sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
@@ -986,10 +970,10 @@ def replayStoredGame(quiet=False,carryDiag=False):
                 last_sc = sc
 
             '''during replay measure carry counts.... 
-                not included in processRisingEdge for run time speed   '''
+               not included in processRisingEdge for run time speed   '''
             if carryDiag == True:
                 for player in range(4):
-                    for digit in range(1, 4):  # only digits with a previous digit                        
+                    for digit in range(1, 5):  # only digits with a previous digit                        
                         if sensorScores[player][digit] == 10:
                             # carryCount index mapping: player blocks of 8 (0,8,16,24)
                             idx = player * 8 + (digit - 1)
@@ -1035,6 +1019,7 @@ def reset_scores():
     #reset leader board scores
     from SPI_DataStore import blankStruct
     blankStruct("leaders")
+
 
 def get_claim_score_list():
     result = []
@@ -1298,7 +1283,9 @@ def CheckForNewScores(nState=[0]):
 
     resource.go()
 
-    if nState[0] == 0:  # power up init       
+    if nState[0] == 0:  # power up init      
+        printMasks() 
+        S.game_status["game_active"]=False
         nState[0] = 1
 
     if nState[0] == 1:  # waiting for a game to start       
@@ -1333,37 +1320,23 @@ def CheckForNewScores(nState=[0]):
         if gameover == True:
             print("SCORE: Game End 76")
             S.game_status["game_active"]=False
-            #load scoes into scores[][]
+
+
+            #load scoes into scores[][]                       
+            if DataStore.read_record("extras", 0)["tournament_mode"]:
+                for i in range(0, 4):
+                    update_tournament({"initials": "", "score": getPlayerScore(i)})
+            else:
+                for i in range(0, 4):                    
+                    update_leaderboard({"initials": "", "score": getPlayerScore(i)})
+
+            game = [S.gameCounter, ["",getPlayerScore(0)], ["",getPlayerScore(1)], ["",getPlayerScore(2)], ["",getPlayerScore(3)]]
+            _place_game_in_claim_list(game)            
 
             # game over
             nState[0] = 1           
-            log.log("SCORE: game end")
-         
-            '''
-            if S.run_learning_game == True:
-                print("End of game - learning game- save and print")
-                save_game_history()
-                #print_game_history_file()
-                free_game_history()
-            '''
-
+            log.log("SCORE: game end")                             
             sensorScores = [[0 for _ in range(6)] for _ in range(4)]
-
-        
-
-            '''                       
-            if DataStore.read_record("extras", 0)["tournament_mode"]:
-                for i in range(0, 4):
-                    update_tournament({"initials": scores[i][0], "score": scores[i][1]})
-            else:
-                for i in range(0, 4):                    
-                    update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
-
-            game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
-            _place_game_in_claim_list(game)
-            '''
-
-
 
 
 
@@ -1515,10 +1488,10 @@ def sort_out_carry_digits_and_apply():
         print("LEARN: no carry measurements")
         return
 
-    # filter out low-count noise
-    filtered = [(p, d, c) for (p, d, c) in carry_measurements if int(c) >= 4]
+    # filter out low-count noise  player-digit-count
+    filtered = [(p, d, c) for (p, d, c) in carry_measurements if int(c) >= 3]
     if not filtered:
-        log.log("LEARN: no carry measurements >=4")
+        log.log("LEARN: no carry measurements >=3")
         return
 
     # group counts by (player,digit)
@@ -1528,11 +1501,14 @@ def sort_out_carry_digits_and_apply():
 
     print("groups ",groups)    
 
-    applied = []
+
+    groups = {  (0,0):[10,10,30,30]  ,  (0,1):[10,10,30,30] , (0,2):[10,10,30,30]  }
+
+    applied = []    
     for (p, d), counts in groups.items():
-        if len(counts) < 2:
-            # require at least two measurements to be confident
-            continue
+        #if len(counts) < 2:
+        # require at least two measurements to be confident
+        #    continue
         minc = min(counts)
         maxc = max(counts)
         low = int(minc*0.9)
@@ -1542,12 +1518,13 @@ def sort_out_carry_digits_and_apply():
         carryThresholds[p][d][1] = high
         applied.append((p, d, low, high, sorted(counts)))
 
+
     if applied:
-        print("LEARN: applied carryThresholds (player,digit,low,high,counts):")
+        log.log("LEARN: applied carryThresholds (player,digit,low,high,counts):")
         for entry in applied:
-            print("  ", entry)      
+            log.log(f"  {entry}")
     else:
-        print("LEARN: no grouped carry measurements found to apply")
+        log.log("LEARN: no grouped carry measurements found to apply")
 
 
 
@@ -1566,7 +1543,8 @@ def stopTimer():
 
 def learnModeProcessNow():
     ''' the BIG learn mode - process all files data and set all filter and score parameters'''
-    global actualScores,fileNumber
+    global actualScores,fileNumber,sensorScores
+
 
     startTimer()
     results = []
@@ -1681,11 +1659,6 @@ def learnModeProcessNow():
     print("\n")
 
 
-    import sys
-    sys.exit()
-
-
-
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
 
@@ -1693,11 +1666,13 @@ def learnModeProcessNow():
     q=pick_best_settings_from_results(p)
     print(q)
 
+   
     #if a digit has no solutions - try somthing??  carry over??
     missing_digits = []
-    for d in range(5):
-        if not p.get(d): 
+    for d in range(16):
+        if not q.get(d): 
             missing_digits.append(d)
+
 
     if missing_digits:
         log.log(f"LEARN: missing digits {missing_digits}")
@@ -1715,6 +1690,7 @@ def learnModeProcessNow():
             p[d] = [(avg_scorebits, avg_resetbits)]
             log.log(f"Digit {d}: filled with average ({avg_scorebits}, {avg_resetbits})")
 
+
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
 
@@ -1723,6 +1699,7 @@ def learnModeProcessNow():
         print(digit, scorebits, resetbits)
         setScoreMask(digit, scorebits, resetbits)
     printMasks()
+
 
     # process files looking for carry/rollover settings
     for file_info in fileList:
@@ -1743,17 +1720,18 @@ def learnModeProcessNow():
         replayStoredGame(quiet=True,carryDiag=True)
 
     print("All carry measurements (player,digit,count) ",carry_measurements)
+
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
 
     #sort out carry digits...
     sort_out_carry_digits_and_apply()
     printMasks()
+    sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
-    # - save to fram
+    #save to fram
     saveState()
     log.log("LEARN: done")
-
     stopTimer()
 
 
@@ -1785,7 +1763,7 @@ def test_processAndStore():
 
     print("Test 1: Same value many times (should result in one entry with long time)")
     reset_history()
-    #test_values = [7<<12] * 55530  # 100 times the same value
+    
     def pull_same():
         return (7<<12)  #test_values.pop(0) if test_values else 0
     globals()['pullWithDelete'] = pull_same
@@ -1892,76 +1870,7 @@ if __name__ == "__main__":
         
         results = []
         import time
-
         learnModeProcessNow()
-
         printMasks()
 
-        '''
-        load_game_history()
-        targetScores = actualScores  # Load target score from the game file
-
-        print("loaded actual score= ", targetScores)
-        print("digits per player=", digitsPerPlayer)
-        print("carryThresholds before=", carryThresholds)
-        printMasks()
-        # Set all carry thresholds to 255
-        
-        for player in range(4):
-            for digit in range(4):
-                carryThresholds[player][digit][0] = 24
-                carryThresholds[player][digit][1] = 27
-        
-        
-        print("carryThresholds after=")
-        printMasks()
-
-
-        start = time.ticks_ms()
-
-      
-        SCORE_RANGE = (2,3,4,5,6,7,8,9)
-        RESET_RANGE = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14)
-
-        SCORE_RANGE = (3,4,5,6,7,8)
-        RESET_RANGE = (6,9,15)
-
-        
-
-
-        
-        for scorebits in SCORE_RANGE:
-            for resetbits in RESET_RANGE:
-
-                # Set all digits of score mask the same
-                for bit in range(10):
-                    setScoreMask(bit, scorebits, resetbits)
-
-                print("Testing: scorebits=",scorebits," resetbits=",resetbits)
-                replayStoredGame(True)
-
-                print("score digits=", [sensorScores[0][d] for d in range(5)], 
-                    " full score=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)), 
-                    " with setting=", scorebits, resetbits)
-
-                # Record z, one, and sensorScores[0][0:5] in results
-                results.append((scorebits, resetbits, [sensorScores[0][d] for d in range(5)]))
-
-                #elapsed = time.ticks_diff(time.ticks_ms(), start)
-                #print("Replay execution time:", elapsed, "ms")
-        '''
-
-        '''
-        # Print set/reset combinations for each digit place (1s, 10s, 100s, 1000s, 10000s)
-        digit_places = [1, 10, 100, 1000]
-        print("Taget Score = ",targetScore)
-        for digit_index, digit_value in enumerate(digit_places):
-            print(f"\nCombinations for digit place {digit_value}:")
-            for record in results:
-                scoreb, resetb, digits = record
-                if digits[digit_index] == targetScore // digit_value % 10:
-                    print(f"scorebits={scoreb}, resetbits={resetb}, digits={digits}")
-        '''
-
-
-
+       
