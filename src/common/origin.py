@@ -2,15 +2,15 @@ import gc
 
 from backend import hmac_sha256
 from micropython import const
+from urequests import post
 
 _MAX_CHALLENGES = const(10)
-_ORIGIN_URL = const("https://origin-beta.doze.dev/")
 _ORIGIN_PUBLIC_KEY_N = const(
     28614654558060418822124381284684831254240478555015789120214464642901890987895680763405283269470147887303926250817244523625615064384265979999971160712325590195185400773415418587665620878814790592993312154170130272487068858777781318039028994811713368525780667651253262629854713152229058045735971916702945553321024064700665927316038594874406926206882462124681757469297186287685022784316136293905948058639312054312972513412949216100630192514723261366098654269262605755873336924648017315943877734167140790946157752127646335353231314390105352972464257397958038844584017889131801645980590812612518452889053859829545934839273  # noqa
 )
 _ORIGIN_PUBLIC_KEY_E = const(65537)
 challenges = []  # queue of server-provided challenges
-gamestate_buffer = ""
+gamestate_buffer = []
 first_push_game_time = None
 
 
@@ -146,24 +146,30 @@ def make_request(path: str, body: dict = None, sign: bool = True, validate: bool
     else:
         raise ValueError("Invalid body type: {}".format(type(body)))
 
+    print("Making request:", path, body, sign, validate)
     # generate a random 32 byte challenge for the server if we need it
     client_challenge = random_bytes(32)
+
+    print("Client challenge:", client_challenge)
 
     gc.collect()
     response = send_request(path, body, sign=sign, client_challenge=client_challenge)
 
     if validate:
+        print("Validating response...")
         validate_response(response, client_challenge)
 
+    print("getting response json...")
     data = response.json()
     print("Response data:", data)
     return data
 
 
 def send_request(path: str, body_bytes: bytes, sign: bool = True, client_challenge: bytes = None):
-    url = _ORIGIN_URL.rstrip("/") + "/" + path.lstrip("/")
+    if path.startswith("/"):
+        raise ValueError("Path must not start with /")
 
-    print("Preparing request:", url, body_bytes)
+    print("Preparing request:", path, body_bytes)
     headers = {
         "Content-Type": "application/json",
     }
@@ -175,18 +181,18 @@ def send_request(path: str, body_bytes: bytes, sign: bool = True, client_challen
         headers["X-Machine-ID"] = config.id_b64
 
     if sign:
+        print("Signing request:", path, body_bytes)
         next_challenge = get_next_challenge()
         headers["X-Server-Challenge"] = _b64encode(next_challenge)
-        msg = path.lstrip("/").encode("utf-8") + next_challenge + body_bytes
+        msg = path.encode("utf-8") + next_challenge + body_bytes
         print("Signing message:", msg)
         hmac_b64 = _b64encode(hmac_sha256(config.secret_bytes, msg))
         headers["X-Signature"] = "v1=" + hmac_b64
 
-    print("Sending request:", url, body_bytes, headers)
+    print("Sending request:", path, body_bytes, headers)
     gc.collect()
-    from urequests import post
 
-    return post(url, data=body_bytes, headers=headers)
+    return post("https://origin-beta.doze.dev/" + path, data=body_bytes, headers=headers)
 
 
 def validate_response(response, client_challenge: bytes):
@@ -277,25 +283,23 @@ def push_game_state(game_time, scores, ball_in_play):
     current_state = f"{game_time},{','.join(map(str, scores))},{ball_in_play}"
     if gamestate_buffer:
         # get last state to avoid duplicates
-        last_state = gamestate_buffer.split("|")[-1] if gamestate_buffer else None
+        last_state = gamestate_buffer[-1] if gamestate_buffer else None
 
         # check if they match (except for game time)
         if last_state.split(",")[1:] == current_state.split(",")[1:]:
             return
-        else:
-            current_state = "|" + current_state
 
-    gamestate_buffer += current_state
+    gamestate_buffer.append(current_state)
     if first_push_game_time is None:
         first_push_game_time = game_time
 
-    # if there are less than 10 states or it's been less than 3 seconds since the first state, don't push yet
-    if gamestate_buffer.count("|") < 4 and game_time - first_push_game_time < 3000:
+    # if there are less than 6 states or it's been less than 5 seconds since the first state, don't push yet
+    if len(gamestate_buffer) < 6 and game_time - first_push_game_time < 5000:
         return
 
     try:
-        make_request("api/v1/machines/game_states", gamestate_buffer, sign=True, validate=False)
-        gamestate_buffer = ""
+        make_request("api/v1/machines/game_states", "|".join(gamestate_buffer), sign=True, validate=False)
+        gamestate_buffer = []
     except Exception as e:
         print("Error pushing game states:", e)
-        gamestate_buffer = ""
+        gamestate_buffer = []

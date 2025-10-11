@@ -24,9 +24,6 @@ class MessageType:
 # UDP port used for discovery traffic
 _DISCOVERY_PORT = const(37020)
 
-# Refresh known devices every 10 minutes
-_DISCOVER_REFRESH = const(600)
-
 # Limit list sizes and names to avoid memory abuse
 _MAXIMUM_KNOWN_DEVICES = const(50)
 _MAX_NAME_LENGTH = const(32)
@@ -36,7 +33,9 @@ _MAX_NAME_LENGTH = const(32)
 known_devices = []
 
 # Sockets are created lazily
-recv_sock = None
+recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+recv_sock.settimeout(0)
+send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
@@ -191,8 +190,12 @@ def _get_local_name_bytes():
 
 def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     print(f"DISCOVERY:Sending message to {addr}: {msg}")
-    send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    global send_sock
+    if not send_sock:
+        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
     send_sock.sendto(msg.encode(), addr)
 
 
