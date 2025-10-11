@@ -650,6 +650,11 @@ ram_bytes = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 bufferPointerIndex = 0
 SRAM_BIT_MASK = (SRAM_DATA_LENGTH-1)
 
+def reset_sensor_buffer_pointer():
+    """Reset the SRAM read pointer used by pullWithDelete()."""
+    global bufferPointerIndex
+    bufferPointerIndex = 0
+    
 def pullWithDelete():
     '''pulls out one 32 bit value and erases the spot in ram
        optimized for speed, 1000 calls approx = 50mS    '''
@@ -958,11 +963,6 @@ def replayStoredGame(quiet=False,carryDiag=False):
     sensorScores = [[0 for _ in range(6)] for _ in range(4)]
 
     index=0
-    last_one = 0
-    tensCarrytime = 0
-    tensCarryActive= False
-    prn=0
-    onesTimeCount=0
 
     last_sc = 0xFFFFFFFF
 
@@ -978,7 +978,7 @@ def replayStoredGame(quiet=False,carryDiag=False):
                 print("send: val=",sensor_value,"  count=",sample_count)
             
             for _ in range(sample_count):              
-                sc = processBitFilter(sensor_value & 0x000F)    
+                sc = processBitFilter(sensor_value)
 
                 # edge detection
                 risingEdge = (~last_sc) & sc
@@ -1445,16 +1445,15 @@ def find_good_combinations_per_digit(results):
     and return a dict mapping each digit index (0..4) to a sorted list of unique
     (scorebits, resetbits) tuples that produced a True match for that digit.
     """
-    good = {d: [] for d in range(5)}
-    if not results:
-        return good
+    good = {d: [] for d in range(16)}    #enough for 2 players
 
     for rec in results:
+        print(rec)
         sb = rec.get("scorebits")
         rb = rec.get("resetbits")
-        dm = rec.get("digit_matches") or []
-        for d in range(min(5, len(dm))):
-            if dm[d]:
+        dm = rec.get("digit_matches")
+        for d in range(len(dm)):
+            if dm[d] == True:
                 good[d].append((int(sb), int(rb)))
 
     # deduplicate and sort each list
@@ -1633,48 +1632,59 @@ def learnModeProcessNow():
                     setLearnModeDigit(displayCounter)                
 
                 # Set all digits of score mask the same
-                for bit in range(10):
+                for bit in range(32):    #all filter bits
                     setScoreMask(bit, scorebits, resetbits)
 
-                print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
+                #print("Testing: scorebits=", scorebits, " resetbits=", resetbits)
                 replayStoredGame(quiet=True,carryDiag=False)
 
                 print("score digits p0=", [sensorScores[0][d] for d in range(5)],
-                      " full score p0=", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),
+                      "(", sum(sensorScores[0][d] * (10 ** d) for d in range(5)),")",
                       "score digits p1=", [sensorScores[1][d] for d in range(5)],
-                      " full score p1=", sum(sensorScores[1][d] * (10 ** d) for d in range(5)),
+                      "(", sum(sensorScores[1][d] * (10 ** d) for d in range(5)),")",
                       " with setting=", scorebits, resetbits)
 
                 # Compare each digit in sensorScores
                 digit_matches_p0 = [sensorScores[0][d] == targetScoreDigits[0][d] for d in range(5)]
                 digit_matches_p1 = [sensorScores[1][d] == targetScoreDigits[1][d] for d in range(5)]
+                spc = [True,True,True]
+                digit_matches = digit_matches_p0 + spc + digit_matches_p1 + spc
+
                 # Record scorebits, resetbits, digits, and digit_matches for both players in results
                 results.append({
                     "scorebits": scorebits,
                     "resetbits": resetbits,
-                    "digits_p0": [sensorScores[0][d] for d in range(5)],
+                    "digits_p0": [sensorScores[0][d] for d in range(5)],  #lesat sig in left most
                     "digit_matches_p0": digit_matches_p0,
                     "digits_p1": [sensorScores[1][d] for d in range(5)],
-                    "digit_matches_p1": digit_matches_p1
+                    "digit_matches_p1": digit_matches_p1,
+                    "digit_matches": digit_matches
                 })
 
         # Print results in a more readable format            
         print("\nResults summary:")
         for idx, rec in enumerate(results):
-            print("  [{}] scorebits={}, resetbits={}, digits_p0={}, digit_matches_p0={}, digits_p1={}, digit_matches_p1={}".format(
-                idx, rec['scorebits'], rec['resetbits'], rec['digits_p0'], rec['digit_matches_p0'], rec['digits_p1'], rec['digit_matches_p1']))
+            print("  [{}] sbits={}, rbits={}, digits_p0={}, matches_p0={}, digits_p1={}, matches_p1={}, match={}".format(
+                idx, rec['scorebits'], rec['resetbits'], rec['digits_p0'], rec['digit_matches_p0'], rec['digits_p1'], rec['digit_matches_p1'], rec['digit_matches']  ))
         print()
     
         
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)
 
-    # find good reset bits asnd score bits settings
+    # find good reset bits and score bits settings
     p=find_good_combinations_per_digit(results)
+
     # print out the results per digit..
     for k in p:
         print("Dig:",k,p[k])
     print("\n")
+
+
+    import sys
+    sys.exit()
+
+
 
     displayCounter = displayCounter -1
     setLearnModeDigit(displayCounter)

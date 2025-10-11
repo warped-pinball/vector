@@ -184,11 +184,12 @@ def initialize():
     for i in range(SRAM_DATA_LENGTH):
         ram_bytes[i] = 0
 
+    import ScoreTrack
+    ScoreTrack.reset_sensor_buffer_pointer()
+
     dma_start()
 
     #state machine - for SPI read of coil sensors
-    
-    #smSpi = rp2.StateMachine(4, spi_master_16bit, freq=340000,
     smSpi = rp2.StateMachine(4, spi_master_16bit_invert, freq=340000,
         in_base=machine.Pin(PIO_MISO_PIN),
         sideset_base=machine.Pin(PIO_SCK_PIN),
@@ -202,7 +203,6 @@ def initialize():
     hiPwm.duty_u16(int(65535 * 0.55))   # 80% duty cycle
     lowPwm.duty_u16(int(65535 * 0.45))  # 20% duty cycle
 
-    
     # Set up state machine for the game active detection
     sma = rp2.StateMachine(
         1, sample_and_count, freq=100000,  
