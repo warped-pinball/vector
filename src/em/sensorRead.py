@@ -5,7 +5,7 @@
 Sensor Read
     setup analog threshold PWMs
     PIO to gather sensor data on SPI
-    DMA to copt sensor data to bulk ram store (8k)
+    DMA to copy sensor data to bulk ram store (8k)
     sample rate 1mS
 """
 
