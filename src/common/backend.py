@@ -375,6 +375,7 @@ def app_reboot_game(request):
 @add_route("/api/game/name")
 def app_game_name(request):
     import SharedState
+
     return SharedState.gdata["GameInfo"]["GameName"], 200
 
 
@@ -987,7 +988,8 @@ try:
     # This import must be after the add_route function is defined at minimum
     import em_routes  # noqa: F401
 except Exception as e:
-    print(f"Error importing em_routes: {e}")
+    pass
+    #print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):
