@@ -10,12 +10,11 @@ import json
 
 import machine
 import Ram_Intercept as RamInt
-import uctypes
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
-
 import SPI_Store as fram
+import uctypes
 from displayMessage import fixAdjustmentChecksum
 from logger import logger_instance
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
 
 Log = logger_instance
 ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)

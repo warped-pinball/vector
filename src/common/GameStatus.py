@@ -1,7 +1,9 @@
 import time
-from Shadow_Ram_Definitions import shadowRam
+
 import SharedState as S
 from logger import logger_instance
+from Shadow_Ram_Definitions import shadowRam
+
 log = logger_instance
 
 # Initialize the game status in SharedState
@@ -98,4 +100,3 @@ def poll_fast():
             S.game_status["poll_state"] = 2
     else:
         S.game_status["poll_state"] = 0
-

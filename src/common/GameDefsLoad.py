@@ -14,6 +14,7 @@ import faults
 import SharedState
 import SPI_DataStore
 from logger import logger_instance
+
 Log = logger_instance
 
 
@@ -47,10 +48,7 @@ safe_defaults = {
     "CoinDrop": {"Type": 0},
 }
 
-safe_defaults_wpc = {"Memory" : {"Start": 1,"Length": 8192,"NvStart": 2048,"NvLength": 2048} }
-
-
-
+safe_defaults_wpc = {"Memory": {"Start": 1, "Length": 8192, "NvStart": 2048, "NvLength": 2048}}
 
 
 def parse_config_line(line):
@@ -110,7 +108,8 @@ def go(safe_mode=False):
     data = safe_defaults.copy()
     try:
         from systemConfig import vectorSystem
-        if vectorSystem == "wpc":            
+
+        if vectorSystem == "wpc":
             data["Memory"] = safe_defaults_wpc["Memory"].copy()
     except Exception as e:
         Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")

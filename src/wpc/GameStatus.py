@@ -3,18 +3,19 @@
 # This file is part of the Warped Pinball WPC-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
-'''
+"""
 WPC
 Game Status
 
-'''
-
+"""
 
 
 import time
-from Shadow_Ram_Definitions import shadowRam
+
 import SharedState as S
 from logger import logger_instance
+from Shadow_Ram_Definitions import shadowRam
+
 log = logger_instance
 
 # Initialize the game status in SharedState
@@ -54,12 +55,12 @@ def _get_ball_in_play():
     try:
         ball_in_play = S.gdata["BallInPlay"]
         if ball_in_play["Type"] == 1:
-            ret_value = shadowRam[ball_in_play["Address"]]           
+            ret_value = shadowRam[ball_in_play["Address"]]
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
-                ret_value = 0   
-            #print(" ball value ",ret_value)    
+                ret_value = 0
+            # print(" ball value ",ret_value)
             return ret_value
-        
+
     except Exception as e:
         log.log(f"GSTAT: error in get_ball_in_play: {e}")
     return 0
@@ -83,7 +84,7 @@ def game_report():
             _get_machine_score(3),
         ]
 
-        '''
+        """
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
                 data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
@@ -93,8 +94,8 @@ def game_report():
                 data["GameTime"] = 0
         else:
             data["GameTime"] = 0
-        '''
-        
+        """
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data
@@ -118,4 +119,3 @@ def poll_fast():
             S.game_status["poll_state"] = 2
     else:
         S.game_status["poll_state"] = 0
-

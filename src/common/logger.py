@@ -1,9 +1,11 @@
 # event / message/ fault logger - goes to serial FRAM
 import gc
+
 import SPI_Store as fram
 
 # FRAM map configuration
 from FramMap import LOGGER_CONFIG
+
 AddressStart = LOGGER_CONFIG["AddressStart"]
 LoggerLength = LOGGER_CONFIG["LoggerLength"]
 

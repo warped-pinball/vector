@@ -368,7 +368,7 @@ def request(
 
             if not MICROPY:
                 sf.flush()
-           
+
             resp = response_class(sock, sf, save_headers=save_headers)
             line = b""
             while True:
@@ -376,7 +376,7 @@ def request(
 
                 if line.endswith(b"\r\n") or len(line) > MAX_READ_SIZE:
                     break
-                
+
             # print("Response: %s" % l.decode("ascii"))
             line = line.split(None, 2)
             resp.status_code = int(line[1])

@@ -1,8 +1,8 @@
 # reset pin control
 
 import machine
-from machine import Pin
 from logger import logger_instance
+from machine import Pin
 
 Log = logger_instance
 

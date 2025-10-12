@@ -5,12 +5,11 @@ four save indexes
 16 character name for each
 
 """
-from Shadow_Ram_Definitions import shadowRam
-
 import displayMessage
 import SharedState as S
 import SPI_Store as fram
 from logger import logger_instance as Log
+from Shadow_Ram_Definitions import shadowRam
 
 ADJ_FRAM_START = 0x2100  # to 0x2340 +4
 ADJ_FRAM_RECORD_SIZE = 0x80

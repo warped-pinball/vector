@@ -1,4 +1,4 @@
-'''
+"""
 WPC
 
 FRAM map configuraiton
@@ -6,7 +6,7 @@ FRAM map configuraiton
 
 fram map constants for some of ther fram users.
 see "fram and sFlash map.txt" for more details.
-'''
+"""
 
 DATA_STORE = {
     "AddressStart": 0x4A67,
@@ -32,5 +32,4 @@ ADJUSTMENTS_CONFIG = {
 }
 
 
-#shadow ram 0x0000-0x1FFF
-
+# shadow ram 0x0000-0x1FFF

@@ -85,14 +85,7 @@ def restart_pico(pico_port):
 
 def wipe_config_data(pico_port):
     print("Wiping config data on Pico...")
-    script = "\n".join(
-        [
-            "import SPI_DataStore as datastore",
-            "datastore.blankAll()",
-            "import Adjustments",
-            "Adjustments.blank_all()",
-        ]
-    )
+    script = "\n".join(["import SPI_DataStore as datastore", "datastore.blankAll()", "import Adjustments", "Adjustments.blank_all()"])
     cmd = f'mpremote connect {pico_port} exec "{script}"'
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)

@@ -69,7 +69,7 @@
         "ChecksumStartAdr": 7265,
         "ChecksumEndAdr": 7300,
         "ChecksumResultAdr": 7301,
-        "GCChecksumStartAdr": 7303, 
+        "GCChecksumStartAdr": 7303,
         "GCChecksumEndAdr": 7311,
         "GCChecksumResultAdr": 7312
     },

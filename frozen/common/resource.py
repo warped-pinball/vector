@@ -3,7 +3,6 @@ import gc
 import os
 
 import micropython
-
 from logger import logger_instance
 
 Log = logger_instance

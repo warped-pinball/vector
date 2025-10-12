@@ -6,18 +6,18 @@ four save indexes
 16 character name for each
 """
 
-from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 import SPI_Store as fram
-from logger import logger_instance as Log
 from FramMap import ADJUSTMENTS_CONFIG
+from logger import logger_instance as Log
+from Shadow_Ram_Definitions import shadowRam
 
 print("ADJS: fram map config", ADJUSTMENTS_CONFIG)
 
-#FRAM address constants
+# FRAM address constants
 ADJ_NUM_SLOTS = ADJUSTMENTS_CONFIG["NumRecords"]
 ADJ_FRAM_START = ADJUSTMENTS_CONFIG["AddressStart"]
-ADJ_FRAM_RECORD_SIZE = ADJUSTMENTS_CONFIG["RecordSize"] 
+ADJ_FRAM_RECORD_SIZE = ADJUSTMENTS_CONFIG["RecordSize"]
 ADJ_FRAM_TOTAL_DATA_LENGTH = ADJUSTMENTS_CONFIG["TotalDataLength"]
 
 ADJ_NAMES_START = ADJUSTMENTS_CONFIG["NamesAddress"]
@@ -25,7 +25,7 @@ ADJ_NAMES_LENGTH = ADJUSTMENTS_CONFIG["NamesLength"]
 
 ADJ_LAST_LOADED_ADR = ADJUSTMENTS_CONFIG["LastLoadedAddress"]
 
-#print(S.gdata)  
+# print(S.gdata)
 
 
 def sanitize_adjustment_names():
@@ -34,25 +34,25 @@ def sanitize_adjustment_names():
     all_names_address = ADJ_NAMES_START
     all_names_length = ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS
     all_names = bytearray(fram.read(all_names_address, all_names_length))
-    
+
     # Track if we made any changes
     changes_made = False
-    
+
     # Replace invalid characters with spaces
     for i in range(len(all_names)):
         b = all_names[i]
-        if b != 0 and (b < 32 or b > 126):  
-            all_names[i] = 32  
+        if b != 0 and (b < 32 or b > 126):
+            all_names[i] = 32
             changes_made = True
-    
+
     # Only write back if we made changes
     if changes_made:
         fram.write(all_names_address, all_names)
         Log.log("ADJS: Fixed invalid characters in adjustment names")
 
+
 # Run name sanitization at module import time
 sanitize_adjustment_names()
-
 
 
 def blank_all():
@@ -62,9 +62,9 @@ def blank_all():
 
     fram_adr = ADJ_FRAM_START
     remaining = ADJ_FRAM_TOTAL_DATA_LENGTH
-    offset = 0    
+    offset = 0
     Log.log(f"ADJS: Blanking {remaining:04X} bytes from {fram_adr:04X}")
-    
+
     while remaining > 0:
         write_size = min(chunk_size, remaining)
         if write_size < chunk_size:
@@ -72,10 +72,10 @@ def blank_all():
             fram.write(fram_adr + offset, zero_chunk[:write_size])
         else:
             fram.write(fram_adr + offset, zero_chunk)
-            
+
         offset += write_size
         remaining -= write_size
-        
+
     Log.log("ADJS: All adjustment data cleared")
 
     # Write valid empty strings for names at ADJ_NAMES_START
@@ -92,25 +92,24 @@ def _get_range_from_gamedef():
         cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
         cpyEnd = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
         chkAdr = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
- 
-    return cpyStart, cpyEnd, chkAdr
 
+    return cpyStart, cpyEnd, chkAdr
 
 
 def _fixChecksum():
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
-    if (cpyStart == 0 or cpyEnd == 0):
+    if cpyStart == 0 or cpyEnd == 0:
         raise ValueError("No valid range found in game data 1")
 
     chk = 0
     for adr in range(cpyStart, cpyEnd + 1):
         chk = chk + shadowRam[adr]
-    chk =0xFFFF - chk
+    chk = 0xFFFF - chk
 
     # Store MSByte and LSByte
     msb = (chk >> 8) & 0xFF
     lsb = chk & 0xFF
-    print("ADJ: Old Checksum: ---------------- ", hex(shadowRam[chkAdr]), hex(shadowRam[chkAdr+1]))
+    print("ADJ: Old Checksum: ---------------- ", hex(shadowRam[chkAdr]), hex(shadowRam[chkAdr + 1]))
     print("ADJ: New Checksum: ---------------- ", hex(msb), hex(lsb))
     shadowRam[chkAdr] = msb
     shadowRam[chkAdr + 1] = lsb
@@ -127,7 +126,7 @@ def set_message_state(on=True):
 
         Log.log(f"ADJS: Message State set to {on}")
         _fixChecksum()
-        #fram.write_all_fram_now()
+        # fram.write_all_fram_now()
 
 
 def get_names():
@@ -156,13 +155,13 @@ def restore_adjustments(index, reset=True):
         return "Fault: Invalid Index"
 
     # Check if a game is in progress and reset is requested
-    '''
+    """
     if reset:
         import GameStatus as GS
         if GS._get_ball_in_play() != 0:
             Log.log("ADJS: No restore - game in progress")
             return "Fault: Game in Progress"
-    '''
+    """
 
     fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
     data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)
@@ -172,18 +171,20 @@ def restore_adjustments(index, reset=True):
         raise ValueError(f"No data in the adjustment profile {index}")
 
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
-    cpyEndCheck = max(cpyEnd, chkAdr+2)
-    if (cpyStart == 0 or cpyEnd == 0):
+    cpyEndCheck = max(cpyEnd, chkAdr + 2)
+    if cpyStart == 0 or cpyEnd == 0:
         raise ValueError("No valid range found in game data 2")
 
     # store this one as the last loaded
     fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
-  
+
     # shut down the pinball machine
-    from reset_control import reset, release  
+    from reset_control import release, reset
+
     reset()
 
     from time import sleep
+
     sleep(2)
 
     shadowRam[cpyStart:cpyEndCheck] = data[: cpyEndCheck - cpyStart]
@@ -191,8 +192,8 @@ def restore_adjustments(index, reset=True):
 
     fram.write_all_fram_now()
     print("ADJ: load done - resetting now ---------------------")
-    #import machine
-    #machine.reset()
+    # import machine
+    # machine.reset()
 
     # restart the pinball machine
     release(True)
@@ -200,6 +201,7 @@ def restore_adjustments(index, reset=True):
     sleep(2)
     # restart the server schedule
     from phew.server import restart_schedule
+
     restart_schedule()
 
 
@@ -210,8 +212,8 @@ def store_adjustments(index):
 
     # will return 0,0 if none found
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
-    cpyEndCheck = max(cpyEnd, chkAdr+2)   
-    if (cpyEndCheck-cpyStart> ADJ_FRAM_RECORD_SIZE):
+    cpyEndCheck = max(cpyEnd, chkAdr + 2)
+    if cpyEndCheck - cpyStart > ADJ_FRAM_RECORD_SIZE:
         Log.log("ADJS: Range too large for adjustment storage")
         return "Fault: Range"
 
@@ -281,7 +283,7 @@ def is_populated(index):
 
 
 def get_adjustments_status():
-    """return list of tuples with names and active index, and if the profile is populated"""   
+    """return list of tuples with names and active index, and if the profile is populated"""
     start, end, chk = _get_range_from_gamedef()
     adjustments_support = start > 0 and end > 0
     names = get_names()
@@ -300,14 +302,15 @@ if __name__ == "__main__":
 
     def fill_shadow_ram_with_pattern(pattern):
         """Fill shadowRam from cpyStart to cpyEnd with a given pattern."""
-        cpyStart, cpyEnd = 6141, 7160  # johnny 
+        cpyStart, cpyEnd = 6141, 7160  # johnny
         pattern_length = len(pattern)
         print(len(shadowRam), cpyStart, cpyEnd, pattern_length)
-        for i in range(0,  cpyEnd-cpyStart):
-            #print(i)
-            shadowRam[i+cpyStart] = pattern[i % pattern_length]
+        for i in range(0, cpyEnd - cpyStart):
+            # print(i)
+            shadowRam[i + cpyStart] = pattern[i % pattern_length]
 
     import GameDefsLoad
+
     GameDefsLoad.go()
 
     fill_shadow_ram_with_pattern([1, 2, 3, 4])
@@ -324,13 +327,13 @@ if __name__ == "__main__":
     print("store 3 done")
 
     restore_adjustments(0, reset=False)
-    print("A0:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
+    print("A0:", " ".join(f"{b:02X}" for b in shadowRam[6141 : 6141 + 16]))
     restore_adjustments(1, reset=False)
-    print("A1:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
+    print("A1:", " ".join(f"{b:02X}" for b in shadowRam[6141 : 6141 + 16]))
     restore_adjustments(2, reset=False)
-    print("A2:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
+    print("A2:", " ".join(f"{b:02X}" for b in shadowRam[6141 : 6141 + 16]))
     restore_adjustments(3, reset=False)
-    print("A3:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
+    print("A3:", " ".join(f"{b:02X}" for b in shadowRam[6141 : 6141 + 16]))
 
     import time
 

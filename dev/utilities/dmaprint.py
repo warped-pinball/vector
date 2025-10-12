@@ -20,10 +20,6 @@ def printdma():
     print("")
 
 
-
-
-
-
 import uctypes
 
 DMA_BASE = 0x50000000
@@ -55,6 +51,7 @@ DMA_REGISTERS = {
 # Map the DMA6 registers
 dma6 = uctypes.struct(DMA6_BASE, DMA_REGISTERS)
 
+
 def print_dma6_registers():
     """Print human-readable DMA6 register data."""
     print("DMA6 Register Data:")
@@ -72,10 +69,9 @@ def print_dma6_registers():
     print(f"    HIGH_PRIORITY: {dma6.CTRL_REG_FIELDS.HIGH_PRIORITY}")
     print(f"  TRANS_COUNT_REG_TRIG: {dma6.TRANS_COUNT_REG_TRIG}")
 
+
 # Call this function after the memory dump
-#print_dma6_registers()
-
-
+# print_dma6_registers()
 
 
 def hex_dump_memory(ptr, num):
