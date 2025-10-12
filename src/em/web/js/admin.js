@@ -875,7 +875,7 @@ async function checkForUpdates() {
 }
 
 async function applyUpdate(url) {
-  req_data = { url: url };
+  const req_data = { url: url };
   const response = await window.smartFetch("/api/update/apply", req_data, true);
   if (!response.ok) {
     throw new Error("Failed to start update");
