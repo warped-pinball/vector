@@ -8,7 +8,7 @@ Score Track
     EM version
 
 """
-from machine import RTC,Pin
+from machine import RTC, Pin
 import sensorRead
 import array
 import time
