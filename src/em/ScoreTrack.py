@@ -149,7 +149,7 @@ def buildSensorBitMask():
     if players >= 4:
         sb |= (base_byte << 24)
     sensorBitMask = sb
-    print("SENSOR BIT MASK SET" ,sb)
+    print(f"SCORE: sensor bit mask: {sb:#010x}")
 
 
 def loadState():
@@ -905,9 +905,8 @@ def processAndRun():
 
     end_time = time.ticks_ms()
     elapsed = time.ticks_diff(end_time, start_time)
-    print("samples=",x,"process And Run execution time:", elapsed, "ms")
-
-    print("scores=",getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
+    print("SCORE: samples=",x,"process/Run time:", elapsed, "ms")
+    print("SCORE: scores,",getPlayerScore(0),getPlayerScore(1),getPlayerScore(2),getPlayerScore(3))
 
     return
 
