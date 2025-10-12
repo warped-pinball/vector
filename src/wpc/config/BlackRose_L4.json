@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Machine Bride of Pinbot",
+        "GameName": "Black Rose",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 1039,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7072,
-        "ChecksumStartAdr": 6209,
-        "ChecksumEndAdr": 7031,
-        "ChecksumResultAdr": 7032
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7172,
+        "ChecksumResultAdr": 7173
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7358,
+        "ScoreAdr": 7280,
         "BytesInScore": 4,
         "ScoreSpacing": 8,
-        "InitialAdr": 7355,
+        "InitialAdr": 7277,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7392,
-        "GrandChampInitAdr": 7389,
-        "ChecksumStartAdr": 7355,
-        "ChecksumEndAdr": 7386,
-        "ChecksumResultAdr": 7387,
-        "GCChecksumStartAdr": 7389,
-        "GCChecksumEndAdr": 7396,
-        "GCChecksumResultAdr": 7397
+        "GrandChampScoreAdr": 7314,
+        "GrandChampInitAdr": 7311,
+        "ChecksumStartAdr": 7277,
+        "ChecksumEndAdr": 7308,
+        "ChecksumResultAdr": 7309,
+        "GCChecksumStartAdr": 7311,
+        "GCChecksumEndAdr": 7318,
+        "GCChecksumResultAdr": 7319
     },
     "HSRewards": {
         "Type": 0,
@@ -75,10 +75,10 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 141,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1038,
+        "Players": 6045,
+        "Playerup": 1039,
         "ScoreAdr": 5935,
         "ScoreBytes": 6,
         "ScoreSpacing": 6

@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Machine Bride of Pinbot",
+        "GameName": "Terminator 2",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 1039,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7072,
-        "ChecksumStartAdr": 6209,
-        "ChecksumEndAdr": 7031,
-        "ChecksumResultAdr": 7032
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7160,
+        "ChecksumResultAdr": 7161
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7358,
+        "ScoreAdr": 7268,
         "BytesInScore": 4,
         "ScoreSpacing": 8,
-        "InitialAdr": 7355,
+        "InitialAdr": 7265,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7392,
-        "GrandChampInitAdr": 7389,
-        "ChecksumStartAdr": 7355,
-        "ChecksumEndAdr": 7386,
-        "ChecksumResultAdr": 7387,
-        "GCChecksumStartAdr": 7389,
-        "GCChecksumEndAdr": 7396,
-        "GCChecksumResultAdr": 7397
+        "GrandChampScoreAdr": 7302,
+        "GrandChampInitAdr": 7299,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7296,
+        "ChecksumResultAdr": 7297,
+        "GCChecksumStartAdr": 7299,
+        "GCChecksumEndAdr": 7306,
+        "GCChecksumResultAdr": 7307
     },
     "HSRewards": {
         "Type": 0,
@@ -75,10 +75,10 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 141,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1038,
+        "Players": 6036,
+        "Playerup": 1039,
         "ScoreAdr": 5935,
         "ScoreBytes": 6,
         "ScoreSpacing": 6

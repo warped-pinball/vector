@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Machine Bride of Pinbot",
+        "GameName": "Junk Yard",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 1039,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7072,
-        "ChecksumStartAdr": 6209,
-        "ChecksumEndAdr": 7031,
-        "ChecksumResultAdr": 7032
+        "CustomMessageOn": 7102,
+        "ChecksumStartAdr": 7061,
+        "ChecksumEndAdr": 7280,
+        "ChecksumResultAdr": 7281
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7358,
+        "ScoreAdr": 7388,
         "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7355,
-        "InitialSpacing": 8,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7385,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7392,
-        "GrandChampInitAdr": 7389,
-        "ChecksumStartAdr": 7355,
-        "ChecksumEndAdr": 7386,
-        "ChecksumResultAdr": 7387,
-        "GCChecksumStartAdr": 7389,
-        "GCChecksumEndAdr": 7396,
-        "GCChecksumResultAdr": 7397
+        "GrandChampScoreAdr": 7427,
+        "GrandChampInitAdr": 7423,
+        "ChecksumStartAdr": 7385,
+        "ChecksumEndAdr": 7420,
+        "ChecksumResultAdr": 7421,
+        "GCChecksumStartAdr": 7423,
+        "GCChecksumEndAdr": 7431,
+        "GCChecksumResultAdr": 7432
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 141,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1038,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "Players": 5905,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }

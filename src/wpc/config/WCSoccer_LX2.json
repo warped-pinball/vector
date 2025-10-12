@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Machine Bride of Pinbot",
+        "GameName": "World Cup Soccer",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 1039,
+        "Address": 951,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7072,
-        "ChecksumStartAdr": 6209,
-        "ChecksumEndAdr": 7031,
-        "ChecksumResultAdr": 7032
+        "CustomMessageOn": 7102,
+        "ChecksumStartAdr": 7061,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7358,
-        "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7355,
-        "InitialSpacing": 8,
+        "ScoreAdr": 8038,
+        "BytesInScore": 5,
+        "ScoreSpacing": 9,
+        "InitialAdr": 8035,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7392,
-        "GrandChampInitAdr": 7389,
-        "ChecksumStartAdr": 7355,
-        "ChecksumEndAdr": 7386,
-        "ChecksumResultAdr": 7387,
-        "GCChecksumStartAdr": 7389,
-        "GCChecksumEndAdr": 7396,
-        "GCChecksumResultAdr": 7397
+        "GrandChampScoreAdr": 7446,
+        "GrandChampInitAdr": 7443,
+        "ChecksumStartAdr": 8067,
+        "ChecksumEndAdr": 8070,
+        "ChecksumResultAdr": 8078,
+        "GCChecksumStartAdr": 7443,
+        "GCChecksumEndAdr": 7451,
+        "GCChecksumResultAdr": 7452
     },
     "HSRewards": {
         "Type": 0,
@@ -77,10 +77,10 @@
         "Type": 10,
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1038,
+        "Players": 6057,
+        "Playerup": 1042,
         "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }

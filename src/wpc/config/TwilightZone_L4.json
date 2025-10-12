@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Machine Bride of Pinbot",
+        "GameName": "Twilight Zone",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,12 +15,22 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 1039,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
         "Ball4": 4,
         "Ball5": 5
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 141,
+        "GameActiveValue": 0,
+        "Players": 5913,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7,
+        "Playerup": 946
     },
     "DisplayMessage": {
         "Type": 10,
@@ -34,27 +44,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7072,
-        "ChecksumStartAdr": 6209,
-        "ChecksumEndAdr": 7031,
-        "ChecksumResultAdr": 7032
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7160,
+        "ChecksumResultAdr": 7161
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7358,
-        "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7355,
-        "InitialSpacing": 8,
+        "ScoreAdr": 7500,
+        "BytesInScore": 5,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7497,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7392,
-        "GrandChampInitAdr": 7389,
-        "ChecksumStartAdr": 7355,
-        "ChecksumEndAdr": 7386,
-        "ChecksumResultAdr": 7387,
-        "GCChecksumStartAdr": 7389,
-        "GCChecksumEndAdr": 7396,
-        "GCChecksumResultAdr": 7397
+        "GrandChampScoreAdr": 7538,
+        "GrandChampInitAdr": 7535,
+        "ChecksumStartAdr": 7497,
+        "ChecksumEndAdr": 7532,
+        "ChecksumResultAdr": 7533,
+        "GCChecksumStartAdr": 7535,
+        "GCChecksumEndAdr": 7543,
+        "GCChecksumResultAdr": 7544
     },
     "HSRewards": {
         "Type": 0,
@@ -73,14 +83,9 @@
     "CoinDrop": {
         "Type": 0
     },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1038,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+    "in_play_data": {
+        "GameActiveAdr": "0x008D",
+        "Playerup": "0x03B2",
+        "Players": "0x1719"
     }
 }
