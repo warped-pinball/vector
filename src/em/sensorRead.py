@@ -249,7 +249,7 @@ def dma_start():
     #-------------------------------------------------------
     dma_sensor.READ_ADDR_REG =      0x50300000 + 0x020      # PIO1_SM0 (4) RX buffer
     dma_sensor.WRITE_ADDR_REG =     SRAM_DATA_BASE
-    dma_sensor.CTRL_REG.CHAIN_TO =  DMA_SENSOR # <<only triggerws at the end of 0x0800              # no chain trigger
+    dma_sensor.CTRL_REG.CHAIN_TO =  DMA_SENSOR # <<only triggers at the end of 0x0800              # no chain trigger
 
     dma_sensor.CTRL_REG.INCR_WRITE =    1       #enable increment to write address
     dma_sensor.CTRL_REG.INCR_READ =     0
