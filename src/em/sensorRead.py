@@ -253,7 +253,7 @@ def dma_start():
 
     dma_sensor.CTRL_REG.INCR_WRITE =    1       #enable increment to write address
     dma_sensor.CTRL_REG.INCR_READ =     0
-    dma_sensor.CTRL_REG.RING_SEL=       1       #ring is appllied to write addresses
+    dma_sensor.CTRL_REG.RING_SEL=       1       #ring is applied to write addresses
     dma_sensor.CTRL_REG.RING_SIZE =     13      #13 bits in ring (8k)
 
     dma_sensor.CTRL_REG.IRQ_QUIET =     1
