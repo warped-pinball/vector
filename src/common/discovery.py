@@ -32,10 +32,25 @@ _MAX_NAME_LENGTH = const(32)
 # bytes are the IP address bytes and the remainder is the game name.
 known_devices = []
 
-# Sockets are created lazily
-recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-recv_sock.settimeout(0)
-send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Sockets
+recv_sock = None
+send_sock = None
+
+
+def _setup_sockets():
+    global recv_sock, send_sock
+    if not recv_sock:
+        recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        recv_sock.bind(("0.0.0.0", _DISCOVERY_PORT))
+        recv_sock.settimeout(0)
+
+    if not send_sock:
+        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+
+_setup_sockets()
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
@@ -190,12 +205,8 @@ def _get_local_name_bytes():
 
 def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     print(f"DISCOVERY:Sending message to {addr}: {msg}")
-
     global send_sock
-    if not send_sock:
-        send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
+    _setup_sockets()
     send_sock.sendto(msg.encode(), addr)
 
 
@@ -320,11 +331,7 @@ def listen():
     """Check for any incoming discovery packets. Non-blocking."""
 
     global recv_sock
-    if not recv_sock:
-        recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        recv_sock.bind(("0.0.0.0", _DISCOVERY_PORT))
-        recv_sock.settimeout(0)
+    _setup_sockets()
 
     while True:
         try:

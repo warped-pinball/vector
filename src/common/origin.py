@@ -1,6 +1,7 @@
 import gc
 
 from backend import hmac_sha256
+from discovery import _send, _setup_sockets
 from micropython import const
 from urequests import post
 
@@ -278,7 +279,8 @@ def status():
 
 
 def push_game_state(game_time, scores, ball_in_play):
-    global gamestate_buffer, first_push_game_time
+    global gamestate_buffer, first_push_game_time, send_sock
+    _setup_sockets()
 
     current_state = f"{game_time},{','.join(map(str, scores))},{ball_in_play}"
     if gamestate_buffer:
@@ -298,7 +300,9 @@ def push_game_state(game_time, scores, ball_in_play):
         return
 
     try:
-        make_request("api/v1/machines/game_states", "|".join(gamestate_buffer), sign=True, validate=False)
+        _send(f"GS|{'|'.join(gamestate_buffer)}", addr=("255.255.255.255", 1111))
+        print("Pushed game states:", gamestate_buffer)
+        # make_request("api/v1/machines/game_states", "|".join(gamestate_buffer), sign=True, validate=False)
         gamestate_buffer = []
     except Exception as e:
         print("Error pushing game states:", e)
