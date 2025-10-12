@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Jack Bot",
+        "GameName": "Indianapolis 500",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
+        "CustomMessageOn": 7162,
+        "ChecksumStartAdr": 6245,
+        "ChecksumEndAdr": 7528,
+        "ChecksumResultAdr": 7529
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7522,
+        "ScoreAdr": 7464,
         "BytesInScore": 5,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7519,
-        "InitialSpacing": 9,
+        "ScoreSpacing": 8,
+        "InitialAdr": 7461,
+        "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7560,
-        "GrandChampInitAdr": 7557,
-        "ChecksumStartAdr": 7519,
-        "ChecksumEndAdr": 7554,
-        "ChecksumResultAdr": 7555,
-        "GCChecksumStartAdr": 7557,
-        "GCChecksumEndAdr": 7565,
-        "GCChecksumResultAdr": 7566
+        "GrandChampScoreAdr": 7498,
+        "GrandChampInitAdr": 7495,
+        "ChecksumStartAdr": 7461,
+        "ChecksumEndAdr": 7492,
+        "ChecksumResultAdr": 7493,
+        "GCChecksumStartAdr": 7495,
+        "GCChecksumEndAdr": 7502,
+        "GCChecksumResultAdr": 7503
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 129,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 5897,
-        "Playerup": 946,
-        "ScoreAdr": 5791,
+        "Players": 5901,
+        "Playerup": 949,
+        "ScoreAdr": 5790,
         "ScoreBytes": 7,
-        "ScoreSpacing": 7
+        "ScoreSpacing": 6
     }
 }
