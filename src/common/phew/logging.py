@@ -1,5 +1,4 @@
 import machine
-
 from logger import logger_instance
 
 log = logger_instance

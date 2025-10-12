@@ -1,8 +1,10 @@
 # Resource (ram and flash and stack) report
 import gc
 import os
-import uctypes
+
 import micropython
+import uctypes
+
 
 def get_ram_usage(details):
     # gc.collect()
@@ -35,19 +37,19 @@ def print_ram_section(start_addr=0x20080000, length=0x80):
     """
     ram = uctypes.bytearray_at(start_addr, length)
     for i in range(0, length, 16):
-        chunk = ram[i:i+16]
-        hex_str = ' '.join('{:02X}'.format(b) for b in chunk)
+        chunk = ram[i : i + 16]
+        hex_str = " ".join("{:02X}".format(b) for b in chunk)
         print("0x{:08X}: {}".format(start_addr + i, hex_str))
 
     # Call buffer_depth from SensorReader and print the result
 
-    
-    import sensorRead 
+    import sensorRead
+
     # If you have an instance, pass its state machine; otherwise, just call with no argument
     depth = sensorRead.depthSensorRx()
-    print("RESOURCE: Sensor buffer depth:", depth)     
-    sensorRead.dma_diag()    
-    
+    print("RESOURCE: Sensor buffer depth:", depth)
+    sensorRead.dma_diag()
+
 
 def go(details=False):
     stack_usage = micropython.stack_use()
@@ -58,10 +60,7 @@ def go(details=False):
     ram_usage_percent = get_ram_usage(details)
     flash_usage_percent = get_flash_usage(details)
 
-    #if ram_usage_percent > 85 or flash_usage_percent > 85 or stack_percent > 85:
+    # if ram_usage_percent > 85 or flash_usage_percent > 85 or stack_percent > 85:
     #    Log.log(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
 
     print(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
-
-
-

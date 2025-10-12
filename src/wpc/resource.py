@@ -4,9 +4,9 @@ import os
 
 import micropython
 
-#from logger import logger_instance
+# from logger import logger_instance
 
-#Log = logger_instance
+# Log = logger_instance
 
 
 def get_ram_usage(details):
@@ -42,7 +42,7 @@ def go(details=False):
     ram_usage_percent = get_ram_usage(details)
     flash_usage_percent = get_flash_usage(details)
 
-    #if ram_usage_percent > 85 or flash_usage_percent > 85 or stack_percent > 85:
+    # if ram_usage_percent > 85 or flash_usage_percent > 85 or stack_percent > 85:
     #    Log.log(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
 
     print(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")

@@ -7,10 +7,11 @@ display message handling (custom message shown on the pinball machine display)
 updated for system 9 - optionally shows IP address in high score display
 """
 
-from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
+from Shadow_Ram_Definitions import shadowRam
+
 log = logger_instance
 
 localCopyIp = 0
@@ -24,25 +25,27 @@ def fixAdjustmentChecksum():
         system 11 with type 0 will only report check sum, not fix it
     """
     if "11" in S.gdata["GameInfo"]["System"]:
-        if S.gdata["Adjustments"]["Type"] == 1:  
+        if S.gdata["Adjustments"]["Type"] == 1:
             start = S.gdata["Adjustments"].get("ChecksumStartAdr", None)
             end = S.gdata["Adjustments"].get("ChecksumEndAdr", None)
             resultLoc = S.gdata["Adjustments"].get("ChecksumResultAdr", None)
             if start is None or end is None or resultLoc is None:
                 log.log("DISP: Checksum addresses not found in adjustments")
                 return False
-            
+
             origCS = shadowRam[resultLoc]
             cs = 0
             for i in range(start, end + 1):
-                cs = (cs + shadowRam[i]) % 256 
-            cs = 255 - cs        
-         
-            print("DISP: adjustments checksum: ",cs)
-            shadowRam[resultLoc]=cs
+                cs = (cs + shadowRam[i]) % 256
+            cs = 255 - cs
 
-            if cs == origCS: return True  #checksum was a match
-            else: return False  #was not a match, corrected
+            print("DISP: adjustments checksum: ", cs)
+            shadowRam[resultLoc] = cs
+
+            if cs == origCS:
+                return True  # checksum was a match
+            else:
+                return False  # was not a match, corrected
 
 
 def _int_to_bcd(number):
@@ -218,7 +221,7 @@ def init(ipAddress):
     show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]
 
     log.log(f"MSG: init ip address {ipAddress}")
-    refresh_9()    #here at boot up, cannot be in scheduler or might mess up a game
+    refresh_9()  # here at boot up, cannot be in scheduler or might mess up a game
     return
 
 

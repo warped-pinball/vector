@@ -12,20 +12,19 @@ import resource
 import time
 
 import sensorRead
+
 sensorRead.initialize()
 
 
+import adjustButtons
 import faults
 import GameDefsLoad
 import machine
-import uctypes
-import adjustButtons
-
-from logger import logger_instance
-from systemConfig import SystemVersion
-
 import ScoreTrack
 import SharedState as S
+import uctypes
+from logger import logger_instance
+from systemConfig import SystemVersion
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -38,6 +37,7 @@ timer = machine.Timer()
 led_board = None
 
 adjustButtons.init_buttons()
+
 
 def error_toggle(timer):
     led_board.toggle()
@@ -115,6 +115,7 @@ resource.go(True)
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402
+
 print("MAIN: Launching Wifi AP mode=", ap_mode)
 go(ap_mode)
 Log.log("MAIN: drop through fault")

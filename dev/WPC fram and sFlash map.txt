@@ -25,7 +25,7 @@ Blank spot - hold for more data store - - -
 		305 bytes plus 16 cahracter name
 		0x2344 - one byte last profile loaded 0-3
 
-	(remove serial flash support)	
+	(remove serial flash support)
 0x2000
 
 

@@ -4,25 +4,25 @@
 """
 User buttons ->  (+/-)
     Sensor sensitivity sdjustment
-    
+
     EM version
 
 """
 
-import micropython
-from machine import Pin, Timer
 import time
 
+import micropython
 import sensorRead
+from machine import Pin, Timer
 
 # GPIO assignments
-UP_PIN = 28     # button UP (active low)
-DOWN_PIN = 27   # button DOWN (active low)
-LED_PIN = 16    # LED (driven LOW to light)
+UP_PIN = 28  # button UP (active low)
+DOWN_PIN = 27  # button DOWN (active low)
+LED_PIN = 16  # LED (driven LOW to light)
 
 # internal state
-_processing = False      # debounce/in-flight flag
-_pending_event = 0       # 0 = none, 1 = UP, 2 = DOWN
+_processing = False  # debounce/in-flight flag
+_pending_event = 0  # 0 = none, 1 = UP, 2 = DOWN
 
 # hardware objects (initialized in init_buttons)
 up_pin = None
@@ -39,11 +39,11 @@ def _scheduled_handler(event_code):
     code = int(event_code)
     try:
         if code == 1:
-           sensorRead.sensitivityChange(1)
-           print("UP")
+            sensorRead.sensitivityChange(1)
+            print("UP")
         elif code == 2:
-           sensorRead.sensitivityChange(-1)
-           print("DOWN")
+            sensorRead.sensitivityChange(-1)
+            print("DOWN")
     finally:
         # turn LED off (active low -> set HIGH)
         led_pin.value(1)
@@ -100,7 +100,7 @@ def init_buttons():
     """Initialize pins, LED and attach interrupts. Call once at startup."""
     global up_pin, down_pin, led_pin, _processing, _pending_event
 
-    led_pin = Pin(LED_PIN, Pin.OUT, value=1)       # default OFF (HIGH -> off)
+    led_pin = Pin(LED_PIN, Pin.OUT, value=1)  # default OFF (HIGH -> off)
     up_pin = Pin(UP_PIN, Pin.IN, Pin.PULL_UP)
     down_pin = Pin(DOWN_PIN, Pin.IN, Pin.PULL_UP)
 
@@ -123,12 +123,7 @@ def disable_buttons():
     down_pin.irq(handler=None)
 
 
-
-
-
-
 if __name__ == "__main__":
-
     init_buttons()
     enable_buttons()
 

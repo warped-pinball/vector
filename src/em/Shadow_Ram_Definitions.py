@@ -8,5 +8,4 @@ now it is the coil sensor buffer
 """
 
 SRAM_DATA_BASE = 0x20080000
-SRAM_DATA_LENGTH = 0x0002000    
-
+SRAM_DATA_LENGTH = 0x0002000

@@ -6,13 +6,13 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score avilability
 """
-from machine import RTC
-from Shadow_Ram_Definitions import shadowRam
-
 import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
+from machine import RTC
+from Shadow_Ram_Definitions import shadowRam
+
 log = logger_instance
 
 rtc = RTC()
@@ -32,10 +32,10 @@ recent_scores = [
 
 
 def reset_scores():
-    #reset leader board scores
+    # reset leader board scores
     from SPI_DataStore import blankStruct
-    blankStruct("leaders")
 
+    blankStruct("leaders")
 
 
 def get_claim_score_list():
@@ -53,11 +53,11 @@ def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
 
-    #condition the initials - more important than one would think.  machines freak if non printables get in
+    # condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
     i_intials = ""
     for c in initials:
-        if 'A' <= c <= 'Z':
+        if "A" <= c <= "Z":
             i_intials += c
     initials = (i_intials + "   ")[:3]
 
@@ -65,7 +65,7 @@ def claim_score(initials, player_index, score):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
             log.log(f"SCORE: claim new score: {initials}, {score}, {game_index}, {player_index}")
             recent_scores[game_index][player_index + 1] = (initials, score)
-            new_score = { "initials": initials, "full_name": None, "score": score, "game": game[0] }
+            new_score = {"initials": initials, "full_name": None, "score": score, "game": game[0]}
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 update_tournament(new_score)
             else:
@@ -179,12 +179,12 @@ def place_machine_scores():
     """write four highest scores & initials from storage to machine memory"""
     global top_scores
 
-    #possible high score intials are empty if there was a reset / reboot etc
-    #games do not like empties!
+    # possible high score intials are empty if there was a reset / reboot etc
+    # games do not like empties!
     for index in range(4):
         if len(top_scores[index]["initials"]) != 3:
             top_scores[index]["initials"] = "   "
-            #top_scores[index]["score"] = 100  only change initials, not score (blank initials happen with good scores sometimes)
+            # top_scores[index]["score"] = 100  only change initials, not score (blank initials happen with good scores sometimes)
 
     if S.gdata["HighScores"]["Type"] == 1 or S.gdata["HighScores"]["Type"] == 3:
         log.log("SCORE: Place system 11 machine scores")
@@ -313,7 +313,7 @@ def update_leaderboard(new_entry):
     year, month, day, _, _, _, _, _ = rtc.datetime()
     new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
-    log.log( f"SCORE: Update Leader Board: {new_entry}")
+    log.log(f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
     # add player name to new_entry if there is an initals match
@@ -387,7 +387,7 @@ def update_tournament(new_entry):
         log.log("SCORE: tournament add bad Initials")
         return False
 
-    if new_entry["score"] < 1000 :
+    if new_entry["score"] < 1000:
         log.log("SCORE: tournament add bad score")
         return False
 
@@ -395,10 +395,9 @@ def update_tournament(new_entry):
     rec = DataStore.read_record("tournament", 0)
     nextIndex = rec["index"]
 
-
-    #check for a match in the tournament board, for Claim Score function
+    # check for a match in the tournament board, for Claim Score function
     #   look back 6 games x 4 scores = 24 places for a match
-    if "game" in new_entry:  #claim will have a game count
+    if "game" in new_entry:  # claim will have a game count
         log.log("SCORE: tournament claim score checking")
         for i in range(24):
             ind = nextIndex - 1 - i
@@ -406,10 +405,9 @@ def update_tournament(new_entry):
                 ind += count
             rec = DataStore.read_record("tournament", ind)
             if rec["game"] == new_entry["game"] and rec["score"] == new_entry["score"]:
-                rec["initials"] = new_entry["initials"]                
+                rec["initials"] = new_entry["initials"]
                 DataStore.write_record("tournament", rec, ind)
         return
-
 
     new_entry["game"] = S.gameCounter
     new_entry["full_name"] = ""
@@ -476,17 +474,17 @@ def CheckForNewScores(nState=[0]):
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
                     # in play scores
                     log.log("SCORE: end, use in-play scores")
-                    scores = _read_machine_score(False)                    
+                    scores = _read_machine_score(False)
                 else:
                     # high scores
                     log.log("SCORE: end, use high scores")
                     scores = _read_machine_score(True)
-             
+
                 if DataStore.read_record("extras", 0)["tournament_mode"]:
                     for i in range(0, 4):
                         update_tournament({"initials": scores[i][0], "score": scores[i][1]})
                 else:
-                    for i in range(0, 4):                    
+                    for i in range(0, 4):
                         update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
 
                 game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]

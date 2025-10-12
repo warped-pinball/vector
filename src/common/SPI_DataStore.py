@@ -4,10 +4,9 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 

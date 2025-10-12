@@ -12,10 +12,11 @@ import faults
 import SharedState
 import SPI_DataStore
 from logger import logger_instance
+
 Log = logger_instance
 
 
-safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "dummy_reels": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "startpause": 5,"endpause":5,"sensorlevels": [0, 0]}
+safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "dummy_reels": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "startpause": 5, "endpause": 5, "sensorlevels": [0, 0]}
 
 
 def parse_config_line(line):
@@ -69,7 +70,7 @@ def list_game_configs():
     return configs
 
 
-def go(safe_mode=False):  
+def go(safe_mode=False):
     """for EM game just load from SPI_DataStore"""
     Log.log(f"Loading EM definition, safe mode ={safe_mode}")
 
@@ -84,7 +85,7 @@ def go(safe_mode=False):
         print("Loaded EMData from SPI_DataStore")
 
     except Exception as e:
-        Log.log(f"Error loading EMData: {e}")        
+        Log.log(f"Error loading EMData: {e}")
         faults.raise_fault(faults.CONF00)
         SharedState.gdata = safe_defaults
         print("Using safe defaults:", safe_defaults)

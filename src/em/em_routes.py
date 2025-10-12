@@ -1,6 +1,7 @@
-from backend import add_route
-import SharedState as S
 import os
+
+import SharedState as S
+from backend import add_route
 
 try:
     import ujson as json
@@ -10,7 +11,9 @@ except Exception:
 import time
 
 from logger import logger_instance
+
 log = logger_instance
+
 
 @add_route("/api/em/set_config", auth=True)
 def em_config(request):
@@ -33,21 +36,22 @@ def em_config(request):
 
     try:
         S.gdata["dummy_reels"] = int(request.data.get("dummy_reels") or 0)
-    except Exception:        
-        S.gdata["dummy_reels"] =  0
+    except Exception:
+        S.gdata["dummy_reels"] = 0
 
     from ScoreTrack import saveState
-    saveState()   # store in fram
+
+    saveState()  # store in fram
     return
 
 
 @add_route("/api/em/get_config")
-def get_em_config(request):   
+def get_em_config(request):
     config = {
         "name": S.gdata["gamename"],
         "players": int(S.gdata["players"]),
         "reels_per_player": int(S.gdata["digits"]),
-        "dummy_reels":  int(S.gdata["dummy_reels"]),
+        "dummy_reels": int(S.gdata["dummy_reels"]),
     }
     return config
 
@@ -60,7 +64,8 @@ def record_calibration_game(request):
     No placeholder file is created here.
     """
     import ScoreTrack
-    ScoreTrack.storeCalibrationGameProgress=0
+
+    ScoreTrack.storeCalibrationGameProgress = 0
 
     try:
         # use check_files() to see which slots exist
@@ -75,11 +80,11 @@ def record_calibration_game(request):
         log.log(f"EMCAL: store file num: {idx}")
         S.run_learning_game = True
 
-        while (S.run_learning_game == True):
+        while S.run_learning_game == True:
             print("&", end="")
             yield json.dumps({"progress": ScoreTrack.storeCalibrationGameProgress})
             time.sleep(0.5)
-       
+
         return {"status": "ok"}
 
     except Exception as e:
@@ -117,38 +122,36 @@ def final_calibration_game_scores(request):
 
     log.log(f"EMCAL: score save {composed}")
     from ScoreTrack import add_actual_score_to_file
+
     add_actual_score_to_file(filename=None, actualScores=tuple(composed))
 
     return {"status": "ok", "scores": composed}
-   
-
 
 
 @add_route("/api/em/start_learning_process", auth=True)
 def start_learning_process(request):
     # TODO actually start the learning process and report progress
-    #target = 20
+    # target = 20
 
     from ScoreTrack import learnModeProcessNow
+
     learnModeProcessNow()
 
-    #for i in range(target):
+    # for i in range(target):
     #    yield json.dumps({"progress": int((i + 1) / target * 100)})
     #    time.sleep(1)
     return json.dumps({"status": "done"})
-
-
-
 
 
 @add_route("/api/em/recorded_games_count")
 def recorded_games_count(request):
     return check_files()
 
-def check_files():   
+
+def check_files():
     """
     Check for game_history1.dat .. game_history4.dat return boolean array of their existence.
-    """ 
+    """
     try:
         try:
             names = set(os.listdir("/"))
@@ -160,9 +163,9 @@ def check_files():
             fname = f"game_history{idx}.dat"
             exists.append(fname in names)
 
-        #print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: ",exists,sum(1 for x in exists if x) )
+        # print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: ",exists,sum(1 for x in exists if x) )
         return {"exists": exists, "count": sum(1 for x in exists if x)}
-    
+
     except Exception as e:
         log.log(f"EMCAL: recorded_games_count error: {e}")
         return {"exists": [False, False, False, False], "count": 0, "error": str(e)}
@@ -178,28 +181,26 @@ def delete_calibration_games(request):
         try:
             for name in os.listdir(root):
                 if name.startswith("game_history"):
-                    filepath = (root.rstrip("/") + "/" + name)
+                    filepath = root.rstrip("/") + "/" + name
                     try:
                         os.remove(filepath)
                         deleted_files.append(filepath)
                     except Exception:
                         pass
         except Exception:
-            pass    
+            pass
     log.log("EMCAL: delete calibration files")
     return json.dumps({"status": "deleted"})
-
-
 
 
 @add_route("/api/em/diagnostics")
 def diagnostics(request):
     """
-    Stream diagnostic data - game history files.   
+    Stream diagnostic data - game history files.
     """
     import os
 
-    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]       
+    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]
     info = check_files()
     exists = info.get("exists", [False, False, False, False])
     existing = ["/" + name for name, present in zip(candidate_files, exists) if present]
@@ -222,9 +223,9 @@ def diagnostics(request):
                         if not chunk:
                             break
                         # convert to str safely
-                        #try:
+                        # try:
                         #    yield chunk.decode("utf-8", "ignore")
-                        #except Exception:
+                        # except Exception:
                         # fallback hex representation if undecodable
                         yield chunk.hex() + "\n"
             except Exception as e:

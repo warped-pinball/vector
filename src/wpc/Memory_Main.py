@@ -7,12 +7,14 @@
    start hardware PIO/DMA memory interfaces
 """
 import json
+
 import machine
 import Ram_Intercept as RamInt
-import uctypes
 import SPI_Store as fram
+import uctypes
 from displayMessage import fixAdjustmentChecksum
 from logger import logger_instance
+
 Log = logger_instance
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH, shadowRam
 
@@ -36,11 +38,12 @@ def go():
         Log.log("MEM: Checksum correction")
 
     # Boot up PIO/DMA Ram Intercept system
-    r=RamInt.configure()
+    r = RamInt.configure()
     if r is "fault":
         Log.log("MEM: Ram Intercept Fault - cycle power")
         while True:
             pass
+
 
 # Function to save the machine ram to a JSON file
 def save_ram():
@@ -51,6 +54,7 @@ def save_ram():
         Log.log("MEM: Data saved to file successfully")
     except Exception as e:
         Log.log("MEM: Failed to save data to file: ", e)
+
 
 # Function to restore RAM from JSON
 def restore_ram():
@@ -67,9 +71,11 @@ def restore_ram():
     except Exception:
         Log.log("MEM: Failed to restore data from file: ")
 
+
 def reset():
     restore_ram()
     fram.write_all_fram_now()
+
 
 def blank_ram():
     # blank the entire ram_access buffer rather than a fixed 2048 bytes

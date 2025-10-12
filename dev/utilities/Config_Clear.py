@@ -42,6 +42,7 @@ def main():
 
     try:
         import Memory_Main
+
         Memory_Main.blank_ram()
     except:
         print("assuming this is an EM board, no blank if shadowram")

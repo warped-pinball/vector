@@ -1,5 +1,4 @@
-import SPI_DataStore as datastore
-#import Memory_Main
+# import Memory_Main
 import SPI_DataStore as datastore
 import SPI_Store
 from logger import logger_instance
@@ -39,15 +38,11 @@ def clear():
     for key, value in extras.items():
         print(f"{key}: {value}")
 
-    #Memory_Main.blank_ram()
-    #SPI_Store.write_all_fram_now()
-
-
-
+    # Memory_Main.blank_ram()
+    # SPI_Store.write_all_fram_now()
 
 
 def main():
-
     clear()
 
     try:
@@ -68,6 +63,7 @@ def main():
     print("\nExtras:")
     for k, v in extras.items():
         print(f"{k}: {v}")
+
 
 if __name__ == "__main__":
     main()

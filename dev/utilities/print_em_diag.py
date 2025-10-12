@@ -3,21 +3,24 @@
 # Parse a diagnostics dump and print each game_history file like ScoreTrack.print_game_history_file
 # from windows / linux terminal on saved disagnostic file download
 
-import sys
-import struct
 import re
+import struct
+import sys
 
-HEX_LINE = re.compile(r'^[0-9A-Fa-f]+$')
+HEX_LINE = re.compile(r"^[0-9A-Fa-f]+$")
+
 
 def parse_game_history_bytes(data):
     off = 0
-    def need(n): 
-        if off + n > len(data): 
+
+    def need(n):
+        if off + n > len(data):
             raise ValueError("unexpected end of data")
+
     def read(n):
         nonlocal off
         need(n)
-        b = data[off:off+n]
+        b = data[off : off + n]
         off += n
         return b
 
@@ -43,6 +46,7 @@ def parse_game_history_bytes(data):
 
     return scores, gameHistoryIndex, sensor_data, time_data
 
+
 def print_game_history_like_pico(name, data):
     try:
         scores, idx, sensor_data, time_data = parse_game_history_bytes(data)
@@ -59,6 +63,7 @@ def print_game_history_like_pico(name, data):
         bits = format(sensor_data[i] & 0xFFFFFFFF, "032b")
         print(f"{i:>5} {bits} {time_data[i]:>8}")
 
+
 def iter_sections(lines):
     """Yield (name, hexstring) for each ==== BEGIN <name> ==== ... ==== END <name> ===="""
     in_section = False
@@ -68,7 +73,7 @@ def iter_sections(lines):
         s = line.strip()
         if s.startswith("==== BEGIN ") and s.endswith("===="):
             in_section = True
-            name = s[len("==== BEGIN "):-4].strip()
+            name = s[len("==== BEGIN ") : -4].strip()
             hex_parts = []
             continue
         if s.startswith("==== END ") and s.endswith("===="):
@@ -83,6 +88,7 @@ def iter_sections(lines):
                 hex_parts.append(s)
             # else ignore non-hex lines inside section
     # no implicit yield at EOF
+
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else "diagnostics.txt"
@@ -102,6 +108,7 @@ def main():
 
     if not any_found:
         print("No sections found. Ensure the file contains '==== BEGIN /game_history*.dat ====' blocks.")
+
 
 if __name__ == "__main__":
     main()

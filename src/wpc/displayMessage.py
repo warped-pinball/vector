@@ -1,8 +1,6 @@
 #  WPC
 
 
-
-
 # This file is part of the Warped Pinball SYS11Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
@@ -12,10 +10,11 @@ display message handling (custom message shown on the pinball machine display)
 updated for system 9 - optionally shows IP address in high score display
 """
 
-from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
+from Shadow_Ram_Definitions import shadowRam
+
 log = logger_instance
 
 localCopyIp = 0
@@ -25,18 +24,18 @@ show_ip_last_state = False
 def fixAdjustmentChecksum():
     pass
     return
-  
+
 
 def _fixDisplayMessageChecksum():
-    if S.gdata["DisplayMessage"]["Type"] == 10: 
+    if S.gdata["DisplayMessage"]["Type"] == 10:
         chk = 0
         for adr in range(S.gdata["DisplayMessage"]["ChecksumStartAdr"], S.gdata["DisplayMessage"]["ChecksumEndAdr"] + 1):
             chk = chk + shadowRam[adr]
-        chk =0xFFFF - chk
+        chk = 0xFFFF - chk
         # Store MSByte and LSByte
         msb = (chk >> 8) & 0xFF
         lsb = chk & 0xFF
-        #print("SCORE: Checksum: ---------------- ", hex(chk), hex(msb), hex(lsb))
+        # print("SCORE: Checksum: ---------------- ", hex(chk), hex(msb), hex(lsb))
         shadowRam[S.gdata["DisplayMessage"]["ChecksumResultAdr"]] = msb
         shadowRam[S.gdata["DisplayMessage"]["ChecksumResultAdr"] + 1] = lsb
 
@@ -50,13 +49,13 @@ def _set(ipAddress):
 
     print("MSG: set display message ", ipAddress)
 
-    #ipAddress = ipAddress.replace(".", " ")
+    # ipAddress = ipAddress.replace(".", " ")
 
     print("MSG: set display message ", ipAddress)
 
     padding_total = 16 - len(ipAddress)
     left_padding = padding_total // 2
-    right_padding = padding_total - left_padding        
+    right_padding = padding_total - left_padding
     padded_ip = " " * left_padding + ipAddress + " " * right_padding
 
     if S.gdata["DisplayMessage"]["Type"] == 10:
@@ -79,23 +78,20 @@ def _set(ipAddress):
         _fixDisplayMessageChecksum()
 
 
-
-
-
 def _blank():
     """
     clear the display message
     """
     if S.gdata["DisplayMessage"]["Type"] == 10:
-        Length = S.gdata["DisplayMessage"].get("Length", 16)    
+        Length = S.gdata["DisplayMessage"].get("Length", 16)
         # Write spaces (0x20) to each address location
         for i in range(Length):
             if "AddressS1" in S.gdata["DisplayMessage"]:
                 shadowRam[S.gdata["DisplayMessage"]["AddressS1"] + i] = 0x20
-                
+
             if "AddressS2" in S.gdata["DisplayMessage"]:
                 shadowRam[S.gdata["DisplayMessage"]["AddressS2"] + i] = 0x20
-                
+
             if "AddressS3" in S.gdata["DisplayMessage"]:
                 shadowRam[S.gdata["DisplayMessage"]["AddressS3"] + i] = 0x20
 
@@ -115,18 +111,17 @@ def refresh():
     call from schduler and any time config for "show ip address" changes
     """
     global localCopyIp, show_ip_last_state
-    
-    #just turned off 
-    if show_ip_last_state==1 and DataStore.read_record("extras", 0)["show_ip_address"]==0:
-        # turn off custom message                
-        _blank()        
+
+    # just turned off
+    if show_ip_last_state == 1 and DataStore.read_record("extras", 0)["show_ip_address"] == 0:
+        # turn off custom message
+        _blank()
         print("MSG: turned off")
-        
-    #refresh message    
+
+    # refresh message
     if DataStore.read_record("extras", 0)["show_ip_address"] == 1:
         _blank()
         _set(localCopyIp)
         print("MSG: refreshed ", localCopyIp)
-        
-    show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]
 
+    show_ip_last_state = DataStore.read_record("extras", 0)["show_ip_address"]

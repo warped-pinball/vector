@@ -6,10 +6,9 @@ Customize this for EM - needs game data store class
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
@@ -45,7 +44,7 @@ memory_map = {
         "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1) - (48 * 1) - 200,
         "size": 200,
         "count": 1,
-    }
+    },
 }
 
 
@@ -72,7 +71,7 @@ def write_record(structure_name, record, index=0, set=0):
     try:
         structure = memory_map[structure_name]
         start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
-        #print(structure,"R",  record)
+        # print(structure,"R",  record)
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
@@ -131,7 +130,7 @@ def serialize(record, structure_name):
         else:
             enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
-    
+
     elif structure_name == "EMData":
         # Accept only bytes/bytearray for filtermasks and carrythresholds.
         # EMData layout:
@@ -182,7 +181,7 @@ def serialize(record, structure_name):
                 s1 = int(record.get("sensorlevels", [0, 0])[1]) & 0xFFFFFFFF
 
         startpause = int(record.get("startpause", 0)) & 0xFFFFFFFF
-        endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF      
+        endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF
 
         packed = struct.pack("<40sBBI64s32sIIII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
@@ -286,7 +285,7 @@ def deserialize(data, structure_name):
             }
     elif structure_name == "EMData":
         try:
-            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)            
+            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)
             return {
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),

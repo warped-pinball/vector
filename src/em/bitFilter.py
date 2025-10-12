@@ -1,14 +1,15 @@
 # BitStreamFilter32: 32-bit, 16-deep zero-run filter with per-stage masks.
-'''
+"""
 this "filter" is setup to be super fast with full 32 parallel bit streams
 
 after init setup the number of samples required for a score increment
 and also the number of idle samples to reset for the next score (hold off)
-'''
+"""
+
 
 class BitStreamFilter32:
     MASK32 = 0xFFFFFFFF
-    DEPTH  = 16
+    DEPTH = 16
     IDXMSK = 0x0F  # pointer wrap around - 16 samples
 
     def __init__(self):
@@ -19,8 +20,8 @@ class BitStreamFilter32:
         """
         iv = 0xFFFFFFFF
         self.buf = [iv] * self.DEPTH
-        self.ptr = 1              # "last written" index
-      
+        self.ptr = 1  # "last written" index
+
         self.score_mask = [0] * self.DEPTH
         self.reset_mask = [0] * self.DEPTH
 
@@ -28,20 +29,20 @@ class BitStreamFilter32:
 
     def set_stage_score_mask(self, channel, stage):
         """send the channel (bit number) and stage - or number of identical bits (0!) for a score to be registered"""
-        #should be called for every active channel on intializaiton
+        # should be called for every active channel on intializaiton
         mask = 1 << channel
-        for i in range(self.DEPTH):        
+        for i in range(self.DEPTH):
             self.score_mask[i] &= ~mask
         # Set the bit only in the specified stage
         self.score_mask[stage] |= mask
 
     def set_stage_reset_mask(self, channel, stage):
-        """send the channel (bit number) and stage or number of samples (1!) for the state to be switched back to scoreable """
+        """send the channel (bit number) and stage or number of samples (1!) for the state to be switched back to scoreable"""
         mask = 1 << channel
         for i in range(self.DEPTH):
             self.reset_mask[i] &= ~mask
         self.reset_mask[stage] |= mask
-  
+
     def process(self, new_word):
         """
         Ingest a new 32-bit sample and run the inverted-AND pipeline.
@@ -68,23 +69,19 @@ class BitStreamFilter32:
         return score_hits
 
 
-
-
-
-
 # ------------------------ Example usage ------------------------
 if __name__ == "__main__":
     f = BitStreamFilter32()
 
-    f.set_stage_score_mask( 0, 1)
-    f.set_stage_score_mask( 1, 1)
-    f.set_stage_score_mask( 2, 1)
-    f.set_stage_score_mask( 3, 1)
+    f.set_stage_score_mask(0, 1)
+    f.set_stage_score_mask(1, 1)
+    f.set_stage_score_mask(2, 1)
+    f.set_stage_score_mask(3, 1)
 
-    f.set_stage_reset_mask( 0, 2)
-    f.set_stage_reset_mask( 1, 7)
-    f.set_stage_reset_mask( 2, 2)
-    f.set_stage_reset_mask( 3, 2)
+    f.set_stage_reset_mask(0, 2)
+    f.set_stage_reset_mask(1, 7)
+    f.set_stage_reset_mask(2, 2)
+    f.set_stage_reset_mask(3, 2)
 
     # Feed some samples
     samples = [
@@ -100,10 +97,9 @@ if __name__ == "__main__":
         0xFFFFFFFF,
         0xFFFFFFFF,
         0xFFFFFFFF,
-        0xFFFFFFFD,  
-        0xFFFFFFFD,  
-        0xFFFFFFFF  
-
+        0xFFFFFFFD,
+        0xFFFFFFFD,
+        0xFFFFFFFF,
     ]
 
     for s in samples:

@@ -444,7 +444,7 @@ async function saveCalibrationScores() {
     // ignore and use DOM values
   }
 
-  const scores = [];           // final integers, one per player
+  const scores = []; // final integers, one per player
   const expected = reelsPerPlayer + dummyReels;
 
   for (let p = 0; p < totalPlayers; p++) {
@@ -460,7 +460,7 @@ async function saveCalibrationScores() {
   try {
     const resp = await window.smartFetch(
       "/api/em/set_calibration_scores",
-      { scores: scores },   // now [12340, 45670, ...]
+      { scores: scores }, // now [12340, 45670, ...]
       true,
     );
     if (!resp.ok) throw new Error("save failed");

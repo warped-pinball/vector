@@ -382,6 +382,7 @@ def app_game_name(request):
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
     import SharedState
+
     if SharedState.gdata["GameInfo"]["System"] == "EM":
         return {"active_config": SharedState.gdata["GameInfo"]["GameName"]}
 
@@ -989,7 +990,7 @@ try:
     import em_routes  # noqa: F401
 except Exception as e:
     pass
-    #print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):

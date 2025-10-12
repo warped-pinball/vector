@@ -90,8 +90,8 @@ def edit_emdata(em):
     if v != "-":
         parts = [p.strip() for p in v.split(",")]
         try:
-            s0 = int(parts[0], 0) if len(parts) > 0 and parts[0] != "" else em.get("sensorlevels",[0,0])[0]
-            s1 = int(parts[1], 0) if len(parts) > 1 and parts[1] != "" else em.get("sensorlevels",[0,0])[1]
+            s0 = int(parts[0], 0) if len(parts) > 0 and parts[0] != "" else em.get("sensorlevels", [0, 0])[0]
+            s1 = int(parts[1], 0) if len(parts) > 1 and parts[1] != "" else em.get("sensorlevels", [0, 0])[1]
             em["sensorlevels"] = [s0 & 0xFFFFFFFF, s1 & 0xFFFFFFFF]
         except Exception:
             pass
