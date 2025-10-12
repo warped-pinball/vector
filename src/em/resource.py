@@ -52,7 +52,7 @@ def print_ram_section(start_addr=0x20080000, length=0x80):
 def go(details=False):
     stack_usage = micropython.stack_use()
     if details:
-        print("stack use", stack_usage)
+        print("RESOURCE: stack use", stack_usage)
     stack_percent = (stack_usage / 6144) * 100
 
     ram_usage_percent = get_ram_usage(details)
@@ -63,6 +63,5 @@ def go(details=False):
 
     print(f"RESOURCE: RAM={ram_usage_percent:.0f}%, Flash={flash_usage_percent:.0f}%, Stack={stack_percent:.0f}%")
 
-    from ScoreTrack import lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
-    print("RESOURCE:  history index: ",gameHistoryIndex)
+
 

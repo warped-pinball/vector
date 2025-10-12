@@ -24,7 +24,6 @@ import adjustButtons
 from logger import logger_instance
 from systemConfig import SystemVersion
 
-import GameStatus
 import ScoreTrack
 import SharedState as S
 
@@ -77,8 +76,6 @@ def check_ap_button():
         return False  # Normal boot mode, no button press
 
 
-
-
 def clear_ram_section(start_addr=0x20080000, length=0x20):
     """
     Clear (set to zero) a section of RAM from start_addr to start_addr+length.
@@ -87,8 +84,6 @@ def clear_ram_section(start_addr=0x20080000, length=0x20):
     ram = uctypes.bytearray_at(start_addr, length)
     for i in range(length):
         ram[i] = 0
-
-
 
 
 print("\n\n")
@@ -108,20 +103,6 @@ ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
 
 
-
-
-
-
-'''
-while True:
-    time.sleep(4)
-    print(ScoreTrack.plen())
-    print("_")
-'''
-
-
-
-
 # load up Game Definitions
 if not ap_mode:
     GameDefsLoad.go()
@@ -129,14 +110,11 @@ else:
     GameDefsLoad.go(safe_mode=True)
 
 sensorRead.calibrate()
-
 ScoreTrack.initialize()
-
 resource.go(True)
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402
-
 print("MAIN: Launching Wifi AP mode=", ap_mode)
 go(ap_mode)
 Log.log("MAIN: drop through fault")

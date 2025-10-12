@@ -27,6 +27,8 @@ def edit_emdata(em):
     print(f"  players:     {em.get('players',1)}")
     print(f"  digits:      {em.get('digits',1)}")
     print(f"  multiplier:  {em.get('multiplier',0)}")
+    print(f"  startpause:  {em.get('startpause', 0)}")
+    print(f"  endpause:    {em.get('endpause', 0)}")
     print(f"  filtermasks: {em.get('filtermasks')[:16]}... (len {len(em.get('filtermasks',b''))})")
     print(f"  carrythresholds: {em.get('carrythresholds')[:16]}... (len {len(em.get('carrythresholds',b''))})")
     print(f"  sensorlevels: {em.get('sensorlevels',[0,0])}")
@@ -55,6 +57,20 @@ def edit_emdata(em):
     if v != "-":
         try:
             em["multiplier"] = int(v, 0)
+        except Exception:
+            pass
+
+    v = input("startpause: ").strip()
+    if v != "-":
+        try:
+            em["startpause"] = int(v, 0)
+        except Exception:
+            pass
+
+    v = input("endpause: ").strip()
+    if v != "-":
+        try:
+            em["endpause"] = int(v, 0)
         except Exception:
             pass
 

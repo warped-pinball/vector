@@ -301,6 +301,8 @@ def printMasks():
         r = int(reset_mask[i]) & MASK32
         print(f"{i:5d}  0x{s:08X}  {grp32(s)}  0x{r:08X}  {grp32(r)}")
 
+    print(f"PROCESS_START_PAUSE={PROCESS_START_PAUSE}  PROCESS_END_PAUSE={PROCESS_END_PAUSE}")
+
     print("\nCarryThresholds (player x digit):")
     for player in range(len(carryThresholds)):
         print(f"Player {player}:")
