@@ -1039,11 +1039,11 @@ def claim_score(initials, player_index, score):
 
     #condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
-    i_intials = ""
+    i_initials = ""
     for c in initials:
         if 'A' <= c <= 'Z':
-            i_intials += c
-    initials = (i_intials + "   ")[:3]
+            i_initials += c
+    initials = (i_initials + "   ")[:3]
 
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
