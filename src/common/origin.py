@@ -1,7 +1,7 @@
 import gc
 
 from backend import hmac_sha256
-from discovery import _send, _setup_sockets
+from discovery import send_sock
 from micropython import const
 from urequests import post
 
@@ -11,8 +11,7 @@ _ORIGIN_PUBLIC_KEY_N = const(
 )
 _ORIGIN_PUBLIC_KEY_E = const(65537)
 challenges = []  # queue of server-provided challenges
-gamestate_buffer = []
-first_push_game_time = None
+previous_state = None  # last gamestate string sent to server
 
 
 def _b64decode(s: str):
@@ -279,31 +278,14 @@ def status():
 
 
 def push_game_state(game_time, scores, ball_in_play):
-    global gamestate_buffer, first_push_game_time, send_sock
-    _setup_sockets()
-
-    current_state = f"{game_time},{','.join(map(str, scores))},{ball_in_play}"
-    if gamestate_buffer:
-        # get last state to avoid duplicates
-        last_state = gamestate_buffer[-1] if gamestate_buffer else None
-
-        # check if they match (except for game time)
-        if last_state.split(",")[1:] == current_state.split(",")[1:]:
-            return
-
-    gamestate_buffer.append(current_state)
-    if first_push_game_time is None:
-        first_push_game_time = game_time
-
-    # if there are less than 6 states or it's been less than 5 seconds since the first state, don't push yet
-    if len(gamestate_buffer) < 6 and game_time - first_push_game_time < 5000:
-        return
+    global previous_state
 
     try:
-        _send(f"GS|{'|'.join(gamestate_buffer)}", addr=("255.255.255.255", 1111))
-        print("Pushed game states:", gamestate_buffer)
-        # make_request("api/v1/machines/game_states", "|".join(gamestate_buffer), sign=True, validate=False)
-        gamestate_buffer = []
+        # Only track and compare non-time components
+        state_tail = f"{','.join(map(str, scores))},{ball_in_play}"
+
+        if previous_state is None or previous_state != state_tail:
+            send_sock.sendto(f"GS|{game_time},{state_tail}".encode(), ("255.255.255.255", 6809))
+            previous_state = state_tail
     except Exception as e:
-        print("Error pushing game states:", e)
-        gamestate_buffer = []
+        print("Error pushing game state:", e)
