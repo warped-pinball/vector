@@ -267,7 +267,7 @@ def require_auth(handler):
         global challenges
 
         def deny_access(reason):
-            msg = json_dumps({"error": "reason"}), 401, "application/json"
+            msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
             print(request.headers)
             return msg
@@ -381,7 +381,12 @@ def app_game_name(request):
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
+    import SharedState
+    if SharedState.gdata["GameInfo"]["System"] == "EM":
+        return {"active_config": SharedState.gdata["GameInfo"]["GameName"]}
+
     return {"active_config": ds_read_record("configuration", 0)["gamename"]}
+    # TODO make this use configured game name on EM
 
 
 @add_route("/api/game/configs_list")
@@ -977,6 +982,14 @@ def connect_to_wifi(initialize=False):
 
     faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
+
+
+try:
+    # This import must be after the add_route function is defined at minimum
+    import em_routes  # noqa: F401
+except Exception as e:
+    pass
+    #print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):
