@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "No Good Gofers",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 953,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 7042,
+        "ChecksumStartAdr": 6437,
+        "ChecksumEndAdr": 7435,
+        "ChecksumResultAdr": 7436
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
+        "ScoreAdr": 7366,
         "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7457,
-        "InitialSpacing": 8,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7363,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7405,
+        "GrandChampInitAdr": 7401,
+        "ChecksumStartAdr": 7363,
+        "ChecksumEndAdr": 7398,
+        "ChecksumResultAdr": 7399,
+        "GCChecksumStartAdr": 7401,
+        "GCChecksumEndAdr": 7409,
+        "GCChecksumResultAdr": 7410
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
+        "Players": 5913,
+        "Playerup": 952,
         "ScoreAdr": 5791,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }

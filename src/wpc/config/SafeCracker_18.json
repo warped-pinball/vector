@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Safe Cracker",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 4063,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 7162,
+        "ChecksumStartAdr": 7121,
+        "ChecksumEndAdr": 7360,
+        "ChecksumResultAdr": 7361
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
+        "ScoreAdr": 7468,
         "BytesInScore": 4,
         "ScoreSpacing": 8,
-        "InitialAdr": 7457,
+        "InitialAdr": 7465,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7502,
+        "GrandChampInitAdr": 7499,
+        "ChecksumStartAdr": 7465,
+        "ChecksumEndAdr": 7496,
+        "ChecksumResultAdr": 7497,
+        "GCChecksumStartAdr": 7499,
+        "GCChecksumEndAdr": 7506,
+        "GCChecksumResultAdr": 7507
     },
     "HSRewards": {
         "Type": 0,
@@ -75,10 +75,10 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
+        "Players": 5909,
+        "Playerup": 1003,
         "ScoreAdr": 5791,
         "ScoreBytes": 6,
         "ScoreSpacing": 6

@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Gilligan's Island",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7160,
+        "ChecksumResultAdr": 7161
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
+        "ScoreAdr": 7268,
         "BytesInScore": 4,
         "ScoreSpacing": 8,
-        "InitialAdr": 7457,
+        "InitialAdr": 7265,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7302,
+        "GrandChampInitAdr": 7299,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7296,
+        "ChecksumResultAdr": 7297,
+        "GCChecksumStartAdr": 7299,
+        "GCChecksumEndAdr": 7306,
+        "GCChecksumResultAdr": 7307
     },
     "HSRewards": {
         "Type": 0,
@@ -75,11 +75,11 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
-        "ScoreAdr": 5791,
+        "Players": 6044,
+        "Playerup": 1039,
+        "ScoreAdr": 5935,
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     }
