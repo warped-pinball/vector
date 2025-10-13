@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Twilight Zone",
         "System": "WPC",
         "FileVer": 1
     },
@@ -22,6 +22,16 @@
         "Ball4": 4,
         "Ball5": 5
     },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 141,
+        "GameActiveValue": 0,
+        "Players": 5913,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7,
+        "Playerup": 946
+    },
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7558,
@@ -34,27 +44,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7160,
+        "ChecksumResultAdr": 7161
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
-        "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7457,
-        "InitialSpacing": 8,
+        "ScoreAdr": 7500,
+        "BytesInScore": 5,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7497,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7538,
+        "GrandChampInitAdr": 7535,
+        "ChecksumStartAdr": 7497,
+        "ChecksumEndAdr": 7532,
+        "ChecksumResultAdr": 7533,
+        "GCChecksumStartAdr": 7535,
+        "GCChecksumEndAdr": 7543,
+        "GCChecksumResultAdr": 7544
     },
     "HSRewards": {
         "Type": 0,
@@ -73,14 +83,9 @@
     "CoinDrop": {
         "Type": 0
     },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 135,
-        "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
-        "ScoreAdr": 5791,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+    "in_play_data": {
+        "GameActiveAdr": "0x008D",
+        "Playerup": "0x03B2",
+        "Players": "0x1719"
     }
 }

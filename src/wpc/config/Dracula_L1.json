@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Bram Stokers Dracula",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 944,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 7084,
+        "ChecksumStartAdr": 6263,
+        "ChecksumEndAdr": 7513,
+        "ChecksumResultAdr": 7514
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
-        "BytesInScore": 4,
+        "ScoreAdr": 7450,
+        "BytesInScore": 5,
         "ScoreSpacing": 8,
-        "InitialAdr": 7457,
+        "InitialAdr": 7447,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7484,
+        "GrandChampInitAdr": 7481,
+        "ChecksumStartAdr": 7447,
+        "ChecksumEndAdr": 7478,
+        "ChecksumResultAdr": 7479,
+        "GCChecksumStartAdr": 7481,
+        "GCChecksumEndAdr": 7488,
+        "GCChecksumResultAdr": 7489
     },
     "HSRewards": {
         "Type": 0,
@@ -75,11 +75,11 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 143,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
-        "ScoreAdr": 5791,
+        "Players": 5877,
+        "Playerup": 943,
+        "ScoreAdr": 5759,
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     }

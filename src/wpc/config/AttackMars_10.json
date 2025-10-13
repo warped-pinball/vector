@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Attach from Mars",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 10,
-        "Address": 947,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 7072,
+        "ChecksumStartAdr": 7031,
+        "ChecksumEndAdr": 7290,
+        "ChecksumResultAdr": 7291
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
-        "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7457,
-        "InitialSpacing": 8,
+        "ScoreAdr": 7398,
+        "BytesInScore": 5,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7395,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7436,
+        "GrandChampInitAdr": 7433,
+        "ChecksumStartAdr": 7395,
+        "ChecksumEndAdr": 7430,
+        "ChecksumResultAdr": 7431,
+        "GCChecksumStartAdr": 7433,
+        "GCChecksumEndAdr": 7441,
+        "GCChecksumResultAdr": 7442
     },
     "HSRewards": {
         "Type": 0,
@@ -77,10 +77,10 @@
         "Type": 10,
         "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 946,
+        "Players": 5905,
+        "Playerup": 949,
         "ScoreAdr": 5791,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }

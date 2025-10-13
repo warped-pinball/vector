@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medeival Madness",
+        "GameName": "Who Dunnit",
         "System": "WPC",
         "FileVer": 1
     },
@@ -34,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7090,
-        "ChecksumStartAdr": 7049,
-        "ChecksumEndAdr": 7338,
-        "ChecksumResultAdr": 7339
+        "CustomMessageOn": 7102,
+        "ChecksumStartAdr": 7061,
+        "ChecksumEndAdr": 7280,
+        "ChecksumResultAdr": 7281
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7460,
-        "BytesInScore": 4,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7457,
-        "InitialSpacing": 8,
+        "ScoreAdr": 7388,
+        "BytesInScore": 5,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7385,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7494,
-        "GrandChampInitAdr": 7491,
-        "ChecksumStartAdr": 7457,
-        "ChecksumEndAdr": 7488,
-        "ChecksumResultAdr": 7489,
-        "GCChecksumStartAdr": 7491,
-        "GCChecksumEndAdr": 7498,
-        "GCChecksumResultAdr": 7499
+        "GrandChampScoreAdr": 7426,
+        "GrandChampInitAdr": 7423,
+        "ChecksumStartAdr": 7385,
+        "ChecksumEndAdr": 7420,
+        "ChecksumResultAdr": 7421,
+        "GCChecksumStartAdr": 7423,
+        "GCChecksumEndAdr": 7431,
+        "GCChecksumResultAdr": 7432
     },
     "HSRewards": {
         "Type": 0,
@@ -77,10 +77,10 @@
         "Type": 10,
         "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 5901,
+        "Players": 5905,
         "Playerup": 946,
         "ScoreAdr": 5791,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }
