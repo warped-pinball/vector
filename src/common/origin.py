@@ -285,6 +285,7 @@ def push_game_state(game_time, scores, ball_in_play):
         state_tail = f"{','.join(map(str, scores))},{ball_in_play}"
 
         if previous_state is None or previous_state != state_tail:
+            # TODO add signature
             send_sock.sendto(f"GS|{game_time},{state_tail}".encode(), ("255.255.255.255", 6809))
             previous_state = state_tail
     except Exception as e:
