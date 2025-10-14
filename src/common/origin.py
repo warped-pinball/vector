@@ -304,7 +304,7 @@ def _reset_new_game():
     _sim_game_start_ms = ticks_ms()
 
 
-def _push_game_state_sim(game_time, scores, ball_in_play):
+def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
     global previous_state
     global _sim_initialized, _sim_scores, _sim_ball_in_play, _sim_current_player, _sim_plays_remaining, _sim_game_start_ms
 
