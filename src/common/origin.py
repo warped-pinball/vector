@@ -228,14 +228,14 @@ def validate_response(response, client_challenge: bytes):
 
 
 def send_handshake_request():
+    import SharedState as S
     from curve25519 import generate_x25519_keypair
-    from SPI_DataStore import read_record as ds_read_record
 
     # Generate X25519 keys
     priv, pub = generate_x25519_keypair()
 
     # Send client key + game title as JSON
-    game_title = ds_read_record("configuration", 0)["gamename"]
+    game_title = S.gdata.get("GameInfo", {}).get("GameName", "Unknown Title")
     client_key_b64 = _b64encode(pub)
 
     data = make_request("api/v1/machines/handshake", {"client_public_key_b64": client_key_b64, "game_title": game_title}, sign=False, validate=False)
@@ -344,19 +344,10 @@ def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
         if previous_state == state_tail:
             return
 
-        packet = dumps(
-            {
-                "machine_id_b64": config.id_b64,
-                "gameTimeMs": game_time_ms,
-                "scores": _sim_scores,
-                "ball_in_play": _sim_ball_in_play,
-            }
-        )
-
-        send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
-        previous_state = state_tail
     except Exception as e:
         print("Error pushing game state (sim):", e)
+
+    _push_game_state_real(game_time_ms, _sim_scores, _sim_ball_in_play, game_active=_sim_ball_in_play > 0)
 
 
 def _push_game_state_real(game_time, scores, ball_in_play, game_active):

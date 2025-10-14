@@ -674,7 +674,12 @@ function applyOriginStatus(status) {
   originButton.classList.remove("gold-pulse");
   originButton.disabled = false;
 
-  if (status.linked) {
+  if (status.linked && status.is_claimed && status.username) {
+    // Machine is linked and claimed by a user
+    originButton.textContent = `Connected to user: ${status.username}`;
+    originButton.disabled = true;
+    originButton.onclick = null;
+  } else if (status.linked) {
     originButton.textContent = "Connected to Warp Pinball Network";
     originButton.onclick = () => {
       if (status.claim_url)
