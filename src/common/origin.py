@@ -3,6 +3,7 @@ import gc
 from backend import hmac_sha256
 from discovery import send_sock
 from micropython import const
+from ujson import dumps
 from urequests import post
 
 _MAX_CHALLENGES = const(10)
@@ -284,9 +285,20 @@ def push_game_state(game_time, scores, ball_in_play):
         # Only track and compare non-time components
         state_tail = f"{','.join(map(str, scores))},{ball_in_play}"
 
-        if previous_state is None or previous_state != state_tail:
-            # TODO add signature
-            send_sock.sendto(f"GS|{game_time},{state_tail}".encode(), ("255.255.255.255", 6809))
-            previous_state = state_tail
+        if previous_state == state_tail:
+            return
+
+        packet = dumps(
+            {
+                "machine_id_b64": config.id_b64,
+                "gameTimeMs": game_time,
+                "scores": scores,
+                "ball_in_play": ball_in_play,
+            }
+        )
+
+        send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
+
+        previous_state = state_tail
     except Exception as e:
         print("Error pushing game state:", e)

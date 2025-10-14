@@ -677,12 +677,14 @@ function applyOriginStatus(status) {
   if (status.linked) {
     originButton.textContent = "Connected to Warp Pinball Network";
     originButton.onclick = () => {
-      if (status.claim_url) window.open(status.claim_url, "_self");
+      if (status.claim_url)
+        window.open(status.claim_url, "_blank", "noopener,noreferrer");
     };
   } else if (status.claim_url) {
     originButton.classList.add("gold-pulse");
     originButton.textContent = "Claim this machine";
-    originButton.onclick = () => window.open(status.claim_url, "_self");
+    originButton.onclick = () =>
+      window.open(status.claim_url, "_blank", "noopener,noreferrer");
   } else {
     originButton.classList.add("gold-pulse");
     originButton.textContent = "Connect to Warped Pinball Network";
