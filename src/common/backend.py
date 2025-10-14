@@ -1018,9 +1018,9 @@ try:
     # This import must be after the add_route function is defined at minimum
     import em_routes  # noqa: F401
 except Exception as e:
-    import systemConfig
+    from systemConfig import vectorSystem
 
-    if systemConfig.System == "EM":
+    if vectorSystem == "EM":
         print(f"Error importing em_routes: {e}")
 
 
