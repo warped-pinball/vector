@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -36,7 +35,7 @@ def wipe_pico(pico_port):
         if ls.stderr:
             print(ls.stderr)
         sys.exit(1)
-    text = (ls.stdout or "")
+    text = ls.stdout or ""
     # Parse entries per-line: mpremote may print sizes/metadata; take last token as name
     entries: list[str] = []
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
@@ -82,7 +81,7 @@ def wipe_pico(pico_port):
             if res.returncode == 0:
                 continue
             else:
-                print(f"   exec removal returned {res.returncode}; falling back to fs")
+                print(f"   exec removal returned {res.returncode}: falling back to fs")
                 if res.stdout:
                     print(res.stdout)
                 if res.stderr:

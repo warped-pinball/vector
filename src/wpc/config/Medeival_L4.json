@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Medieval Madness",
+        "GameName": "Medeival Madness",
         "System": "WPC",
         "FileVer": 1
     },
@@ -34,10 +34,10 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
+        "CustomMessageOn": 7090,
+        "ChecksumStartAdr": 7049,
+        "ChecksumEndAdr": 7338,
+        "ChecksumResultAdr": 7339
     },
     "HighScores": {
         "Type": 10,
