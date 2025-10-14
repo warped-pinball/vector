@@ -6,7 +6,7 @@ Log = logger_instance
 usb_power_state = False
 
 def init():
-    global usb_power_state   
+    global usb_power_state
     print("RST: Reset control init")
 
     usb_power_pin = Pin("WL_GPIO2", Pin.IN)
