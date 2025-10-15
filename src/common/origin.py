@@ -321,7 +321,7 @@ def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
         # If this player is done, advance player (and maybe ball)
         if _sim_plays_remaining <= 0:
             _sim_current_player = (_sim_current_player + 1) % 4
-            _sim_plays_remaining = _randint(30, 100)
+            _sim_plays_remaining = _randint(15, 40)
             if _sim_current_player == 0:
                 _sim_ball_in_play += 1
                 if _sim_ball_in_play > 5:
