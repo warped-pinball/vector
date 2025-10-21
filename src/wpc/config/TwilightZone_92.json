@@ -22,16 +22,6 @@
         "Ball4": 4,
         "Ball5": 5
     },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5913,
-        "ScoreAdr": 5791,
-        "ScoreBytes": 7,
-        "ScoreSpacing": 7,
-        "Playerup": 946
-    },
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7558,
@@ -44,15 +34,15 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
+        "CustomMessageOn": 7174,
+        "ChecksumStartAdr": 6269,
+        "ChecksumEndAdr": 7564,
+        "ChecksumResultAdr": 7565
     },
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7500,
-        "BytesInScore": 5,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
         "InitialAdr": 7497,
         "InitialSpacing": 9,
@@ -83,9 +73,14 @@
     "CoinDrop": {
         "Type": 0
     },
-    "in_play_data": {
-        "GameActiveAdr": "0x008D",
-        "Playerup": "0x03B2",
-        "Players": "0x1719"
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 141,
+        "GameActiveValue": 0,
+        "Players": 5913,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }
