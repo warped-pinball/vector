@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Theater of Magic",
+        "GameName": "Theatre of Magic",
         "System": "WPC",
         "FileVer": 1
     },
@@ -14,7 +14,7 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 944,
         "Ball1": 1,
         "Ball2": 2,
