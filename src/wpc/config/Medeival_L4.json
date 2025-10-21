@@ -14,7 +14,7 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
@@ -42,7 +42,7 @@
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7460,
-        "BytesInScore": 4,
+        "BytesInScore": 5,
         "ScoreSpacing": 8,
         "InitialAdr": 7457,
         "InitialSpacing": 8,
