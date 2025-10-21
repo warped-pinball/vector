@@ -1,9 +1,8 @@
 {
     "GameInfo": {
-        "GameName": "Junk Yard",
+        "GameName": "Twilight Zone",
         "System": "WPC",
-        "FileVer": 1,
-        "Clock": "MM"
+        "FileVer": 1
     },
     "Definition": {
         "version": 1
@@ -35,27 +34,27 @@
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7102,
-        "ChecksumStartAdr": 7061,
-        "ChecksumEndAdr": 7280,
-        "ChecksumResultAdr": 7281
+        "CustomMessageOn": 7174,
+        "ChecksumStartAdr": 6269,
+        "ChecksumEndAdr": 7564,
+        "ChecksumResultAdr": 7565
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7388,
+        "ScoreAdr": 7500,
         "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7385,
+        "InitialAdr": 7497,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7427,
-        "GrandChampInitAdr": 7423,
-        "ChecksumStartAdr": 7385,
-        "ChecksumEndAdr": 7420,
-        "ChecksumResultAdr": 7421,
-        "GCChecksumStartAdr": 7423,
-        "GCChecksumEndAdr": 7431,
-        "GCChecksumResultAdr": 7432
+        "GrandChampScoreAdr": 7538,
+        "GrandChampInitAdr": 7535,
+        "ChecksumStartAdr": 7497,
+        "ChecksumEndAdr": 7532,
+        "ChecksumResultAdr": 7533,
+        "GCChecksumStartAdr": 7535,
+        "GCChecksumEndAdr": 7543,
+        "GCChecksumResultAdr": 7544
     },
     "HSRewards": {
         "Type": 0,
@@ -76,9 +75,9 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5905,
+        "Players": 5913,
         "Playerup": 946,
         "ScoreAdr": 5791,
         "ScoreBytes": 7,
