@@ -14,7 +14,7 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 1040,
         "Ball1": 1,
         "Ball2": 2,
@@ -35,9 +35,9 @@
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 7054,
-        "ChecksumStartAdr": 7013,
-        "ChecksumEndAdr": 7232,
-        "ChecksumResultAdr": 7233
+        "ChecksumStartAdr": 6359,
+        "ChecksumEndAdr": 7403,
+        "ChecksumResultAdr": 7404
     },
     "HighScores": {
         "Type": 10,
@@ -83,5 +83,4 @@
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     }
-
 }

@@ -2,7 +2,8 @@
     "GameInfo": {
         "GameName": "Congo",
         "System": "WPC",
-        "FileVer": 1
+        "FileVer": 1,
+        "Clock": "MM"
     },
     "Definition": {
         "version": 1
@@ -14,7 +15,7 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
@@ -42,7 +43,7 @@
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7398,
-        "BytesInScore": 5,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
         "InitialAdr": 7395,
         "InitialSpacing": 9,
