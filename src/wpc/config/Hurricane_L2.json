@@ -24,20 +24,20 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7558,
-        "AddressS2": 7623,
-        "AddressS3": 7688,
+        "AddressS1": 7532,
+        "AddressS2": 7597,
+        "AddressS3": 7662,
         "Length": 32,
-        "ChecksumStartAdr": 7558,
-        "ChecksumEndAdr": 7750,
-        "ChecksumResultAdr": 7751
+        "ChecksumStartAdr": 7532,
+        "ChecksumEndAdr": 7724,
+        "ChecksumResultAdr": 7725
     },
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6299,
-        "ChecksumEndAdr": 6941,
-        "ChecksumResultAdr": 6942
+        "ChecksumStartAdr": 7318,
+        "ChecksumEndAdr": 7529,
+        "ChecksumResultAdr": 7530
     },
     "HighScores": {
         "Type": 10,
@@ -58,17 +58,17 @@
     },
     "HSRewards": {
         "Type": 0,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
     "CoinDrop": {
         "Type": 0

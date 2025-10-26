@@ -1,8 +1,9 @@
 {
     "GameInfo": {
-        "GameName": "Twilight Zone",
+        "GameName": "Johnny Mnemonic",
         "System": "WPC",
-        "FileVer": 1
+        "FileVer": 1,
+        "Clock": "MM"
     },
     "Definition": {
         "version": 1
@@ -21,16 +22,6 @@
         "Ball3": 3,
         "Ball4": 4,
         "Ball5": 5
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5913,
-        "ScoreAdr": 5791,
-        "ScoreBytes": 7,
-        "ScoreSpacing": 7,
-        "Playerup": 946
     },
     "DisplayMessage": {
         "Type": 10,
@@ -51,41 +42,42 @@
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7500,
-        "BytesInScore": 5,
+        "ScoreAdr": 7268,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7497,
+        "InitialAdr": 7265,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7538,
-        "GrandChampInitAdr": 7535,
-        "ChecksumStartAdr": 7497,
-        "ChecksumEndAdr": 7532,
-        "ChecksumResultAdr": 7533,
-        "GCChecksumStartAdr": 7535,
-        "GCChecksumEndAdr": 7543,
-        "GCChecksumResultAdr": 7544
+        "GrandChampScoreAdr": 7306,
+        "GrandChampInitAdr": 7303,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301,
+        "GCChecksumStartAdr": 7303,
+        "GCChecksumEndAdr": 7311,
+        "GCChecksumResultAdr": 7312
     },
     "HSRewards": {
         "Type": 0,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
     "CoinDrop": {
         "Type": 0
     },
-    "in_play_data": {
-        "GameActiveAdr": "0x008D",
-        "Playerup": "0x03B2",
-        "Players": "0x1719"
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 135,
+        "GameActiveValue": 0,
+        "Players": 5905
     }
 }
