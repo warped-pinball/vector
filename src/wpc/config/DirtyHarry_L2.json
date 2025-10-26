@@ -1,8 +1,9 @@
 {
     "GameInfo": {
-        "GameName": "World Cup Soccer",
+        "GameName": "Dirty Harry",
         "System": "WPC",
-        "FileVer": 1
+        "FileVer": 1,
+        "Clock": "MM"
     },
     "Definition": {
         "version": 1
@@ -15,7 +16,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 951,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -24,37 +25,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7697,
-        "AddressS2": 7762,
-        "AddressS3": 7827,
+        "AddressS1": 7688,
+        "AddressS2": 7753,
+        "AddressS3": 7818,
         "Length": 32,
-        "ChecksumStartAdr": 7697,
-        "ChecksumEndAdr": 7889,
-        "ChecksumResultAdr": 7890
+        "ChecksumStartAdr": 7688,
+        "ChecksumEndAdr": 7880,
+        "ChecksumResultAdr": 7881
     },
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 7102,
         "ChecksumStartAdr": 7061,
-        "ChecksumEndAdr": 7300,
-        "ChecksumResultAdr": 7301
+        "ChecksumEndAdr": 7290,
+        "ChecksumResultAdr": 7291
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 8038,
+        "ScoreAdr": 7398,
         "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 8035,
+        "InitialAdr": 7395,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7446,
-        "GrandChampInitAdr": 7443,
-        "ChecksumStartAdr": 8067,
-        "ChecksumEndAdr": 8070,
-        "ChecksumResultAdr": 8078,
-        "GCChecksumStartAdr": 7443,
-        "GCChecksumEndAdr": 7451,
-        "GCChecksumResultAdr": 7452
+        "GrandChampScoreAdr": 7436,
+        "GrandChampInitAdr": 7433,
+        "ChecksumStartAdr": 7395,
+        "ChecksumEndAdr": 7430,
+        "ChecksumResultAdr": 7431,
+        "GCChecksumStartAdr": 7433,
+        "GCChecksumEndAdr": 7441,
+        "GCChecksumResultAdr": 7442
     },
     "HSRewards": {
         "Type": 0,
@@ -77,9 +78,9 @@
         "Type": 10,
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 6057,
-        "Playerup": 1042,
-        "ScoreAdr": 5935,
+        "Players": 5913,
+        "Playerup": 663,
+        "ScoreAdr": 5791,
         "ScoreBytes": 7,
         "ScoreSpacing": 7
     }

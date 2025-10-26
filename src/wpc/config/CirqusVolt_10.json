@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Black Rose",
+        "GameName": "Cirqus Voltaire",
         "System": "WPC",
         "FileVer": 1
     },
@@ -24,37 +24,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7564,
-        "AddressS2": 7629,
-        "AddressS3": 7694,
+        "AddressS1": 7843,
+        "AddressS2": 7908,
+        "AddressS3": 7973,
         "Length": 32,
-        "ChecksumStartAdr": 7564,
-        "ChecksumEndAdr": 7756,
-        "ChecksumResultAdr": 7757
+        "ChecksumStartAdr": 7843,
+        "ChecksumEndAdr": 8035,
+        "ChecksumResultAdr": 8036
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7172,
-        "ChecksumResultAdr": 7173
+        "CustomMessageOn": 7192,
+        "ChecksumStartAdr": 7151,
+        "ChecksumEndAdr": 7450,
+        "ChecksumResultAdr": 7451
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7280,
+        "ScoreAdr": 7558,
         "BytesInScore": 5,
         "ScoreSpacing": 8,
-        "InitialAdr": 7277,
+        "InitialAdr": 7555,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7314,
-        "GrandChampInitAdr": 7311,
-        "ChecksumStartAdr": 7277,
-        "ChecksumEndAdr": 7308,
-        "ChecksumResultAdr": 7309,
-        "GCChecksumStartAdr": 7311,
-        "GCChecksumEndAdr": 7318,
-        "GCChecksumResultAdr": 7319
+        "GrandChampScoreAdr": 7592,
+        "GrandChampInitAdr": 7589,
+        "ChecksumStartAdr": 7555,
+        "ChecksumEndAdr": 7586,
+        "ChecksumResultAdr": 7587,
+        "GCChecksumStartAdr": 7589,
+        "GCChecksumEndAdr": 7596,
+        "GCChecksumResultAdr": 7597
     },
     "HSRewards": {
         "Type": 0,
@@ -77,9 +77,9 @@
         "Type": 10,
         "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 6045,
-        "Playerup": 1039,
-        "ScoreAdr": 5935,
+        "Players": 5901,
+        "Playerup": 949,
+        "ScoreAdr": 5791,
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     }
