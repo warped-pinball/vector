@@ -16,9 +16,10 @@ import machine
 import SPI_DataStore as DataStore
 from logger import logger_instance
 log = logger_instance
+import SharedState as S
 
 from Shadow_Ram_Definitions import SRAM_CLOCK_MINUTES, SRAM_CLOCK_HOURS
-from Ram_Intercept import DISABLE_CLOCK_ADDRESS, DISABLE_CLOCK_DATA, ENABLE_CLOCK_DATA
+from Ram_Intercept import enableClockCapture, disableClockCapture 
 
 #this is the power up state
 Time_Enabeled = True
@@ -44,7 +45,11 @@ def trigger_midnight_madness():
 
 def update_game_time():    
     """setup phew timer to call this once every minute.  handle config changes and time updates"""
-    global Time_Enabeled,MM_Trigger_Active_Count
+    global Time_Enabeled,MM_Trigger_Active_Count   
+
+    if S.gdata.get("GameInfo", {}).get("Clock") != "MM":
+        return
+
     if MM_Trigger_Active_Count == 0:
         if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
             if DataStore.read_record("extras", 0)["MM_Always"] == True:
@@ -55,16 +60,14 @@ def update_game_time():
                 machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23) might go back to this with twilight zone
                 machine.mem8[SRAM_CLOCK_MINUTES] = 0x20   #t[4]  # Minute (0-59)                   
 
-        if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):
-            log.log("TIME: enable off")
-            #special code to turn off the PIO TIME Function
-            machine.mem32[DISABLE_CLOCK_ADDRESS] = DISABLE_CLOCK_DATA   
+        if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):        
+            log.log("TIME: enable off")          
+            disableClockCapture()
             Time_Enabeled=False
         
         if (DataStore.read_record("extras", 0)["WPCTimeOn"] == True) and (Time_Enabeled==False):
-            log.log("TIME: enable on")
-            #special code to turn off the PIO TIME Function
-            machine.mem32[DISABLE_CLOCK_ADDRESS] = ENABLE_CLOCK_DATA   
+            log.log("TIME: enable on")          
+            disableClockCapture()
             Time_Enabeled=True
     else:
         MM_Trigger_Active_Count=MM_Trigger_Active_Count-1
