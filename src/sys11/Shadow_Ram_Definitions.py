@@ -16,7 +16,6 @@ import uctypes
 def _is_rp2350():
     try:
         m = os.uname().machine
-        # Typical strings include "Raspberry Pi Pico 2 with RP2350"
         return ("RP2350" in m) or ("Pico 2" in m)
     except Exception:
         return False
@@ -25,7 +24,7 @@ IS_RP2350 = _is_rp2350()
 
 if IS_RP2350 == True:
   # only need 2k block
-  SRAM_DATA_BASE = 0x20081800                 #PICO2W  original 8k block
+  SRAM_DATA_BASE = 0x20081800                 #PICO2W end of ram-2k 
   SRAM_DATA_BASE_21 = SRAM_DATA_BASE >> 11    #MSBits to be preloaded in pio for address generation
   SRAM_DATA_LENGTH = 0x00000800               #2k byte total
 
