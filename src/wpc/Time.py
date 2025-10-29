@@ -67,7 +67,7 @@ def update_game_time():
         
         if (DataStore.read_record("extras", 0)["WPCTimeOn"] == True) and (Time_Enabeled==False):
             log.log("TIME: enable on")          
-            disableClockCapture()
+            enableClockCapture()
             Time_Enabeled=True
     else:
         MM_Trigger_Active_Count=MM_Trigger_Active_Count-1
