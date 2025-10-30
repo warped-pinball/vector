@@ -22,7 +22,7 @@ from Shadow_Ram_Definitions import SRAM_CLOCK_MINUTES, SRAM_CLOCK_HOURS
 from Ram_Intercept import enableClockCapture, disableClockCapture 
 
 #this is the power up state
-Time_Enabeled = True
+Time_Enabeled = False #starts up in pio in off state
 MM_Trigger_Active_Count = 0
 
 def initialize():
