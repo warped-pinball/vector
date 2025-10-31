@@ -44,7 +44,7 @@ def trigger_midnight_madness():
         MM_Trigger_Active_Count = 3
 
 def update_game_time():    
-    """setup phew timer to call this once every minute.  handle config changes and time updates"""
+    """setup phew timer to call this once every 1/2 minute.  handle config changes and time updates"""
     global Time_Enabeled,MM_Trigger_Active_Count   
 
     if S.gdata.get("GameInfo", {}).get("Clock") != "MM":
@@ -52,12 +52,12 @@ def update_game_time():
 
     if MM_Trigger_Active_Count == 0:
         if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
-            if DataStore.read_record("extras", 0)["MM_Always"] == True:
+            if DataStore.read_record("extras", 0)["MM_Always"] == True  and  S.gdata["BallInPlay"]>1:
                 _midnight_now()    
             else:
                 import time
                 t = time.localtime() 
-                machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23) might go back to this with twilight zone
+                machine.mem8[SRAM_CLOCK_HOURS] = 0x17     #t[3]  # Hour (0-23) 
                 machine.mem8[SRAM_CLOCK_MINUTES] = 0x20   #t[4]  # Minute (0-59)                   
 
         if (DataStore.read_record("extras", 0)["WPCTimeOn"] == False) and (Time_Enabeled==True):        
