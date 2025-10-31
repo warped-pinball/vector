@@ -28,7 +28,7 @@ MM_Trigger_Active_Count = 0
 def initialize():
     #set schedule call back
     from phew import server
-    server.schedule(update_game_time, 25000, 30000)
+    server.schedule(update_game_time, 5000, 30000)
 
 def _midnight_now():
     machine.mem8[SRAM_CLOCK_HOURS] = 0x18
