@@ -28,7 +28,7 @@ MM_Trigger_Active_Count = 0
 def initialize():
     #set schedule call back
     from phew import server
-    server.schedule(update_game_time, 5000, 30000)
+    server.schedule(update_game_time, 5000, 20000)
 
 def _midnight_now():
     machine.mem8[SRAM_CLOCK_HOURS] = 0x18
@@ -52,7 +52,7 @@ def update_game_time():
 
     if MM_Trigger_Active_Count == 0:
         if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
-            if DataStore.read_record("extras", 0)["MM_Always"] == True  and  S.gdata["BallInPlay"]>1:
+            if DataStore.read_record("extras", 0)["MM_Always"] == True: #  and  S.gdata["BallInPlay"]>1:
                 _midnight_now()    
             else:
                 import time
