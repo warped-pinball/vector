@@ -164,3 +164,6 @@ src/vector.code-workspace
 dev/config.json
 update.json
 .vscode/settings.json
+
+# Mac
+.DS_Store

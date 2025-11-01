@@ -91,6 +91,12 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
  * updateLeaderboardArticles: 5 columns => #, Score, Player, Ago, Date
  */
 window.updateLeaderboardArticles = function () {
+
+  //If we're in delete mode, don't refresh the board!!!!
+  if(window.scoreDeleteMode){
+    return;
+  }
+
   var columns = [
     { header: "#", key: "rank" },
     { header: "Score", key: "score" },
@@ -654,13 +660,13 @@ window.createFireworkEffect = function (scoreElement) {
     const angle = Math.random() * 2 * Math.PI;
     const distance =
       Math.random() *
-        (window.fireworkSettings.maxDistance -
-          window.fireworkSettings.minDistance) +
+      (window.fireworkSettings.maxDistance -
+        window.fireworkSettings.minDistance) +
       window.fireworkSettings.minDistance;
     const duration =
       Math.random() *
-        (window.fireworkSettings.maxDuration -
-          window.fireworkSettings.minDuration) +
+      (window.fireworkSettings.maxDuration -
+        window.fireworkSettings.minDuration) +
       window.fireworkSettings.minDuration;
 
     // Initial velocity components
@@ -695,9 +701,9 @@ window.createFireworkEffect = function (scoreElement) {
     const flickerCount =
       Math.floor(
         Math.random() *
-          (window.fireworkSettings.flickerMax -
-            window.fireworkSettings.flickerMin +
-            1),
+        (window.fireworkSettings.flickerMax -
+          window.fireworkSettings.flickerMin +
+          1),
       ) + window.fireworkSettings.flickerMin;
     const flickerTimes = Array(flickerCount)
       .fill()
@@ -835,7 +841,7 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
       const avgChange =
         playerHistory.changes.length > 0
           ? playerHistory.changes.reduce((sum, val) => sum + val, 0) /
-            playerHistory.changes.length
+          playerHistory.changes.length
           : change;
 
       // Calculate and apply animation
@@ -931,6 +937,56 @@ window.getGameStatus = async function () {
 
   // Update ball in play display
   window.updateBallInPlay(data);
+};
+
+window.scoreDeleteMode = false;
+
+window.toggleScoreDelete = function() {
+    
+  // switch (tabId) {
+  //   case "leader-board":
+
+  //     break;
+  //   case "tournament-board":
+  //     break;
+  //   default:
+  //     //Not supported!
+  //     return;
+  // }
+
+  window.scoreDeleteMode = !window.scoreDeleteMode;
+
+  var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
+  var deleteBtn = document.querySelector("#delete-scores-btn");
+  if(window.scoreDeleteMode){
+    deleteBtn.classList.add('danger');
+    //Switch to checkboxes
+    rows.forEach(function (row) {
+      var number = row.innerHTML;
+      row.innerHTML = '<input type="checkbox" name="'+number+'" />';
+    });
+  }else{
+    deleteBtn.classList.remove('danger');
+
+    var rowsToDelete = []
+    var checkboxes = document.querySelectorAll(".tab-content.active .score-row .rank checkbox");
+    checkboxes.forEach(function (checkbox) {
+      if(checkbox.checked){
+        rowsToDelete.push(checkbox.name);
+      }
+    });
+    if(rowsToDelete.length > 0){
+      alert(rowsToDelete.join(", "));
+    }
+
+
+    //Switch back to numbers
+    rows.forEach(function (row) {
+      var checkbox = row.children[0];
+      row.innerHTML = checkbox.name;
+    });
+  }
+
 };
 
 // Initial call
