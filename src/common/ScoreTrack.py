@@ -348,25 +348,6 @@ def update_leaderboard(new_entry):
     return True
 
 
-def remove_score_entry(initials, score, list="leaders"):
-    global top_scores
-    top_scores = [DataStore.read_record(list, i) for i in range(DataStore.memory_map["leaders"]["count"])]
-    # Look for record in top scores and wipe it
-    for entry in top_scores:
-        if entry["initials"] == initials and entry["score"] == score:
-            # Delete This!
-            top_scores.remove(entry)
-
-    # Sort and prune the list before saving again.
-    top_scores.sort(key=lambda x: x["score"], reverse=True)
-    count = DataStore.memory_map[list]["count"]
-    top_scores = top_scores[:count]
-    for i in range(count):
-        DataStore.write_record(list, top_scores[i], i)
-
-    return True
-
-
 def initialize_leaderboard():
     """power up init for leader board"""
     global top_scores

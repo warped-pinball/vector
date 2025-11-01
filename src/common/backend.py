@@ -466,7 +466,7 @@ def _scoreDelete(scores_to_delete, list="leaders"):
             print("*" * 20)
             remove_score_entry(initials=score["initials"], score=score["score"], list=list)
 
-    return remove_score_entry
+    return sanitized_scores_to_delete
 
 
 @add_route("/api/tournament")
