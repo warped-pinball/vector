@@ -138,6 +138,11 @@ window.updateLeaderboardArticles = function () {
  * updateTournamentArticles: 4 equally wide columns => Game, Rank, Initials, Score
  */
 window.updateTournamentArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var columns = [
     { header: "Game", key: "game" },
     { header: "Rank", key: "rank" },
@@ -180,6 +185,11 @@ window.updateTournamentArticles = function () {
  * Do nothing if no player is selected in our custom dropdown.
  */
 window.updatePersonalArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var container = document.getElementById("personalArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -351,6 +361,11 @@ window.startAutoRefreshForTab = function (tabId) {
  * showTab: Switch between tabs, refresh data, start auto-refresh on new tab.
  */
 window.showTab = function (tabId) {
+  //If we're in delete mode, don't switch tabs
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   // Hide all tab-content sections
   var tabs = document.querySelectorAll(".tab-content");
   tabs.forEach(function (tab) {
