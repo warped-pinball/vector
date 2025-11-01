@@ -382,6 +382,7 @@ def app_game_name(request):
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
     import SharedState
+
     if SharedState.gdata["GameInfo"]["System"] == "EM":
         return {"active_config": SharedState.gdata["GameInfo"]["GameName"]}
 
@@ -439,6 +440,33 @@ def get_scoreboard(key, sort_by="score", reverse=False):
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
     return get_scoreboard("leaders", reverse=True)
+
+
+@add_route("/api/leaders/delete")
+def app_leaderBoardDelete(request):
+    body = request.data
+    requested_to_delete = body["to_delete"]
+    scores_to_delete = dict()
+    for requested in requested_to_delete:
+        scores_to_delete[requested["score"]] = requested["initials"]
+
+    return _scoreDelete(scores_to_delete=scores_to_delete, list="leaders")
+
+
+def _scoreDelete(scores_to_delete, list="leaders"):
+    from ScoreTrack import remove_score_entry
+
+    scores = get_scoreboard(list, reverse=True)
+    sanitized_scores_to_delete = dict()
+    for score in scores:
+        if score["score"] in scores_to_delete and score["initials"] == scores_to_delete[score["score"]]:
+            sanitized_scores_to_delete[score["score"]] = score["initials"]
+            print("*" * 20)
+            print("DELETING " + str(score["score"]))
+            print("*" * 20)
+            remove_score_entry(initials=score["initials"], score=score["score"], list=list)
+
+    return remove_score_entry
 
 
 @add_route("/api/tournament")
@@ -989,7 +1017,7 @@ try:
     import em_routes  # noqa: F401
 except Exception as e:
     pass
-    #print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):

@@ -968,7 +968,7 @@ window.toggleScoreDelete = function () {
 
     var rowsToDelete = [];
     var checkboxes = document.querySelectorAll(
-      ".tab-content.active .score-row .rank checkbox",
+      ".tab-content.active .score-row .rank input",
     );
     checkboxes.forEach(function (checkbox) {
       if (checkbox.checked) {
