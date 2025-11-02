@@ -1,3 +1,41 @@
+//
+// Generic / Utility functions
+//
+
+async function confirm_auth_get(url, purpose, data = null) {
+  await confirmAction(purpose, async () => {
+    const response = await window.smartFetch(url, data, true);
+    if (response.status !== 200 && response.status !== 401) {
+      // 401 already alerted the user that their password was wrong
+      console.error(`Failed to ${purpose}:`, response.status);
+      alert(`Failed to ${purpose}.`);
+    }
+  });
+}
+
+async function confirmAction(message, callback, cancelCallback = null) {
+  const modal = await window.waitForElementById("confirm-modal");
+  const modalMessage = await window.waitForElementById("modal-message");
+  const confirmButton = await window.waitForElementById("modal-confirm-button");
+  const cancelButton = await window.waitForElementById("modal-cancel-button");
+
+  modalMessage.textContent = `Are you sure you want to ${message}?`;
+
+  confirmButton.onclick = () => {
+    modal.close();
+    callback();
+  };
+
+  cancelButton.onclick = () => {
+    modal.close();
+    if (cancelCallback) {
+      cancelCallback();
+    }
+  };
+
+  modal.showModal();
+}
+
 async function smartFetch(url, data = false, auth = true) {
   console.log({ url, data, auth });
   const headers = {

@@ -53,7 +53,9 @@ window.renderDataRow = function (item, columns, colClass) {
       if (fullName.trim() !== "") {
         value += " (" + fullName + ")";
       }
+      cellDiv.setAttribute("raw", initials);
     } else if (col.key === "score") {
+      cellDiv.setAttribute("raw", item[col.key]);
       value = window.formatScore(item[col.key]);
     } else {
       // For the rank column, we do not prepend "#"
@@ -91,6 +93,11 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
  * updateLeaderboardArticles: 5 columns => #, Score, Player, Ago, Date
  */
 window.updateLeaderboardArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var columns = [
     { header: "#", key: "rank" },
     { header: "Score", key: "score" },
@@ -133,6 +140,11 @@ window.updateLeaderboardArticles = function () {
  * updateTournamentArticles: 4 equally wide columns => Game, Rank, Initials, Score
  */
 window.updateTournamentArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var columns = [
     { header: "Game", key: "game" },
     { header: "Rank", key: "rank" },
@@ -175,6 +187,11 @@ window.updateTournamentArticles = function () {
  * Do nothing if no player is selected in our custom dropdown.
  */
 window.updatePersonalArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var container = document.getElementById("personalArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -346,6 +363,11 @@ window.startAutoRefreshForTab = function (tabId) {
  * showTab: Switch between tabs, refresh data, start auto-refresh on new tab.
  */
 window.showTab = function (tabId) {
+  //If we're in delete mode, don't switch tabs
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   // Hide all tab-content sections
   var tabs = document.querySelectorAll(".tab-content");
   tabs.forEach(function (tab) {
@@ -931,6 +953,63 @@ window.getGameStatus = async function () {
 
   // Update ball in play display
   window.updateBallInPlay(data);
+};
+
+window.scoreDeleteMode = false;
+
+window.toggleScoreDelete = function () {
+  // switch (tabId) {
+  //   case "leader-board":
+
+  //     break;
+  //   case "tournament-board":
+  //     break;
+  //   default:
+  //     //Not supported!
+  //     return;
+  // }
+
+  window.scoreDeleteMode = !window.scoreDeleteMode;
+
+  var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
+  var deleteBtn = document.querySelector("#delete-scores-btn");
+  if (window.scoreDeleteMode) {
+    deleteBtn.classList.add("danger");
+    //Switch to checkboxes
+    rows.forEach(function (row) {
+      var number = row.innerHTML;
+      row.innerHTML = '<input type="checkbox" name="' + number + '" />';
+    });
+  } else {
+    deleteBtn.classList.remove("danger");
+
+    var deleteData = {
+      to_delete: [],
+    };
+    var checkboxes = document.querySelectorAll(
+      ".tab-content.active .score-row .rank input:checked",
+    );
+    checkboxes.forEach(function (checkbox) {
+      var row = checkbox.parentElement.parentElement;
+      var player = row.querySelector(".player").getAttribute("raw");
+      var score = row.querySelector(".score").getAttribute("raw");
+      var intScore = parseInt(score);
+      deleteData["to_delete"].push({ initials: player, score: intScore });
+    });
+    if (deleteData["to_delete"].length > 0) {
+      confirm_auth_get(
+        "/api/leaders/delete",
+        "Delete Selected Scores?",
+        deleteData,
+      );
+    }
+
+    //Switch back to numbers
+    rows.forEach(function (row) {
+      var checkbox = row.children[0];
+      row.innerHTML = checkbox.name;
+    });
+  }
 };
 
 // Initial call
