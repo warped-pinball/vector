@@ -63,7 +63,8 @@ Create a `dev/config.json` file so the sync script can configure Wi‑Fi and gam
 }
 ```
 
-Optionally, if you create a `dev/config_{system}.json` (`wpc`,`sys11`,`em`), it will use that config instead. Useful if you find yourself flashing different machine system versions often.
+> [!TIP]
+> Optionally, if you create a `dev/config_{system}.json` (`wpc`,`sys11`,`em`), it will use that config instead. Useful if you find yourself flashing different machine system versions often.
 
 Save the file with your values before running `sync.py`.
 
