@@ -444,6 +444,9 @@ def remove_score_entry(initials, score, list="leaders"):
     for i in range(count):
         DataStore.write_record(list, top_scores[i], i)
 
+    # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
+    place_machine_scores()
+
     return True
 
 

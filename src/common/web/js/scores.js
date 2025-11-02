@@ -53,7 +53,9 @@ window.renderDataRow = function (item, columns, colClass) {
       if (fullName.trim() !== "") {
         value += " (" + fullName + ")";
       }
+      cellDiv.setAttribute("raw", initials);
     } else if (col.key === "score") {
+      cellDiv.setAttribute("raw", item[col.key]);
       value = window.formatScore(item[col.key]);
     } else {
       // For the rank column, we do not prepend "#"
@@ -981,17 +983,25 @@ window.toggleScoreDelete = function () {
   } else {
     deleteBtn.classList.remove("danger");
 
-    var rowsToDelete = [];
+    var deleteData = {
+      to_delete: [],
+    };
     var checkboxes = document.querySelectorAll(
-      ".tab-content.active .score-row .rank input",
+      ".tab-content.active .score-row .rank input:checked",
     );
     checkboxes.forEach(function (checkbox) {
-      if (checkbox.checked) {
-        rowsToDelete.push(checkbox.name);
-      }
+      var row = checkbox.parentElement.parentElement;
+      var player = row.querySelector(".player").getAttribute("raw");
+      var score = row.querySelector(".score").getAttribute("raw");
+      var intScore = parseInt(score);
+      deleteData["to_delete"].push({ initials: player, score: intScore });
     });
-    if (rowsToDelete.length > 0) {
-      alert(rowsToDelete.join(", "));
+    if (deleteData["to_delete"].length > 0) {
+      confirm_auth_get(
+        "/api/leaders/delete",
+        "Delete Selected Scores?",
+        deleteData,
+      );
     }
 
     //Switch back to numbers
