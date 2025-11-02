@@ -77,6 +77,11 @@ window.renderDataRow = function (item, columns, colClass) {
  * Clears the container and renders a header row followed by all data rows.
  */
 window.renderFullArticleList = function (containerId, data, columns, colClass) {
+  //Don't attempt to re-render the scores
+  if (window.scoreDeleteMode) {
+    return;
+  }
+
   var container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = ""; // Clear previous content
@@ -958,23 +963,13 @@ window.getGameStatus = async function () {
 window.scoreDeleteMode = false;
 
 window.toggleScoreDelete = function () {
-  // switch (tabId) {
-  //   case "leader-board":
-
-  //     break;
-  //   case "tournament-board":
-  //     break;
-  //   default:
-  //     //Not supported!
-  //     return;
-  // }
-
   window.scoreDeleteMode = !window.scoreDeleteMode;
 
   var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
   var deleteBtn = document.querySelector("#delete-scores-btn");
   if (window.scoreDeleteMode) {
     deleteBtn.classList.add("danger");
+    deleteBtn.innerHTML = "Delete Selected";
     //Switch to checkboxes
     rows.forEach(function (row) {
       var number = row.innerHTML;
@@ -982,6 +977,7 @@ window.toggleScoreDelete = function () {
     });
   } else {
     deleteBtn.classList.remove("danger");
+    deleteBtn.innerHTML = "Delete Scores";
 
     var deleteData = {
       to_delete: [],
