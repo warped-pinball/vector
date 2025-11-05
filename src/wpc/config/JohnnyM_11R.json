@@ -1,8 +1,9 @@
 {
     "GameInfo": {
-        "GameName": "Gilligan's Island",
+        "GameName": "Johnny Mnemonic",
         "System": "WPC",
-        "FileVer": 1
+        "FileVer": 1,
+        "Clock": "MM"
     },
     "Definition": {
         "version": 1
@@ -15,7 +16,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 950,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -35,52 +36,52 @@
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6233,
-        "ChecksumEndAdr": 7327,
-        "ChecksumResultAdr": 7328
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7160,
+        "ChecksumResultAdr": 7161
     },
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7268,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
+        "BytesInScore": 6,
+        "ScoreSpacing": 9,
         "InitialAdr": 7265,
-        "InitialSpacing": 8,
+        "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
+        "GrandChampScoreAdr": 7306,
+        "GrandChampInitAdr": 7303,
         "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301,
+        "GCChecksumStartAdr": 7303,
+        "GCChecksumEndAdr": 7311,
+        "GCChecksumResultAdr": 7312
     },
     "HSRewards": {
         "Type": 0,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
     "CoinDrop": {
         "Type": 0
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 141,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 6044,
-        "Playerup": 1039,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "Players": 5905,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }

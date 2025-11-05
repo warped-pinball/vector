@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Cirqus Voltaire",
+        "GameName": "Addams Family",
         "System": "WPC",
         "FileVer": 1
     },
@@ -24,37 +24,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7843,
-        "AddressS2": 7908,
-        "AddressS3": 7973,
-        "Length": 65,
-        "ChecksumStartAdr": 7843,
-        "ChecksumEndAdr": 8035,
-        "ChecksumResultAdr": 8036
+        "AddressS1": 7572,
+        "AddressS2": 7637,
+        "AddressS3": 7702,
+        "Length": 32,
+        "ChecksumStartAdr": 7572,
+        "ChecksumEndAdr": 7764,
+        "ChecksumResultAdr": 7765
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7192,
-        "ChecksumStartAdr": 7151,
-        "ChecksumEndAdr": 7450,
-        "ChecksumResultAdr": 7451
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7180,
+        "ChecksumResultAdr": 7181
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7558,
+        "ScoreAdr": 7288,
         "BytesInScore": 5,
         "ScoreSpacing": 8,
-        "InitialAdr": 7555,
+        "InitialAdr": 7285,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7592,
-        "GrandChampInitAdr": 7589,
-        "ChecksumStartAdr": 7555,
-        "ChecksumEndAdr": 7586,
-        "ChecksumResultAdr": 7587,
-        "GCChecksumStartAdr": 7589,
-        "GCChecksumEndAdr": 7596,
-        "GCChecksumResultAdr": 7597
+        "GrandChampScoreAdr": 7322,
+        "GrandChampInitAdr": 7319,
+        "ChecksumStartAdr": 7285,
+        "ChecksumEndAdr": 7316,
+        "ChecksumResultAdr": 7317,
+        "GCChecksumStartAdr": 7319,
+        "GCChecksumEndAdr": 7326,
+        "GCChecksumResultAdr": 7327
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 949,
-        "ScoreAdr": 5791,
-        "ScoreBytes": 6,
+        "Players": 6053,
+        "Playerup": 1039,
+        "ScoreAdr": 5934,
+        "ScoreBytes": 7,
         "ScoreSpacing": 6
     }
 }

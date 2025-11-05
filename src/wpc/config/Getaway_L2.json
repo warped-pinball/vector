@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Black Rose",
+        "GameName": "The Getaway: High Speed II",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 950,
+        "Address": 1037,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -24,37 +24,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7564,
-        "AddressS2": 7629,
-        "AddressS3": 7694,
+        "AddressS1": 7532,
+        "AddressS2": 7597,
+        "AddressS3": 7662,
         "Length": 32,
-        "ChecksumStartAdr": 7564,
-        "ChecksumEndAdr": 7756,
-        "ChecksumResultAdr": 7757
+        "ChecksumStartAdr": 7532,
+        "ChecksumEndAdr": 7724,
+        "ChecksumResultAdr": 7725
     },
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7172,
-        "ChecksumResultAdr": 7173
+        "ChecksumStartAdr": 6899,
+        "ChecksumEndAdr": 7140,
+        "ChecksumResultAdr": 7141
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7280,
+        "ScoreAdr": 7248,
         "BytesInScore": 5,
         "ScoreSpacing": 8,
-        "InitialAdr": 7277,
+        "InitialAdr": 7245,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7314,
-        "GrandChampInitAdr": 7311,
-        "ChecksumStartAdr": 7277,
-        "ChecksumEndAdr": 7308,
-        "ChecksumResultAdr": 7309,
-        "GCChecksumStartAdr": 7311,
-        "GCChecksumEndAdr": 7318,
-        "GCChecksumResultAdr": 7319
+        "GrandChampScoreAdr": 7282,
+        "GrandChampInitAdr": 7279,
+        "ChecksumStartAdr": 7245,
+        "ChecksumEndAdr": 7276,
+        "ChecksumResultAdr": 7277,
+        "GCChecksumStartAdr": 7279,
+        "GCChecksumEndAdr": 7286,
+        "GCChecksumResultAdr": 7287
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 152,
         "GameActiveValue": 0,
-        "Players": 6045,
-        "Playerup": 1039,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
+        "Players": 6052,
+        "Playerup": 1036,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 5,
         "ScoreSpacing": 6
     }
 }
