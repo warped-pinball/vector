@@ -285,7 +285,7 @@ jobs:
             const bodyLines = [
               marker,
               '',
-              'Download the raw update files generated for this pull request:',
+              'Developer build links:',
               ...rawLinks.map(link => `- [${link.name}](${link.url})`),
             ];
 
