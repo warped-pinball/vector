@@ -442,7 +442,7 @@ def app_leaderBoardRead(request):
     return get_scoreboard("leaders", reverse=True)
 
 
-@add_route("/api/leaders/delete")
+@add_route("/api/leaders/delete", auth=True)
 def app_leaderBoardDelete(request):
     body = request.data
     requested_to_delete = body["to_delete"]

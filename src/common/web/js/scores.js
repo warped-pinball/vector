@@ -78,7 +78,7 @@ window.renderDataRow = function (item, columns, colClass) {
  */
 window.renderFullArticleList = function (containerId, data, columns, colClass) {
   //Don't attempt to re-render the scores
-  if (window.scoreDeleteMode) {
+  if (window.scoreEditMode) {
     return;
   }
 
@@ -99,7 +99,7 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
  */
 window.updateLeaderboardArticles = function () {
   //If we're in delete mode, don't refresh the board!!!!
-  if (window.scoreDeleteMode) {
+  if (window.scoreEditMode) {
     return;
   }
 
@@ -146,7 +146,7 @@ window.updateLeaderboardArticles = function () {
  */
 window.updateTournamentArticles = function () {
   //If we're in delete mode, don't refresh the board!!!!
-  if (window.scoreDeleteMode) {
+  if (window.scoreEditMode) {
     return;
   }
 
@@ -193,7 +193,7 @@ window.updateTournamentArticles = function () {
  */
 window.updatePersonalArticles = function () {
   //If we're in delete mode, don't refresh the board!!!!
-  if (window.scoreDeleteMode) {
+  if (window.scoreEditMode) {
     return;
   }
 
@@ -369,7 +369,7 @@ window.startAutoRefreshForTab = function (tabId) {
  */
 window.showTab = function (tabId) {
   //If we're in delete mode, don't switch tabs
-  if (window.scoreDeleteMode) {
+  if (window.scoreEditMode) {
     return;
   }
 
@@ -960,31 +960,45 @@ window.getGameStatus = async function () {
   window.updateBallInPlay(data);
 };
 
-window.scoreDeleteMode = false;
+window.scoreEditMode = false;
 
-window.toggleScoreDelete = function () {
-  window.scoreDeleteMode = !window.scoreDeleteMode;
+window.toggleScoreDelete = function (forcedMode) {
+  if (forcedMode != undefined) {
+    window.scoreEditMode = forcedMode;
+  } else {
+    window.scoreEditMode = !window.scoreEditMode;
+  }
 
+  var header = document.querySelector(".tab-content.active .header-row .rank");
   var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
-  var deleteBtn = document.querySelector("#delete-scores-btn");
-  if (window.scoreDeleteMode) {
-    deleteBtn.classList.add("danger");
-    deleteBtn.innerHTML = "Delete Selected";
+  var editBtn = document.querySelector("#edit-scores-btn");
+  var importBtn = document.querySelector("#edit-scores-import-btn");
+  var cancelBtn = document.querySelector("#edit-scores-cancel-btn");
+  if (window.scoreEditMode) {
+    editBtn.classList.add("danger");
+    editBtn.innerHTML = "Delete Selected";
+    importBtn.classList.remove("hide");
+    cancelBtn.classList.remove("hide");
     //Switch to checkboxes
+    header.innerHTML = "Del";
     rows.forEach(function (row) {
       var number = row.innerHTML;
       row.innerHTML = '<input type="checkbox" name="' + number + '" />';
     });
   } else {
-    deleteBtn.classList.remove("danger");
-    deleteBtn.innerHTML = "Delete Scores";
+    editBtn.classList.remove("danger");
+    editBtn.innerHTML = "Edit Scores";
+    importBtn.classList.add("hide");
+    cancelBtn.classList.add("hide");
 
     var deleteData = {
       to_delete: [],
     };
+    //Switch back to ranks, if any selected, send delete api request.
     var checkboxes = document.querySelectorAll(
       ".tab-content.active .score-row .rank input:checked",
     );
+    header.innerHTML = "#";
     checkboxes.forEach(function (checkbox) {
       var row = checkbox.parentElement.parentElement;
       var player = row.querySelector(".player").getAttribute("raw");
