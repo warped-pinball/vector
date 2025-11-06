@@ -249,44 +249,63 @@ jobs:
             try {
               rawLinks = JSON.parse(process.env.RAW_LINKS_JSON || '[]');
             } catch (error) {
-              core.warning('Failed to parse raw links JSON. Falling back to artifact downloads.');
+              core.warning('Failed to parse raw links JSON.');
             }
 
-            const artifactLinks = [
-              { name: 'Sys11', url: '${{ steps.upload_sys11.outputs.artifact-url }}' },
-              { name: 'WPC', url: '${{ steps.upload_wpc.outputs.artifact-url }}' },
-              { name: 'EM', url: '${{ steps.upload_em.outputs.artifact-url }}' }
-            ].filter(link => link.url);
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const marker = '<!-- pr-update-artifacts -->';
 
-            if (rawLinks.length === 0 && artifactLinks.length === 0) {
-              console.log('No artifacts available to comment about.');
+            async function findExistingComment() {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+              });
+
+              return comments.find(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+            }
+
+            const existingComment = await findExistingComment();
+
+            if (rawLinks.length === 0) {
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                });
+              } else {
+                console.log('No raw artifact links available to publish.');
+              }
               return;
             }
 
-            const sections = [];
+            const bodyLines = [
+              marker,
+              '',
+              'Download the raw update files generated for this pull request:',
+              ...rawLinks.map(link => `- [${link.name}](${link.url})`),
+            ];
 
-            if (rawLinks.length) {
-              sections.push([
-                'Download the raw update files generated for this pull request:',
-                ...rawLinks.map(link => `- [${link.name}](${link.url})`),
-              ].join('\n'));
+            const body = bodyLines.join('\n');
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number,
+                owner,
+                repo,
+                body,
+              });
             }
-
-            if (artifactLinks.length) {
-              sections.push([
-                rawLinks.length
-                  ? 'If you need the zipped workflow artifacts, use the links below:'
-                  : 'Download the workflow artifacts generated for this pull request:',
-                ...artifactLinks.map(link => `- [${link.name}](${link.url})`),
-              ].join('\n'));
-            }
-
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: sections.join('\n\n')
-            });
 
       - name: Prepare release body
         if: ${{ env.SHOULD_RELEASE == 'true' }}
