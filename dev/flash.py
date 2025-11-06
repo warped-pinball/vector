@@ -215,7 +215,16 @@ def main():
 
     wipe_config_data(pico_port)
 
-    apply_local_config_to_pico(pico_port)
+    # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
+    config_file = "dev/config.json"
+    if args.build_dir == "build/sys11" and os.path.isfile("dev/config_sys11.json"):
+        config_file = "dev/config_sys11.json"
+    elif args.build_dir == "build/wpc" and os.path.isfile("dev/config_wpc.json"):
+        config_file = "dev/config_wpc.json"
+    elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
+        config_file = "dev/config_em.json"
+
+    apply_local_config_to_pico(pico_port, config_file=config_file)
 
     write_test_data(pico_port)
 
