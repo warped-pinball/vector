@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -35,10 +36,16 @@ jobs:
           EM_BASE=$(grep SystemVersion src/em/systemConfig.py | awk -F '"' '{print $2}')
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             SUFFIX="-dev${{ github.event.pull_request.number }}"
+            SHOULD_SIGN="false"
+            SHOULD_RELEASE="false"
           elif [ "${{ github.event_name }}" = "push" ]; then
             SUFFIX="-beta${{ github.run_number }}"
+            SHOULD_SIGN="true"
+            SHOULD_RELEASE="true"
           else
             SUFFIX=""
+            SHOULD_SIGN="true"
+            SHOULD_RELEASE="true"
           fi
           VERSION="$BASE_VERSION$SUFFIX"
           SYS11_VERSION="$SYS11_BASE$SUFFIX"
@@ -49,6 +56,8 @@ jobs:
           echo "SYS11_VERSION=$SYS11_VERSION" >> $GITHUB_ENV
           echo "WPC_VERSION=$WPC_VERSION" >> $GITHUB_ENV
           echo "EM_VERSION=$EM_VERSION" >> $GITHUB_ENV
+          echo "SHOULD_SIGN=$SHOULD_SIGN" >> $GITHUB_ENV
+          echo "SHOULD_RELEASE=$SHOULD_RELEASE" >> $GITHUB_ENV
 
       - name: Update version files
         run: |
@@ -67,7 +76,7 @@ jobs:
               output_file="update.json"
             fi
             VERSION_TO_USE=$(eval echo \$$version_var)
-            if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
+            if [ "${{ env.SHOULD_SIGN }}" = "true" ] && [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
               echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
               python dev/build_update.py \
                 --build-dir build \
@@ -85,7 +94,64 @@ jobs:
             fi
           done
 
+      - name: Upload Sys11 update artifact
+        if: ${{ github.event_name == 'pull_request' }}
+        id: upload_sys11
+        uses: actions/upload-artifact@v4
+        with:
+          name: sys11-update.json
+          path: update.json
+          artifact-content-type: raw
+
+      - name: Upload WPC update artifact
+        if: ${{ github.event_name == 'pull_request' }}
+        id: upload_wpc
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpc-update.json
+          path: update_wpc.json
+          artifact-content-type: raw
+
+      - name: Upload EM update artifact
+        if: ${{ github.event_name == 'pull_request' }}
+        id: upload_em
+        uses: actions/upload-artifact@v4
+        with:
+          name: em-update.json
+          path: update_em.json
+          artifact-content-type: raw
+
+      - name: Comment with update artifact links
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const links = [
+              { name: 'Sys11', url: '${{ steps.upload_sys11.outputs.artifact-url }}' },
+              { name: 'WPC', url: '${{ steps.upload_wpc.outputs.artifact-url }}' },
+              { name: 'EM', url: '${{ steps.upload_em.outputs.artifact-url }}' }
+            ].filter(link => link.url);
+
+            if (links.length === 0) {
+              core.info('No artifacts available to comment about.');
+              return;
+            }
+
+            const bodyLines = [
+              'Download the raw update files generated for this pull request:',
+              ...links.map(link => `- [${link.name}](${link.url})`)
+            ];
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: bodyLines.join('\n')
+            });
+
       - name: Prepare release body
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         id: prepare_body
         run: |
           VERSION_SECTION='## Versions
@@ -118,6 +184,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create or update GitHub Release
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
