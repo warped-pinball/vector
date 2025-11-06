@@ -126,7 +126,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const core = require('@actions/core');
             const links = [
               { name: 'Sys11', url: '${{ steps.upload_sys11.outputs.artifact-url }}' },
               { name: 'WPC', url: '${{ steps.upload_wpc.outputs.artifact-url }}' },
@@ -134,7 +133,7 @@ jobs:
             ].filter(link => link.url);
 
             if (links.length === 0) {
-              core.info('No artifacts available to comment about.');
+              console.log('No artifacts available to comment about.');
               return;
             }
 
