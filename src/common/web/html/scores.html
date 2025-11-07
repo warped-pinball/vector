@@ -483,17 +483,18 @@
   </section>
 </div>
 
-<button id="edit-scores-btn" onclick="window.toggleScoreDelete()">
-  Edit Scores
-</button>
-<button id="edit-scores-cancel-btn" class="hide">Import Scores</button>
-<button
-  id="edit-scores-cancel-btn"
-  class="hide"
-  onclick="window.toggleScoreDelete(false)"
->
-  Cancel
-</button>
+<article class="hide" id="edit-btns">
+  <button id="edit-scores-btn" onclick="window.toggleScoreDelete()">
+    Edit Scores
+  </button>
+  <button
+    id="edit-scores-cancel-btn"
+    class="hide"
+    onclick="window.toggleScoreDelete(false)"
+  >
+    Cancel
+  </button>
+</article>
 
 <div id="claimable-scores" class="hide score-claim"></div>
 <dialog id="score-claim-modal">

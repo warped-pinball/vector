@@ -275,7 +275,13 @@
       </div>
       <div>
         <p>Apply the latest update to your Vector</p>
-        <p id="release-notes"></p>
+        <button
+          id="release-toggle-button"
+          class="button hide"
+          onclick="window.toggleReleaseNotes()"
+        >
+          Show Changelog
+        </button>
         <a id="release-link" target="_blank" rel="noopener noreferrer"></a>
       </div>
     </div>
@@ -283,7 +289,14 @@
   <section>
     <div class="grid">
       <div>
-        <button id="update-button" onclick="window.customUpdate()">
+        <article class="hide" id="release-notes"></article>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="grid">
+      <div>
+        <button id="update-developer-button" onclick="window.customUpdate()">
           Upload Developer Build
         </button>
       </div>
@@ -296,7 +309,7 @@
     </div>
   </section>
   <section>
-    <h3>Export Data</h3>
+    <h3>Export / Import Data</h3>
     <div class="grid">
       <div>
         <button onclick="window.downloadScores()">Export Scores</button>
@@ -305,6 +318,20 @@
         <p>
           Export all scores from the Leaderboard and Tournament Board as an
           update file
+        </p>
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <input type="file" id="input_scores" />
+        <button id="input_scores_btn" onclick="window.importScores()">
+          Import Scores
+        </button>
+      </div>
+      <div>
+        <p>
+          Import all scores from the Leaderboard and Tournament Board from file
+          generated above
         </p>
       </div>
     </div>

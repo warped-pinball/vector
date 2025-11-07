@@ -92,6 +92,10 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
     var row = window.renderDataRow(item, columns, colClass);
     container.appendChild(row);
   });
+
+  //Don't show edit buttons until at least rendering the scores
+  btnSection = document.querySelector("#edit-btns");
+  btnSection.classList.remove("hide");
 };
 
 /*
@@ -972,12 +976,10 @@ window.toggleScoreDelete = function (forcedMode) {
   var header = document.querySelector(".tab-content.active .header-row .rank");
   var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
   var editBtn = document.querySelector("#edit-scores-btn");
-  var importBtn = document.querySelector("#edit-scores-import-btn");
   var cancelBtn = document.querySelector("#edit-scores-cancel-btn");
   if (window.scoreEditMode) {
     editBtn.classList.add("danger");
     editBtn.innerHTML = "Delete Selected";
-    importBtn.classList.remove("hide");
     cancelBtn.classList.remove("hide");
     //Switch to checkboxes
     header.innerHTML = "Del";
@@ -988,7 +990,6 @@ window.toggleScoreDelete = function (forcedMode) {
   } else {
     editBtn.classList.remove("danger");
     editBtn.innerHTML = "Edit Scores";
-    importBtn.classList.add("hide");
     cancelBtn.classList.add("hide");
 
     var deleteData = {
@@ -1009,7 +1010,7 @@ window.toggleScoreDelete = function (forcedMode) {
     if (deleteData["to_delete"].length > 0) {
       confirm_auth_get(
         "/api/leaders/delete",
-        "Delete Selected Scores?",
+        "Delete Selected Scores",
         deleteData,
       );
     }

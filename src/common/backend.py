@@ -461,13 +461,7 @@ def _scoreDelete(scores_to_delete, list="leaders"):
     for score in scores:
         if score["score"] in scores_to_delete and score["initials"] == scores_to_delete[score["score"]]:
             sanitized_scores_to_delete[score["score"]] = score["initials"]
-            print("*" * 20)
-            print("*" * 20)
-            print("DELETING " + str(score["score"]))
-            print("-" * 20)
             remove_score_entry(initials=score["initials"], score=score["score"], list=list)
-            print("*" * 20)
-            print("*" * 20)
 
     return sanitized_scores_to_delete
 
@@ -870,6 +864,14 @@ def app_export_leaderboard(request):
     from FileIO import download_scores
 
     return download_scores()
+
+
+@add_route("/api/import/scores")
+def app_import_leaderboard(request):
+    from FileIO import import_scores
+
+    data = request.data
+    return {"success": import_scores(data)}
 
 
 @add_route("/api/memory-snapshot")

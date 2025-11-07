@@ -3,13 +3,14 @@
 //
 
 async function confirm_auth_get(url, purpose, data = null) {
-  await confirmAction(purpose, async () => {
+  return await confirmAction(purpose, async () => {
     const response = await window.smartFetch(url, data, true);
     if (response.status !== 200 && response.status !== 401) {
       // 401 already alerted the user that their password was wrong
       console.error(`Failed to ${purpose}:`, response.status);
       alert(`Failed to ${purpose}.`);
     }
+    return response;
   });
 }
 
@@ -23,13 +24,13 @@ async function confirmAction(message, callback, cancelCallback = null) {
 
   confirmButton.onclick = () => {
     modal.close();
-    callback();
+    return callback();
   };
 
   cancelButton.onclick = () => {
     modal.close();
     if (cancelCallback) {
-      cancelCallback();
+      return cancelCallback();
     }
   };
 

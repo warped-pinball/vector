@@ -348,6 +348,20 @@ def update_leaderboard(new_entry):
     return True
 
 
+def bulk_import_scores(scores, list="leaders"):
+    # Merge imported data into respective leaderboards using existing logic.
+    for score in scores:
+        if score["score"] == 0:
+            continue
+        if list == "leaders":
+            update_leaderboard(score)
+        if list == "tournament":
+            update_tournament(score)
+
+    # Update the machine's top scores
+    place_machine_scores()
+
+
 def remove_score_entry(initials, score, list="leaders"):
     global top_scores
     top_scores = [DataStore.read_record(list, i) for i in range(DataStore.memory_map[list]["count"])]
@@ -355,6 +369,7 @@ def remove_score_entry(initials, score, list="leaders"):
     for entry in top_scores:
         if entry["initials"] == initials and entry["score"] == score:
             # Delete This!
+            log.log(f"SCORE: Deleting from '{list}' {entry}")
             entry["initials"] = ""
             entry["date"] = ""
             entry["full_name"] = ""
