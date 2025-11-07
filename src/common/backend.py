@@ -843,7 +843,7 @@ def app_export_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
-    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
     for value in ram_access:
         yield f"{value}\n".encode("utf-8")
 
