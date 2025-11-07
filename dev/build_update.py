@@ -20,6 +20,8 @@ hardware_configs = {
     "sys11": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.24.1", "1.23.0-preview"]},
     "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0", "1.26.0-preview"]},
     "em": {"supported_hardware": ["EM"], "micropython_versions": ["1.26.0-preview"]},
+    "data_east": {},
+    "whitestar": {},
 }
 
 
@@ -222,7 +224,7 @@ def main():
     parser.add_argument(
         "--target_hardware",
         default="sys11",
-        help="Target system for the update (e.g., sys11, wpc, em, etc.)",
+        help="Target system for the update (e.g., data_east, sys11, whitestar, wpc, em, etc.)",
     )
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
     args = parser.parse_args()
