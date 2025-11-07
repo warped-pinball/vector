@@ -191,6 +191,7 @@ def redirect(url, status=301):
 def update_time(retry=1):
     attempt = 0
     print("Server: Date Update")
+    return
     while attempt <= retry:
         try:
             ntptime.settime()  # This updates the RTC based on NTP server time
