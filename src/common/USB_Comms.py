@@ -1,32 +1,54 @@
-'''
+"""
     serial data via USB handler
-    
+
     IRQ for incoming data
     call handler from system scheduler
-    to send data - just print!    
+    to send data - just print!
 
-'''
-import machine
+"""
+import io
 import sys
-import uselect
+
+import machine
 import SharedState as S
+import uselect
+from phew.server import _handle_request as server_handle_request
 
-
-incoming_data = [] #complete lines only
-buffer = ""  #partial input line
+incoming_data = []  # complete lines only
+buffer = ""  # partial input line
 poller = uselect.poll()
 poller.register(sys.stdin, uselect.POLLIN)
 
+
+def usb_request_handler():
+    # api/url/route|headers|data
+    while poller.poll(0):
+        request = sys.stdin.readline(1000).strip()
+        route_url, headers, data = request.split("|", 2)
+        print(f"USB REQ: URL: {route_url} HEADERS: {headers} DATA: {data}")
+
+        # build a reader / writer pair to feed to the server handler
+        request_line = f"GET {route_url} USB"
+        reader = "\r\n\r\n".join([request_line.encode(), headers.encode(), data.encode()])
+
+        # make reader into a stream
+        reader_stream = io.BytesIO(reader.encode())
+        writer = sys.stdout
+
+        # call the server handler
+        server_handle_request(reader_stream, writer)
+
+
 def usb_data_handler(timer):
-    '''IRQ driven,  gets bytes from usb serial port
-        stash in global for main line to pick up
-    '''
+    """IRQ driven,  gets bytes from usb serial port
+    stash in global for main line to pick up
+    """
     global buffer, incoming_data
-    #print(" P ",end="")
+    # print(" P ",end="")
     loop_count = 0
     while poller.poll(0) and loop_count < 100:
         data = sys.stdin.read(1)
-        if data in ('\n', '\r'):
+        if data in ("\n", "\r"):
             if buffer:  # if buffer is not empty and string has been terminated by \n or \r
                 print(f"Data received at vector: {buffer}")
                 incoming_data.append(buffer)
@@ -39,23 +61,23 @@ def usb_data_handler(timer):
 
 
 def usb_data_process():
-    '''processes the data from the usb serial port
-        call on a schedule 
-    '''        
+    """processes the data from the usb serial port
+    call on a schedule
+    """
     global incoming_data
-    #print("USB")   
-    loop_count=0     
-    while incoming_data and loop_count<10:
+    # print("USB")
+    loop_count = 0
+    while incoming_data and loop_count < 10:
         loop_count += 1
-        in_buffer = incoming_data.pop(0)  #pops a complete string from the list        
+        in_buffer = incoming_data.pop(0)  # pops a complete string from the list
 
-        #initals and name coming in?
+        # initals and name coming in?
         search_str = "VECTOR: I: "
         index = in_buffer.find(search_str)
         if index != -1 and index + len(search_str) < len(in_buffer):
             start_index = index + len(search_str)
-            S.zoom_incoming_intials = in_buffer[start_index:start_index + 3].strip()
-        
+            S.zoom_incoming_intials = in_buffer[start_index : start_index + 3].strip()
+
             # NAME coming in?
             name_search_str = "N:"
             name_index = in_buffer.find(name_search_str)
@@ -63,29 +85,30 @@ def usb_data_process():
                 name_start_index = name_index + len(name_search_str)
                 S.zoom_incomming_name = in_buffer[name_start_index:].strip()
 
-
-            #finish intial clean up
+            # finish intial clean up
             S.zoom_incoming_intials = S.zoom_incoming_intials.upper()
             i_intials = ""
             for c in S.zoom_incoming_intials:
-                if 'A' <= c <= 'Z':
+                if "A" <= c <= "Z":
                     i_intials += c
             S.zoom_incoming_intials = (i_intials + "   ")[:3]
 
             print(f"USB: initials received: {S.zoom_incoming_intials}")
             print(f"USB: name received: {S.zoom_incomming_name}")
 
-    
 
 # Set up a timer to call usb_data_handler every 100ms
 usb_timer = machine.Timer(-1)
 usb_timer.init(period=100, mode=machine.Timer.PERIODIC, callback=usb_data_handler)
 
 
-import GameStatus
-import json
-def send_game_status():
-    gs = GameStatus.game_report()
-    #gs['zoom_initials'] = S.zoom_initials  
-    gs_json = json.dumps(gs)
-    print(f"ZOOM: GAME: {gs_json}")
+# import json
+
+# import GameStatus
+
+
+# def send_game_status():
+#     gs = GameStatus.game_report()
+#     # gs['zoom_initials'] = S.zoom_initials
+#     gs_json = json.dumps(gs)
+#     print(f"ZOOM: GAME: {gs_json}")
