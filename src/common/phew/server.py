@@ -12,12 +12,12 @@ from ScoreTrack import (
 )
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
-#from SPI_UpdateStore import initialize as sflash_initialize
-#from SPI_UpdateStore import tick as sflash_tick
-from USB_Comms import send_game_status
-
 
 from . import logging
+
+# from SPI_UpdateStore import initialize as sflash_initialize
+# from SPI_UpdateStore import tick as sflash_tick
+
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
@@ -284,6 +284,7 @@ def create_schedule(ap_mode: bool = False):
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
+    from USB_Comms import send_game_status, usb_request_handler
 
     #
     # one time tasks
@@ -300,19 +301,17 @@ def create_schedule(ap_mode: bool = False):
     # print out memory usage
     schedule(resource_go, 5000, 10000)
 
-
     #
     # reoccuring tasks
     #
 
     schedule(send_game_status, 14000, 1000)
-
+    schedule(usb_request_handler, 1000, 1000)
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)
-
 
     # only if there are no hardware faults
     if not faults.fault_is_raised(faults.ALL_HDWR):
