@@ -282,12 +282,19 @@ jobs:
               return;
             }
 
-            const bodyLines = [
-              marker,
-              '',
-              'Developer build links:',
-              ...rawLinks.map(link => `- [${link.name}](${link.url})`),
-            ];
+            const bodyLines = [marker, '', 'Developer build links:'];
+
+            for (const link of rawLinks) {
+              bodyLines.push(`**${link.name}**`);
+              bodyLines.push('```text');
+              bodyLines.push(link.url);
+              bodyLines.push('```');
+              bodyLines.push('');
+            }
+
+            if (bodyLines[bodyLines.length - 1] === '') {
+              bodyLines.pop();
+            }
 
             const body = bodyLines.join('\n');
 
