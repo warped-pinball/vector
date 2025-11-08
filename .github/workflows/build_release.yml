@@ -286,7 +286,7 @@ jobs:
 
             for (const link of rawLinks) {
               bodyLines.push(`**${link.name}**`);
-              bodyLines.push('```');
+              bodyLines.push('```text');
               bodyLines.push(link.url);
               bodyLines.push('```');
               bodyLines.push('');
