@@ -571,7 +571,7 @@ if (typeof window !== "undefined") {
   }
 
   async function applyUpdate(url, skip_signature_check = false) {
-    req_data = { url: url, skip_signature_check: skip_signature_check };
+    const req_data = { url: url, skip_signature_check: skip_signature_check };
     const response = await window.smartFetch(
       "/api/update/apply",
       req_data,
