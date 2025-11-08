@@ -82,7 +82,7 @@ def game_report():
         else:
             gameActive = True
             ball = _get_ball_in_play()
-            endHoldTimer=0
+            endHoldTimer = 0
 
         data["GameActive"] = gameActive
         data["BallInPlay"] = ball
