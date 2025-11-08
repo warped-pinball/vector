@@ -570,8 +570,8 @@ if (typeof window !== "undefined") {
     }
   }
 
-  async function applyUpdate(url) {
-    req_data = { url: url };
+  async function applyUpdate(url, skip_signature_check = false) {
+    req_data = { url: url, skip_signature_check: skip_signature_check };
     const response = await window.smartFetch(
       "/api/update/apply",
       req_data,
@@ -652,7 +652,7 @@ if (typeof window !== "undefined") {
     }
     // confirm url
     await confirmAction("update with file at " + url, async () => {
-      await window.applyUpdate(url);
+      await window.applyUpdate(url, (skip_signature_check = true));
     });
   };
 }
