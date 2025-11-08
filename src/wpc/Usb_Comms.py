@@ -64,7 +64,7 @@ def usb_data_process():
                 S.zoom_incomming_name = in_buffer[name_start_index:].strip()
 
 
-            #finish intial clean up
+            #finish initial clean up
             S.zoom_incoming_intials = S.zoom_incoming_intials.upper()
             i_intials = ""
             for c in S.zoom_incoming_intials:
