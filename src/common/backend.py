@@ -382,6 +382,7 @@ def app_game_name(request):
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
     import SharedState
+
     if SharedState.gdata["GameInfo"]["System"] == "EM":
         return {"active_config": SharedState.gdata["GameInfo"]["GameName"]}
 
@@ -882,7 +883,7 @@ def app_apply_update(request):
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
     try:
-        for response in apply_update(data["url"]):
+        for response in apply_update(data["url"], skip_signature_check=data.get("skip_signature_check", False)):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
@@ -987,9 +988,9 @@ def connect_to_wifi(initialize=False):
 try:
     # This import must be after the add_route function is defined at minimum
     import em_routes  # noqa: F401
-except Exception as e:
+except Exception:
     pass
-    #print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):
