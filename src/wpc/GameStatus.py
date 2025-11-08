@@ -104,7 +104,7 @@ def game_report():
 
         data["PlayerUp"] = _get_player_up()
 
-        count=(count+1)%20
+        count = (count + 1) % 20
         if count == 0:
             from ScoreTrack import top_scores
             data["Leaders"] = top_scores
