@@ -13,7 +13,7 @@ from ScoreTrack import (
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
 
-from USB_Comms import send_game_status
+from Usb_Comms import send_game_status
 
 from . import logging
 
