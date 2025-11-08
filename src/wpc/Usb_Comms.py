@@ -49,12 +49,12 @@ def usb_data_process():
         loop_count += 1
         in_buffer = incoming_data.pop(0)  #pops a complete string from the list        
 
-        #initals and name coming in?
+        #initials and name coming in?
         search_str = "VECTOR: I: "
         index = in_buffer.find(search_str)
         if index != -1 and index + len(search_str) < len(in_buffer):
             start_index = index + len(search_str)
-            S.zoom_incoming_intials = in_buffer[start_index:start_index + 3].strip()
+            S.zoom_incoming_initials = in_buffer[start_index:start_index + 3].strip()
         
             # NAME coming in?
             name_search_str = "N:"
@@ -64,15 +64,15 @@ def usb_data_process():
                 S.zoom_incomming_name = in_buffer[name_start_index:].strip()
 
 
-            #finish intial clean up
-            S.zoom_incoming_intials = S.zoom_incoming_intials.upper()
-            i_intials = ""
-            for c in S.zoom_incoming_intials:
+            #finish initial clean up
+            S.zoom_incoming_initials = S.zoom_incoming_initials.upper()
+            i_initials = ""
+            for c in S.zoom_incoming_initials:
                 if 'A' <= c <= 'Z':
-                    i_intials += c
-            S.zoom_incoming_intials = (i_intials + "   ")[:3]
+                    i_initials += c
+            S.zoom_incoming_initials = (i_initials + "   ")[:3]
 
-            print(f"USB: initials received: {S.zoom_incoming_intials}")
+            print(f"USB: initials received: {S.zoom_incoming_initials}")
             print(f"USB: name received: {S.zoom_incomming_name}")
 
     
