@@ -65,23 +65,22 @@ def _get_ball_in_play():
     return 0
 
 
-endHoldTimer = 0
-ball =0
-gameActive=False
+endHoldTimer = 0  #1/4 second timer for hold score after game end
+gameActive = False
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global endHoldTimer,ball,gameActive
+    global endHoldTimer, ball, gameActive
     data = {}
 
-    try:    
-        if _get_ball_in_play() == 0:    
-            if (endHoldTimer > 68 ):
+    try:
+        # read ball once and use the value in the conditional
+        ball = _get_ball_in_play()
+        if ball == 0:
+            if endHoldTimer > 68:    # 1/4 second call rate - 68/4 = 17 second hold time
                 gameActive = False
-                ball = 0
         else:
             gameActive = True
-            ball = _get_ball_in_play()
             endHoldTimer = 0
 
         data["GameActive"] = gameActive
