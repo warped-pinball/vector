@@ -64,21 +64,28 @@ def _get_ball_in_play():
         log.log(f"GSTAT: error in get_ball_in_play: {e}")
     return 0
 
+
 endHoldTimer = 0
+ball =0
+gameActive=False
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global endHoldTimer
+    global endHoldTimer,ball,gameActive
     data = {}
-    try:
-        data["BallInPlay"] = _get_ball_in_play()
 
-        if data["BallInPlay"] == 0:           
-            if (endHoldTimer> 48 ):
-                data["GameActive"] = False
+    try:    
+        if _get_ball_in_play() == 0:    
+            if (endHoldTimer > 68 ):
+                gameActive = False
+                ball = 0
         else:
-            data["GameActive"] = True
+            gameActive = True
+            ball = _get_ball_in_play()
             endHoldTimer=0
+
+        data["GameActive"] = gameActive
+        data["BallInPlay"] = ball
 
         data["Scores"] = [
             _get_machine_score(0),
@@ -108,7 +115,7 @@ def game_report():
 def poll_fast():
     global  endHoldTimer
     endHoldTimer = endHoldTimer +1
-    
+
     """Poll for game start and end time."""
     ps = S.game_status["poll_state"]
     if ps == 0:
