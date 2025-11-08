@@ -651,8 +651,12 @@ if (typeof window !== "undefined") {
       return;
     }
     // confirm url
-    await confirmAction("update with file at " + url, async () => {
-      await window.applyUpdate(url, true);
-    });
+    await confirmAction(
+      "Do you trust the source of and want to apply the update file at the url: " +
+        url,
+      async () => {
+        await window.applyUpdate(url, true);
+      },
+    );
   };
 }
