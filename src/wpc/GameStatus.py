@@ -71,7 +71,7 @@ def _get_player_up():
         if S.gdata.get("InPlay", {}).get("PlayerUp", 0) != 0:
             adr = S.gdata["InPlay"]["PlayerUp"] 
             player = shadowRam[adr]
-        return player
+            return player
     except:
         pass
     return 0
