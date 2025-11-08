@@ -652,7 +652,7 @@ if (typeof window !== "undefined") {
     }
     // confirm url
     await confirmAction("update with file at " + url, async () => {
-      await window.applyUpdate(url, (skip_signature_check = true));
+      await window.applyUpdate(url, true);
     });
   };
 }
