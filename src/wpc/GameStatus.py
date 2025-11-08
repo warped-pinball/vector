@@ -113,7 +113,7 @@ def game_report():
 
 # this is called at 4 calls per second
 def poll_fast():
-    global  endHoldTimer
+    global endHoldTimer
     endHoldTimer = endHoldTimer +1
 
     """Poll for game start and end time."""
