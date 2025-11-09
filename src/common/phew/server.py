@@ -277,7 +277,6 @@ async def run_scheduled():
 def create_schedule(ap_mode: bool = False):
     from resource import go as resource_go
 
-    import network
     from backend import connect_to_wifi
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
@@ -326,12 +325,6 @@ def create_schedule(ap_mode: bool = False):
 
         # reconnect to wifi occasionally
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
-
-        # check if we are connected to wifi
-        wlan = network.WLAN(network.STA_IF)
-        if wlan.isconnected():
-            # initialize the time and date 5 seconds after boot
-            schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
 
     restart_schedule()
 
