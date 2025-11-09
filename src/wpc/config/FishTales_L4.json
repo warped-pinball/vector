@@ -2,21 +2,17 @@
     "GameInfo": {
         "GameName": "Fish Tales",
         "System": "WPC",
-        "Clock": "Yes",
         "FileVer": 1
     },
-
     "Definition": {
         "version": 1
     },
-
-    "Memory" : {
+    "Memory": {
         "Start": 1,
         "Length": 8192,
         "NvStart": 2048,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 1,
         "Address": 941,
@@ -26,7 +22,6 @@
         "Ball4": 4,
         "Ball5": 5
     },
-
     "InPlay": {
         "Type": 10,
         "GameActiveAdr": 131,
@@ -37,7 +32,6 @@
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     },
-
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7552,
@@ -48,15 +42,13 @@
         "ChecksumEndAdr": 7744,
         "ChecksumResultAdr": 7745
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
         "ChecksumStartAdr": 6941,
         "ChecksumEndAdr": 7160,
         "ChecksumResultAdr": 7161
     },
-
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7268,
@@ -70,27 +62,24 @@
         "ChecksumStartAdr": 7265,
         "ChecksumEndAdr": 7296,
         "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299, 
+        "GCChecksumStartAdr": 7299,
         "GCChecksumEndAdr": 7306,
         "GCChecksumResultAdr": 7307
     },
-
     "HSRewards": {
-        "Type": 10,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
-
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
-
     "CoinDrop": {
         "Type": 0
     }

@@ -1,5 +1,5 @@
 # clear wifi and game selection configuration out
-import Memory_Main
+
 
 import SPI_DataStore as datastore
 import SPI_Store
@@ -40,7 +40,12 @@ def main():
     for key, value in extras.items():
         print(f"{key}: {value}")
 
-    Memory_Main.blank_ram()
+    try:
+        import Memory_Main
+        Memory_Main.blank_ram()
+    except:
+        print("assuming this is an EM board, no blank if shadowram")
+
     SPI_Store.write_all_fram_now()
 
 

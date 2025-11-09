@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Jack Bot",
+        "GameName": "Theatre of Magic",
         "System": "WPC",
         "FileVer": 1
     },
@@ -14,8 +14,8 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
-        "Address": 947,
+        "Type": 1,
+        "Address": 944,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -41,20 +41,20 @@
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7522,
+        "ScoreAdr": 7268,
         "BytesInScore": 5,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7519,
-        "InitialSpacing": 9,
+        "ScoreSpacing": 8,
+        "InitialAdr": 7265,
+        "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7560,
-        "GrandChampInitAdr": 7557,
-        "ChecksumStartAdr": 7519,
-        "ChecksumEndAdr": 7554,
-        "ChecksumResultAdr": 7555,
-        "GCChecksumStartAdr": 7557,
-        "GCChecksumEndAdr": 7565,
-        "GCChecksumResultAdr": 7566
+        "GrandChampScoreAdr": 7302,
+        "GrandChampInitAdr": 7299,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7296,
+        "ChecksumResultAdr": 7297,
+        "GCChecksumStartAdr": 7299,
+        "GCChecksumEndAdr": 7306,
+        "GCChecksumResultAdr": 7307
     },
     "HSRewards": {
         "Type": 0,
@@ -75,12 +75,12 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 129,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 5897,
-        "Playerup": 946,
+        "Players": 5909,
+        "Playerup": 776,
         "ScoreAdr": 5791,
-        "ScoreBytes": 7,
-        "ScoreSpacing": 7
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
     }
 }

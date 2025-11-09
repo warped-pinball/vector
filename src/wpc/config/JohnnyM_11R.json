@@ -2,21 +2,18 @@
     "GameInfo": {
         "GameName": "Johnny Mnemonic",
         "System": "WPC",
-        "Clock": "MM",
-        "FileVer": 1
+        "FileVer": 1,
+        "Clock": "MM"
     },
-
     "Definition": {
         "version": 1
     },
-
-    "Memory" : {
+    "Memory": {
         "Start": 1,
         "Length": 8192,
         "NvStart": 2048,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 1,
         "Address": 947,
@@ -26,17 +23,6 @@
         "Ball4": 4,
         "Ball5": 5
     },
-
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 135,
-        "GameActiveValue": 0,
-        "Players": 5905,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    },
-
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7558,
@@ -47,19 +33,17 @@
         "ChecksumEndAdr": 7750,
         "ChecksumResultAdr": 7751
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
         "ChecksumStartAdr": 6941,
         "ChecksumEndAdr": 7160,
         "ChecksumResultAdr": 7161
     },
-
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7268,
-        "BytesInScore":6,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
         "InitialAdr": 7265,
         "InitialSpacing": 9,
@@ -69,28 +53,35 @@
         "ChecksumStartAdr": 7265,
         "ChecksumEndAdr": 7300,
         "ChecksumResultAdr": 7301,
-        "GCChecksumStartAdr": 7303, 
+        "GCChecksumStartAdr": 7303,
         "GCChecksumEndAdr": 7311,
         "GCChecksumResultAdr": 7312
     },
-
     "HSRewards": {
-        "Type": 10,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
-
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
-
     "CoinDrop": {
         "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 135,
+        "GameActiveValue": 0,
+        "Players": 5905,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
     }
 }
