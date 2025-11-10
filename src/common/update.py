@@ -167,10 +167,14 @@ def get_check_data(path="update.json"):
     return calculated_hash, expected_hash, signature
 
 
-def validate_signature():
+def validate_signature(skip_signature_check=False):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash}, got {hash_bytes}")
+
+    if skip_signature_check:
+        print("Skipping signature check")
+        return
 
     from rsa.key import PublicKey
     from rsa.pkcs1 import verify
@@ -278,7 +282,7 @@ def detect_hardware_version():
     return "Unknown"
 
 
-def apply_update(url):
+def apply_update(url, skip_signature_check=False):
     from gc import collect as gc_collect
     from time import sleep
 
@@ -288,7 +292,7 @@ def apply_update(url):
     gc_collect()
 
     yield {"log": "Validating signature", "percent": 30}
-    validate_signature()
+    validate_signature(skip_signature_check=skip_signature_check)
     gc_collect()
 
     yield {"log": "Validating compatibility", "percent": 35}
