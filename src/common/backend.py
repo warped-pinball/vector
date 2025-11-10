@@ -974,8 +974,10 @@ def add_ap_mode_routes():
 
 def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
+    from phew.server import initialize_timedate, schedule
 
     if phew_is_connected() and not initialize:
+        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
         return True
 
     from displayMessage import init as init_display
@@ -1001,6 +1003,8 @@ def connect_to_wifi(initialize=False):
             # clear any wifi related faults
             if faults.fault_is_raised(faults.ALL_WIFI):
                 faults.clear_fault(faults.ALL_WIFI)
+
+            schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
 
             return True
 
