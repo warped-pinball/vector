@@ -369,6 +369,20 @@ window.startAutoRefreshForTab = function (tabId) {
 };
 
 /*
+ * getTab: Returns currently shown tab
+ */
+window.getTab = function () {
+  var tabs = document.querySelectorAll(".tab-content");
+  for (var i in tabs) {
+    var tab = tabs[i];
+    if (tab.classList.contains("active")) {
+      return tab.getAttribute("id");
+    }
+  }
+  return null;
+};
+
+/*
  * showTab: Switch between tabs, refresh data, start auto-refresh on new tab.
  */
 window.showTab = function (tabId) {
@@ -966,7 +980,26 @@ window.getGameStatus = async function () {
 
 window.scoreEditMode = false;
 
-window.toggleScoreDelete = function (forcedMode) {
+window.toggleScoreEdit = function (forcedMode) {
+  //Make sure the tab is legit before anything else
+  var tabId = window.getTab();
+  console.info(tabId);
+  var list = "";
+  switch (tabId) {
+    case "leader-board":
+      list = "leaders";
+      break;
+    case "tournament-board":
+      list = "tournament";
+      break;
+    case "personal-board":
+      list = "individual";
+      break;
+    default:
+      console.error("Unknown Tab Id!");
+      return;
+  }
+
   if (forcedMode != undefined) {
     window.scoreEditMode = forcedMode;
   } else {
@@ -982,7 +1015,7 @@ window.toggleScoreDelete = function (forcedMode) {
     editBtn.innerHTML = "Delete Selected";
     cancelBtn.classList.remove("hide");
     //Switch to checkboxes
-    header.innerHTML = "Del";
+    header.innerHTML = "🗑️";
     rows.forEach(function (row) {
       var number = row.innerHTML;
       row.innerHTML = '<input type="checkbox" name="' + number + '" />';
@@ -993,7 +1026,8 @@ window.toggleScoreDelete = function (forcedMode) {
     cancelBtn.classList.add("hide");
 
     var deleteData = {
-      to_delete: [],
+      list: list,
+      delete: [],
     };
     //Switch back to ranks, if any selected, send delete api request.
     var checkboxes = document.querySelectorAll(
@@ -1002,12 +1036,15 @@ window.toggleScoreDelete = function (forcedMode) {
     header.innerHTML = "#";
     checkboxes.forEach(function (checkbox) {
       var row = checkbox.parentElement.parentElement;
-      var player = row.querySelector(".player").getAttribute("raw");
+      var player =
+        list == "tournament"
+          ? row.querySelector(".initials").getAttribute("title")
+          : row.querySelector(".player").getAttribute("raw");
       var score = row.querySelector(".score").getAttribute("raw");
       var intScore = parseInt(score);
-      deleteData["to_delete"].push({ initials: player, score: intScore });
+      deleteData["delete"].push({ initials: player, score: intScore });
     });
-    if (deleteData["to_delete"].length > 0) {
+    if (deleteData["delete"].length > 0) {
       confirm_auth_get(
         "/api/leaders/delete",
         "Delete Selected Scores",

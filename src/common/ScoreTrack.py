@@ -310,8 +310,9 @@ def update_leaderboard(new_entry):
         log.log("SCORE: Bad Initials")
         return False
 
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
+    if "date" not in new_entry:
+        year, month, day, _, _, _, _, _ = rtc.datetime()
+        new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
     log.log(f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
@@ -382,6 +383,25 @@ def remove_score_entry(initials, score, list="leaders"):
     top_scores = top_scores[:count]
     for i in range(count):
         DataStore.write_record(list, top_scores[i], i)
+
+    # if Leaders board, also prune from individual list.
+    if list == "leaders":
+        player_name, player_num = find_player_by_initials({"initials": initials})
+        if not (not player_name or player_name in [" ", "@@@", "   ", ""]) and (0 <= player_num < DataStore.memory_map["individual"]["count"]):
+            individual_scores = [DataStore.read_record("individual", i) for i in range(DataStore.memory_map["individual"]["count"])]
+            for entry in individual_scores:
+                if entry["score"] == score:
+                    # Delete This!
+                    log.log(f"SCORE: Deleting from 'individual' {entry}")
+                    entry["date"] = ""
+                    entry["score"] = 0
+                    break
+
+            individual_scores.sort(key=lambda x: x["score"], reverse=True)
+            count = DataStore.memory_map["individual"]["count"]
+            individual_scores = individual_scores[:count]
+            for i in range(count):
+                DataStore.write_record("individual", individual_scores[i], i, player_num)
 
     # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
     place_machine_scores()

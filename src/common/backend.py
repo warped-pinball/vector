@@ -445,12 +445,13 @@ def app_leaderBoardRead(request):
 @add_route("/api/leaders/delete", auth=True)
 def app_leaderBoardDelete(request):
     body = request.data
-    requested_to_delete = body["to_delete"]
+    requested_to_delete = body["delete"]
+    delete_from = body["list"]
     scores_to_delete = dict()
     for requested in requested_to_delete:
         scores_to_delete[requested["score"]] = requested["initials"]
 
-    return _scoreDelete(scores_to_delete=scores_to_delete, list="leaders")
+    return _scoreDelete(scores_to_delete=scores_to_delete, list=delete_from)
 
 
 def _scoreDelete(scores_to_delete, list="leaders"):
