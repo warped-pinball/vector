@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json
 import time
 
@@ -17,7 +19,7 @@ import serial
 # first_port = boards[first_board_type][0]
 # print(f"Using board type: {first_board_type} on port: {first_port}")
 
-ser = serial.Serial(port="/dev/ttyACM0", baudrate=115200, timeout=1)
+ser = serial.Serial(port="/dev/ttyACM0", baudrate=115200, timeout=10)
 time.sleep(2)
 
 try:
