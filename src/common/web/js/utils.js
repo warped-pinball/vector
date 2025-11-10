@@ -2,16 +2,35 @@
 // Generic / Utility functions
 //
 
-async function confirm_auth_get(url, purpose, data = null) {
-  return await confirmAction(purpose, async () => {
-    const response = await window.smartFetch(url, data, true);
-    if (response.status !== 200 && response.status !== 401) {
-      // 401 already alerted the user that their password was wrong
-      console.error(`Failed to ${purpose}:`, response.status);
-      alert(`Failed to ${purpose}.`);
-    }
-    return response;
-  });
+const { call } = require("three/tsl");
+
+async function confirm_auth_get(
+  url,
+  purpose,
+  data = null,
+  callback = null,
+  cancelCallback = null,
+) {
+  return await confirmAction(
+    purpose,
+    async () => {
+      const response = await window.smartFetch(url, data, true);
+      if (response.status !== 200 && response.status !== 401) {
+        // 401 already alerted the user that their password was wrong
+        console.error(`Failed to ${purpose}:`, response.status);
+        alert(`Failed to ${purpose}.`);
+      }
+      if (callback != undefined) {
+        callback(response);
+      }
+    },
+    () => {
+      //Cancelled
+      if (cancelCallback != undefined) {
+        cancelCallback();
+      }
+    },
+  );
 }
 
 async function confirmAction(message, callback, cancelCallback = null) {
@@ -24,13 +43,13 @@ async function confirmAction(message, callback, cancelCallback = null) {
 
   confirmButton.onclick = () => {
     modal.close();
-    return callback();
+    callback();
   };
 
   cancelButton.onclick = () => {
     modal.close();
     if (cancelCallback) {
-      return cancelCallback();
+      cancelCallback();
     }
   };
 

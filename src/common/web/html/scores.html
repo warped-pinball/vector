@@ -484,13 +484,20 @@
 </div>
 
 <article class="hide" id="edit-btns">
-  <button id="edit-scores-btn" onclick="window.toggleScoreEdit()">
+  <button id="edit-scores-btn" onclick="window.enterScoreEdit()">
     Edit Scores
+  </button>
+  <button
+    id="delete-scores-btn"
+    class="danger hide"
+    onclick="window.deleteSelectedScores()"
+  >
+    Delete Selected
   </button>
   <button
     id="edit-scores-cancel-btn"
     class="hide"
-    onclick="window.toggleScoreEdit(false)"
+    onclick="window.exitScoreEdit()"
   >
     Cancel
   </button>
