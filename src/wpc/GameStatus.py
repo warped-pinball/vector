@@ -65,23 +65,28 @@ def _get_ball_in_play():
     return 0
 
 
-endHoldTimer = 0  #1/4 second timer for hold score after game end
+END_HOLD_MS = 15_000
+end_hold_start = None 
 gameActive = False
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global endHoldTimer, ball, gameActive
+    global end_hold_start, gameActive
     data = {}
 
     try:
         # read ball once and use the value in the conditional
         ball = _get_ball_in_play()
         if ball == 0:
-            if endHoldTimer > 68:    # 1/4 second call rate - 68/4 = 17 second hold time
-                gameActive = False
+            if end_hold_start is None:
+                end_hold_start = time.ticks_ms()
+            else:
+                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
+                    gameActive = False
         else:
+            # ball non 0
+            end_hold_start = None
             gameActive = True
-            endHoldTimer = 0
 
         data["GameActive"] = gameActive
         data["BallInPlay"] = ball
@@ -112,9 +117,6 @@ def game_report():
 
 # this is called at 4 calls per second
 def poll_fast():
-    global endHoldTimer
-    endHoldTimer = endHoldTimer + 1
-
     """Poll for game start and end time."""
     ps = S.game_status["poll_state"]
     if ps == 0:
