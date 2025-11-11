@@ -28,12 +28,13 @@ def remove_score_entry(initials, score, list="leaders"):
     from ScoreTrack import find_player_by_initials, place_machine_scores
 
     player_name, player_num = (None, None)
-    if list == "leaders" or list == "individual":
-        player_name, player_num = find_player_by_initials({"initials": initials})
-
-    # if specifically removing from individual, remove from their specific data set.
     data_set = 0
+    # if specifically removing from individual, remove from their specific data set.
     if list == "individual":
+        player_name, player_num = find_player_by_initials({"initials": initials})
+        if (player_name or player_name in [" ", "@@@", "   ", ""]) or (0 > player_num) or (player_num > DataStore.memory_map["individual"]["count"]):
+            # Player isn't in the list, no need to continue
+            return
         data_set = int(player_num)
 
     # Look for record in top scores and wipe it
@@ -72,23 +73,7 @@ def remove_score_entry(initials, score, list="leaders"):
     # Extra checks for leaderboard deletes
     if list == "leaders":
         # if leaders board, also prune from individual player list, if the score exists there too.
-        if not (not player_name or player_name in [" ", "@@@", "   ", ""]) and (0 <= player_num < DataStore.memory_map["individual"]["count"]):
-            individual_scores = []
-            count = DataStore.memory_map["individual"]["count"]
-            # individual_scores = [DataStore.read_record("individual", i, player_num) for i in range(DataStore.memory_map["individual"]["count"])]
-            for i in range(count):
-                existing_individual_score = DataStore.read_record("individual", i, player_num)
-                if existing_individual_score and existing_individual_score.get("score") == score:
-                    # Delete
-                    log.log(f"SCORE: Deleting from 'individual' {existing_individual_score}")
-                    existing_individual_score["date"] = ""
-                    existing_individual_score["score"] = 0
-                individual_scores.append(existing_individual_score)
-
-            individual_scores.sort(key=lambda x: x["score"], reverse=True)
-            individual_scores = individual_scores[:count]
-            for i in range(count):
-                DataStore.write_record("individual", individual_scores[i], i, player_num)
+        remove_score_entry(initials, score, "individual")
 
         # If this was the leaders list, set top_scores global var and update machine scores.
         from ScoreTrack import top_scores
@@ -97,4 +82,4 @@ def remove_score_entry(initials, score, list="leaders"):
         # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
         place_machine_scores()
 
-    return True
+    return
