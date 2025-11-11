@@ -61,7 +61,7 @@ def download_scores():
 
 
 def import_scores(data):
-    from ScoreTrack import bulk_import_scores
+    from ScoreTrackCommon import bulk_import_scores
 
     # Upgrade format if needed
     data = upgrade_score_export_format(data)

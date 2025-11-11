@@ -2,7 +2,7 @@
 // Generic / Utility functions
 //
 
-const { call } = require("three/tsl");
+const { call, pass } = require("three/tsl");
 
 async function confirm_auth_get(
   url,
@@ -63,6 +63,9 @@ async function smartFetch(url, data = false, auth = true) {
   };
   if (auth) {
     const password = await window.get_password();
+    if (password == null) {
+      throw new Error("No Password");
+    }
     const cRes = await fetch("/api/auth/challenge");
     if (!cRes.ok) throw new Error("Failed to get challenge.");
     const { challenge } = await cRes.json();

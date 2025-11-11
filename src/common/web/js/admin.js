@@ -433,36 +433,39 @@ if (typeof window !== "undefined") {
   // Import Scores
   window.importScores = async function () {
     console.log("Importing scores...");
-    try {
-      var fileInput = document.querySelector("#input_scores");
-      var fileBtn = document.querySelector("#input_scores_btn");
-      const file = fileInput.files[0];
-      if (file) {
-        const fileContent = await file.text(); // Read file as text
-        const data = JSON.parse(fileContent); // Parse the text into JSON
+
+    var fileInput = document.querySelector("#input_scores");
+    var fileBtn = document.querySelector("#input_scores_btn");
+    const file = fileInput.files[0];
+    if (file) {
+      const fileContent = await file.text(); // Read file as text
+      const data = JSON.parse(fileContent); // Parse the text into JSON
+      const previousText = fileBtn.innerHTML;
+      var response_json = null;
+      try {
         fileBtn.disabled = true;
-        var previousText = fileBtn.innerHTML;
         fileBtn.innerHTML = "Importing...";
-        fileBtn.classList.add("danger");
         const response = await window.smartFetch(
           "/api/import/scores",
           data,
-          false,
+          true,
         );
-        const response_json = await response.json();
-        fileInput.value = "";
-        fileBtn.innerHTML = previousText;
-        fileBtn.classList.remove("danger");
-        fileBtn.disabled = false;
-        if (response_json["success"]) {
-          //TODO: would be nice to use the modals here...
-          alert("Imported!");
-        } else {
+        response_json = await response.json();
+      } catch (e) {
+        console.error(e);
+      }
+      fileInput.value = "";
+      fileBtn.innerHTML = previousText;
+      fileBtn.disabled = false;
+      if (response_json != null && response_json["success"]) {
+        //TODO: would be nice to use the modals here...
+        alert("Imported!");
+      } else {
+        if (response.status != 401) {
+          //Show an error only if auth didn't fail.
           alert("Error Importing!");
         }
       }
-    } catch (e) {
-      alert(e);
     }
   };
 

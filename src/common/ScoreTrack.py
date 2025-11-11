@@ -349,66 +349,6 @@ def update_leaderboard(new_entry):
     return True
 
 
-def bulk_import_scores(scores, list="leaders"):
-    # Merge imported data into respective leaderboards using existing logic.
-    for score in scores:
-        if score["score"] == 0:
-            continue
-        if list == "leaders":
-            update_leaderboard(score)
-        if list == "tournament":
-            update_tournament(score)
-
-    # Update the machine's top scores
-    place_machine_scores()
-
-
-def remove_score_entry(initials, score, list="leaders"):
-    global top_scores
-    top_scores = [DataStore.read_record(list, i) for i in range(DataStore.memory_map[list]["count"])]
-    # Look for record in top scores and wipe it
-    for entry in top_scores:
-        if entry["initials"] == initials and entry["score"] == score:
-            # Delete This!
-            log.log(f"SCORE: Deleting from '{list}' {entry}")
-            entry["initials"] = ""
-            entry["date"] = ""
-            entry["full_name"] = ""
-            entry["score"] = 0
-            break
-
-    # Sort and prune the list before saving again.
-    top_scores.sort(key=lambda x: x["score"], reverse=True)
-    count = DataStore.memory_map[list]["count"]
-    top_scores = top_scores[:count]
-    for i in range(count):
-        DataStore.write_record(list, top_scores[i], i)
-
-    # if Leaders board, also prune from individual list.
-    if list == "leaders":
-        player_name, player_num = find_player_by_initials({"initials": initials})
-        if not (not player_name or player_name in [" ", "@@@", "   ", ""]) and (0 <= player_num < DataStore.memory_map["individual"]["count"]):
-            individual_scores = [DataStore.read_record("individual", i) for i in range(DataStore.memory_map["individual"]["count"])]
-            for entry in individual_scores:
-                if entry["score"] == score:
-                    # Delete This!
-                    log.log(f"SCORE: Deleting from 'individual' {entry}")
-                    entry["date"] = ""
-                    entry["score"] = 0
-                    break
-
-            individual_scores.sort(key=lambda x: x["score"], reverse=True)
-            count = DataStore.memory_map["individual"]["count"]
-            individual_scores = individual_scores[:count]
-            for i in range(count):
-                DataStore.write_record("individual", individual_scores[i], i, player_num)
-
-    # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
-    place_machine_scores()
-
-    return True
-
-
 def initialize_leaderboard():
     """power up init for leader board"""
     global top_scores

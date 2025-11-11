@@ -455,7 +455,7 @@ def app_leaderBoardDelete(request):
 
 
 def _scoreDelete(scores_to_delete, list="leaders"):
-    from ScoreTrack import remove_score_entry
+    from ScoreTrackCommon import remove_score_entry
 
     scores = get_scoreboard(list, reverse=True)
     sanitized_scores_to_delete = dict()
@@ -867,7 +867,7 @@ def app_export_leaderboard(request):
     return download_scores()
 
 
-@add_route("/api/import/scores")
+@add_route("/api/import/scores", auth=True)
 def app_import_leaderboard(request):
     from FileIO import import_scores
 
