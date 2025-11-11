@@ -292,7 +292,7 @@ def update_individual_score(new_entry):
 
     scores.append(new_entry)
     scores.sort(key=lambda x: x["score"], reverse=True)
-    scores = scores[:20]
+    scores = scores[:num_scores]
 
     # Save the updated scores
     for i in range(num_scores):
