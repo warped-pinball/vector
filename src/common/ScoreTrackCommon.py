@@ -25,7 +25,8 @@ def bulk_import_scores(scores, list="leaders"):
 
 # Removes a scores from a list. If it's leaders, and an individual score exists, remove that too.
 def remove_score_entry(initials, score, list="leaders"):
-    from ScoreTrack import find_player_by_initials, place_machine_scores
+    log.log(f"SCORE: Looking for {initials} {score} in '{list}'")
+    from ScoreTrack import find_player_by_initials
 
     player_name, player_num = (None, None)
     data_set = 0
@@ -74,12 +75,5 @@ def remove_score_entry(initials, score, list="leaders"):
     if list == "leaders":
         # if leaders board, also prune from individual player list, if the score exists there too.
         remove_score_entry(initials, score, "individual")
-
-        # If this was the leaders list, set top_scores global var and update machine scores.
-        from ScoreTrack import top_scores
-
-        top_scores = [DataStore.read_record(list, i, data_set) for i in range(DataStore.memory_map[list]["count"])]
-        # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
-        place_machine_scores()
 
     return

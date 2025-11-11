@@ -442,8 +442,10 @@ def app_leaderBoardRead(request):
     return get_scoreboard("leaders", reverse=True)
 
 
-@add_route("/api/leaders/delete", auth=True)
-def app_leaderBoardDelete(request):
+@add_route("/api/score/delete", auth=True)
+def app_scoreDelete(request):
+    from ScoreTrackCommon import remove_score_entry
+
     body = request.data
     requested_to_delete = body["delete"]
     delete_from = body["list"]
@@ -451,20 +453,17 @@ def app_leaderBoardDelete(request):
     for requested in requested_to_delete:
         scores_to_delete[requested["score"]] = requested["initials"]
 
-    return _scoreDelete(scores_to_delete=scores_to_delete, list=delete_from)
+    for score in scores_to_delete:
+        remove_score_entry(initials=scores_to_delete[score], score=score, list=delete_from)
 
+    # If this was the leaders list, set top_scores global var and update machine scores.
+    if delete_from == "leaders":
+        import SPI_DataStore as DataStore
+        from ScoreTrack import place_machine_scores, top_scores
 
-def _scoreDelete(scores_to_delete, list="leaders"):
-    from ScoreTrackCommon import remove_score_entry
-
-    scores = get_scoreboard(list, reverse=True)
-    sanitized_scores_to_delete = dict()
-    for score in scores:
-        if score["score"] in scores_to_delete and score["initials"] == scores_to_delete[score["score"]]:
-            sanitized_scores_to_delete[score["score"]] = score["initials"]
-            remove_score_entry(initials=score["initials"], score=score["score"], list=list)
-
-    return sanitized_scores_to_delete
+        top_scores = [DataStore.read_record(delete_from, i) for i in range(DataStore.memory_map[list]["count"])]
+        # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
+        place_machine_scores()
 
 
 @add_route("/api/tournament")

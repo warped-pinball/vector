@@ -1041,7 +1041,7 @@ window.deleteSelectedScores = async function () {
     deleteBtn.disabled = true;
     cancelBtn.disabled = true;
     confirm_auth_get(
-      "/api/leaders/delete",
+      "/api/score/delete",
       "Delete Selected Scores",
       deleteData,
       () => {
