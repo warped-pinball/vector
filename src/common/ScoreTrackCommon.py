@@ -32,7 +32,7 @@ def remove_score_entry(initials, score, list="leaders"):
     # if specifically removing from individual, remove from their specific data set.
     if list == "individual":
         player_name, player_num = find_player_by_initials({"initials": initials})
-        if (player_name or player_name in [" ", "@@@", "   ", ""]) or (0 > player_num) or (player_num > DataStore.memory_map["individual"]["count"]):
+        if (not player_name or player_name in [" ", "@@@", "   ", ""]) or (0 > player_num) or (player_num > DataStore.memory_map["individual"]["count"]):
             # Player isn't in the list, no need to continue
             return
         data_set = int(player_num)
