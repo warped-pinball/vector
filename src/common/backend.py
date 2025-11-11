@@ -461,7 +461,7 @@ def app_scoreDelete(request):
         import SPI_DataStore as DataStore
         from ScoreTrack import place_machine_scores, top_scores
 
-        top_scores = [DataStore.read_record(delete_from, i) for i in range(DataStore.memory_map[list]["count"])]
+        top_scores = [DataStore.read_record(delete_from, i) for i in range(DataStore.memory_map[delete_from]["count"])]
         # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
         place_machine_scores()
 
