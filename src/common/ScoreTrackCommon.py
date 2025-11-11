@@ -39,8 +39,10 @@ def remove_score_entry(initials, score, list="leaders"):
         data_set = int(player_num)
 
     # Look for record in top scores and wipe it
-    list_scores = [DataStore.read_record(list, i, data_set) for i in range(DataStore.memory_map[list]["count"])]
-    for entry in list_scores:
+    count = DataStore.memory_map[list]["count"]
+    list_scores = []  # [DataStore.read_record(list, i, data_set) for i in range(count)]
+    for i in range(count):
+        entry = DataStore.read_record(list, i, data_set)
         if list == "leaders":
             if entry["initials"] == initials and entry["score"] == score:
                 log.log(f"SCORE: Deleting from '{list}' {entry}")
@@ -48,7 +50,7 @@ def remove_score_entry(initials, score, list="leaders"):
                 entry["initials"] = ""
                 entry["date"] = ""
                 entry["score"] = 0
-                break
+
         if list == "tournament":
             if entry["initials"] == initials and entry["score"] == score:
                 log.log(f"SCORE: Deleting from '{list}' {entry}")
@@ -56,24 +58,19 @@ def remove_score_entry(initials, score, list="leaders"):
                 entry["index"] = 0
                 entry["score"] = 0
                 entry["game"] = 0
-                break
+
         if list == "individual":
             if entry["score"] == score:
                 log.log(f"SCORE: Deleting from '{list}' {entry}")
                 entry["date"] = ""
                 entry["score"] = 0
-                break
+
+        list_scores.append(entry)
 
     # Sort and prune the list before saving again.
     list_scores.sort(key=lambda x: x["score"], reverse=True)
-    count = DataStore.memory_map[list]["count"]
     list_scores = list_scores[:count]
     for i in range(count):
         DataStore.write_record(list, list_scores[i], i, data_set)
-
-    # Extra checks for leaderboard deletes
-    if list == "leaders":
-        # if leaders board, also prune from individual player list, if the score exists there too.
-        remove_score_entry(initials, score, "individual")
 
     return
