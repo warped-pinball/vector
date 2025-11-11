@@ -27,31 +27,11 @@ def bulk_import_scores(scores, list="leaders"):
             if "index" in score and score["index"] != 0:
                 # Put this tournament score in the correct game.
                 S.gameCounter = score["game"]
+                # Remove the "game" key from the dict, so it will save as new.
+                del score["game"]
                 update_tournament(score)
             # Put game counter back to what it was
             S.gameCounter = cached_game
-
-            # import_tournament_score(score)
-
-
-# def import_tournament_score(score):
-#     if score["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
-#         log.log("SCORE: tournament import bad Initials")
-#         return False
-
-#     if score["score"] < 1000:
-#         log.log("SCORE: tournament import bad score")
-#         return False
-
-#     count = DataStore.memory_map["tournament"]["count"]
-#     rec = DataStore.read_record("tournament", 0)
-#     nextIndex = rec["index"]
-
-#     print("NEXT INDEX: ", nextIndex)
-
-#     score["index"] = nextIndex
-
-#     DataStore.write_record("tournament", score, nextIndex)
 
 
 # Removes a scores from a list. If it's leaders, and an individual score exists, remove that too.
