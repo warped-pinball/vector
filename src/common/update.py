@@ -249,33 +249,31 @@ def validate_compatibility():
         raise Exception(f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}")
 
     # hardware compatibility
-    hardware = detect_hardware_version()
+    supported_hardwares = metadata.get("supported_hardware", [])
 
-    if hardware not in metadata.get("supported_hardware", []):
-        raise Exception(f"Hardware ({hardware}) not in supported hardware list: {metadata.get('supported_hardware')}")
-
-
-def detect_hardware_version():
-    # This is written akwardly in order to run on unknown future hardware
-    from sys import implementation
-
-    from machine import Pin
-
-    known_hardware = {
+    known_hardwares = {
         "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
         "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
         "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": False},
-        "EM": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": True},
+        "em_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": True},
+        "generic_pico_1w": {"machine": "Raspberry Pi Pico with RP2040", "GPIO28_HIGH": None},
+        "generic_pico_2w": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": None},
     }
 
-    # read GPIO28, set GPIO28_HIGH based on its state
-    GPIO28_HIGH = Pin(28, Pin.IN).value()
+    for hardware in supported_hardwares:
+        if hardware not in known_hardwares:
+            raise Exception(f"Unknown hardware: {hardware}")
+        details = known_hardwares[hardware]
+        if implementation._machine != details["machine"]:
+            continue
+        from machine import Pin
 
-    for hardware, details in known_hardware.items():
-        if implementation._machine == details["machine"] and GPIO28_HIGH == details["GPIO28_HIGH"]:
-            return hardware
+        gpio28_high = Pin(28, Pin.IN).value()
+        expected = details["GPIO28_HIGH"]
+        if expected is None or expected == gpio28_high:
+            return  # compatible hardware found
 
-    return "Unknown"
+    raise Exception(f"None of the supported hardwares are compatible with this device. Supported: {supported_hardwares}")
 
 
 def apply_update(url):

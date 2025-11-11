@@ -19,9 +19,9 @@ OUTPUT_FILE = "update.json"
 hardware_configs = {
     "sys11": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.24.1", "1.23.0-preview"]},
     "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0", "1.26.0-preview"]},
-    "em": {"supported_hardware": ["EM"], "micropython_versions": ["1.26.0-preview"]},
-    "data_east": {},
-    "whitestar": {},
+    "em": {"supported_hardware": ["generic_pico_2w"], "micropython_versions": ["1.26.0-preview"]},
+    "data_east": {"supported_hardware": ["generic_pico_2w"], "micropython_versions": ["1.25.0"]},
+    "whitestar": {"supported_hardware": ["generic_pico_2w"], "micropython_versions": ["1.25.0"]},
 }
 
 
@@ -158,6 +158,8 @@ def build_update_file(
     """
 
     build_dir_path = Path(build_dir)
+
+    # confirm that the build_dir exists and is a directory that does not contain hardware-specific subdirectories
     subdirs = {p.name for p in build_dir_path.iterdir() if p.is_dir()}
     if any(name in hardware_configs for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
