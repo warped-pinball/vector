@@ -86,7 +86,7 @@ def remove_score_entry(initials, score, list="leaders"):
             if entry["initials"] == initials and entry["score"] == score:
                 log.log(f"SCORE: Deleting from '{list}' {entry}")
                 entry["initials"] = ""
-                entry["index"] = 0
+                # entry["index"] = 0
                 entry["score"] = 0
                 entry["game"] = 0
 
@@ -103,15 +103,22 @@ def remove_score_entry(initials, score, list="leaders"):
     list_scores = list_scores[:count]
     next_index = None
     for i in range(count):
-        index = i
         if list == "tournament":
-            # Re-index tournament scores as we write. Index 0 Holds the next index.
-            index = i + 1
-            next_index = index + 1
-        DataStore.write_record(list, list_scores[i], index, data_set)
+            # Re-index tournament scores as we write. Index 0 Holds the next index
+            print(f"Writing '{list}' record... at ", i)
+            list_scores[i]["index"] = i
+            print(list_scores[i])
+            print(data_set)
+            next_index = i + 1
+
+        DataStore.write_record(list, list_scores[i], i, data_set)
 
     # If next index was set, set it at the 0 slot (Only for tournament)
     if next_index != None:
-        DataStore.write_record(list, {"index": next_index}, 0, data_set)
+        if next_index >= count:
+            next_index = 0
+        rec = DataStore.read_record(list, 0, data_set)
+        rec["index"] = next_index
+        DataStore.write_record(list, rec, 0, data_set)
 
     return
