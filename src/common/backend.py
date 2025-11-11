@@ -465,6 +465,8 @@ def app_scoreDelete(request):
         # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
         place_machine_scores()
 
+    return {"success": True}
+
 
 @add_route("/api/tournament")
 def app_tournamentRead(request):
