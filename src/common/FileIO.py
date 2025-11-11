@@ -48,8 +48,8 @@ score_version_upgrades = {0: score_export_0_to_1}
 
 def _get_scores_no_zeros(list):
     result = []
-    for i in range(DataStore.memory_map["leaders"]["count"]):
-        row = DataStore.read_record("leaders", i)
+    for i in range(DataStore.memory_map[list]["count"]):
+        row = DataStore.read_record(list, i)
         if row["score"] > 0:
             result.append(row)
     return result
@@ -63,8 +63,16 @@ def download_scores():
 def import_scores(data):
     from ScoreTrackCommon import bulk_import_scores
 
+    # print("BEFORE"+"*"*20)
+    # print(data)
+    # print("*"*20)
     # Upgrade format if needed
     data = upgrade_score_export_format(data)
+
+    print("AFTER" + "*" * 20)
+    print(data)
+    print("*" * 20)
+
     if "scores" in data:
         if "leaders" in data["scores"]:
             bulk_import_scores(data["scores"]["leaders"], "leaders")

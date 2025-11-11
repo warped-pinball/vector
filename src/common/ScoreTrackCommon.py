@@ -15,12 +15,43 @@ def bulk_import_scores(scores, list="leaders"):
         if score["score"] == 0:
             continue
         if list == "leaders":
+            # Use existing leaderboard function
             update_leaderboard(score)
+            # Update the machine's top scores
+            place_machine_scores()
         if list == "tournament":
-            update_tournament(score)
+            import SharedState as S
 
-    # Update the machine's top scores
-    place_machine_scores()
+            # Force game counter from score.
+            cached_game = S.gameCounter
+            if "index" in score and score["index"] != 0:
+                # Put this tournament score in the correct game.
+                S.gameCounter = score["game"]
+                update_tournament(score)
+            # Put game counter back to what it was
+            S.gameCounter = cached_game
+
+            # import_tournament_score(score)
+
+
+# def import_tournament_score(score):
+#     if score["initials"] in ["@@@", "   ", "???"]:  # check for corruption/ no player
+#         log.log("SCORE: tournament import bad Initials")
+#         return False
+
+#     if score["score"] < 1000:
+#         log.log("SCORE: tournament import bad score")
+#         return False
+
+#     count = DataStore.memory_map["tournament"]["count"]
+#     rec = DataStore.read_record("tournament", 0)
+#     nextIndex = rec["index"]
+
+#     print("NEXT INDEX: ", nextIndex)
+
+#     score["index"] = nextIndex
+
+#     DataStore.write_record("tournament", score, nextIndex)
 
 
 # Removes a scores from a list. If it's leaders, and an individual score exists, remove that too.
@@ -70,7 +101,17 @@ def remove_score_entry(initials, score, list="leaders"):
     # Sort and prune the list before saving again.
     list_scores.sort(key=lambda x: x["score"], reverse=True)
     list_scores = list_scores[:count]
+    next_index = None
     for i in range(count):
-        DataStore.write_record(list, list_scores[i], i, data_set)
+        index = i
+        if list == "tournament":
+            # Re-index tournament scores as we write. Index 0 Holds the next index.
+            index = i + 1
+            next_index = index + 1
+        DataStore.write_record(list, list_scores[i], index, data_set)
+
+    # If next index was set, set it at the 0 slot (Only for tournament)
+    if next_index != None:
+        DataStore.write_record(list, {"index": next_index}, 0, data_set)
 
     return
