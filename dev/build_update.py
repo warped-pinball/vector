@@ -272,7 +272,7 @@ def build_update_file(
     signature_line = json.dumps({"sha256": sha256_hex, "signature": signature_b64}, separators=(",", ":"))
 
     # Final output: top line is metadata, then all file lines, then signature line
-    final_output = "\n".join([metadata_line] + file_lines + [signature_line]) + "\n"
+    final_output = "\n".join(file_lines + [signature_line]) + "\n"
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_output)
