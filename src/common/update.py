@@ -99,7 +99,7 @@ def get_check_data(path="update.json"):
 def validate_signature(skip_signature_check=False):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
-        raise Exception(f"Hash mismatch - expected {expected_hash}, got {hash_bytes}")
+        raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
 
     if skip_signature_check:
         print("Skipping signature check")
