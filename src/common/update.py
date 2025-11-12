@@ -1,74 +1,3 @@
-class Version:
-    def __init__(self, major: int, minor: int, patch: int, candidate=None):
-        self.major = major
-        self.minor = minor
-        self.patch = patch
-        if candidate is not None and candidate == "":
-            candidate = None
-        self.candidate = candidate
-
-    def __str__(self):
-        if self.candidate:
-            return f"{self.major}.{self.minor}.{self.patch}-{self.candidate}"
-        return f"{self.major}.{self.minor}.{self.patch}"
-
-    def __repr__(self):
-        return '"' + self.__str__() + '"'
-
-    def __gt__(self, other):
-        # Compare major first
-        if self.major > other.major:
-            return True
-        elif self.major < other.major:
-            return False
-
-        # Same major, compare minor
-        if self.minor > other.minor:
-            return True
-        elif self.minor < other.minor:
-            return False
-
-        # Same minor, compare patch
-        if self.patch > other.patch:
-            return True
-        elif self.patch < other.patch:
-            return False
-
-        # If self has no candidate but other does, self is "greater"
-        if not self.candidate and other.candidate:
-            return True
-
-        return False
-
-    def __lt__(self, other):
-        return not self.__gt__(other) and self != other
-
-    def __eq__(self, other):
-        def eq_none(a, b):
-            return (a is None and b is None) or (a == b)
-
-        return eq_none(self.major, other.major) and eq_none(self.minor, other.minor) and eq_none(self.patch, other.patch) and eq_none(self.candidate, other.candidate)
-
-    @staticmethod
-    def from_str(version_str):
-        """Parses 'major.minor.patch' or 'major.minor.patch-candidate' format,
-        also handling candidate separated by '.'.
-        Example: 1.2.3-dev or 1.2.3.dev"""
-        parts = version_str.split(".", 2)
-        if len(parts) < 3:
-            raise ValueError(f"Version string must have at least major.minor.patch, e.g. '1.2.3' or '1.2.3-dev'. Got: {version_str}")
-        patch_part = parts[2]
-        candidate = None
-        for sep in ["-", "."]:
-            if sep in patch_part:
-                patch_part, candidate = patch_part.split(sep, 1)
-                break
-        major = int(parts[0])
-        minor = int(parts[1])
-        patch = int(patch_part)
-        return Version(major, minor, patch, candidate=candidate)
-
-
 def read_last_significant_line(path):
     """
     Returns the last non-whitespace line from 'path' in bytes.
@@ -222,60 +151,6 @@ def download_update(url):
     response.close()
 
 
-def validate_compatibility():
-    from json import loads as json_loads
-
-    # Check if the update is compatible with the current firmware
-    with open("update.json", "r") as f:
-        metadata = f.readline()
-        metadata = json_loads(metadata)
-
-    # update file format
-    supported_update_file_formats = ["1.0"]
-    incoming_update_file_format = metadata.get("update_file_format", "")
-    if incoming_update_file_format not in supported_update_file_formats:
-        raise Exception(f"Update file format ({incoming_update_file_format}) not in supported formats: {supported_update_file_formats}")
-
-    from sys import implementation
-
-    mp_version_obj = Version(
-        major=implementation.version[0],
-        minor=implementation.version[1],
-        patch=implementation.version[2],
-        candidate=implementation.version[3],
-    )
-    supported_micropython_versions = [Version.from_str(v) for v in metadata.get("micropython_versions", [])]
-    if not any(mp_version_obj == m for m in supported_micropython_versions):
-        raise Exception(f"MicroPython version {mp_version_obj} not in supported versions: {[str(v) for v in supported_micropython_versions]}")
-
-    # hardware compatibility
-    supported_hardwares = metadata.get("supported_hardware", [])
-
-    known_hardwares = {
-        "vector_v4": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
-        "vector_v5": {"machine": "Raspberry Pi Pico W with RP2040", "GPIO28_HIGH": False},
-        "wpc_vector_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": False},
-        "em_v1": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": True},
-        "generic_pico_1w": {"machine": "Raspberry Pi Pico with RP2040", "GPIO28_HIGH": None},
-        "generic_pico_2w": {"machine": "Raspberry Pi Pico 2 W with RP2350", "GPIO28_HIGH": None},
-    }
-
-    for hardware in supported_hardwares:
-        if hardware not in known_hardwares:
-            raise Exception(f"Unknown hardware: {hardware}")
-        details = known_hardwares[hardware]
-        if implementation._machine != details["machine"]:
-            continue
-        from machine import Pin
-
-        gpio28_high = Pin(28, Pin.IN).value()
-        expected = details["GPIO28_HIGH"]
-        if expected is None or expected == gpio28_high:
-            return  # compatible hardware found
-
-    raise Exception(f"None of the supported hardwares are compatible with this device. Supported: {supported_hardwares}")
-
-
 def apply_update(url):
     from gc import collect as gc_collect
     from time import sleep
@@ -287,10 +162,6 @@ def apply_update(url):
 
     yield {"log": "Validating signature", "percent": 30}
     validate_signature()
-    gc_collect()
-
-    yield {"log": "Validating compatibility", "percent": 35}
-    validate_compatibility()
     gc_collect()
 
     yield {"log": "Writing files to board", "percent": 40}

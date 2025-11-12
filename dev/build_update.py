@@ -58,6 +58,55 @@ def get_file_contents(file_path: str) -> bytes:
         return f.read()
 
 
+def build_confirm_compatibility_code(target_hardware: str) -> bytes:
+    """
+    Build a Micropython script that checks for compatible hardware and micropython versions.
+    Return it as raw bytes ready for base64 encoding.
+    """
+
+    def all_combos(pico_list, micropython_list):
+        return [{"pico": pico, "micropython": mp} for pico in pico_list for mp in micropython_list]
+
+    compatible_configurations = {
+        "sys11": all_combos(["1w"], ["1.24.1", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0"]),
+        "wpc": all_combos(["2w"], ["1.25.0", "1.26.0.preview"]),
+        "em": all_combos(["2w"], ["1.26.0.preview"]),
+        "data_east": all_combos(["2w"], ["1.25.0"]),
+        "whitestar": all_combos(["2w"], ["1.25.0"]),
+    }
+
+    code = "\n".join(
+        [
+            "from sys import implementation",
+            "pico_strs = {",
+            "   'Raspberry Pi Pico with RP2040': '1w',",
+            "   'Raspberry Pi Pico 2 W with RP2350': '2w'",
+            "},",
+            "pico_version = pico_strs[implementation._machine]" "micropython_version = '.'.join([str(i) for i in implementation.version])" "try:",
+            "    from systemConfig import vectorSystem",
+            "except:",
+            "    vectorSystem = None",
+            # define all valid hardware/micropython/system combinations
+            "pico_and_micropython_pairs = [",
+        ]
+        + [f"    ({pico!r}, {micropython!r})" for pico, micropython in compatible_configurations.get(target_hardware, [])]
+        + [
+            "]" "valid = False",
+            "for pico, micropython in pico_and_micropython_pairs:",
+            "    if pico_version != pico:",
+            "        continue",
+            "    if micropython_version != micropython:",
+            "        continue",
+            "    if vectorSystem is None or vectorSystem == {target_hardware!r}:",
+            "        valid = True",
+            "        break",
+            "if not valid:",
+            "   raise RuntimeError(f'Hardware / Micropython version / System combination not supported for this update: {pico_version} / {micropython_version} / {vectorSystem}')",
+        ]
+    )
+    return code.encode("utf-8")
+
+
 def build_remove_extra_files_code(build_dir: str) -> bytes:
     """
     Build a Micropython script that removes any file not present in 'build_dir'.
@@ -164,6 +213,8 @@ def build_update_file(
     if any(name in hardware_configs for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
+    file_lines = []
+
     # 1) Build top-level metadata as a single line
     hardware_metadata = hardware_configs.get(target_hardware, {})
     if not hardware_metadata:
@@ -180,7 +231,19 @@ def build_update_file(
 
     metadata_line = json.dumps(meta_data, separators=(",", ":"))
 
+    file_lines.append(metadata_line)
+
     # 2) Build lines for files
+    # 2a) confirm_compatibility.py
+
+    compatibility_code = build_confirm_compatibility_code(target_hardware)
+    compatibility_line = make_file_line(
+        "confirm_compatibility.py",
+        compatibility_code,
+        custom_log="Checking update compatibility",
+    )
+    file_lines.append(compatibility_line)
+
     # 2a) remove_extra_files.py
     removal_bytes = build_remove_extra_files_code(build_dir)
     removal_line = make_file_line(
@@ -189,7 +252,7 @@ def build_update_file(
         custom_log="Removing extra files",
         execute=True,
     )
-    file_lines = [removal_line]
+    file_lines.append(removal_line)
 
     # 2b) everything else in build_dir
     for root, _, files in os.walk(build_dir):
@@ -203,7 +266,7 @@ def build_update_file(
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
-    update_body = "\n".join([metadata_line] + file_lines)
+    update_body = "\n".join(file_lines)
     sha256_hex, signature_b64 = sign_data(update_body.encode("utf-8"), private_key_path)
 
     signature_line = json.dumps({"sha256": sha256_hex, "signature": signature_b64}, separators=(",", ":"))
