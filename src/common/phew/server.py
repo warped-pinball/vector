@@ -328,11 +328,9 @@ def create_schedule(ap_mode: bool = False):
         # ping peers to detect offline devices every 15 seconds
         schedule(ping_random_peer, 12000, 15000)
 
-        # initialize the time and date 5 seconds after boot
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
-
         # reconnect to wifi occasionally
         schedule(connect_to_wifi, 0, 120000, log="Server: Check Wifi")
+
     restart_schedule()
 
 

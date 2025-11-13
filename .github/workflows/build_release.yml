@@ -216,7 +216,7 @@ jobs:
                   repo,
                   path: repoPath,
                   branch,
-                  message: `Publish ${repoPath} for PR #${prNumber}`,
+                  message: `Publish ${repoPath} for PR ${prNumber}`,
                   content: Buffer.from(contents, 'utf8').toString('base64'),
                   sha: existingSha,
                   committer,
