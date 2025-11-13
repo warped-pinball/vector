@@ -192,7 +192,7 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
     return make_file_line(
         "remove_extra_files.py",
         removal_code.encode("utf-8"),
-        custom_log="Checking update compatibility",
+        custom_log="Removing extra files from previous versions",
     )
 
 
