@@ -13,6 +13,8 @@ from ScoreTrack import (
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
 
+from Usb_Comms import send_game_status
+
 from . import logging
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
@@ -189,6 +191,7 @@ def redirect(url, status=301):
 def update_time(retry=1):
     attempt = 0
     print("Server: Date Update")
+    return
     while attempt <= retry:
         try:
             ntptime.settime()  # This updates the RTC based on NTP server time
@@ -303,6 +306,8 @@ def create_schedule(ap_mode: bool = False):
 
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
+
+    schedule(send_game_status, 14000, 1000)
 
     # start checking scores every 5 seconds 15 seconds after boot
     schedule(CheckForNewScores, 15000, 5000)

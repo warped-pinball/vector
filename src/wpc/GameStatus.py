@@ -98,6 +98,17 @@ def game_report():
             _get_machine_score(3),
         ]
 
+
+        data["PlayerUp"] = _get_player_up()
+
+        count = (count + 1) % 20
+        if count == 0:
+            from ScoreTrack import top_scores
+            data["Leaders"] = top_scores
+
+
+
+
         '''
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
