@@ -185,11 +185,7 @@ def apply_update(url, skip_signature_check=False):
             return
     gc_collect()
 
-    yield {"log": "Update complete, Device will now reboot", "percent": 98}
-    yield {
-        "log": "Web interface changes may take up to 10 minutes to show up",
-        "percent": 99,
-    }
+    yield {"log": "Update complete, Device will now reboot", "percent": 99}
     yield {
         "log": "This page should automatically reload in ~30 seconds, if not please do so manually",
         "percent": 100,
