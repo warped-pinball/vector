@@ -190,7 +190,7 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
         ]
     )
     return make_file_line(
-        "confirm_compatibility.py",
+        "remove_extra_files.py",
         removal_code.encode("utf-8"),
         custom_log="Checking update compatibility",
     )
