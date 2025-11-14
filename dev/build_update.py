@@ -21,11 +21,11 @@ def all_combos(pico_list, micropython_list):
 
 
 compatible_configurations = {
-    "sys11": all_combos(["1w"], ["1.24.1", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0"]),
-    "wpc": all_combos(["2w"], ["1.25.0", "1.26.0.preview"]),
+    "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0."]),
+    "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "em": all_combos(["2w"], ["1.26.0.preview"]),
-    "data_east": all_combos(["2w"], ["1.25.0"]),
-    "whitestar": all_combos(["2w"], ["1.25.0"]),
+    "data_east": all_combos(["2w"], ["1.25.0."]),
+    "whitestar": all_combos(["2w"], ["1.25.0."]),
 }
 
 
@@ -121,17 +121,20 @@ def build_confirm_compatibility_code(target_hardware: str) -> bytes:
         [
             "from sys import implementation",
             "pico_strs = {",
-            "   'Raspberry Pi Pico with RP2040': '1w',",
+            "   'Raspberry Pi Pico W with RP2040': '1w',",
             "   'Raspberry Pi Pico 2 W with RP2350': '2w'",
-            "},",
-            "pico_version = pico_strs[implementation._machine]" "micropython_version = '.'.join([str(i) for i in implementation.version])" "try:",
+            "}",
+            "pico_version = pico_strs[implementation._machine]",
+            "micropython_version = '.'.join([str(i) for i in implementation.version])",
+            "try:",
             "    from systemConfig import vectorSystem",
             "except:",
             "    vectorSystem = None",
+            "",
             # define all valid hardware/micropython/system combinations
             "pico_and_micropython_pairs = [",
         ]
-        + [f"    ({pico!r}, {micropython!r})" for pico, micropython in compatible_configurations.get(target_hardware, [])]
+        + [f"    ({config['pico']!r}, {config['micropython']!r})," for config in compatible_configurations.get(target_hardware, [])]
         + [
             "]",
             "valid = False",
@@ -140,13 +143,17 @@ def build_confirm_compatibility_code(target_hardware: str) -> bytes:
             "        continue",
             "    if micropython_version != micropython:",
             "        continue",
-            "    if vectorSystem is None or vectorSystem == {target_hardware!r}:",
+            "    if vectorSystem is None or vectorSystem == {target_hardware!r}:".format(target_hardware=target_hardware),
             "        valid = True",
             "        break",
+            "",
             "if not valid:",
             "   raise RuntimeError(f'Hardware / Micropython version / System combination not supported for this update: {pico_version} / {micropython_version} / {vectorSystem}')",
+            "",
         ]
     )
+
+    print(code)
     return make_file_line(
         "confirm_compatibility.py",
         code.encode("utf-8"),
