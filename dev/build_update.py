@@ -158,6 +158,7 @@ def build_confirm_compatibility_code(target_hardware: str) -> bytes:
         "confirm_compatibility.py",
         code.encode("utf-8"),
         custom_log="Checking update compatibility",
+        execute=True,
     )
 
 
@@ -200,6 +201,7 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
         "remove_extra_files.py",
         removal_code.encode("utf-8"),
         custom_log="Removing extra files from previous versions",
+        execute=True,
     )
 
 
