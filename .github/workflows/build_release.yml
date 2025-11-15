@@ -370,10 +370,3 @@ jobs:
           body: ${{ steps.prepare_body.outputs.body }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
-
-      # Optional: if you want to publish “raw” files to a branch, do it here in the trusted job.
-      # - name: Publish raw update files (trusted context)
-      #   uses: actions/github-script@v7
-      #   with:
-      #     script: |
-      #       // move your existing publisher code here if still desired
