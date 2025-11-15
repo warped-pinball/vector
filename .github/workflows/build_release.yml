@@ -164,6 +164,8 @@ def update_file(path: str, pattern: str, replacement: str) -> None:
     content = file_path.read_text()
     new_content = re.sub(pattern, replacement, content)
     if content == new_content:
+        if replacement in content:
+            return
         raise RuntimeError(f"Failed to update version in {path}")
     file_path.write_text(new_content)
 
@@ -398,6 +400,8 @@ def update_file(path: str, pattern: str, replacement: str) -> None:
     content = file_path.read_text()
     new_content = re.sub(pattern, replacement, content)
     if content == new_content:
+        if replacement in content:
+            return
         raise RuntimeError(f"Failed to update version in {path}")
     file_path.write_text(new_content)
 
