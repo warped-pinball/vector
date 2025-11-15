@@ -18,6 +18,9 @@ env:
 jobs:
   pr-ci:
     if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ./.github/workflows/reusable_build_release.yml
     with:
       checkout-ref: ${{ github.event.pull_request.head.sha }}
@@ -25,6 +28,9 @@ jobs:
 
   trusted-build-and-release:
     if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ./.github/workflows/reusable_build_release.yml
     with:
       checkout-ref: ${{ github.ref }}
