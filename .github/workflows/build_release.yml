@@ -10,6 +10,51 @@ on:
 jobs:
   build_and_release:
     runs-on: ubuntu-latest
+    env:
+      TARGET_SYSTEMS: >-
+        [
+          {
+            "id": "sys11",
+            "label": "Sys11",
+            "config_path": "src/sys11/systemConfig.py",
+            "output": "update.json",
+            "artifact": "sys11-update.json",
+            "raw_filename": "sys11-update.json"
+          },
+          {
+            "id": "wpc",
+            "label": "WPC",
+            "config_path": "src/wpc/systemConfig.py",
+            "output": "update_wpc.json",
+            "artifact": "wpc-update.json",
+            "raw_filename": "wpc-update.json"
+          },
+          {
+            "id": "em",
+            "label": "EM",
+            "config_path": "src/em/systemConfig.py",
+            "output": "update_em.json",
+            "artifact": "em-update.json",
+            "raw_filename": "em-update.json"
+          },
+          {
+            "id": "whitestar",
+            "label": "WhiteStar",
+            "config_path": "src/whitestar/systemConfig.py",
+            "output": "update_whitestar.json",
+            "artifact": "whitestar-update.json",
+            "raw_filename": "whitestar-update.json"
+          },
+          {
+            "id": "data_east",
+            "label": "DataEast",
+            "config_path": "src/data_east/systemConfig.py",
+            "output": "update_data_east.json",
+            "artifact": "data-east-update.json",
+            "raw_filename": "data-east-update.json"
+          }
+        ]
+      WARPED_PINBALL_PRIVATE_KEY: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
     permissions:
       contents: write
       pull-requests: write
@@ -29,102 +74,198 @@ jobs:
 
       - name: Determine build environment and version
         id: determine_version
+        env:
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
         run: |
-          BASE_VERSION=$(grep VectorVersion src/common/SharedState.py | awk -F '"' '{print $2}')
-          SYS11_BASE=$(grep SystemVersion src/sys11/systemConfig.py | awk -F '"' '{print $2}')
-          WPC_BASE=$(grep SystemVersion src/wpc/systemConfig.py | awk -F '"' '{print $2}')
-          EM_BASE=$(grep SystemVersion src/em/systemConfig.py | awk -F '"' '{print $2}')
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            SUFFIX="-dev${{ github.event.pull_request.number }}"
-            SHOULD_SIGN="false"
-            SHOULD_RELEASE="false"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            SUFFIX="-beta${{ github.run_number }}"
-            SHOULD_SIGN="true"
-            SHOULD_RELEASE="true"
-          else
-            SUFFIX=""
-            SHOULD_SIGN="true"
-            SHOULD_RELEASE="true"
-          fi
-          VERSION="$BASE_VERSION$SUFFIX"
-          SYS11_VERSION="$SYS11_BASE$SUFFIX"
-          WPC_VERSION="$WPC_BASE$SUFFIX"
-          EM_VERSION="$EM_BASE$SUFFIX"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "SYS11_VERSION=$SYS11_VERSION" >> $GITHUB_ENV
-          echo "WPC_VERSION=$WPC_VERSION" >> $GITHUB_ENV
-          echo "EM_VERSION=$EM_VERSION" >> $GITHUB_ENV
-          echo "SHOULD_SIGN=$SHOULD_SIGN" >> $GITHUB_ENV
-          echo "SHOULD_RELEASE=$SHOULD_RELEASE" >> $GITHUB_ENV
+          python <<'PY'
+import json
+import os
+import re
+from pathlib import Path
+
+targets = json.loads(os.environ["TARGET_SYSTEMS"])
+
+
+def extract_version(path: str, pattern: str) -> str:
+    text = Path(path).read_text()
+    match = re.search(pattern, text)
+    if not match:
+        raise RuntimeError(f"Unable to find version in {path}")
+    return match.group(1)
+
+
+base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
+target_base_versions = {
+    target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
+    for target in targets
+}
+
+event_name = os.environ["EVENT_NAME"]
+if event_name == "pull_request":
+    suffix = f"-dev{os.environ['PR_NUMBER']}"
+    should_sign = should_release = "false"
+elif event_name == "push":
+    suffix = f"-beta{os.environ['RUN_NUMBER']}"
+    should_sign = should_release = "true"
+else:
+    suffix = ""
+    should_sign = should_release = "true"
+
+version = f"{base_version}{suffix}"
+target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
+
+release_files = "\n".join(target["output"] for target in targets)
+
+env_file = Path(os.environ["GITHUB_ENV"])
+with env_file.open("a") as handle:
+    handle.write(f"VERSION={version}\n")
+    handle.write(f"SHOULD_SIGN={should_sign}\n")
+    handle.write(f"SHOULD_RELEASE={should_release}\n")
+    handle.write("TARGET_VERSIONS<<EOF\n")
+    handle.write(json.dumps(target_versions))
+    handle.write("\nEOF\n")
+    handle.write("RELEASE_FILES<<EOF\n")
+    handle.write(release_files + "\n")
+    handle.write("EOF\n")
+
+output_file = Path(os.environ["GITHUB_OUTPUT"])
+with output_file.open("a") as handle:
+    handle.write(f"version={version}\n")
+PY
 
       - name: Update version files
+        env:
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
+          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
-          sed -i "s/VectorVersion = .*/VectorVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.SYS11_VERSION }}\"/" src/sys11/systemConfig.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.WPC_VERSION }}\"/" src/wpc/systemConfig.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.EM_VERSION }}\"/" src/em/systemConfig.py
+          python <<'PY'
+import json
+import os
+import re
+from pathlib import Path
+
+targets = json.loads(os.environ["TARGET_SYSTEMS"])
+versions = json.loads(os.environ["TARGET_VERSIONS"])
+vector_version = os.environ["VERSION"]
+
+
+def update_file(path: str, pattern: str, replacement: str) -> None:
+    file_path = Path(path)
+    content = file_path.read_text()
+    new_content = re.sub(pattern, replacement, content)
+    if content == new_content:
+        raise RuntimeError(f"Failed to update version in {path}")
+    file_path.write_text(new_content)
+
+
+update_file(
+    "src/common/SharedState.py",
+    r"VectorVersion\s*=\s*\"[^\"]+\"",
+    f'VectorVersion = "{vector_version}"',
+)
+
+for target in targets:
+    target_version = versions[target["id"]]
+    update_file(
+        target["config_path"],
+        r"SystemVersion\s*=\s*\"[^\"]+\"",
+        f'SystemVersion = "{target_version}"',
+    )
+PY
 
       - name: Build and generate update files
+        env:
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
+          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
+          SHOULD_SIGN: ${{ env.SHOULD_SIGN }}
+          PRIVATE_KEY: ${{ env.WARPED_PINBALL_PRIVATE_KEY }}
         run: |
-          for target in sys11 wpc em; do
-            python dev/build.py --build-dir build --target_hardware $target
-            output_file="update_${target}.json"
-            version_var="${target^^}_VERSION"
-            if [ "$target" = "sys11" ]; then
-              output_file="update.json"
-            fi
-            VERSION_TO_USE=$(eval echo \$$version_var)
-            if [ "${{ env.SHOULD_SIGN }}" = "true" ] && [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
-              echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
-              python dev/build_update.py \
-                --build-dir build \
-                --output "$output_file" \
-                --version "$VERSION_TO_USE" \
-                --target_hardware $target \
-                --private-key private_key.pem
-              rm -f private_key.pem
-            else
-              python dev/build_update.py \
-                --build-dir build \
-                --output "$output_file" \
-                --version "$VERSION_TO_USE" \
-                --target_hardware $target
-            fi
-          done
+          python <<'PY'
+import json
+import os
+import subprocess
+import tempfile
+from pathlib import Path
 
-      - name: Upload Sys11 update artifact
+targets = json.loads(os.environ["TARGET_SYSTEMS"])
+versions = json.loads(os.environ["TARGET_VERSIONS"])
+should_sign = os.environ.get("SHOULD_SIGN", "false").lower() == "true"
+private_key = os.environ.get("PRIVATE_KEY", "").strip()
+
+
+def run_command(command):
+    subprocess.run(command, check=True)
+
+
+for target in targets:
+    target_id = target["id"]
+    run_command(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
+
+    base_command = [
+        "python",
+        "dev/build_update.py",
+        "--build-dir",
+        "build",
+        "--output",
+        target["output"],
+        "--version",
+        versions[target_id],
+        "--target_hardware",
+        target_id,
+    ]
+
+    if should_sign and private_key:
+        with tempfile.NamedTemporaryFile("w", delete=False) as key_file:
+            key_file.write(private_key)
+            key_path = key_file.name
+        try:
+            run_command(base_command + ["--private-key", key_path])
+        finally:
+            Path(key_path).unlink(missing_ok=True)
+    else:
+        run_command(base_command)
+PY
+
+      - name: Prepare pull request artifacts
         if: ${{ github.event_name == 'pull_request' }}
-        id: upload_sys11
+        env:
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
+        run: |
+          python <<'PY'
+import json
+import os
+import shutil
+from pathlib import Path
+
+targets = json.loads(os.environ["TARGET_SYSTEMS"])
+artifact_dir = Path("pr-artifacts")
+artifact_dir.mkdir(parents=True, exist_ok=True)
+
+for target in targets:
+    source = Path(target["output"])
+    if not source.exists():
+        continue
+    destination = artifact_dir / target["artifact"]
+    shutil.copy2(source, destination)
+PY
+
+      - name: Upload update artifacts
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
-          name: sys11-update.json
-          path: update.json
-          artifact-content-type: raw
-
-      - name: Upload WPC update artifact
-        if: ${{ github.event_name == 'pull_request' }}
-        id: upload_wpc
-        uses: actions/upload-artifact@v4
-        with:
-          name: wpc-update.json
-          path: update_wpc.json
-          artifact-content-type: raw
-
-      - name: Upload EM update artifact
-        if: ${{ github.event_name == 'pull_request' }}
-        id: upload_em
-        uses: actions/upload-artifact@v4
-        with:
-          name: em-update.json
-          path: update_em.json
+          name: developer-updates
+          path: pr-artifacts
           artifact-content-type: raw
 
       - name: Publish raw update files
         if: ${{ github.event_name == 'pull_request' }}
         id: publish_raw_updates
         uses: actions/github-script@v7
+        env:
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
         with:
           script: |
             const fs = require('fs/promises');
@@ -136,11 +277,11 @@ jobs:
             const prNumber = context.issue.number;
             const basePath = `pr-artifacts/pr-${prNumber}`;
 
-            const files = [
-              { label: 'Sys11', source: 'update.json', filename: 'sys11-update.json' },
-              { label: 'WPC', source: 'update_wpc.json', filename: 'wpc-update.json' },
-              { label: 'EM', source: 'update_em.json', filename: 'em-update.json' },
-            ];
+            const files = JSON.parse(process.env.TARGET_SYSTEMS || '[]').map(system => ({
+              label: system.label,
+              source: system.output,
+              filename: system.raw_filename || system.artifact || `${system.id}-update.json`,
+            }));
 
             const committer = {
               name: 'github-actions[bot]',
@@ -317,13 +458,26 @@ jobs:
       - name: Prepare release body
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         id: prepare_body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
+          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
-          VERSION_SECTION='## Versions
-          **Vector**: `${{ env.VERSION }}`
-          **Sys11**: `${{ env.SYS11_VERSION }}`
-          **WPC**: `${{ env.WPC_VERSION }}`
-          **EM**: `${{ env.EM_VERSION }}`
-          <!-- END VERSIONS SECTION -->'
+          VERSION_SECTION="$(python <<'PY'
+import json
+import os
+
+targets = json.loads(os.environ["TARGET_SYSTEMS"])
+versions = json.loads(os.environ["TARGET_VERSIONS"])
+
+lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
+for target in targets:
+    lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
+lines.append("<!-- END VERSIONS SECTION -->")
+
+print("\n".join(lines))
+PY
+          )"
 
           # Fetch existing release body if it exists
           EXISTING_BODY=""
@@ -344,8 +498,6 @@ jobs:
           echo "body<<EOF" >> $GITHUB_OUTPUT
           cat new_body.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
@@ -357,9 +509,6 @@ jobs:
           body: ${{ steps.prepare_body.outputs.body }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
-          files: |
-            update.json
-            update_wpc.json
-            update_em.json
+          files: ${{ env.RELEASE_FILES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
