@@ -16,10 +16,16 @@ SOURCE_DIR = "src"
 OUTPUT_FILE = "update.json"
 
 
-hardware_configs = {
-    "sys11": {"supported_hardware": ["vector_v4", "vector_v5"], "micropython_versions": ["1.24.1", "1.23.0-preview"]},
-    "wpc": {"supported_hardware": ["wpc_vector_v1"], "micropython_versions": ["1.25.0", "1.26.0-preview"]},
-    "em": {"supported_hardware": ["EM"], "micropython_versions": ["1.26.0-preview"]},
+def all_combos(pico_list, micropython_list):
+    return [{"pico": pico, "micropython": mp} for pico in pico_list for mp in micropython_list]
+
+
+compatible_configurations = {
+    "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0."]),
+    "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
+    "em": all_combos(["2w"], ["1.26.0.preview"]),
+    "data_east": all_combos(["2w"], ["1.25.0."]),
+    "whitestar": all_combos(["2w"], ["1.25.0."]),
 }
 
 
@@ -54,6 +60,106 @@ def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> str:
 def get_file_contents(file_path: str) -> bytes:
     with open(file_path, "rb") as f:
         return f.read()
+
+
+def build_update_metadata(target_hardware: str, version: str) -> dict:
+    hardware_metadata = compatible_configurations.get(target_hardware, {})
+    if not hardware_metadata:
+        raise ValueError(f"Unsupported target hardware: {target_hardware}")
+
+    # combine the default metadata with hardware-specific metadata
+    meta_data = {
+        "update_file_format": "1.0",
+        "downgradable_to": ["1.0.0"],
+        "version": version,
+        # This is the list of all hardware that was sold with software that checks for compatibility this way
+        # It's now kept only to ensure those boards can update directly to the latest version
+        "supported_hardware": ["vector_v4", "vector_v5", "wpc_vector_v1"],
+        # We simply list all the micropython versions that are supported by the target hardware and not specific combinations of hardware/micropython
+        # Since this is only checked by old versions of the update code the real "check" is done in the confirm_compatibility.py script
+        "micropython_versions": [combo["micropython"] for combo in hardware_metadata],
+    }
+
+    return json.dumps(meta_data, separators=(",", ":"))
+
+
+def make_file_line(
+    file_path: str,
+    file_contents: bytes,
+    custom_log: Optional[str] = None,
+    execute: bool = False,
+) -> str:
+    """
+    Create a single line representing one file's update entry:
+        filename + jsonDictionary + base64EncodedFileContents
+
+    Example line:
+        some_file.py{"checksum":"ABCD","bytes":1234,"log":"Uploading file"}c29tZSB
+    """
+    checksum = crc16_ccitt(file_contents)
+    file_size = len(file_contents)
+    b64_data = base64.b64encode(file_contents).decode("utf-8")
+
+    file_meta = {
+        "checksum": checksum,
+        "bytes": file_size,
+        "log": custom_log if custom_log else f"Uploading {file_path}",
+    }
+    if execute:
+        file_meta["execute"] = True
+
+    meta_json = json.dumps(file_meta, separators=(",", ":"))
+    return f"{file_path}{meta_json}{b64_data}"
+
+
+def build_confirm_compatibility_code(target_hardware: str) -> bytes:
+    """
+    Build a Micropython script that checks for compatible hardware and micropython versions.
+    Return it as raw bytes ready for base64 encoding.
+    """
+    code = "\n".join(
+        [
+            "from sys import implementation",
+            "pico_strs = {",
+            "   'Raspberry Pi Pico W with RP2040': '1w',",
+            "   'Raspberry Pi Pico 2 W with RP2350': '2w'",
+            "}",
+            "pico_version = pico_strs[implementation._machine]",
+            "micropython_version = '.'.join([str(i) for i in implementation.version])",
+            "try:",
+            "    from systemConfig import vectorSystem",
+            "except:",
+            "    vectorSystem = None",
+            "",
+            # define all valid hardware/micropython/system combinations
+            "pico_and_micropython_pairs = [",
+        ]
+        + [f"    ({config['pico']!r}, {config['micropython']!r})," for config in compatible_configurations.get(target_hardware, [])]
+        + [
+            "]",
+            "valid = False",
+            "for pico, micropython in pico_and_micropython_pairs:",
+            "    if pico_version != pico:",
+            "        continue",
+            "    if micropython_version != micropython:",
+            "        continue",
+            "    if vectorSystem is None or vectorSystem == {target_hardware!r}:".format(target_hardware=target_hardware),
+            "        valid = True",
+            "        break",
+            "",
+            "if not valid:",
+            "   raise RuntimeError(f'Hardware / Micropython version / System combination not supported for this update: {pico_version} / {micropython_version} / {vectorSystem}')",
+            "",
+        ]
+    )
+
+    print(code)
+    return make_file_line(
+        "confirm_compatibility.py",
+        code.encode("utf-8"),
+        custom_log="Checking update compatibility",
+        execute=True,
+    )
 
 
 def build_remove_extra_files_code(build_dir: str) -> bytes:
@@ -91,36 +197,12 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
             "rm_walk('/')",
         ]
     )
-    return removal_code.encode("utf-8")
-
-
-def make_file_line(
-    file_path: str,
-    file_contents: bytes,
-    custom_log: Optional[str] = None,
-    execute: bool = False,
-) -> str:
-    """
-    Create a single line representing one file's update entry:
-        filename + jsonDictionary + base64EncodedFileContents
-
-    Example line:
-        some_file.py{"checksum":"ABCD","bytes":1234,"log":"Uploading file"}c29tZSB
-    """
-    checksum = crc16_ccitt(file_contents)
-    file_size = len(file_contents)
-    b64_data = base64.b64encode(file_contents).decode("utf-8")
-
-    file_meta = {
-        "checksum": checksum,
-        "bytes": file_size,
-        "log": custom_log if custom_log else f"Uploading {file_path}",
-    }
-    if execute:
-        file_meta["execute"] = True
-
-    meta_json = json.dumps(file_meta, separators=(",", ":"))
-    return f"{file_path}{meta_json}{b64_data}"
+    return make_file_line(
+        "remove_extra_files.py",
+        removal_code.encode("utf-8"),
+        custom_log="Removing extra files from previous versions",
+        execute=True,
+    )
 
 
 def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
@@ -156,36 +238,13 @@ def build_update_file(
     """
 
     build_dir_path = Path(build_dir)
+
+    # confirm that the build_dir exists and is a directory that does not contain hardware-specific subdirectories
     subdirs = {p.name for p in build_dir_path.iterdir() if p.is_dir()}
-    if any(name in hardware_configs for name in subdirs):
+    if any(name in compatible_configurations for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
-    # 1) Build top-level metadata as a single line
-    hardware_metadata = hardware_configs.get(target_hardware, {})
-    if not hardware_metadata:
-        raise ValueError(f"Unsupported target hardware: {target_hardware}")
-
-    # combine the default metadata with hardware-specific metadata
-    meta_data = {
-        "update_file_format": "1.0",
-        "downgradable_to": ["1.0.0"],
-        "version": version,
-    }
-
-    meta_data.update(hardware_metadata)
-
-    metadata_line = json.dumps(meta_data, separators=(",", ":"))
-
-    # 2) Build lines for files
-    # 2a) remove_extra_files.py
-    removal_bytes = build_remove_extra_files_code(build_dir)
-    removal_line = make_file_line(
-        "remove_extra_files.py",
-        removal_bytes,
-        custom_log="Removing extra files",
-        execute=True,
-    )
-    file_lines = [removal_line]
+    file_lines = [build_update_metadata(target_hardware, version), build_confirm_compatibility_code(target_hardware), build_remove_extra_files_code(build_dir)]
 
     # 2b) everything else in build_dir
     for root, _, files in os.walk(build_dir):
@@ -199,13 +258,13 @@ def build_update_file(
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
-    update_body = "\n".join([metadata_line] + file_lines)
+    update_body = "\n".join(file_lines)
     sha256_hex, signature_b64 = sign_data(update_body.encode("utf-8"), private_key_path)
 
     signature_line = json.dumps({"sha256": sha256_hex, "signature": signature_b64}, separators=(",", ":"))
 
     # Final output: top line is metadata, then all file lines, then signature line
-    final_output = "\n".join([metadata_line] + file_lines + [signature_line]) + "\n"
+    final_output = "\n".join(file_lines + [signature_line]) + "\n"
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_output)
@@ -222,7 +281,7 @@ def main():
     parser.add_argument(
         "--target_hardware",
         default="sys11",
-        help="Target system for the update (e.g., sys11, wpc, em, etc.)",
+        help="Target system for the update (e.g., data_east, sys11, whitestar, wpc, em, etc.)",
     )
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
     args = parser.parse_args()

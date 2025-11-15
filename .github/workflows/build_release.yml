@@ -7,124 +7,93 @@ on:
   release:
     types: [published]
 
+# Default least privilege across the repo unless a job elevates
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  TARGET_CONFIG: dev/ci/targets.json
+
+# ============================================================
+# =============== UNTRUSTED JOB (PRs only) ===================
+# ============================================================
 jobs:
-  build_and_release:
+  pr-ci:
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Check out code
+      - name: Check out PR HEAD (no secrets)
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install dependencies (no secrets)
         run: |
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Determine build environment and version
+      - name: Determine build environment and version (PR)
         id: determine_version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
         run: |
-          BASE_VERSION=$(grep VectorVersion src/common/SharedState.py | awk -F '"' '{print $2}')
-          SYS11_BASE=$(grep SystemVersion src/sys11/systemConfig.py | awk -F '"' '{print $2}')
-          WPC_BASE=$(grep SystemVersion src/wpc/systemConfig.py | awk -F '"' '{print $2}')
-          EM_BASE=$(grep SystemVersion src/em/systemConfig.py | awk -F '"' '{print $2}')
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            SUFFIX="-dev${{ github.event.pull_request.number }}"
-            SHOULD_SIGN="false"
-            SHOULD_RELEASE="false"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            SUFFIX="-beta${{ github.run_number }}"
-            SHOULD_SIGN="true"
-            SHOULD_RELEASE="true"
-          else
-            SUFFIX=""
-            SHOULD_SIGN="true"
-            SHOULD_RELEASE="true"
-          fi
-          VERSION="$BASE_VERSION$SUFFIX"
-          SYS11_VERSION="$SYS11_BASE$SUFFIX"
-          WPC_VERSION="$WPC_BASE$SUFFIX"
-          EM_VERSION="$EM_BASE$SUFFIX"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "SYS11_VERSION=$SYS11_VERSION" >> $GITHUB_ENV
-          echo "WPC_VERSION=$WPC_VERSION" >> $GITHUB_ENV
-          echo "EM_VERSION=$EM_VERSION" >> $GITHUB_ENV
-          echo "SHOULD_SIGN=$SHOULD_SIGN" >> $GITHUB_ENV
-          echo "SHOULD_RELEASE=$SHOULD_RELEASE" >> $GITHUB_ENV
+          python dev/ci/workflow_helpers.py determine-version \
+            --targets "$TARGET_CONFIG" \
+            --event-name "$EVENT_NAME" \
+            --run-number "$RUN_NUMBER" \
+            --pr-number "$PR_NUMBER" \
+            --env-file "$GITHUB_ENV" \
+            --output-file "$GITHUB_OUTPUT"
 
-      - name: Update version files
+      - name: Capture raw artifact metadata
         run: |
-          sed -i "s/VectorVersion = .*/VectorVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.SYS11_VERSION }}\"/" src/sys11/systemConfig.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.WPC_VERSION }}\"/" src/wpc/systemConfig.py
-          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.EM_VERSION }}\"/" src/em/systemConfig.py
+          python dev/ci/workflow_helpers.py emit-pr-metadata \
+            --targets "$TARGET_CONFIG" \
+            --env-file "$GITHUB_ENV"
 
-      - name: Build and generate update files
+      - name: Update version files (PR)
         run: |
-          for target in sys11 wpc em; do
-            python dev/build.py --build-dir build --target_hardware $target
-            output_file="update_${target}.json"
-            version_var="${target^^}_VERSION"
-            if [ "$target" = "sys11" ]; then
-              output_file="update.json"
-            fi
-            VERSION_TO_USE=$(eval echo \$$version_var)
-            if [ "${{ env.SHOULD_SIGN }}" = "true" ] && [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
-              echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
-              python dev/build_update.py \
-                --build-dir build \
-                --output "$output_file" \
-                --version "$VERSION_TO_USE" \
-                --target_hardware $target \
-                --private-key private_key.pem
-              rm -f private_key.pem
-            else
-              python dev/build_update.py \
-                --build-dir build \
-                --output "$output_file" \
-                --version "$VERSION_TO_USE" \
-                --target_hardware $target
-            fi
-          done
+          python dev/ci/workflow_helpers.py update-versions \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION"
 
-      - name: Upload Sys11 update artifact
-        if: ${{ github.event_name == 'pull_request' }}
-        id: upload_sys11
+      - name: Build and generate update files (no signing on PR)
+        run: |
+          python dev/ci/workflow_helpers.py build-updates \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --build-dir build
+
+      - name: Prepare pull request artifacts
+        run: |
+          python dev/ci/workflow_helpers.py prepare-pr-artifacts \
+            --targets "$TARGET_CONFIG" \
+            --artifact-dir pr-artifacts
+
+      - name: Upload update artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sys11-update.json
-          path: update.json
-          artifact-content-type: raw
-
-      - name: Upload WPC update artifact
-        if: ${{ github.event_name == 'pull_request' }}
-        id: upload_wpc
-        uses: actions/upload-artifact@v4
-        with:
-          name: wpc-update.json
-          path: update_wpc.json
-          artifact-content-type: raw
-
-      - name: Upload EM update artifact
-        if: ${{ github.event_name == 'pull_request' }}
-        id: upload_em
-        uses: actions/upload-artifact@v4
-        with:
-          name: em-update.json
-          path: update_em.json
+          name: developer-updates
+          path: pr-artifacts
           artifact-content-type: raw
 
       - name: Publish raw update files
-        if: ${{ github.event_name == 'pull_request' }}
         id: publish_raw_updates
         uses: actions/github-script@v7
+        env:
+          RAW_ARTIFACT_METADATA: ${{ env.RAW_ARTIFACT_METADATA }}
         with:
           script: |
             const fs = require('fs/promises');
@@ -135,12 +104,7 @@ jobs:
             const branch = 'pr-update-artifacts';
             const prNumber = context.issue.number;
             const basePath = `pr-artifacts/pr-${prNumber}`;
-
-            const files = [
-              { label: 'Sys11', source: 'update.json', filename: 'sys11-update.json' },
-              { label: 'WPC', source: 'update_wpc.json', filename: 'wpc-update.json' },
-              { label: 'EM', source: 'update_em.json', filename: 'em-update.json' },
-            ];
+            const metadata = JSON.parse(process.env.RAW_ARTIFACT_METADATA || '[]');
 
             const committer = {
               name: 'github-actions[bot]',
@@ -176,57 +140,63 @@ jobs:
 
             const links = [];
 
-            try {
-              await ensureBranch();
-
-              for (const file of files) {
-                let contents;
-                try {
-                  contents = await fs.readFile(file.source, 'utf8');
-                } catch (error) {
-                  if (error.code === 'ENOENT') {
-                    core.warning(`Skipping ${file.source} because it was not found.`);
-                    continue;
-                  }
-                  throw error;
+            async function publishFile(entry) {
+              let contents;
+              try {
+                contents = await fs.readFile(entry.source, 'utf8');
+              } catch (error) {
+                if (error.code === 'ENOENT') {
+                  core.warning(`Skipping ${entry.source} because it was not found.`);
+                  return;
                 }
+                throw error;
+              }
 
-                const repoPath = `${basePath}/${file.filename}`;
+              const repoPath = `${basePath}/${entry.filename}`;
 
-                let existingSha;
-                try {
-                  const { data } = await github.rest.repos.getContent({
-                    owner,
-                    repo,
-                    path: repoPath,
-                    ref: branch,
-                  });
-
-                  if (!Array.isArray(data)) {
-                    existingSha = data.sha;
-                  }
-                } catch (error) {
-                  if (error.status !== 404) {
-                    throw error;
-                  }
-                }
-
-                await github.rest.repos.createOrUpdateFileContents({
+              let existingSha;
+              try {
+                const { data } = await github.rest.repos.getContent({
                   owner,
                   repo,
                   path: repoPath,
-                  branch,
-                  message: `Publish ${repoPath} for PR ${prNumber}`,
-                  content: Buffer.from(contents, 'utf8').toString('base64'),
-                  sha: existingSha,
-                  committer,
-                  author: committer,
+                  ref: branch,
                 });
+                if (!Array.isArray(data)) {
+                  existingSha = data.sha;
+                }
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
 
-                links.push({
-                  name: file.label,
-                  url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
-                });
+              await github.rest.repos.createOrUpdateFileContents({
+                owner,
+                repo,
+                path: repoPath,
+                branch,
+                message: `Publish ${repoPath} for PR ${prNumber}`,
+                content: Buffer.from(contents, 'utf8').toString('base64'),
+                sha: existingSha,
+                committer,
+                author: committer,
+              });
+
+              links.push({
+                name: entry.label,
+                url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
+              });
+            }
+
+            try {
+              if (metadata.length === 0) {
+                core.info('No artifact metadata found; skipping raw publishing.');
+              } else {
+                await ensureBranch();
+                for (const entry of metadata) {
+                  await publishFile(entry);
+                }
               }
             } catch (error) {
               if (error.status === 403) {
@@ -239,7 +209,6 @@ jobs:
             core.setOutput('links', JSON.stringify(links));
 
       - name: Comment with update artifact links
-        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         env:
           RAW_LINKS_JSON: ${{ steps.publish_raw_updates.outputs.links }}
@@ -314,42 +283,86 @@ jobs:
               });
             }
 
+# ============================================================
+# =========== TRUSTED JOB (main pushes & releases) ===========
+# ============================================================
+  trusted-build-and-release:
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out trusted ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dev/requirements.txt
+
+      - name: Determine build environment and version (trusted)
+        id: determine_version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python dev/ci/workflow_helpers.py determine-version \
+            --targets "$TARGET_CONFIG" \
+            --event-name "$EVENT_NAME" \
+            --run-number "$RUN_NUMBER" \
+            --pr-number "" \
+            --env-file "$GITHUB_ENV"
+
+      - name: Update version files (trusted)
+        run: |
+          python dev/ci/workflow_helpers.py update-versions \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION"
+
+      - name: Build and generate update files (with signing)
+        if: ${{ env.SHOULD_SIGN == 'true' }}
+        env:
+          PRIVATE_KEY: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
+        run: |
+          python dev/ci/workflow_helpers.py build-updates \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --build-dir build \
+            --sign \
+            --private-key-env PRIVATE_KEY
+
       - name: Prepare release body
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         id: prepare_body
-        run: |
-          VERSION_SECTION='## Versions
-          **Vector**: `${{ env.VERSION }}`
-          **Sys11**: `${{ env.SYS11_VERSION }}`
-          **WPC**: `${{ env.WPC_VERSION }}`
-          **EM**: `${{ env.EM_VERSION }}`
-          <!-- END VERSIONS SECTION -->'
-
-          # Fetch existing release body if it exists
-          EXISTING_BODY=""
-          if gh release view "${{ env.VERSION }}" --json body -q .body > body.txt 2>/dev/null; then
-          EXISTING_BODY=$(cat body.txt)
-          fi
-
-          # Remove any existing versions section
-          CLEANED_BODY=$(echo "$EXISTING_BODY" | awk '/## Versions/{flag=1} /<!-- END VERSIONS SECTION -->/{flag=0;next} !flag')
-
-          # Compose new body
-          if [ -n "$CLEANED_BODY" ]; then
-          echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
-          else
-          echo -e "$VERSION_SECTION" > new_body.txt
-          fi
-
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          cat new_body.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
+        run: |
+          set -euo pipefail
+          gh release view "$VERSION" --json body -q .body > existing_body.txt 2>/dev/null || true
+          python dev/ci/workflow_helpers.py render-release-body \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION" \
+            --existing-body-file existing_body.txt \
+            --output-file new_body.txt
+
+          {
+            echo "body<<EOF"
+            cat new_body.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
@@ -357,9 +370,3 @@ jobs:
           body: ${{ steps.prepare_body.outputs.body }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
-          files: |
-            update.json
-            update_wpc.json
-            update_em.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
