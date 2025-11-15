@@ -355,8 +355,11 @@ jobs:
             --existing-body-file existing_body.txt \
             --output-file new_body.txt
 
-          body_contents=$(cat new_body.txt)
-          printf 'body<<EOF\n%s\nEOF\n' "$body_contents" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<EOF"
+            cat new_body.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
