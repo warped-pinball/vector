@@ -355,11 +355,20 @@ jobs:
             --existing-body-file existing_body.txt \
             --output-file new_body.txt
 
-          {
-            echo "body<<EOF"
-            cat new_body.txt
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          python - <<'PY'
+            import os
+            from pathlib import Path
+
+            body = Path("new_body.txt").read_text()
+            output_path = os.environ["GITHUB_OUTPUT"]
+
+            with open(output_path, "a", encoding="utf-8") as fh:
+                fh.write("body<<EOF\n")
+                fh.write(body)
+                if not body.endswith("\n"):
+                    fh.write("\n")
+                fh.write("EOF\n")
+          PY
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
