@@ -12,6 +12,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  TARGET_CONFIG: dev/ci/targets.json
+
 # ============================================================
 # =============== UNTRUSTED JOB (PRs only) ===================
 # ============================================================
@@ -20,52 +23,8 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
-    env:
-      TARGET_SYSTEMS: >-
-        [
-          {
-            "id": "sys11",
-            "label": "Sys11",
-            "config_path": "src/sys11/systemConfig.py",
-            "output": "update.json",
-            "artifact": "sys11-update.json",
-            "raw_filename": "sys11-update.json"
-          },
-          {
-            "id": "wpc",
-            "label": "WPC",
-            "config_path": "src/wpc/systemConfig.py",
-            "output": "update_wpc.json",
-            "artifact": "wpc-update.json",
-            "raw_filename": "wpc-update.json"
-          },
-          {
-            "id": "em",
-            "label": "EM",
-            "config_path": "src/em/systemConfig.py",
-            "output": "update_em.json",
-            "artifact": "em-update.json",
-            "raw_filename": "em-update.json"
-          },
-          {
-            "id": "whitestar",
-            "label": "WhiteStar",
-            "config_path": "src/whitestar/systemConfig.py",
-            "output": "update_whitestar.json",
-            "artifact": "whitestar-update.json",
-            "raw_filename": "whitestar-update.json"
-          },
-          {
-            "id": "data_east",
-            "label": "DataEast",
-            "config_path": "src/data_east/systemConfig.py",
-            "output": "update_data_east.json",
-            "artifact": "data-east-update.json",
-            "raw_filename": "data-east-update.json"
-          }
-        ]
     steps:
       - name: Check out PR HEAD (no secrets)
         uses: actions/checkout@v4
@@ -85,165 +44,43 @@ jobs:
       - name: Determine build environment and version (PR)
         id: determine_version
         env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}
         run: |
-          python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
+          python dev/ci/workflow_helpers.py determine-version \
+            --targets "$TARGET_CONFIG" \
+            --event-name "$EVENT_NAME" \
+            --run-number "$RUN_NUMBER" \
+            --pr-number "$PR_NUMBER" \
+            --env-file "$GITHUB_ENV" \
+            --output-file "$GITHUB_OUTPUT"
 
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-
-def extract_version(path: str, pattern: str) -> str:
-    text = Path(path).read_text()
-    match = re.search(pattern, text)
-    if not match:
-        raise RuntimeError(f"Unable to find version in {path}")
-    return match.group(1)
-
-base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
-target_base_versions = {
-    target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
-    for target in targets
-}
-
-event_name = os.environ["EVENT_NAME"]
-if event_name == "pull_request":
-    suffix = f"-dev{os.environ['PR_NUMBER']}"
-    should_sign = should_release = "false"
-elif event_name == "push":
-    suffix = f"-beta{os.environ['RUN_NUMBER']}"
-    should_sign = should_release = "true"
-else:
-    suffix = ""
-    should_sign = should_release = "true"
-
-version = f"{base_version}{suffix}"
-target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
-
-release_files = "\n".join(target["output"] for target in targets)
-
-env_file = Path(os.environ["GITHUB_ENV"])
-with env_file.open("a") as handle:
-    handle.write(f"VERSION={version}\n")
-    handle.write(f"SHOULD_SIGN={should_sign}\n")
-    handle.write(f"SHOULD_RELEASE={should_release}\n")
-    handle.write("TARGET_VERSIONS<<EOF\n")
-    handle.write(json.dumps(target_versions))
-    handle.write("\nEOF\n")
-    handle.write("RELEASE_FILES<<EOF\n")
-    handle.write(release_files + "\n")
-    handle.write("EOF\n")
-
-output_file = Path(os.environ["GITHUB_OUTPUT"])
-with output_file.open("a") as handle:
-    handle.write(f"version={version}\n")
-PY
+      - name: Capture raw artifact metadata
+        run: |
+          python dev/ci/workflow_helpers.py emit-pr-metadata \
+            --targets "$TARGET_CONFIG" \
+            --env-file "$GITHUB_ENV"
 
       - name: Update version files (PR)
-        env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
-          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
-          python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-vector_version = os.environ["VERSION"]
-
-def update_file(path: str, pattern: str, replacement: str) -> None:
-    file_path = Path(path)
-    content = file_path.read_text()
-    new_content = re.sub(pattern, replacement, content)
-    if content == new_content:
-        if replacement in content:
-            return
-        raise RuntimeError(f"Failed to update version in {path}")
-    file_path.write_text(new_content)
-
-update_file(
-    "src/common/SharedState.py",
-    r"VectorVersion\s*=\s*\"[^\"]+\"",
-    f'VectorVersion = "{vector_version}"',
-)
-
-for target in targets:
-    target_version = versions[target["id"]]
-    update_file(
-        target["config_path"],
-        r"SystemVersion\s*=\s*\"[^\"]+\"",
-        f'SystemVersion = "{target_version}"',
-    )
-PY
+          python dev/ci/workflow_helpers.py update-versions \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION"
 
       - name: Build and generate update files (no signing on PR)
-        env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
-          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
-          SHOULD_SIGN: "false"
         run: |
-          python <<'PY'
-import json
-import os
-import subprocess
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-
-def run_command(command):
-    subprocess.run(command, check=True)
-
-for target in targets:
-    target_id = target["id"]
-    run_command(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
-
-    base_command = [
-        "python",
-        "dev/build_update.py",
-        "--build-dir",
-        "build",
-        "--output",
-        target["output"],
-        "--version",
-        versions[target_id],
-        "--target_hardware",
-        target_id,
-    ]
-
-    # PRs never sign; just run the base command.
-    run_command(base_command)
-PY
+          python dev/ci/workflow_helpers.py build-updates \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --build-dir build
 
       - name: Prepare pull request artifacts
-        env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
         run: |
-          python <<'PY'
-import json
-import os
-import shutil
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-artifact_dir = Path("pr-artifacts")
-artifact_dir.mkdir(parents=True, exist_ok=True)
-
-for target in targets:
-    source = Path(target["output"])
-    if not source.exists():
-        continue
-    destination = artifact_dir / target["artifact"]
-    shutil.copy2(source, destination)
-PY
+          python dev/ci/workflow_helpers.py prepare-pr-artifacts \
+            --targets "$TARGET_CONFIG" \
+            --artifact-dir pr-artifacts
 
       - name: Upload update artifacts
         uses: actions/upload-artifact@v4
@@ -252,7 +89,199 @@ PY
           path: pr-artifacts
           artifact-content-type: raw
 
-      # Intentionally NOT pushing to a branch from PRs.
+      - name: Publish raw update files
+        id: publish_raw_updates
+        uses: actions/github-script@v7
+        env:
+          RAW_ARTIFACT_METADATA: ${{ env.RAW_ARTIFACT_METADATA }}
+        with:
+          script: |
+            const fs = require('fs/promises');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const defaultBranch = context.payload.repository.default_branch;
+            const branch = 'pr-update-artifacts';
+            const prNumber = context.issue.number;
+            const basePath = `pr-artifacts/pr-${prNumber}`;
+            const metadata = JSON.parse(process.env.RAW_ARTIFACT_METADATA || '[]');
+
+            const committer = {
+              name: 'github-actions[bot]',
+              email: '41898282+github-actions[bot]@users.noreply.github.com',
+            };
+
+            async function ensureBranch() {
+              try {
+                await github.rest.git.getRef({
+                  owner,
+                  repo,
+                  ref: `heads/${branch}`,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                const { data: defaultRef } = await github.rest.git.getRef({
+                  owner,
+                  repo,
+                  ref: `heads/${defaultBranch}`,
+                });
+
+                await github.rest.git.createRef({
+                  owner,
+                  repo,
+                  ref: `refs/heads/${branch}`,
+                  sha: defaultRef.object.sha,
+                });
+              }
+            }
+
+            const links = [];
+
+            async function publishFile(entry) {
+              let contents;
+              try {
+                contents = await fs.readFile(entry.source, 'utf8');
+              } catch (error) {
+                if (error.code === 'ENOENT') {
+                  core.warning(`Skipping ${entry.source} because it was not found.`);
+                  return;
+                }
+                throw error;
+              }
+
+              const repoPath = `${basePath}/${entry.filename}`;
+
+              let existingSha;
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: repoPath,
+                  ref: branch,
+                });
+                if (!Array.isArray(data)) {
+                  existingSha = data.sha;
+                }
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner,
+                repo,
+                path: repoPath,
+                branch,
+                message: `Publish ${repoPath} for PR ${prNumber}`,
+                content: Buffer.from(contents, 'utf8').toString('base64'),
+                sha: existingSha,
+                committer,
+                author: committer,
+              });
+
+              links.push({
+                name: entry.label,
+                url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
+              });
+            }
+
+            try {
+              if (metadata.length === 0) {
+                core.info('No artifact metadata found; skipping raw publishing.');
+              } else {
+                await ensureBranch();
+                for (const entry of metadata) {
+                  await publishFile(entry);
+                }
+              }
+            } catch (error) {
+              if (error.status === 403) {
+                core.warning('Unable to publish raw update files because the workflow token lacks write permissions.');
+              } else {
+                throw error;
+              }
+            }
+
+            core.setOutput('links', JSON.stringify(links));
+
+      - name: Comment with update artifact links
+        uses: actions/github-script@v7
+        env:
+          RAW_LINKS_JSON: ${{ steps.publish_raw_updates.outputs.links }}
+        with:
+          script: |
+            let rawLinks = [];
+            try {
+              rawLinks = JSON.parse(process.env.RAW_LINKS_JSON || '[]');
+            } catch (error) {
+              core.warning('Failed to parse raw links JSON.');
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const marker = '<!-- pr-update-artifacts -->';
+
+            async function findExistingComment() {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+              });
+
+              return comments.find(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+            }
+
+            const existingComment = await findExistingComment();
+
+            if (rawLinks.length === 0) {
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                });
+              } else {
+                console.log('No raw artifact links available to publish.');
+              }
+              return;
+            }
+
+            const bodyLines = [marker, '', 'Developer build links:'];
+
+            for (const link of rawLinks) {
+              bodyLines.push(`**${link.name}**`);
+              bodyLines.push('```text');
+              bodyLines.push(link.url);
+              bodyLines.push('```');
+              bodyLines.push('');
+            }
+
+            if (bodyLines[bodyLines.length - 1] === '') {
+              bodyLines.pop();
+            }
+
+            const body = bodyLines.join('\n');
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number,
+                owner,
+                repo,
+                body,
+              });
+            }
 
 # ============================================================
 # =========== TRUSTED JOB (main pushes & releases) ===========
@@ -263,50 +292,6 @@ PY
     permissions:
       contents: write
       pull-requests: write
-    env:
-      TARGET_SYSTEMS: >-
-        [
-          {
-            "id": "sys11",
-            "label": "Sys11",
-            "config_path": "src/sys11/systemConfig.py",
-            "output": "update.json",
-            "artifact": "sys11-update.json",
-            "raw_filename": "sys11-update.json"
-          },
-          {
-            "id": "wpc",
-            "label": "WPC",
-            "config_path": "src/wpc/systemConfig.py",
-            "output": "update_wpc.json",
-            "artifact": "wpc-update.json",
-            "raw_filename": "wpc-update.json"
-          },
-          {
-            "id": "em",
-            "label": "EM",
-            "config_path": "src/em/systemConfig.py",
-            "output": "update_em.json",
-            "artifact": "em-update.json",
-            "raw_filename": "em-update.json"
-          },
-          {
-            "id": "whitestar",
-            "label": "WhiteStar",
-            "config_path": "src/whitestar/systemConfig.py",
-            "output": "update_whitestar.json",
-            "artifact": "whitestar-update.json",
-            "raw_filename": "whitestar-update.json"
-          },
-          {
-            "id": "data_east",
-            "label": "DataEast",
-            "config_path": "src/data_east/systemConfig.py",
-            "output": "update_data_east.json",
-            "artifact": "data-east-update.json",
-            "raw_filename": "data-east-update.json"
-          }
-        ]
     steps:
       - name: Check out trusted ref
         uses: actions/checkout@v4
@@ -326,181 +311,55 @@ PY
       - name: Determine build environment and version (trusted)
         id: determine_version
         env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-
-def extract_version(path: str, pattern: str) -> str:
-    text = Path(path).read_text()
-    match = re.search(pattern, text)
-    if not match:
-        raise RuntimeError(f"Unable to find version in {path}")
-    return match.group(1)
-
-base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
-target_base_versions = {
-    target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
-    for target in targets
-}
-
-event_name = os.environ["EVENT_NAME"]
-if event_name == "pull_request":
-    suffix = f"-dev{os.environ.get('PR_NUMBER','')}"
-    should_sign = should_release = "false"
-elif event_name == "push":
-    suffix = f"-beta{os.environ['RUN_NUMBER']}"
-    should_sign = should_release = "true"
-else:
-    suffix = ""
-    should_sign = should_release = "true"
-
-version = f"{base_version}{suffix}"
-target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
-
-release_files = "\n".join(target["output"] for target in targets)
-
-env_file = Path(os.environ["GITHUB_ENV"])
-with env_file.open("a") as handle:
-    handle.write(f"VERSION={version}\n")
-    handle.write(f"SHOULD_SIGN={should_sign}\n")
-    handle.write(f"SHOULD_RELEASE={should_release}\n")
-    handle.write("TARGET_VERSIONS<<EOF\n")
-    handle.write(json.dumps(target_versions))
-    handle.write("\nEOF\n")
-    handle.write("RELEASE_FILES<<EOF\n")
-    handle.write(release_files + "\n")
-    handle.write("EOF\n")
-PY
+          python dev/ci/workflow_helpers.py determine-version \
+            --targets "$TARGET_CONFIG" \
+            --event-name "$EVENT_NAME" \
+            --run-number "$RUN_NUMBER" \
+            --pr-number "" \
+            --env-file "$GITHUB_ENV"
 
       - name: Update version files (trusted)
-        env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
-          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
-          python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-vector_version = os.environ["VERSION"]
-
-def update_file(path: str, pattern: str, replacement: str) -> None:
-    file_path = Path(path)
-    content = file_path.read_text()
-    new_content = re.sub(pattern, replacement, content)
-    if content == new_content:
-        if replacement in content:
-            return
-        raise RuntimeError(f"Failed to update version in {path}")
-    file_path.write_text(new_content)
-
-update_file(
-    "src/common/SharedState.py",
-    r"VectorVersion\s*=\s*\"[^\"]+\"",
-    f'VectorVersion = "{vector_version}"',
-)
-
-for target in targets:
-    target_version = versions[target["id"]]
-    update_file(
-        target["config_path"],
-        r"SystemVersion\s*=\s*\"[^\"]+\"",
-        f'SystemVersion = "{target_version}"',
-    )
-PY
+          python dev/ci/workflow_helpers.py update-versions \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION"
 
       - name: Build and generate update files (with signing)
         if: ${{ env.SHOULD_SIGN == 'true' }}
         env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
-          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
+          PRIVATE_KEY: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
         run: |
-          python <<'PY'
-import json, os, subprocess, tempfile
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-
-def run(cmd): subprocess.run(cmd, check=True)
-
-# Fetch secret only inside this trusted step
-private_key = """${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}""".strip()
-
-for target in targets:
-    target_id = target["id"]
-    run(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
-
-    base = [
-        "python", "dev/build_update.py",
-        "--build-dir", "build",
-        "--output", target["output"],
-        "--version", versions[target_id],
-        "--target_hardware", target_id
-    ]
-
-    if private_key:
-        with tempfile.NamedTemporaryFile("w", delete=False) as key_file:
-            key_file.write(private_key)
-            key_path = key_file.name
-        try:
-            run(base + ["--private-key", key_path])
-        finally:
-            Path(key_path).unlink(missing_ok=True)
-    else:
-        run(base)
-PY
+          python dev/ci/workflow_helpers.py build-updates \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --build-dir build \
+            --sign \
+            --private-key-env PRIVATE_KEY
 
       - name: Prepare release body
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         id: prepare_body
         env:
-          TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
-          TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
+          VERSION: ${{ env.VERSION }}
         run: |
-          VERSION_SECTION="$(python <<'PY'
-import json
-import os
+          set -euo pipefail
+          gh release view "$VERSION" --json body -q .body > existing_body.txt 2>/dev/null || true
+          python dev/ci/workflow_helpers.py render-release-body \
+            --targets "$TARGET_CONFIG" \
+            --versions-json "$TARGET_VERSIONS" \
+            --vector-version "$VERSION" \
+            --existing-body-file existing_body.txt \
+            --output-file new_body.txt
 
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-
-lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
-for target in targets:
-    lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
-lines.append("<!-- END VERSIONS SECTION -->")
-
-print("\n".join(lines))
-PY
-          )"
-
-          EXISTING_BODY=""
-          if gh release view "${{ env.VERSION }}" --json body -q .body > body.txt 2>/dev/null; then
-            EXISTING_BODY=$(cat body.txt)
-          fi
-
-          CLEANED_BODY=$(echo "$EXISTING_BODY" | awk '/## Versions/{flag=1} /<!-- END VERSIONS SECTION -->/{flag=0;next} !flag')
-
-          if [ -n "$CLEANED_BODY" ]; then
-            echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
-          else:
-            echo -e "$VERSION_SECTION" > new_body.txt
-          fi
-
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          cat new_body.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "body<<EOF"
+            cat new_body.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
