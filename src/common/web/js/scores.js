@@ -53,9 +53,9 @@ window.renderDataRow = function (item, columns, colClass) {
       if (fullName.trim() !== "") {
         value += " (" + fullName + ")";
       }
-      cellDiv.setAttribute("raw", initials);
     } else if (col.key === "score") {
-      cellDiv.setAttribute("raw", item[col.key]);
+      cellDiv.setAttribute("raw-score", item[col.key]);
+      cellDiv.setAttribute("raw-initials", item["initials"] || "");
       value = window.formatScore(item[col.key]);
     } else {
       // For the rank column, we do not prepend "#"
@@ -1028,11 +1028,8 @@ window.deleteSelectedScores = async function () {
 
   checkboxes.forEach(function (checkbox) {
     var row = checkbox.parentElement.parentElement;
-    var player =
-      list == "tournament"
-        ? row.querySelector(".initials").getAttribute("title")
-        : row.querySelector(".player").getAttribute("raw");
-    var score = row.querySelector(".score").getAttribute("raw");
+    var player = row.querySelector(".score").getAttribute("raw-initials");
+    var score = row.querySelector(".score").getAttribute("raw-score");
     var intScore = parseInt(score);
     deleteData["delete"].push({ initials: player, score: intScore });
   });
