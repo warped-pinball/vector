@@ -1,7 +1,7 @@
 name: Build and Deploy
 
 on:
-  pull_request:
+  pull_request_target:
   push:
     branches: ["main"]
   release:
@@ -54,13 +54,14 @@ jobs:
             "raw_filename": "data-east-update.json"
           }
         ]
-      WARPED_PINBALL_PRIVATE_KEY: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
     permissions:
       contents: write
       pull-requests: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -79,6 +80,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
         run: |
           python <<'PY'
 import json
@@ -104,9 +106,12 @@ target_base_versions = {
 }
 
 event_name = os.environ["EVENT_NAME"]
-if event_name == "pull_request":
-    suffix = f"-dev{os.environ['PR_NUMBER']}"
-    should_sign = should_release = "false"
+pr_base_ref = os.environ.get("PR_BASE_REF", "")
+pr_number = os.environ.get("PR_NUMBER", "")
+if event_name in {"pull_request", "pull_request_target"}:
+    suffix = f"-dev{pr_number}"
+    should_release = "false"
+    should_sign = "true" if pr_base_ref == "main" else "false"
 elif event_name == "push":
     suffix = f"-beta{os.environ['RUN_NUMBER']}"
     should_sign = should_release = "true"
@@ -181,7 +186,7 @@ PY
           TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
           SHOULD_SIGN: ${{ env.SHOULD_SIGN }}
-          PRIVATE_KEY: ${{ env.WARPED_PINBALL_PRIVATE_KEY }}
+          PRIVATE_KEY: ${{ env.SHOULD_SIGN == 'true' && secrets.WARPED_PINBALL_PRIVATE_KEY || '' }}
         run: |
           python <<'PY'
 import json
