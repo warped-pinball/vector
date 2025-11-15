@@ -80,3 +80,16 @@ def test_merge_release_body_replaces_existing_versions(tmp_path: Path) -> None:
     assert "old" not in merged
     assert "Other notes" in merged
     assert merged.startswith("## Versions")
+
+
+def test_pr_raw_artifact_metadata_prefers_raw_name(tmp_path: Path) -> None:
+    targets, _ = build_targets(tmp_path)
+    metadata = wh.pr_raw_artifact_metadata(targets)
+
+    assert metadata == [
+        {
+            "label": "Sys11",
+            "source": "update.json",
+            "filename": "sys11-update.json",
+        }
+    ]

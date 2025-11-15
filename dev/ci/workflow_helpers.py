@@ -29,6 +29,19 @@ def load_targets(path: Path) -> List[Dict[str, Any]]:
     return json.loads(path.read_text())
 
 
+def pr_raw_artifact_metadata(targets: Iterable[Dict[str, Any]]) -> List[Dict[str, str]]:
+    metadata = []
+    for target in targets:
+        metadata.append(
+            {
+                "label": target["label"],
+                "source": target["output"],
+                "filename": target.get("raw_filename", target["artifact"]),
+            }
+        )
+    return metadata
+
+
 def _extract_version(path: Path, pattern: str) -> str:
     text = path.read_text()
     match = re.search(pattern, text)
@@ -219,6 +232,10 @@ def parse_args() -> argparse.Namespace:
     pr_artifacts.add_argument("--targets", type=Path, required=True)
     pr_artifacts.add_argument("--artifact-dir", type=Path, default=Path("pr-artifacts"))
 
+    pr_metadata = subparsers.add_parser("emit-pr-metadata")
+    pr_metadata.add_argument("--targets", type=Path, required=True)
+    pr_metadata.add_argument("--env-file", type=Path, required=True)
+
     release_body = subparsers.add_parser("render-release-body")
     release_body.add_argument("--targets", type=Path, required=True)
     release_body.add_argument("--versions-json", required=True)
@@ -278,6 +295,14 @@ def main() -> None:
 
     elif args.command == "prepare-pr-artifacts":
         prepare_pr_artifacts(targets, args.artifact_dir)
+
+    elif args.command == "emit-pr-metadata":
+        metadata = pr_raw_artifact_metadata(targets)
+        env_file: Path = args.env_file
+        with env_file.open("a") as fh:
+            fh.write("RAW_ARTIFACT_METADATA<<EOF\n")
+            fh.write(json.dumps(metadata))
+            fh.write("\nEOF\n")
 
     elif args.command == "render-release-body":
         existing_body = ""
