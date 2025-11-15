@@ -470,19 +470,19 @@ jobs:
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
           VERSION_SECTION="$(python <<'PY'
-          import json
-          import os
+            import json
+            import os
 
-          targets = json.loads(os.environ["TARGET_SYSTEMS"])
-          versions = json.loads(os.environ["TARGET_VERSIONS"])
+            targets = json.loads(os.environ["TARGET_SYSTEMS"])
+            versions = json.loads(os.environ["TARGET_VERSIONS"])
 
-          lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
-          for target in targets:
-              lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
-          lines.append("<!-- END VERSIONS SECTION -->")
+            lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
+            for target in targets:
+                lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
+            lines.append("<!-- END VERSIONS SECTION -->")
 
-          print("\n".join(lines))
-PY
+            print("\n".join(lines))
+          PY
           )"
 
           EXISTING_BODY=""
@@ -494,7 +494,7 @@ PY
 
           if [ -n "$CLEANED_BODY" ]; then
             echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
-          else:
+          else
             echo -e "$VERSION_SECTION" > new_body.txt
           fi
 
