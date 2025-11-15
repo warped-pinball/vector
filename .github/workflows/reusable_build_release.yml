@@ -109,7 +109,6 @@ jobs:
         with:
           name: developer-updates
           path: pr-artifacts
-          artifact-content-type: raw
 
       - name: Publish raw update files
         if: ${{ inputs.include-pr-artifacts }}
@@ -312,6 +311,8 @@ jobs:
         id: prepare_body
         env:
           VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh release view "$VERSION" --json body -q .body > existing_body.txt 2>/dev/null || true
@@ -322,10 +323,11 @@ jobs:
             --existing-body-file existing_body.txt \
             --output-file new_body.txt
 
+          delimiter="BODY_$(date +%s)"
           {
-            echo "body<<EOF"
+            echo "body<<$delimiter"
             cat new_body.txt
-            echo "EOF"
+            echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
