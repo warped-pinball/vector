@@ -356,19 +356,19 @@ jobs:
             --output-file new_body.txt
 
           python - <<'PY'
-import os
-from pathlib import Path
+            import os
+            from pathlib import Path
 
-body = Path("new_body.txt").read_text()
-output_path = os.environ["GITHUB_OUTPUT"]
+            body = Path("new_body.txt").read_text()
+            output_path = os.environ["GITHUB_OUTPUT"]
 
-with open(output_path, "a", encoding="utf-8") as fh:
-    fh.write("body<<EOF\n")
-    fh.write(body)
-    if not body.endswith("\n"):
-        fh.write("\n")
-    fh.write("EOF\n")
-PY
+            with open(output_path, "a", encoding="utf-8") as fh:
+                fh.write("body<<EOF\n")
+                fh.write(body)
+                if not body.endswith("\n"):
+                    fh.write("\n")
+                fh.write("EOF\n")
+          PY
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
