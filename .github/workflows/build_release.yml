@@ -91,58 +91,58 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}
         run: |
           python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-
-def extract_version(path: str, pattern: str) -> str:
-    text = Path(path).read_text()
-    match = re.search(pattern, text)
-    if not match:
-        raise RuntimeError(f"Unable to find version in {path}")
-    return match.group(1)
-
-base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
-target_base_versions = {
-    target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
-    for target in targets
-}
-
-event_name = os.environ["EVENT_NAME"]
-if event_name == "pull_request":
-    suffix = f"-dev{os.environ['PR_NUMBER']}"
-    should_sign = should_release = "false"
-elif event_name == "push":
-    suffix = f"-beta{os.environ['RUN_NUMBER']}"
-    should_sign = should_release = "true"
-else:
-    suffix = ""
-    should_sign = should_release = "true"
-
-version = f"{base_version}{suffix}"
-target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
-
-release_files = "\n".join(target["output"] for target in targets)
-
-env_file = Path(os.environ["GITHUB_ENV"])
-with env_file.open("a") as handle:
-    handle.write(f"VERSION={version}\n")
-    handle.write(f"SHOULD_SIGN={should_sign}\n")
-    handle.write(f"SHOULD_RELEASE={should_release}\n")
-    handle.write("TARGET_VERSIONS<<EOF\n")
-    handle.write(json.dumps(target_versions))
-    handle.write("\nEOF\n")
-    handle.write("RELEASE_FILES<<EOF\n")
-    handle.write(release_files + "\n")
-    handle.write("EOF\n")
-
-output_file = Path(os.environ["GITHUB_OUTPUT"])
-with output_file.open("a") as handle:
-    handle.write(f"version={version}\n")
-PY
+          import json
+          import os
+          import re
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          
+          def extract_version(path: str, pattern: str) -> str:
+              text = Path(path).read_text()
+              match = re.search(pattern, text)
+              if not match:
+                  raise RuntimeError(f"Unable to find version in {path}")
+              return match.group(1)
+          
+          base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
+          target_base_versions = {
+              target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
+              for target in targets
+          }
+          
+          event_name = os.environ["EVENT_NAME"]
+          if event_name == "pull_request":
+              suffix = f"-dev{os.environ['PR_NUMBER']}"
+              should_sign = should_release = "false"
+          elif event_name == "push":
+              suffix = f"-beta{os.environ['RUN_NUMBER']}"
+              should_sign = should_release = "true"
+          else:
+              suffix = ""
+              should_sign = should_release = "true"
+          
+          version = f"{base_version}{suffix}"
+          target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
+          
+          release_files = "\n".join(target["output"] for target in targets)
+          
+          env_file = Path(os.environ["GITHUB_ENV"])
+          with env_file.open("a") as handle:
+              handle.write(f"VERSION={version}\n")
+              handle.write(f"SHOULD_SIGN={should_sign}\n")
+              handle.write(f"SHOULD_RELEASE={should_release}\n")
+              handle.write("TARGET_VERSIONS<<EOF\n")
+              handle.write(json.dumps(target_versions))
+              handle.write("\nEOF\n")
+              handle.write("RELEASE_FILES<<EOF\n")
+              handle.write(release_files + "\n")
+              handle.write("EOF\n")
+          
+          output_file = Path(os.environ["GITHUB_OUTPUT"])
+          with output_file.open("a") as handle:
+              handle.write(f"version={version}\n")
+          PY
 
       - name: Update version files (PR)
         env:
@@ -150,39 +150,39 @@ PY
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
           python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-vector_version = os.environ["VERSION"]
-
-def update_file(path: str, pattern: str, replacement: str) -> None:
-    file_path = Path(path)
-    content = file_path.read_text()
-    new_content = re.sub(pattern, replacement, content)
-    if content == new_content:
-        if replacement in content:
-            return
-        raise RuntimeError(f"Failed to update version in {path}")
-    file_path.write_text(new_content)
-
-update_file(
-    "src/common/SharedState.py",
-    r"VectorVersion\s*=\s*\"[^\"]+\"",
-    f'VectorVersion = "{vector_version}"',
-)
-
-for target in targets:
-    target_version = versions[target["id"]]
-    update_file(
-        target["config_path"],
-        r"SystemVersion\s*=\s*\"[^\"]+\"",
-        f'SystemVersion = "{target_version}"',
-    )
-PY
+          import json
+          import os
+          import re
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          versions = json.loads(os.environ["TARGET_VERSIONS"])
+          vector_version = os.environ["VERSION"]
+          
+          def update_file(path: str, pattern: str, replacement: str) -> None:
+              file_path = Path(path)
+              content = file_path.read_text()
+              new_content = re.sub(pattern, replacement, content)
+              if content == new_content:
+                  if replacement in content:
+                      return
+                  raise RuntimeError(f"Failed to update version in {path}")
+              file_path.write_text(new_content)
+          
+          update_file(
+              "src/common/SharedState.py",
+              r"VectorVersion\s*=\s*\"[^\"]+\"",
+              f'VectorVersion = "{vector_version}"',
+          )
+          
+          for target in targets:
+              target_version = versions[target["id"]]
+              update_file(
+                  target["config_path"],
+                  r"SystemVersion\s*=\s*\"[^\"]+\"",
+                  f'SystemVersion = "{target_version}"',
+              )
+          PY
 
       - name: Build and generate update files (no signing on PR)
         env:
@@ -191,59 +191,59 @@ PY
           SHOULD_SIGN: "false"
         run: |
           python <<'PY'
-import json
-import os
-import subprocess
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-
-def run_command(command):
-    subprocess.run(command, check=True)
-
-for target in targets:
-    target_id = target["id"]
-    run_command(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
-
-    base_command = [
-        "python",
-        "dev/build_update.py",
-        "--build-dir",
-        "build",
-        "--output",
-        target["output"],
-        "--version",
-        versions[target_id],
-        "--target_hardware",
-        target_id,
-    ]
-
-    # PRs never sign; just run the base command.
-    run_command(base_command)
-PY
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          versions = json.loads(os.environ["TARGET_VERSIONS"])
+          
+          def run_command(command):
+              subprocess.run(command, check=True)
+          
+          for target in targets:
+              target_id = target["id"]
+              run_command(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
+          
+              base_command = [
+                  "python",
+                  "dev/build_update.py",
+                  "--build-dir",
+                  "build",
+                  "--output",
+                  target["output"],
+                  "--version",
+                  versions[target_id],
+                  "--target_hardware",
+                  target_id,
+              ]
+          
+              # PRs never sign; just run the base command.
+              run_command(base_command)
+          PY
 
       - name: Prepare pull request artifacts
         env:
           TARGET_SYSTEMS: ${{ env.TARGET_SYSTEMS }}
         run: |
           python <<'PY'
-import json
-import os
-import shutil
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-artifact_dir = Path("pr-artifacts")
-artifact_dir.mkdir(parents=True, exist_ok=True)
-
-for target in targets:
-    source = Path(target["output"])
-    if not source.exists():
-        continue
-    destination = artifact_dir / target["artifact"]
-    shutil.copy2(source, destination)
-PY
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          artifact_dir = Path("pr-artifacts")
+          artifact_dir.mkdir(parents=True, exist_ok=True)
+          
+          for target in targets:
+              source = Path(target["output"])
+              if not source.exists():
+                  continue
+              destination = artifact_dir / target["artifact"]
+              shutil.copy2(source, destination)
+          PY
 
       - name: Upload update artifacts
         uses: actions/upload-artifact@v4
@@ -331,54 +331,54 @@ PY
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-
-def extract_version(path: str, pattern: str) -> str:
-    text = Path(path).read_text()
-    match = re.search(pattern, text)
-    if not match:
-        raise RuntimeError(f"Unable to find version in {path}")
-    return match.group(1)
-
-base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
-target_base_versions = {
-    target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
-    for target in targets
-}
-
-event_name = os.environ["EVENT_NAME"]
-if event_name == "pull_request":
-    suffix = f"-dev{os.environ.get('PR_NUMBER','')}"
-    should_sign = should_release = "false"
-elif event_name == "push":
-    suffix = f"-beta{os.environ['RUN_NUMBER']}"
-    should_sign = should_release = "true"
-else:
-    suffix = ""
-    should_sign = should_release = "true"
-
-version = f"{base_version}{suffix}"
-target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
-
-release_files = "\n".join(target["output"] for target in targets)
-
-env_file = Path(os.environ["GITHUB_ENV"])
-with env_file.open("a") as handle:
-    handle.write(f"VERSION={version}\n")
-    handle.write(f"SHOULD_SIGN={should_sign}\n")
-    handle.write(f"SHOULD_RELEASE={should_release}\n")
-    handle.write("TARGET_VERSIONS<<EOF\n")
-    handle.write(json.dumps(target_versions))
-    handle.write("\nEOF\n")
-    handle.write("RELEASE_FILES<<EOF\n")
-    handle.write(release_files + "\n")
-    handle.write("EOF\n")
-PY
+          import json
+          import os
+          import re
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          
+          def extract_version(path: str, pattern: str) -> str:
+              text = Path(path).read_text()
+              match = re.search(pattern, text)
+              if not match:
+                  raise RuntimeError(f"Unable to find version in {path}")
+              return match.group(1)
+          
+          base_version = extract_version("src/common/SharedState.py", r"VectorVersion\s*=\s*\"([^\"]+)\"")
+          target_base_versions = {
+              target["id"]: extract_version(target["config_path"], r"SystemVersion\s*=\s*\"([^\"]+)\"")
+              for target in targets
+          }
+          
+          event_name = os.environ["EVENT_NAME"]
+          if event_name == "pull_request":
+              suffix = f"-dev{os.environ.get('PR_NUMBER','')}"
+              should_sign = should_release = "false"
+          elif event_name == "push":
+              suffix = f"-beta{os.environ['RUN_NUMBER']}"
+              should_sign = should_release = "true"
+          else:
+              suffix = ""
+              should_sign = should_release = "true"
+          
+          version = f"{base_version}{suffix}"
+          target_versions = {key: f"{value}{suffix}" for key, value in target_base_versions.items()}
+          
+          release_files = "\n".join(target["output"] for target in targets)
+          
+          env_file = Path(os.environ["GITHUB_ENV"])
+          with env_file.open("a") as handle:
+              handle.write(f"VERSION={version}\n")
+              handle.write(f"SHOULD_SIGN={should_sign}\n")
+              handle.write(f"SHOULD_RELEASE={should_release}\n")
+              handle.write("TARGET_VERSIONS<<EOF\n")
+              handle.write(json.dumps(target_versions))
+              handle.write("\nEOF\n")
+              handle.write("RELEASE_FILES<<EOF\n")
+              handle.write(release_files + "\n")
+              handle.write("EOF\n")
+          PY
 
       - name: Update version files (trusted)
         env:
@@ -386,39 +386,39 @@ PY
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
           python <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-vector_version = os.environ["VERSION"]
-
-def update_file(path: str, pattern: str, replacement: str) -> None:
-    file_path = Path(path)
-    content = file_path.read_text()
-    new_content = re.sub(pattern, replacement, content)
-    if content == new_content:
-        if replacement in content:
-            return
-        raise RuntimeError(f"Failed to update version in {path}")
-    file_path.write_text(new_content)
-
-update_file(
-    "src/common/SharedState.py",
-    r"VectorVersion\s*=\s*\"[^\"]+\"",
-    f'VectorVersion = "{vector_version}"',
-)
-
-for target in targets:
-    target_version = versions[target["id"]]
-    update_file(
-        target["config_path"],
-        r"SystemVersion\s*=\s*\"[^\"]+\"",
-        f'SystemVersion = "{target_version}"',
-    )
-PY
+          import json
+          import os
+          import re
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          versions = json.loads(os.environ["TARGET_VERSIONS"])
+          vector_version = os.environ["VERSION"]
+          
+          def update_file(path: str, pattern: str, replacement: str) -> None:
+              file_path = Path(path)
+              content = file_path.read_text()
+              new_content = re.sub(pattern, replacement, content)
+              if content == new_content:
+                  if replacement in content:
+                      return
+                  raise RuntimeError(f"Failed to update version in {path}")
+              file_path.write_text(new_content)
+          
+          update_file(
+              "src/common/SharedState.py",
+              r"VectorVersion\s*=\s*\"[^\"]+\"",
+              f'VectorVersion = "{vector_version}"',
+          )
+          
+          for target in targets:
+              target_version = versions[target["id"]]
+              update_file(
+                  target["config_path"],
+                  r"SystemVersion\s*=\s*\"[^\"]+\"",
+                  f'SystemVersion = "{target_version}"',
+              )
+          PY
 
       - name: Build and generate update files (with signing)
         if: ${{ env.SHOULD_SIGN == 'true' }}
@@ -427,40 +427,40 @@ PY
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
           python <<'PY'
-import json, os, subprocess, tempfile
-from pathlib import Path
-
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
-
-def run(cmd): subprocess.run(cmd, check=True)
-
-# Fetch secret only inside this trusted step
-private_key = """${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}""".strip()
-
-for target in targets:
-    target_id = target["id"]
-    run(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
-
-    base = [
-        "python", "dev/build_update.py",
-        "--build-dir", "build",
-        "--output", target["output"],
-        "--version", versions[target_id],
-        "--target_hardware", target_id
-    ]
-
-    if private_key:
-        with tempfile.NamedTemporaryFile("w", delete=False) as key_file:
-            key_file.write(private_key)
-            key_path = key_file.name
-        try:
-            run(base + ["--private-key", key_path])
-        finally:
-            Path(key_path).unlink(missing_ok=True)
-    else:
-        run(base)
-PY
+          import json, os, subprocess, tempfile
+          from pathlib import Path
+          
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          versions = json.loads(os.environ["TARGET_VERSIONS"])
+          
+          def run(cmd): subprocess.run(cmd, check=True)
+          
+          # Fetch secret only inside this trusted step
+          private_key = """${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}""".strip()
+          
+          for target in targets:
+              target_id = target["id"]
+              run(["python", "dev/build.py", "--build-dir", "build", "--target_hardware", target_id])
+          
+              base = [
+                  "python", "dev/build_update.py",
+                  "--build-dir", "build",
+                  "--output", target["output"],
+                  "--version", versions[target_id],
+                  "--target_hardware", target_id
+              ]
+          
+              if private_key:
+                  with tempfile.NamedTemporaryFile("w", delete=False) as key_file:
+                      key_file.write(private_key)
+                      key_path = key_file.name
+                  try:
+                      run(base + ["--private-key", key_path])
+                  finally:
+                      Path(key_path).unlink(missing_ok=True)
+              else:
+                  run(base)
+          PY
 
       - name: Prepare release body
         if: ${{ env.SHOULD_RELEASE == 'true' }}
@@ -470,18 +470,18 @@ PY
           TARGET_VERSIONS: ${{ env.TARGET_VERSIONS }}
         run: |
           VERSION_SECTION="$(python <<'PY'
-import json
-import os
+          import json
+          import os
 
-targets = json.loads(os.environ["TARGET_SYSTEMS"])
-versions = json.loads(os.environ["TARGET_VERSIONS"])
+          targets = json.loads(os.environ["TARGET_SYSTEMS"])
+          versions = json.loads(os.environ["TARGET_VERSIONS"])
 
-lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
-for target in targets:
-    lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
-lines.append("<!-- END VERSIONS SECTION -->")
+          lines = ["## Versions", f"**Vector**: `{os.environ['VERSION']}`"]
+          for target in targets:
+              lines.append(f"**{target['label']}**: `{versions[target['id']]}`")
+          lines.append("<!-- END VERSIONS SECTION -->")
 
-print("\n".join(lines))
+          print("\n".join(lines))
 PY
           )"
 
