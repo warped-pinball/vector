@@ -109,7 +109,6 @@ jobs:
         with:
           name: developer-updates
           path: pr-artifacts
-          artifact-content-type: raw
 
       - name: Publish raw update files
         if: ${{ inputs.include-pr-artifacts }}
@@ -312,6 +311,8 @@ jobs:
         id: prepare_body
         env:
           VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh release view "$VERSION" --json body -q .body > existing_body.txt 2>/dev/null || true
@@ -322,11 +323,7 @@ jobs:
             --existing-body-file existing_body.txt \
             --output-file new_body.txt
 
-          {
-            echo "body<<EOF"
-            cat new_body.txt
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "body-path=new_body.txt" >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ inputs.enable-release-steps && env.SHOULD_RELEASE == 'true' }}
@@ -334,6 +331,6 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           name: ${{ env.VERSION }}
-          body: ${{ steps.prepare_body.outputs.body }}
+          body_path: ${{ steps.prepare_body.outputs.body-path }}
           draft: false
           prerelease: ${{ github.event_name != 'release' }}
