@@ -300,9 +300,18 @@ jobs:
             --vector-version "$VECTOR_VERSION" \
             --existing-body-file "$EXISTING_BODY_FILE" \
             --output-file body.txt
-          echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          cat body.txt >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          DELIMITER=$(python - <<'PY'
+import secrets
+
+print(secrets.token_hex(16))
+PY
+)
+
+          {
+            echo "body<<${DELIMITER}"
+            cat body.txt
+            echo "${DELIMITER}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
