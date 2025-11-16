@@ -252,7 +252,7 @@ def main():
     parser.add_argument(
         "--target_hardware",
         default="sys11",
-        help="Target system for the build (e.g., sys11, wpc, em, etc.)",
+        help="Target system for the build (e.g., data_east, sys11, whitestar, wpc, em, etc.)",
     )
     args = parser.parse_args()
 
