@@ -29,7 +29,7 @@ def _parse_headers(header_text):
     return headers
 
 
-def _render_response(response):
+def _render_response(response, url):
     body = response.body
     if type(body).__name__ == "generator":
         body = b"".join(body)
@@ -45,6 +45,7 @@ def _render_response(response):
         body_text = str(body_bytes)
 
     payload = {
+        "url": url,
         "status": response.status,
         "headers": response.headers,
         "body": body_text,
@@ -104,6 +105,7 @@ def handle_usb_api_request(route_url, headers_text, data_text):
     if handler is None:
         return json.dumps(
             {
+                "url": request.path,
                 "status": 404,
                 "headers": {"Content-Type": "text/plain"},
                 "body": "Route not found",
@@ -114,11 +116,12 @@ def handle_usb_api_request(route_url, headers_text, data_text):
     response = _normalize_response(response)
 
     if isinstance(response, Response):
-        return _render_response(response)
+        return _render_response(response, request.path)
 
     print(f"USB REQ: invalid response type: {type(response)}")
     return json.dumps(
         {
+            "url": request.path,
             "status": 500,
             "headers": {"Content-Type": "text/plain"},
             "body": "Invalid response type",

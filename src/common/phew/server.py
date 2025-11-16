@@ -1,4 +1,3 @@
-import sys
 import time
 
 import faults
@@ -84,7 +83,7 @@ async def _parse_json_body(reader, headers):
 
 
 # handle an incoming request to the web server
-async def _handle_request(reader, writer=sys.stdout):
+async def _handle_request(reader, writer):
     print("Handling request...")
     try:
         response = None

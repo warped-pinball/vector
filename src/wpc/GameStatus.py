@@ -78,9 +78,6 @@ def _get_player_up():
     return 0
 
 
-count = 0  # TODO double check this, comlicated merge conflict with count
-
-
 END_HOLD_MS = 15_000
 end_hold_start = None
 gameActive = False
@@ -88,7 +85,7 @@ gameActive = False
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global end_hold_start, gameActive, count
+    global end_hold_start, gameActive
     data = {}
 
     try:
@@ -116,24 +113,6 @@ def game_report():
         ]
 
         data["PlayerUp"] = _get_player_up()
-
-        count = (count + 1) % 20
-        if count == 0:
-            from ScoreTrack import top_scores
-
-            data["Leaders"] = top_scores
-
-        """
-        if S.game_status["time_game_start"] is not None:
-            if S.game_status["game_active"]:
-                data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
-            elif S.game_status["time_game_end"] is not None and S.game_status["time_game_end"] > S.game_status["time_game_start"]:
-                data["GameTime"] = (S.game_status["time_game_end"] - S.game_status["time_game_start"]) / 1000
-            else:
-                data["GameTime"] = 0
-        else:
-            data["GameTime"] = 0
-        """
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
