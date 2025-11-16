@@ -94,8 +94,9 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
   });
 
   //Don't show edit buttons until at least rendering the scores
+  //Never show for Tournament tab
   btnSection = document.querySelector("#edit-btns");
-  if (data.length > 0) {
+  if (window.getTab != "tournament-board" && data.length > 0) {
     btnSection.classList.remove("hide");
   } else {
     btnSection.classList.add("hide");
