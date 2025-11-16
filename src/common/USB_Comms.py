@@ -1,11 +1,3 @@
-"""
-    serial data via USB handler
-
-    IRQ for incoming data
-    call handler from system scheduler
-    to send data - just print!
-
-"""
 import json
 import sys
 
@@ -180,6 +172,7 @@ def usb_request_handler():
 
         try:
             response_text = handle_usb_api_request(route_url, headers, data)
+            # This is how the response is sent back to the device
             print(f"USB API RESPONSE-->{response_text}")
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")

@@ -311,7 +311,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     schedule(send_game_status, 14000, 1000)
-    schedule(usb_request_handler, 1000, 1000)
+    schedule(usb_request_handler, 1000, 100)
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
 

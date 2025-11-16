@@ -22,6 +22,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from dev.usb_coms import UsbApiClient
 
+
 def main():
     # Open a serial connection to the device. Adjust the port if needed for your
     # environment (for example, ``COM3`` on Windows).
@@ -35,17 +36,22 @@ def main():
     try:
         print("Listening for responses. Press Ctrl+C to stop.")
         while True:
-            client.send_and_receive(
+            start_time = time.perf_counter()
+            resp = client.send_and_receive(
                 route="/api/game/status",
                 payload={"player": "AB|C", "score": 12345},
             )
-            time.sleep(5)
+            elapsed = time.perf_counter() - start_time
+            print("Received response:", resp)
+            print(f"Report: route=/api/game/status duration={elapsed:.3f}s")
+            time.sleep(1)
 
-            client.send_authenticated_request(
+            resp = client.send_authenticated_request(
                 route="/api/auth/password_check",
                 payload={"intent": "demo"},
                 require_authentication=False,
             )
+            print("Received response:", resp)
             time.sleep(5)
     except KeyboardInterrupt:
         print("Stopped listening.")

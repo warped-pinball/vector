@@ -43,9 +43,7 @@ def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
     return "\n".join(header_lines)
 
 
-def build_auth_headers(
-    challenge: str, route: str, body_text: str, password: str
-) -> Dict[str, str]:
+def build_auth_headers(challenge: str, route: str, body_text: str, password: str) -> Dict[str, str]:
     """Build headers required for the firmware's HMAC-based authentication.
 
     The HMAC digest is calculated over ``challenge + route + body`` using the
@@ -145,7 +143,6 @@ class UsbApiClient:
 
         self.ser.write(request.encode())
         self.ser.flush()
-        print("Sent:", request.strip())
 
         prefix = "USB API RESPONSE-->"
         deadline = time.monotonic() + timeout
@@ -159,24 +156,18 @@ class UsbApiClient:
                 if not text.startswith(prefix):
                     continue
                 payload_text = text[len(prefix) :].strip()
-                try:
-                    data = json.loads(payload_text)
-                except json.JSONDecodeError:
-                    print("Recv malformed:", payload_text)
-                    return None
+                data = json.loads(payload_text)
+
                 body_raw = data.get("body")
                 if isinstance(body_raw, str):
                     try:
                         data["body"] = json.loads(body_raw)
                     except json.JSONDecodeError:
-                        print("Recv body malformed:", body_raw)
-                print(text)
-                print("Recv:\n" + json.dumps(data, indent=2))
+                        pass
                 return data
             time.sleep(0.05)
 
-        print("Timed out waiting for response.")
-        return None
+        raise TimeoutError("No response received within timeout period.")
 
     def fetch_challenge(self, timeout: int = 5) -> str | None:
         """Request an authentication challenge from the device."""
@@ -213,9 +204,7 @@ class UsbApiClient:
                 ``False`` for USB connections.
         """
 
-        auth_required = (
-            self.authentication_enabled if require_authentication is None else require_authentication
-        )
+        auth_required = self.authentication_enabled if require_authentication is None else require_authentication
 
         if not auth_required:
             return self.send_and_receive(
@@ -235,9 +224,7 @@ class UsbApiClient:
             print("Could not fetch authentication challenge.")
             return None
 
-        auth_headers = build_auth_headers(
-            challenge, route, body_text, password=self.device_password
-        )
+        auth_headers = build_auth_headers(challenge, route, body_text, password=self.device_password)
         return self.send_and_receive(
             route=route,
             payload=payload,
