@@ -6,18 +6,120 @@
     to send data - just print!
 
 """
-import io
 import json
 import sys
 
 import GameStatus
 import uselect
-from phew.server import _handle_request as server_handle_request
+from phew.server import Request, Response, _routes, catchall_handler
 
 incoming_data = []  # complete lines only
 buffer = ""  # partial input line
 poller = uselect.poll()
 poller.register(sys.stdin, uselect.POLLIN)
+
+
+def _parse_headers(header_text):
+    headers = {}
+    for line in header_text.split("\n"):
+        if ":" not in line:
+            continue
+        name, value = line.split(":", 1)
+        headers[name.strip().lower()] = value.strip()
+    return headers
+
+
+def _render_response(response):
+    body = response.body
+    if type(body).__name__ == "generator":
+        body = b"".join(body)
+
+    if isinstance(body, str):
+        body_bytes = body.encode()
+    else:
+        body_bytes = body
+
+    try:
+        body_text = body_bytes.decode()
+    except Exception:
+        body_text = str(body_bytes)
+
+    payload = {
+        "status": response.status,
+        "headers": response.headers,
+        "body": body_text,
+    }
+
+    return json.dumps(payload)
+
+
+def _normalize_response(response):
+    if type(response).__name__ == "generator":
+        return Response(response, status=200, headers={"Content-Type": "application/octet-stream"})
+
+    if isinstance(response, str):
+        response = (response,)
+
+    if isinstance(response, tuple):
+        body = response[0]
+        status = response[1] if len(response) >= 2 else 200
+        headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+
+        if isinstance(headers, str):
+            headers = {"Content-Type": headers}
+
+        response = Response(body, status=status)
+
+        for key, value in headers.items():
+            response.add_header(key, value)
+
+        if hasattr(body, "__len__"):
+            response.add_header("Content-Length", len(body))
+
+    return response
+
+
+def handle_usb_api_request(route_url, headers_text, data_text):
+    request_headers = _parse_headers(headers_text)
+
+    request = Request("USB", route_url, "HTTP/1.1")
+    request.headers = request_headers
+    request.raw_data = None
+    request.data = {}
+
+    if data_text:
+        request.raw_data = data_text
+        if request_headers.get("content-type", "").startswith("application/json"):
+            try:
+                request.data = json.loads(data_text)
+            except Exception as exc:
+                print(f"USB REQ: failed to parse JSON body: {exc}")
+
+    handler = catchall_handler
+    try:
+        handler = _routes[request.path]
+    except KeyError:
+        print(f"USB REQ: route not found: {request.path}")
+
+    if handler is None:
+        return json.dumps({
+            "status": 404,
+            "headers": {"Content-Type": "text/plain"},
+            "body": "Route not found",
+        })
+
+    response = handler(request)
+    response = _normalize_response(response)
+
+    if isinstance(response, Response):
+        return _render_response(response)
+
+    print(f"USB REQ: invalid response type: {type(response)}")
+    return json.dumps({
+        "status": 500,
+        "headers": {"Content-Type": "text/plain"},
+        "body": "Invalid response type",
+    })
 
 
 def usb_request_handler():
@@ -56,20 +158,8 @@ def usb_request_handler():
         print(f"USB REQ: URL: {route_url} HEADERS: {headers} DATA: {data}")
 
         try:
-            # build a reader / writer pair to feed to the server handler
-            request_line = f"GET {route_url} HTTP/1.1".encode()
-            reader = b"\r\n".join([request_line, headers.encode(), b"", data.encode()])
-
-            # make reader into a stream
-            reader_stream = io.BytesIO(reader)
-
-            # pretend to be the API route and write something to the writer
-            # writer.write(f"HELLO FROM USB API\n")
-
-            # # call the server handler (this might still block, but at least we're not blocking on I/O)
-            server_handle_request(reader_stream, None)
-
-            # print(f"API: {writer.getvalue().decode()}")
+            response_text = handle_usb_api_request(route_url, headers, data)
+            print(response_text)
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")
             # Continue processing other requests even if one fails
