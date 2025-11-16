@@ -7,33 +7,314 @@ on:
   release:
     types: [published]
 
-# Default least privilege across the repo unless a job elevates
-permissions:
-  contents: read
-  pull-requests: read
-
-env:
-  TARGET_CONFIG: dev/ci/targets.json
-
 jobs:
-  pr-ci:
-    if: ${{ github.event_name == 'pull_request' }}
+  build_and_release:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    uses: ./.github/workflows/reusable_build_release.yml
-    with:
-      checkout-ref: ${{ github.event.pull_request.head.sha }}
-      include-pr-artifacts: true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-  trusted-build-and-release:
-    if: ${{ github.event_name != 'pull_request' }}
-    permissions:
-      contents: write
-      pull-requests: write
-    uses: ./.github/workflows/reusable_build_release.yml
-    with:
-      checkout-ref: ${{ github.ref }}
-      enable-release-steps: true
-    secrets:
-      private-key: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
+      - name: Set up Python
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dev/requirements.txt
+
+      - name: Determine build environment and version
+        id: determine_version
+        run: |
+          python -m dev.ci.workflow_helpers determine-version \
+            --targets dev/ci/targets.json \
+            --event-name "${{ github.event_name }}" \
+            --run-number "${{ github.run_number }}" \
+            --pr-number "${{ github.event.pull_request.number || '' }}" \
+            --env-file "$GITHUB_ENV" \
+            --output-file "$GITHUB_OUTPUT"
+
+      - name: Update version files
+        run: |
+          VERSIONS_JSON='${{ env.TARGET_VERSIONS }}'
+          python -m dev.ci.workflow_helpers update-versions \
+            --targets dev/ci/targets.json \
+            --versions-json "$VERSIONS_JSON" \
+            --vector-version "${{ env.VERSION }}"
+
+      - name: Build and generate update files
+        env:
+          SHOULD_SIGN: ${{ env.SHOULD_SIGN }}
+          PRIVATE_KEY: ${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}
+        run: |
+          VERSIONS_JSON='${{ env.TARGET_VERSIONS }}'
+          ARGS=(
+            --targets dev/ci/targets.json
+            --versions-json "$VERSIONS_JSON"
+            --build-dir build
+          )
+          if [ "$SHOULD_SIGN" = "true" ] && [ -n "$PRIVATE_KEY" ]; then
+            ARGS+=(--sign --private-key-env PRIVATE_KEY)
+          fi
+          python -m dev.ci.workflow_helpers build-updates "${ARGS[@]}"
+
+      - name: Prepare PR artifacts
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          python -m dev.ci.workflow_helpers prepare-pr-artifacts \
+            --targets dev/ci/targets.json \
+            --artifact-dir pr-artifacts
+
+      - name: Upload update artifacts
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: update-files
+          path: pr-artifacts
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Capture target metadata
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          python -m dev.ci.workflow_helpers emit-pr-metadata \
+            --targets dev/ci/targets.json \
+            --env-file "$GITHUB_ENV"
+
+      - name: Publish raw update files
+        if: ${{ github.event_name == 'pull_request' }}
+        id: publish_raw_updates
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs/promises');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const defaultBranch = context.payload.repository.default_branch;
+            const branch = 'pr-update-artifacts';
+            const prNumber = context.issue.number;
+            const basePath = `pr-artifacts/pr-${prNumber}`;
+
+            let files = [];
+            try {
+              files = JSON.parse(process.env.RAW_ARTIFACT_METADATA || '[]');
+            } catch (error) {
+              core.warning('Unable to parse target metadata.');
+            }
+
+            const committer = {
+              name: 'github-actions[bot]',
+              email: '41898282+github-actions[bot]@users.noreply.github.com',
+            };
+
+            async function ensureBranch() {
+              try {
+                await github.rest.git.getRef({
+                  owner,
+                  repo,
+                  ref: `heads/${branch}`,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                const { data: defaultRef } = await github.rest.git.getRef({
+                  owner,
+                  repo,
+                  ref: `heads/${defaultBranch}`,
+                });
+
+                await github.rest.git.createRef({
+                  owner,
+                  repo,
+                  ref: `refs/heads/${branch}`,
+                  sha: defaultRef.object.sha,
+                });
+              }
+            }
+
+            const links = [];
+
+            try {
+              await ensureBranch();
+
+              for (const file of files) {
+                let contents;
+                try {
+                  contents = await fs.readFile(file.source, 'utf8');
+                } catch (error) {
+                  if (error.code === 'ENOENT') {
+                    core.warning(`Skipping ${file.source} because it was not found.`);
+                    continue;
+                  }
+                  throw error;
+                }
+
+                const repoPath = `${basePath}/${file.filename}`;
+
+                let existingSha;
+                try {
+                  const { data } = await github.rest.repos.getContent({
+                    owner,
+                    repo,
+                    path: repoPath,
+                    ref: branch,
+                  });
+
+                  if (!Array.isArray(data)) {
+                    existingSha = data.sha;
+                  }
+                } catch (error) {
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                }
+
+                await github.rest.repos.createOrUpdateFileContents({
+                  owner,
+                  repo,
+                  path: repoPath,
+                  branch,
+                  message: `Publish ${repoPath} for PR ${prNumber}`,
+                  content: Buffer.from(contents, 'utf8').toString('base64'),
+                  sha: existingSha,
+                  committer,
+                  author: committer,
+                });
+
+                links.push({
+                  name: file.label,
+                  url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
+                });
+              }
+            } catch (error) {
+              if (error.status === 403) {
+                core.warning('Unable to publish raw update files because the workflow token lacks write permissions.');
+              } else {
+                throw error;
+              }
+            }
+
+            core.setOutput('links', JSON.stringify(links));
+
+      - name: Comment with update artifact links
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          RAW_LINKS_JSON: ${{ steps.publish_raw_updates.outputs.links }}
+        with:
+          script: |
+            let rawLinks = [];
+            try {
+              rawLinks = JSON.parse(process.env.RAW_LINKS_JSON || '[]');
+            } catch (error) {
+              core.warning('Failed to parse raw links JSON.');
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const marker = '<!-- pr-update-artifacts -->';
+
+            async function findExistingComment() {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+              });
+
+              return comments.find(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+            }
+
+            const existingComment = await findExistingComment();
+
+            if (rawLinks.length === 0) {
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                });
+              } else {
+                console.log('No raw artifact links available to publish.');
+              }
+              return;
+            }
+
+            const bodyLines = [marker, '', 'Developer build links:'];
+
+            for (const link of rawLinks) {
+              bodyLines.push(`**${link.name}**`);
+              bodyLines.push('```text');
+              bodyLines.push(link.url);
+              bodyLines.push('```');
+              bodyLines.push('');
+            }
+
+            if (bodyLines[bodyLines.length - 1] === '') {
+              bodyLines.pop();
+            }
+
+            const body = bodyLines.join('\n');
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number,
+                owner,
+                repo,
+                body,
+              });
+            }
+
+      - name: Prepare release body
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        id: prepare_body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VECTOR_VERSION="${{ env.VERSION }}"
+          VERSIONS_JSON='${{ env.TARGET_VERSIONS }}'
+          EXISTING_BODY_FILE=existing_body.txt
+          if gh release view "$VECTOR_VERSION" --json body -q .body > "$EXISTING_BODY_FILE" 2>/dev/null; then
+            :
+          else
+            rm -f "$EXISTING_BODY_FILE"
+          fi
+          python -m dev.ci.workflow_helpers render-release-body \
+            --targets dev/ci/targets.json \
+            --versions-json "$VERSIONS_JSON" \
+            --vector-version "$VECTOR_VERSION" \
+            --existing-body-file "$EXISTING_BODY_FILE" \
+            --output-file body.txt
+          python -m dev.ci.workflow_helpers emit-output \
+            --name body \
+            --value-file body.txt \
+            --output-file "$GITHUB_OUTPUT" \
+            --delimiter "${{ env.RELEASE_BODY_DELIMITER }}"
+
+      - name: Create or update GitHub Release
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        id: create_release
+        uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0 # v2.0.6
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          body: ${{ steps.prepare_body.outputs.body }}
+          draft: false
+          prerelease: ${{ github.event_name != 'release' }}
+          files: ${{ env.RELEASE_FILES }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
