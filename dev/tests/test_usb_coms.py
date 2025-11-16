@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import runpy
+import sys
+from pathlib import Path
 from typing import List
 
 import dev.usb_coms as usb_coms
@@ -77,3 +80,21 @@ def test_fetch_challenge_round_trip():
         fake_serial.write_buffer
         == b"/api/auth/challenge|Content-Type: application/json|{}\n"
     )
+
+
+def test_demo_bootstraps_repo_root_into_sys_path(monkeypatch):
+    demo_path = Path(__file__).resolve().parent.parent / "usb_coms_demo.py"
+
+    repo_root = demo_path.parent.parent
+
+    # Simulate running the script directly: the script directory is first on
+    # sys.path and the repository root is not present yet, but the standard
+    # library entries remain.
+    sanitized_path = [p for p in sys.path if p not in {"", str(repo_root)}]
+    monkeypatch.setattr(sys, "path", [str(demo_path.parent), *sanitized_path])
+
+    namespace = runpy.run_path(str(demo_path), run_name="usb_coms_demo_test")
+
+    # The helper import succeeds when the script adds the repository root to
+    # sys.path at runtime.
+    assert "UsbApiClient" in namespace

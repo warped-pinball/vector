@@ -10,7 +10,15 @@ Usage::
     python dev/usb_coms_demo.py
 """
 
+import sys
 import time
+from pathlib import Path
+
+# Ensure the repository root is on ``sys.path`` so ``dev`` can be imported when the
+# script is executed directly via ``python dev/usb_coms_demo.py``.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from dev.usb_coms import UsbApiClient
 
