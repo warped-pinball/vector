@@ -83,7 +83,7 @@ def _normalize_response(response):
 def handle_usb_api_request(route_url, headers_text, data_text):
     request_headers = _parse_headers(headers_text)
 
-    request = Request("USB", route_url, "HTTP/1.1")
+    request = Request("USB", route_url, "USB/1.0")
     request.headers = request_headers
     request.raw_data = None
     request.data = {}

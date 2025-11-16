@@ -57,6 +57,12 @@ def main():
                 payload={"player": "ABC", "score": 12345},
             )
             time.sleep(5)
+            send_and_receive(
+                ser,
+                route="/api/leaders",
+                payload={"player": "ABC", "score": 12345},
+            )
+            time.sleep(5)
     except KeyboardInterrupt:
         print("Stopped listening.")
     finally:
