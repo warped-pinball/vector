@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from dev.ci import workflow_helpers as wh
@@ -112,3 +113,34 @@ def test_emit_output_respects_custom_delimiter(tmp_path: Path) -> None:
     wh.emit_output("body", "value\n", output_file, delimiter="CUSTOM")
 
     assert output_file.read_text() == "body<<CUSTOM\nvalue\nCUSTOM\n"
+
+
+def test_main_emit_output_skips_targets(monkeypatch, tmp_path: Path) -> None:
+    value_file = tmp_path / "value.txt"
+    value_file.write_text("value")
+    output_file = tmp_path / "out.txt"
+
+    def fail_load_targets(path):  # pragma: no cover - defensive
+        raise AssertionError("load_targets should not be called")
+
+    monkeypatch.setattr(wh, "load_targets", fail_load_targets)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "workflow_helpers.py",
+            "emit-output",
+            "--name",
+            "body",
+            "--value-file",
+            str(value_file),
+            "--output-file",
+            str(output_file),
+            "--delimiter",
+            "DELIM",
+        ],
+    )
+
+    wh.main()
+
+    assert output_file.read_text() == "body<<DELIM\nvalue\nDELIM\n"

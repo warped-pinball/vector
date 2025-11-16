@@ -268,6 +268,16 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    if args.command == "emit-output":
+        emit_output(
+            args.name,
+            args.value_file.read_text(),
+            args.output_file,
+            delimiter=args.delimiter,
+        )
+        return
+
     targets = load_targets(args.targets)
 
     if args.command == "determine-version":
@@ -335,14 +345,6 @@ def main() -> None:
         )
         merged = merge_release_body(existing_body, version_section)
         args.output_file.write_text(merged)
-
-    elif args.command == "emit-output":
-        emit_output(
-            args.name,
-            args.value_file.read_text(),
-            args.output_file,
-            delimiter=args.delimiter,
-        )
 
     else:
         raise ValueError(f"Unsupported command {args.command}")
