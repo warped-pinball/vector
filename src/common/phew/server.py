@@ -34,6 +34,7 @@ class Request:
     def __init__(self, method, uri, protocol):
         self.method = method
         self.protocol = protocol
+        self.is_usb_transport = False
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)

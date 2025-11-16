@@ -85,6 +85,7 @@ def handle_usb_api_request(route_url, headers_text, data_text):
 
     request = Request("USB", route_url, "USB/1.0")
     request.headers = request_headers
+    request.is_usb_transport = True
     request.raw_data = None
     request.data = {}
 
