@@ -26,6 +26,8 @@ AP_NAME = "Warped Pinball"
 # Authentication variables
 challenges = {}
 CHALLENGE_EXPIRATION_SECONDS = 60
+USB_AUTH_BYPASS_HEADER = "x-auth-transport"
+USB_AUTH_BYPASS_TOKEN = "usb"
 
 
 #
@@ -265,6 +267,12 @@ def require_auth(handler):
 
     def auth_wrapper(request, *args, **kwargs):
         global challenges
+
+        # Allow USB transport to bypass authentication when explicitly tagged in
+        # the request headers. This is intended for trusted physical
+        # connections, e.g., using the USB serial bridge.
+        if request.headers.get(USB_AUTH_BYPASS_HEADER, "").lower() == USB_AUTH_BYPASS_TOKEN:
+            return handler(request, *args, **kwargs)
 
         def deny_access(reason):
             msg = json_dumps({"error": reason}), 401, "application/json"

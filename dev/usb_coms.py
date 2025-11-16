@@ -5,7 +5,10 @@ serial connection and handles the wire protocol used by the device firmware.
 
 USB connections are treated as trusted physical links, so authentication is
 disabled by default when constructing a client with :meth:`UsbApiClient.from_device`.
-If your firmware still expects HMAC headers, enable authentication explicitly.
+When authentication is disabled the client tags requests with a
+``x-auth-transport: usb`` header so the firmware can allow protected routes to
+run without HMAC validation. If your firmware still expects HMAC headers,
+enable authentication explicitly.
 
 The flow for authenticated requests is:
     1. Ask the device for a challenge via ``/api/auth/challenge``.
@@ -27,6 +30,10 @@ import time
 from typing import Dict, Iterable, Union
 
 import serial
+
+USB_TRANSPORT_HEADER = "x-auth-transport"
+USB_TRANSPORT = "usb"
+
 
 def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
     """Render a header mapping as a newline-delimited string.
@@ -217,7 +224,15 @@ class UsbApiClient:
         )
 
         if not auth_required:
-            return self.send_and_receive(route=route, payload=payload, timeout=timeout)
+            return self.send_and_receive(
+                route=route,
+                payload=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    USB_TRANSPORT_HEADER: USB_TRANSPORT,
+                },
+                timeout=timeout,
+            )
 
         if not self.device_password:
             print("Device password is not configured for authenticated requests.")

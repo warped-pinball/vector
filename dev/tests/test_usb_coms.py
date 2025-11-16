@@ -169,6 +169,13 @@ def test_send_authenticated_request_can_be_bypassed_over_usb():
 
     assert response["body"]["result"] == "ok"
     assert b"/api/auth/challenge" not in fake_serial.write_buffer
-    assert fake_serial.write_buffer.endswith(
-        b"/api/test|Content-Type: application/json|{\"ok\": true}\n"
+
+    expected_headers = usb_coms.headers_to_text(
+        {
+            "Content-Type": "application/json",
+            usb_coms.USB_TRANSPORT_HEADER: usb_coms.USB_TRANSPORT,
+        }
     )
+    expected_request = f"/api/test|{expected_headers}|{{\"ok\": true}}\n".encode()
+
+    assert fake_serial.write_buffer.endswith(expected_request)
