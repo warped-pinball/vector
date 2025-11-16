@@ -286,32 +286,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VECTOR_VERSION="${{ env.VERSION }}"
-          VERSIONS_JSON='${{ env.TARGET_VERSIONS }}'
-          EXISTING_BODY_FILE=existing_body.txt
-          if gh release view "$VECTOR_VERSION" --json body -q .body > "$EXISTING_BODY_FILE" 2>/dev/null; then
-            :
-          else
-            rm -f "$EXISTING_BODY_FILE"
-          fi
-          python -m dev.ci.workflow_helpers render-release-body \
-            --targets dev/ci/targets.json \
-            --versions-json "$VERSIONS_JSON" \
-            --vector-version "$VECTOR_VERSION" \
-            --existing-body-file "$EXISTING_BODY_FILE" \
-            --output-file body.txt
-          DELIMITER=$(python - <<'PY'
+            VECTOR_VERSION="${{ env.VERSION }}"
+            VERSIONS_JSON='${{ env.TARGET_VERSIONS }}'
+            EXISTING_BODY_FILE=existing_body.txt
+            if gh release view "$VECTOR_VERSION" --json body -q .body > "$EXISTING_BODY_FILE" 2>/dev/null; then
+              :
+            else
+              rm -f "$EXISTING_BODY_FILE"
+            fi
+            python -m dev.ci.workflow_helpers render-release-body \
+              --targets dev/ci/targets.json \
+              --versions-json "$VERSIONS_JSON" \
+              --vector-version "$VECTOR_VERSION" \
+              --existing-body-file "$EXISTING_BODY_FILE" \
+              --output-file body.txt
+            DELIMITER=$(python - <<'PY'
 import secrets
 
 print(secrets.token_hex(16))
 PY
-)
+            )
 
-          {
-            echo "body<<${DELIMITER}"
-            cat body.txt
-            echo "${DELIMITER}"
-          } >> "$GITHUB_OUTPUT"
+            {
+              echo "body<<${DELIMITER}"
+              cat body.txt
+              echo "${DELIMITER}"
+            } >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
