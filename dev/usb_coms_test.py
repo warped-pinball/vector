@@ -7,7 +7,12 @@ import serial
 
 
 def send_and_receive(ser, route, payload, headers="Content-Type: application/json", timeout=10):
-    request = f"{route}|{headers}|{json.dumps(payload)}\n"
+    sections = [route, headers, json.dumps(payload)]
+
+    # escape '|' in sections
+    escaped_sections = [s.replace("|", "\\|") for s in sections]
+    request = "|".join(escaped_sections) + "\n"
+
     ser.write(request.encode())
     ser.flush()
     print("Sent:", request.strip())
@@ -54,7 +59,7 @@ def main():
             send_and_receive(
                 ser,
                 route="/api/game/status",
-                payload={"player": "ABC", "score": 12345},
+                payload={"player": "AB|C", "score": 12345},
             )
             time.sleep(5)
             send_and_receive(

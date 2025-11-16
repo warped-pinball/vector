@@ -156,7 +156,20 @@ def usb_request_handler():
         request = incoming_data.pop(0)
 
         print(f"USB REQ: processing request: {request}")
-        parts = request.split("|", 2)
+
+        split_by_escaped_pipes = request.split("\\|")
+        true_parts = []
+        for part in split_by_escaped_pipes:
+            new_parts = part.split("|")
+            if len(true_parts) == 0:
+                true_parts.append(new_parts.pop(0))
+            else:
+                true_parts[-1] += "\\|" + new_parts.pop(0)
+
+            if len(new_parts) > 0:
+                true_parts.extend(new_parts)
+
+        parts = true_parts
         if len(parts) != 3:
             print(f"USB REQ: invalid request format: {request}")
             continue
