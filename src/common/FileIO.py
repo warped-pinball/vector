@@ -12,7 +12,7 @@ Log = logger_instance
 
 
 # Logic for importing scores supporting any format changes
-def upgrade_score_export_format(data):
+def upgrade_score_file_format(data):
     version = get_score_export_version(data)
     # Upgrade file through all version upgrade functions
     while version in score_version_upgrades:
@@ -67,7 +67,7 @@ def import_scores(data):
     # print(data)
     # print("*"*20)
     # Upgrade format if needed
-    data = upgrade_score_export_format(data)
+    data = upgrade_score_file_format(data)
 
     print("AFTER" + "*" * 20)
     print(data)
