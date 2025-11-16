@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "The Flinstones",
+        "GameName": "Terminator 2",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 944,
+        "Address": 950,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -35,7 +35,7 @@
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
+        "ChecksumStartAdr": 6899,
         "ChecksumEndAdr": 7160,
         "ChecksumResultAdr": 7161
     },
@@ -65,11 +65,6 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "Switches": {
-        "Type": 0,
-        "Address": 0,
-        "Length": 0
-    },
     "CoinDrop": {
         "Type": 0
     },
@@ -77,10 +72,21 @@
         "Type": 10,
         "GameActiveAdr": 135,
         "GameActiveValue": 0,
-        "Players": 5901,
-        "Playerup": 943,
-        "ScoreAdr": 5791,
+        "Players": 6036,
+        "Playerup": 1039,
+        "ScoreAdr": 5935,
         "ScoreBytes": 6,
         "ScoreSpacing": 6
+    },
+    "Switches": {
+        "Type": 10,
+        "Address": 5975,
+        "Length": 64,
+        "List": {
+            "Target2": 6024,
+            "Target3": 6025,
+            "Target4": 6026,
+            "Target5 Low": 6027
+        }
     }
 }

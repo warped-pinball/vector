@@ -1,13 +1,13 @@
-vectorSystem = "sys11"
-updatesURL = "http://software.warpedpinball.com/vector/sys11/latest.json"
+vectorSystem = "data_east"
+updatesURL = "http://software.warpedpinball.com/vector/data_east/latest.json"
 
-# Firmware version for the System11 build
-SystemVersion = "1.6.1"
+# Firmware version for the Data East build
+SystemVersion = "0.0.0"
 
 
 # System specific scheduled tasks
 def schedule_system_tasks():
-    # Note: this function is duplicated in src/wpc/systemConfig.py
+    # Note: this function is duplicated in src/sys11/systemConfig.py
     import faults
     from GameStatus import poll_fast
     from phew.server import copy_to_fram, schedule

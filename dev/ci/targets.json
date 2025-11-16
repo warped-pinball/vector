@@ -1,0 +1,42 @@
+[
+  {
+    "id": "sys11",
+    "label": "Sys11",
+    "config_path": "src/sys11/systemConfig.py",
+    "output": "update.json",
+    "artifact": "sys11-update.json",
+    "raw_filename": "sys11-update.json"
+  },
+  {
+    "id": "wpc",
+    "label": "WPC",
+    "config_path": "src/wpc/systemConfig.py",
+    "output": "update_wpc.json",
+    "artifact": "wpc-update.json",
+    "raw_filename": "wpc-update.json"
+  },
+  {
+    "id": "em",
+    "label": "EM",
+    "config_path": "src/em/systemConfig.py",
+    "output": "update_em.json",
+    "artifact": "em-update.json",
+    "raw_filename": "em-update.json"
+  },
+  {
+    "id": "whitestar",
+    "label": "WhiteStar",
+    "config_path": "src/whitestar/systemConfig.py",
+    "output": "update_whitestar.json",
+    "artifact": "whitestar-update.json",
+    "raw_filename": "whitestar-update.json"
+  },
+  {
+    "id": "data_east",
+    "label": "DataEast",
+    "config_path": "src/data_east/systemConfig.py",
+    "output": "update_data_east.json",
+    "artifact": "data-east-update.json",
+    "raw_filename": "data-east-update.json"
+  }
+]
