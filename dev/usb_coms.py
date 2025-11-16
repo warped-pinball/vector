@@ -1,0 +1,185 @@
+"""USB API client utilities for communicating with the device over serial.
+
+This module exposes a small helper class, :class:`UsbApiClient`, that wraps a
+serial connection and handles the wire protocol used by the device firmware.
+
+The flow for authenticated requests is:
+    1. Ask the device for a challenge via ``/api/auth/challenge``.
+    2. Combine the challenge, route, and request body and sign with the device
+       password using HMAC-SHA256.
+    3. Send the request with the resulting headers.
+
+The password is hard-coded here for convenience while developing. If your
+project uses a different secret management mechanism, update ``DEVICE_PASSWORD``
+accordingly.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import time
+from typing import Dict, Iterable, Union
+
+import serial
+
+DEVICE_PASSWORD = "vector-password"
+
+
+def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
+    """Render a header mapping as a newline-delimited string.
+
+    The device expects headers to be sent as ``name: value`` pairs joined by
+    newlines. If ``headers`` is already a string it is returned unchanged.
+    """
+
+    if isinstance(headers, str):
+        return headers
+
+    header_lines: Iterable[str] = (f"{name}: {value}" for name, value in headers.items())
+    return "\n".join(header_lines)
+
+
+def build_auth_headers(
+    challenge: str, route: str, body_text: str, password: str = DEVICE_PASSWORD
+) -> Dict[str, str]:
+    """Build headers required for the firmware's HMAC-based authentication.
+
+    The HMAC digest is calculated over ``challenge + route + body`` using the
+    device password. The returned headers include ``Content-Type`` and the
+    challenge/HMAC pair that the device validates.
+    """
+
+    message = f"{challenge}{route}{body_text}".encode("utf-8")
+    digest = hmac.new(password.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+    return {
+        "Content-Type": "application/json",
+        "x-auth-challenge": challenge,
+        "x-auth-hmac": digest,
+    }
+
+
+class UsbApiClient:
+    """High-level client for the USB API protocol used by the device."""
+
+    def __init__(self, ser):
+        self.ser = ser
+
+    @classmethod
+    def from_device(
+        cls, port: str = "/dev/ttyACM0", baudrate: int = 115200, timeout: int = 10
+    ) -> "UsbApiClient":
+        """Create a client with a real serial connection.
+
+        A short delay is added after opening the port to give the device time to
+        boot, matching the behavior of the previous utility script.
+        """
+
+        ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+        time.sleep(2)
+        return cls(ser)
+
+    def close(self) -> None:
+        """Close the underlying serial connection."""
+
+        self.ser.close()
+
+    def send_and_receive(
+        self,
+        route: str,
+        payload: Union[Dict, str, None],
+        headers: Union[str, Dict[str, str]] | None = None,
+        body_text: str | None = None,
+        timeout: int = 10,
+    ):
+        """Send a request to the device and return the parsed response.
+
+        Requests are formatted as ``<route>|<headers>|<body>`` with ``|``
+        characters escaped. The method waits for a ``USB API RESPONSE-->`` line
+        and parses the JSON payload into a Python dictionary.
+        """
+
+        if headers is None:
+            headers = {"Content-Type": "application/json"}
+
+        header_text = headers_to_text(headers)
+        if payload is None:
+            payload = {}
+        if body_text is None:
+            body_text = json.dumps(payload)
+
+        sections = [route, header_text, body_text]
+        escaped_sections = [section.replace("|", "\\|") for section in sections]
+        request = "|".join(escaped_sections) + "\n"
+
+        self.ser.write(request.encode())
+        self.ser.flush()
+        print("Sent:", request.strip())
+
+        prefix = "USB API RESPONSE-->"
+        deadline = time.monotonic() + timeout
+
+        while time.monotonic() < deadline:
+            if self.ser.in_waiting:
+                line = self.ser.readline()
+                if not line:
+                    continue
+                text = line.decode(errors="replace").rstrip("\r\n")
+                if not text.startswith(prefix):
+                    continue
+                payload_text = text[len(prefix) :].strip()
+                try:
+                    data = json.loads(payload_text)
+                except json.JSONDecodeError:
+                    print("Recv malformed:", payload_text)
+                    return None
+                body_raw = data.get("body")
+                if isinstance(body_raw, str):
+                    try:
+                        data["body"] = json.loads(body_raw)
+                    except json.JSONDecodeError:
+                        print("Recv body malformed:", body_raw)
+                print(text)
+                print("Recv:\n" + json.dumps(data, indent=2))
+                return data
+            time.sleep(0.05)
+
+        print("Timed out waiting for response.")
+        return None
+
+    def fetch_challenge(self, timeout: int = 5) -> str | None:
+        """Request an authentication challenge from the device."""
+
+        response = self.send_and_receive(
+            route="/api/auth/challenge",
+            payload={},
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+        if not response or response.get("status") != 200:
+            return None
+
+        body = response.get("body") or {}
+        if isinstance(body, dict):
+            return body.get("challenge")
+        return None
+
+    def send_authenticated_request(self, route: str, payload: Dict, timeout: int = 10):
+        """Send a request using the HMAC-based authentication headers."""
+
+        body_text = json.dumps(payload)
+        challenge = self.fetch_challenge(timeout=timeout)
+        if not challenge:
+            print("Could not fetch authentication challenge.")
+            return None
+
+        auth_headers = build_auth_headers(challenge, route, body_text)
+        return self.send_and_receive(
+            route=route,
+            payload=payload,
+            headers=auth_headers,
+            body_text=body_text,
+            timeout=timeout,
+        )
