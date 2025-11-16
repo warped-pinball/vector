@@ -47,12 +47,13 @@ def test_build_auth_headers_matches_backend_scheme():
     challenge = "abc123"
     route = "/api/auth/password_check"
     body_text = json.dumps({"payload": True})
+    password = "local-device-password"
 
-    headers = usb_coms.build_auth_headers(challenge, route, body_text)
+    headers = usb_coms.build_auth_headers(challenge, route, body_text, password)
 
     expected_message = f"{challenge}{route}{body_text}".encode("utf-8")
     expected_hmac = usb_coms.hmac.new(
-        usb_coms.DEVICE_PASSWORD.encode("utf-8"),
+        password.encode("utf-8"),
         expected_message,
         usb_coms.hashlib.sha256,
     ).hexdigest()
@@ -98,3 +99,50 @@ def test_demo_bootstraps_repo_root_into_sys_path(monkeypatch):
     # The helper import succeeds when the script adds the repository root to
     # sys.path at runtime.
     assert "UsbApiClient" in namespace
+
+
+def test_send_authenticated_request_requires_password():
+    fake_serial = FakeSerial([])
+    client = usb_coms.UsbApiClient(fake_serial)
+
+    result = client.send_authenticated_request("/api/test", {"ok": True})
+
+    assert result is None
+    assert fake_serial.write_buffer == b""
+
+
+def test_send_authenticated_request_uses_provided_password():
+    challenge_response = {
+        "url": "/api/auth/challenge",
+        "status": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"challenge": "demo-challenge"}),
+    }
+    success_response = {
+        "url": "/api/test",
+        "status": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"result": "ok"}),
+    }
+
+    fake_serial = FakeSerial(
+        [
+            f"USB API RESPONSE-->{json.dumps(challenge_response)}\n".encode(),
+            f"USB API RESPONSE-->{json.dumps(success_response)}\n".encode(),
+        ]
+    )
+
+    password = "demo-pass"
+    client = usb_coms.UsbApiClient(fake_serial, device_password=password)
+    response = client.send_authenticated_request("/api/test", {"ok": True})
+
+    assert response["body"]["result"] == "ok"
+
+    expected_body = json.dumps({"ok": True})
+    expected_auth = usb_coms.build_auth_headers(
+        "demo-challenge", "/api/test", expected_body, password
+    )
+    expected_headers = usb_coms.headers_to_text(expected_auth)
+
+    assert b"/api/auth/challenge|Content-Type: application/json|{}\n" in fake_serial.write_buffer
+    assert expected_headers.encode("utf-8") in fake_serial.write_buffer

@@ -9,9 +9,9 @@ The flow for authenticated requests is:
        password using HMAC-SHA256.
     3. Send the request with the resulting headers.
 
-The password is hard-coded here for convenience while developing. If your
-project uses a different secret management mechanism, update ``DEVICE_PASSWORD``
-accordingly.
+The password is provided by the caller (for example, the demo script hard-codes
+one for simplicity). In production environments this value should come from a
+secure secret store or environment variable rather than a checked-in constant.
 """
 
 from __future__ import annotations
@@ -23,9 +23,6 @@ import time
 from typing import Dict, Iterable, Union
 
 import serial
-
-DEVICE_PASSWORD = "vector-password"
-
 
 def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
     """Render a header mapping as a newline-delimited string.
@@ -42,7 +39,7 @@ def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
 
 
 def build_auth_headers(
-    challenge: str, route: str, body_text: str, password: str = DEVICE_PASSWORD
+    challenge: str, route: str, body_text: str, password: str
 ) -> Dict[str, str]:
     """Build headers required for the firmware's HMAC-based authentication.
 
@@ -64,12 +61,25 @@ def build_auth_headers(
 class UsbApiClient:
     """High-level client for the USB API protocol used by the device."""
 
-    def __init__(self, ser):
+    def __init__(self, ser, device_password: str | None = None):
+        """Initialize the client with an open serial connection.
+
+        Args:
+            ser: An object implementing the subset of the :mod:`serial.Serial`
+                interface used by this client.
+            device_password: Optional password used for authenticated requests.
+        """
+
         self.ser = ser
+        self.device_password = device_password
 
     @classmethod
     def from_device(
-        cls, port: str = "/dev/ttyACM0", baudrate: int = 115200, timeout: int = 10
+        cls,
+        port: str = "/dev/ttyACM0",
+        baudrate: int = 115200,
+        timeout: int = 10,
+        device_password: str | None = None,
     ) -> "UsbApiClient":
         """Create a client with a real serial connection.
 
@@ -79,7 +89,7 @@ class UsbApiClient:
 
         ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         time.sleep(2)
-        return cls(ser)
+        return cls(ser, device_password=device_password)
 
     def close(self) -> None:
         """Close the underlying serial connection."""
@@ -167,7 +177,15 @@ class UsbApiClient:
         return None
 
     def send_authenticated_request(self, route: str, payload: Dict, timeout: int = 10):
-        """Send a request using the HMAC-based authentication headers."""
+        """Send a request using the HMAC-based authentication headers.
+
+        A device password must be configured on the client instance before
+        calling this method.
+        """
+
+        if not self.device_password:
+            print("Device password is not configured for authenticated requests.")
+            return None
 
         body_text = json.dumps(payload)
         challenge = self.fetch_challenge(timeout=timeout)
@@ -175,7 +193,9 @@ class UsbApiClient:
             print("Could not fetch authentication challenge.")
             return None
 
-        auth_headers = build_auth_headers(challenge, route, body_text)
+        auth_headers = build_auth_headers(
+            challenge, route, body_text, password=self.device_password
+        )
         return self.send_and_receive(
             route=route,
             payload=payload,
