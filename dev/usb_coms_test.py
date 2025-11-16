@@ -6,69 +6,57 @@ import time
 import serial
 
 
-def main():  # pragma: no cover - manual USB harness
-    # from detect_boards import detect_boards
+def send_and_receive(ser, route, payload, headers="Content-Type: application/json", timeout=10):
+    request = f"{route}|{headers}|{json.dumps(payload)}\n"
+    ser.write(request.encode())
+    ser.flush()
+    print("Sent:", request.strip())
 
-    # boards = detect_boards()
-    # print("Detected boards:", boards)
+    prefix = "USB API RESPONSE-->"
+    deadline = time.monotonic() + timeout
 
-    # # pick the first key and the first port for that key
-    # board_types = list(boards.keys())
-    # if not board_types:
-    #     print("No boards detected.")
-    #     exit(1)
-    # first_board_type = board_types[0]
-    # first_port = boards[first_board_type][0]
-    # print(f"Using board type: {first_board_type} on port: {first_port}")
+    while time.monotonic() < deadline:
+        if ser.in_waiting:
+            line = ser.readline()
+            if not line:
+                continue
+            text = line.decode(errors="replace").rstrip("\r\n")
+            if not text.startswith(prefix):
+                continue
+            payload_text = text[len(prefix) :].strip()
+            try:
+                data = json.loads(payload_text)
+            except json.JSONDecodeError:
+                print("Recv malformed:", payload_text)
+                return None
+            body_raw = data.get("body")
+            if isinstance(body_raw, str):
+                try:
+                    data["body"] = json.loads(body_raw)
+                except json.JSONDecodeError:
+                    print("Recv body malformed:", body_raw)
+            print(text)
+            print("Recv:\n" + json.dumps(data, indent=2))
+            return data
+        time.sleep(0.05)
 
+    print("Timed out waiting for response.")
+    return None
+
+
+def main():
     ser = serial.Serial(port="/dev/ttyACM0", baudrate=115200, timeout=10)
     time.sleep(2)
 
     try:
-
-        def send_api_request():
-            """Send a test API request to the USB handler"""
-            route = "/api/game/status"
-            headers = "Content-Type: application/json"
-            data = json.dumps({"player": "ABC", "score": 12345})
-
-            request = f"{route}|{headers}|{data}\n"
-            ser.write(request.encode())
-            ser.flush()
-            print("Sent:", request.strip())
-
-        last_send = time.monotonic() - 5
-
         print("Listening for responses. Press Ctrl+C to stop.")
         while True:
-            now = time.monotonic()
-            if now - last_send >= 5:
-                send_api_request()
-                last_send = now
-
-            if ser.in_waiting:
-                line = ser.readline()
-                if line:
-                    text = line.decode(errors="replace").rstrip("\r\n")
-                    prefix = "USB API RESPONSE-->"
-                    if text.startswith(prefix):
-                        payload = text[len(prefix) :].strip()
-                        try:
-                            data = json.loads(payload)
-                            body_raw = data.get("body")
-                            if isinstance(body_raw, str):
-                                try:
-                                    data["body"] = json.loads(body_raw)
-                                except json.JSONDecodeError:
-                                    print("Recv body malformed:", body_raw)
-                        except json.JSONDecodeError:
-                            print("Recv malformed:", payload)
-                        else:
-                            print(text)
-                            print("Recv:\n" + json.dumps(data, indent=2))
-            else:
-                time.sleep(0.05)
-
+            send_and_receive(
+                ser,
+                route="/api/game/status",
+                payload={"player": "ABC", "score": 12345},
+            )
+            time.sleep(5)
     except KeyboardInterrupt:
         print("Stopped listening.")
     finally:
