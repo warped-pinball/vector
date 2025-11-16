@@ -266,6 +266,12 @@ def require_auth(handler):
     def auth_wrapper(request, *args, **kwargs):
         global challenges
 
+        # USB transport is explicitly tagged by the USB bridge. Only those
+        # requests bypass authentication; HTTP callers cannot skip HMAC by
+        # spoofing the protocol string.
+        if getattr(request, "is_usb_transport", False):
+            return handler(request, *args, **kwargs)
+
         def deny_access(reason):
             msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
@@ -340,7 +346,7 @@ def get_challenge(request):
     return json_dumps({"challenge": new_challenge}), 200
 
 
-@add_route("api/auth/password_check", auth=True)
+@add_route("/api/auth/password_check", auth=True)
 def check_password(request):
     return "ok", 200
 

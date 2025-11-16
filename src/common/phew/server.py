@@ -34,6 +34,7 @@ class Request:
     def __init__(self, method, uri, protocol):
         self.method = method
         self.protocol = protocol
+        self.is_usb_transport = False
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
@@ -310,7 +311,7 @@ def create_schedule(ap_mode: bool = False):
     #
 
     schedule(send_game_status, 14000, 1000)
-    schedule(usb_request_handler, 1000, 1000)
+    schedule(usb_request_handler, 1000, 100)
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
 
