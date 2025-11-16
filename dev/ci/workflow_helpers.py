@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Dict, Any
@@ -202,6 +203,19 @@ def merge_release_body(existing_body: str, version_section: str) -> str:
     return version_section
 
 
+def emit_output(name: str, value: str, output_file: Path, *, delimiter: str | None = None) -> str:
+    delimiter = delimiter or secrets.token_hex(16)
+
+    with output_file.open("a") as fh:
+        fh.write(f"{name}<<{delimiter}\n")
+        fh.write(value)
+        if not value.endswith("\n"):
+            fh.write("\n")
+        fh.write(f"{delimiter}\n")
+
+    return delimiter
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -242,6 +256,12 @@ def parse_args() -> argparse.Namespace:
     release_body.add_argument("--vector-version", required=True)
     release_body.add_argument("--existing-body-file", type=Path)
     release_body.add_argument("--output-file", type=Path, required=True)
+
+    emit = subparsers.add_parser("emit-output")
+    emit.add_argument("--name", required=True)
+    emit.add_argument("--value-file", type=Path, required=True)
+    emit.add_argument("--output-file", type=Path, required=True)
+    emit.add_argument("--delimiter")
 
     return parser.parse_args()
 
@@ -315,6 +335,14 @@ def main() -> None:
         )
         merged = merge_release_body(existing_body, version_section)
         args.output_file.write_text(merged)
+
+    elif args.command == "emit-output":
+        emit_output(
+            args.name,
+            args.value_file.read_text(),
+            args.output_file,
+            delimiter=args.delimiter,
+        )
 
     else:
         raise ValueError(f"Unsupported command {args.command}")

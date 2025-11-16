@@ -300,22 +300,11 @@ jobs:
             --vector-version "$VECTOR_VERSION" \
             --existing-body-file "$EXISTING_BODY_FILE" \
             --output-file body.txt
-
-          DELIMITER=${{ env.RELEASE_BODY_DELIMITER || '' }}
-          if [ -z "$DELIMITER" ]; then
-            DELIMITER=$(python - <<'PY'
-import secrets
-
-print(secrets.token_hex(16))
-PY
-            )
-          fi
-
-          {
-            echo "body<<${DELIMITER}"
-            cat body.txt
-            echo "${DELIMITER}"
-          } >> "$GITHUB_OUTPUT"
+          python -m dev.ci.workflow_helpers emit-output \
+            --name body \
+            --value-file body.txt \
+            --output-file "$GITHUB_OUTPUT" \
+            --delimiter "${{ env.RELEASE_BODY_DELIMITER }}"
 
       - name: Create or update GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}

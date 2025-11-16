@@ -93,3 +93,22 @@ def test_pr_raw_artifact_metadata_prefers_raw_name(tmp_path: Path) -> None:
             "filename": "sys11-update.json",
         }
     ]
+
+
+def test_emit_output_generates_delimiter_and_appends_newline(tmp_path: Path) -> None:
+    output_file = tmp_path / "gout.txt"
+
+    delimiter = wh.emit_output("body", "content", output_file)
+
+    lines = output_file.read_text().splitlines()
+    assert lines[0] == f"body<<{delimiter}"
+    assert lines[1] == "content"
+    assert lines[2] == delimiter
+
+
+def test_emit_output_respects_custom_delimiter(tmp_path: Path) -> None:
+    output_file = tmp_path / "gout.txt"
+
+    wh.emit_output("body", "value\n", output_file, delimiter="CUSTOM")
+
+    assert output_file.read_text() == "body<<CUSTOM\nvalue\nCUSTOM\n"
