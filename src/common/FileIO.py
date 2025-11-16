@@ -63,21 +63,15 @@ def download_scores():
 def import_scores(data):
     from ScoreTrackCommon import bulk_import_scores
 
-    # print("BEFORE"+"*"*20)
-    # print(data)
-    # print("*"*20)
     # Upgrade format if needed
     data = upgrade_score_file_format(data)
-
-    print("AFTER" + "*" * 20)
-    print(data)
-    print("*" * 20)
 
     if "scores" in data:
         if "leaders" in data["scores"]:
             bulk_import_scores(data["scores"]["leaders"], "leaders")
-        if "tournament" in data["scores"]:
-            bulk_import_scores(data["scores"]["tournament"], "tournament")
+        # Not Importing Tournament for now
+        # if "tournament" in data["scores"]:
+        #     bulk_import_scores(data["scores"]["tournament"], "tournament")
     return True
 
 
