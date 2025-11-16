@@ -3,10 +3,7 @@
 import json
 import time
 
-import pytest
 import serial
-
-pytestmark = pytest.mark.skip(reason="requires connected USB hardware")
 
 
 def main():  # pragma: no cover - manual USB harness
@@ -31,7 +28,7 @@ def main():  # pragma: no cover - manual USB harness
 
         def send_api_request():
             """Send a test API request to the USB handler"""
-            route = "/game/status"
+            route = "/api/game/status"
             headers = "Content-Type: application/json"
             data = json.dumps({"player": "ABC", "score": 12345})
 
@@ -53,7 +50,22 @@ def main():  # pragma: no cover - manual USB harness
                 line = ser.readline()
                 if line:
                     text = line.decode(errors="replace").rstrip("\r\n")
-                    print("Recv:", text)
+                    prefix = "USB API RESPONSE-->"
+                    if text.startswith(prefix):
+                        payload = text[len(prefix) :].strip()
+                        try:
+                            data = json.loads(payload)
+                            body_raw = data.get("body")
+                            if isinstance(body_raw, str):
+                                try:
+                                    data["body"] = json.loads(body_raw)
+                                except json.JSONDecodeError:
+                                    print("Recv body malformed:", body_raw)
+                        except json.JSONDecodeError:
+                            print("Recv malformed:", payload)
+                        else:
+                            print(text)
+                            print("Recv:\n" + json.dumps(data, indent=2))
             else:
                 time.sleep(0.05)
 

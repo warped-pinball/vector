@@ -102,11 +102,13 @@ def handle_usb_api_request(route_url, headers_text, data_text):
         print(f"USB REQ: route not found: {request.path}")
 
     if handler is None:
-        return json.dumps({
-            "status": 404,
-            "headers": {"Content-Type": "text/plain"},
-            "body": "Route not found",
-        })
+        return json.dumps(
+            {
+                "status": 404,
+                "headers": {"Content-Type": "text/plain"},
+                "body": "Route not found",
+            }
+        )
 
     response = handler(request)
     response = _normalize_response(response)
@@ -115,11 +117,13 @@ def handle_usb_api_request(route_url, headers_text, data_text):
         return _render_response(response)
 
     print(f"USB REQ: invalid response type: {type(response)}")
-    return json.dumps({
-        "status": 500,
-        "headers": {"Content-Type": "text/plain"},
-        "body": "Invalid response type",
-    })
+    return json.dumps(
+        {
+            "status": 500,
+            "headers": {"Content-Type": "text/plain"},
+            "body": "Invalid response type",
+        }
+    )
 
 
 def usb_request_handler():
@@ -159,7 +163,7 @@ def usb_request_handler():
 
         try:
             response_text = handle_usb_api_request(route_url, headers, data)
-            print(response_text)
+            print(f"USB API RESPONSE-->{response_text}")
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")
             # Continue processing other requests even if one fails
