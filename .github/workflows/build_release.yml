@@ -144,6 +144,20 @@ jobs:
             try {
               await ensureBranch();
 
+              const { data: branchRef } = await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`,
+              });
+
+              const { data: branchCommit } = await github.rest.git.getCommit({
+                owner,
+                repo,
+                commit_sha: branchRef.object.sha,
+              });
+
+              const treeEntries = [];
+
               for (const file of files) {
                 let contents;
                 try {
@@ -158,39 +172,44 @@ jobs:
 
                 const repoPath = `${basePath}/${file.filename}`;
 
-                let existingSha;
-                try {
-                  const { data } = await github.rest.repos.getContent({
-                    owner,
-                    repo,
-                    path: repoPath,
-                    ref: branch,
-                  });
-
-                  if (!Array.isArray(data)) {
-                    existingSha = data.sha;
-                  }
-                } catch (error) {
-                  if (error.status !== 404) {
-                    throw error;
-                  }
-                }
-
-                await github.rest.repos.createOrUpdateFileContents({
-                  owner,
-                  repo,
+                treeEntries.push({
                   path: repoPath,
-                  branch,
-                  message: `Publish ${repoPath} for PR ${prNumber}`,
-                  content: Buffer.from(contents, 'utf8').toString('base64'),
-                  sha: existingSha,
-                  committer,
-                  author: committer,
+                  mode: '100644',
+                  type: 'blob',
+                  content: contents,
                 });
 
                 links.push({
                   name: file.label,
                   url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
+                });
+              }
+
+              if (treeEntries.length > 0) {
+                const { data: tree } = await github.rest.git.createTree({
+                  owner,
+                  repo,
+                  base_tree: branchCommit.tree.sha,
+                  tree: treeEntries,
+                });
+
+                const commitMessage = `Publish ${basePath} for PR ${prNumber}`;
+                const { data: commit } = await github.rest.git.createCommit({
+                  owner,
+                  repo,
+                  message: commitMessage,
+                  tree: tree.sha,
+                  parents: [],
+                  committer,
+                  author: committer,
+                });
+
+                await github.rest.git.updateRef({
+                  owner,
+                  repo,
+                  ref: `heads/${branch}`,
+                  sha: commit.sha,
+                  force: true,
                 });
               }
             } catch (error) {
