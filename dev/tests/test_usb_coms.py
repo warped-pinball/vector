@@ -103,7 +103,7 @@ def test_demo_bootstraps_repo_root_into_sys_path(monkeypatch):
 
 def test_send_authenticated_request_requires_password():
     fake_serial = FakeSerial([])
-    client = usb_coms.UsbApiClient(fake_serial)
+    client = usb_coms.UsbApiClient(fake_serial, authentication_enabled=True)
 
     result = client.send_authenticated_request("/api/test", {"ok": True})
 
@@ -133,7 +133,9 @@ def test_send_authenticated_request_uses_provided_password():
     )
 
     password = "demo-pass"
-    client = usb_coms.UsbApiClient(fake_serial, device_password=password)
+    client = usb_coms.UsbApiClient(
+        fake_serial, device_password=password, authentication_enabled=True
+    )
     response = client.send_authenticated_request("/api/test", {"ok": True})
 
     assert response["body"]["result"] == "ok"
@@ -146,3 +148,27 @@ def test_send_authenticated_request_uses_provided_password():
 
     assert b"/api/auth/challenge|Content-Type: application/json|{}\n" in fake_serial.write_buffer
     assert expected_headers.encode("utf-8") in fake_serial.write_buffer
+
+
+def test_send_authenticated_request_can_be_bypassed_over_usb():
+    success_response = {
+        "url": "/api/test",
+        "status": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"result": "ok"}),
+    }
+
+    fake_serial = FakeSerial(
+        [f"USB API RESPONSE-->{json.dumps(success_response)}\n".encode()]
+    )
+
+    client = usb_coms.UsbApiClient(fake_serial, authentication_enabled=False)
+    response = client.send_authenticated_request(
+        "/api/test", {"ok": True}, require_authentication=False
+    )
+
+    assert response["body"]["result"] == "ok"
+    assert b"/api/auth/challenge" not in fake_serial.write_buffer
+    assert fake_serial.write_buffer.endswith(
+        b"/api/test|Content-Type: application/json|{\"ok\": true}\n"
+    )

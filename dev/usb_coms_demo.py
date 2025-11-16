@@ -22,15 +22,15 @@ if str(REPO_ROOT) not in sys.path:
 
 from dev.usb_coms import UsbApiClient
 
-# For demo purposes we hard-code the device password here. In production you
-# should load this value from a secure secret store or environment variable.
-DEVICE_PASSWORD = "vector-password"
-
-
 def main():
     # Open a serial connection to the device. Adjust the port if needed for your
     # environment (for example, ``COM3`` on Windows).
-    client = UsbApiClient.from_device(device_password=DEVICE_PASSWORD)
+    client = UsbApiClient.from_device(
+        # Authentication is disabled for USB traffic because the physical cable
+        # is treated as a trusted link. If your device firmware enforces HMAC
+        # auth, set ``authentication_enabled=True`` and provide a password.
+        authentication_enabled=False,
+    )
 
     try:
         print("Listening for responses. Press Ctrl+C to stop.")
@@ -44,6 +44,7 @@ def main():
             client.send_authenticated_request(
                 route="/api/auth/password_check",
                 payload={"intent": "demo"},
+                require_authentication=False,
             )
             time.sleep(5)
     except KeyboardInterrupt:

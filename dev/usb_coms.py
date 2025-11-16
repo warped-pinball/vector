@@ -3,6 +3,10 @@
 This module exposes a small helper class, :class:`UsbApiClient`, that wraps a
 serial connection and handles the wire protocol used by the device firmware.
 
+USB connections are treated as trusted physical links, so authentication is
+disabled by default when constructing a client with :meth:`UsbApiClient.from_device`.
+If your firmware still expects HMAC headers, enable authentication explicitly.
+
 The flow for authenticated requests is:
     1. Ask the device for a challenge via ``/api/auth/challenge``.
     2. Combine the challenge, route, and request body and sign with the device
@@ -61,17 +65,26 @@ def build_auth_headers(
 class UsbApiClient:
     """High-level client for the USB API protocol used by the device."""
 
-    def __init__(self, ser, device_password: str | None = None):
+    def __init__(
+        self,
+        ser,
+        device_password: str | None = None,
+        authentication_enabled: bool = True,
+    ):
         """Initialize the client with an open serial connection.
 
         Args:
             ser: An object implementing the subset of the :mod:`serial.Serial`
                 interface used by this client.
             device_password: Optional password used for authenticated requests.
+            authentication_enabled: Whether to perform challenge/HMAC
+                authentication for protected routes. USB links can safely use
+                ``False`` because the transport is a trusted physical cable.
         """
 
         self.ser = ser
         self.device_password = device_password
+        self.authentication_enabled = authentication_enabled
 
     @classmethod
     def from_device(
@@ -80,6 +93,7 @@ class UsbApiClient:
         baudrate: int = 115200,
         timeout: int = 10,
         device_password: str | None = None,
+        authentication_enabled: bool = False,
     ) -> "UsbApiClient":
         """Create a client with a real serial connection.
 
@@ -89,7 +103,11 @@ class UsbApiClient:
 
         ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         time.sleep(2)
-        return cls(ser, device_password=device_password)
+        return cls(
+            ser,
+            device_password=device_password,
+            authentication_enabled=authentication_enabled,
+        )
 
     def close(self) -> None:
         """Close the underlying serial connection."""
@@ -176,12 +194,30 @@ class UsbApiClient:
             return body.get("challenge")
         return None
 
-    def send_authenticated_request(self, route: str, payload: Dict, timeout: int = 10):
-        """Send a request using the HMAC-based authentication headers.
+    def send_authenticated_request(
+        self,
+        route: str,
+        payload: Dict,
+        timeout: int = 10,
+        require_authentication: bool | None = None,
+    ):
+        """Send a request, optionally using the HMAC-based authentication headers.
 
-        A device password must be configured on the client instance before
-        calling this method.
+        Args:
+            route: API route to call.
+            payload: JSON-serializable request body.
+            timeout: Maximum seconds to wait for a response.
+            require_authentication: Force authentication on or off. ``None``
+                defers to :pyattr:`authentication_enabled`, which defaults to
+                ``False`` for USB connections.
         """
+
+        auth_required = (
+            self.authentication_enabled if require_authentication is None else require_authentication
+        )
+
+        if not auth_required:
+            return self.send_and_receive(route=route, payload=payload, timeout=timeout)
 
         if not self.device_password:
             print("Device password is not configured for authenticated requests.")
