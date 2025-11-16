@@ -1,42 +1,4 @@
 //
-// Generic / Utility functions
-//
-
-async function confirm_auth_get(url, purpose) {
-  await confirmAction(purpose, async () => {
-    const response = await window.smartFetch(url, null, true);
-    if (response.status !== 200 && response.status !== 401) {
-      // 401 already alerted the user that their password was wrong
-      console.error(`Failed to ${purpose}:`, response.status);
-      alert(`Failed to ${purpose}.`);
-    }
-  });
-}
-
-async function confirmAction(message, callback, cancelCallback = null) {
-  const modal = await window.waitForElementById("confirm-modal");
-  const modalMessage = await window.waitForElementById("modal-message");
-  const confirmButton = await window.waitForElementById("modal-confirm-button");
-  const cancelButton = await window.waitForElementById("modal-cancel-button");
-
-  modalMessage.textContent = `Are you sure you want to ${message}?`;
-
-  confirmButton.onclick = () => {
-    modal.close();
-    callback();
-  };
-
-  cancelButton.onclick = () => {
-    modal.close();
-    if (cancelCallback) {
-      cancelCallback();
-    }
-  };
-
-  modal.showModal();
-}
-
-//
 // Settings
 //
 
@@ -468,6 +430,45 @@ if (typeof window !== "undefined") {
     console.log("Scores download initiated.");
   };
 
+  // Import Scores
+  window.importScores = async function () {
+    console.log("Importing scores...");
+
+    var fileInput = document.querySelector("#input_scores");
+    var fileBtn = document.querySelector("#input_scores_btn");
+    const file = fileInput.files[0];
+    if (file) {
+      const fileContent = await file.text(); // Read file as text
+      const data = JSON.parse(fileContent); // Parse the text into JSON
+      const previousText = fileBtn.innerHTML;
+      var response_json = null;
+      try {
+        fileBtn.disabled = true;
+        fileBtn.innerHTML = "Importing...";
+        const response = await window.smartFetch(
+          "/api/import/scores",
+          data,
+          true,
+        );
+        response_json = await response.json();
+      } catch (e) {
+        console.error(e);
+      }
+      fileInput.value = "";
+      fileBtn.innerHTML = previousText;
+      fileBtn.disabled = false;
+      if (response_json != null && response_json["success"]) {
+        //TODO: would be nice to use the modals here...
+        alert("Imported!");
+      } else {
+        if (response.status != 401) {
+          //Show an error only if auth didn't fail.
+          alert("Error Importing!");
+        }
+      }
+    }
+  };
+
   //
   // Updates
   //
@@ -512,6 +513,7 @@ if (typeof window !== "undefined") {
       // link to release notes in text
       const releaseNotes = document.getElementById("release-notes");
       const releaseLink = document.getElementById("release-link");
+      const releaseToggle = document.getElementById("release-toggle-button");
       if (releaseNotes) {
         if (data["release_page"]) {
           releaseLink.href = data["release_page"];
@@ -525,9 +527,12 @@ if (typeof window !== "undefined") {
 
         if (data["notes"]) {
           releaseNotes.innerHTML = data["notes"];
-          releaseNotes.classList.remove("hide");
+          releaseNotes.classList.add("hide");
+          releaseToggle.innerHTML = "Show Changelog";
+          releaseToggle.classList.remove("hide");
         } else {
           releaseNotes.classList.add("hide");
+          releaseToggle.classList.add("hide");
         }
       }
 
@@ -642,6 +647,18 @@ if (typeof window !== "undefined") {
 
   checkForUpdates();
   window.applyUpdate = applyUpdate;
+
+  window.toggleReleaseNotes = function () {
+    const releaseToggle = document.getElementById("release-toggle-button");
+    const notes = document.getElementById("release-notes");
+    if (notes.classList.contains("hide")) {
+      notes.classList.remove("hide");
+      releaseToggle.innerHTML = "Hide Changelog";
+    } else {
+      notes.classList.add("hide");
+      releaseToggle.innerHTML = "Show Changelog";
+    }
+  };
 
   // custom update function
   window.customUpdate = async function () {
