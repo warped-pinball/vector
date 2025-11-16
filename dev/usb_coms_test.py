@@ -23,23 +23,32 @@ ser = serial.Serial(port="/dev/ttyACM0", baudrate=115200, timeout=10)
 time.sleep(2)
 
 try:
-    # Example API request
-    route = "/game/status"
-    headers = "Content-Type: application/json"
-    data = json.dumps({"player": "ABC", "score": 12345})
 
-    request = f"{route}|{headers}|{data}\n"
-    ser.write(request.encode())
-    ser.flush()
-    print("Sent:", request.strip())
+    def send_api_request():
+        """Send a test API request to the USB handler"""
+        route = "/game/status"
+        headers = "Content-Type: application/json"
+        data = json.dumps({"player": "ABC", "score": 12345})
 
-    # Keep listening indefinitely until interrupted
+        request = f"{route}|{headers}|{data}\n"
+        ser.write(request.encode())
+        ser.flush()
+        print("Sent:", request.strip())
+
+    last_send = time.monotonic() - 5
+
     print("Listening for responses. Press Ctrl+C to stop.")
     while True:
-        line = ser.readline()  # returns b'' on timeout
-        if line:
-            text = line.decode(errors="replace").rstrip("\r\n")
-            print("Recv:", text)
+        now = time.monotonic()
+        if now - last_send >= 5:
+            send_api_request()
+            last_send = now
+
+        if ser.in_waiting:
+            line = ser.readline()
+            if line:
+                text = line.decode(errors="replace").rstrip("\r\n")
+                print("Recv:", text)
         else:
             time.sleep(0.05)
 

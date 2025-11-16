@@ -62,10 +62,14 @@ def usb_request_handler():
 
             # make reader into a stream
             reader_stream = io.BytesIO(reader)
-            writer = sys.stdout
 
-            # call the server handler (this might still block, but at least we're not blocking on I/O)
-            server_handle_request(reader_stream, writer)
+            # pretend to be the API route and write something to the writer
+            # writer.write(f"HELLO FROM USB API\n")
+
+            # # call the server handler (this might still block, but at least we're not blocking on I/O)
+            server_handle_request(reader_stream, None)
+
+            # print(f"API: {writer.getvalue().decode()}")
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")
             # Continue processing other requests even if one fails

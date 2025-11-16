@@ -1,3 +1,4 @@
+import sys
 import time
 
 import faults
@@ -83,7 +84,8 @@ async def _parse_json_body(reader, headers):
 
 
 # handle an incoming request to the web server
-async def _handle_request(reader, writer):
+async def _handle_request(reader, writer=sys.stdout):
+    print("Handling request...")
     try:
         response = None
 
@@ -93,6 +95,7 @@ async def _handle_request(reader, writer):
         try:
             method, uri, protocol = request_line.decode().split()
         except Exception as e:
+            print(f"Error parsing request line: {request_line}")
             logging.error(e)
             return
 
@@ -102,8 +105,10 @@ async def _handle_request(reader, writer):
         try:
             handler = _routes[request.path]
         except KeyError:
+            print(f"Route not found: {request.path}")
             logging.info(f"Route not found: {request.path}")
 
+        print(f"Handling request: {request.method} {request.path}")
         # TODO make parsing json and headers lazy
         request.headers = await _parse_headers(reader)
         if "content-length" in request.headers and "content-type" in request.headers:
