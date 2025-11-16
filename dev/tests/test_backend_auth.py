@@ -94,6 +94,9 @@ def _install_stub_modules(monkeypatch):
     add_module("GameStatus", types.ModuleType("GameStatus"))
     add_module("GameDefsLoad", types.ModuleType("GameDefsLoad"))
 
+    # Ensure the backend is re-imported with these stubs each time.
+    sys.modules.pop("src.common.backend", None)
+
 
 def test_require_auth_bypass_only_from_usb(monkeypatch):
     _install_stub_modules(monkeypatch)
@@ -158,3 +161,28 @@ def test_require_auth_rejects_http_with_usb_protocol(monkeypatch):
 
     assert isinstance(denial, tuple)
     assert denial[1] == 401
+
+
+def test_password_check_route_registered_with_leading_slash(monkeypatch):
+    _install_stub_modules(monkeypatch)
+
+    backend = importlib.import_module("src.common.backend")
+    phew_server = importlib.import_module("phew.server")
+
+    assert "/api/auth/password_check" in phew_server._routes
+
+    usb_request = types.SimpleNamespace(
+        headers={},
+        path="/api/auth/password_check",
+        raw_data="",
+        data={},
+        method="USB",
+        protocol="USB/1.0",
+        is_usb_transport=True,
+    )
+
+    response = phew_server._routes["/api/auth/password_check"](usb_request)
+
+    assert isinstance(response, tuple)
+    assert response[0] == "ok"
+    assert response[1] == 200

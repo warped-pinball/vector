@@ -346,7 +346,7 @@ def get_challenge(request):
     return json_dumps({"challenge": new_challenge}), 200
 
 
-@add_route("api/auth/password_check", auth=True)
+@add_route("/api/auth/password_check", auth=True)
 def check_password(request):
     return "ok", 200
 
