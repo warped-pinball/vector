@@ -89,6 +89,7 @@ class UsbApiClient:
                     try:
                         data["body"] = json.loads(body_raw)
                     except json.JSONDecodeError:
+                        # If body is not valid JSON, leave as string (expected for some responses)
                         pass
                 return data
             time.sleep(0.05)
