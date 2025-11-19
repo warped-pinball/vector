@@ -97,6 +97,15 @@ class UsbApiClient:
         raise TimeoutError("No response received within timeout period.")
 
 
+def is_game_active(client: UsbApiClient) -> bool:
+    """Check if the game is active by sending a request to the device."""
+    try:
+        resp = client.send_and_receive(route="/api/game/status", payload=None)
+        return bool(resp["body"].get("GameActive", False))
+    except Exception:
+        return False
+
+
 def main():
     # The port will probably need to be changed here
     client = UsbApiClient.from_device(port="/dev/ttyACM0", timeout=10)
@@ -116,6 +125,21 @@ def main():
             resp = client.send_and_receive(route="/api/player/update", payload={"id": 1, "full_name": "Tim Crowley", "initials": "TIM"})
             print("Received response:" + json.dumps(resp["body"]))
             time.sleep(0.5)
+
+            print("Checking if game is active...")
+            if is_game_active(client):
+                print("\tGame is active!")
+            else:
+                print("\tGame is not active.")
+            now = time.perf_counter()
+            last = getattr(main, "_last_check_time", None)
+            if last is not None:
+                interval = now - last
+                rate = 1.0 / interval if interval else float("inf")
+                print(f"\tLast check {interval:.3f}s ago (~{rate:.2f} Hz)")
+            main._last_check_time = now
+            time.sleep(0.5)
+
     except KeyboardInterrupt:
         print("Stopped listening.")
     finally:
