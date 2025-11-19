@@ -113,17 +113,7 @@ def handle_usb_api_request(route_url, headers_text, data_text):
 
     response = handler(request)
     response = _normalize_response(response)
-
-    if isinstance(response, Response):
-        return _render_response(response, request.path)
-
-    print(f"USB REQ: invalid response type: {type(response)}")
-    return _build_payload(
-        route=request.path,
-        status=500,
-        headers={"Content-Type": "text/plain"},
-        body="Invalid response type",
-    )
+    return _render_response(response, request.path)
 
 
 def usb_request_handler():
