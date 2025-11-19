@@ -292,7 +292,7 @@ def create_schedule(ap_mode: bool = False):
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
-    from USB_Comms import usb_request_handler
+    from usb_comms import usb_request_handler
 
     #
     # one time tasks
