@@ -1,7 +1,6 @@
 import json
 import sys
 
-import GameStatus
 import uselect
 from phew.server import Request, Response, _routes, catchall_handler
 
@@ -21,7 +20,18 @@ def _parse_headers(header_text):
     return headers
 
 
-def _render_response(response, url):
+def _build_payload(route, status, headers, body):
+    return json.dumps(
+        {
+            "route": route,
+            "status": status,
+            "headers": headers,
+            "body": body,
+        }
+    )
+
+
+def _render_response(response, route):
     body = response.body
     if type(body).__name__ == "generator":
         body = b"".join(body)
@@ -36,14 +46,12 @@ def _render_response(response, url):
     except Exception:
         body_text = str(body_bytes)
 
-    payload = {
-        "url": url,
-        "status": response.status,
-        "headers": response.headers,
-        "body": body_text,
-    }
-
-    return json.dumps(payload)
+    return _build_payload(
+        route=route,
+        status=response.status,
+        headers=dict(response.headers),
+        body=body_text,
+    )
 
 
 def _normalize_response(response):
@@ -96,13 +104,11 @@ def handle_usb_api_request(route_url, headers_text, data_text):
         print(f"USB REQ: route not found: {request.path}")
 
     if handler is None:
-        return json.dumps(
-            {
-                "url": request.path,
-                "status": 404,
-                "headers": {"Content-Type": "text/plain"},
-                "body": "Route not found",
-            }
+        return _build_payload(
+            route=request.path,
+            status=404,
+            headers={"Content-Type": "text/plain"},
+            body="Route not found",
         )
 
     response = handler(request)
@@ -112,13 +118,11 @@ def handle_usb_api_request(route_url, headers_text, data_text):
         return _render_response(response, request.path)
 
     print(f"USB REQ: invalid response type: {type(response)}")
-    return json.dumps(
-        {
-            "url": request.path,
-            "status": 500,
-            "headers": {"Content-Type": "text/plain"},
-            "body": "Invalid response type",
-        }
+    return _build_payload(
+        route=request.path,
+        status=500,
+        headers={"Content-Type": "text/plain"},
+        body="Invalid response type",
     )
 
 
@@ -177,10 +181,3 @@ def usb_request_handler():
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")
             # Continue processing other requests even if one fails
-
-
-def send_game_status():
-    gs = GameStatus.game_report()
-    # gs['zoom_initials'] = S.zoom_initials
-    gs_json = json.dumps(gs)
-    print(f"ZOOM: GAME: {gs_json}")
