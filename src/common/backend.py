@@ -269,10 +269,11 @@ def require_auth(handler):
         # USB transport is explicitly tagged by the USB bridge. Only those
         # requests bypass authentication; HTTP callers cannot skip HMAC by
         # spoofing the protocol string.
-        if getattr(request, "is_usb_transport", False) and (
-            getattr(request, "method", None) == "USB" or getattr(request, "protocol", None) == "USB/1.0"
-        ):
-            return handler(request, *args, **kwargs)
+        try:
+            if request.is_usb_transport and request.method == "USB" and request.protocol.startswith("USB"):
+                return handler(request, *args, **kwargs)
+        except Exception:
+            pass
 
         def deny_access(reason):
             msg = json_dumps({"error": reason}), 401, "application/json"

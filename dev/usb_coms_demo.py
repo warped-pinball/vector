@@ -112,7 +112,7 @@ def main():
             resp = client.send_and_receive(route="/api/players", payload=None)
             print("Received response:" + json.dumps(resp["body"]))
             time.sleep(0.5)
-            resp = client.send_and_receive(route="/api/player/update", payload={"id": 1, "full_name": "Tim C.", "initials": "TIM"})
+            resp = client.send_and_receive(route="/api/player/update", payload={"id": 1, "full_name": "Tim Crowley", "initials": "TIM"})
             print("Received response:" + json.dumps(resp["body"]))
             time.sleep(0.5)
     except KeyboardInterrupt:
