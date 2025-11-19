@@ -133,6 +133,7 @@ def usb_request_handler():
         else:
             buffer += data
             if len(buffer) > 1000:  # prevent buffer overflow
+                print(f"USB REQ: buffer overflow (>1000 chars), clearing buffer. Discarded data (first 100 chars): {buffer[:100]!r}")
                 buffer = ""
         loop_count += 1
 
