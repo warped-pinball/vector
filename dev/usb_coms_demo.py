@@ -138,13 +138,6 @@ def main():
                 print("\tGame is active!")
             else:
                 print("\tGame is not active.")
-            now = time.perf_counter()
-            last = getattr(main, "_last_check_time", None)
-            if last is not None:
-                interval = now - last
-                rate = 1.0 / interval if interval else float("inf")
-                print(f"\tLast check {interval:.3f}s ago (~{rate:.2f} Hz)")
-            main._last_check_time = now
             time.sleep(0.5)
 
     except KeyboardInterrupt:
