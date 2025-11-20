@@ -15,9 +15,12 @@ from SPI_Store import write_16_fram
 
 from . import logging
 
+# from SPI_UpdateStore import initialize as sflash_initialize
+# from SPI_UpdateStore import tick as sflash_tick
+
+
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
-
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
 
@@ -31,6 +34,7 @@ class Request:
     def __init__(self, method, uri, protocol):
         self.method = method
         self.protocol = protocol
+        self.is_usb_transport = False
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
@@ -246,11 +250,14 @@ async def run_scheduled():
         for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
             if time.ticks_diff(time.ticks_ms(), t[2]) >= 0:  # t[2] is next_run
                 if t[4] is not None:  # t[4] is log
-                    print(t[4])  # TODO should we actually log this or is print enough?
+                    print(t[4])
 
                 # run the task
                 try:
+                    # Uncomment the two lines below to print the time taken to run each task
+                    # start_time = time.ticks_ms()
                     t[0]()  # t[0] is func
+                    # print(f"Task {t[0].__name__} took {time.ticks_diff(time.ticks_ms(), start_time)}ms")
                 except Exception as e:
                     logging.error(f"Error running scheduled task: {e}")
 
@@ -281,6 +288,7 @@ def create_schedule(ap_mode: bool = False):
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
     from GameStatus import poll_fast
+    from usb_comms import usb_request_handler
 
     #
     # one time tasks
@@ -300,7 +308,8 @@ def create_schedule(ap_mode: bool = False):
     #
     # reoccuring tasks
     #
-
+    # check for new USB requests every 0.1 second
+    schedule(usb_request_handler, 1000, 100)
     # update the game status every 0.25 second
     schedule(poll_fast, 15000, 250)
 

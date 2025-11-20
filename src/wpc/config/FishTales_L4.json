@@ -22,6 +22,16 @@
         "Ball4": 4,
         "Ball5": 5
     },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 131,
+        "GameActiveValue": 0,
+        "Players": 6037,
+        "PlayerUp": 940,
+        "ScoreAdr": 5935,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    },
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7552,
@@ -72,15 +82,5 @@
     },
     "CoinDrop": {
         "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 131,
-        "GameActiveValue": 0,
-        "Players": 6037,
-        "Playerup": 940,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
     }
 }
