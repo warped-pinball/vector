@@ -10,6 +10,48 @@ window.formatScore = function (score) {
   return num.toLocaleString();
 };
 
+// Format score with smart abbreviation (K/M/B/T) when needed
+// Removes digits in 3-digit increments from the right side
+window.formatScoreAbbreviated = function (score, maxLength) {
+  var num = parseInt(score, 10);
+  if (isNaN(num)) return score;
+  
+  // Default formatting with commas
+  var formatted = num.toLocaleString();
+  
+  // If no maxLength specified or it fits, return as-is
+  if (!maxLength || formatted.length <= maxLength) {
+    return formatted;
+  }
+  
+  // Abbreviate with suffixes
+  var suffixes = [
+    { threshold: 1e12, suffix: 'T' },  // Trillion
+    { threshold: 1e9, suffix: 'B' },   // Billion
+    { threshold: 1e6, suffix: 'M' },   // Million
+    { threshold: 1e3, suffix: 'K' }    // Thousand
+  ];
+  
+  for (var i = 0; i < suffixes.length; i++) {
+    var item = suffixes[i];
+    if (num >= item.threshold) {
+      // Remove digits in 3-digit increments
+      var abbreviated = Math.floor(num / item.threshold);
+      var result = abbreviated.toLocaleString() + item.suffix;
+      
+      // If still too long, try next level up
+      if (result.length > maxLength && i > 0) {
+        continue;
+      }
+      
+      return result;
+    }
+  }
+  
+  // If we get here, number is less than 1000, just show as-is
+  return formatted;
+};
+
 /*
  * Function: renderHeaderRow
  * Renders a header row (with column labels) into the specified container.

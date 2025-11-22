@@ -11,7 +11,7 @@
   /* Five-column boards (leaderboard) */
   .score-board-list article.five-col {
     display: grid;
-    grid-template-columns: 0.25fr 3fr 7fr 1fr 3fr;
+    grid-template-columns: minmax(2.5rem, auto) 3fr 7fr 1fr 3fr;
     gap: 0.25rem;
     padding: 0.25rem;
   }
@@ -22,7 +22,7 @@
     */
   .score-board-list article.four-col-personal {
     display: grid;
-    grid-template-columns: 0.6fr 2fr 1fr 2fr;
+    grid-template-columns: minmax(2.5rem, auto) 2fr 1fr 2fr;
     gap: 0.25rem;
     padding: 0.25rem;
   }
@@ -49,6 +49,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Never truncate rank column - it should always show full digits */
+  .score-board-list article div.rank {
+    min-width: fit-content;
+    overflow: visible;
   }
 
   /* Right-align certain columns */
@@ -108,7 +114,7 @@
     }
 
     .score-board-list article.five-col {
-      grid-template-columns: 0.25fr 3fr 7fr 1fr;
+      grid-template-columns: minmax(2.5rem, auto) 3fr 7fr 1fr;
       /* drop the date col at narrow widths */
     }
   }
