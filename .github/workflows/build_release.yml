@@ -71,6 +71,7 @@ jobs:
 
       - name: Upload update artifacts
         if: ${{ github.event_name == 'pull_request' }}
+        id: upload_update_artifacts
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: update-files
@@ -86,7 +87,7 @@ jobs:
             --env-file "$GITHUB_ENV"
 
       - name: Publish raw update files
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         id: publish_raw_updates
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
@@ -227,6 +228,8 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           RAW_LINKS_JSON: ${{ steps.publish_raw_updates.outputs.links }}
+          ARTIFACT_URL: ${{ steps.upload_update_artifacts.outputs.artifact-url }}
+          TARGET_METADATA: ${{ env.RAW_ARTIFACT_METADATA }}
         with:
           script: |
             let rawLinks = [];
@@ -240,6 +243,14 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.issue.number;
             const marker = '<!-- pr-update-artifacts -->';
+            const artifactUrl = process.env.ARTIFACT_URL;
+
+            let metadata = [];
+            try {
+              metadata = JSON.parse(process.env.TARGET_METADATA || '[]');
+            } catch (error) {
+              core.warning('Failed to parse target metadata.');
+            }
 
             async function findExistingComment() {
               const comments = await github.paginate(github.rest.issues.listComments, {
@@ -253,7 +264,7 @@ jobs:
 
             const existingComment = await findExistingComment();
 
-            if (rawLinks.length === 0) {
+            if (rawLinks.length === 0 && !artifactUrl) {
               if (existingComment) {
                 await github.rest.issues.deleteComment({
                   owner,
@@ -261,19 +272,37 @@ jobs:
                   comment_id: existingComment.id,
                 });
               } else {
-                console.log('No raw artifact links available to publish.');
+                console.log('No artifact links available to publish.');
               }
               return;
             }
 
-            const bodyLines = [marker, '', 'Developer build links:'];
+            const bodyLines = [marker, ''];
 
-            for (const link of rawLinks) {
-              bodyLines.push(`**${link.name}**`);
+            if (rawLinks.length > 0) {
+              bodyLines.push('Developer build links:');
+
+              for (const link of rawLinks) {
+                bodyLines.push(`**${link.name}**`);
+                bodyLines.push('```text');
+                bodyLines.push(link.url);
+                bodyLines.push('```');
+                bodyLines.push('');
+              }
+            } else {
+              bodyLines.push('Developer build artifact:');
               bodyLines.push('```text');
-              bodyLines.push(link.url);
+              bodyLines.push(artifactUrl);
               bodyLines.push('```');
-              bodyLines.push('');
+
+              const items = metadata.filter(item => item.label && item.filename);
+              if (items.length > 0) {
+                bodyLines.push('');
+                bodyLines.push('Includes:');
+                for (const item of items) {
+                  bodyLines.push(`- ${item.label} (${item.filename})`);
+                }
+              }
             }
 
             if (bodyLines[bodyLines.length - 1] === '') {
