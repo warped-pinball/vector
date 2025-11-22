@@ -467,7 +467,6 @@ if (typeof window !== "undefined") {
         response_json = await response.json();
       } catch (e) {
         console.error(e);
-        alert("Failed to import scores: " + e.message);
         return;
       }
       fileInput.value = "";
