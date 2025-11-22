@@ -44,7 +44,22 @@ ENABLE_CLOCK_DATA = 0xC005   # IRQ(5)  1100 0000 0000 1001   = 0xC005
 DISABLE_CLOCK_ADDRESS = PIO2_BASE + INSTR_MEM_OFFSET + (INSTR_INDEX * 4)
 
 
-#
+sm_CatchCADR = None
+
+def enableClockCapture():
+    global sm_CatchCADR
+    if sm_CatchCADR != None:
+        sm_CatchCADR.active(1)
+    return
+
+def disableClockCapture():
+    global sm_CatchCADR
+    if sm_CatchCADR != None:
+        sm_CatchCADR.active(0)
+    return
+
+
+
 #Catch the memory VMA signal
 #   SM#9, PIO2
 #   JMP Pin is VMA_ADR (GPIO#13) 
@@ -75,7 +90,7 @@ def CatchCADR():
     wait(0, gpio, 11)           #wait for CADR to go active(low)
     jmp (pin,"start_cadr")      #confirm still active (debounce)
              
-    irq(5)   #<<<<<<< point here for enable and disable clock interface <<<<<<<<<<
+    irq(5)   
     wrap()
 
 
@@ -225,6 +240,7 @@ def WriteRam():
 
  
 def pio_start():
+    global sm_CatchCADR
 
     gpio_1 = machine.Pin(1, machine.Pin.IN)
     gpio_13 = machine.Pin(13, machine.Pin.IN)
@@ -273,7 +289,7 @@ def pio_start():
     #Trigger and Detection PIO (#2)
     #
     #PIO2 - three state machine in use (fourth used by system for wifi)
-    sm_CatchCADR.active(1)
+    sm_CatchCADR.active(0)
     sm_CatchVma.active(1)
     sm_Pass_VMA_CADR.active(1)
     sm_Pass_VMA_CADR.exec("irq(clear,5)")

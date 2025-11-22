@@ -264,6 +264,15 @@ def require_auth(handler):
     def auth_wrapper(request, *args, **kwargs):
         global challenges
 
+        # USB transport is explicitly tagged by the USB bridge. Only those
+        # requests bypass authentication; HTTP callers cannot skip HMAC by
+        # spoofing the protocol string.
+        try:
+            if request.is_usb_transport and request.method == "USB" and request.protocol.startswith("USB"):
+                return handler(request, *args, **kwargs)
+        except Exception:
+            pass
+
         def deny_access(reason):
             msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
@@ -338,7 +347,7 @@ def get_challenge(request):
     return json_dumps({"challenge": new_challenge}), 200
 
 
-@add_route("api/auth/password_check", auth=True)
+@add_route("/api/auth/password_check", auth=True)
 def check_password(request):
     return "ok", 200
 
@@ -848,7 +857,7 @@ def app_export_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
-    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
     for value in ram_access:
         yield f"{value}\n".encode("utf-8")
 
@@ -887,7 +896,7 @@ def app_apply_update(request):
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
     try:
-        for response in apply_update(data["url"]):
+        for response in apply_update(data["url"], skip_signature_check=data.get("skip_signature_check", False)):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
@@ -963,8 +972,10 @@ def add_ap_mode_routes():
 
 def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
+    from phew.server import initialize_timedate, schedule
 
     if phew_is_connected() and not initialize:
+        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
         return True
 
     from displayMessage import init as init_display
@@ -999,6 +1010,8 @@ def connect_to_wifi(initialize=False):
             if fault_is_raised(ALL_WIFI):
                 clear_fault(ALL_WIFI)
 
+            schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
+
             return True
 
     # If there's signal that means the credentials are wrong
@@ -1017,11 +1030,9 @@ def connect_to_wifi(initialize=False):
 try:
     # This import must be after the add_route function is defined at minimum
     import em_routes  # noqa: F401
-except Exception as e:
-    from systemConfig import vectorSystem
-
-    if vectorSystem == "EM":
-        print(f"Error importing em_routes: {e}")
+except Exception:
+    pass
+    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
 def go(ap_mode):

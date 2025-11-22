@@ -18,12 +18,20 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": "0x38",
+        "Address": 56,
         "Ball1": "0x01",
         "Ball2": "0x02",
         "Ball3": "0x03",
         "Ball4": "0x04",
         "Ball5": "0x05"
+    },
+
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "PlayersInGame": "0xA9",
+        "PlayerUP": "0xAA",
+        "Warnings": "0xB0"
     },
 
     "DisplayMessage": {

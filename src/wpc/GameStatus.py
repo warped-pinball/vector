@@ -68,16 +68,43 @@ def _get_ball_in_play():
     return 0
 
 
+def _get_player_up():
+    """Get the player up  (1-4)"""
+    try:
+        if S.gdata.get("InPlay", {}).get("PlayerUp", 0) != 0:
+            adr = S.gdata["InPlay"]["PlayerUp"]
+            return shadowRam[adr]
+    except Exception:
+        pass
+    return 0
+
+
+END_HOLD_MS = 15_000
+end_hold_start = None
+gameActive = False
+
+
 def game_report():
     """Generate a report of the current game status, return dict"""
+    global end_hold_start, gameActive
     data = {}
-    try:
-        data["BallInPlay"] = _get_ball_in_play()
 
-        if data["BallInPlay"] == 0:
-            data["GameActive"] = False
+    try:
+        # read ball once and use the value in the conditional
+        ball = _get_ball_in_play()
+        if ball == 0:
+            if end_hold_start is None:
+                end_hold_start = time.ticks_ms()
+            else:
+                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
+                    gameActive = False
         else:
-            data["GameActive"] = True
+            # ball non 0
+            end_hold_start = None
+            gameActive = True
+
+        data["GameActive"] = gameActive
+        data["BallInPlay"] = ball
 
         data["Scores"] = [
             _get_machine_score(0),
@@ -86,23 +113,14 @@ def game_report():
             _get_machine_score(3),
         ]
 
-        """
-        if S.game_status["time_game_start"] is not None:
-            if S.game_status["game_active"]:
-                data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
-            elif S.game_status["time_game_end"] is not None and S.game_status["time_game_end"] > S.game_status["time_game_start"]:
-                data["GameTime"] = (S.game_status["time_game_end"] - S.game_status["time_game_start"]) / 1000
-            else:
-                data["GameTime"] = 0
-        else:
-            data["GameTime"] = 0
-        """
+        data["PlayerUp"] = _get_player_up()
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data
 
 
+# this is called at 4 calls per second
 def poll_fast():
     """Poll for game start and end time."""
     ps = S.game_status["poll_state"]

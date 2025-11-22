@@ -1,3 +1,5 @@
+# SYS9 and SYS11
+
 import time
 
 import SharedState as S
@@ -53,15 +55,30 @@ def _get_ball_in_play():
     return 0
 
 
+END_HOLD_MS = 15_000
+end_hold_start = None
+gameActive = False
+
+
 def game_report():
     """Generate a report of the current game status, return dict"""
+    global end_hold_start, gameActive
     data = {}
     try:
-        data["GameActive"] = S.game_status["game_active"]
-        if not data["GameActive"]:
-            return data
+        ball = _get_ball_in_play()
+        if ball == 0:
+            if end_hold_start is None:
+                end_hold_start = time.ticks_ms()
+            else:
+                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
+                    gameActive = False
+        else:
+            # ball non 0
+            end_hold_start = None
+            gameActive = True
 
-        data["BallInPlay"] = _get_ball_in_play()
+        data["GameActive"] = gameActive
+        data["BallInPlay"] = ball
 
         data["Scores"] = [
             _get_machine_score(0),
@@ -70,6 +87,7 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        """
         if S.game_status["time_game_start"] is not None:
             if S.game_status["game_active"]:
                 data["GameTime"] = (time.ticks_ms() - S.game_status["time_game_start"]) / 1000
@@ -79,6 +97,8 @@ def game_report():
                 data["GameTime"] = 0
         else:
             data["GameTime"] = 0
+        """
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data

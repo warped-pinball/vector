@@ -14,7 +14,7 @@
         "NvLength": 2048
     },
     "BallInPlay": {
-        "Type": 10,
+        "Type": 1,
         "Address": 953,
         "Ball1": 1,
         "Ball2": 2,
@@ -24,25 +24,25 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7558,
-        "AddressS2": 7623,
-        "AddressS3": 7688,
+        "AddressS1": 7656,
+        "AddressS2": 7721,
+        "AddressS3": 7786,
         "Length": 32,
-        "ChecksumStartAdr": 7558,
-        "ChecksumEndAdr": 7750,
-        "ChecksumResultAdr": 7751
+        "ChecksumStartAdr": 7656,
+        "ChecksumEndAdr": 7848,
+        "ChecksumResultAdr": 7849
     },
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 7042,
-        "ChecksumStartAdr": 6437,
-        "ChecksumEndAdr": 7435,
-        "ChecksumResultAdr": 7436
+        "ChecksumStartAdr": 7001,
+        "ChecksumEndAdr": 7258,
+        "ChecksumResultAdr": 7259
     },
     "HighScores": {
         "Type": 10,
         "ScoreAdr": 7366,
-        "BytesInScore": 4,
+        "BytesInScore": 6,
         "ScoreSpacing": 9,
         "InitialAdr": 7363,
         "InitialSpacing": 9,
@@ -58,17 +58,17 @@
     },
     "HSRewards": {
         "Type": 0,
-        "HS1": 7016,
-        "HS2": 7018,
-        "HS3": 7020,
-        "HS4": 7022,
-        "HS5": 7024,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
         "DisableByte": 0
     },
     "Switches": {
         "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Address": 0,
+        "Length": 0
     },
     "CoinDrop": {
         "Type": 0
