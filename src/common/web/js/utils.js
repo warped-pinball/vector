@@ -2,8 +2,6 @@
 // Generic / Utility functions
 //
 
-const { call, pass } = require("three/tsl");
-
 async function confirm_auth_get(
   url,
   purpose,

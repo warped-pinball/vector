@@ -274,14 +274,7 @@
         <button id="update-button" disabled>Checking for Updates</button>
       </div>
       <div>
-        <p>Apply the latest update to your Vector</p>
-        <button
-          id="release-toggle-button"
-          class="button hide"
-          onclick="window.toggleReleaseNotes()"
-        >
-          Show Changelog
-        </button>
+        <p style="margin: 0">Apply the latest update to your Vector</p>
         <a id="release-link" target="_blank" rel="noopener noreferrer"></a>
       </div>
     </div>
@@ -289,7 +282,18 @@
   <section>
     <div class="grid">
       <div>
-        <article class="hide" id="release-notes"></article>
+        <details name="release-notes">
+          <summary
+            disabled
+            id="release-notes-btn"
+            class="secondary"
+            role="button"
+            style="width: max-content"
+          >
+            View Latest Changelog
+          </summary>
+          <article id="release-notes"></article>
+        </details>
       </div>
     </div>
   </section>
@@ -323,8 +327,8 @@
     </div>
     <div class="grid">
       <div>
-        <input type="file" id="input_scores" />
-        <button id="input_scores_btn" onclick="window.importScores()">
+        <input class="hide" type="file" id="input_scores" />
+        <button id="input_scores_btn" onclick="window.clickedImportScores()">
           Import Scores
         </button>
       </div>

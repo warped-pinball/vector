@@ -431,18 +431,32 @@ if (typeof window !== "undefined") {
   };
 
   // Import Scores
-  window.importScores = async function () {
-    console.log("Importing scores...");
+  window.clickedImportScores = async function () {
+    var fileInput = document.querySelector("#input_scores");
+    fileInput.onchange = (e) => {
+      var file = e.target.files[0];
+      file.filename;
+      window.importScores(file);
+    };
+    fileInput.click();
+  };
 
+  window.importScores = async function (file) {
+    if (file.name == "" || file.size == 0) {
+      return;
+    }
+    if (file.type != "application/json") {
+      alert("Not a JSON file!");
+    }
+    console.log("Importing scores...");
     var fileInput = document.querySelector("#input_scores");
     var fileBtn = document.querySelector("#input_scores_btn");
-    const file = fileInput.files[0];
     if (file) {
-      const fileContent = await file.text(); // Read file as text
-      const data = JSON.parse(fileContent); // Parse the text into JSON
       const previousText = fileBtn.innerHTML;
-      var response_json = null;
       try {
+        const fileContent = await file.text(); // Read file as text
+        const data = JSON.parse(fileContent); // Parse the text into JSON
+        var response_json = null;
         fileBtn.disabled = true;
         fileBtn.innerHTML = "Importing...";
         const response = await window.smartFetch(
@@ -453,6 +467,8 @@ if (typeof window !== "undefined") {
         response_json = await response.json();
       } catch (e) {
         console.error(e);
+        alert("Failed to import scores: " + e.message);
+        return;
       }
       fileInput.value = "";
       fileBtn.innerHTML = previousText;
@@ -513,7 +529,7 @@ if (typeof window !== "undefined") {
       // link to release notes in text
       const releaseNotes = document.getElementById("release-notes");
       const releaseLink = document.getElementById("release-link");
-      const releaseToggle = document.getElementById("release-toggle-button");
+      const accordion = document.getElementById("release-notes-btn");
       if (releaseNotes) {
         if (data["release_page"]) {
           releaseLink.href = data["release_page"];
@@ -527,12 +543,7 @@ if (typeof window !== "undefined") {
 
         if (data["notes"]) {
           releaseNotes.innerHTML = data["notes"];
-          releaseNotes.classList.add("hide");
-          releaseToggle.innerHTML = "Show Changelog";
-          releaseToggle.classList.remove("hide");
-        } else {
-          releaseNotes.classList.add("hide");
-          releaseToggle.classList.add("hide");
+          accordion.removeAttribute("disabled");
         }
       }
 
@@ -647,18 +658,6 @@ if (typeof window !== "undefined") {
 
   checkForUpdates();
   window.applyUpdate = applyUpdate;
-
-  window.toggleReleaseNotes = function () {
-    const releaseToggle = document.getElementById("release-toggle-button");
-    const notes = document.getElementById("release-notes");
-    if (notes.classList.contains("hide")) {
-      notes.classList.remove("hide");
-      releaseToggle.innerHTML = "Hide Changelog";
-    } else {
-      notes.classList.add("hide");
-      releaseToggle.innerHTML = "Show Changelog";
-    }
-  };
 
   // custom update function
   window.customUpdate = async function () {
