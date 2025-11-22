@@ -133,22 +133,27 @@
           </p>
 
           <footer style="position: relative">
-            <small
-              style="
-                position: absolute;
-                display: block;
-                top: 50%;
-                transform: translateY(-50%);
-                bottom: auto;
-                text-align: left;
-                max-width: 65%;
-              "
-              >Previous IP: <a id="previous-ip" href="#"></a><br />
-              <div id="config-reply"></div
-            ></small>
-            <button id="config-save-btn" onclick="window.save_configuration()">
-              💾 Save
-            </button>
+            <div style="text-align: center" id="config-reply"></div>
+            <div>
+              <small
+                style="
+                  position: absolute;
+                  display: block;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  bottom: auto;
+                  text-align: left;
+                  max-width: 65%;
+                "
+                >Previous IP: <a id="previous-ip" href="#"></a><br />
+              </small>
+              <button
+                id="config-save-btn"
+                onclick="window.save_configuration()"
+              >
+                💾 Save
+              </button>
+            </div>
           </footer>
         </article>
       </dialog>
