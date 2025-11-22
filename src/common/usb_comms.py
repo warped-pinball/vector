@@ -1,0 +1,174 @@
+import json
+import sys
+
+import uselect
+from phew.server import Request, Response, _routes, catchall_handler
+
+incoming_data = []  # complete lines only
+buffer = ""  # partial input line
+poller = uselect.poll()
+poller.register(sys.stdin, uselect.POLLIN)
+
+
+def _parse_headers(header_text):
+    headers = {}
+    for line in header_text.split("\n"):
+        if ":" not in line:
+            continue
+        name, value = line.split(":", 1)
+        headers[name.strip().lower()] = value.strip()
+    return headers
+
+
+def _build_payload(route, status, headers, body):
+    return json.dumps(
+        {
+            "route": route,
+            "status": status,
+            "headers": headers,
+            "body": body,
+        }
+    )
+
+
+def _render_response(response, route):
+    body = response.body
+    if type(body).__name__ == "generator":
+        body = b"".join(body)
+
+    if isinstance(body, str):
+        body_bytes = body.encode()
+    else:
+        body_bytes = body
+
+    try:
+        body_text = body_bytes.decode()
+    except Exception:
+        body_text = str(body_bytes)
+
+    return _build_payload(
+        route=route,
+        status=response.status,
+        headers=dict(response.headers),
+        body=body_text,
+    )
+
+
+def _normalize_response(response):
+    if type(response).__name__ == "generator":
+        return Response(response, status=200, headers={"Content-Type": "application/octet-stream"})
+
+    if isinstance(response, str):
+        response = (response,)
+
+    if isinstance(response, tuple):
+        body = response[0]
+        status = response[1] if len(response) >= 2 else 200
+        headers = response[2] if len(response) >= 3 else {"Content-Type": "text/html"}
+
+        if isinstance(headers, str):
+            headers = {"Content-Type": headers}
+
+        response = Response(body, status=status)
+
+        for key, value in headers.items():
+            response.add_header(key, value)
+
+        if hasattr(body, "__len__"):
+            response.add_header("Content-Length", len(body))
+
+    return response
+
+
+def handle_usb_api_request(route_url, headers_text, data_text):
+    request_headers = _parse_headers(headers_text)
+
+    request = Request("USB", route_url, "USB/1.0")
+    request.headers = request_headers
+    request.is_usb_transport = True
+    request.raw_data = None
+    request.data = {}
+
+    if data_text:
+        request.raw_data = data_text
+        if request_headers.get("content-type", "").startswith("application/json"):
+            try:
+                request.data = json.loads(data_text)
+            except Exception as exc:
+                print(f"USB REQ: failed to parse JSON body: {exc}")
+
+    handler = catchall_handler
+    try:
+        handler = _routes[request.path]
+    except KeyError:
+        print(f"USB REQ: route not found: {request.path}")
+
+    if handler is None:
+        return _build_payload(
+            route=request.path,
+            status=404,
+            headers={"Content-Type": "text/plain"},
+            body="Route not found",
+        )
+
+    response = handler(request)
+    response = _normalize_response(response)
+    return _render_response(response, request.path)
+
+
+def usb_request_handler():
+    """Non-blocking USB request handler - processes complete request lines"""
+    global buffer, incoming_data
+
+    # First, read any available data into buffer (non-blocking)
+    loop_count = 0
+    while poller.poll(0) and loop_count < 100:
+        data = sys.stdin.read(1)
+        if not data:
+            break
+        if data in ("\n", "\r"):
+            if buffer:  # if buffer is not empty and string has been terminated
+                incoming_data.append(buffer)
+                buffer = ""
+        else:
+            buffer += data
+            if len(buffer) > 1000:  # prevent buffer overflow
+                print(f"USB REQ: buffer overflow (>1000 chars), clearing buffer. Discarded data (first 100 chars): {buffer[:100]!r}")
+                buffer = ""
+        loop_count += 1
+
+    # Process any complete requests from the buffer
+    request_count = 0
+    while incoming_data and request_count < 10:
+        request_count += 1
+        request = incoming_data.pop(0)
+
+        print(f"USB REQ: processing request: {request}")
+
+        split_by_escaped_pipes = request.split("\\|")
+        true_parts = []
+        for part in split_by_escaped_pipes:
+            new_parts = part.split("|")
+            if len(true_parts) == 0:
+                true_parts.append(new_parts.pop(0))
+            else:
+                true_parts[-1] += "\\|" + new_parts.pop(0)
+
+            if len(new_parts) > 0:
+                true_parts.extend(new_parts)
+
+        parts = true_parts
+        if len(parts) != 3:
+            print(f"USB REQ: invalid request format: {request}")
+            continue
+
+        route_url, headers, data = parts
+        print(f"USB REQ: URL: {route_url} HEADERS: {headers} DATA: {data}")
+
+        try:
+            response_text = handle_usb_api_request(route_url, headers, data)
+            # This is how the response is sent back to the device
+            print(f"USB API RESPONSE-->{response_text}")
+        except Exception as e:
+            print(f"USB REQ: error processing request: {e}")
+            # Continue processing other requests even if one fails
