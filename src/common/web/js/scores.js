@@ -35,9 +35,9 @@ window.formatScoreAbbreviated = function (score, maxLength) {
   for (var i = 0; i < suffixes.length; i++) {
     var item = suffixes[i];
     if (num >= item.threshold) {
-      // Remove digits in 3-digit increments
-      var abbreviated = Math.floor(num / item.threshold);
-      var result = abbreviated.toLocaleString() + item.suffix;
+      // Remove digits in 3-digit increments, use round for better UX
+      var abbreviated = Math.round(num / item.threshold);
+      var result = abbreviated.toString() + item.suffix;
       
       // If still too long, try next level up
       if (result.length > maxLength && i > 0) {
