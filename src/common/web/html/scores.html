@@ -55,6 +55,13 @@
   .score-board-list article div.rank {
     min-width: fit-content;
     overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Also prevent score column from showing ellipsis */
+  .score-board-list article div.score {
+    overflow: visible;
+    text-overflow: clip;
   }
 
   /* Right-align certain columns */
