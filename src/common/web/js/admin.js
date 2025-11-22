@@ -652,7 +652,7 @@ if (typeof window !== "undefined") {
     }
     // confirm url
     await confirmAction(
-      "Do you trust the source of and want to apply the update file at the url: " +
+      "Do you trust the source of this update and want to apply the update file at the url:" +
         url,
       async () => {
         await window.applyUpdate(url, true);
