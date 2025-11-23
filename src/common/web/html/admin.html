@@ -274,8 +274,7 @@
         <button id="update-button" disabled>Checking for Updates</button>
       </div>
       <div>
-        <p>Apply the latest update to your Vector</p>
-        <p id="release-notes"></p>
+        <p style="margin: 0">Apply the latest update to your Vector</p>
         <a id="release-link" target="_blank" rel="noopener noreferrer"></a>
       </div>
     </div>
@@ -283,7 +282,25 @@
   <section>
     <div class="grid">
       <div>
-        <button id="update-button" onclick="window.customUpdate()">
+        <details name="release-notes">
+          <summary
+            disabled
+            id="release-notes-btn"
+            class="secondary"
+            role="button"
+            style="width: max-content"
+          >
+            View Latest Changelog
+          </summary>
+          <article id="release-notes"></article>
+        </details>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="grid">
+      <div>
+        <button id="update-developer-button" onclick="window.customUpdate()">
           Upload Developer Build
         </button>
       </div>
@@ -296,7 +313,7 @@
     </div>
   </section>
   <section>
-    <h3>Export Data</h3>
+    <h3>Export / Import Data</h3>
     <div class="grid">
       <div>
         <button onclick="window.downloadScores()">Export Scores</button>
@@ -305,6 +322,21 @@
         <p>
           Export all scores from the Leaderboard and Tournament Board as an
           update file
+        </p>
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <input class="hide" type="file" id="input_scores" />
+        <button id="input_scores_btn" onclick="window.clickedImportScores()">
+          Import Scores
+        </button>
+      </div>
+      <div>
+        <p>
+          Import scores to the Leaderboard from file generated above. Doesn't
+          import Tournament scores. Will also add to individual player board
+          list if a user account is registered.
         </p>
       </div>
     </div>

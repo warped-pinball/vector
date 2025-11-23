@@ -11,24 +11,68 @@ from logger import logger_instance
 Log = logger_instance
 
 
+# Logic for importing scores supporting any format changes
+def upgrade_score_file_format(data):
+    version = get_score_export_version(data)
+    # Upgrade file through all version upgrade functions
+    while version in score_version_upgrades:
+        data = score_version_upgrades[version](data)
+        if "version" not in data or data["version"] == version:
+            # Version did not increment, or some other error.
+            raise ValueError("Failed to upgrade score import format!")
+        version = data["version"]
+    return data
+
+
+def get_score_export_version(data):
+    if "version" in data:
+        return data["version"]
+    return 0
+
+
+# Version "0" was "classic score" format, before we versioned it.
+def score_export_0_to_1(data):
+    output = {"version": 1, "scores": {}}
+    # Convert to nicer format, with version number
+    for row in data:
+        output["scores"][row["FileType"]] = row["contents"]
+    return output
+
+
+# If we ever change the format again, we can use the below dictionary and functions named as so to update the format from older exports so they'll continue to work.
+# def score_export_1_to_2(data):
+
+current_score_version = 1
+score_version_upgrades = {0: score_export_0_to_1}
+
+
+def _get_scores_no_zeros(list):
+    result = []
+    for i in range(DataStore.memory_map[list]["count"]):
+        row = DataStore.read_record(list, i)
+        if row["score"] > 0:
+            result.append(row)
+    return result
+
+
 def download_scores():
-    data = []
-
-    data.append(
-        {
-            "FileType": "leaders",
-            "contents": [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])],
-        }
-    )
-
-    data.append(
-        {
-            "FileType": "tournament",
-            "contents": [DataStore.read_record("tournament", i) for i in range(DataStore.memory_map["tournament"]["count"])],
-        }
-    )
-
+    data = {"version": current_score_version, "scores": {"leaders": _get_scores_no_zeros("leaders"), "tournament": _get_scores_no_zeros("tournament")}}
     return json.dumps(data)
+
+
+def import_scores(data):
+    from ScoreTrackCommon import bulk_import_scores
+
+    # Upgrade format if needed
+    data = upgrade_score_file_format(data)
+
+    if "scores" in data:
+        if "leaders" in data["scores"]:
+            bulk_import_scores(data["scores"]["leaders"], "leaders")
+        # Not Importing Tournament for now
+        # if "tournament" in data["scores"]:
+        #     bulk_import_scores(data["scores"]["tournament"], "tournament")
+    return True
 
 
 # download the list of players
