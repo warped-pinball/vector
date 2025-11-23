@@ -449,6 +449,31 @@ def app_leaderBoardRead(request):
     return get_scoreboard("leaders", reverse=True)
 
 
+@add_route("/api/score/delete", auth=True)
+def app_scoreDelete(request):
+    from ScoreTrackCommon import remove_score_entry
+
+    body = request.data
+    requested_to_delete = body["delete"]
+    delete_from = body["list"]
+    scores_to_delete = dict()
+    for requested in requested_to_delete:
+        scores_to_delete[requested["score"]] = requested["initials"]
+
+    for score in scores_to_delete:
+        remove_score_entry(initials=scores_to_delete[score], score=score, list=delete_from)
+
+    # If this was the leaders list, set top_scores global var and update machine scores.
+    if delete_from == "leaders":
+        from ScoreTrack import initialize_leaderboard, place_machine_scores
+
+        initialize_leaderboard()
+        # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
+        place_machine_scores()
+
+    return {"success": True}
+
+
 @add_route("/api/tournament")
 def app_tournamentRead(request):
     return get_scoreboard("tournament", sort_by="game")
@@ -853,6 +878,14 @@ def app_export_leaderboard(request):
     from FileIO import download_scores
 
     return download_scores()
+
+
+@add_route("/api/import/scores", auth=True)
+def app_import_leaderboard(request):
+    from FileIO import import_scores
+
+    data = request.data
+    return {"success": import_scores(data)}
 
 
 @add_route("/api/memory-snapshot")

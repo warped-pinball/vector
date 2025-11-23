@@ -1,41 +1,3 @@
-//
-// Generic / Utility functions
-//
-
-async function confirm_auth_get(url, purpose) {
-  await confirmAction(purpose, async () => {
-    const response = await window.smartFetch(url, null, true);
-    if (response.status !== 200 && response.status !== 401) {
-      // 401 already alerted the user that their password was wrong
-      console.error(`Failed to ${purpose}:`, response.status);
-      alert(`Failed to ${purpose}.`);
-    }
-  });
-}
-
-async function confirmAction(message, callback, cancelCallback = null) {
-  const modal = await window.waitForElementById("confirm-modal");
-  const modalMessage = await window.waitForElementById("modal-message");
-  const confirmButton = await window.waitForElementById("modal-confirm-button");
-  const cancelButton = await window.waitForElementById("modal-cancel-button");
-
-  modalMessage.textContent = `Are you sure you want to ${message}?`;
-
-  confirmButton.onclick = () => {
-    modal.close();
-    callback();
-  };
-
-  cancelButton.onclick = () => {
-    modal.close();
-    if (cancelCallback) {
-      cancelCallback();
-    }
-  };
-
-  modal.showModal();
-}
-
 // ------------------ Setup / Calibration Helpers ------------------
 
 // Helper: show modal by id
@@ -444,7 +406,7 @@ async function saveCalibrationScores() {
     // ignore and use DOM values
   }
 
-  const scores = [];           // final integers, one per player
+  const scores = []; // final integers, one per player
   const expected = reelsPerPlayer + dummyReels;
 
   for (let p = 0; p < totalPlayers; p++) {
@@ -460,7 +422,7 @@ async function saveCalibrationScores() {
   try {
     const resp = await window.smartFetch(
       "/api/em/set_calibration_scores",
-      { scores: scores },   // now [12340, 45670, ...]
+      { scores: scores }, // now [12340, 45670, ...]
       true,
     );
     if (!resp.ok) throw new Error("save failed");
@@ -874,8 +836,8 @@ async function checkForUpdates() {
   }
 }
 
-async function applyUpdate(url) {
-  const req_data = { url: url };
+async function applyUpdate(url, skip_signature_check = false) {
+  const req_data = { url: url, skip_signature_check: skip_signature_check };
   const response = await window.smartFetch("/api/update/apply", req_data, true);
   if (!response.ok) {
     throw new Error("Failed to start update");
@@ -951,7 +913,11 @@ window.customUpdate = async function () {
     return;
   }
   // confirm url
-  await confirmAction("update with file at " + url, async () => {
-    await window.applyUpdate(url);
-  });
+  await confirmAction(
+    "Do you trust the source of this update and want to apply the update file at the url: " +
+      url,
+    async () => {
+      await window.applyUpdate(url, true);
+    },
+  );
 };
