@@ -456,7 +456,7 @@ def check_for_machine_high_scores(report=True):
         if scores[idx][1] > 10000:  # ignore placed fake scores
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
             
-            if scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:                
+            if idx < len(top_scores) and (scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]):
                 if report:
                     print(f"SCORE: place game score into vector {new_score}")
                 # As a claim first
