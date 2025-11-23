@@ -942,23 +942,6 @@ def app_apply_update(request):
 
 
 #
-# Origin
-#
-@add_route("/api/origin/enable", auth=True)
-def app_enable_origin(request):
-    from origin import send_handshake_request
-
-    return send_handshake_request()
-
-
-@add_route("/api/origin/status")
-def app_origin_status(request):
-    from origin import status
-
-    return status()
-
-
-#
 # APP mode route of AP mode only routes
 #
 def add_app_mode_routes():

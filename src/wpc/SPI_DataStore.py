@@ -7,10 +7,9 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
@@ -20,7 +19,7 @@ top_mem = const(32767)
 memory_map = {
     "MapVersion": {"start": top_mem - 16, "size": 16, "count": 1},
     "names": {"start": top_mem - 16 - (20 * 30), "size": 20, "count": numberOfPlayers},
-    "leaders": {"start": top_mem - 16 - (20 * 30) - (38 * 20), "size": 38, "count": 20},   #s=38
+    "leaders": {"start": top_mem - 16 - (20 * 30) - (38 * 20), "size": 38, "count": 20},  # s=38
     "tournament": {
         "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100),
         "size": 14,
@@ -42,11 +41,6 @@ memory_map = {
         "size": 48,
         "count": 1,
     },
-    "cloud": {
-        "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100) - (18 * 20 * 30) - (96 * 1) - (48 * 1) - (64),
-        "size": 16+32+16,
-        "count": 1
-    }
 }
 
 
@@ -59,7 +53,6 @@ def show_mem_map():
     memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
     memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
     memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
-    memory_map["cloud"]["start"] = memory_map["extras"]["start"] - (memory_map["cloud"]["size"] * memory_map["cloud"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
@@ -90,18 +83,18 @@ def serialize(record, structure_name):
             record["initials"].encode(),
             record["full_name"].encode(),
             record["date"].encode(),
-            record["score"],                         # I integer (4 bytes)  - - move to Q  (8 bytes)
+            record["score"],  # I integer (4 bytes)  - - move to Q  (8 bytes)
         )
     elif structure_name == "tournament":
         return struct.pack(
-            "<3sQBB",                             # I->Q
+            "<3sQBB",  # I->Q
             record["initials"].encode(),
             record["score"],
             record["game"],
             record["index"],
         )
     elif structure_name == "individual":
-        return struct.pack("<Q10s", record["score"], record["date"].encode())    #I->Q
+        return struct.pack("<Q10s", record["score"], record["date"].encode())  # I->Q
     elif structure_name == "MapVersion":
         return struct.pack("<16s", record["version"].encode())
     elif structure_name == "configuration":
@@ -123,24 +116,13 @@ def serialize(record, structure_name):
                 enable |= 0x04
             if record.get("tournament_mode", True):
                 enable |= 0x08
-            if record.get("WPCTimeOn", True):     #was "flag5"
+            if record.get("WPCTimeOn", True):  # was "flag5"
                 enable |= 0x10
-            if record.get("MM_Always", True):     #was "flag6"
+            if record.get("MM_Always", True):  # was "flag6"
                 enable |= 0x20
         else:
             enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
-    elif structure_name == "cloud":
-        id_bytes = list(record["id"]) if not isinstance(record["id"], list) else record["id"]
-        secret_bytes = list(record["secret"]) if not isinstance(record["secret"], list) else record["secret"]
-        reserved = record.get("reserved", [0]*16)
-        reserved_bytes = list(reserved) if not isinstance(reserved, list) else reserved
-        return struct.pack(
-            "<16B32B16B",       # all unsigned bytes
-            *id_bytes,
-            *secret_bytes,
-            *reserved_bytes
-        )
     else:
         raise ValueError("Unknown structure name")
 
@@ -219,7 +201,7 @@ def deserialize(data, structure_name):
                 "show_ip_address": bool(enable & 0x04),
                 "tournament_mode": bool(enable & 0x08),
                 "WPCTimeOn": bool(enable & 0x10),
-                "MM_Always": bool(enable & 0x20)
+                "MM_Always": bool(enable & 0x20),
             }
         except Exception:
             Log.log("DATSTORE: fault extras")
@@ -235,16 +217,6 @@ def deserialize(data, structure_name):
                 "WPCTimeOn": False,
                 "MM_Always": False,
             }
-    elif structure_name == "cloud":       
-        unpacked = struct.unpack("<16B32B16B", data)
-        id = list(unpacked[0:16])         # First 16 bytes
-        secret = list(unpacked[16:48])    
-        reserved = list(unpacked[48:64])  # Last 16 bytes
-        return {
-            "id" : id,
-            "secret" : secret,
-            "reserved" : reserved           
-        }
     else:
         raise ValueError("Unknown structure name")
 
@@ -265,9 +237,6 @@ def blankStruct(structure_name):
         "Gpassword": "",
         "gamename": "Generic_WPC",
         "other": 1,
-        "secret": [0]*32,
-        "reserved" : [0]*16,
-        "id" : [0]*16
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
@@ -296,7 +265,6 @@ def blankAll():
     blankStruct("extras")
     record1 = {"version": "Map Ver: 2.0"}
     write_record("MapVersion", record1, index=0)
-    blankStruct("cloud")
 
 
 def writeIP(ipaddress):
@@ -320,16 +288,3 @@ if __name__ == "__main__":
 
     readver = read_record("MapVersion", index=0)
     print("read ver string=", readver["version"])
-
-
-    cloud = read_record("cloud",index=0)
-    print (cloud)
-    cloud["secret"] = bytes([1, 2, 3, 4, 5, 6])
-    write_record("cloud",cloud,index=0)
-    cloud = read_record("cloud",index=0)
-    print (cloud)
-    cloud["reserved"]= [4,5,1,2]
-    write_record("cloud",cloud,index=0)
-    cloud = read_record("cloud",index=0)
-    print (cloud)
-

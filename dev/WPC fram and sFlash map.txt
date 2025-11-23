@@ -9,9 +9,7 @@ FRAM - 32K Byte
 		Version 1 fills down to:  21707  (0x54CB)
 		expand score number in WPC - now down to:  19047   (0x4A67)
 
-		adding web key data now - - - -
 
-		
 Blank spot - hold for more data store - - -
 
 
@@ -28,7 +26,7 @@ Blank spot - hold for more data store - - -
 		305 bytes plus 16 cahracter name
 		0x2344 - one byte last profile loaded 0-3
 
-	(remove serial flash support)	
+	(remove serial flash support)
 0x2000
 
 

@@ -13,7 +13,6 @@ import ScoreTrack
 # from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 from logger import logger_instance
-from origin import config as origin_config
 from origin import push_game_state
 
 log = logger_instance
@@ -71,15 +70,14 @@ def poll_fast():
     else:
         S.game_status["poll_state"] = 0
 
-    if origin_config.is_enabled():  # temporarily disable pushing game state to server
-        push_game_state(
-            game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
-            scores=[
-                _get_machine_score(0),
-                _get_machine_score(1),
-                _get_machine_score(2),
-                _get_machine_score(3),
-            ],
-            ball_in_play=_get_ball_in_play(),
-            game_active=S.game_status["game_active"],
-        )
+    push_game_state(
+        game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
+        scores=[
+            _get_machine_score(0),
+            _get_machine_score(1),
+            _get_machine_score(2),
+            _get_machine_score(3),
+        ],
+        ball_in_play=_get_ball_in_play(),
+        game_active=S.game_status["game_active"],
+    )

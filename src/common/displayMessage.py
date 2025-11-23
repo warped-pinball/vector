@@ -40,10 +40,7 @@ def fixAdjustmentChecksum():
             print("DISP: adjustments checksum: ", cs)
             shadowRam[resultLoc] = cs
 
-            if cs == origCS:
-                return True  # checksum was a match
-            else:
-                return False  # was not a match, corrected
+            return cs == origCS
 
 
 def _int_to_bcd(number):
