@@ -318,7 +318,7 @@ def update_leaderboard(new_entry):
 
     # add player name to new_entry if there is an initals match 
     if not new_entry.get("full_name"):  # could come in with name from score load on admin page
-        new_entry["full_name"], ind = find_player_by_initials(new_entry)
+        new_entry["full_name"], _ = find_player_by_initials(new_entry)
         if new_entry["full_name"] is None:
             new_entry["full_name"] = ""
 
