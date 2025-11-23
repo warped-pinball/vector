@@ -383,7 +383,7 @@ def update_leaderboard(new_entry):
 
     # Sanitize initials: 3 uppercase letters only
     initials = new_entry.get("initials", "")
-    new_entry["initials"] = "".join(c.upper() for c in initials if c.isalpha())[:3]
+    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()) + "   ")[:3]
 
     if "date" not in new_entry:
         year, month, day, _, _, _, _, _ = rtc.datetime()
