@@ -54,6 +54,8 @@ window.renderDataRow = function (item, columns, colClass) {
         value += " (" + fullName + ")";
       }
     } else if (col.key === "score") {
+      cellDiv.setAttribute("raw-score", item[col.key]);
+      cellDiv.setAttribute("raw-initials", item["initials"] || "");
       value = window.formatScore(item[col.key]);
     } else {
       // For the rank column, we do not prepend "#"
@@ -75,6 +77,11 @@ window.renderDataRow = function (item, columns, colClass) {
  * Clears the container and renders a header row followed by all data rows.
  */
 window.renderFullArticleList = function (containerId, data, columns, colClass) {
+  //Don't attempt to re-render the scores
+  if (window.scoreEditMode) {
+    return;
+  }
+
   var container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = ""; // Clear previous content
@@ -85,12 +92,26 @@ window.renderFullArticleList = function (containerId, data, columns, colClass) {
     var row = window.renderDataRow(item, columns, colClass);
     container.appendChild(row);
   });
+
+  //Don't show edit buttons until at least rendering the scores
+  //Never show for Tournament tab
+  btnSection = document.querySelector("#edit-btns");
+  if (window.getTab() != "tournament-board" && data.length > 0) {
+    btnSection.classList.remove("hide");
+  } else {
+    btnSection.classList.add("hide");
+  }
 };
 
 /*
  * updateLeaderboardArticles: 5 columns => #, Score, Player, Ago, Date
  */
 window.updateLeaderboardArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreEditMode) {
+    return;
+  }
+
   var columns = [
     { header: "#", key: "rank" },
     { header: "Score", key: "score" },
@@ -133,6 +154,11 @@ window.updateLeaderboardArticles = function () {
  * updateTournamentArticles: 4 equally wide columns => Game, Rank, Initials, Score
  */
 window.updateTournamentArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreEditMode) {
+    return;
+  }
+
   var columns = [
     { header: "Game", key: "game" },
     { header: "Rank", key: "rank" },
@@ -175,6 +201,11 @@ window.updateTournamentArticles = function () {
  * Do nothing if no player is selected in our custom dropdown.
  */
 window.updatePersonalArticles = function () {
+  //If we're in delete mode, don't refresh the board!!!!
+  if (window.scoreEditMode) {
+    return;
+  }
+
   var container = document.getElementById("personalArticles");
   if (!container) {
     if (window.currentRefreshIntervalId) {
@@ -343,14 +374,67 @@ window.startAutoRefreshForTab = function (tabId) {
 };
 
 /*
+ * getTab: Returns currently shown tab
+ */
+window.getTab = function () {
+  var tabs = document.querySelectorAll(".tab-content");
+  for (var i in tabs) {
+    var tab = tabs[i];
+    if (tab.classList.contains("active")) {
+      return tab.getAttribute("id");
+    }
+  }
+  return null;
+};
+
+/*
+ * getTab: Returns currently shown tab's behind the scenes list
+ */
+window.getTabList = function () {
+  var tabId = window.getTab();
+  switch (tabId) {
+    case "leader-board":
+      return "leaders";
+    case "tournament-board":
+      return "tournament";
+    case "personal-board":
+      return "individual";
+    default:
+      console.error("Unknown Tab Id!");
+      return null;
+  }
+};
+
+/*
+ * showTab: Refresh data of current tab, or given tab if specified
+ */
+window.refreshTab = function (tabId) {
+  if (tabId == undefined) {
+    tabId = window.getTab();
+  }
+  if (tabId in refreshFunctions) {
+    refreshFunctions[tabId]();
+  }
+};
+
+/*
  * showTab: Switch between tabs, refresh data, start auto-refresh on new tab.
  */
 window.showTab = function (tabId) {
+  //If we're in delete mode, don't switch tabs
+  if (window.scoreEditMode) {
+    return;
+  }
+
   // Hide all tab-content sections
   var tabs = document.querySelectorAll(".tab-content");
   tabs.forEach(function (tab) {
     tab.classList.remove("active");
   });
+
+  // Hide Edit button
+  btnSection = document.querySelector("#edit-btns");
+  btnSection.classList.add("hide");
 
   // Show the selected tab
   var selectedTab = document.getElementById(tabId);
@@ -372,13 +456,7 @@ window.showTab = function (tabId) {
   }
 
   // Immediately fetch new data (but personal board will only show data if a player is selected)
-  if (tabId === "leader-board") {
-    window.updateLeaderboardArticles();
-  } else if (tabId === "tournament-board") {
-    window.updateTournamentArticles();
-  } else if (tabId === "personal-board") {
-    window.updatePersonalArticles();
-  }
+  window.refreshTab(tabId);
 
   // Start auto-refresh
   window.startAutoRefreshForTab(tabId);
@@ -931,6 +1009,98 @@ window.getGameStatus = async function () {
 
   // Update ball in play display
   window.updateBallInPlay(data);
+};
+
+window.scoreEditMode = false;
+
+window.deleteSelectedScores = async function () {
+  var list = window.getTabList();
+
+  var deleteBtn = document.querySelector("#delete-scores-btn");
+  var cancelBtn = document.querySelector("#edit-scores-cancel-btn");
+  var deleteData = {
+    list: list,
+    delete: [],
+  };
+  //Switch back to ranks, if any selected, send delete api request.
+  var checkboxes = document.querySelectorAll(
+    ".tab-content.active .score-row .rank input:checked",
+  );
+
+  checkboxes.forEach(function (checkbox) {
+    var row = checkbox.parentElement.parentElement;
+    var player = row.querySelector(".score").getAttribute("raw-initials");
+    var score = row.querySelector(".score").getAttribute("raw-score");
+    var intScore = parseInt(score);
+    deleteData["delete"].push({ initials: player, score: intScore });
+  });
+  if (deleteData["delete"].length > 0) {
+    //Send delete api call
+    deleteBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirm_auth_get(
+      "/api/score/delete",
+      "Delete Selected Scores",
+      deleteData,
+      () => {
+        //user opted to delete
+        deleteBtn.disabled = false;
+        cancelBtn.disabled = false;
+        window.exitScoreEdit();
+        window.refreshTab();
+      },
+      () => {
+        //user hit cancel on prompt
+        deleteBtn.disabled = false;
+        cancelBtn.disabled = false;
+      },
+    );
+  }
+};
+
+window.enterScoreEdit = async function () {
+  //Make sure the tab is legit before anything else
+  // var list = window.getTabList();
+
+  var header = document.querySelector(".tab-content.active .header-row .rank");
+  var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
+  var editBtn = document.querySelector("#edit-scores-btn");
+  var deleteBtn = document.querySelector("#delete-scores-btn");
+  var cancelBtn = document.querySelector("#edit-scores-cancel-btn");
+
+  editBtn.classList.add("hide");
+  deleteBtn.classList.remove("hide");
+  cancelBtn.classList.remove("hide");
+  //Switch to checkboxes
+  header.innerHTML = "🗑️";
+  rows.forEach(function (row) {
+    var number = row.innerHTML;
+    row.innerHTML = '<input type="checkbox" name="' + number + '" />';
+  });
+
+  window.scoreEditMode = true;
+};
+
+window.exitScoreEdit = function () {
+  var header = document.querySelector(".tab-content.active .header-row .rank");
+  var rows = document.querySelectorAll(".tab-content.active .score-row .rank");
+  var editBtn = document.querySelector("#edit-scores-btn");
+  var deleteBtn = document.querySelector("#delete-scores-btn");
+  var cancelBtn = document.querySelector("#edit-scores-cancel-btn");
+
+  //Revert back to normal.
+  editBtn.classList.remove("hide");
+  deleteBtn.classList.add("hide");
+  cancelBtn.classList.add("hide");
+
+  //Switch back to numbers
+  header.innerHTML = "#";
+  rows.forEach(function (row) {
+    var checkbox = row.children[0];
+    row.innerHTML = checkbox.name;
+  });
+
+  window.scoreEditMode = false;
 };
 
 // Initial call

@@ -56,10 +56,13 @@ def detect_board_type(port: str, timeout: float = 5.0) -> str | None:
 def detect_boards() -> Dict[str, List[str]]:
     """Detect all connected boards and group them by board type."""
     mapping: Dict[str, List[str]] = {}
+    print("Automatically detecting boards...", end="", flush=True)
     for port in list_pico_ports():
         board = detect_board_type(port)
         if board:
+            print(".", end="", flush=True)
             mapping.setdefault(board, []).append(port)
+    print("OK!")
     return mapping
 
 

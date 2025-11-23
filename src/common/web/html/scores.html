@@ -63,6 +63,29 @@
     margin-bottom: 0.25rem;
   }
 
+  /* Ensure enough space for specific columns */
+  .score-board-list .rank {
+    min-width: 25px;
+  }
+
+  .score-board-list .score {
+    min-width: 120px;
+  }
+
+  .score-board-list .age {
+    min-width: 25px;
+  }
+
+  button.danger {
+    background-color: #e73434;
+    color: white;
+    border: none;
+  }
+
+  button.danger:hover {
+    background-color: #c53d3d;
+  }
+
   /* Narrower left/right padding on tab buttons */
   #score-board-nav button {
     padding-left: 12px;
@@ -459,6 +482,27 @@
     <div id="personalArticles" class="score-board-list"></div>
   </section>
 </div>
+
+<article class="hide" id="edit-btns">
+  <button id="edit-scores-btn" onclick="window.enterScoreEdit()">
+    Edit Scores
+  </button>
+  <button
+    id="delete-scores-btn"
+    class="danger hide"
+    onclick="window.deleteSelectedScores()"
+  >
+    Delete Selected
+  </button>
+  <button
+    id="edit-scores-cancel-btn"
+    class="hide"
+    onclick="window.exitScoreEdit()"
+  >
+    Cancel
+  </button>
+</article>
+
 <div id="claimable-scores" class="hide score-claim"></div>
 <dialog id="score-claim-modal">
   <article>
