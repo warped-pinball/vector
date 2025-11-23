@@ -389,7 +389,7 @@ def update_leaderboard(new_entry):
         year, month, day, _, _, _, _, _ = rtc.datetime()
         new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
-    # add player name to new_entry if there is an initals match
+    # add player name to new_entry if there is an initials match
     if not new_entry.get("full_name"):
         new_entry["full_name"], ind = find_player_by_initials(new_entry)
         if new_entry["full_name"] is None:
