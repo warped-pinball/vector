@@ -49,9 +49,9 @@
         "NumberOfScores": 4,
         "GrandChampScoreAdr": 7306,
         "GrandChampInitAdr": 7303,
-        "ChecksumStartAdr": 7954,
+        "ChecksumStartAdr": 7922,
         "ChecksumEndAdr": 7957,
-        "ChecksumResultAdr": 7965,
+        "ChecksumResultAdr": 7958,
         "GCChecksumStartAdr": 7303,
         "GCChecksumEndAdr": 7311,
         "GCChecksumResultAdr": 7312
