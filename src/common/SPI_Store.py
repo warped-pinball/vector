@@ -32,7 +32,7 @@ cs.value(1)
 # Initialize SPI Port
 spi = machine.SPI(
     0,
-    baudrate=60000,  # 20000,
+    baudrate=1000000, 
     polarity=1,
     phase=1,
     bits=8,
@@ -172,3 +172,6 @@ def write_all_fram_now():
         if MemIndex >= SRAM_DATA_LENGTH:
             print("FRAM: complete store done")
             return
+
+
+
