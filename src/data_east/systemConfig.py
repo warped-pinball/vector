@@ -2,7 +2,7 @@ vectorSystem = "data_east"
 updatesURL = "http://software.warpedpinball.com/vector/data_east/latest.json"
 
 # Firmware version for the Data East build
-SystemVersion = "0.2.0"
+SystemVersion = "0.3.0"
 
 
 # System specific scheduled tasks
