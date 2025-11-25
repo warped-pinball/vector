@@ -2,7 +2,7 @@ vectorSystem = "whitestar"
 updatesURL = "http://software.warpedpinball.com/vector/whitestar/latest.json"
 
 # Firmware version for the Whitestar build
-SystemVersion = "0.2.0"
+SystemVersion = "0.3.0"
 
 
 # System specific scheduled tasks
