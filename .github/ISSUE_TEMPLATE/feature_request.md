@@ -8,10 +8,6 @@ project: 'Triage'
 
 ---
 
-**What product is this feature request related to?**
-1. Origin (Multi-machine web server)
-2. Vector (Pinball Wifi Module)
-
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 

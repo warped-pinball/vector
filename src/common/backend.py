@@ -266,6 +266,15 @@ def require_auth(handler):
     def auth_wrapper(request, *args, **kwargs):
         global challenges
 
+        # USB transport is explicitly tagged by the USB bridge. Only those
+        # requests bypass authentication; HTTP callers cannot skip HMAC by
+        # spoofing the protocol string.
+        try:
+            if request.is_usb_transport and request.method == "USB" and request.protocol.startswith("USB"):
+                return handler(request, *args, **kwargs)
+        except Exception:
+            pass
+
         def deny_access(reason):
             msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
@@ -340,7 +349,7 @@ def get_challenge(request):
     return json_dumps({"challenge": new_challenge}), 200
 
 
-@add_route("api/auth/password_check", auth=True)
+@add_route("/api/auth/password_check", auth=True)
 def check_password(request):
     return "ok", 200
 
@@ -440,6 +449,31 @@ def get_scoreboard(key, sort_by="score", reverse=False):
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
     return get_scoreboard("leaders", reverse=True)
+
+
+@add_route("/api/score/delete", auth=True)
+def app_scoreDelete(request):
+    from ScoreTrackCommon import remove_score_entry
+
+    body = request.data
+    requested_to_delete = body["delete"]
+    delete_from = body["list"]
+    scores_to_delete = dict()
+    for requested in requested_to_delete:
+        scores_to_delete[requested["score"]] = requested["initials"]
+
+    for score in scores_to_delete:
+        remove_score_entry(initials=scores_to_delete[score], score=score, list=delete_from)
+
+    # If this was the leaders list, set top_scores global var and update machine scores.
+    if delete_from == "leaders":
+        from ScoreTrack import initialize_leaderboard, place_machine_scores
+
+        initialize_leaderboard()
+        # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
+        place_machine_scores()
+
+    return {"success": True}
 
 
 @add_route("/api/tournament")
@@ -842,9 +876,17 @@ def app_export_leaderboard(request):
     return download_scores()
 
 
+@add_route("/api/import/scores", auth=True)
+def app_import_leaderboard(request):
+    from FileIO import import_scores
+
+    data = request.data
+    return {"success": import_scores(data)}
+
+
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
-    ram_access = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
+    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
     for value in ram_access:
         yield f"{value}\n".encode("utf-8")
 
