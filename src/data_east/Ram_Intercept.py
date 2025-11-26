@@ -2,8 +2,6 @@
 #  8K RAM!
 
 
-# use OS for sys11 on PICO2W
-
 
 
 # This file is part of the Warped Pinball SYS11Wifi Project.
@@ -187,6 +185,9 @@ def pio_start():
 
     #   IN: Data Pins
     sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
+    #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22) ,  sideset_base=machine.Pin(27))
+   
+
 
     #PIO1_SM1  (#5)
     sm_CatchVma.active(1)
