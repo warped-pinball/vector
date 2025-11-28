@@ -1,31 +1,33 @@
+from micropython import const
+
 # Hardware Faults
-HDWR00 = "HDWR00: Unknown Hardware Error"
-HDWR01 = "HDWR01: Early Bus Activity"
-HDWR02 = "HDWR02: No Bus Activity"
+HDWR00 = const("HDWR00: Unknown Hardware Error")
+HDWR01 = const("HDWR01: Early Bus Activity")
+HDWR02 = const("HDWR02: No Bus Activity")
 
 ALL_HDWR = [HDWR00, HDWR01, HDWR02]
 
 # Software Faults
-SFWR00 = "SFWR00: Unknown Software Error"
-SFTW01 = "SFTW01: Drop Through"
-SFTW02 = "SFTW02: async loop interrupted"
+SFWR00 = const("SFWR00: Unknown Software Error")
+SFTW01 = const("SFTW01: Drop Through")
+SFTW02 = const("SFTW02: async loop interrupted")
 
 ALL_SFWR = [SFWR00, SFTW01, SFTW02]
 
 # Configuration Faults
-CONF00 = "CONF00: Unknown Configuration Error"
-CONF01 = "CONF01: Invalid Configuration"
+CONF00 = const("CONF00: Unknown Configuration Error")
+CONF01 = const("CONF01: Invalid Configuration")
 
 ALL_CONF = [CONF00, CONF01]
 
 # WiFi Faults
-WIFI00 = "WIFI00: Unknown Wifi Error"
-WIFI01 = "WIFI01: Invalid Wifi Credentials"
-WIFI02 = "WIFI02: No Wifi Signal"
+WIFI00 = const("WIFI00: Unknown Wifi Error")
+WIFI01 = const("WIFI01: Invalid Wifi Credentials")
+WIFI02 = const("WIFI02: No Wifi Signal")
 
 ALL_WIFI = [WIFI00, WIFI01, WIFI02]
 
-DUNO00 = "DUNO00: Unknown Error"
+DUNO00 = const("DUNO00: Unknown Error")
 
 ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO00]
 

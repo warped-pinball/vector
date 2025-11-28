@@ -181,7 +181,6 @@ if (typeof window !== "undefined") {
 
       profileRestore.checked = profiles[i][1];
       profileRestore.disabled = !profiles[i][2];
-
       profileName.disabled = false;
       if (profiles[i][0] != "") {
         profileName.placeholder = profiles[i][0];
