@@ -863,6 +863,13 @@ def app_version(request):
     return {"version": SystemVersion}
 
 
+@add_route("/api/uid")
+def app_uid(request):
+    from micropython import unique_id
+
+    return {"uid": hexlify(unique_id()).decode()}
+
+
 @add_route("/api/fault")
 def app_install_fault(request):
     import SharedState
