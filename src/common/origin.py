@@ -96,7 +96,7 @@ def _push_game_state_real(game_time, scores, ball_in_play, game_active):
 
         uid = hexlify(unique_id()).decode()
 
-        packet = dumps({"machine_id_b64": uid, "gameTimeMs": game_time if game_time is not None else 0, "scores": scores, "ball_in_play": ball_in_play, "game_active": game_active})
+        packet = dumps({"machine_id": uid, "gameTimeMs": game_time if game_time is not None else 0, "scores": scores, "ball_in_play": ball_in_play, "game_active": game_active})
         send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
         previous_state = state_tail
     except Exception as e:
