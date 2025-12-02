@@ -34,6 +34,28 @@
         justify-content: flex-end;
       }
 
+      /* Keep header content from overlapping between 770px and 1024px */
+      @media (max-width: 1024px) {
+        header .grid {
+          grid-template-columns: 1fr;
+          row-gap: 0.5rem;
+          justify-items: stretch;
+        }
+
+        header nav {
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        header nav ul {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          column-gap: 0.75rem;
+          row-gap: 0.25rem;
+        }
+      }
+
       /* Slightly tighten spacing on smaller viewports */
       @media (max-width: 600px) {
         nav button {
@@ -48,6 +70,13 @@
         header nav a {
           padding-inline: 0.35rem;
           font-size: 0.95rem;
+        }
+      }
+
+      /* Remove spacing to keep items on one line on very small screens */
+      @media (max-width: 500px) {
+        header nav ul {
+          column-gap: 0;
         }
       }
 
@@ -72,28 +101,6 @@
       details.dropdown summary::after {
         width: 0;
         margin: 0;
-      }
-
-      /* Keep header content from overlapping between 770px and 1024px */
-      @media (max-width: 1024px) {
-        header .grid {
-          grid-template-columns: 1fr;
-          row-gap: 0.5rem;
-          justify-items: stretch;
-        }
-
-        header nav {
-          display: flex;
-          justify-content: flex-end;
-          width: 100%;
-        }
-
-        header nav ul {
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          column-gap: 0.75rem;
-          row-gap: 0.25rem;
-        }
       }
     </style>
   </head>
