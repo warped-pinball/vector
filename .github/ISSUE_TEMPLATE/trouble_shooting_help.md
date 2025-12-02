@@ -8,10 +8,6 @@ project: 'Help Desk'
 
 ---
 
-**What product do you need help with?**
-1. Origin (Multi-machine web server)
-2. Vector (Pinball Wifi Module)
-
 **Describe what you're trying to accomplish**
 A clear and concise description of what you're trying to do.
 
@@ -32,7 +28,7 @@ If applicable, add screenshots to help explain your situation.
  - ROM Version: [e.g. L-1]
  - OS: [e.g. iOS, Windows]
  - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Version [e.g. 1.9.0]
 
 **Additional context**
 Add any other relevant information about your setup or what you're trying to accomplish.

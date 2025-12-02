@@ -381,17 +381,19 @@ def update_leaderboard(new_entry):
         log.log("SCORE: Bad Initials")
         return False
 
+    # Sanitize initials: 3 uppercase letters only
+    initials = new_entry.get("initials", "")
+    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()) )[:3]
+
     if "date" not in new_entry:
         year, month, day, _, _, _, _, _ = rtc.datetime()
         new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
 
-    # og.log( f"SCORE: Update Leader Board: {new_entry}")
-    # update_individual_score(new_entry)
-
-    # add player name to new_entry if there is an initals match
-    new_entry["full_name"], ind = find_player_by_initials(new_entry)
-    if new_entry["full_name"] is None:
-        new_entry["full_name"] = ""
+    # add player name to new_entry if there is an initials match
+    if not new_entry.get("full_name"):
+        new_entry["full_name"] = find_player_by_initials(new_entry)[0]
+        if new_entry["full_name"] is None:
+            new_entry["full_name"] = ""
 
     # Load scores
     top_scores = [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])]
@@ -453,11 +455,11 @@ def check_for_machine_high_scores(report=True):
     for idx in range(5):  # with WPC could be 5 scores - -
         if scores[idx][1] > 10000:  # ignore placed fake scores
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
-            if report:
-                print(f"SCORE: place game score into vector {new_score}")
-
-            # As a claim first
-            claim_score(new_score["initials"], 0, new_score["score"])
+            
+            if idx >= len(top_scores) or scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:
+                if report:
+                    print(f"SCORE: place game score into vector {new_score}")        
+                claim_score(new_score["initials"], 0, new_score["score"])
 
 
 def update_tournament(new_entry):
@@ -531,8 +533,11 @@ def CheckForNewScores(nState=[0]):
 
     # only run this if ball in play is enabled
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
+
+       
+
         # waiting for a game to start
-        if nState[0] == 1:
+        if nState[0] == 1:        
             GameEndCount = 0
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
@@ -556,6 +561,7 @@ def CheckForNewScores(nState=[0]):
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                     _remove_machine_scores()
                 S.gameCounter = (S.gameCounter + 1) % 100
+
 
         # waiting for game to end
         elif nState[0] == 2:
