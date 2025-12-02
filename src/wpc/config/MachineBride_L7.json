@@ -65,11 +65,6 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "Switches": {
-        "Type": 0,
-        "Address": 0,
-        "Length": 0
-    },
     "CoinDrop": {
         "Type": 0
     },
@@ -79,8 +74,8 @@
         "GameActiveValue": 0,
         "Players": 6044,
         "Playerup": 1038,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 5,
         "ScoreSpacing": 6
     }
 }

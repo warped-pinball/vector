@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Theatre of Magic",
+        "GameName": "Party Zone",
         "System": "WPC",
         "FileVer": 1
     },
@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 944,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -24,37 +24,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7553,
-        "AddressS2": 7618,
-        "AddressS3": 7683,
+        "AddressS1": 7532,
+        "AddressS2": 7597,
+        "AddressS3": 7662,
         "Length": 32,
-        "ChecksumStartAdr": 7553,
-        "ChecksumEndAdr": 7745,
-        "ChecksumResultAdr": 7746
+        "ChecksumStartAdr": 7532,
+        "ChecksumEndAdr": 7724,
+        "ChecksumResultAdr": 7725
     },
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
+        "ChecksumStartAdr": 7318,
+        "ChecksumEndAdr": 7529,
+        "ChecksumResultAdr": 7530
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7268,
+        "ScoreAdr": 7248,
         "BytesInScore": 5,
         "ScoreSpacing": 8,
-        "InitialAdr": 7265,
+        "InitialAdr": 7245,
         "InitialSpacing": 8,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
+        "GrandChampScoreAdr": 7282,
+        "GrandChampInitAdr": 7279,
+        "ChecksumStartAdr": 7245,
+        "ChecksumEndAdr": 7276,
+        "ChecksumResultAdr": 7277,
+        "GCChecksumStartAdr": 7279,
+        "GCChecksumEndAdr": 7286,
+        "GCChecksumResultAdr": 7287
     },
     "HSRewards": {
         "Type": 0,
@@ -70,11 +70,11 @@
     },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 141,
+        "GameActiveAdr": 148,
         "GameActiveValue": 0,
-        "Players": 5909,
-        "Playerup": 776,
-        "ScoreAdr": 5792,
+        "Players": 6052,
+        "Playerup": 1011,
+        "ScoreAdr": 5936,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
     }
