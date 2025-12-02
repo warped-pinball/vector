@@ -34,6 +34,40 @@
         justify-content: flex-end;
       }
 
+      /* Slightly tighten spacing on smaller viewports */
+      @media (max-width: 600px) {
+        nav button {
+          width: 38px !important;
+          height: 38px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.5rem;
+        }
+
+        header nav a {
+          padding-inline: 0.35rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      /* Compress further for the narrowest phones */
+      @media (max-width: 440px) {
+        nav button {
+          width: 34px !important;
+          height: 34px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.35rem;
+        }
+
+        header nav a {
+          padding-inline: 0.25rem;
+          font-size: 0.9rem;
+        }
+      }
+
       /* make the ::after on summary text 0 width*/
       details.dropdown summary::after {
         width: 0;
