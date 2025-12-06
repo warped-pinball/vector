@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Pinbot",
-        "System": "11A",
-        "FileVer": 1
+        "System": "11A"        
     },
 
     "Memory" : {
@@ -14,7 +13,7 @@
 
     "BallInPlay": {
         "Type": 1,
-        "Address": 56,
+        "Address": 56, 
         "Ball1": "0xF1",
         "Ball2": "0xF2",
         "Ball3": "0xF3",
@@ -43,10 +42,15 @@
         "InitialAdr": "0x737",
         "BytesInScore": 4
     },
-
-    "InPlay": {
+    
+    "InPlayScores": {
         "Type": 1,
         "ScoreAdr": "0x200",
+        "ZeroNibble": 0,
+        "BytesInScore": 4
+    },
+
+    "InPlayInfo": {
         "PlayersInGame": "0xAC",
         "PlayerUP": "0xAD",
         "ExtraBalls": "0xB0",
@@ -63,9 +67,20 @@
     },
 
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Type": 1,
+        "Address": 1600,
+        "Length": 60,
+        "List": {
+            "Lower Drop": 1650,
+            "Middle Drop": 1649,
+            "Upper Drop": 1648,
+            "Advance Planet": 1618
+        }
+    },
+
+    "Flippers": {
+        "Type": 1,
+        "Address": 67
     },
 
     "CoinDrop": {
