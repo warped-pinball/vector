@@ -1,0 +1,66 @@
+{
+    "GameInfo": {
+        "GameName": "Star Wars",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 420,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+    "DisplayMessage": {
+        "Type": 0,
+        "AddressS1": 0,
+        "AddressS2": 0,
+        "AddressS3": 0,
+        "Length": 0,
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
+    },
+    "Adjustments": {
+        "Type": 0,
+        "CustomMessageOn": 0,
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
+    },
+    "HighScores": {
+        "Type": 24,
+        "ScoreAdr": 5756,
+        "ScoreAdrEx":  5800,
+        "InitialAdr": 5818,
+        "NumberOfScores": 6       
+    },
+    "InPlay": {
+        "Type": 21,        
+        "Playerup": 419,
+        "ScoreAdr": 434
+    },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
+        "DisableByte": 0
+    },
+    "CoinDrop": {
+        "Type": 0
+    }
+}

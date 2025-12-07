@@ -1,4 +1,4 @@
-# reset pin control
+# reset pin control - DataEast
 
 import machine
 from machine import Pin
@@ -27,8 +27,6 @@ def init():
 # Release reset line
 def release(override=False):    
     global usb_power_state, reset_output
-
-    print("@@@@@@@@@@@@@@@@@@@@ release")
 
     if reset_output is None:
         Log.log("RST: Error")

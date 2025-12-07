@@ -1,8 +1,8 @@
-# This file is part of the Warped Pinball SYS11Wifi Project.
+# This file is part of the Warped Pinball Vector (DataEast) Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
-WPC Wifi ShadowRamDefs.py
+DE Wifi ShadowRamDefs.py
 
 Definitions for the location and length of internal RP2350
     ram used to replace the on mother-board SRAM

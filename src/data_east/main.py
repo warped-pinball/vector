@@ -1,24 +1,19 @@
+# Data East
 
 
+
+#get DMA channels straight - allocate wifi channel now
 import Pico_Led
-
-
 Pico_Led.on()
-
-#import TransparentMode
-
 
 #import mmain
 
 
-
-
-
-# This file is part of the Warped Pinball SYS11Wifi Project.
+# This file is part of the Warped Pinball Vector Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
-    Warped Pinball - SYS11.Wifi
+    Warped Pinball - Data East
     fault check updated for early sys11 game compatability
 """
 
@@ -122,13 +117,13 @@ def check_ap_button():
 reset_control.init()
 
 print("\n\n")
-print("  Warped Pinball :: System11.Wifi")
+print("  Warped Pinball :: DataEast.Wifi")
 Log.log(f"          Version {SystemVersion}")
 print("Contact Paul -> Inventingfun@gmail.com")
 
 print(
     """
-SYS11.Wifi (Vector) from Warped Pinball
+DataEast.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )
