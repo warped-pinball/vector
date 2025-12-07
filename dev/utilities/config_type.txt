@@ -1,0 +1,16 @@
+
+
+Configs all hav e a'Type' entery in the JSON.
+Maybe should be alpha and be descriptive - but they are just numbers.
+Here is what they mean- -
+
+0) this section is not setup, default to OFF
+1) system 11
+2) system 11
+3) system 11
+10) WPC games
+20) Data East, normal
+21) Data East longer scores (5 bytes)
+
+
+
