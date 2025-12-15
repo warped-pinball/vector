@@ -42,9 +42,10 @@
     "HighScores": {
         "Type": 24,
         "ScoreAdr": 5756,
-        "ScoreAdrEx":  5800,
+        "ScoreAdrEx":  5780,
         "InitialAdr": 5818,
-        "NumberOfScores": 6       
+        "NumberOfScores": 6,
+        "BytesInScore": 5       
     },
     "InPlay": {
         "Type": 21,        

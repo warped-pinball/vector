@@ -100,14 +100,12 @@ def game_report():
             # ball non 0
             end_hold_start = None
             gameActive = True
+             # Get all four scores in one call
+            data["Scores"] = _get_machine_score()
+            data["PlayerUp"] = _get_player_up()
 
         data["GameActive"] = gameActive
         data["BallInPlay"] = ball
-
-        # Get all four scores in one call
-        data["Scores"] = _get_machine_score()
-
-        data["PlayerUp"] = _get_player_up()
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
