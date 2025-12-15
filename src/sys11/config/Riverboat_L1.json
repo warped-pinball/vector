@@ -1,16 +1,14 @@
 {
     "GameInfo": {
         "GameName": "Riverboat Gambler",
-        "System": "11c"        
+        "System": "11c"
     },
-
     "Memory" : {
         "Start": 0,
         "Length": 2048,
         "NvStart": 0,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 0,
         "Address": 56,
@@ -20,7 +18,6 @@
         "Ball4": "0x04",
         "Ball5": "0x05"
     },
-
     "DisplayMessage": {
         "Type": 3,
         "Address": "0x7B4",
@@ -28,14 +25,12 @@
         "Number": 3,
         "EnableByteAddress": "0x7B0"
     },
-
     "Adjustments" :{
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
         "ChecksumResultAdr": "0x7E6"
     },
-
     "HighScores": {
         "Type": 3,
         "ScoreAdr": "0x70E",
@@ -56,13 +51,11 @@
         "HS4": 1940,
         "DisableByte": 0
     },
-
     "Switches": {
         "Type": 0,
         "Address": 56,
         "Length": 23
     },
-
     "CoinDrop": {
         "Type": 0
     }
