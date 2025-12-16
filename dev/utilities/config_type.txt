@@ -1,6 +1,6 @@
 
 
-Configs all hav e a'Type' entery in the JSON.
+Configs all have a 'Type' entry in the JSON.
 Maybe should be alpha and be descriptive - but they are just numbers.
 Here is what they mean- -
 
