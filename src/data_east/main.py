@@ -84,7 +84,7 @@ def adr_activity_ok():
         current_values = [shadowRam[i] for i in range(0x10, 0x18)]
         # Changing?
         if current_values != initial_values:
-            Log.log("Main: Acitivy Check OK")
+            Log.log("Main: Activity Check OK")
             return True
         time.sleep_ms(100)
 
