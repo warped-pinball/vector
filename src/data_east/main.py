@@ -14,7 +14,7 @@ Pico_Led.on()
 # This work is licensed under CC BY-NC 4.0
 """
     Warped Pinball - Data East
-    fault check updated for early sys11 game compatability
+    fault check updated for early sys11 game compatibility
 """
 
 import resource
