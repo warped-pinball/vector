@@ -6,7 +6,7 @@
 """
 Score Track
     This module is responsible for tracking scores and updating the leaderboard.
-    Must account for highscores and in play score avilability
+    Must account for highscores and in play score availability
 """
 import displayMessage
 import SharedState as S
