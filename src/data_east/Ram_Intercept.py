@@ -1,4 +1,4 @@
-#sepcial test version of system 11 ram intercept for DATA EAST
+#special test version of system 11 ram intercept for DATA EAST
 #  8K RAM!   Bus structure like System11
 
 
