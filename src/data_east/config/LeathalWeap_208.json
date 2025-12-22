@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Leathal Weapon III",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,7 +12,7 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 419
     },
     "DisplayMessage": {
         "Type": 20,
@@ -20,9 +20,9 @@
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
-        "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
+        "CustomMessageOn": 7009,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7770,
         "ChecksumResultAdr": 8128
     },
     "HighScores": {
@@ -38,12 +38,11 @@
     },
     "InPlay": {
         "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "Players": 421,
+        "PlayerUp": 418,
+        "ScoreAdr": 433,
+        "BytesInScore": 5,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
     }
 }

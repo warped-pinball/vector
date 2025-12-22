@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Hook",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,38 +12,41 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 94
     },
     "DisplayMessage": {
-        "Type": 20,
-        "Address": 8001
+        "Type": 21,
+        "Address": 7784
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
+        "CustomMessageOn": 7774,
         "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128
+        "ChecksumEndAdr": 7784,
+        "ChecksumResultAdr": 7898
     },
     "HighScores": {
         "Type": 24,
-        "ScoreAdr": 5756,
-        "ScoreAdrNV": 7711,
+        "ScoreAdr": 7380,
+        "ScoreAdrNV": 7710,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1,
-        "InitialAdr": 5818,
+        "InitialAdr": 7438,
         "InitialSpacing": 3,
         "NumberOfScores": 6
     },
     "InPlay": {
         "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "Players": 151,
+        "PlayerUp": 150,
+        "ScoreAdr": 16,
+        "BytesInScore": 5,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
+    },
+    "Flippers": {
+        "Type": 10,
+        "Address": 6193
     }
 }

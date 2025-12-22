@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Maverick",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,7 +12,7 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 443
     },
     "DisplayMessage": {
         "Type": 20,
@@ -20,10 +20,10 @@
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
+        "CustomMessageOn": 7755,
         "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128
+        "ChecksumEndAdr": 7772,
+        "ChecksumResultAdr": 8157
     },
     "HighScores": {
         "Type": 24,
@@ -38,12 +38,11 @@
     },
     "InPlay": {
         "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "Players": 445,
+        "PlayerUp": 442,
+        "ScoreAdr": 5846,
+        "BytesInScore": 5,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
     }
 }

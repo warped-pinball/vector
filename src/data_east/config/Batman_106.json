@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Batman",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,38 +12,37 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 78
     },
     "DisplayMessage": {
-        "Type": 20,
-        "Address": 8001
+        "Type": 21,
+        "Address": 7820
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
+        "CustomMessageOn": 7742,
         "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128
+        "ChecksumEndAdr": 7752,
+        "ChecksumResultAdr": 7934
     },
     "HighScores": {
-        "Type": 24,
-        "ScoreAdr": 5756,
-        "ScoreAdrNV": 7711,
-        "BytesInScore": 5,
+        "Type": 20,
+        "ScoreAdr": 7576,
+        "ScoreAdrNV": 7709,
+        "BytesInScore": 4,
         "ScoreSpacing": 4,
         "Multiplier": 1,
-        "InitialAdr": 5818,
+        "InitialAdr": 7626,
         "InitialSpacing": 3,
         "NumberOfScores": 6
     },
     "InPlay": {
-        "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "Type": 20,
+        "Players": 135,
+        "PlayerUp": 134,
+        "ScoreAdr": 16,
+        "BytesInScore": 4,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
     }
 }

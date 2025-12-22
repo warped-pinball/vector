@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Baywatch",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,7 +12,7 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 463
     },
     "DisplayMessage": {
         "Type": 20,
@@ -20,30 +20,29 @@
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
+        "CustomMessageOn": 7755,
         "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128
+        "ChecksumResultAdr": 8157
     },
     "HighScores": {
-        "Type": 24,
+        "Type": 25,
         "ScoreAdr": 5756,
         "ScoreAdrNV": 7711,
         "BytesInScore": 5,
-        "ScoreSpacing": 4,
+        "ScoreSpacing": 5,
         "Multiplier": 1,
         "InitialAdr": 5818,
         "InitialSpacing": 3,
         "NumberOfScores": 6
     },
     "InPlay": {
-        "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
-        "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Type": 25,
+        "Players": 465,
+        "PlayerUp": 462,
+        "ScoreAdr": 1758,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "Multiplier": 1
     }
 }

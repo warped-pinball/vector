@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Tales from the Crypt",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,7 +12,7 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 434
     },
     "DisplayMessage": {
         "Type": 20,
@@ -20,30 +20,29 @@
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
-        "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128
+        "CustomMessageOn": 7009,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7808,
+        "ChecksumResultAdr": 8157
     },
     "HighScores": {
         "Type": 24,
-        "ScoreAdr": 5756,
+        "ScoreAdr": 5916,
         "ScoreAdrNV": 7711,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1,
-        "InitialAdr": 5818,
+        "InitialAdr": 5978,
         "InitialSpacing": 3,
         "NumberOfScores": 6
     },
     "InPlay": {
         "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "Players": 434,
+        "PlayerUp": 434,
+        "ScoreAdr": 6006,
+        "BytesInScore": 5,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
     }
 }
