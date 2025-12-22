@@ -1,0 +1,47 @@
+{
+    "GameInfo": {
+        "GameName": "RoboCop",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 5955
+    },
+    "DisplayMessage": {
+        "Type": 21,
+        "Address": 7360
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 8019,
+        "ChecksumStartAdr": 7943,
+        "ChecksumEndAdr": 7978,
+        "ChecksumResultAdr": 7979
+    },
+    "HighScores": {
+        "Type": 27,
+        "ScoreAdr": 7264,
+        "BytesInScore": 7,
+        "ScoreSpacing": 12,
+        "Multiplier": 1,
+        "InitialAdr": 7271,
+        "InitialSpacing": 12,
+        "NumberOfScores": 4
+    },
+    "InPlay": {
+        "Type": 27,
+        "Players": 5953,
+        "PlayerUp": 5957,
+        "ScoreAdr": 423,
+        "BytesInScore": 7,
+        "ScoreSpacing": 166,
+        "Multiplier": 1
+    }
+}

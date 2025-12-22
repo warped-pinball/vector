@@ -1,0 +1,47 @@
+{
+    "GameInfo": {
+        "GameName": "Phantom of the Opera",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 237
+    },
+    "DisplayMessage": {
+        "Type": 23,
+        "Address": 8115
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 8114,
+        "ChecksumStartAdr": 8031,
+        "ChecksumEndAdr": 8184,
+        "ChecksumResultAdr": 8190
+    },
+    "HighScores": {
+        "Type": 20,
+        "ScoreAdr": 1696,
+        "BytesInScore": 4,
+        "ScoreSpacing": 7,
+        "Multiplier": 10,
+        "InitialAdr": 1700,
+        "InitialSpacing": 7,
+        "NumberOfScores": 4
+    },
+    "InPlay": {
+        "Type": 20,
+        "Players": 1610,
+        "PlayerUp": 1609,
+        "ScoreAdr": 1408,
+        "BytesInScore": 4,
+        "ScoreSpacing": 32,
+        "Multiplier": 10
+    }
+}

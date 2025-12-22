@@ -1,0 +1,47 @@
+{
+    "GameInfo": {
+        "GameName": "Back to the Future",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 202
+    },
+    "DisplayMessage": {
+        "Type": 23,
+        "Address": 7820
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7742,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7747,
+        "ChecksumResultAdr": 7902
+    },
+    "HighScores": {
+        "Type": 20,
+        "ScoreAdr": 7588,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 7631,
+        "InitialSpacing": 3,
+        "NumberOfScores": 5
+    },
+    "InPlay": {
+        "Type": 20,
+        "Players": 968,
+        "PlayerUp": 967,
+        "ScoreAdr": 16,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}
