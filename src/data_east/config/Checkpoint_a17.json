@@ -21,20 +21,20 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 0,
-        "ChecksumStartAdr": 7678,
-        "ChecksumEndAdr": 7751,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7749,
         "ChecksumResultAdr": 7934
     },
     "HighScores": {
         "Type": 20,
         "ScoreAdr": 7582,
-        "ScoreAdrNV": 7707,
         "BytesInScore": 6,
         "ScoreSpacing": 4,
         "Multiplier": 1,
         "InitialAdr": 7628,
         "InitialSpacing": 3,
-        "NumberOfScores": 6
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7707
     },
     "InPlay": {
         "Type": 20,

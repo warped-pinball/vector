@@ -28,22 +28,21 @@
     "HighScores": {
         "Type": 24,
         "ScoreAdr": 5756,
-        "ScoreAdrNV": 7711,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1,
         "InitialAdr": 5818,
         "InitialSpacing": 3,
-        "NumberOfScores": 6
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
     },
     "InPlay": {
         "Type": 24,
         "Players": 422,
         "PlayerUp": 419,
         "ScoreAdr": 434,
-        "ScoreBytes": 0,
+        "BytesInScore": 5,
         "ScoreSpacing": 4,
-        "Multiplier": 1,
-        "BytesInScore": 5
+        "Multiplier": 1
     }
 }

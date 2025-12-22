@@ -28,13 +28,13 @@
     "HighScores": {
         "Type": 25,
         "ScoreAdr": 5756,
-        "ScoreAdrNV": 7711,
         "BytesInScore": 5,
         "ScoreSpacing": 5,
         "Multiplier": 1,
         "InitialAdr": 5818,
         "InitialSpacing": 3,
-        "NumberOfScores": 6
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
     },
     "InPlay": {
         "Type": 25,

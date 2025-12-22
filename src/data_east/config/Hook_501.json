@@ -15,7 +15,7 @@
         "Address": 94
     },
     "DisplayMessage": {
-        "Type": 21,
+        "Type": 24,
         "Address": 7784
     },
     "Adjustments": {
@@ -28,13 +28,13 @@
     "HighScores": {
         "Type": 24,
         "ScoreAdr": 7380,
-        "ScoreAdrNV": 7710,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1,
         "InitialAdr": 7438,
         "InitialSpacing": 3,
-        "NumberOfScores": 6
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7710
     },
     "InPlay": {
         "Type": 24,
