@@ -1,8 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Generic Data East / Early Sega",
-        "System": "DE",
-        "Clock": "No",
+        "GameName": "Generic Data East",
+        "System": "DataEast",
         "FileVer": 1
     },
 
@@ -29,7 +28,7 @@
 
     "DisplayMessage": {
        "Type": 0,
-        "AddressS1": 0,
+        "AddressS1": 0
     },
 
     "Adjustments" :{

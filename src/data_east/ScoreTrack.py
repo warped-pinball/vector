@@ -12,16 +12,16 @@ import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
-from machine import RTC
-from Shadow_Ram_Definitions import shadowRam
-
-from GameStatus import _get_ball_in_play
-
 log = logger_instance
+from machine import RTC
+import DataMapper
+
+
 
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -36,43 +36,19 @@ recent_scores = [
 
 
 def reset_scores():
-    """reset high scores"""
+    """
+        reset high scores
+    """
     from SPI_DataStore import blankStruct
-
-    print(" RESET Leader scores")
+    print("RESET Leader scores")
     blankStruct("leaders")
-    _remove_machine_scores()
-
-
-def fix_high_score_checksum():
-    """fix high score checksum if needed, also do grand champion checksum"""
-
-    def _calc_checksum(start_adr, end_adr):
-        """calculate checksum for a range of addresses"""
-        chk = 0
-        for adr in range(start_adr, end_adr + 1):
-            chk += shadowRam[adr]
-        chk = 0xFFFF - chk
-        msb = (chk >> 8) & 0xFF
-        lsb = chk & 0xFF
-        return msb, lsb
-
-    '''
-    if S.gdata["HighScores"]["Type"] == 10:  # 10 for std WPC
-        msb, lsb = _calc_checksum(S.gdata["HighScores"]["ChecksumStartAdr"], S.gdata["HighScores"]["ChecksumEndAdr"])
-        # print("SCORE: Checksum: ---------------- ", hex(msb), hex(lsb))
-        shadowRam[S.gdata["HighScores"]["ChecksumResultAdr"]] = msb
-        shadowRam[S.gdata["HighScores"]["ChecksumResultAdr"] + 1] = lsb
-
-        msb, lsb = _calc_checksum(S.gdata["HighScores"]["GCChecksumStartAdr"], S.gdata["HighScores"]["GCChecksumEndAdr"])
-        # print("SCORE: Checksum Grand Champ : ---------------- ", hex(msb), hex(lsb))
-        shadowRam[S.gdata["HighScores"]["GCChecksumResultAdr"]] = msb
-        shadowRam[S.gdata["HighScores"]["GCChecksumResultAdr"] + 1] = lsb
-    '''
-
+    machine_scores = [["", 1000], ["", 900], ["", 800], ["", 700], ["", 600], ["", 500]]
+    DataMapper.write_high_scores(machine_scores)
 
 def get_claim_score_list():
-    """fetch the list of claimable scores"""
+    """
+        fetch the list of claimable scores
+    """
     result = []
     if DataStore.read_record("extras", 0)["claim_scores"] is True:
         for game in recent_scores[:4]:
@@ -84,7 +60,9 @@ def get_claim_score_list():
 
 
 def claim_score(initials, player_index, score):
-    """claim a score from the recent scores list - do not require a player index, search all"""
+    """
+        claim a score from the recent scores list - do not require a player index, search all
+    """
     global recent_scores
 
     # condition the initials - more important than one would think.  machines freak if non printables get in
@@ -119,179 +97,6 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-
-
-def _read_machine_score(UseHighScores=True):
-    """read machine scores - in play and highscores
-    and if HighScores is True try to get intials from highscore area
-    """
-    high_scores = [["", 0], ["", 0], ["", 0], ["", 0], ["", 0], ["", 0] ]  # 6 for data east
-    in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-
-    # Build a set of all four in-play scores, index=0,1,2,3 (by player number)
-    try:
-        if S.gdata["InPlay"]["Type"] == 20:  #20 Data East all in a row w/ multiplier
-            for idx in range(4):
-                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                in_play_score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
-                in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes) * S.gdata["InPlay"]["ScoreMultiplier"]
-
-        elif S.gdata["InPlay"]["Type"] == 21:  #21 Data East break after fourth byte, assume 5 bytes total
-            for idx in range(4):
-                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
-                score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
-
-                in_play_score_bytes = [shadowRam[score_fifth_byte_adr]]
-                in_play_score_bytes.extend( shadowRam[score_start : score_start + 4] )                                
-                in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes)   
-                print("  bcd to int",in_play_score_bytes,in_play_scores[idx][1] )
-
-            print(" SCORE DIAG  12    :  ",in_play_scores)                            
-    except Exception:
-        pass
-
-    # grab all high scores (in order of high->low score, not player number!)
-    # there can be 4 or 6 high scores
-    if S.gdata["HighScores"]["Type"] == 24:  # DataEast Star Wars like - 6 scores
-        Number_Scores=S.gdata["HighScores"]["NumberOfScores"]
-        for idx in range(Number_Scores):
-            # extra bytes (MSB)
-            score_adr_extend = S.gdata["HighScores"]["ScoreAdrEx"] + idx
-            # first section is always 4 bytes
-            score_adr = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
-
-            score_bytes = [shadowRam[score_adr_extend]]   #MSbytes
-            score_bytes.extend( shadowRam[score_adr : score_adr + 4] ) # 4 LSBytes
-
-            print("raws bytes",idx,score_bytes)
-
-            high_scores[idx][1] = _bcd_to_int(score_bytes)
-            if high_scores[idx][1] < 1000:
-                high_scores[idx][1] = 0      
-
-        print("SCORE DIAG:xx high scores ",high_scores)
-
-        # initials
-        if "InitialAdr" in S.gdata["HighScores"]:
-            for idx in range(Number_Scores):
-                initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * 3 
-                initials_bytes = shadowRam[initial_start : initial_start + 3]               
-                high_scores[idx][0] = bytes(initials_bytes).decode("ascii")   # normal ascii
-                if high_scores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
-                    high_scores[idx][0] = ""
-
-            print("SCORE DIAG: high scores init  ",high_scores)
-          
-        # if we have high scores, intials AND in-play socres, put initials to the in play scores
-        for in_play_score in in_play_scores:
-            for high_score in high_scores:
-                if in_play_score[1] == high_score[1]:
-                    in_play_score[0] = high_score[0]  # copy initals over
-
-    if UseHighScores:
-        print("SCORE: High Scores used")
-        return high_scores
-    else:
-        print("SCORE: In play scores used")
-        return in_play_scores
-
-
-def _bcd_to_int(score_bytes):
-    """game system (BCD to integer conversion)
-    up to 8 bcd bytes
-    """
-    score = 0
-    for byte in score_bytes:
-        high_digit = byte >> 4
-        low_digit = byte & 0x0F
-        if low_digit > 9:
-            low_digit = 0
-        if high_digit > 9:
-            high_digit = 0
-        score = score * 100 + high_digit * 10 + low_digit
-    return score
-
-
-def _int_to_bcd(number,ScoreBytes=4):
-    """change int back to BCD coded for the game
-    tested to support large numbers - to 8 bcd digits"""
-
-    # pad with zeros to ensure it has ScoreBytes*2 digits
-    num_str = f"{number:0{ScoreBytes*2}d}"
-    bcd_bytes = bytearray(ScoreBytes)
-    # Fill byte array
-    for i in range(ScoreBytes):
-        bcd_bytes[i] = (int(num_str[2 * i]) << 4) + int(num_str[2 * i + 1])
-    return bcd_bytes
-
-
-def place_machine_scores():
-    """write highest scores & initials from storage to machine memory"""
-    global top_scores
-
-    # possible high score intials are empty if there was a reset / reboot etc
-    # games do not like empties!
-    for index in range(6): 
-        if len(top_scores[index]["initials"]) != 3:
-            top_scores[index]["initials"] = "   "
-            # top_scores[index]["score"] = 100  only change intials, not score (blank initials happen with good scores sometimes)
-
-    if S.gdata["HighScores"]["Type"] == 24:
-        print("SCORE: Place Data East machine scores, type 24")
-
-        Number_Scores=S.gdata["HighScores"]["NumberOfScores"]
-        for index in range(Number_Scores):                       
-            #scores
-            score_adr_extend = S.gdata["HighScores"]["ScoreAdrEx"] + index   # extra byte (MSB)           
-            score_adr = S.gdata["HighScores"]["ScoreAdr"] + index * 4   # first section is always 4 bytes
-            try:
-                scoreBCD = _int_to_bcd(top_scores[index]["score"],S.gdata["HighScores"]["BytesInScore"])  
-            except Exception:
-                log.log("SCORE: score convert problem")
-                scoreBCD = _int_to_bcd(100,S.gdata["HighScores"]["BytesInScore"])        
-
-            shadowRam[score_adr : score_adr + 4] = scoreBCD[1:5]
-            shadowRam[score_adr_extend] = scoreBCD[0]
-            print("  top scores: ", scoreBCD, top_scores[index])
-
-            #initials
-            try:
-                initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-                initials = top_scores[index]["initials"]
-                for i in range(3):
-                    shadowRam[initial_start + i] = ord(initials[i])  # std ASCII
-
-            except Exception:
-                log.log("SCORE: place machine scores exception")
-                shadowRam[initial_start] = 64
-                shadowRam[initial_start + 1] = 64
-                shadowRam[initial_start + 2] = 64
-
-        #fix_high_score_checksum()
-
-
-def _remove_machine_scores():
-    """remove machine scores to prep for forced intial entry  - Data East"""
-
-    if S.gdata["HighScores"]["Type"] == 24:
-        log.log("SCORE: Remove machine scores type 24")
-        Number_Scores=S.gdata["HighScores"]["NumberOfScores"]
-        for index in range(Number_Scores):
-
-            score_adr_extend = S.gdata["HighScores"]["ScoreAdrEx"] + index   # extra byte (MSB)           
-            shadowRam[score_adr_extend] = 0 
-
-            score_adr = S.gdata["HighScores"]["ScoreAdr"] + index * 4   # first section is always 4 bytes
-            for i in range(4):
-                shadowRam[score_adr + i] = 0 
-
-            shadowRam[score_adr + 2] = 0x10 * (6 - index)
-
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-            for i in range(3):
-                shadowRam[initial_start + i] = 0x41  # initials all 'A'       
-
-        #fix_high_score_checksum()
 
 
 def find_player_by_initials(new_entry):
@@ -436,7 +241,10 @@ def initialize_leaderboard():
 
 def check_for_machine_high_scores(report=True):
     # check for high scores in machine that we dont have yet
-    print(" Check for machine high scores - - - - - - - - -- ")
+    print(" Check for machine high scores - - - - - - - - -- not - placeholder")
+
+
+    """
     scores = _read_machine_score(UseHighScores=True)
     year, month, day, _, _, _, _, _ = rtc.datetime()
     for idx in range(6):
@@ -460,7 +268,7 @@ def check_for_machine_high_scores(report=True):
                 if report:
                     print(f"SCORE: place game score into vector {new_score}")
                 claim_score(new_score["initials"], 0, new_score["score"])
-
+    """
 
 def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
@@ -508,41 +316,51 @@ def update_tournament(new_entry):
 
 GameEndCount = 0
 
+# State constants for CheckForNewScores
+STATE_INIT = 0           # Power up initialization
+STATE_WAITING = 1        # Waiting for game to start
+STATE_PLAYING = 2        # Game in progress
+_game_state = STATE_INIT
 
-def CheckForNewScores(nState=[0]):
-    """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount
 
-    print(f"SCORE: CheckForNewScores - State={nState[0]}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
+def CheckForNewScores():
+    """Called by scheduler every 5 seconds. Tracks game state and updates scores."""
+    global nGameIdleCounter, GameEndCount, _game_state
+
+    print(f"SCORE: CheckForNewScores - State={_game_state}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
+    #DataMapper.read_high_scores()
 
     # power up init state - only runs once
-    if nState[0] == 0:
-        nState[0] = 1
-        print("SCORE: State 0 - Power up initialization")
-        import machine        
-        
-        print("SCORE: Checking for machine high scores")
-        check_for_machine_high_scores(True)
-        place_machine_scores()
-      
-        '''
-        # if enter initials on game set high score rewards to zero
-        if S.gdata["HSRewards"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
-            print("SCORE: Disabling HS rewards")
-            for key, value in S.gdata["HSRewards"].items():
-                if key.startswith("HS"):  # Check if the key starts with 'HS'
-                    shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
-        '''
+    if _game_state == STATE_INIT:
+        _game_state = STATE_WAITING
+        print("SCORE: State 0 - Power up initialization")        
+        scores=DataMapper.read_high_scores()        
+        print("Power up read machine scores - ",scores)
+        for entry in scores:
+            # Convert from [initials, score] list format to dict format for update_leaderboard
+            if isinstance(entry, list) and len(entry) >= 2:
+                update_leaderboard({"initials": entry[0], "score": entry[1]})
+            elif isinstance(entry, dict):
+                update_leaderboard(entry)
 
-        print("SCORE: SCORETRACK Init complete")
+
+        # Pull top 6 scores from leaderboard and write to machine
+        machine_scores = []
+        for i in range(min(6, len(top_scores))):
+            initials = top_scores[i].get("initials", "")
+            score = top_scores[i].get("score", 0)
+            machine_scores.append([initials, score])    
+        
+        DataMapper.write_high_scores(machine_scores)
+
 
     # only run this if ball in play is enabled
-    if S.gdata["BallInPlay"]["Type"] == 1:       
-        print(f"SCORE: BallInPlay Type=1 enabled, current state={nState[0]}")
+    if S.gdata["BallInPlay"]["Type"] == 20:       
+        print(f"SCORE: BallInPlay enabled, current state={_game_state}")
 
         # waiting for a game to start
-        if nState[0] == 1:        
-            print(f"SCORE: State 1 - Waiting for game start, IdleCounter={nGameIdleCounter}")
+        if _game_state == STATE_WAITING:        
+            print(f"SCORE: State WAITING - Waiting for game start, IdleCounter={nGameIdleCounter}")
             
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
@@ -551,41 +369,55 @@ def CheckForNewScores(nState=[0]):
                 nGameIdleCounter = 0
                 print("SCORE: game list 10 minute expire")
 
-            ball_in_play = _get_ball_in_play()
-            print(f"SCORE: Ball in play = {ball_in_play}")
+            ballInPlay = DataMapper.get_ball_in_play()
+            print(f"SCORE: Ball in play = {ballInPlay}")
 
-            if ball_in_play != 0:            
-                nState[0] = 2
-                # Game Started!
+            if ballInPlay != 0:            
+                _game_state = STATE_PLAYING  # Game Started!
+                
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                     print("SCORE: Removing machine scores (enter_initials_on_game=True)")
-                    _remove_machine_scores()
+                    highScores = [["aaa", 900], ["aaa", 800], ["aaa", 700], ["aaa", 600]]
+                    DataMapper.write_high_scores(highScores)
+                    
                 S.gameCounter = (S.gameCounter + 1) % 100
                 print(f"SCORE: New game counter = {S.gameCounter}")
 
         # waiting for game to end
-        elif nState[0] == 2:
-            print("SCORE: State 2 - Game in progress, waiting for end")         
+        elif _game_state == STATE_PLAYING:
+            print("SCORE: State PLAYING - Game in progress, waiting for end")         
 
-            ball_in_play = _get_ball_in_play()
-            print(f"SCORE: Ball in play = {ball_in_play}")
-            if ball_in_play == 0:       
-                nState[0] = 1       
+            ballInPlay = DataMapper.get_ball_in_play()
+            print(f"SCORE: Ball in play = {ballInPlay}")
+            if ballInPlay == 0:       
+                _game_state = STATE_WAITING       
                 if S.gdata["HighScores"]["Type"] in range(20, 29):
                     if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:                    
-                        scores = _read_machine_score(UseHighScores=True)
+                        scores = DataMapper.read_high_scores()
+                        #if not isinstance(scores, list):
+                        #    log.log(f"SCORE: read_high_scores returned invalid type: {type(scores)}")
+                        #    scores = [["", 0], ["", 0], ["", 0], ["", 0]]
                         high_score_count = 0
                         high_score_count = sum(1 for score in scores if score[1] > 10000)                   
                         print(f"SCORE: High scores entered at game end: {high_score_count}")                                           
+
                         log.log("SCORE: end, use high scores")
-                        scores = _read_machine_score(UseHighScores=True)                                 
+                                                     
 
                     else:
-                        # in play scores
+                        # read in play scores after game over to populate claim list ?  ?
                         log.log("SCORE: end, use in-play scores")
-                        scores = _read_machine_score(UseHighScores=False)
+                        in_play_data = DataMapper.get_in_play_data()
+                        
+                        # Extract scores list from the returned dictionary
+                        if isinstance(in_play_data, dict) and "Scores" in in_play_data:
+                            # Convert from [score1, score2, score3, score4] to [["", score1], ["", score2], ...]
+                            scores = [["", score] for score in in_play_data["Scores"]]
+                        else:
+                            log.log(f"SCORE: get_in_play_data returned invalid type: {type(in_play_data)}")
+                            scores = [["", 0], ["", 0], ["", 0], ["", 0]]
                         print(f"SCORE: In-play scores: {scores}")
            
 
@@ -617,10 +449,22 @@ def CheckForNewScores(nState=[0]):
                     # put high scores back in machine memory
                     if  DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:        
                         print("SCORE: Placing high scores back in machine")
-                        place_machine_scores()
+
+                        # Pull top 6 scores from leaderboard
+                        machine_scores = []
+                        for i in range(min(6, len(top_scores))):
+                            initials = top_scores[i].get("initials", "")
+                            score = top_scores[i].get("score", 0)
+                            machine_scores.append([initials, score])
+                        
+                        # Pad to 6 entries if needed
+                        while len(machine_scores) < 6:
+                            machine_scores.append(["", 0])
+                        
+                        # Write to machine
+                        DataMapper.write_high_scores(machine_scores)
                     
                     print("SCORE: Cleanup complete - returning to state 1")
-
 
     else:
         print(f"SCORE: BallInPlay Type={S.gdata['BallInPlay']['Type']} - not monitoring game state")
