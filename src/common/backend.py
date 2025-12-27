@@ -865,7 +865,7 @@ def app_version(request):
 
 @add_route("/api/uid")
 def app_uid(request):
-    from micropython import unique_id
+    from machine import unique_id
 
     return {"uid": hexlify(unique_id()).decode()}
 
