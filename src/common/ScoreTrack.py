@@ -53,13 +53,8 @@ def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
 
-    # condition the initials - more important than one would think.  machines freak if non printables get in
-    initials = initials.upper()
-    i_intials = ""
-    for c in initials:
-        if "A" <= c <= "Z":
-            i_intials += c
-    initials = (i_intials + "   ")[:3]
+    # Sanitize initials: 3 uppercase letters only
+    initials = ("".join(c for c in initials.upper() if c.isalpha()) + "   ")[:3]
 
     for game_index, game in enumerate(recent_scores):
         if game[player_index + 1][1] == score and game[player_index + 1][0] == "":
@@ -310,6 +305,10 @@ def update_leaderboard(new_entry):
         log.log("SCORE: Bad Initials")
         return False
 
+    # Sanitize initials: 3 uppercase letters only
+    initials = new_entry.get("initials", "")
+    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()))[:3]
+
     if "date" not in new_entry:
         year, month, day, _, _, _, _, _ = rtc.datetime()
         new_entry["date"] = f"{month:02d}/{day:02d}/{year}"
@@ -317,10 +316,11 @@ def update_leaderboard(new_entry):
     log.log(f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
-    # add player name to new_entry if there is an initals match
-    new_entry["full_name"], ind = find_player_by_initials(new_entry)
-    if new_entry["full_name"] is None:
-        new_entry["full_name"] = ""
+    # add player name to new_entry if there is an initials match 
+    if not new_entry.get("full_name"):  # could come in with name from score load on admin page
+        new_entry["full_name"], _ = find_player_by_initials(new_entry)
+        if new_entry["full_name"] is None:
+            new_entry["full_name"] = ""
 
     # Load scores
     top_scores = [DataStore.read_record("leaders", i) for i in range(DataStore.memory_map["leaders"]["count"])]

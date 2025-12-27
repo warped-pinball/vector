@@ -8,10 +8,6 @@ project: 'Bug Tracker'
 
 ---
 
-**What product is this bug related to?**
-1. Origin (Multi-machine web server)
-2. Vector (Pinball Wifi Module)
-
 **Describe the bug**
 A clear and concise description of what the bug is.
 
@@ -33,7 +29,7 @@ If applicable, add screenshots to help explain your problem.
  - ROM Version: [e.g. L-1]
  - OS: [e.g. iOS]
  - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Version [e.g. 1.9.0]
 
 **Additional context**
 Add any other context about the problem here.
