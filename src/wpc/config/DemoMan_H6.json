@@ -73,7 +73,7 @@
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 5913,
-        "PlayerUp": 952,
+        "Playerup": 952,
         "ScoreAdr": 5792,
         "ScoreBytes": 6,
         "ScoreSpacing": 7
