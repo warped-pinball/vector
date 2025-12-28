@@ -181,10 +181,7 @@ def write_high_scores(highScores):
         Returns:
             bool: True if successful, False otherwise
     """
-
-
-    print("WRTIE HIGH SCORES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
+    
     # Validate HighScores configuration exists
     if "HighScores" not in S.gdata:    
         log.log("HighScores configuration missing")
@@ -361,16 +358,9 @@ def get_in_play_data():
     if "InPlay" not in S.gdata or S.gdata["InPlay"].get("Type", 0) not in range(20, 30):
         return data
 
-
-    print("INPLAYYYYYYYYYYYYYYYYYYYyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
-
-    data["BallInPlay"] = get_ball_in_play()    
-    
-    if data["BallInPlay"] == 0:
-        return data
-    
-    # Game is active
-    data["GameActive"] = True
+    data["BallInPlay"] = get_ball_in_play()        
+    if data["BallInPlay"] != 0:
+        data["GameActive"] = True
     
     # Get player up
     try:

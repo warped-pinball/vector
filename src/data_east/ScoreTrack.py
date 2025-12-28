@@ -244,31 +244,7 @@ def check_for_machine_high_scores(report=True):
     print(" Check for machine high scores - - - - - - - - -- not - placeholder")
 
 
-    """
-    scores = _read_machine_score(UseHighScores=True)
-    year, month, day, _, _, _, _, _ = rtc.datetime()
-    for idx in range(6):
-        if scores[idx][1] > 9000:  # ignore placed fake scores
-            new_score = {
-                "initials": scores[idx][0],
-                "full_name": "",
-                "score": scores[idx][1],
-                "date": f"{month:02d}/{day:02d}/{year}",
-                "game_count": S.gameCounter
-            }
-            
-            # Check if we should claim this score
-            should_claim = (
-                idx >= len(top_scores) or
-                scores[idx][1] != top_scores[idx]["score"] or
-                scores[idx][0] != top_scores[idx]["initials"]
-            )
-            
-            if should_claim:
-                if report:
-                    print(f"SCORE: place game score into vector {new_score}")
-                claim_score(new_score["initials"], 0, new_score["score"])
-    """
+
 
 def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
@@ -328,7 +304,6 @@ def CheckForNewScores():
     global nGameIdleCounter, GameEndCount, _game_state
 
     print(f"SCORE: CheckForNewScores - State={_game_state}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
-    #DataMapper.read_high_scores()
 
     # power up init state - only runs once
     if _game_state == STATE_INIT:
@@ -396,15 +371,12 @@ def CheckForNewScores():
                 if S.gdata["HighScores"]["Type"] in range(20, 29):
                     if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:                    
                         scores = DataMapper.read_high_scores()
-                        #if not isinstance(scores, list):
-                        #    log.log(f"SCORE: read_high_scores returned invalid type: {type(scores)}")
-                        #    scores = [["", 0], ["", 0], ["", 0], ["", 0]]
+                        # Convert any empty initials to empty strings
+                        scores = [[("" if init == "@@@" else init), score] for init, score in scores]
+                        
                         high_score_count = 0
                         high_score_count = sum(1 for score in scores if score[1] > 10000)                   
-                        print(f"SCORE: High scores entered at game end: {high_score_count}")                                           
-
-                        log.log("SCORE: end, use high scores")
-                                                     
+                        print(f"SCORE: High scores entered at game end: {high_score_count}")
 
                     else:
                         # read in play scores after game over to populate claim list ?  ?
@@ -443,6 +415,7 @@ def CheckForNewScores():
 
                     # Set any placeholder scores less than 10000 to zero and no initials
                     game = [game[0]] + [("", 0) if score[1] < 10000 else score for score in game[1:]]
+
                     print(f"SCORE: Cleaned game scores: {game}")
                     _place_game_in_claim_list(game)
 
