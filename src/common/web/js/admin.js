@@ -160,25 +160,15 @@ async function loadSwitchDiagnostics() {
 
     const payload = await response.json();
 
-    const supported =
-      (typeof payload === "object" && payload?.supported !== undefined
-        ? Boolean(payload.supported)
-        : true) ?? true;
-
     const switches = Array.isArray(payload)
       ? payload
       : payload?.switches ?? [];
 
-    if (!supported) {
+    if (!Array.isArray(switches) || switches.length === 0) {
       const unsupportedMessage =
         "Switch diagnostics are not yet supported for this title.";
       grid.textContent = unsupportedMessage;
       infoContent.textContent = unsupportedMessage;
-      return;
-    }
-
-    if (!Array.isArray(switches) || switches.length === 0) {
-      grid.textContent = "No switch diagnostics available.";
       return;
     }
 

@@ -965,11 +965,6 @@ def app_get_active_formats(request):
 # get switch diagnostics
 @add_route("/api/diagnostics/switches")
 def app_get_switch_diagnostics(request):
-    supported = S.game_status.get("switch_diagnostics_supported", True)
-
-    if not supported:
-        return {"supported": False, "switches": []}
-
     switches = [
         (1, 1, 100, "Left Flipper"),
         (1, 2, 100, "Right Flipper"),
@@ -993,18 +988,15 @@ def app_get_switch_diagnostics(request):
         (5, 8, 100),
     ]
 
-    return {
-        "supported": True,
-        "switches": [
-            {
-                "row": switch[0],
-                "col": switch[1],
-                "val": switch[2],
-                "label": switch[3] if len(switch) > 3 else "",
-            }
-            for switch in switches
-        ],
-    }
+    return [
+        {
+            "row": switch[0],
+            "col": switch[1],
+            "val": switch[2],
+            "label": switch[3] if len(switch) > 3 else "",
+        }
+        for switch in switches
+    ]
 
 
 #
