@@ -75,6 +75,41 @@
   input[type="radio"]:disabled {
     opacity: 0;
   }
+
+  .switch-grid-container {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    align-items: center;
+  }
+
+  .switch-grid {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .switch-cell {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid #1f2937;
+  }
+
+  .switch-cell.green {
+    background-color: #16a34a;
+  }
+
+  .switch-cell.yellow {
+    background-color: #eab308;
+  }
+
+  .switch-cell.red {
+    background-color: #dc2626;
+  }
+
+  .switch-cell.missing {
+    background-color: #9ca3af;
+  }
 </style>
 
 <div style="text-align: left">
@@ -428,6 +463,17 @@
       Download Memory Snapshot
     </button>
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
+  </section>
+  <section>
+    <h3>Switch Diagnostics</h3>
+    <p>
+      Visualize the status of your switch matrix. Hover over a square to see the
+      row, column, and label when available.
+    </p>
+    <div class="switch-grid-container">
+      <div>Rows ↓<br />Cols →</div>
+      <div id="switch-diagnostics-grid" class="switch-grid"></div>
+    </div>
   </section>
   <section>
     <h2>Help</h2>

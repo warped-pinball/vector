@@ -79,6 +79,78 @@ async function getShowIP() {
   });
 }
 
+async function loadSwitchDiagnostics() {
+  const grid = await window.waitForElementById("switch-diagnostics-grid");
+  grid.textContent = "Loading switch diagnostics...";
+
+  try {
+    const response = await window.smartFetch(
+      "/api/diagnostics/switches",
+      null,
+      false,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Switch diagnostics request failed: ${response.status}`);
+    }
+
+    const switches = await response.json();
+
+    if (!Array.isArray(switches) || switches.length === 0) {
+      grid.textContent = "No switch diagnostics available.";
+      return;
+    }
+
+    const switchMap = new Map();
+    let maxRow = 0;
+    let maxCol = 0;
+
+    switches.forEach((entry) => {
+      if (!entry || entry.row == null || entry.col == null) return;
+      switchMap.set(`${entry.row}-${entry.col}`, entry);
+      maxRow = Math.max(maxRow, entry.row);
+      maxCol = Math.max(maxCol, entry.col);
+    });
+
+    grid.innerHTML = "";
+    grid.style.gridTemplateColumns = `repeat(${maxCol}, 24px)`;
+
+    for (let row = 1; row <= maxRow; row += 1) {
+      for (let col = 1; col <= maxCol; col += 1) {
+        const cell = document.createElement("div");
+        cell.classList.add("switch-cell");
+
+        const key = `${row}-${col}`;
+        const switchData = switchMap.get(key);
+
+        if (!switchData) {
+          cell.classList.add("missing");
+          cell.title = `Row ${row}, Column ${col}`;
+        } else {
+          const value = Number(switchData.val);
+          let statusClass = "green";
+
+          if (value === 0) {
+            statusClass = "red";
+          } else if (value < 50) {
+            statusClass = "yellow";
+          }
+
+          cell.classList.add(statusClass);
+
+          const labelText = switchData.label ? `: ${switchData.label}` : "";
+          cell.title = `Row ${row}, Column ${col}${labelText}`;
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load switch diagnostics", error);
+    grid.textContent = "Failed to load switch diagnostics.";
+  }
+}
+
 // Midnight Madness settings
 async function getMidnightMadness() {
   const response = await window.smartFetch(
@@ -147,6 +219,7 @@ if (typeof window !== "undefined") {
   getScoreClaimMethods();
   getShowIP();
   initMidnightMadness();
+  loadSwitchDiagnostics();
 
   //
   // Adjustment Profiles
