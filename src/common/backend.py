@@ -406,9 +406,6 @@ def app_game_configs_list(request):
     return list_game_configs()
 
 
-game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "GameTime": 213}
-
-
 @add_route("/api/game/status")
 def app_game_status(request):
     # TODO cache me
@@ -904,43 +901,94 @@ def app_getLogs(request):
 
 
 # list format options
+def get_available_formats():
+    return [
+        {"id": 0, "name": "Arcade", "Description": "Manufacturer standard game play", "enable_function": None},
+        {"id": 1, "name": "Practice", "Description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
+        {
+            "id": 2,
+            "name": "Golf",
+            "Description": "Hit a specific target in the least number of balls",
+            "options": {
+                "Target": {
+                    "type": "select",
+                    "options": {
+                        "11": "Crazy Bobs",
+                        "12": "Spinner",
+                        "13": "Left Outlane",
+                    },
+                    "default": "11",
+                }
+            },
+            "enable_function": None,
+        },
+    ]
+
+
 # 0 will always be default
 @add_route("/api/formats/available")
 def app_list_available_formats(request):
-    return {
-        "formats": [
-            {"id": 0, "name": "Arcade", "Description": "Your game plays as manufacturer standard"},
-            {"id": 1, "name": "Practice", "Description": "Practice mode with unlimited balls and no score tracking"},
-            {
-                "id": 2,
-                "name": "Golf",
-                "Description": "Hit a specific target in the least number of balls",
-                "options": {
-                    "Target": {
-                        "type": "select",
-                        "options": {
-                            "11": "Crazy Bobs",
-                            "12": "Spinner",
-                            "13": "Left Outlane",
-                        },
-                        "default": "11",
-                    }
-                },
-            },
-        ]
-    }
+    return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
 
 
 # set current format
 @add_route("/api/formats/set", auth=True)
 def app_set_current_format(request):
-    pass
+    data = request.data
+    format_id = data["format_id"]
+    available_formats = get_available_formats()
+    format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
+    if not format_dict:
+        return {"error": f"Invalid format id: {format_id}"}, 400
+
+    # Call enable function if it exists
+    enable_function = format_dict.get("enable_function", None)
+    if not enable_function:
+        raise NotImplementedError("Format enable function not implemented yet")
+
+    # Enable the format
+    enable_function(data.get("options", {}))
+
+    S.game_status["format"] = {"format_id": format_id}
+    if "options" in data:
+        S.game_status["format"]["options"] = data["options"]
+
+    return
 
 
-# get current format
+# get active format(s)
+@add_route("/api/formats/active")
+def app_get_active_formats(request):
+    return S.game_status.get("format", {"format_id": 0})
 
 
 # get switch diagnostics
+@add_route("/api/diagnostics/switches")
+def app_get_switch_diagnostics(request):
+    switches = [
+        (1, 1, 100),
+        (1, 2, 100),
+        (1, 3, 90),
+        (1, 4, 100),
+        (1, 5, 80),
+        (1, 6, 100),
+        (1, 7, 100),
+        (2, 2, 100),
+        (2, 4, 50),
+        (2, 5, 100),
+        (2, 8, 100),
+        (3, 1, 10),
+        (3, 3, 100),
+        (3, 6, 100),
+        (4, 2, 0),
+        (4, 5, 100),
+        (4, 7, 100),
+        (5, 4, 100),
+        (5, 6, 5),
+        (5, 8, 100),
+    ]
+
+    return [{"row": switch[0], "col": switch[1], "val": switch[2]} for switch in switches]
 
 
 #
