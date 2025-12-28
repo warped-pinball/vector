@@ -82,11 +82,14 @@ async function getShowIP() {
 async function loadSwitchDiagnostics() {
   const grid = await window.waitForElementById("switch-diagnostics-grid");
   grid.textContent = "Loading switch diagnostics...";
+  const infoPanel = await window.waitForElementById("switch-info-panel");
   const infoContent = await window.waitForElementById("switch-info-content");
   const refreshButton = await window.waitForElementById(
     "switch-diagnostics-refresh",
   );
   const cellSizePx = 40;
+
+  if (infoPanel) infoPanel.classList.remove("hide");
 
   if (refreshButton) refreshButton.disabled = true;
 
@@ -168,7 +171,7 @@ async function loadSwitchDiagnostics() {
       const unsupportedMessage =
         "Switch diagnostics are not yet supported for this title.";
       grid.textContent = unsupportedMessage;
-      infoContent.textContent = unsupportedMessage;
+      if (infoPanel) infoPanel.classList.add("hide");
       return;
     }
 
