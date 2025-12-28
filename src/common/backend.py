@@ -899,6 +899,51 @@ def app_getLogs(request):
 
 
 #
+# Special Formats
+#
+
+
+# list format options
+# 0 will always be default
+@add_route("/api/formats/available")
+def app_list_available_formats(request):
+    return {
+        "formats": [
+            {"id": 0, "name": "Arcade", "Description": "Your game plays as manufacturer standard"},
+            {"id": 1, "name": "Practice", "Description": "Practice mode with unlimited balls and no score tracking"},
+            {
+                "id": 2,
+                "name": "Golf",
+                "Description": "Hit a specific target in the least number of balls",
+                "options": {
+                    "Target": {
+                        "type": "select",
+                        "options": {
+                            "11": "Crazy Bobs",
+                            "12": "Spinner",
+                            "13": "Left Outlane",
+                        },
+                        "default": "11",
+                    }
+                },
+            },
+        ]
+    }
+
+
+# set current format
+@add_route("/api/formats/set", auth=True)
+def app_set_current_format(request):
+    pass
+
+
+# get current format
+
+
+# get switch diagnostics
+
+
+#
 # Updates
 #
 @add_route("/api/update/check", cool_down_seconds=10)
