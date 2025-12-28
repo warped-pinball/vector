@@ -85,9 +85,14 @@ async function loadSwitchDiagnostics() {
   const infoContent = await window.waitForElementById("switch-info-content");
   const cellSizePx = 40;
 
+  const tooltip = document.createElement("div");
+  tooltip.id = "switch-tooltip";
+  tooltip.className = "switch-tooltip";
+  document.body.appendChild(tooltip);
+
   const renderInfo = (details) => {
-    if (!details) {
-      infoContent.textContent = "Click a switch to see its details.";
+    if (!details || !details.present) {
+      infoContent.textContent = "Click a switch with data to see its details.";
       return;
     }
 
@@ -96,9 +101,7 @@ async function loadSwitchDiagnostics() {
       `Column: ${details.col}`,
     ];
 
-    if (details.present) {
-      lines.push(`Value: ${details.value}`);
-    }
+    lines.push(`Value: ${details.value}`);
 
     if (details.label) {
       lines.push(`Label: ${details.label}`);
@@ -110,6 +113,31 @@ async function loadSwitchDiagnostics() {
   };
 
   renderInfo();
+
+  const hideTooltip = () => {
+    tooltip.style.display = "none";
+  };
+
+  const showTooltip = (details, event) => {
+    if (!details.present) return;
+
+    const lines = [`Row: ${details.row}`, `Column: ${details.col}`];
+    lines.push(`Value: ${details.value}`);
+
+    if (details.label) {
+      lines.push(`Label: ${details.label}`);
+    }
+
+    tooltip.innerHTML = lines
+      .map((line) => `<div class="switch-info-line">${line}</div>`)
+      .join("");
+
+    const offset = 12;
+    const { clientX, clientY } = event;
+    tooltip.style.left = `${clientX + offset}px`;
+    tooltip.style.top = `${clientY + offset}px`;
+    tooltip.style.display = "block";
+  };
 
   try {
     const response = await window.smartFetch(
@@ -168,22 +196,24 @@ async function loadSwitchDiagnostics() {
       for (let col = 1; col <= maxCol; col += 1) {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
-        cell.textContent = `${row}${col}`;
 
         const key = `${row}-${col}`;
         const switchData = switchMap.get(key);
+        const hasValue =
+          switchData && switchData.val !== undefined && switchData.val !== null;
 
         const details = {
           row,
           col,
-          present: Boolean(switchData),
-          value: switchData ? Number(switchData.val) : null,
+          present: Boolean(hasValue),
+          value: hasValue ? Number(switchData.val) : null,
           label: switchData?.label ?? "",
         };
 
-        if (!switchData) {
+        if (!hasValue) {
           cell.classList.add("missing");
         } else {
+          cell.textContent = `${row}${col}`;
           const value = Number(switchData.val);
           let statusClass = "green";
 
@@ -196,13 +226,29 @@ async function loadSwitchDiagnostics() {
           cell.classList.add(statusClass);
         }
 
-        cell.addEventListener("mouseenter", () => {
-          renderInfo(details);
+        cell.addEventListener("mouseenter", (event) => {
+          showTooltip(details, event);
         });
 
+        cell.addEventListener("mousemove", (event) => {
+          if (tooltip.style.display === "block") {
+            showTooltip(details, event);
+          }
+        });
+
+        cell.addEventListener("mouseleave", hideTooltip);
+
         cell.addEventListener("click", () => {
+          hideTooltip();
+
           if (selectedCell) {
             selectedCell.classList.remove("selected");
+          }
+
+          if (!details.present) {
+            renderInfo();
+            selectedCell = null;
+            return;
           }
 
           selectedCell = cell;

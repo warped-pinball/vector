@@ -86,8 +86,6 @@
   .switch-grid-container {
     display: inline-block;
     padding: 0.5rem;
-    border: 1px solid #1f2937;
-    border-radius: 8px;
     background: transparent;
   }
 
@@ -114,7 +112,6 @@
     font-weight: 600;
     border-radius: 8px;
     border: none;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     color: #f9fafb;
   }
 
@@ -154,6 +151,21 @@
   .switch-info-line {
     margin: 0.25rem 0;
     font-weight: 600;
+  }
+
+  .switch-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(31, 41, 55, 0.9);
+    color: #f9fafb;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.25rem;
+    pointer-events: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    display: none;
   }
 </style>
 
