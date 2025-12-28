@@ -966,21 +966,21 @@ def app_get_active_formats(request):
 @add_route("/api/diagnostics/switches")
 def app_get_switch_diagnostics(request):
     switches = [
-        (1, 1, 100),
-        (1, 2, 100),
+        (1, 1, 100, "Left Flipper"),
+        (1, 2, 100, "Right Flipper"),
         (1, 3, 90),
         (1, 4, 100),
         (1, 5, 80),
         (1, 6, 100),
-        (1, 7, 100),
+        (1, 7, 100, "Start Button"),
         (2, 2, 100),
         (2, 4, 50),
         (2, 5, 100),
         (2, 8, 100),
         (3, 1, 10),
-        (3, 3, 100),
+        (3, 3, 100, "Shooter Lane"),
         (3, 6, 100),
-        (4, 2, 0),
+        (4, 2, 0, "Tilt"),
         (4, 5, 100),
         (4, 7, 100),
         (5, 4, 100),
@@ -988,7 +988,15 @@ def app_get_switch_diagnostics(request):
         (5, 8, 100),
     ]
 
-    return [{"row": switch[0], "col": switch[1], "val": switch[2]} for switch in switches]
+    return [
+        {
+            "row": switch[0],
+            "col": switch[1],
+            "val": switch[2],
+            "label": switch[3] if len(switch) > 3 else "",
+        }
+        for switch in switches
+    ]
 
 
 #

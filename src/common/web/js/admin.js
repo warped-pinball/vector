@@ -82,6 +82,7 @@ async function getShowIP() {
 async function loadSwitchDiagnostics() {
   const grid = await window.waitForElementById("switch-diagnostics-grid");
   grid.textContent = "Loading switch diagnostics...";
+  const cellSizePx = 32;
 
   try {
     const response = await window.smartFetch(
@@ -113,19 +114,39 @@ async function loadSwitchDiagnostics() {
     });
 
     grid.innerHTML = "";
-    grid.style.gridTemplateColumns = `repeat(${maxCol}, 24px)`;
+    grid.style.gridTemplateColumns = `auto repeat(${maxCol}, ${cellSizePx}px)`;
+    grid.style.gridTemplateRows = `auto repeat(${maxRow}, ${cellSizePx}px)`;
+
+    // Top-left spacer
+    const spacer = document.createElement("div");
+    spacer.classList.add("switch-header");
+    grid.appendChild(spacer);
+
+    // Column headers
+    for (let col = 1; col <= maxCol; col += 1) {
+      const header = document.createElement("div");
+      header.classList.add("switch-header");
+      header.textContent = col;
+      grid.appendChild(header);
+    }
 
     for (let row = 1; row <= maxRow; row += 1) {
+      const rowHeader = document.createElement("div");
+      rowHeader.classList.add("switch-header");
+      rowHeader.textContent = row;
+      grid.appendChild(rowHeader);
+
       for (let col = 1; col <= maxCol; col += 1) {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
+        cell.textContent = `${row}${col}`;
 
         const key = `${row}-${col}`;
         const switchData = switchMap.get(key);
 
         if (!switchData) {
           cell.classList.add("missing");
-          cell.title = `Row ${row}, Column ${col}`;
+          cell.setAttribute("data-tooltip", `Row ${row}, Column ${col}`);
         } else {
           const value = Number(switchData.val);
           let statusClass = "green";
@@ -138,8 +159,11 @@ async function loadSwitchDiagnostics() {
 
           cell.classList.add(statusClass);
 
-          const labelText = switchData.label ? `: ${switchData.label}` : "";
-          cell.title = `Row ${row}, Column ${col}${labelText}`;
+          const labelText = switchData.label ? ` (${switchData.label})` : "";
+          cell.setAttribute(
+            "data-tooltip",
+            `Row ${row}, Column ${col}${labelText}`,
+          );
         }
 
         grid.appendChild(cell);
