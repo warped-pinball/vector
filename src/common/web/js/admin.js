@@ -82,7 +82,34 @@ async function getShowIP() {
 async function loadSwitchDiagnostics() {
   const grid = await window.waitForElementById("switch-diagnostics-grid");
   grid.textContent = "Loading switch diagnostics...";
-  const cellSizePx = 32;
+  const infoContent = await window.waitForElementById("switch-info-content");
+  const cellSizePx = 40;
+
+  const renderInfo = (details) => {
+    if (!details) {
+      infoContent.textContent = "Click a switch to see its details.";
+      return;
+    }
+
+    const lines = [
+      `Row: ${details.row}`,
+      `Column: ${details.col}`,
+    ];
+
+    if (details.present) {
+      lines.push(`Value: ${details.value}`);
+    }
+
+    if (details.label) {
+      lines.push(`Label: ${details.label}`);
+    }
+
+    infoContent.innerHTML = lines
+      .map((line) => `<div class="switch-info-line">${line}</div>`)
+      .join("\n");
+  };
+
+  renderInfo();
 
   try {
     const response = await window.smartFetch(
@@ -130,6 +157,8 @@ async function loadSwitchDiagnostics() {
       grid.appendChild(header);
     }
 
+    let selectedCell = null;
+
     for (let row = 1; row <= maxRow; row += 1) {
       const rowHeader = document.createElement("div");
       rowHeader.classList.add("switch-header");
@@ -144,9 +173,16 @@ async function loadSwitchDiagnostics() {
         const key = `${row}-${col}`;
         const switchData = switchMap.get(key);
 
+        const details = {
+          row,
+          col,
+          present: Boolean(switchData),
+          value: switchData ? Number(switchData.val) : null,
+          label: switchData?.label ?? "",
+        };
+
         if (!switchData) {
           cell.classList.add("missing");
-          cell.setAttribute("data-tooltip", `Row ${row}, Column ${col}`);
         } else {
           const value = Number(switchData.val);
           let statusClass = "green";
@@ -158,13 +194,21 @@ async function loadSwitchDiagnostics() {
           }
 
           cell.classList.add(statusClass);
-
-          const labelText = switchData.label ? ` (${switchData.label})` : "";
-          cell.setAttribute(
-            "data-tooltip",
-            `Row ${row}, Column ${col}${labelText}`,
-          );
         }
+
+        cell.addEventListener("mouseenter", () => {
+          renderInfo(details);
+        });
+
+        cell.addEventListener("click", () => {
+          if (selectedCell) {
+            selectedCell.classList.remove("selected");
+          }
+
+          selectedCell = cell;
+          cell.classList.add("selected");
+          renderInfo(details);
+        });
 
         grid.appendChild(cell);
       }

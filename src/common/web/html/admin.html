@@ -76,12 +76,19 @@
     opacity: 0;
   }
 
+  .switch-diagnostics {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
   .switch-grid-container {
     display: inline-block;
     padding: 0.5rem;
     border: 1px solid #1f2937;
     border-radius: 8px;
-    background: #0b1525;
+    background: transparent;
   }
 
   .switch-grid {
@@ -98,38 +105,17 @@
 
   .switch-cell,
   .switch-header {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    border-radius: 6px;
-    border: 1px solid #1f2937;
-    position: relative;
+    border-radius: 8px;
+    border: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     color: #f9fafb;
-  }
-
-  .switch-cell::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 110%;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    background: #111827;
-    color: #f3f4f6;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #1f2937;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .switch-cell:hover::after {
-    opacity: 1;
   }
 
   .switch-cell.green {
@@ -146,6 +132,28 @@
 
   .switch-cell.missing {
     background-color: #9ca3af;
+  }
+
+  .switch-cell.selected {
+    box-shadow: 0 0 0 2px #60a5fa, inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .switch-info-panel {
+    min-width: 220px;
+    padding: 0.75rem;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    background: transparent;
+    color: #e5e7eb;
+  }
+
+  .switch-info-panel h4 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .switch-info-line {
+    margin: 0.25rem 0;
+    font-weight: 600;
   }
 </style>
 
@@ -504,11 +512,19 @@
   <section>
     <h3>Switch Diagnostics</h3>
     <p>
-      Visualize the status of your switch matrix. Hover over a square to see the
-      row, column, and label when available.
+      Visualize the status of your switch matrix. Click any switch to view its
+      details.
     </p>
-    <div class="switch-grid-container">
-      <div id="switch-diagnostics-grid" class="switch-grid"></div>
+    <div class="switch-diagnostics">
+      <div class="switch-grid-container">
+        <div id="switch-diagnostics-grid" class="switch-grid"></div>
+      </div>
+      <div class="switch-info-panel">
+        <h4>Switch Info</h4>
+        <div id="switch-info-content" class="switch-info-content">
+          Click a switch to see its details.
+        </div>
+      </div>
     </div>
   </section>
   <section>
