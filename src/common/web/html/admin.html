@@ -524,9 +524,13 @@
   <section>
     <h3>Switch Diagnostics</h3>
     <p>
-      Visualize the status of your switch matrix. Click any switch to view its
-      details.
+      Check the health of your switch matrix. Each switch is marked
+      green/yellow/red based on how many points have been scored since the last
+      time it was closed.
     </p>
+    <button id="switch-diagnostics-refresh" class="secondary">
+      Refresh
+    </button>
     <div class="switch-diagnostics">
       <div class="switch-grid-container">
         <div id="switch-diagnostics-grid" class="switch-grid"></div>

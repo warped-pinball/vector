@@ -83,7 +83,15 @@ async function loadSwitchDiagnostics() {
   const grid = await window.waitForElementById("switch-diagnostics-grid");
   grid.textContent = "Loading switch diagnostics...";
   const infoContent = await window.waitForElementById("switch-info-content");
+  const refreshButton = await window.waitForElementById(
+    "switch-diagnostics-refresh",
+  );
   const cellSizePx = 40;
+
+  if (refreshButton) refreshButton.disabled = true;
+
+  const existingTooltip = document.getElementById("switch-tooltip");
+  if (existingTooltip) existingTooltip.remove();
 
   const tooltip = document.createElement("div");
   tooltip.id = "switch-tooltip";
@@ -150,7 +158,24 @@ async function loadSwitchDiagnostics() {
       throw new Error(`Switch diagnostics request failed: ${response.status}`);
     }
 
-    const switches = await response.json();
+    const payload = await response.json();
+
+    const supported =
+      (typeof payload === "object" && payload?.supported !== undefined
+        ? Boolean(payload.supported)
+        : true) ?? true;
+
+    const switches = Array.isArray(payload)
+      ? payload
+      : payload?.switches ?? [];
+
+    if (!supported) {
+      const unsupportedMessage =
+        "Switch diagnostics are not yet supported for this title.";
+      grid.textContent = unsupportedMessage;
+      infoContent.textContent = unsupportedMessage;
+      return;
+    }
 
     if (!Array.isArray(switches) || switches.length === 0) {
       grid.textContent = "No switch diagnostics available.";
@@ -262,6 +287,8 @@ async function loadSwitchDiagnostics() {
   } catch (error) {
     console.error("Failed to load switch diagnostics", error);
     grid.textContent = "Failed to load switch diagnostics.";
+  } finally {
+    if (refreshButton) refreshButton.disabled = false;
   }
 }
 
@@ -334,6 +361,15 @@ if (typeof window !== "undefined") {
   getShowIP();
   initMidnightMadness();
   loadSwitchDiagnostics();
+
+  window
+    .waitForElementById("switch-diagnostics-refresh")
+    .then((refreshButton) => {
+      refreshButton.addEventListener("click", () => {
+        loadSwitchDiagnostics();
+      });
+    })
+    .catch(() => {});
 
   //
   // Adjustment Profiles
