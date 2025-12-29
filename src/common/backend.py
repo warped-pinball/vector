@@ -910,7 +910,7 @@ def get_available_formats():
             "name": "Golf",
             "Description": "Hit a specific target in the least number of balls",
             "options": {
-                "Target": {
+                "target": {
                     "type": "select",
                     "options": {
                         "11": "Crazy Bobs",
