@@ -78,6 +78,8 @@ def _bytes_to_initials(initial_bytes):
 
 
 
+
+
 def read_high_scores():
     """
     Read and decode the high scores
@@ -91,6 +93,20 @@ def read_high_scores():
     if "HighScores" not in S.gdata:
         log.log("HighScores configuration missing")
         return highScores
+
+    def _decode_initials(initial_bytes):
+        """
+        Custom decode for initials: replace '@' with ' ', allow only ASCII 0x40-0x5A.
+        """
+        result = ""
+        for b in initial_bytes[:3]:
+            if b == 0x40:  # '@' becomes space
+                result += ' '
+            elif 0x41 <= b <= 0x5A:
+                result += chr(b)
+            else:
+                result += ' '
+        return result.strip()
 
     try:
         if S.gdata["HighScores"]["Type"] < 20:  
@@ -152,7 +168,7 @@ def read_high_scores():
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * S.gdata["HighScores"]["InitialSpacing"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]               
                 try:
-                    highScores[idx][0] = bytes(initials_bytes).decode("ascii")   #todo: normal ascii - need to use func some games have non standard symbols
+                    highScores[idx][0] = _decode_initials(initials_bytes)                    
                 except (UnicodeDecodeError, ValueError) as e:
                     log.log(f"Invalid initials data at index {idx}: {e}")
                     highScores[idx][0] = ""
@@ -458,7 +474,7 @@ def set_message(message):
         turns on custom message
         and fixes checksum
     """  
-    if S.gdata["DisplayMessage"].get("Type", 0) != 0:
+    if S.gdata["DisplayMessage"].get("Type", 0) > 19:
         if S.gdata["DisplayMessage"]["Type"]==20:
             # 12 x 3 lines
             s=format_text_lines(message,12,3)
@@ -491,6 +507,7 @@ def set_message(message):
             if S.gdata["DisplayMessage"]["Type"]==24:
                 offset += 3
 
+        #enable message display
         shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=1
 
         _set_adjustment_checksum()
@@ -652,13 +669,7 @@ def format_text_lines(text, line_length, num_lines):
 
 def validate_initials(initials):
     """
-    Validate and sanitize player initials.
-    
-    Args:
-        initials: str, proposed initials
-        
-    Returns:
-        str: Validated initials (uppercase, alphanumeric, 3 chars)
+        Validate and sanitize player initials.
     """
     # Ensure initials is a string
     if not isinstance(initials, str):
@@ -667,14 +678,22 @@ def validate_initials(initials):
     if not initials:
         return "   "
     
-    # Convert to uppercase and filter to alphanumeric
-    clean = "".join(c for c in initials.upper() if (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9'))
-    
+    # Replace '@' with space
+    initials = initials.replace('@', ' ')
+
+    # Allow any character from ASCII 0x40 to 0x5A, convert lowercase to uppercase
+    clean = ""
+    for c in initials:
+        code = ord(c)
+        # Convert lowercase to uppercase if in a-z
+        if 0x61 <= code <= 0x7A:
+            code = code - 0x20
+        if 0x40 <= code <= 0x5A:
+            clean += chr(code)
+        
     # Pad or truncate to 3 characters
-    if len(clean) < 3:
-        clean = clean + ' ' * (3 - len(clean))
-    else:
-        clean = clean[:3]
+    clean = clean + ' ' * 3
+    clean = clean[:3]
     
     return clean
 

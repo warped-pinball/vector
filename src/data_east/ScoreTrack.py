@@ -8,7 +8,6 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score availability
 """
-import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -16,12 +15,9 @@ log = logger_instance
 from machine import RTC
 import DataMapper
 
-
-
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
-
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -312,7 +308,7 @@ def CheckForNewScores():
         scores=DataMapper.read_high_scores()        
         print("Power up read machine scores - ",scores)
         for entry in scores:
-            # Convert from [initials, score] list format to dict format for update_leaderboard
+            # Convert from [initials, score] list format to dict format for update leaderboard
             if isinstance(entry, list) and len(entry) >= 2:
                 update_leaderboard({"initials": entry[0], "score": entry[1]})
             elif isinstance(entry, dict):
@@ -370,14 +366,24 @@ def CheckForNewScores():
                 _game_state = STATE_WAITING       
                 if S.gdata["HighScores"]["Type"] in range(20, 29):
                     if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:                    
-                        scores = DataMapper.read_high_scores()
-                        # Convert any empty initials to empty strings
-                        scores = [[("" if init == "@@@" else init), score] for init, score in scores]
-                        
-                        high_score_count = 0
-                        high_score_count = sum(1 for score in scores if score[1] > 10000)                   
-                        print(f"SCORE: High scores entered at game end: {high_score_count}")
+                        high_scores = DataMapper.read_high_scores()
+                        in_play_data = DataMapper.get_in_play_data()
+                        in_play_scores = in_play_data["Scores"]
+                        print("in play scores - - - - ", in_play_scores)
+                        scores = []
 
+                        # Build scores as a list of [initials, score] pairs
+                        for in_play_score in in_play_scores:
+                            initials = ""
+                            for high_score in high_scores:
+                                if in_play_score == high_score[1]:
+                                    initials = high_score[0]
+                                    break
+                            scores.append([initials, in_play_score])
+
+                        high_score_count = sum(1 for score in scores if score[1] > 10000)                   
+                        print(f"SCORE: High scores entered at game end: {high_score_count}",scores)
+                       
                     else:
                         # read in play scores after game over to populate claim list ?  ?
                         log.log("SCORE: end, use in-play scores")
