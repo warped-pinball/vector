@@ -935,6 +935,8 @@ def app_list_available_formats(request):
 @add_route("/api/formats/set", auth=True)
 def app_set_current_format(request):
     data = request.data
+    if not isinstance(data, dict) or "format_id" not in data:
+        return {"error": "Missing required field: format_id"}, 400
     format_id = data["format_id"]
     available_formats = get_available_formats()
     format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
