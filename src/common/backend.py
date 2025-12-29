@@ -903,12 +903,12 @@ def app_getLogs(request):
 # list format options
 def get_available_formats():
     return [
-        {"id": 0, "name": "Arcade", "Description": "Manufacturer standard game play", "enable_function": None},
-        {"id": 1, "name": "Practice", "Description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
+        {"id": 0, "name": "Arcade", "description": "Manufacturer standard game play", "enable_function": None},
+        {"id": 1, "name": "Practice", "description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
         {
             "id": 2,
             "name": "Golf",
-            "Description": "Hit a specific target in the least number of balls",
+            "description": "Hit a specific target in the least number of balls",
             "options": {
                 "target": {
                     "type": "select",
