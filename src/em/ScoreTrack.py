@@ -9,6 +9,7 @@ Score Track
 
 """
 import array
+import gc
 import os
 import resource
 import time
@@ -17,18 +18,18 @@ import displayMessage
 import sensorRead
 import SharedState as S
 import SPI_DataStore as DataStore
+import uctypes
 from logger import logger_instance
-from machine import RTC, Pin
+from machine import RTC, Timer
 from ScoreTrackFilter_viper import _viper_process
+from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 log = logger_instance
-import gc
 
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 
-from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -566,7 +567,7 @@ def processSensorData():
 
             if stateCount > PROCESS_START_PAUSE:
                 # run or store for learning
-                if S.run_learning_game == True:
+                if S.run_learning_game is True:
                     log.log("SCORE: Run learning game capture")
                     stateVar = PROCESS_STORE
                     alloc_game_history()
@@ -623,7 +624,6 @@ def processSensorData():
 # This is the sensor ram buffer area (8k), data placed by PIO - pulled out here
 # 0x0000 is invalid data and used to mark empty space.
 # Define the RAM as an array of 32-bit unsigned ints
-import uctypes
 
 ram_bytes = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
 bufferPointerIndex = 0
@@ -946,7 +946,7 @@ def replayStoredGame(quiet=False, carryDiag=False):
         if sample_count > 20:
             sample_count = 20
 
-        if quiet == False:
+        if quiet is False:
             print("send: val=", sensor_value, "  count=", sample_count)
 
         for _ in range(sample_count):
@@ -959,7 +959,7 @@ def replayStoredGame(quiet=False, carryDiag=False):
 
         """during replay measure carry counts....
                not included in processRisingEdge for run time speed   """
-        if carryDiag == True:
+        if carryDiag is True:
             for player in range(4):
                 for digit in range(1, 5):  # only digits with a previous digit
                     if sensorScores[player][digit] == 10:
@@ -984,10 +984,10 @@ def replayStoredGame(quiet=False, carryDiag=False):
                             sensorScores[i][3] %= 10
         # if there is a fifth reel let it overflow and keep counting
 
-        if quiet == False:
+        if quiet is False:
             print("SCORE REPLAY: ", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
-    if quiet == False:
+    if quiet is False:
         print("SCORE: replay DONE")
         print("SCORE REPLAY results -> ", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
@@ -1040,6 +1040,9 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_end_of_game(game)
 
 
 def _read_machine_score(HighScores):
@@ -1284,14 +1287,14 @@ def CheckForNewScores(nState=[0]):
     elif nState[0] == 2:  # waiting for game to end
         # process data in storeage...
 
-        if S.run_learning_game == False:
+        if S.run_learning_game is False:
             print("SCORE: game end check - play mode                 SCORE=", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
         else:
             print("SCORE: game end check. learn mode ", sensorRead.depthSensorRx(), gameHistoryIndex)
 
         # if sensorRead.gameActive() == 0:
-        if gameover == True:
+        if gameover is True:
             print("SCORE: Game End 76")
             S.game_status["game_active"] = False
 
@@ -1396,7 +1399,7 @@ def find_good_combinations_per_digit(results):
         rb = rec.get("resetbits")
         dm = rec.get("digit_matches")
         for d in range(len(dm)):
-            if dm[d] == True:
+            if dm[d] is True:
                 good[d].append((int(sb), int(rb)))
 
     # deduplicate and sort each list
@@ -1496,14 +1499,11 @@ def sort_out_carry_digits_and_apply():
 
 
 # timer stuff to keep the digit display going during learn mode only
-from machine import Timer
-
 display_timer = Timer(-1)
-from displayMessage import displayUpdate
 
 
 def dis(r):
-    displayUpdate()
+    displayMessage.displayUpdate()
 
 
 def startTimer():
@@ -1780,7 +1780,7 @@ if __name__ == "__main__":
 
     initialize()
 
-    if actualScoreFromLastGame != None:
+    if actualScoreFromLastGame is not None:
         add_actual_score_to_file(filename=None, actualScores=actualScoreFromLastGame)
 
     else:
@@ -1820,6 +1820,7 @@ if __name__ == "__main__":
             # Compute expected digit per digit index from targetScore
             expected = []
             for d in range(5):
+                # TODO target scores is underfined here - fix
                 expected.append((targetScores[0] // (10**d)) % 10)
 
             for digit_index in range(5):
@@ -1844,7 +1845,6 @@ if __name__ == "__main__":
             # print_score_reset_ranges(results, SCORE_RANGE, targetScore)
 
         results = []
-        import time
 
         learnModeProcessNow()
         printMasks()

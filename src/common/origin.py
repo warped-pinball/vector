@@ -77,6 +77,19 @@ def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
     _push_game_state_real(game_time_ms, _sim_scores, _sim_ball_in_play, game_active=_sim_ball_in_play > 0)
 
 
+def send_origin_message(message_type, data):
+    try:
+        from machine import unique_id
+        from ubinascii import hexlify
+
+        uid = hexlify(unique_id()).decode()
+
+        packet = dumps({"machine_id": uid, "type": message_type, "data": data})
+        send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
+    except Exception as e:
+        print("Error sending origin message:", e)
+
+
 def _push_game_state_real(game_time, scores, ball_in_play, game_active):
     global previous_state
     try:
@@ -91,14 +104,18 @@ def _push_game_state_real(game_time, scores, ball_in_play, game_active):
         if previous_state == state_tail:
             return
 
-        from machine import unique_id
-        from ubinascii import hexlify
+        send_origin_message(
+            "game_state",
+            {
+                "gameTimeMs": game_time if game_time is not None else 0,
+                "scores": scores,
+                "ball_in_play": ball_in_play,
+                "game_active": game_active,
+            },
+        )
 
-        uid = hexlify(unique_id()).decode()
-
-        packet = dumps({"machine_id": uid, "gameTimeMs": game_time if game_time is not None else 0, "scores": scores, "ball_in_play": ball_in_play, "game_active": game_active})
-        send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
         previous_state = state_tail
+
     except Exception as e:
         print("Error pushing game state (real):", e)
 
@@ -109,3 +126,12 @@ def push_game_state(game_time, scores, ball_in_play, game_active):
 
     # Normal behavior: uncomment the next line to use real game state.
     # return _push_game_state_real(game_time, scores, ball_in_play, game_active)
+
+
+def push_end_of_game(game):
+    # ensure list of tuplies with initial, and score
+    plays = [play for play in game["plays"] if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0]
+    if not plays:
+        return
+
+    send_origin_message("end_of_game", {"plays": plays})

@@ -74,6 +74,9 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_end_of_game(game)
 
 
 def _read_machine_score(HighScores):
@@ -316,7 +319,7 @@ def update_leaderboard(new_entry):
     log.log(f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
-    # add player name to new_entry if there is an initials match 
+    # add player name to new_entry if there is an initials match
     if not new_entry.get("full_name"):  # could come in with name from score load on admin page
         new_entry["full_name"], _ = find_player_by_initials(new_entry)
         if new_entry["full_name"] is None:
