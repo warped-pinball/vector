@@ -12,7 +12,7 @@
     },
 
     "BallInPlay": {
-        "Type": 0,
+        "Type": 1,
         "Address": 56,
         "Ball1": "0x01",
         "Ball2": "0x02",
