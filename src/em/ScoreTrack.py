@@ -567,7 +567,7 @@ def processSensorData():
 
             if stateCount > PROCESS_START_PAUSE:
                 # run or store for learning
-                if S.run_learning_game is True:
+                if S.run_learning_game:
                     log.log("SCORE: Run learning game capture")
                     stateVar = PROCESS_STORE
                     alloc_game_history()
@@ -946,7 +946,7 @@ def replayStoredGame(quiet=False, carryDiag=False):
         if sample_count > 20:
             sample_count = 20
 
-        if quiet is False:
+        if not quiet:
             print("send: val=", sensor_value, "  count=", sample_count)
 
         for _ in range(sample_count):
@@ -959,7 +959,7 @@ def replayStoredGame(quiet=False, carryDiag=False):
 
         """during replay measure carry counts....
                not included in processRisingEdge for run time speed   """
-        if carryDiag is True:
+        if carryDiag:
             for player in range(4):
                 for digit in range(1, 5):  # only digits with a previous digit
                     if sensorScores[player][digit] == 10:
@@ -984,10 +984,10 @@ def replayStoredGame(quiet=False, carryDiag=False):
                             sensorScores[i][3] %= 10
         # if there is a fifth reel let it overflow and keep counting
 
-        if quiet is False:
+        if not quiet:
             print("SCORE REPLAY: ", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
-    if quiet is False:
+    if not quiet:
         print("SCORE: replay DONE")
         print("SCORE REPLAY results -> ", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
@@ -1001,7 +1001,7 @@ def reset_scores():
 
 def get_claim_score_list():
     result = []
-    if DataStore.read_record("extras", 0)["claim_scores"] is True:
+    if DataStore.read_record("extras", 0)["claim_scores"]:
         for game in recent_scores[:4]:
             # if there are any unclaimed non zero scores, add them to the list
             if any(score[0] == "" and score[1] != 0 for score in game[1:]):
@@ -1287,14 +1287,14 @@ def CheckForNewScores(nState=[0]):
     elif nState[0] == 2:  # waiting for game to end
         # process data in storeage...
 
-        if S.run_learning_game is False:
+        if not S.run_learning_game:
             print("SCORE: game end check - play mode                 SCORE=", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
         else:
             print("SCORE: game end check. learn mode ", sensorRead.depthSensorRx(), gameHistoryIndex)
 
         # if sensorRead.gameActive() == 0:
-        if gameover is True:
+        if gameover:
             print("SCORE: Game End 76")
             S.game_status["game_active"] = False
 
@@ -1399,7 +1399,7 @@ def find_good_combinations_per_digit(results):
         rb = rec.get("resetbits")
         dm = rec.get("digit_matches")
         for d in range(len(dm)):
-            if dm[d] is True:
+            if dm[d]:
                 good[d].append((int(sb), int(rb)))
 
     # deduplicate and sort each list

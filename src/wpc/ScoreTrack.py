@@ -557,7 +557,7 @@ def CheckForNewScores(nState=[0]):
                 # Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
-                if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
+                if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                     _remove_machine_scores()
                 S.gameCounter = (S.gameCounter + 1) % 100
 
@@ -581,7 +581,7 @@ def CheckForNewScores(nState=[0]):
                 nState[0] = 4
 
             # game has ended but players can be putting in initials now, wait for scores to show up
-            if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
+            if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 # how many players? wait for all initials to go in and fake scores to be replaced
 
                 # grand champ score is maxed out so no player gets it
@@ -602,7 +602,7 @@ def CheckForNewScores(nState=[0]):
         elif nState[0] == 4:
             # game over - back to top state
             nState[0] = 1
-            if DataStore.read_record("extras", 0)["enter_initials_on_game"] is False:
+            if not DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 # in play scores
                 log.log("SCORE: end, use in-play scores")
                 scores = _read_machine_score(UseHighScores=False)
@@ -629,5 +629,5 @@ def CheckForNewScores(nState=[0]):
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory
-            if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
+            if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 place_machine_scores()
