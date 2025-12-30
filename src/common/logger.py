@@ -37,6 +37,12 @@ class Logger:
         print(message)
         message += LogEndMarker  # Append the end marker
         for char in message:
+            
+            # Safety: validate address before every write
+            if self.NextWriteAddress < AddressStart or self.NextWriteAddress >= AddressEnd:
+                print(f"LOG: Address corruption detected 0x{self.NextWriteAddress:04X}, resetting")
+                self.NextWriteAddress = AddressStart
+            
             fram.write(self.NextWriteAddress, char.encode("utf-8"))
             self.NextWriteAddress += 1
             if self.NextWriteAddress >= AddressEnd:
