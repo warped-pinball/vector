@@ -41,20 +41,20 @@
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7887,
+        "ScoreAdr": 7268,
         "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7884,
+        "InitialAdr": 7265,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7952,
-        "GrandChampInitAdr": 7949,
-        "ChecksumStartAdr": 7884,
-        "ChecksumEndAdr": 7919,
-        "ChecksumResultAdr": 7920,
-        "GCChecksumStartAdr": 7953,
-        "GCChecksumEndAdr": 7957,
-        "GCChecksumResultAdr": 7965
+        "GrandChampScoreAdr": 7306,
+        "GrandChampInitAdr": 7303,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301,
+        "GCChecksumStartAdr": 7303,
+        "GCChecksumEndAdr": 7311,
+        "GCChecksumResultAdr": 7312
     },
     "HSRewards": {
         "Type": 0,
@@ -65,11 +65,6 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "Switches": {
-        "Type": 0,
-        "Address": 0,
-        "Length": 0
-    },
     "CoinDrop": {
         "Type": 0
     },
@@ -78,9 +73,9 @@
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 6057,
-        "Playerup": 840,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 7,
+        "PlayerUp": 840,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 6,
         "ScoreSpacing": 7
     }
 }

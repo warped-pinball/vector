@@ -49,9 +49,9 @@
         "NumberOfScores": 4,
         "GrandChampScoreAdr": 7446,
         "GrandChampInitAdr": 7443,
-        "ChecksumStartAdr": 8067,
-        "ChecksumEndAdr": 8070,
-        "ChecksumResultAdr": 8078,
+        "ChecksumStartAdr": 8035,
+        "ChecksumEndAdr": 8073,
+        "ChecksumResultAdr": 8074,
         "GCChecksumStartAdr": 7443,
         "GCChecksumEndAdr": 7451,
         "GCChecksumResultAdr": 7452
@@ -65,11 +65,6 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "Switches": {
-        "Type": 0,
-        "Address": 0,
-        "Length": 0
-    },
     "CoinDrop": {
         "Type": 0
     },
@@ -78,9 +73,9 @@
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 6057,
-        "Playerup": 1042,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 7,
+        "PlayerUp": 1042,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 6,
         "ScoreSpacing": 7
     }
 }

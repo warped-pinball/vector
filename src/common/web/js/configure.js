@@ -171,18 +171,23 @@ async function set_vector_config() {
 // function to  save the configuration  and restart the device
 async function save_configuration() {
   // save the vector configuration
+  var replyDom = document.querySelector("#config-reply");
+  var saveBtn = document.querySelector("#config-save-btn");
+  saveBtn.disabled = true;
+  var saveText = saveBtn.innerHTML;
+  saveBtn.innerHTML = "⏳ Saving...";
   let response_vector = await set_vector_config();
-
+  saveBtn.disabled = false;
+  saveBtn.innerHTML = saveText;
   if (!response_vector.status == 200) {
-    alert("Error saving vector configuration; Try again");
+    replyDom.innerHTML =
+      "<p style='color:red;'>Error saving vector configuration; Try again</p>";
     return;
   }
 
   response_vector = null;
-
-  alert(
-    "Configuration saved. Power cycle your Pinball Machine to apply the changes",
-  );
+  replyDom.innerHTML =
+    "<p style='color:green;'>Configuration saved. Power cycle your Pinball Machine to apply the changes</p>";
 }
 
 window.save_configuration = save_configuration;

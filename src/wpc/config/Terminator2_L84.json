@@ -73,9 +73,9 @@
         "GameActiveAdr": 135,
         "GameActiveValue": 0,
         "Players": 6036,
-        "Playerup": 1039,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
+        "PlayerUp": 1039,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 5,
         "ScoreSpacing": 6
     },
     "Switches": {
