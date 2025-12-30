@@ -454,7 +454,7 @@ def _set_adjustment_checksum():
         endAdr = S.gdata["Adjustments"]["ChecksumEndAdr"]
         resultAdr = S.gdata["Adjustments"]["ChecksumResultAdr"]
         checksum=0
-        for i in range(startAdr,endAdr):
+        for i in range(startAdr,endAdr+1):
             checksum = checksum + shadowRam[i]
         shadowRam[resultAdr]=checksum
 
