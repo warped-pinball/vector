@@ -25,11 +25,11 @@ LOGGER_CONFIG = {   # 0x2600 - 0x45FF
 ADJUSTMENTS_CONFIG = {
     "NumRecords": 4,
     "AddressStart": 0x2000,
-    "RecordSize":   0x120,           #WPC=0x140,     
-    "NamesAddress": 0x2480,
+    "RecordSize":   0x140,     
+    "NamesAddress": 0x2510,
     "NamesLength":  0x10,
-    "LastLoadedAddress": 0x24D0,     #25F0,
-    "TotalDataLength":   0x04E0      #600
+    "LastLoadedAddress": 0x25F0,
+    "TotalDataLength":   0x0600
 }
 
 

@@ -6,7 +6,9 @@ four save indexes
 16 character name for each
 
 
-for Data East checksum result is out of address range - store @ chekEnd+2
+for Data East checksum result is out of address range - store @ chekEnd+1
+
+also store "extra" section outside of normal checsksum range
 """
 
 from Shadow_Ram_Definitions import shadowRam
@@ -15,7 +17,7 @@ import SPI_Store as fram
 from logger import logger_instance as Log
 from FramMap import ADJUSTMENTS_CONFIG
 
-print("ADJS: fram map config", ADJUSTMENTS_CONFIG)
+#print("ADJS: fram map config", ADJUSTMENTS_CONFIG)
 
 #FRAM address constants
 ADJ_NUM_SLOTS = ADJUSTMENTS_CONFIG["NumRecords"]
@@ -31,60 +33,32 @@ ADJ_LAST_LOADED_ADR = ADJUSTMENTS_CONFIG["LastLoadedAddress"]
 
 def sanitize_adjustment_names():
     """
-        Check adjustment names in one sweep and replace invalid characters with spaces
+        Replace invalid characters in adjustment names with spaces.
     """
-    # Read the entire block of names at once
-    all_names_address = ADJ_NAMES_START
-    all_names_length = ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS
-    all_names = bytearray(fram.read(all_names_address, all_names_length))
-    
-    # Track if we made any changes
-    changes_made = False
-    
-    # Replace invalid characters with spaces
-    for i in range(len(all_names)):
-        b = all_names[i]
-        if b != 0 and (b < 32 or b > 126):  
-            all_names[i] = 32  
-            changes_made = True
-    
-    # Only write back if we made changes
-    if changes_made:
-        fram.write(all_names_address, all_names)
+    all_names = bytearray(fram.read(ADJ_NAMES_START, ADJ_NAMES_LENGTH * ADJ_NUM_SLOTS))
+    changed = False
+    for i, b in enumerate(all_names):
+        if b and (b < 32 or b > 126):
+            all_names[i] = 32
+            changed = True
+    if changed:
+        fram.write(ADJ_NAMES_START, all_names)
         Log.log("ADJS: Fixed invalid characters in adjustment names")
 
 
 # Run name sanitization at module import time
 sanitize_adjustment_names()
 
-
 def blank_all():
     """
-        blank out all adjustment storage - only for manufacturing init
+        Blank out all adjustment storage and names.
     """
-    chunk_size = 16
-    zero_chunk = bytearray(chunk_size)
+    # Clear adjustment data
+    fram.write(ADJ_FRAM_START, bytearray(ADJ_FRAM_TOTAL_DATA_LENGTH))
+    Log.log(f"ADJS: Blanked {ADJ_FRAM_TOTAL_DATA_LENGTH} bytes from {ADJ_FRAM_START:04X}")
 
-    fram_adr = ADJ_FRAM_START
-    remaining = ADJ_FRAM_TOTAL_DATA_LENGTH
-    offset = 0    
-    Log.log(f"ADJS: Blanking {remaining:04X} bytes from {fram_adr:04X}")
-    
-    while remaining > 0:
-        write_size = min(chunk_size, remaining)
-        if write_size < chunk_size:
-            # For the last partial chunk
-            fram.write(fram_adr + offset, zero_chunk[:write_size])
-        else:
-            fram.write(fram_adr + offset, zero_chunk)
-            
-        offset += write_size
-        remaining -= write_size
-        
-    Log.log("ADJS: All adjustment data cleared")
-
-    # Write valid empty strings for names at ADJ_NAMES_START
-    empty_name = bytearray(b"\x00" * ADJ_NAMES_LENGTH)
+    # Clear adjustment names
+    empty_name = bytearray(ADJ_NAMES_LENGTH)
     for i in range(ADJ_NUM_SLOTS):
         fram.write(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, empty_name)
     Log.log("ADJS: All adjustment names cleared")
@@ -97,21 +71,17 @@ def _get_range_from_gamedef():
         cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
         cpyEnd = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
         chkAdr = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
- 
-    print ("ADJS: Range ",cpyStart,"to ", cpyEnd,"chk at", chkAdr)
-    return cpyStart, cpyEnd, chkAdr
+        
+        extraStart = S.gdata["Adjustments"].get("ExtraStartAdr", 0)
+        extraEnd = S.gdata["Adjustments"].get("ExtraEndAdr", 0)
 
+    print("ADJS: Range", cpyStart, "to", cpyEnd, "chk at", chkAdr)
+    print("ADJS: EXRange:",extraStart,"to ",extraEnd)  
 
-
-def _fixChecksum():
-    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
-    if (cpyStart == 0 or cpyEnd == 0):
-        raise ValueError("No valid range found in game data 1")
-
-    print("ADJ: Old Checksum: ---------------- ", hex(shadowRam[chkAdr]))
-    import DataMapper
-    DataMapper._set_adjustment_checksum()    
-    print("ADJ: New Checksum: ---------------- ", hex(shadowRam[chkAdr]))
+    if ((cpyEnd-cpyStart)+(extraEnd-extraStart)+4) > ADJ_FRAM_RECORD_SIZE:
+        Log.log("ADJ: fault adjustment record size")
+        return 0,0,0,0,0
+    return cpyStart, cpyEnd, chkAdr, extraStart, extraEnd
 
 
 def set_message_state(on=True):
@@ -121,16 +91,10 @@ def set_message_state(on=True):
     import displayMessage
     displayMessage.refresh()                
 
-
-def get_names():
-    """read out all four names"""
-    return [fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH).decode("ascii").rstrip("\x00") for i in range(4)]
-
-
 def set_name(index, name):
     """set name for index"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
-        raise ValueError("Invalid Index")
+        Log.log("ADJS: Invalid Index sn")
 
     name = name[:16]
     name_bytes = bytearray(name.encode("ascii") + b"\x00" * (16 - len(name)))
@@ -144,18 +108,19 @@ def restore_adjustments(index, reset=True):
     """pull from FRAM data and put in shadow ram in the machine, reset after by default"""
 
     if index < 0 or index >= ADJ_NUM_SLOTS:
-        return "Fault: Invalid Index"
+        Log.log("ADJS: Invalid Index ra")
 
     fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
     data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)
 
     # Check the data is not empty
-    if all(byte == 0 for byte in data[:50]):
-        Log.log(f"ADJS: No data in the adjustment profile {index}")
+    #if all(byte == 0 for byte in data[:50]):
+    #    Log.log(f"ADJS: No data in the adjustment profile {index}")
 
-    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
+    cpyStart, cpyEnd, chkAdr, extraStart, extraEnd = _get_range_from_gamedef()
     if (cpyStart == 0 or cpyEnd == 0):
         Log.log("ADJS: No valid range found in game data 2")
+        return
 
     # store this one as the last loaded
     fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
@@ -168,13 +133,24 @@ def restore_adjustments(index, reset=True):
     sleep(2)
 
     # Bulk adjustment data
-    shadowRam[cpyStart:cpyEnd] = data[: cpyEnd - cpyStart]
+    shadowRam[cpyStart:cpyEnd+1] = data[: cpyEnd - cpyStart +1]
     print(f"ADJS: Adjustments restored {index}")
 
     # Checksum byte
-    print("length datat - - - ",len(data),chkAdr,cpyEnd)
-    shadowRam[chkAdr] = data[cpyEnd - cpyStart]
+    print("length data - - - ",len(data),chkAdr,cpyEnd,"chk index=",cpyEnd - cpyStart+1)
+    checksumOffset = cpyEnd - cpyStart +1
+    shadowRam[chkAdr] = data[checksumOffset]
     print("ADJS: restore checksum ", shadowRam[chkAdr] )
+
+    if extraStart!=0 and extraEnd!=0:
+        print("restore extra section",extraStart,extraEnd,"len=",extraEnd-extraStart+1)
+        extraLength = extraEnd-extraStart+1
+        shadowRam[extraStart:extraEnd+1] = data[checksumOffset+1  : checksumOffset +1 +extraLength]
+
+        print("ADJS: REstoring EX adjustment:","  - ".join(f"{b:02X}" for b in shadowRam[extraStart:extraEnd+1]))
+
+
+
 
     from DataMapper import _set_adjustment_checksum
     _set_adjustment_checksum()
@@ -182,7 +158,7 @@ def restore_adjustments(index, reset=True):
     print("ADJS: checksum after re-calc", shadowRam[chkAdr] )
 
     fram.write_all_fram_now()
-    print("ADJ: load done - resetting now ---------------------")
+    print("ADJS: load done - resetting now ---------------------")
    
     # restart the pinball machine
     release(True)
@@ -198,44 +174,52 @@ def store_adjustments(index):
         store current adjustments into a storage location (0-3)
     """
     if index < 0 or index >= ADJ_NUM_SLOTS:
-        return "Fault: Invalid Index"
+        Log.log("ADJS: Invalid Index sa")
+        return
 
-    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()    
-    if (cpyEnd-cpyStart> ADJ_FRAM_RECORD_SIZE):
-        Log.log("ADJS: Range too large for adjustment storage",cpyEnd-cpyStart)
-        return "Fault: Range"
-
+    cpyStart, cpyEnd, chkAdr, exStart, exEnd = _get_range_from_gamedef()    
+   
     # if valid ranges do the copy
     if cpyStart > 0 and cpyEnd > 0:
         Log.log(f"ADJS: Store {index} Range {cpyStart}:{cpyEnd}")
 
         # copy shadowram to fram
-        data = bytearray(shadowRam[cpyStart:cpyEnd])
-        print ("ADJS: storing checksum value ", shadowRam[chkAdr])
-        data.append(shadowRam[chkAdr])  #checksum on the end
-        data.append(shadowRam[chkAdr])
+        data = bytearray(shadowRam[cpyStart:cpyEnd+1])
+        print("data length a", len(data))
 
-        #print("data length", len(data))
+        print ("ADJS: storing checksum value ", shadowRam[chkAdr])
+        data.extend(bytes( [shadowRam[chkAdr]] ))  #checksum 
+        print("data length b", len(data))
+
+        if exStart>0 and exEnd>0:
+            print("ADJS: storing EX adjustment:","  - ".join(f"{b:02X}" for b in shadowRam[exStart:exEnd+1]))
+            data.extend(bytearray(shadowRam[exStart:exEnd+1]))
+
+        print("data length c", len(data))
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
         fram.write(fram_adr, data)
-
+       
         # store this one as the last 'loaded'
         fram.write(ADJ_LAST_LOADED_ADR, bytearray([index]))
     else:
-        Log.log("ADJS: No Gamedef Ranges")
+        Log.log("ADJS: No Gamedef ranges")
 
 
 def get_active_adjustment():
     """look for acive adjustment profile
-    Do not use built in checksum, it is simple and duplicates are common
+        Do not use built in checksum, it is simple and duplicates are common
 
-    return None if no match, 0-3 if found
-    in case of two matches use last_loaded number from fram
+        return None if no match, 0-3 if found
+        in case of two matches use last_loaded number from fram
     """
-    cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
+    cpyStart, cpyEnd, chkAdr, x,y = _get_range_from_gamedef()
     if cpyStart == 0 or cpyEnd == 0 or chkAdr == 0:
-        print("ADJS: No valid range found in game data 3")
+        Log.log("ADJS: No valid range aa")
         return None
+
+    #last_loaded_index = fram.read(ADJ_LAST_LOADED_ADR, 1)[0]
+    #indexList = [last_loaded_index] + [x for x in range(4) if x != last_loaded_index]
+    #print("ADJS: Active search list :",indexList)  
 
     matches = []
     # try to do this 16 bytes at a time for speed - (one SPI read cycle)
@@ -254,7 +238,7 @@ def get_active_adjustment():
         if match:
             matches.append(i)
     if not matches:
-        print("ADJS: No active adjustment found")
+        Log.log("ADJS: No acitve adjustment found")
         return None
 
     # If there are multiple matches, use the last loaded index
@@ -267,24 +251,58 @@ def get_active_adjustment():
 
 
 def is_populated(index):
-    """return True if the profile is populated"""
-    return fram.read(ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index, ADJ_FRAM_RECORD_SIZE) != b"\x00" * ADJ_FRAM_RECORD_SIZE
+    """
+        return True if the profile is populated
+        no need to lok at the whole thing - do 32 bytes only for speed
+    """
+    LOOK_SIZE = 32
+    return fram.read(ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index, LOOK_SIZE) != b"\x00" * LOOK_SIZE
+
+
+
+def get_profile_status():
+
+    
 
 
 def get_adjustments_status():
-    """return list of tuples with names and active index, and if the profile is populated"""   
-    start, end, chk = _get_range_from_gamedef()
-    adjustments_support = start > 0 and end > 0
-    names = get_names()
-    active_index = get_active_adjustment()
-    print("ADJ: acitve adj", active_index)
-    profile_status = []
-    for i in range(ADJ_NUM_SLOTS):
-        profile_status.append((names[i], i == active_index, is_populated(i)))
+    """
+        return list of tuples with names and active index, and if the profile is populated
+    """   
+    start,end,chk,x,y = _get_range_from_gamedef()
+    adjustments_support = start > 0 and end > 0   # support Boolean
 
-    print("ADJS: get_adjustments_status: adjustments_support", adjustments_support, "profiles", profile_status)
 
-    return {"adjustments_support": adjustments_support, "profiles": profile_status}
+    names = [
+        fram.read(ADJ_NAMES_START + i * ADJ_NAMES_LENGTH, ADJ_NAMES_LENGTH).decode("ascii").rstrip("\x00")
+        for i in range(4)
+    ]
+
+    profile_status = get_profile_status()  # List of four (active, populated) tuples
+
+    # Merge names and profile_status into one tuple per profile
+    name_tuples = [
+        (name, active, populated)
+        for name, (active, populated) in zip(names, profile_status)
+    ]
+
+    print("ADJS: get_adjustments_status: adjustments_support $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", adjustments_support, "profiles", name_tuples)
+
+    # adjustment support is True/False
+    # name_tuples   [('name1',active bool, poulated bool),('name2', , ),(),()]
+    return {"adjustments_support": adjustments_support, "profiles": name_tuples}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
