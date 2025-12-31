@@ -111,7 +111,7 @@ def find_player_by_initials(new_entry):
 
 
 def update_individual_score(new_entry):
-    """upadate a players individual score board"""
+    """update a players individual score board"""
     initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
