@@ -25,7 +25,7 @@ def init():
 
 
 # Release reset line
-def release(override=False):    
+def release(override=False):
     global usb_power_state, reset_output
 
     if reset_output is None:
