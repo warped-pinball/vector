@@ -17,7 +17,8 @@ SRAM_DATA_BASE_19 = SRAM_DATA_BASE >> 13    #MSBits to be preloaded in pio for a
 SRAM_DATA_LENGTH = 0x00002000               #8k byte total
 
 shadowRam = uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH)
-print("sram->", len(shadowRam), hex(SRAM_DATA_BASE), hex(SRAM_DATA_LENGTH))
 
+if __name__ == "__main__":
+    print("sram->", len(shadowRam), hex(SRAM_DATA_BASE), hex(SRAM_DATA_LENGTH))
 SRAM_CLOCK_MINUTES = 0x20081FFB
 SRAM_CLOCK_HOURS = 0x20081FFA
