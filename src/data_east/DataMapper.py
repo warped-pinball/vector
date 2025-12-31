@@ -96,18 +96,11 @@ def read_high_scores():
 
     def _decode_initials(initial_bytes):
         """
-        Custom decode for initials: replace '@' with ' ', allow only ASCII 0x40-0x5A.
+        Custom decode for initials: replace '@' with ' ', allow only ASCII 0x40-0x5A. Returns empty string if result is single 'A'.
         """
-        result = ""
-        for b in initial_bytes[:3]:
-            if b == 0x40:  # '@' becomes space
-                result += ' '
-            elif 0x41 <= b <= 0x5A:
-                result += chr(b)
-            else:
-                result += ' '
-        return result.strip()
-
+        result = ''.join(' ' if b == 0x40 or not (0x41 <= b <= 0x5A) else chr(b) for b in initial_bytes[:3]).strip()
+        return '' if result == 'A' else result
+        
     try:
         if S.gdata["HighScores"]["Type"] < 20:  
             log.log("Data Mapper: HS return less than 20")

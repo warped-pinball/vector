@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Wars",
+        "GameName": "Frank",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -12,7 +12,7 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 420
+        "Address": 407
     },
     "DisplayMessage": {
         "Type": 20,
@@ -20,12 +20,10 @@
     },
     "Adjustments": {
         "Type": 20,
-        "CustomMessageOn": 7757,
+        "CustomMessageOn": 7755,
         "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8128,
-        "ExtraStartAdr": 7808,
-        "ExtraEndAdr": 7810
+        "ChecksumEndAdr": 7771,
+        "ChecksumResultAdr": 8157
     },
     "HighScores": {
         "Type": 24,
@@ -40,9 +38,9 @@
     },
     "InPlay": {
         "Type": 24,
-        "Players": 422,
-        "PlayerUp": 419,
-        "ScoreAdr": 434,
+        "Players": 448,
+        "PlayerUp": 445,
+        "ScoreAdr": 5849,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1
