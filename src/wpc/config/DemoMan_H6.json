@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "No Good Gofers",
+        "GameName": "Demolition Man",
         "System": "WPC",
         "FileVer": 1
     },
@@ -24,37 +24,37 @@
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7656,
-        "AddressS2": 7721,
-        "AddressS3": 7786,
+        "AddressS1": 7597,
+        "AddressS2": 7662,
+        "AddressS3": 7727,
         "Length": 32,
-        "ChecksumStartAdr": 7656,
-        "ChecksumEndAdr": 7848,
-        "ChecksumResultAdr": 7849
+        "ChecksumStartAdr": 7597,
+        "ChecksumEndAdr": 7789,
+        "ChecksumResultAdr": 7790
     },
     "Adjustments": {
         "Type": 10,
-        "CustomMessageOn": 7042,
-        "ChecksumStartAdr": 7001,
-        "ChecksumEndAdr": 7258,
-        "ChecksumResultAdr": 7259
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6929,
+        "ChecksumEndAdr": 7200,
+        "ChecksumResultAdr": 7201
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7366,
+        "ScoreAdr": 7308,
         "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7363,
+        "InitialAdr": 7305,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7405,
-        "GrandChampInitAdr": 7401,
-        "ChecksumStartAdr": 7363,
-        "ChecksumEndAdr": 7398,
-        "ChecksumResultAdr": 7399,
-        "GCChecksumStartAdr": 7401,
-        "GCChecksumEndAdr": 7409,
-        "GCChecksumResultAdr": 7410
+        "GrandChampScoreAdr": 7346,
+        "GrandChampInitAdr": 7343,
+        "ChecksumStartAdr": 7305,
+        "ChecksumEndAdr": 7340,
+        "ChecksumResultAdr": 7341,
+        "GCChecksumStartAdr": 7343,
+        "GCChecksumEndAdr": 7351,
+        "GCChecksumResultAdr": 7352
     },
     "HSRewards": {
         "Type": 0,
@@ -73,7 +73,7 @@
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 5913,
-        "PlayerUp": 952,
+        "Playerup": 952,
         "ScoreAdr": 5792,
         "ScoreBytes": 6,
         "ScoreSpacing": 7

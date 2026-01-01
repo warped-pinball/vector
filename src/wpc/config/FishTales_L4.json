@@ -22,16 +22,6 @@
         "Ball4": 4,
         "Ball5": 5
     },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 131,
-        "GameActiveValue": 0,
-        "Players": 6037,
-        "PlayerUp": 940,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 6
-    },
     "DisplayMessage": {
         "Type": 10,
         "AddressS1": 7552,
@@ -75,12 +65,62 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "Switches": {
-        "Type": 0,
-        "Address": 0,
-        "Length": 0
-    },
     "CoinDrop": {
         "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 131,
+        "GameActiveValue": 0,
+        "Players": 6037,
+        "PlayerUp": 940,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 5,
+        "ScoreSpacing": 6
+    },
+    "ModeChamps": {
+        "Biggest Liar": {
+            "InitialAdr": 6061,
+            "NumberOfScores": 1,
+            "Spacing": 0,
+            "scores": [
+                {
+                    "address": 6058,
+                    "length": 1,
+                    "format": "u8"
+                },
+                {
+                    "address": 6059,
+                    "length": 1,
+                    "format": "u8"
+                }
+            ]
+        },
+        "Top Boat Rocker": {
+            "InitialAdr": 6066,
+            "NumberOfScores": 1,
+            "Spacing": 0,
+            "scores": [
+                {
+                    "address": 6064,
+                    "length": 1,
+                    "format": "u8"
+                }
+            ]
+        }
+    },
+    "Modes": {
+        "Fish Caught": {
+            "Type": "EventCount",
+            "Address": "0x515",
+            "Length": 1,
+            "Format": "u8"
+        },
+        "Monster Fish": {
+            "Type": "BonusCountDown",
+            "Address": "0x351",
+            "Length": 2,
+            "Format": "BCD"
+        }
     }
 }

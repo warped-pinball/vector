@@ -41,17 +41,17 @@
     },
     "HighScores": {
         "Type": 10,
-        "ScoreAdr": 7925,
+        "ScoreAdr": 7268,
         "BytesInScore": 6,
         "ScoreSpacing": 9,
-        "InitialAdr": 7922,
+        "InitialAdr": 7265,
         "InitialSpacing": 9,
         "NumberOfScores": 4,
         "GrandChampScoreAdr": 7306,
         "GrandChampInitAdr": 7303,
-        "ChecksumStartAdr": 7922,
-        "ChecksumEndAdr": 7957,
-        "ChecksumResultAdr": 7958,
+        "ChecksumStartAdr": 7265,
+        "ChecksumEndAdr": 7300,
+        "ChecksumResultAdr": 7301,
         "GCChecksumStartAdr": 7303,
         "GCChecksumEndAdr": 7311,
         "GCChecksumResultAdr": 7312
@@ -73,9 +73,9 @@
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 6057,
-        "Playerup": 1042,
-        "ScoreAdr": 5935,
-        "ScoreBytes": 7,
+        "PlayerUp": 1042,
+        "ScoreAdr": 5936,
+        "ScoreBytes": 6,
         "ScoreSpacing": 7
     }
 }
