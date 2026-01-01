@@ -35,9 +35,8 @@ def reset_scores():
     """
         reset high scores
     """
-    from SPI_DataStore import blankStruct
     print("RESET Leader scores")
-    blankStruct("leaders")
+    DataStore.blankStruct("leaders")
     machine_scores = [["", 1000], ["", 900], ["", 800], ["", 700], ["", 600], ["", 500]]
     DataMapper.write_high_scores(machine_scores)
 
