@@ -125,16 +125,13 @@ def restore_adjustments(index, reset=True):
     print(f"ADJS: Adjustments restored {index}")
 
     # Checksum byte
-    #print("length data - - - ",len(data),chkAdr,cpyEnd,"chk index=",cpyEnd - cpyStart+1)
     checksumOffset = cpyEnd - cpyStart +1
     shadowRam[chkAdr] = data[checksumOffset]
     #print("ADJS: restore checksum ", shadowRam[chkAdr] )
 
     if extraStart!=0 and extraEnd!=0:
-        #print("restore extra section",extraStart,extraEnd,"len=",extraEnd-extraStart+1)
         extraLength = extraEnd-extraStart+1
         shadowRam[extraStart:extraEnd+1] = data[checksumOffset+1  : checksumOffset +1 +extraLength]
-        #print("ADJS: Restoring EX adjustment:","  - ".join(f"{b:02X}" for b in shadowRam[extraStart:extraEnd+1]))
 
     from DataMapper import _set_adjustment_checksum
     _set_adjustment_checksum()
@@ -170,11 +167,9 @@ def store_adjustments(index):
         # copy shadowram to fram
         data = bytearray(shadowRam[cpyStart:cpyEnd+1])
 
-        #print ("ADJS: storing checksum value ", shadowRam[chkAdr])
         data.extend(bytes( [shadowRam[chkAdr]] ))  #checksum 
 
         if exStart>0 and exEnd>0:
-            #print("ADJS: storing EX adjustment:","  - ".join(f"{b:02X}" for b in shadowRam[exStart:exEnd+1]))
             data.extend(bytearray(shadowRam[exStart:exEnd+1]))
 
         fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
