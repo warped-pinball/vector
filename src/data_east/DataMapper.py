@@ -62,6 +62,8 @@ def _initials_to_bytes(initials):
         result[i] = ord(c) if ((c >= 'A' and c <= 'Z') or (c >= 'a' and c <= 'z') or (c >= '0' and c <= '9')) else ord(' ')
     return result
 
+
+
 def _bytes_to_initials(initial_bytes):   
     """
        Simple ASCII decoding
@@ -87,7 +89,7 @@ def read_high_scores():
         and intitals intials
     """
     highScores = [["", 0], ["", 0], ["", 0], ["", 0], ["", 0], ["", 0] ]
-    print("HIGH SCORES: DataMapper ")  #,highScores)
+    #print("HIGH SCORES: DataMapper ")  #,highScores)
 
     # Validate HighScores configuration exists
     if "HighScores" not in S.gdata:
@@ -168,8 +170,6 @@ def read_high_scores():
                     
                 if highScores[idx][0] in ["???", "", None, "   "]:  # no player, allow claim
                     highScores[idx][0] = ""
-            
-        print("HIGH SCORES: $$$$$$$$$$$  ",highScores)
 
     except (IndexError, KeyError, ValueError) as e:        
         log.log(f"High score read error: {e}")
@@ -313,8 +313,7 @@ def write_high_scores(highScores):
                 initials = validate_initials(initials)
                 
                 # Convert to bytes (simple ASCII encoding)
-                initials_bytes = _initials_to_bytes(initials)
-                print("wirte intiial s-  - - - ",idx,initials,initial_start)
+                initials_bytes = _initials_to_bytes(initials)                
                 shadowRam[initial_start : initial_start + 3] = initials_bytes
         
         log.log(f"Successfully wrote {NumberOfScores} high scores to shadow RAM")

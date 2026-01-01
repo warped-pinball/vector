@@ -235,9 +235,8 @@ def initialize_leaderboard():
 
 def check_for_machine_high_scores(report=True):
     # check for high scores in machine that we dont have yet
-    print(" Check for machine high scores - - - - - - - - -- not - placeholder")
-
-
+    pass
+    #print(" Check for machine high scores - - - - - - - - -- not - placeholder")
 
 
 def update_tournament(new_entry):
