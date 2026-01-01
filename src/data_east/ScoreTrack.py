@@ -111,7 +111,6 @@ def find_player_by_initials(new_entry):
 
 def update_individual_score(new_entry):
     """update a players individual score board"""
-    initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
     if not playername or playername in [" ", "@@@", "   ", ""]:
