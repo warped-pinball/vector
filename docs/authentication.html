@@ -41,6 +41,40 @@ body = ""  # no payload for this route
 message = challenge + path + body</code></pre>
     <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
   </div>
+  <div class="panel">
+    <h2>Ready-to-run Python example</h2>
+    <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
+<pre><code>#!/usr/bin/env python3
+import hashlib
+import hmac
+import requests
+
+BASE_URL = "http://192.168.1.42"  # replace with your board IP
+PASSWORD = "your-password"         # the device password used for HMAC
+
+
+def signed_get(path: str):
+    challenge = requests.get(f"{BASE_URL}/api/auth/challenge", timeout=5).json()["challenge"]
+    message = (challenge + path).encode()
+    signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
+
+    return requests.get(
+        f"{BASE_URL}{path}",
+        headers={
+            "x-auth-challenge": challenge,
+            "x-auth-hmac": signature,
+        },
+        timeout=5,
+    )
+
+
+if __name__ == "__main__":
+    print("Version:", requests.get(f"{BASE_URL}/api/version", timeout=5).json())
+    resp = signed_get("/api/settings/set_show_ip")
+    print("Authenticated response:", resp.status_code, resp.text)
+</code></pre>
+    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
+  </div>
   <p><a href="index.html">Back to API reference</a></p>
 </body>
 </html>

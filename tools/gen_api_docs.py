@@ -521,6 +521,40 @@ body = ""  # no payload for this route
 message = challenge + path + body</code></pre>
     <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
   </div>
+  <div class="panel">
+    <h2>Ready-to-run Python example</h2>
+    <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
+<pre><code>#!/usr/bin/env python3
+import hashlib
+import hmac
+import requests
+
+BASE_URL = "http://192.168.1.42"  # replace with your board IP
+PASSWORD = "your-password"         # the device password used for HMAC
+
+
+def signed_get(path: str):
+    challenge = requests.get(f"{BASE_URL}/api/auth/challenge", timeout=5).json()["challenge"]
+    message = (challenge + path).encode()
+    signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
+
+    return requests.get(
+        f"{BASE_URL}{path}",
+        headers={
+            "x-auth-challenge": challenge,
+            "x-auth-hmac": signature,
+        },
+        timeout=5,
+    )
+
+
+if __name__ == "__main__":
+    print("Version:", requests.get(f"{BASE_URL}/api/version", timeout=5).json())
+    resp = signed_get("/api/settings/set_show_ip")
+    print("Authenticated response:", resp.status_code, resp.text)
+</code></pre>
+    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
+  </div>
   <p><a href="index.html">Back to API reference</a></p>
 </body>
 </html>
@@ -617,26 +651,74 @@ def build_discovery_html() -> str:
   <h1>Discover boards on the network</h1>
   <div class="panel">
     <p>The discovery helpers in <code>src/common/discovery.py</code> broadcast a small UDP heartbeat on port <code>37020</code>. Boards elect the lowest IP as the registry device, which replies with the full peer list.</p>
+    <p>On a laptop or desktop you will need to implement the wire protocol yourself (you cannot import the MicroPython helpers directly). The script below mirrors the on-device behavior using standard Python sockets.</p>
   </div>
   <div class="panel">
     <h2>Quick start</h2>
     <ol>
-      <li>Import the helpers: <code>from discovery import broadcast_hello, listen, get_peer_map</code>.</li>
-      <li>Call <code>broadcast_hello()</code> once to announce yourself.</li>
-      <li>Periodically call <code>listen()</code> to process incoming packets and update the peer list.</li>
-      <li>Read peers from <code>get_peer_map()</code>, which returns <code>{"&lt;ip&gt;": "&lt;game name&gt;"}</code>.</li>
+      <li>Broadcast a HELLO frame (<code>[1, name_length, name bytes]</code>) on UDP port <code>37020</code>.</li>
+      <li>Listen for FULL responses (<code>[2, count, ip bytes..., name length, name bytes]</code>) from the elected registry node.</li>
+      <li>Parse the peer map from the FULL payload and refresh it periodically.</li>
     </ol>
-<pre><code>import time
-from discovery import broadcast_hello, get_peer_map, listen
+    <p>Ready-to-run desktop script:</p>
+<pre><code>#!/usr/bin/env python3
+import socket
+import time
 
-broadcast_hello()  # announce this board
+DISCOVERY_PORT = 37020
+NAME = "DesktopClient"
 
-while True:
-    listen()              # handle any discovery packets
-    print(get_peer_map())  # {'192.168.1.20': 'Vector One', ...}
-    time.sleep(5)
+
+def send_hello(sock: socket.socket):
+    name_bytes = NAME.encode("utf-8")[:32]
+    payload = bytes([1, len(name_bytes)]) + name_bytes
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.sendto(payload, ("255.255.255.255", DISCOVERY_PORT))
+
+
+def decode_full(data: bytes):
+    peers = {}
+    if len(data) < 2 or data[0] != 2:
+        return peers
+    count = data[1]
+    offset = 2
+    for _ in range(count):
+        if len(data) < offset + 5:
+            break
+        ip_bytes = data[offset : offset + 4]
+        offset += 4
+        name_len = data[offset]
+        offset += 1
+        name = data[offset : offset + name_len].decode("utf-8", "ignore")
+        offset += name_len
+        ip_str = socket.inet_ntoa(ip_bytes)
+        peers[ip_str] = name
+    return peers
+
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", DISCOVERY_PORT))
+    send_hello(sock)
+    print("Broadcasted discovery HELLO... listening for peers")
+
+    while True:
+        sock.settimeout(5)
+        try:
+            data, addr = sock.recvfrom(1024)
+        except socket.timeout:
+            send_hello(sock)
+            continue
+
+        peers = decode_full(data)
+        if peers:
+            print(f"Registry {addr[0]} reports peers: {peers}")
+
+
+if __name__ == "__main__":
+    main()
 </code></pre>
-    <p>Use <code>ping_random_peer()</code> to nudge peers for liveness, or <code>broadcast_full_list()</code> from the registry node to re-sync late joiners.</p>
+    <p>Run the script on the same network as the boards. It will rebroadcast a HELLO every few seconds if no responses arrive.</p>
   </div>
   <p><a href="index.html">Back to API reference</a></p>
 </body>
@@ -668,6 +750,7 @@ def build_usb_html() -> str:
   <h1>Accessing the API over USB</h1>
   <div class="panel">
     <p>The USB transport reuses the same route handlers via <code>src/common/usb_comms.py</code>. Requests are read from the serial console as <code>route|headers|body</code> lines and responded to with JSON.</p>
+    <p>Host-side scripts cannot import the MicroPython modules. Use the standalone client below based on <code>dev/usb_coms_demo.py</code> to talk to the board over serial.</p>
   </div>
   <div class="panel">
     <h2>Frame format</h2>
@@ -675,29 +758,44 @@ def build_usb_html() -> str:
   </div>
   <div class="panel">
     <h2>Host demo snippet</h2>
-<pre><code>import json
+    <p>Save the following as <code>usb_client.py</code> (adapted from <code>dev/usb_coms_demo.py</code>) and run it locally:</p>
+<pre><code>#!/usr/bin/env python3
+import json
+import time
+
 import serial
 
-port = serial.Serial("/dev/ttyACM0", 115200, timeout=2)
 
-def send(route, headers=None, body=""):
-    headers = headers or {}
-    header_text = "\n".join(f"{k}: {v}" for k, v in headers.items())
-    frame = f"{route}|{header_text}|{body}\n"
-    port.write(frame.encode())
-    line = port.readline().decode().strip()
-    # USB API responses are JSON payloads already stringified by the device
-    return json.loads(line.replace("USB API RESPONSE-->", ""))
+def send_and_receive(port: str, route: str, headers=None, body_text=""):
+    ser = serial.Serial(port=port, baudrate=115200, timeout=10)
+    time.sleep(2)  # allow the device to reset
+    headers = headers or {"Content-Type": "application/json"}
+    header_text = "\\n".join(f"{k}: {v}" for k, v in headers.items())
+    frame = f"{route}|{header_text}|{body_text}\\n"
+    ser.write(frame.encode())
+    prefix = "USB API RESPONSE-->"
+    while True:
+        line = ser.readline().decode(errors="replace").strip()
+        if not line.startswith(prefix):
+            continue
+        payload = json.loads(line[len(prefix) :])
+        body_raw = payload.get("body")
+        if isinstance(body_raw, str):
+            try:
+                payload["body"] = json.loads(body_raw)
+            except json.JSONDecodeError:
+                pass
+        return payload
 
-# Query version
-print(send("/api/version"))
 
-# Authenticated example: challenge first, then include headers
-challenge_resp = send("/api/auth/challenge")
-challenge = json.loads(challenge_resp["body"]).get("challenge")
-print("challenge", challenge)
+if __name__ == "__main__":
+    port = "/dev/ttyACM0"  # adjust for your platform
+    print(send_and_receive(port, "/api/version"))
+    # Authenticated call: fetch challenge then include headers
+    challenge_resp = send_and_receive(port, "/api/auth/challenge")
+    print("challenge", challenge_resp.get("body"))
 </code></pre>
-    <p>Process incoming <code>USB API RESPONSE--></code> lines from the device as JSON objects containing <code>route</code>, <code>status</code>, <code>headers</code>, and <code>body</code>.</p>
+    <p>The helper opens the serial connection, writes a framed request, and parses the JSON response emitted by the firmware. Expand it with additional routes as needed.</p>
   </div>
   <p><a href="index.html">Back to API reference</a></p>
 </body>
