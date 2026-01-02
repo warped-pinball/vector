@@ -96,71 +96,71 @@
       <h2><code>/api/game/reboot</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L414'>app_reboot_game</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Power-cycle the connected game controller</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reboot triggered</li></ul><p><strong>Response body:</strong> Empty body; returns OK on success</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-game-name">
       <h2><code>/api/game/name</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L425'>app_game_name</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L438'>app_game_name</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the current game name</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Active game returned</li></ul><p><strong>Response body:</strong> Plain-text game name</p><pre><code>&quot;Vector&quot;</code></pre>
     </section>
     
     <section id="api-game-active_config">
       <h2><code>/api/game/active_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L432'>app_game_config_filename</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L457'>app_game_config_filename</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the filename of the active game configuration</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Active configuration returned</li></ul><p><strong>Response body:</strong> JSON object identifying the configuration file in use</p><pre><code>{&quot;active_config&quot;: &quot;vector.json&quot;}</code></pre>
     </section>
     
     <section id="api-game-configs_list">
       <h2><code>/api/game/configs_list</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L443'>app_game_configs_list</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L480'>app_game_configs_list</a></p>
       
-      <p>No description provided.</p>
+      <p>List available game configuration files</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;vector.json&quot;: &quot;Vector&quot;, &quot;em_sample.json&quot;: &quot;Sample EM&quot;}</code></pre>
     </section>
     
     <section id="api-game-status">
       <h2><code>/api/game/status</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L453'>app_game_status</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L502'>app_game_status</a></p>
       
-      <p>No description provided.</p>
+      <p>Retrieve the current game status snapshot</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Status returned</li></ul><p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p><pre><code>{&quot;GameActive&quot;: true, &quot;BallInPlay&quot;: 2, &quot;Scores&quot;: [1000, 0, 0, 0]}</code></pre>
     </section>
     
     <section id="api-leaders">
       <h2><code>/api/leaders</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L490'>app_leaderBoardRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L550'>app_leaderBoardRead</a></p>
       
-      <p>No description provided.</p>
+      <p>Fetch the main leaderboard</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard returned</li></ul><p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p><pre><code>[{&quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 123456, &quot;rank&quot;: 1, &quot;ago&quot;: &quot;2h&quot;}]</code></pre>
     </section>
     
     <section id="api-score-delete">
       <h2><code>/api/score/delete</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L495'>app_scoreDelete</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L567'>app_scoreDelete</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Delete score entries from a leaderboard</p>
       <h3>Request</h3>
@@ -171,73 +171,73 @@
     
     <section id="api-tournament">
       <h2><code>/api/tournament</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L543'>app_tournamentRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L615'>app_tournamentRead</a></p>
       
-      <p>No description provided.</p>
+      <p>Read the tournament leaderboard</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament leaderboard returned</li></ul><p><strong>Response body:</strong> List of tournament scores sorted by game order</p><pre><code>[{&quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 123456, &quot;game&quot;: 1}]</code></pre>
     </section>
     
     <section id="api-leaders-reset">
       <h2><code>/api/leaders/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L548'>app_resetScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L632'>app_resetScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Clear the main leaderboard</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Scores cleared</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-tournament-reset">
       <h2><code>/api/tournament/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L555'>app_tournamentClear</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L652'>app_tournamentClear</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Clear tournament standings and reset counters</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament data cleared</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-scores-claimable">
       <h2><code>/api/scores/claimable</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L564'>app_getClaimableScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L674'>app_getClaimableScores</a></p>
       
-      <p>No description provided.</p>
+      <p>List scores awaiting initials entry</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claimable scores returned</li></ul><p><strong>Response body:</strong> Collection of unclaimed score records</p><pre><code>[{&quot;score&quot;: 12345, &quot;player_index&quot;: 0, &quot;game&quot;: 1}]</code></pre>
     </section>
     
     <section id="api-scores-claim">
       <h2><code>/api/scores/claim</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L571'>app_claimScore</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L693'>app_claimScore</a></p>
       
-      <p>No description provided.</p>
+      <p>Apply initials to an unclaimed score</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>initials</code> (string, required) - Player initials to record</li><li><code>player_index</code> (int, required) - Player slot associated with the score</li><li><code>score</code> (int, required) - Score value to claim</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Score claimed</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-players">
       <h2><code>/api/players</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L582'>app_getPlayers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L730'>app_getPlayers</a></p>
       
-      <p>No description provided.</p>
+      <p>List player records stored on the device</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player list returned</li></ul><p><strong>Response body:</strong> Mapping of player indices to initials and names</p><pre><code>{&quot;0&quot;: {&quot;initials&quot;: &quot;ABC&quot;, &quot;name&quot;: &quot;Alice&quot;}}</code></pre>
     </section>
     
     <section id="api-player-update">
       <h2><code>/api/player/update</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L596'>app_updatePlayer</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L756'>app_updatePlayer</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Update a stored player record</p>
       <h3>Request</h3>
@@ -248,348 +248,348 @@
     
     <section id="api-player-scores">
       <h2><code>/api/player/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L652'>app_getScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L812'>app_getScores</a></p>
       
-      <p>No description provided.</p>
+      <p>Fetch all scores for a specific player</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>id</code> (int, required) - Player index to inspect</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player scores returned</li></ul><p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p><pre><code>[{&quot;score&quot;: 10000, &quot;rank&quot;: 1, &quot;initials&quot;: &quot;ABC&quot;, &quot;date&quot;: &quot;2024-01-01&quot;, &quot;ago&quot;: &quot;1d&quot;}]</code></pre>
     </section>
     
     <section id="api-personal-bests">
       <h2><code>/api/personal/bests</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L685'>app_personal_bests</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L863'>app_personal_bests</a></p>
       
-      <p>No description provided.</p>
+      <p>Return the best score for each registered player</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Personal bests returned</li></ul><p><strong>Response body:</strong> Leaderboard of each player&#x27;s highest score</p><pre><code>[{&quot;player_id&quot;: 0, &quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 12345, &quot;rank&quot;: 1}]</code></pre>
     </section>
     
     <section id="api-player-scores-reset">
       <h2><code>/api/player/scores/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L726'>app_resetIndScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L915'>app_resetIndScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Clear all scores for a single player</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Query parameters</h4><ul><li><code>id</code> (int, required) - Player index whose scores should be erased</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Scores cleared</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-adjustments-status">
       <h2><code>/api/adjustments/status</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L737'>app_getAdjustmentStatus</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L945'>app_getAdjustmentStatus</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the status of each adjustment bank</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustment metadata returned</li></ul><p><strong>Response body:</strong> List of tuples describing adjustment slots, activation, and whether data exists</p><pre><code>[[&quot;Default&quot;, true, true]]</code></pre>
     </section>
     
     <section id="api-adjustments-name">
       <h2><code>/api/adjustments/name</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L747'>app_setAdjustmentName</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L964'>app_setAdjustmentName</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Rename an adjustment set</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Adjustment slot to rename</li><li><code>name</code> (string, required) - New name for the slot</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Name updated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-adjustments-capture">
       <h2><code>/api/adjustments/capture</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L757'>app_captureAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L997'>app_captureAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Capture current adjustments into a slot</p>
       <h3>Request</h3>
-      <h4>Body parameters</h4><ul><li><code>index</code> (inferred)</li></ul>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Destination slot for captured adjustments</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustments stored</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-adjustments-restore">
       <h2><code>/api/adjustments/restore</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L764'>app_restoreAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1023'>app_restoreAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 5s</p>
-      <p>No description provided.</p>
+      <p>Restore adjustments from a saved slot</p>
       <h3>Request</h3>
-      <h4>Body parameters</h4><ul><li><code>index</code> (inferred)</li></ul>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Adjustment slot to restore</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustments restored</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-settings-get_claim_methods">
       <h2><code>/api/settings/get_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L774'>app_getScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1052'>app_getScoreCap</a></p>
       
-      <p>No description provided.</p>
+      <p>Read score entry methods</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claim methods returned</li></ul><p><strong>Response body:</strong> Flags indicating where initials can be entered</p><pre><code>{&quot;on-machine&quot;: true, &quot;web-ui&quot;: false}</code></pre>
     </section>
     
     <section id="api-settings-set_claim_methods">
       <h2><code>/api/settings/set_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L783'>app_setScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1073'>app_setScoreCap</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Configure score claim methods</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>on-machine</code> (bool, optional) - Allow initials entry on the physical game</li><li><code>web-ui</code> (bool, optional) - Allow initials entry via the web interface</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preferences updated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-settings-get_tournament_mode">
       <h2><code>/api/settings/get_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L794'>app_getTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1107'>app_getTournamentMode</a></p>
       
-      <p>No description provided.</p>
+      <p>Get whether tournament mode is enabled</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament mode returned</li></ul><p><strong>Response body:</strong> Flag indicating tournament mode state</p><pre><code>{&quot;tournament_mode&quot;: true}</code></pre>
     </section>
     
     <section id="api-settings-set_tournament_mode">
       <h2><code>/api/settings/set_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L800'>app_setTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1125'>app_setTournamentMode</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Enable or disable tournament mode</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>tournament_mode</code> (bool, required) - New tournament mode setting</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Setting saved</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-settings-get_show_ip">
       <h2><code>/api/settings/get_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L809'>app_getShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1153'>app_getShowIP</a></p>
       
-      <p>No description provided.</p>
+      <p>Check whether the IP address is shown on the display</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preference returned</li></ul><p><strong>Response body:</strong> Flag indicating whether the IP is displayed</p><pre><code>{&quot;show_ip&quot;: true}</code></pre>
     </section>
     
     <section id="api-settings-set_show_ip">
       <h2><code>/api/settings/set_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L814'>app_setShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1170'>app_setShowIP</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Set whether the IP address should be shown on the display</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>show_ip</code> (bool, required) - Whether to show the IP address on screen</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preference updated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-time-midnight_madness_available">
       <h2><code>/api/time/midnight_madness_available</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L825'>app_midnightMadnessAvailable</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1200'>app_midnightMadnessAvailable</a></p>
       
-      <p>No description provided.</p>
+      <p>Report whether Midnight Madness mode is supported</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Availability returned</li></ul><p><strong>Response body:</strong> Flag indicating if the game supports Midnight Madness</p><pre><code>{&quot;available&quot;: true}</code></pre>
     </section>
     
     <section id="api-time-get_midnight_madness">
       <h2><code>/api/time/get_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L833'>app_getMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1220'>app_getMidnightMadness</a></p>
       
-      <p>No description provided.</p>
+      <p>Read Midnight Madness configuration</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration returned</li></ul><p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p><pre><code>{&quot;enabled&quot;: true, &quot;always&quot;: false}</code></pre>
     </section>
     
     <section id="api-time-set_midnight_madness">
       <h2><code>/api/time/set_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L842'>app_setMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1241'>app_setMidnightMadness</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Update Midnight Madness configuration</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>always</code> (bool, required) - Keep Midnight Madness enabled at all times</li><li><code>enabled</code> (bool, required) - Enable timed Midnight Madness events</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-time-trigger_midnight_madness">
       <h2><code>/api/time/trigger_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L851'>app_triggerMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1273'>app_triggerMidnightMadness</a></p>
       
-      <p>No description provided.</p>
+      <p>Immediately trigger Midnight Madness</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Event triggered</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-settings-factory_reset">
       <h2><code>/api/settings/factory_reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L858'>app_factoryReset</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1292'>app_factoryReset</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Perform a full factory reset</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reset initiated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-settings-reboot">
       <h2><code>/api/settings/reboot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L885'>app_reboot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1332'>app_reboot</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Reboot the controller</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reboot initiated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-last_ip">
       <h2><code>/api/last_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L898'>app_getLastIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1358'>app_getLastIP</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the last known IP address</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - IP returned</li></ul><p><strong>Response body:</strong> Last recorded IP address</p><pre><code>{&quot;ip&quot;: &quot;192.168.0.10&quot;}</code></pre>
     </section>
     
     <section id="api-available_ssids">
       <h2><code>/api/available_ssids</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L904'>app_getAvailableSSIDs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1376'>app_getAvailableSSIDs</a></p>
       
-      <p>No description provided.</p>
+      <p>Scan for nearby Wi-Fi networks</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[{&quot;ssid&quot;: &quot;MyNetwork&quot;, &quot;rssi&quot;: -40, &quot;configured&quot;: true}]</code></pre>
     </section>
     
     <section id="api-network-peers">
       <h2><code>/api/network/peers</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L919'>app_getPeers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1403'>app_getPeers</a></p>
       
-      <p>No description provided.</p>
+      <p>Discover other devices on the local network</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Peer map returned</li></ul><p><strong>Response body:</strong> Mapping of peer identifiers to network information</p><pre><code>{&quot;vector-1&quot;: {&quot;ip&quot;: &quot;192.168.0.11&quot;}}</code></pre>
     </section>
     
     <section id="api-set_date">
       <h2><code>/api/set_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L929'>app_setDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1425'>app_setDateTime</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Set the device date and time</p>
       <h3>Request</h3>
-      <h4>Body parameters</h4><ul><li><code>date</code> (inferred)</li></ul>
+      <h4>Body parameters</h4><ul><li><code>date</code> (list, required) - RTC tuple [year, month, day, hour, minute, second]</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Clock updated</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     
     <section id="api-get_date">
       <h2><code>/api/get_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L938'>app_getDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1452'>app_getDateTime</a></p>
       
-      <p>No description provided.</p>
+      <p>Read the current device time</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - RTC timestamp returned</li></ul><p><strong>Response body:</strong> Tuple containing RTC date/time fields</p><pre><code>[2024, 5, 1, 0, 12, 0, 0, 0]</code></pre>
     </section>
     
     <section id="api-version">
       <h2><code>/api/version</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L946'>app_version</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1472'>app_version</a></p>
       
-      <p>No description provided.</p>
+      <p>Report software version</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Version returned</li></ul><p><strong>Response body:</strong> Current firmware version string</p><pre><code>{&quot;version&quot;: &quot;1.0.0&quot;}</code></pre>
     </section>
     
     <section id="api-fault">
       <h2><code>/api/fault</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L953'>app_install_fault</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1491'>app_install_fault</a></p>
       
-      <p>No description provided.</p>
+      <p>Read current fault state</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Faults returned</li></ul><p><strong>Response body:</strong> Collection of fault flags and details</p><pre><code>{&quot;faults&quot;: []}</code></pre>
     </section>
     
     <section id="api-export-scores">
       <h2><code>/api/export/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L963'>app_export_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1513'>app_export_leaderboard</a></p>
       
-      <p>No description provided.</p>
+      <p>Export all leaderboard data</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Export stream started</li></ul><p><strong>Response body:</strong> File download containing leaderboard scores</p><pre><code>&quot;&lt;binary stream&gt;&quot;</code></pre>
     </section>
     
     <section id="api-import-scores">
       <h2><code>/api/import/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L970'>app_import_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1532'>app_import_leaderboard</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Import leaderboard data from an uploaded file</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>file</code> (bytes, required) - Score export file content</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Import completed</li></ul><p><strong>Response body:</strong> Success indicator</p><pre><code>{&quot;success&quot;: true}</code></pre>
     </section>
     
     <section id="api-memory-snapshot">
       <h2><code>/api/memory-snapshot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L978'>app_memory_snapshot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1559'>app_memory_snapshot</a></p>
       
-      <p>No description provided.</p>
+      <p>Stream a snapshot of memory contents</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Snapshot streaming</li></ul><p><strong>Response body:</strong> Text stream of byte values separated by newlines</p><pre><code>&quot;0</code></pre>
     </section>
     
     <section id="api-logs">
       <h2><code>/api/logs</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L985'>app_getLogs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1578'>app_getLogs</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 10s</p><p><strong>Single instance:</strong> Yes</p>
-      <p>No description provided.</p>
+      <p>Download the system log file</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Log download streaming</li></ul><p><strong>Response body:</strong> Log file content</p><pre><code>&quot;&lt;log text&gt;&quot;</code></pre>
     </section>
     
     <section id="api-update-check">
       <h2><code>/api/update/check</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L995'>app_updates_available</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1601'>app_updates_available</a></p>
       <p><strong>Cooldown:</strong> 10s</p>
-      <p>No description provided.</p>
+      <p>Check the server for available updates</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{&quot;available&quot;: true, &quot;version&quot;: &quot;1.2.3&quot;}</code></pre>
     </section>
     
     <section id="api-update-apply">
       <h2><code>/api/update/apply</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1011'>app_apply_update</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1628'>app_apply_update</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Apply a downloaded software update</p>
       <h3>Request</h3>
@@ -600,35 +600,35 @@
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1060'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1677'>app_inAPMode</a></p>
       
-      <p>No description provided.</p>
+      <p>Indicate that the device is running in app mode</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Mode reported</li></ul><p><strong>Response body:</strong> Flag showing AP mode status</p><pre><code>{&quot;in_ap_mode&quot;: false}</code></pre>
     </section>
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1071'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1700'>app_inAPMode</a></p>
       
-      <p>No description provided.</p>
+      <p>Indicate that the device is running in AP mode</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Mode reported</li></ul><p><strong>Response body:</strong> Flag showing AP mode status</p><pre><code>{&quot;in_ap_mode&quot;: true}</code></pre>
     </section>
     
     <section id="api-settings-set_vector_config">
       <h2><code>/api/settings/set_vector_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1075'>app_setWifi</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1716'>app_setWifi</a></p>
       
-      <p>No description provided.</p>
+      <p>Configure Wi-Fi credentials and default game</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>ssid</code> (string, required) - Wi-Fi network name</li><li><code>wifi_password</code> (string, required) - Wi-Fi network password</li><li><code>vector_password</code> (string, required) - Password for authenticated API access</li><li><code>game_config_filename</code> (string, required) - Game configuration filename to load</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> Empty body; generator emits OK</p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     </div>
 </body>
