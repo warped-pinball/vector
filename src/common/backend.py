@@ -525,20 +525,14 @@ def get_scoreboard(key, sort_by="score", reverse=False):
     """
     @api
     summary: Build an ordered leaderboard from stored score records
-    request:
-      query:
-        - name: key
-          type: string
-          required: true
-          description: Data store list key containing score entries.
-        - name: sort_by
-          type: string
-          required: false
-          description: Field to sort by (defaults to ``score``).
-        - name: reverse
-          type: boolean
-          required: false
-          description: Sort descending when true (defaults to false).
+    details:
+      note: >
+        This is an internal helper function, not an HTTP endpoint. It is called
+        from other route handlers, and its parameters are regular Python
+        function arguments:
+          - key (str): Data store list key containing score entries.
+          - sort_by (str, optional): Field to sort by (defaults to "score").
+          - reverse (bool, optional): Sort descending when true (defaults to false).
     response:
       status_codes:
         - code: 200
