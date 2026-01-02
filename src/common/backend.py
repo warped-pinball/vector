@@ -522,26 +522,6 @@ def app_game_status(request):
 # Leaderboard
 #
 def get_scoreboard(key, sort_by="score", reverse=False):
-    """
-    @api
-    summary: Build an ordered leaderboard from stored score records
-    details:
-      note: >
-        This is an internal helper function, not an HTTP endpoint. It is called
-        from other route handlers, and its parameters are regular Python
-        function arguments:
-          - key (str): Data store list key containing score entries.
-          - sort_by (str, optional): Field to sort by (defaults to "score").
-          - reverse (bool, optional): Sort descending when true (defaults to false).
-    response:
-      status_codes:
-        - code: 200
-          description: Sorted leaderboard rows returned
-      body:
-        description: Ranked list of score objects annotated with relative time.
-        example: [{"initials": "ABC", "score": 123456, "rank": 1, "ago": "2h"}]
-    @end
-    """
     rows = []
     for i in range(ds_memory_map[key]["count"]):
         row = ds_read_record(key, i)
