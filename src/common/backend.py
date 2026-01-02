@@ -412,6 +412,19 @@ for file_path in ls("web"):
 #
 @add_route("/api/game/reboot", auth=True)
 def app_reboot_game(request):
+    """
+    @api
+    summary: Power-cycle the connected game controller
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Reboot triggered
+      body:
+        description: Empty body; returns OK on success
+        example: "ok"
+    @end
+    """
     import reset_control
     from phew.server import restart_schedule as phew_restart_schedule
 
@@ -423,6 +436,18 @@ def app_reboot_game(request):
 
 @add_route("/api/game/name")
 def app_game_name(request):
+    """
+    @api
+    summary: Get the current game name
+    response:
+      status_codes:
+        - code: 200
+          description: Active game returned
+      body:
+        description: Plain-text game name
+        example: "Vector"
+    @end
+    """
     import SharedState
 
     return SharedState.gdata["GameInfo"]["GameName"], 200
@@ -430,6 +455,18 @@ def app_game_name(request):
 
 @add_route("/api/game/active_config")
 def app_game_config_filename(request):
+    """
+    @api
+    summary: Get the filename of the active game configuration
+    response:
+      status_codes:
+        - code: 200
+          description: Active configuration returned
+      body:
+        description: JSON object identifying the configuration file in use
+        example: {"active_config": "vector.json"}
+    @end
+    """
     import SharedState
 
     if SharedState.gdata["GameInfo"]["System"] == "EM":
@@ -441,6 +478,18 @@ def app_game_config_filename(request):
 
 @add_route("/api/game/configs_list")
 def app_game_configs_list(request):
+    """
+    @api
+    summary: List available game configuration files
+    response:
+      status_codes:
+        - code: 200
+          description: Configurations listed
+      body:
+        description: Mapping of configuration filenames to human-readable titles
+        example: {"vector.json": "Vector", "em_sample.json": "Sample EM"}
+    @end
+    """
     from GameDefsLoad import list_game_configs
 
     return list_game_configs()
@@ -451,6 +500,18 @@ game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "Gam
 
 @add_route("/api/game/status")
 def app_game_status(request):
+    """
+    @api
+    summary: Retrieve the current game status snapshot
+    response:
+      status_codes:
+        - code: 200
+          description: Status returned
+      body:
+        description: JSON object describing current play state, score, and timers
+        example: {"GameActive": true, "BallInPlay": 2, "Scores": [1000, 0, 0, 0]}
+    @end
+    """
     # TODO cache me
     from GameStatus import game_report
 
@@ -461,7 +522,32 @@ def app_game_status(request):
 # Leaderboard
 #
 def get_scoreboard(key, sort_by="score", reverse=False):
-    """Get the leaderboard from memory"""
+    """
+    @api
+    summary: Build an ordered leaderboard from stored score records
+    request:
+      query:
+        - name: key
+          type: string
+          required: true
+          description: Data store list key containing score entries.
+        - name: sort_by
+          type: string
+          required: false
+          description: Field to sort by (defaults to ``score``).
+        - name: reverse
+          type: boolean
+          required: false
+          description: Sort descending when true (defaults to false).
+    response:
+      status_codes:
+        - code: 200
+          description: Sorted leaderboard rows returned
+      body:
+        description: Ranked list of score objects annotated with relative time.
+        example: [{"initials": "ABC", "score": 123456, "rank": 1, "ago": "2h"}]
+    @end
+    """
     rows = []
     for i in range(ds_memory_map[key]["count"]):
         row = ds_read_record(key, i)
@@ -488,6 +574,18 @@ def get_scoreboard(key, sort_by="score", reverse=False):
 
 @add_route("/api/leaders")
 def app_leaderBoardRead(request):
+    """
+    @api
+    summary: Fetch the main leaderboard
+    response:
+      status_codes:
+        - code: 200
+          description: Leaderboard returned
+      body:
+        description: Sorted list of leaderboard entries with rank and relative times
+        example: [{"initials": "ABC", "score": 123456, "rank": 1, "ago": "2h"}]
+    @end
+    """
     return get_scoreboard("leaders", reverse=True)
 
 
@@ -541,11 +639,36 @@ def app_scoreDelete(request):
 
 @add_route("/api/tournament")
 def app_tournamentRead(request):
+    """
+    @api
+    summary: Read the tournament leaderboard
+    response:
+      status_codes:
+        - code: 200
+          description: Tournament leaderboard returned
+      body:
+        description: List of tournament scores sorted by game order
+        example: [{"initials": "ABC", "score": 123456, "game": 1}]
+    @end
+    """
     return get_scoreboard("tournament", sort_by="game")
 
 
 @add_route("/api/leaders/reset", auth=True)
 def app_resetScores(request):
+    """
+    @api
+    summary: Clear the main leaderboard
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Scores cleared
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from ScoreTrack import reset_scores
 
     reset_scores()
@@ -553,6 +676,19 @@ def app_resetScores(request):
 
 @add_route("/api/tournament/reset", auth=True)
 def app_tournamentClear(request):
+    """
+    @api
+    summary: Clear tournament standings and reset counters
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Tournament data cleared
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     import SharedState
     from SPI_DataStore import blankStruct
 
@@ -562,6 +698,18 @@ def app_tournamentClear(request):
 
 @add_route("/api/scores/claimable")
 def app_getClaimableScores(request):
+    """
+    @api
+    summary: List scores awaiting initials entry
+    response:
+      status_codes:
+        - code: 200
+          description: Claimable scores returned
+      body:
+        description: Collection of unclaimed score records
+        example: [{"score": 12345, "player_index": 0, "game": 1}]
+    @end
+    """
     from ScoreTrack import get_claim_score_list
 
     return get_claim_score_list()
@@ -569,6 +717,32 @@ def app_getClaimableScores(request):
 
 @add_route("/api/scores/claim")
 def app_claimScore(request):
+    """
+    @api
+    summary: Apply initials to an unclaimed score
+    request:
+      body:
+        - name: initials
+          type: string
+          required: true
+          description: Player initials to record
+        - name: player_index
+          type: int
+          required: true
+          description: Player slot associated with the score
+        - name: score
+          type: int
+          required: true
+          description: Score value to claim
+    response:
+      status_codes:
+        - code: 200
+          description: Score claimed
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from ScoreTrack import claim_score
 
     data = request.data
@@ -580,6 +754,18 @@ def app_claimScore(request):
 #
 @add_route("/api/players")
 def app_getPlayers(request):
+    """
+    @api
+    summary: List player records stored on the device
+    response:
+      status_codes:
+        - code: 200
+          description: Player list returned
+      body:
+        description: Mapping of player indices to initials and names
+        example: {"0": {"initials": "ABC", "name": "Alice"}}
+    @end
+    """
     players = {}
     count = ds_memory_map["names"]["count"]
     # Iterate through the player records
@@ -650,6 +836,24 @@ def app_updatePlayer(request):
 
 @add_route("/api/player/scores")
 def app_getScores(request):
+    """
+    @api
+    summary: Fetch all scores for a specific player
+    request:
+      body:
+        - name: id
+          type: int
+          required: true
+          description: Player index to inspect
+    response:
+      status_codes:
+        - code: 200
+          description: Player scores returned
+      body:
+        description: Sorted list of score entries with rank, initials, and timestamps
+        example: [{"score": 10000, "rank": 1, "initials": "ABC", "date": "2024-01-01", "ago": "1d"}]
+    @end
+    """
     from time import time
 
     from phew.ntp import time_ago
@@ -683,7 +887,18 @@ def app_getScores(request):
 
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
-    """Return best score for each registered player."""
+    """
+    @api
+    summary: Return the best score for each registered player
+    response:
+      status_codes:
+        - code: 200
+          description: Personal bests returned
+      body:
+        description: Leaderboard of each player's highest score
+        example: [{"player_id": 0, "initials": "ABC", "score": 12345, "rank": 1}]
+    @end
+    """
     from time import time
 
     from phew.ntp import time_ago
@@ -724,6 +939,25 @@ def app_personal_bests(request):
 
 @add_route("/api/player/scores/reset", auth=True)
 def app_resetIndScores(request):
+    """
+    @api
+    summary: Clear all scores for a single player
+    auth: true
+    request:
+      query:
+        - name: id
+          type: int
+          required: true
+          description: Player index whose scores should be erased
+    response:
+      status_codes:
+        - code: 200
+          description: Scores cleared
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from SPI_DataStore import blankIndPlayerScores
 
     index = int(request.args.get("id"))
@@ -736,7 +970,16 @@ def app_resetIndScores(request):
 @add_route("/api/adjustments/status")
 def app_getAdjustmentStatus(request):
     """
-    Get the status of the adjustments as a list of tuples (name, active, populated)
+    @api
+    summary: Get the status of each adjustment bank
+    response:
+      status_codes:
+        - code: 200
+          description: Adjustment metadata returned
+      body:
+        description: List of tuples describing adjustment slots, activation, and whether data exists
+        example: [["Default", true, true]]
+    @end
     """
     from Adjustments import get_adjustments_status
 
@@ -745,6 +988,29 @@ def app_getAdjustmentStatus(request):
 
 @add_route("/api/adjustments/name", auth=True)
 def app_setAdjustmentName(request):
+    """
+    @api
+    summary: Rename an adjustment set
+    auth: true
+    request:
+      body:
+        - name: index
+          type: int
+          required: true
+          description: Adjustment slot to rename
+        - name: name
+          type: string
+          required: true
+          description: New name for the slot
+    response:
+      status_codes:
+        - code: 200
+          description: Name updated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from Adjustments import set_name
 
     data = request.data
@@ -755,6 +1021,25 @@ def app_setAdjustmentName(request):
 
 @add_route("/api/adjustments/capture", auth=True)
 def app_captureAdjustments(request):
+    """
+    @api
+    summary: Capture current adjustments into a slot
+    auth: true
+    request:
+      body:
+        - name: index
+          type: int
+          required: true
+          description: Destination slot for captured adjustments
+    response:
+      status_codes:
+        - code: 200
+          description: Adjustments stored
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from Adjustments import store_adjustments
 
     store_adjustments(int(request.data["index"]))
@@ -762,6 +1047,25 @@ def app_captureAdjustments(request):
 
 @add_route("/api/adjustments/restore", auth=True, cool_down_seconds=5)
 def app_restoreAdjustments(request):
+    """
+    @api
+    summary: Restore adjustments from a saved slot
+    auth: true
+    request:
+      body:
+        - name: index
+          type: int
+          required: true
+          description: Adjustment slot to restore
+    response:
+      status_codes:
+        - code: 200
+          description: Adjustments restored
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     from Adjustments import restore_adjustments
 
     restore_adjustments(int(request.data["index"]))
@@ -772,6 +1076,18 @@ def app_restoreAdjustments(request):
 #
 @add_route("/api/settings/get_claim_methods")
 def app_getScoreCap(request):
+    """
+    @api
+    summary: Read score entry methods
+    response:
+      status_codes:
+        - code: 200
+          description: Claim methods returned
+      body:
+        description: Flags indicating where initials can be entered
+        example: {"on-machine": true, "web-ui": false}
+    @end
+    """
     record = ds_read_record("extras", 0)
     return {
         "on-machine": record["enter_initials_on_game"],
@@ -781,6 +1097,29 @@ def app_getScoreCap(request):
 
 @add_route("/api/settings/set_claim_methods", auth=True)
 def app_setScoreCap(request):
+    """
+    @api
+    summary: Configure score claim methods
+    auth: true
+    request:
+      body:
+        - name: on-machine
+          type: bool
+          required: false
+          description: Allow initials entry on the physical game
+        - name: web-ui
+          type: bool
+          required: false
+          description: Allow initials entry via the web interface
+    response:
+      status_codes:
+        - code: 200
+          description: Preferences updated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     json_data = request.data
     record = ds_read_record("extras", 0)
     if "on-machine" in json_data:
@@ -792,12 +1131,43 @@ def app_setScoreCap(request):
 
 @add_route("/api/settings/get_tournament_mode")
 def app_getTournamentMode(request):
+    """
+    @api
+    summary: Get whether tournament mode is enabled
+    response:
+      status_codes:
+        - code: 200
+          description: Tournament mode returned
+      body:
+        description: Flag indicating tournament mode state
+        example: {"tournament_mode": true}
+    @end
+    """
     tournament_mode = ds_read_record("extras", 0)["tournament_mode"]
     return {"tournament_mode": tournament_mode}
 
 
 @add_route("/api/settings/set_tournament_mode", auth=True)
 def app_setTournamentMode(request):
+    """
+    @api
+    summary: Enable or disable tournament mode
+    auth: true
+    request:
+      body:
+        - name: tournament_mode
+          type: bool
+          required: true
+          description: New tournament mode setting
+    response:
+      status_codes:
+        - code: 200
+          description: Setting saved
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     json_data = request.data
     if "tournament_mode" in json_data:
         info = ds_read_record("extras", 0)
@@ -807,11 +1177,42 @@ def app_setTournamentMode(request):
 
 @add_route("/api/settings/get_show_ip")
 def app_getShowIP(request):
+    """
+    @api
+    summary: Check whether the IP address is shown on the display
+    response:
+      status_codes:
+        - code: 200
+          description: Preference returned
+      body:
+        description: Flag indicating whether the IP is displayed
+        example: {"show_ip": true}
+    @end
+    """
     return {"show_ip": ds_read_record("extras", 0)["show_ip_address"]}
 
 
 @add_route("/api/settings/set_show_ip", auth=True)
 def app_setShowIP(request):
+    """
+    @api
+    summary: Set whether the IP address should be shown on the display
+    auth: true
+    request:
+      body:
+        - name: show_ip
+          type: bool
+          required: true
+          description: Whether to show the IP address on screen
+    response:
+      status_codes:
+        - code: 200
+          description: Preference updated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     data = request.data
     info = ds_read_record("extras", 0)
     info["show_ip_address"] = bool(data["show_ip"])
@@ -823,6 +1224,18 @@ def app_setShowIP(request):
 
 @add_route("/api/time/midnight_madness_available")
 def app_midnightMadnessAvailable(request):
+    """
+    @api
+    summary: Report whether Midnight Madness mode is supported
+    response:
+      status_codes:
+        - code: 200
+          description: Availability returned
+      body:
+        description: Flag indicating if the game supports Midnight Madness
+        example: {"available": true}
+    @end
+    """
     if S.gdata["GameInfo"].get("Clock") == "MM":
         return {"available": True}
     else:
@@ -831,6 +1244,18 @@ def app_midnightMadnessAvailable(request):
 
 @add_route("/api/time/get_midnight_madness")
 def app_getMidnightMadness(request):
+    """
+    @api
+    summary: Read Midnight Madness configuration
+    response:
+      status_codes:
+        - code: 200
+          description: Configuration returned
+      body:
+        description: Flags describing whether Midnight Madness is enabled and always on
+        example: {"enabled": true, "always": false}
+    @end
+    """
     record = ds_read_record("extras", 0)
     return {
         "enabled": record.get("WPCTimeOn", False),
@@ -840,6 +1265,29 @@ def app_getMidnightMadness(request):
 
 @add_route("/api/time/set_midnight_madness", auth=True)
 def app_setMidnightMadness(request):
+    """
+    @api
+    summary: Update Midnight Madness configuration
+    auth: true
+    request:
+      body:
+        - name: always
+          type: bool
+          required: true
+          description: Keep Midnight Madness enabled at all times
+        - name: enabled
+          type: bool
+          required: true
+          description: Enable timed Midnight Madness events
+    response:
+      status_codes:
+        - code: 200
+          description: Configuration saved
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     data = request.data
     info = ds_read_record("extras", 0)
     info["MM_Always"] = bool(data["always"])
@@ -849,6 +1297,18 @@ def app_setMidnightMadness(request):
 
 @add_route("/api/time/trigger_midnight_madness")
 def app_triggerMidnightMadness(request):
+    """
+    @api
+    summary: Immediately trigger Midnight Madness
+    response:
+      status_codes:
+        - code: 200
+          description: Event triggered
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     import Time
 
     Time.trigger_midnight_madness()
@@ -856,6 +1316,19 @@ def app_triggerMidnightMadness(request):
 
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
+    """
+    @api
+    summary: Perform a full factory reset
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Reset initiated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     import reset_control
     from Adjustments import blank_all as A_blank
     from logger import logger_instance
@@ -883,6 +1356,19 @@ def app_factoryReset(request):
 
 @add_route("/api/settings/reboot", auth=True)
 def app_reboot(request):
+    """
+    @api
+    summary: Reboot the controller
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Reboot initiated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     import reset_control
     from machine import reset
 
@@ -896,12 +1382,36 @@ def app_reboot(request):
 #
 @add_route("/api/last_ip")
 def app_getLastIP(request):
+    """
+    @api
+    summary: Get the last known IP address
+    response:
+      status_codes:
+        - code: 200
+          description: IP returned
+      body:
+        description: Last recorded IP address
+        example: {"ip": "192.168.0.10"}
+    @end
+    """
     ip_address = ds_read_record("extras", 0)["lastIP"]
     return {"ip": ip_address}
 
 
 @add_route("/api/available_ssids")
 def app_getAvailableSSIDs(request):
+    """
+    @api
+    summary: Scan for nearby Wi-Fi networks
+    response:
+      status_codes:
+        - code: 200
+          description: Networks listed
+      body:
+        description: Array of SSID records with signal quality and configuration flag
+        example: [{"ssid": "MyNetwork", "rssi": -40, "configured": true}]
+    @end
+    """
     import scanwifi
 
     available_networks = scanwifi.scan_wifi2()
@@ -917,6 +1427,18 @@ def app_getAvailableSSIDs(request):
 
 @add_route("/api/network/peers")
 def app_getPeers(request):
+    """
+    @api
+    summary: Discover other devices on the local network
+    response:
+      status_codes:
+        - code: 200
+          description: Peer map returned
+      body:
+        description: Mapping of peer identifiers to network information
+        example: {"vector-1": {"ip": "192.168.0.11"}}
+    @end
+    """
     from discovery import get_peer_map
 
     return get_peer_map()
@@ -927,7 +1449,25 @@ def app_getPeers(request):
 #
 @add_route("/api/set_date", auth=True)
 def app_setDateTime(request):
-    """Set the date and time on the device"""
+    """
+    @api
+    summary: Set the device date and time
+    auth: true
+    request:
+      body:
+        - name: date
+          type: list
+          required: true
+          description: RTC tuple [year, month, day, hour, minute, second]
+    response:
+      status_codes:
+        - code: 200
+          description: Clock updated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     date = [int(e) for e in request.json["date"]]
 
     # rtc will calculate the day of the week for us
@@ -936,6 +1476,18 @@ def app_setDateTime(request):
 
 @add_route("/api/get_date")
 def app_getDateTime(request):
+    """
+    @api
+    summary: Read the current device time
+    response:
+      status_codes:
+        - code: 200
+          description: RTC timestamp returned
+      body:
+        description: Tuple containing RTC date/time fields
+        example: [2024, 5, 1, 0, 12, 0, 0, 0]
+    @end
+    """
     return rtc.datetime(), 200
 
 
@@ -944,6 +1496,18 @@ def app_getDateTime(request):
 #
 @add_route("/api/version")
 def app_version(request):
+    """
+    @api
+    summary: Report software version
+    response:
+      status_codes:
+        - code: 200
+          description: Version returned
+      body:
+        description: Current firmware version string
+        example: {"version": "1.0.0"}
+    @end
+    """
     from systemConfig import SystemVersion
 
     return {"version": SystemVersion}
@@ -951,6 +1515,18 @@ def app_version(request):
 
 @add_route("/api/fault")
 def app_install_fault(request):
+    """
+    @api
+    summary: Read current fault state
+    response:
+      status_codes:
+        - code: 200
+          description: Faults returned
+      body:
+        description: Collection of fault flags and details
+        example: {"faults": []}
+    @end
+    """
     import SharedState
 
     return SharedState.faults
@@ -961,6 +1537,18 @@ def app_install_fault(request):
 #
 @add_route("/api/export/scores")
 def app_export_leaderboard(request):
+    """
+    @api
+    summary: Export all leaderboard data
+    response:
+      status_codes:
+        - code: 200
+          description: Export stream started
+      body:
+        description: File download containing leaderboard scores
+        example: "<binary stream>"
+    @end
+    """
     from FileIO import download_scores
 
     return download_scores()
@@ -968,6 +1556,25 @@ def app_export_leaderboard(request):
 
 @add_route("/api/import/scores", auth=True)
 def app_import_leaderboard(request):
+    """
+    @api
+    summary: Import leaderboard data from an uploaded file
+    auth: true
+    request:
+      body:
+        - name: file
+          type: bytes
+          required: true
+          description: Score export file content
+    response:
+      status_codes:
+        - code: 200
+          description: Import completed
+      body:
+        description: Success indicator
+        example: {"success": true}
+    @end
+    """
     from FileIO import import_scores
 
     data = request.data
@@ -976,6 +1583,18 @@ def app_import_leaderboard(request):
 
 @add_route("/api/memory-snapshot")
 def app_memory_snapshot(request):
+    """
+    @api
+    summary: Stream a snapshot of memory contents
+    response:
+      status_codes:
+        - code: 200
+          description: Snapshot streaming
+      body:
+        description: Text stream of byte values separated by newlines
+        example: "0\n1\n2\n"
+    @end
+    """
     ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
     for value in ram_access:
         yield f"{value}\n".encode("utf-8")
@@ -983,6 +1602,19 @@ def app_memory_snapshot(request):
 
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
+    """
+    @api
+    summary: Download the system log file
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Log download streaming
+      body:
+        description: Log file content
+        example: "<log text>"
+    @end
+    """
     from FileIO import download_log
 
     return download_log()
@@ -993,7 +1625,18 @@ def app_getLogs(request):
 #
 @add_route("/api/update/check", cool_down_seconds=10)
 def app_updates_available(request):
-    """Check for available updates and return the result as JSON."""
+    """
+    @api
+    summary: Check the server for available updates
+    response:
+      status_codes:
+        - code: 200
+          description: Update metadata returned
+      body:
+        description: JSON payload describing available updates
+        example: {"available": true, "version": "1.2.3"}
+    @end
+    """
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
@@ -1058,6 +1701,18 @@ def add_app_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
+        """
+        @api
+        summary: Indicate that the device is running in app mode
+        response:
+          status_codes:
+            - code: 200
+              description: Mode reported
+          body:
+            description: Flag showing AP mode status
+            example: {"in_ap_mode": false}
+        @end
+        """
         return {"in_ap_mode": False}
 
 
@@ -1069,11 +1724,52 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
+        """
+        @api
+        summary: Indicate that the device is running in AP mode
+        response:
+          status_codes:
+            - code: 200
+              description: Mode reported
+          body:
+            description: Flag showing AP mode status
+            example: {"in_ap_mode": true}
+        @end
+        """
         return {"in_ap_mode": True}
 
     @add_route("/api/settings/set_vector_config")
     def app_setWifi(request):
-        """Set the wifi SSID and password"""
+        """
+        @api
+        summary: Configure Wi-Fi credentials and default game
+        request:
+          body:
+            - name: ssid
+              type: string
+              required: true
+              description: Wi-Fi network name
+            - name: wifi_password
+              type: string
+              required: true
+              description: Wi-Fi network password
+            - name: vector_password
+              type: string
+              required: true
+              description: Password for authenticated API access
+            - name: game_config_filename
+              type: string
+              required: true
+              description: Game configuration filename to load
+        response:
+          status_codes:
+            - code: 200
+              description: Configuration saved
+          body:
+            description: Empty body; generator emits OK
+            example: "ok"
+        @end
+        """
         from GameDefsLoad import list_game_configs
 
         all_game_configs = list_game_configs().keys()
