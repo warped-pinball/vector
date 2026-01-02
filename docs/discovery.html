@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover boards on the network</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Discover boards on the network</h1>
+  <div class="panel">
+    <p>The discovery helpers in <code>src/common/discovery.py</code> broadcast a small UDP heartbeat on port <code>37020</code>. Boards elect the lowest IP as the registry device, which replies with the full peer list.</p>
+  </div>
+  <div class="panel">
+    <h2>Quick start</h2>
+    <ol>
+      <li>Import the helpers: <code>from discovery import broadcast_hello, listen, get_peer_map</code>.</li>
+      <li>Call <code>broadcast_hello()</code> once to announce yourself.</li>
+      <li>Periodically call <code>listen()</code> to process incoming packets and update the peer list.</li>
+      <li>Read peers from <code>get_peer_map()</code>, which returns <code>{"&lt;ip&gt;": "&lt;game name&gt;"}</code>.</li>
+    </ol>
+<pre><code>import time
+from discovery import broadcast_hello, get_peer_map, listen
+
+broadcast_hello()  # announce this board
+
+while True:
+    listen()              # handle any discovery packets
+    print(get_peer_map())  # {'192.168.1.20': 'Vector One', ...}
+    time.sleep(5)
+</code></pre>
+    <p>Use <code>ping_random_peer()</code> to nudge peers for liveness, or <code>broadcast_full_list()</code> from the registry node to re-sync late joiners.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
+</body>
+</html>

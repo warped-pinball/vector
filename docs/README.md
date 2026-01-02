@@ -8,7 +8,12 @@ The files in this directory are generated automatically from `src/common/backend
 python tools/gen_api_docs.py
 ```
 
-This rewrites `docs/index.html` with the latest routes discovered in `backend.py`, and regenerates `docs/authentication.html` with the authentication flow.
+This rewrites `docs/index.html` with the latest routes discovered in `backend.py`, and regenerates the supplemental guides:
+
+- `docs/authentication.html` — authentication flow
+- `docs/network.html` — calling the HTTP API over the network
+- `docs/discovery.html` — peer discovery quickstart
+- `docs/usb.html` — USB transport framing and examples
 
 ## Optional structured docstrings
 

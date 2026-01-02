@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessing the API over USB</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Accessing the API over USB</h1>
+  <div class="panel">
+    <p>The USB transport reuses the same route handlers via <code>src/common/usb_comms.py</code>. Requests are read from the serial console as <code>route|headers|body</code> lines and responded to with JSON.</p>
+  </div>
+  <div class="panel">
+    <h2>Frame format</h2>
+    <p>Each request line contains three pipe-delimited fields. Escape literal pipes in headers or body as <code>\|</code>. Headers are provided as raw HTTP-style text (e.g. <code>Content-Type: application/json</code> on separate lines) and the body is optional.</p>
+  </div>
+  <div class="panel">
+    <h2>Host demo snippet</h2>
+<pre><code>import json
+import serial
+
+port = serial.Serial("/dev/ttyACM0", 115200, timeout=2)
+
+def send(route, headers=None, body=""):
+    headers = headers or {}
+    header_text = "
+".join(f"{k}: {v}" for k, v in headers.items())
+    frame = f"{route}|{header_text}|{body}
+"
+    port.write(frame.encode())
+    line = port.readline().decode().strip()
+    # USB API responses are JSON payloads already stringified by the device
+    return json.loads(line.replace("USB API RESPONSE-->", ""))
+
+# Query version
+print(send("/api/version"))
+
+# Authenticated example: challenge first, then include headers
+challenge_resp = send("/api/auth/challenge")
+challenge = json.loads(challenge_resp["body"]).get("challenge")
+print("challenge", challenge)
+</code></pre>
+    <p>Process incoming <code>USB API RESPONSE--></code> lines from the device as JSON objects containing <code>route</code>, <code>status</code>, <code>headers</code>, and <code>body</code>.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
+</body>
+</html>
