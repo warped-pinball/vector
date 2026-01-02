@@ -345,7 +345,12 @@ def render_route(route: RouteDoc) -> str:
     doc = route.doc_block or {}
     summary = html.escape(str(doc.get("summary", ""))) if doc else ""
     description = summary or "No description provided."
-    auth_note = "<p><strong>Authentication:</strong> Required</p>" if route.auth else ""
+    handler_link = f"<a href='../src/common/backend.py#L{route.lineno}'>{html.escape(route.handler)}</a>"
+    auth_note = (
+        "<p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>"
+        if route.auth
+        else ""
+    )
     cooldown_note = (
         f"<p><strong>Cooldown:</strong> {route.cool_down_seconds}s</p>"
         if route.cool_down_seconds
@@ -373,15 +378,13 @@ def render_route(route: RouteDoc) -> str:
     return f"""
     <section id="{anchor}">
       <h2><code>{html.escape(route.path)}</code></h2>
-      <p><strong>Handler:</strong> {html.escape(route.handler)}</p>
-      <p><strong>Method:</strong> GET (all routes are treated as GET for documentation)</p>
+      <p><strong>Handler:</strong> {handler_link}</p>
       {auth_note}{cooldown_note}{single_note}
       {description_block}
       <h3>Request</h3>
       {request_fields or '<p>No parameters inferred.</p>'}
       <h3>Response</h3>
       {response_block}
-      <p class="auth-hint">For authenticated routes, include <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers from the authentication flow.</p>
     </section>
     """
 
@@ -405,19 +408,396 @@ def build_html(routes: List[RouteDoc]) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vector HTTP API</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 2rem; max-width: 960px; }}
-    code {{ background: #f2f2f2; padding: 2px 4px; border-radius: 4px; }}
-    section {{ border-bottom: 1px solid #ddd; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }}
-    h1, h2, h3 {{ color: #222; }}
-    .auth-hint {{ color: #555; font-size: 0.95rem; }}
+    :root {{
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #111827;
+      --panel-border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --code-bg: #0b1221;
+      --code-text: #f8fafc;
+      --code-border: #1d2a3f;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem 3rem;
+      max-width: 1024px;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
+                  radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 25%),
+                  var(--bg);
+    }}
+    h1, h2, h3 {{ color: var(--text); margin-top: 0; }}
+    a {{ color: var(--accent); text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+    .panel {{
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.75rem;
+    }}
+    ul {{ list-style: none; padding-left: 0; }}
+    ul li {{ margin: 0.3rem 0; }}
+    .endpoint-list a {{ font-weight: 600; }}
+    code {{ background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--code-border); }}
+    pre {{
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--code-border);
+      overflow-x: auto;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }}
+    pre code {{ display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }}
+    section {{ border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }}
+    .meta {{ color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }}
+    .tag {{ display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }}
   </style>
 </head>
 <body>
   <h1>Vector HTTP API</h1>
-  <p>This documentation is generated automatically from <code>src/common/backend.py</code>. Routes are treated as GET for readability; refer to request parameter locations for specifics.</p>
-  <h2>Endpoints</h2>
-  {index}
-  {sections}
+  <div class="panel">
+    <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Refer to request parameter locations for specifics.</p>
+    <p class="meta">Authentication flow is documented separately in <a href="authentication.html">Authentication</a>.</p>
+    <p class="meta">Connectivity guides: <a href="network.html">HTTP over the network</a>, <a href="discovery.html">peer discovery</a>, and <a href="usb.html">USB transport</a>.</p>
+    <h2>Endpoints</h2>
+    <div class="endpoint-list">{index}</div>
+  </div>
+  <div class="panel">{sections}</div>
+</body>
+</html>
+"""
+
+
+def build_authentication_html() -> str:
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector HTTP API Authentication</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Authentication</h1>
+  <div class="panel">
+    <p>Authenticated routes require an HMAC signature tied to a one-time challenge token. Use this flow for any route marked as requiring authentication.</p>
+  </div>
+  <div class="panel">
+    <h2>Flow</h2>
+    <ol>
+      <li>Call <code>/api/auth/challenge</code> to receive a hexadecimal <code>challenge</code> string.</li>
+      <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
+      <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
+      <li>Send the protected request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
+      <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h2>Examples</h2>
+    <p>Example message construction for <code>/api/settings/set_show_ip</code> without a request body:</p>
+    <pre><code>challenge = "deadbeef..."  # obtained from /api/auth/challenge
+path = "/api/settings/set_show_ip"
+body = ""  # no payload for this route
+message = challenge + path + body</code></pre>
+    <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
+  </div>
+  <div class="panel">
+    <h2>Ready-to-run Python example</h2>
+    <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
+<pre><code>#!/usr/bin/env python3
+import hashlib
+import hmac
+import requests
+
+BASE_URL = "http://192.168.1.42"  # replace with your board IP
+PASSWORD = "your-password"         # the device password used for HMAC
+
+
+def signed_get(path: str):
+    challenge = requests.get(f"{BASE_URL}/api/auth/challenge", timeout=5).json()["challenge"]
+    message = (challenge + path).encode()
+    signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
+
+    return requests.get(
+        f"{BASE_URL}{path}",
+        headers={
+            "x-auth-challenge": challenge,
+            "x-auth-hmac": signature,
+        },
+        timeout=5,
+    )
+
+
+if __name__ == "__main__":
+    print("Version:", requests.get(f"{BASE_URL}/api/version", timeout=5).json())
+    resp = signed_get("/api/settings/set_show_ip")
+    print("Authenticated response:", resp.status_code, resp.text)
+</code></pre>
+    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
+</body>
+</html>
+"""
+
+
+def build_network_html() -> str:
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector HTTP API over the network</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Accessing the API over the network</h1>
+  <div class="panel">
+    <p>Use regular HTTP requests against the board's IP address (e.g. <code>http://192.168.1.42</code>). All routes are GET endpoints unless otherwise documented.</p>
+    <p>For routes marked as authenticated, obtain an HMAC challenge token first and include the required headers; see <a href="authentication.html">Authentication</a> for the signing flow.</p>
+  </div>
+  <div class="panel">
+    <h2>Quick demo script</h2>
+    <p>The snippet below discovers the firmware version and, if needed, signs an authenticated request using the standard challenge flow.</p>
+<pre><code>import hashlib
+import hmac
+import requests
+
+BASE_URL = "http://192.168.1.42"
+PASSWORD = "your-password"
+
+def get(path):
+    return requests.get(BASE_URL + path, timeout=5)
+
+print("Version:", get("/api/version").json())
+
+# Authenticated example: toggle show_ip
+challenge = get("/api/auth/challenge").json()["challenge"]
+path = "/api/settings/set_show_ip"
+body = ""  # no body for this GET route
+message = (challenge + path + body).encode()
+signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
+
+resp = requests.get(
+    BASE_URL + path,
+    headers={
+        "x-auth-challenge": challenge,
+        "x-auth-hmac": signature,
+    },
+    timeout=5,
+)
+print("show_ip response:", resp.text)
+</code></pre>
+    <p>Swap <code>BASE_URL</code> for your board's address and reuse the helper to call other authenticated routes.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
+</body>
+</html>
+"""
+
+
+def build_discovery_html() -> str:
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover boards on the network</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Discover boards on the network</h1>
+  <div class="panel">
+    <p>The discovery helpers in <code>src/common/discovery.py</code> broadcast a small UDP heartbeat on port <code>37020</code>. Boards elect the lowest IP as the registry device, which replies with the full peer list.</p>
+    <p>On a laptop or desktop you will need to implement the wire protocol yourself (you cannot import the MicroPython helpers directly). The script below mirrors the on-device behavior using standard Python sockets.</p>
+  </div>
+  <div class="panel">
+    <h2>Quick start</h2>
+    <ol>
+      <li>Broadcast a HELLO frame (<code>[1, name_length, name bytes]</code>) on UDP port <code>37020</code>.</li>
+      <li>Listen for FULL responses (<code>[2, count, ip bytes..., name length, name bytes]</code>) from the elected registry node.</li>
+      <li>Parse the peer map from the FULL payload and refresh it periodically.</li>
+    </ol>
+    <p>Ready-to-run desktop script:</p>
+<pre><code>#!/usr/bin/env python3
+import socket
+import time
+
+DISCOVERY_PORT = 37020
+NAME = "DesktopClient"
+
+
+def send_hello(sock: socket.socket):
+    name_bytes = NAME.encode("utf-8")[:32]
+    payload = bytes([1, len(name_bytes)]) + name_bytes
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.sendto(payload, ("255.255.255.255", DISCOVERY_PORT))
+
+
+def decode_full(data: bytes):
+    peers = {}
+    if len(data) < 2 or data[0] != 2:
+        return peers
+    count = data[1]
+    offset = 2
+    for _ in range(count):
+        if len(data) < offset + 5:
+            break
+        ip_bytes = data[offset : offset + 4]
+        offset += 4
+        name_len = data[offset]
+        offset += 1
+        name = data[offset : offset + name_len].decode("utf-8", "ignore")
+        offset += name_len
+        ip_str = socket.inet_ntoa(ip_bytes)
+        peers[ip_str] = name
+    return peers
+
+
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", DISCOVERY_PORT))
+    send_hello(sock)
+    print("Broadcasted discovery HELLO... listening for peers")
+
+    while True:
+        sock.settimeout(5)
+        try:
+            data, addr = sock.recvfrom(1024)
+        except socket.timeout:
+            send_hello(sock)
+            continue
+
+        peers = decode_full(data)
+        if peers:
+            print(f"Registry {addr[0]} reports peers: {peers}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+    <p>Run the script on the same network as the boards. It will rebroadcast a HELLO every few seconds if no responses arrive.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
+</body>
+</html>
+"""
+
+
+def build_usb_html() -> str:
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessing the API over USB</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Accessing the API over USB</h1>
+  <div class="panel">
+    <p>The USB transport reuses the same route handlers via <code>src/common/usb_comms.py</code>. Requests are read from the serial console as <code>route|headers|body</code> lines and responded to with JSON.</p>
+    <p>Host-side scripts cannot import the MicroPython modules. Use the standalone client below based on <code>dev/usb_coms_demo.py</code> to talk to the board over serial.</p>
+  </div>
+  <div class="panel">
+    <h2>Frame format</h2>
+    <p>Each request line contains three pipe-delimited fields. Escape literal pipes in headers or body as <code>\|</code>. Headers are provided as raw HTTP-style text (e.g. <code>Content-Type: application/json</code> on separate lines) and the body is optional.</p>
+  </div>
+  <div class="panel">
+    <h2>Host demo snippet</h2>
+    <p>Save the following as <code>usb_client.py</code> (adapted from <code>dev/usb_coms_demo.py</code>) and run it locally:</p>
+<pre><code>#!/usr/bin/env python3
+import json
+import time
+
+import serial
+
+
+def send_and_receive(port: str, route: str, headers=None, body_text=""):
+    ser = serial.Serial(port=port, baudrate=115200, timeout=10)
+    time.sleep(2)  # allow the device to reset
+    headers = headers or {"Content-Type": "application/json"}
+    header_text = "\\n".join(f"{k}: {v}" for k, v in headers.items())
+    frame = f"{route}|{header_text}|{body_text}\\n"
+    ser.write(frame.encode())
+    prefix = "USB API RESPONSE-->"
+    while True:
+        line = ser.readline().decode(errors="replace").strip()
+        if not line.startswith(prefix):
+            continue
+        payload = json.loads(line[len(prefix) :])
+        body_raw = payload.get("body")
+        if isinstance(body_raw, str):
+            try:
+                payload["body"] = json.loads(body_raw)
+            except json.JSONDecodeError:
+                pass
+        return payload
+
+
+if __name__ == "__main__":
+    port = "/dev/ttyACM0"  # adjust for your platform
+    print(send_and_receive(port, "/api/version"))
+    # Authenticated call: fetch challenge then include headers
+    challenge_resp = send_and_receive(port, "/api/auth/challenge")
+    print("challenge", challenge_resp.get("body"))
+</code></pre>
+    <p>The helper opens the serial connection, writes a framed request, and parses the JSON response emitted by the firmware. Expand it with additional routes as needed.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
 </body>
 </html>
 """
@@ -425,11 +805,14 @@ def build_html(routes: List[RouteDoc]) -> str:
 
 def write_docs(routes: List[RouteDoc]) -> None:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    (DOCS_DIR / "api").mkdir(parents=True, exist_ok=True)
-
     html_content = build_html(routes)
     (DOCS_DIR / "index.html").write_text(html_content, encoding="utf-8")
-    (DOCS_DIR / "api" / "index.html").write_text(html_content, encoding="utf-8")
+    (DOCS_DIR / "authentication.html").write_text(
+        build_authentication_html(), encoding="utf-8"
+    )
+    (DOCS_DIR / "network.html").write_text(build_network_html(), encoding="utf-8")
+    (DOCS_DIR / "discovery.html").write_text(build_discovery_html(), encoding="utf-8")
+    (DOCS_DIR / "usb.html").write_text(build_usb_html(), encoding="utf-8")
 
 
 def main() -> None:
