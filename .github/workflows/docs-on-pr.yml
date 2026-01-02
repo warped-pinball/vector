@@ -1,7 +1,7 @@
 name: Generate API docs
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "src/common/backend.py"
@@ -13,11 +13,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+
+      - name: Fetch PR branch
+        run: |
+          git fetch --no-tags origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}
+          git checkout pr-${{ github.event.pull_request.number }}
+
+      - name: Restore trusted doc generator
+        run: |
+          git show origin/${{ github.event.pull_request.base.ref }}:tools/gen_api_docs.py > /tmp/gen_api_docs.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,12 +36,12 @@ jobs:
 
       - name: Generate docs
         run: |
-          python tools/gen_api_docs.py
+          python /tmp/gen_api_docs.py
 
       - name: Commit docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: |
           git config user.name "vector-docs-bot"
           git config user.email "vector-docs-bot@example.com"
