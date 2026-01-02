@@ -149,7 +149,7 @@
     
     <section id="api-leaders">
       <h2><code>/api/leaders</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L576'>app_leaderBoardRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L570'>app_leaderBoardRead</a></p>
       
       <p>Fetch the main leaderboard</p>
       <h3>Request</h3>
@@ -160,7 +160,7 @@
     
     <section id="api-score-delete">
       <h2><code>/api/score/delete</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L593'>app_scoreDelete</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L587'>app_scoreDelete</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Delete score entries from a leaderboard</p>
       <h3>Request</h3>
@@ -171,7 +171,7 @@
     
     <section id="api-tournament">
       <h2><code>/api/tournament</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L641'>app_tournamentRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L635'>app_tournamentRead</a></p>
       
       <p>Read the tournament leaderboard</p>
       <h3>Request</h3>
@@ -182,7 +182,7 @@
     
     <section id="api-leaders-reset">
       <h2><code>/api/leaders/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L658'>app_resetScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L652'>app_resetScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear the main leaderboard</p>
       <h3>Request</h3>
@@ -193,7 +193,7 @@
     
     <section id="api-tournament-reset">
       <h2><code>/api/tournament/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L678'>app_tournamentClear</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L672'>app_tournamentClear</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear tournament standings and reset counters</p>
       <h3>Request</h3>
@@ -204,7 +204,7 @@
     
     <section id="api-scores-claimable">
       <h2><code>/api/scores/claimable</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L700'>app_getClaimableScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L694'>app_getClaimableScores</a></p>
       
       <p>List scores awaiting initials entry</p>
       <h3>Request</h3>
@@ -215,7 +215,7 @@
     
     <section id="api-scores-claim">
       <h2><code>/api/scores/claim</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L719'>app_claimScore</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L713'>app_claimScore</a></p>
       
       <p>Apply initials to an unclaimed score</p>
       <h3>Request</h3>
@@ -226,7 +226,7 @@
     
     <section id="api-players">
       <h2><code>/api/players</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L756'>app_getPlayers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L750'>app_getPlayers</a></p>
       
       <p>List player records stored on the device</p>
       <h3>Request</h3>
@@ -237,7 +237,7 @@
     
     <section id="api-player-update">
       <h2><code>/api/player/update</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L782'>app_updatePlayer</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L776'>app_updatePlayer</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Update a stored player record</p>
       <h3>Request</h3>
@@ -248,7 +248,7 @@
     
     <section id="api-player-scores">
       <h2><code>/api/player/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L838'>app_getScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L832'>app_getScores</a></p>
       
       <p>Fetch all scores for a specific player</p>
       <h3>Request</h3>
@@ -259,7 +259,7 @@
     
     <section id="api-personal-bests">
       <h2><code>/api/personal/bests</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L889'>app_personal_bests</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L883'>app_personal_bests</a></p>
       
       <p>Return the best score for each registered player</p>
       <h3>Request</h3>
@@ -270,7 +270,7 @@
     
     <section id="api-player-scores-reset">
       <h2><code>/api/player/scores/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L941'>app_resetIndScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L935'>app_resetIndScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear all scores for a single player</p>
       <h3>Request</h3>
@@ -281,7 +281,7 @@
     
     <section id="api-adjustments-status">
       <h2><code>/api/adjustments/status</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L971'>app_getAdjustmentStatus</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L965'>app_getAdjustmentStatus</a></p>
       
       <p>Get the status of each adjustment bank</p>
       <h3>Request</h3>
@@ -292,7 +292,7 @@
     
     <section id="api-adjustments-name">
       <h2><code>/api/adjustments/name</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L990'>app_setAdjustmentName</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L984'>app_setAdjustmentName</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Rename an adjustment set</p>
       <h3>Request</h3>
@@ -303,7 +303,7 @@
     
     <section id="api-adjustments-capture">
       <h2><code>/api/adjustments/capture</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1023'>app_captureAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1017'>app_captureAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Capture current adjustments into a slot</p>
       <h3>Request</h3>
@@ -314,7 +314,7 @@
     
     <section id="api-adjustments-restore">
       <h2><code>/api/adjustments/restore</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1049'>app_restoreAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1043'>app_restoreAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 5s</p>
       <p>Restore adjustments from a saved slot</p>
       <h3>Request</h3>
@@ -325,7 +325,7 @@
     
     <section id="api-settings-get_claim_methods">
       <h2><code>/api/settings/get_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1078'>app_getScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1072'>app_getScoreCap</a></p>
       
       <p>Read score entry methods</p>
       <h3>Request</h3>
@@ -336,7 +336,7 @@
     
     <section id="api-settings-set_claim_methods">
       <h2><code>/api/settings/set_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1099'>app_setScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1093'>app_setScoreCap</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Configure score claim methods</p>
       <h3>Request</h3>
@@ -347,7 +347,7 @@
     
     <section id="api-settings-get_tournament_mode">
       <h2><code>/api/settings/get_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1133'>app_getTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1127'>app_getTournamentMode</a></p>
       
       <p>Get whether tournament mode is enabled</p>
       <h3>Request</h3>
@@ -358,7 +358,7 @@
     
     <section id="api-settings-set_tournament_mode">
       <h2><code>/api/settings/set_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1151'>app_setTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1145'>app_setTournamentMode</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Enable or disable tournament mode</p>
       <h3>Request</h3>
@@ -369,7 +369,7 @@
     
     <section id="api-settings-get_show_ip">
       <h2><code>/api/settings/get_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1179'>app_getShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1173'>app_getShowIP</a></p>
       
       <p>Check whether the IP address is shown on the display</p>
       <h3>Request</h3>
@@ -380,7 +380,7 @@
     
     <section id="api-settings-set_show_ip">
       <h2><code>/api/settings/set_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1196'>app_setShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1190'>app_setShowIP</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set whether the IP address should be shown on the display</p>
       <h3>Request</h3>
@@ -391,7 +391,7 @@
     
     <section id="api-time-midnight_madness_available">
       <h2><code>/api/time/midnight_madness_available</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1226'>app_midnightMadnessAvailable</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1220'>app_midnightMadnessAvailable</a></p>
       
       <p>Report whether Midnight Madness mode is supported</p>
       <h3>Request</h3>
@@ -402,7 +402,7 @@
     
     <section id="api-time-get_midnight_madness">
       <h2><code>/api/time/get_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1246'>app_getMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1240'>app_getMidnightMadness</a></p>
       
       <p>Read Midnight Madness configuration</p>
       <h3>Request</h3>
@@ -413,7 +413,7 @@
     
     <section id="api-time-set_midnight_madness">
       <h2><code>/api/time/set_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1267'>app_setMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1261'>app_setMidnightMadness</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Update Midnight Madness configuration</p>
       <h3>Request</h3>
@@ -424,7 +424,7 @@
     
     <section id="api-time-trigger_midnight_madness">
       <h2><code>/api/time/trigger_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1299'>app_triggerMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1293'>app_triggerMidnightMadness</a></p>
       
       <p>Immediately trigger Midnight Madness</p>
       <h3>Request</h3>
@@ -435,7 +435,7 @@
     
     <section id="api-settings-factory_reset">
       <h2><code>/api/settings/factory_reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1318'>app_factoryReset</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1312'>app_factoryReset</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Perform a full factory reset</p>
       <h3>Request</h3>
@@ -446,7 +446,7 @@
     
     <section id="api-settings-reboot">
       <h2><code>/api/settings/reboot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1358'>app_reboot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1352'>app_reboot</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Reboot the controller</p>
       <h3>Request</h3>
@@ -457,7 +457,7 @@
     
     <section id="api-last_ip">
       <h2><code>/api/last_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1384'>app_getLastIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1378'>app_getLastIP</a></p>
       
       <p>Get the last known IP address</p>
       <h3>Request</h3>
@@ -468,7 +468,7 @@
     
     <section id="api-available_ssids">
       <h2><code>/api/available_ssids</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1402'>app_getAvailableSSIDs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1396'>app_getAvailableSSIDs</a></p>
       
       <p>Scan for nearby Wi-Fi networks</p>
       <h3>Request</h3>
@@ -479,7 +479,7 @@
     
     <section id="api-network-peers">
       <h2><code>/api/network/peers</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1429'>app_getPeers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1423'>app_getPeers</a></p>
       
       <p>Discover other devices on the local network</p>
       <h3>Request</h3>
@@ -490,7 +490,7 @@
     
     <section id="api-set_date">
       <h2><code>/api/set_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1451'>app_setDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1445'>app_setDateTime</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set the device date and time</p>
       <h3>Request</h3>
@@ -501,7 +501,7 @@
     
     <section id="api-get_date">
       <h2><code>/api/get_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1478'>app_getDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1472'>app_getDateTime</a></p>
       
       <p>Read the current device time</p>
       <h3>Request</h3>
@@ -512,7 +512,7 @@
     
     <section id="api-version">
       <h2><code>/api/version</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1498'>app_version</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1492'>app_version</a></p>
       
       <p>Report software version</p>
       <h3>Request</h3>
@@ -523,7 +523,7 @@
     
     <section id="api-fault">
       <h2><code>/api/fault</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1517'>app_install_fault</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1511'>app_install_fault</a></p>
       
       <p>Read current fault state</p>
       <h3>Request</h3>
@@ -534,7 +534,7 @@
     
     <section id="api-export-scores">
       <h2><code>/api/export/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1539'>app_export_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1533'>app_export_leaderboard</a></p>
       
       <p>Export all leaderboard data</p>
       <h3>Request</h3>
@@ -545,7 +545,7 @@
     
     <section id="api-import-scores">
       <h2><code>/api/import/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1558'>app_import_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1552'>app_import_leaderboard</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Import leaderboard data from an uploaded file</p>
       <h3>Request</h3>
@@ -556,7 +556,7 @@
     
     <section id="api-memory-snapshot">
       <h2><code>/api/memory-snapshot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1585'>app_memory_snapshot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1579'>app_memory_snapshot</a></p>
       
       <p>Stream a snapshot of memory contents</p>
       <h3>Request</h3>
@@ -567,7 +567,7 @@
     
     <section id="api-logs">
       <h2><code>/api/logs</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1604'>app_getLogs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1598'>app_getLogs</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 10s</p><p><strong>Single instance:</strong> Yes</p>
       <p>Download the system log file</p>
       <h3>Request</h3>
@@ -578,7 +578,7 @@
     
     <section id="api-update-check">
       <h2><code>/api/update/check</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1627'>app_updates_available</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1621'>app_updates_available</a></p>
       <p><strong>Cooldown:</strong> 10s</p>
       <p>Check the server for available updates</p>
       <h3>Request</h3>
@@ -589,7 +589,7 @@
     
     <section id="api-update-apply">
       <h2><code>/api/update/apply</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1654'>app_apply_update</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1648'>app_apply_update</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Apply a downloaded software update</p>
       <h3>Request</h3>
@@ -600,7 +600,7 @@
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1703'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1697'>app_inAPMode</a></p>
       
       <p>Indicate that the device is running in app mode</p>
       <h3>Request</h3>
@@ -611,7 +611,7 @@
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1726'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1720'>app_inAPMode</a></p>
       
       <p>Indicate that the device is running in AP mode</p>
       <h3>Request</h3>
@@ -622,7 +622,7 @@
     
     <section id="api-settings-set_vector_config">
       <h2><code>/api/settings/set_vector_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1742'>app_setWifi</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1736'>app_setWifi</a></p>
       
       <p>Configure Wi-Fi credentials and default game</p>
       <h3>Request</h3>
