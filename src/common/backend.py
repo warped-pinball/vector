@@ -331,11 +331,6 @@ def get_challenge(request):
     @api
     summary: Request a new authentication challenge
     request:
-      headers:
-        - name: x-auth-user
-          type: string
-          required: false
-          description: Optional user hint; ignored if provided
     response:
       status_codes:
         - code: 200
@@ -343,7 +338,7 @@ def get_challenge(request):
         - code: 429
           description: Too many active challenges
       body:
-        description: JSON containing a single ``challenge`` token.
+        description: JSON containing a single challenge token.
         example: {"challenge": "<hex>"}
     @end
     """
