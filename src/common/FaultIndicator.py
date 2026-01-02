@@ -61,7 +61,7 @@ def toggleBoardLED():
           -runs with no effect on PICO2 with only ws2812 led installed
     """
     global enableWS2812led
-    if enableWS2812led == 1:
+    if enableWS2812led is True:
         #ws2812 driver - control of single color LED
         L.ledtoggle()
     else:
