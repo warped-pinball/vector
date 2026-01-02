@@ -26,7 +26,7 @@ except:
 FAULT_COLOR_SEQUENCES = {
     "ALL_OK":  [L.GREEN, L.GREENDIM, L.GREEN, L.GREENDIMM],
     "GEN_FLT": [L.RED, L.RED,L.RED,L.RED,L.RED,L.RED, L.BLACK],
-    "WIFI00":  [L.RED, L.CYAN, L.CYAN, L.CYAN, L.BLACK],
+    "WIFI00":  [L.RED, L.BLUE, L.YELLOW, L.BLACK],
     "WIFI01":  [L.RED, L.RED, L.BLUE, L.BLACK],
     "HDWR01":  [L.RED, L.MAGENTA, L.BLACK],
     "SFTW01":  [L.MAGENTA, L.WHITE, L.BLACK],
@@ -131,14 +131,14 @@ if __name__ == "__main__":
     start()
 
     #generic fault
-    faults.raise_fault(faults.WIFI02, f"Invalid wifi credentials ")
+    #faults.raise_fault(faults.WIFI02, f"Invalid wifi credentials ")
 
-    #known fault
-    #faults.raise_fault(faults.WIFI00, f"Invalid wifi credentials ")
-    #faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials ")
-
+   
     time.sleep(2)
     L.ledtoggle()
     time.sleep(5)
+    #known fault
+    faults.raise_fault(faults.WIFI00, f"Invalid wifi credentials ")
+    faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials ")
     L.ledtoggle()
     time.sleep(2)
