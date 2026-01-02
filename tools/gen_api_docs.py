@@ -345,7 +345,12 @@ def render_route(route: RouteDoc) -> str:
     doc = route.doc_block or {}
     summary = html.escape(str(doc.get("summary", ""))) if doc else ""
     description = summary or "No description provided."
-    auth_note = "<p><strong>Authentication:</strong> Required</p>" if route.auth else ""
+    handler_link = f"<a href='../src/common/backend.py#L{route.lineno}'>{html.escape(route.handler)}</a>"
+    auth_note = (
+        "<p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>"
+        if route.auth
+        else ""
+    )
     cooldown_note = (
         f"<p><strong>Cooldown:</strong> {route.cool_down_seconds}s</p>"
         if route.cool_down_seconds
@@ -373,15 +378,13 @@ def render_route(route: RouteDoc) -> str:
     return f"""
     <section id="{anchor}">
       <h2><code>{html.escape(route.path)}</code></h2>
-      <p><strong>Handler:</strong> {html.escape(route.handler)}</p>
-      <p><strong>Method:</strong> GET (all routes are treated as GET for documentation)</p>
+      <p><strong>Handler:</strong> {handler_link}</p>
       {auth_note}{cooldown_note}{single_note}
       {description_block}
       <h3>Request</h3>
       {request_fields or '<p>No parameters inferred.</p>'}
       <h3>Response</h3>
       {response_block}
-      <p class="auth-hint">For authenticated routes, include <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers from the authentication flow.</p>
     </section>
     """
 
@@ -405,19 +408,119 @@ def build_html(routes: List[RouteDoc]) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vector HTTP API</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 2rem; max-width: 960px; }}
-    code {{ background: #f2f2f2; padding: 2px 4px; border-radius: 4px; }}
-    section {{ border-bottom: 1px solid #ddd; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }}
-    h1, h2, h3 {{ color: #222; }}
-    .auth-hint {{ color: #555; font-size: 0.95rem; }}
+    :root {{
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #111827;
+      --panel-border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --code-bg: #0b1221;
+      --code-text: #f8fafc;
+      --code-border: #1d2a3f;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem 3rem;
+      max-width: 1024px;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
+                  radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 25%),
+                  var(--bg);
+    }}
+    h1, h2, h3 {{ color: var(--text); margin-top: 0; }}
+    a {{ color: var(--accent); text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+    .panel {{
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.75rem;
+    }}
+    ul {{ list-style: none; padding-left: 0; }}
+    ul li {{ margin: 0.3rem 0; }}
+    .endpoint-list a {{ font-weight: 600; }}
+    code {{ background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--code-border); }}
+    pre {{
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--code-border);
+      overflow-x: auto;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }}
+    pre code {{ display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }}
+    section {{ border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }}
+    .meta {{ color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }}
+    .tag {{ display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }}
   </style>
 </head>
 <body>
   <h1>Vector HTTP API</h1>
-  <p>This documentation is generated automatically from <code>src/common/backend.py</code>. Routes are treated as GET for readability; refer to request parameter locations for specifics.</p>
-  <h2>Endpoints</h2>
-  {index}
-  {sections}
+  <div class="panel">
+    <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Refer to request parameter locations for specifics.</p>
+    <p class="meta">Authentication flow is documented separately in <a href="authentication.html">Authentication</a>.</p>
+    <h2>Endpoints</h2>
+    <div class="endpoint-list">{index}</div>
+  </div>
+  <div class="panel">{sections}</div>
+</body>
+</html>
+"""
+
+
+def build_authentication_html() -> str:
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector HTTP API Authentication</title>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
+    h1, h2, h3 { color: #e5e7eb; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
+    ol { padding-left: 1.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Authentication</h1>
+  <div class="panel">
+    <p>Authenticated routes require an HMAC signature tied to a one-time challenge token. Use this flow for any route marked as requiring authentication.</p>
+  </div>
+  <div class="panel">
+    <h2>Flow</h2>
+    <ol>
+      <li>Call <code>/api/auth/challenge</code> to receive a hexadecimal <code>challenge</code> string.</li>
+      <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
+      <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
+      <li>Send the protected request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
+      <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h2>Examples</h2>
+    <p>Example message construction for <code>/api/settings/set_show_ip</code> without a request body:</p>
+    <pre><code>challenge = "deadbeef..."  # obtained from /api/auth/challenge
+path = "/api/settings/set_show_ip"
+body = ""  # no payload for this route
+message = challenge + path + body</code></pre>
+    <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
+  </div>
+  <p><a href="index.html">Back to API reference</a></p>
 </body>
 </html>
 """
@@ -425,11 +528,11 @@ def build_html(routes: List[RouteDoc]) -> str:
 
 def write_docs(routes: List[RouteDoc]) -> None:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    (DOCS_DIR / "api").mkdir(parents=True, exist_ok=True)
-
     html_content = build_html(routes)
     (DOCS_DIR / "index.html").write_text(html_content, encoding="utf-8")
-    (DOCS_DIR / "api" / "index.html").write_text(html_content, encoding="utf-8")
+    (DOCS_DIR / "authentication.html").write_text(
+        build_authentication_html(), encoding="utf-8"
+    )
 
 
 def main() -> None:

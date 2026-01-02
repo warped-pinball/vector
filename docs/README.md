@@ -8,7 +8,7 @@ The files in this directory are generated automatically from `src/common/backend
 python tools/gen_api_docs.py
 ```
 
-This rewrites `docs/index.html` (and `docs/api/index.html`) with the latest routes discovered in `backend.py`.
+This rewrites `docs/index.html` with the latest routes discovered in `backend.py`, and regenerates `docs/authentication.html` with the authentication flow.
 
 ## Optional structured docstrings
 
