@@ -50,14 +50,16 @@ def parse_scalar(value: str) -> Any:
     if value.lower() in {"true", "false"}:
         return value.lower() == "true"
     try:
-        if value.startswith("0") and value != "0":
+        # Reject integer-like values with leading zeros (e.g. "0123"),
+        # but allow "0" and non-integer values like "0.5".
+        if value.startswith("0") and len(value) > 1 and value.isdigit():
             raise ValueError
         return int(value)
-    except Exception:
+    except (ValueError, OverflowError):
         pass
     try:
         return float(value)
-    except Exception:
+    except (ValueError, OverflowError):
         return value
 
 
@@ -246,9 +248,6 @@ def _is_request_attr(node: ast.AST, attr_name: str) -> bool:
 def _extract_key_from_subscript(node: ast.Subscript) -> Optional[str]:
     if isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str):
         return node.slice.value
-    if isinstance(node.slice, ast.Index) and isinstance(node.slice.value, ast.Constant):
-        if isinstance(node.slice.value.value, str):
-            return node.slice.value.value
     return None
 
 
@@ -259,13 +258,11 @@ def infer_request_fields(func_node: ast.FunctionDef, route: RouteDoc) -> None:
             key = _extract_key_from_subscript(node)
             if not key:
                 continue
-            if _is_request_attr(attr.value, "data") or _is_request_attr(
-                attr.value, "json"
-            ):
+            if _is_request_attr(attr, "data") or _is_request_attr(attr, "json"):
                 route.inferred_fields["body"].add(key)
-            elif _is_request_attr(attr.value, "args"):
+            elif _is_request_attr(attr, "args"):
                 route.inferred_fields["query"].add(key)
-            elif _is_request_attr(attr.value, "headers"):
+            elif _is_request_attr(attr, "headers"):
                 route.inferred_fields["headers"].add(key)
         elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             func_attr = node.func
@@ -277,12 +274,12 @@ def infer_request_fields(func_node: ast.FunctionDef, route: RouteDoc) -> None:
             ):
                 continue
             key = first_arg.value
-            if _is_request_attr(func_attr.value, "args"):
+            if _is_request_attr(func_attr, "args"):
                 route.inferred_fields["query"].add(key)
-            elif _is_request_attr(func_attr.value, "headers"):
+            elif _is_request_attr(func_attr, "headers"):
                 route.inferred_fields["headers"].add(key)
-            elif _is_request_attr(func_attr.value, "data") or _is_request_attr(
-                func_attr.value, "json"
+            elif _is_request_attr(func_attr, "data") or _is_request_attr(
+                func_attr, "json"
             ):
                 route.inferred_fields["body"].add(key)
 
