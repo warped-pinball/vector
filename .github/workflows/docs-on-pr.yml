@@ -1,0 +1,44 @@
+name: Generate API docs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/common/backend.py"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate docs
+        run: |
+          python tools/gen_api_docs.py
+
+      - name: Commit docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          git config user.name "vector-docs-bot"
+          git config user.email "vector-docs-bot@example.com"
+          if git status --porcelain docs | grep -q .; then
+            git add docs
+            git commit -m "chore: regenerate API docs [skip ci]" || echo "No changes to commit"
+            git push origin HEAD:$BRANCH_NAME
+          else
+            echo "No documentation changes detected"
+          fi

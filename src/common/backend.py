@@ -327,6 +327,26 @@ def require_auth(handler):
 
 @add_route("/api/auth/challenge")
 def get_challenge(request):
+    """
+    @api
+    summary: Request a new authentication challenge
+    request:
+      headers:
+        - name: x-auth-user
+          type: string
+          required: false
+          description: Optional user hint; ignored if provided
+    response:
+      status_codes:
+        - code: 200
+          description: Challenge issued
+        - code: 429
+          description: Too many active challenges
+      body:
+        description: JSON containing a single ``challenge`` token.
+        example: {"challenge": "<hex>"}
+    @end
+    """
     global challenges
 
     # remove expired challenges
@@ -351,6 +371,31 @@ def get_challenge(request):
 
 @add_route("/api/auth/password_check", auth=True)
 def check_password(request):
+    """
+    @api
+    summary: Validate password proof
+    auth: true
+    request:
+      headers:
+        - name: x-auth-challenge
+          type: hex-string
+          required: true
+          description: Nonce provided by /api/auth/challenge
+        - name: x-auth-hmac
+          type: hex-string
+          required: true
+          description: HMAC signature over the challenge
+    response:
+      status_codes:
+        - code: 200
+          description: Credentials accepted
+        - code: 401
+          description: Credentials rejected
+      body:
+        description: Simple acknowledgement string
+        example: "ok"
+    @end
+    """
     return "ok", 200
 
 
@@ -453,6 +498,29 @@ def app_leaderBoardRead(request):
 
 @add_route("/api/score/delete", auth=True)
 def app_scoreDelete(request):
+    """
+    @api
+    summary: Delete score entries from a leaderboard
+    auth: true
+    request:
+      body:
+        - name: delete
+          type: list
+          required: true
+          description: Collection of score objects containing ``score`` and ``initials``.
+        - name: list
+          type: string
+          required: true
+          description: Target list name (e.g. leaders or tournament)
+    response:
+      status_codes:
+        - code: 200
+          description: Scores removed
+      body:
+        description: Confirmation indicator
+        example: {"success": true}
+    @end
+    """
     from ScoreTrackCommon import remove_score_entry
 
     body = request.data
@@ -531,6 +599,33 @@ def app_getPlayers(request):
 
 @add_route("/api/player/update", auth=True)
 def app_updatePlayer(request):
+    """
+    @api
+    summary: Update a stored player record
+    auth: true
+    request:
+      body:
+        - name: id
+          type: int
+          required: true
+          description: Player index in memory map
+        - name: initials
+          type: string
+          required: true
+          description: Up to three alphabetic characters
+        - name: full_name
+          type: string
+          required: false
+          description: Player display name (truncated to 16 characters)
+    response:
+      status_codes:
+        - code: 200
+          description: Record updated
+      body:
+        description: Empty body; generator emits OK
+        example: "ok"
+    @end
+    """
     body = request.data
 
     index = int(body["id"])
@@ -919,6 +1014,29 @@ def app_updates_available(request):
 
 @add_route("/api/update/apply", auth=True)
 def app_apply_update(request):
+    """
+    @api
+    summary: Apply a downloaded software update
+    auth: true
+    request:
+      body:
+        - name: url
+          type: string
+          required: true
+          description: Signed update package URL
+        - name: skip_signature_check
+          type: bool
+          required: false
+          description: Bypass signature validation (for diagnostics only)
+    response:
+      status_codes:
+        - code: 200
+          description: Streaming progress updates
+      body:
+        description: Sequence of JSON log entries with ``log`` and ``percent`` fields
+        example: {"log": "Starting update", "percent": 0}
+    @end
+    """
     from logger import logger_instance as Log
     from update import apply_update
 
