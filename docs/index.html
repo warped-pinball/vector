@@ -78,12 +78,14 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Challenge issued</li><li><code>429</code> - Too many active challenges</li></ul><p><strong>Response body:</strong> JSON containing a single challenge token.</p><pre><code>{&quot;challenge&quot;: &quot;&lt;hex&gt;&quot;}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Challenge issued</li><li><code>429</code> - Too many active challenges</li></ul><p><strong>Response body:</strong> JSON containing a single challenge token.</p><pre><code>{
+&quot;challenge&quot;: &quot;0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&quot;
+}</code></pre>
     </section>
     
     <section id="api-auth-password_check">
       <h2><code>/api/auth/password_check</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L368'>check_password</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L371'>check_password</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Convenience method to verify credentials without side effects</p>
       <h3>Request</h3>
@@ -94,7 +96,7 @@
     
     <section id="api-game-reboot">
       <h2><code>/api/game/reboot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L404'>app_reboot_game</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L407'>app_reboot_game</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Power-cycle the pinball machine and restart the scheduled tasks</p>
       <h3>Request</h3>
@@ -105,7 +107,7 @@
     
     <section id="api-game-name">
       <h2><code>/api/game/name</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L428'>app_game_name</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L431'>app_game_name</a></p>
       
       <p>Get the human-friendly title of the active game configuration</p>
       <h3>Request</h3>
@@ -116,51 +118,74 @@
     
     <section id="api-game-active_config">
       <h2><code>/api/game/active_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L447'>app_game_config_filename</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L450'>app_game_config_filename</a></p>
       
       <p>Get the filename of the active game configuration. Note that on EM systems this is the same as the game name.</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Active configuration returned</li></ul><p><strong>Response body:</strong> JSON object identifying the configuration file in use</p><pre><code>{&quot;active_config&quot;: &quot;AttackMars_11&quot;}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Active configuration returned</li></ul><p><strong>Response body:</strong> JSON object identifying the configuration file in use</p><pre><code>{
+&quot;active_config&quot;: &quot;AttackMars_11&quot;
+}</code></pre>
     </section>
     
     <section id="api-game-configs_list">
       <h2><code>/api/game/configs_list</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L470'>app_game_configs_list</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L476'>app_game_configs_list</a></p>
       
       <p>List all available game configuration files</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}
+{
+&quot;F14_L1&quot;: {
+&quot;name&quot;: &quot;F14 Tomcat&quot;,
+&quot;rom&quot;: &quot;L1&quot;
+},
+&quot;Taxi_L4&quot;: {
+&quot;name&quot;: &quot;Taxi&quot;,
+&quot;rom&quot;: &quot;L4&quot;
+}
+}</code></pre>
     </section>
     
     <section id="api-game-status">
       <h2><code>/api/game/status</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L489'>app_game_status</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L505'>app_game_status</a></p>
       
       <p>Retrieve the current game status such as ball in play, scores, and anything else the configured game supports</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Status returned</li></ul><p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p><pre><code>{&quot;GameActive&quot;: true, &quot;BallInPlay&quot;: 2, &quot;Scores&quot;: [1000, 0, 0, 0]}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Status returned</li></ul><p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p><pre><code>{
+&quot;GameActive&quot;: true,
+&quot;BallInPlay&quot;: 2,
+&quot;Scores&quot;: [1000, 0, 0, 0]
+}</code></pre>
     </section>
     
     <section id="api-leaders">
       <h2><code>/api/leaders</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L537'>app_leaderBoardRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L558'>app_leaderBoardRead</a></p>
       
       <p>Fetch the main leaderboard</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard returned</li></ul><p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p><pre><code>[{&quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 123456, &quot;rank&quot;: 1, &quot;ago&quot;: &quot;2h&quot;}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard returned</li></ul><p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p><pre><code>[
+{
+&quot;initials&quot;: &quot;ABC&quot;,
+&quot;score&quot;: 123456,
+&quot;rank&quot;: 1,
+&quot;ago&quot;: &quot;2h&quot;
+}
+]</code></pre>
     </section>
     
     <section id="api-score-delete">
       <h2><code>/api/score/delete</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L554'>app_scoreDelete</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L583'>app_scoreDelete</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Delete one or more score entries from a leaderboard</p>
       <h3>Request</h3>
@@ -171,18 +196,24 @@
     
     <section id="api-tournament">
       <h2><code>/api/tournament</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L602'>app_tournamentRead</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L631'>app_tournamentRead</a></p>
       
       <p>Read the tournament leaderboard</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament leaderboard returned</li></ul><p><strong>Response body:</strong> List of tournament scores sorted by game order</p><pre><code>[{&quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 123456, &quot;game&quot;: 1}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament leaderboard returned</li></ul><p><strong>Response body:</strong> List of tournament scores sorted by game order</p><pre><code>[
+{
+&quot;initials&quot;: &quot;ABC&quot;,
+&quot;score&quot;: 123456,
+&quot;game&quot;: 1
+}
+]</code></pre>
     </section>
     
     <section id="api-leaders-reset">
       <h2><code>/api/leaders/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L619'>app_resetScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L655'>app_resetScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear the main leaderboard</p>
       <h3>Request</h3>
@@ -193,7 +224,7 @@
     
     <section id="api-tournament-reset">
       <h2><code>/api/tournament/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L638'>app_tournamentClear</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L674'>app_tournamentClear</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear tournament standings and resets the game counter</p>
       <h3>Request</h3>
@@ -204,18 +235,24 @@
     
     <section id="api-scores-claimable">
       <h2><code>/api/scores/claimable</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L659'>app_getClaimableScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L695'>app_getClaimableScores</a></p>
       
       <p>List recent claimable plays</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Claimable scores returned</li></ul><p><strong>Response body:</strong> Collection of unclaimed score records</p><pre><code>[{&quot;score&quot;: 12345, &quot;player_index&quot;: 0, &quot;game&quot;: 1}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claimable scores returned</li></ul><p><strong>Response body:</strong> Collection of unclaimed score records</p><pre><code>[
+{
+&quot;score&quot;: 12345,
+&quot;player_index&quot;: 0,
+&quot;game&quot;: 1
+}
+]</code></pre>
     </section>
     
     <section id="api-scores-claim">
       <h2><code>/api/scores/claim</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L678'>app_claimScore</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L721'>app_claimScore</a></p>
       
       <p>Apply initials to an unclaimed score</p>
       <h3>Request</h3>
@@ -226,18 +263,23 @@
     
     <section id="api-players">
       <h2><code>/api/players</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L714'>app_getPlayers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L757'>app_getPlayers</a></p>
       
       <p>List registered players</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Player list returned</li></ul><p><strong>Response body:</strong> Mapping of player IDs to initials and names</p><pre><code>{&quot;0&quot;: {&quot;initials&quot;: &quot;ABC&quot;, &quot;name&quot;: &quot;Alice&quot;}}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player list returned</li></ul><p><strong>Response body:</strong> Mapping of player IDs to initials and names</p><pre><code>{
+&quot;0&quot;: {
+&quot;initials&quot;: &quot;ABC&quot;,
+&quot;name&quot;: &quot;Alice&quot;
+}
+}</code></pre>
     </section>
     
     <section id="api-player-update">
       <h2><code>/api/player/update</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L740'>app_updatePlayer</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L789'>app_updatePlayer</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Update a stored player record</p>
       <h3>Request</h3>
@@ -248,29 +290,44 @@
     
     <section id="api-player-scores">
       <h2><code>/api/player/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L795'>app_getScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L844'>app_getScores</a></p>
       
       <p>Fetch all scores for a specific player</p>
       <h3>Request</h3>
       <h4>Body parameters</h4><ul><li><code>id</code> (int, required) - Player index to inspect</li></ul>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Player scores returned</li></ul><p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p><pre><code>[{&quot;score&quot;: 10000, &quot;rank&quot;: 1, &quot;initials&quot;: &quot;ABC&quot;, &quot;date&quot;: &quot;2024-01-01&quot;, &quot;ago&quot;: &quot;1d&quot;}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player scores returned</li></ul><p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p><pre><code>[
+{
+&quot;score&quot;: 10000,
+&quot;rank&quot;: 1,
+&quot;initials&quot;: &quot;ABC&quot;,
+&quot;date&quot;: &quot;2024-01-01&quot;,
+&quot;ago&quot;: &quot;1d&quot;
+}
+]</code></pre>
     </section>
     
     <section id="api-personal-bests">
       <h2><code>/api/personal/bests</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L846'>app_personal_bests</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L904'>app_personal_bests</a></p>
       
       <p>Return the best score for each registered player</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Personal bests returned</li></ul><p><strong>Response body:</strong> Leaderboard of each player&#x27;s highest score</p><pre><code>[{&quot;player_id&quot;: 0, &quot;initials&quot;: &quot;ABC&quot;, &quot;score&quot;: 12345, &quot;rank&quot;: 1}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Personal bests returned</li></ul><p><strong>Response body:</strong> Leaderboard of each player&#x27;s highest score</p><pre><code>[
+{
+&quot;player_id&quot;: 0,
+&quot;initials&quot;: &quot;ABC&quot;,
+&quot;score&quot;: 12345,
+&quot;rank&quot;: 1
+}
+]</code></pre>
     </section>
     
     <section id="api-player-scores-reset">
       <h2><code>/api/player/scores/reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L898'>app_resetIndScores</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L964'>app_resetIndScores</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Clear all scores for a single player</p>
       <h3>Request</h3>
@@ -281,18 +338,26 @@
     
     <section id="api-adjustments-status">
       <h2><code>/api/adjustments/status</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L927'>app_getAdjustmentStatus</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L993'>app_getAdjustmentStatus</a></p>
       
       <p>Get the status of each adjustment bank</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustment metadata returned</li></ul><p><strong>Response body:</strong> List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support</p><pre><code>{&quot;profiles&quot;: [[&quot;Free Play&quot;, false, true], [&quot;Arcade&quot;, true, true], [&quot;&quot;, false, false], [&quot;&quot;, false, false]], &quot;adjustments_support&quot;: true}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustment metadata returned</li></ul><p><strong>Response body:</strong> List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support</p><pre><code>{
+&quot;profiles&quot;: [
+[&quot;Free Play&quot;, false, true],
+[&quot;Arcade&quot;, true, true],
+[&quot;&quot;, false, false],
+[&quot;&quot;, false, false]
+],
+&quot;adjustments_support&quot;: true
+}</code></pre>
     </section>
     
     <section id="api-adjustments-name">
       <h2><code>/api/adjustments/name</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L946'>app_setAdjustmentName</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1021'>app_setAdjustmentName</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set the name of an adjustment profile</p>
       <h3>Request</h3>
@@ -303,7 +368,7 @@
     
     <section id="api-adjustments-capture">
       <h2><code>/api/adjustments/capture</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L978'>app_captureAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1053'>app_captureAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Capture current adjustments into a profile</p>
       <h3>Request</h3>
@@ -314,7 +379,7 @@
     
     <section id="api-adjustments-restore">
       <h2><code>/api/adjustments/restore</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1003'>app_restoreAdjustments</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1078'>app_restoreAdjustments</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 5s</p>
       <p>Restore adjustments from a saved profile</p>
       <h3>Request</h3>
@@ -325,18 +390,21 @@
     
     <section id="api-settings-get_claim_methods">
       <h2><code>/api/settings/get_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1031'>app_getScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1106'>app_getScoreCap</a></p>
       
       <p>Read score entry methods</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Claim methods returned</li></ul><p><strong>Response body:</strong> All keys are available methods for entering initials, only enabled methods are true</p><pre><code>{&quot;on-machine&quot;: true, &quot;web-ui&quot;: false}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claim methods returned</li></ul><p><strong>Response body:</strong> All keys are available methods for entering initials, only enabled methods are true</p><pre><code>{
+&quot;on-machine&quot;: true,
+&quot;web-ui&quot;: false
+}</code></pre>
     </section>
     
     <section id="api-settings-set_claim_methods">
       <h2><code>/api/settings/set_claim_methods</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1052'>app_setScoreCap</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1131'>app_setScoreCap</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Configure which score claim methods are enabled</p>
       <h3>Request</h3>
@@ -347,7 +415,7 @@
     
     <section id="api-settings-get_tournament_mode">
       <h2><code>/api/settings/get_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1085'>app_getTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1164'>app_getTournamentMode</a></p>
       
       <p>Get whether tournament mode is enabled</p>
       <h3>Request</h3>
@@ -358,7 +426,7 @@
     
     <section id="api-settings-set_tournament_mode">
       <h2><code>/api/settings/set_tournament_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1103'>app_setTournamentMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1182'>app_setTournamentMode</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Enable or disable tournament mode</p>
       <h3>Request</h3>
@@ -369,7 +437,7 @@
     
     <section id="api-settings-get_show_ip">
       <h2><code>/api/settings/get_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1130'>app_getShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1209'>app_getShowIP</a></p>
       
       <p>Check whether the IP address is shown on the display</p>
       <h3>Request</h3>
@@ -380,7 +448,7 @@
     
     <section id="api-settings-set_show_ip">
       <h2><code>/api/settings/set_show_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1147'>app_setShowIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1226'>app_setShowIP</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set whether the IP address should be shown on the display</p>
       <h3>Request</h3>
@@ -391,7 +459,7 @@
     
     <section id="api-time-midnight_madness_available">
       <h2><code>/api/time/midnight_madness_available</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1176'>app_midnightMadnessAvailable</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1255'>app_midnightMadnessAvailable</a></p>
       
       <p>Report if Midnight Madness mode is supported</p>
       <h3>Request</h3>
@@ -402,18 +470,21 @@
     
     <section id="api-time-get_midnight_madness">
       <h2><code>/api/time/get_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1196'>app_getMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1275'>app_getMidnightMadness</a></p>
       
       <p>Read Midnight Madness configuration</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration returned</li></ul><p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p><pre><code>{&quot;enabled&quot;: true, &quot;always&quot;: false}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration returned</li></ul><p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p><pre><code>{
+&quot;enabled&quot;: true,
+&quot;always&quot;: false
+}</code></pre>
     </section>
     
     <section id="api-time-set_midnight_madness">
       <h2><code>/api/time/set_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1217'>app_setMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1300'>app_setMidnightMadness</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set Midnight Madness configuration</p>
       <h3>Request</h3>
@@ -424,7 +495,7 @@
     
     <section id="api-time-trigger_midnight_madness">
       <h2><code>/api/time/trigger_midnight_madness</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1248'>app_triggerMidnightMadness</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1331'>app_triggerMidnightMadness</a></p>
       
       <p>Immediately trigger Midnight Madness</p>
       <h3>Request</h3>
@@ -435,7 +506,7 @@
     
     <section id="api-settings-factory_reset">
       <h2><code>/api/settings/factory_reset</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1266'>app_factoryReset</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1349'>app_factoryReset</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Perform a full factory reset of Vector and the pinball machine</p>
       <h3>Request</h3>
@@ -446,7 +517,7 @@
     
     <section id="api-settings-reboot">
       <h2><code>/api/settings/reboot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1305'>app_reboot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1388'>app_reboot</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Reboot the Pinball machine</p>
       <h3>Request</h3>
@@ -457,7 +528,7 @@
     
     <section id="api-last_ip">
       <h2><code>/api/last_ip</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1330'>app_getLastIP</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1413'>app_getLastIP</a></p>
       
       <p>Get the last known IP address</p>
       <h3>Request</h3>
@@ -468,29 +539,40 @@
     
     <section id="api-available_ssids">
       <h2><code>/api/available_ssids</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1348'>app_getAvailableSSIDs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1431'>app_getAvailableSSIDs</a></p>
       
       <p>Scan for nearby Wi-Fi networks</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[{&quot;ssid&quot;: &quot;MyNetwork&quot;, &quot;rssi&quot;: -40, &quot;configured&quot;: true}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[
+{
+&quot;ssid&quot;: &quot;MyNetwork&quot;,
+&quot;rssi&quot;: -40,
+&quot;configured&quot;: true
+}
+]</code></pre>
     </section>
     
     <section id="api-network-peers">
       <h2><code>/api/network/peers</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1375'>app_getPeers</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1465'>app_getPeers</a></p>
       
       <p>List other vector devices discovered on the local network</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Peer map returned</li></ul><p><strong>Response body:</strong> Mapping of peer identifiers to network information</p><pre><code>{&quot;vector-1&quot;: {&quot;ip&quot;: &quot;192.168.0.11&quot;}}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Peer map returned</li></ul><p><strong>Response body:</strong> Mapping of peer identifiers to network information</p><pre><code>{
+&quot;192.168.4.243&quot;: {
+&quot;name&quot;: &quot;Pinbot&quot;,
+&quot;self&quot;: true
+}
+}</code></pre>
     </section>
     
     <section id="api-set_date">
       <h2><code>/api/set_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1397'>app_setDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1493'>app_setDateTime</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set Vector&#x27;s date and time</p>
       <h3>Request</h3>
@@ -501,7 +583,7 @@
     
     <section id="api-get_date">
       <h2><code>/api/get_date</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1423'>app_getDateTime</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1519'>app_getDateTime</a></p>
       
       <p>Read the current time according to Vector</p>
       <h3>Request</h3>
@@ -512,7 +594,7 @@
     
     <section id="api-version">
       <h2><code>/api/version</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1443'>app_version</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1539'>app_version</a></p>
       
       <p>Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.</p>
       <h3>Request</h3>
@@ -523,7 +605,7 @@
     
     <section id="api-fault">
       <h2><code>/api/fault</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1462'>app_install_fault</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1558'>app_install_fault</a></p>
       
       <p>Get the list of currently active faults</p>
       <h3>Request</h3>
@@ -534,7 +616,7 @@
     
     <section id="api-export-scores">
       <h2><code>/api/export/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1484'>app_export_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1580'>app_export_leaderboard</a></p>
       
       <p>Export all leaderboard data</p>
       <h3>Request</h3>
@@ -548,7 +630,7 @@
     
     <section id="api-import-scores">
       <h2><code>/api/import/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1506'>app_import_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1602'>app_import_leaderboard</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Import leaderboard data from an uploaded file</p>
       <h3>Request</h3>
@@ -559,7 +641,7 @@
     
     <section id="api-memory-snapshot">
       <h2><code>/api/memory-snapshot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1533'>app_memory_snapshot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1629'>app_memory_snapshot</a></p>
       
       <p>Stream a snapshot of memory contents</p>
       <h3>Request</h3>
@@ -570,7 +652,7 @@
     
     <section id="api-logs">
       <h2><code>/api/logs</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1551'>app_getLogs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1647'>app_getLogs</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 10s</p><p><strong>Single instance:</strong> Yes</p>
       <p>Download the system log file</p>
       <h3>Request</h3>
@@ -581,18 +663,24 @@
     
     <section id="api-formats-available">
       <h2><code>/api/formats/available</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1601'>app_list_available_formats</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1697'>app_list_available_formats</a></p>
       
       <p>Get the list of available game formats</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Formats returned</li></ul><p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p><pre><code>[{&quot;id&quot;: 0, &quot;name&quot;: &quot;Arcade&quot;, &quot;description&quot;: &quot;Manufacturer standard game play&quot;}]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Formats returned</li></ul><p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p><pre><code>[
+{
+&quot;id&quot;: 0,
+&quot;name&quot;: &quot;Arcade&quot;,
+&quot;description&quot;: &quot;Manufacturer standard game play&quot;
+}
+]</code></pre>
     </section>
     
     <section id="api-formats-set">
       <h2><code>/api/formats/set</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1619'>app_set_current_format</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1722'>app_set_current_format</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Set the active game format</p>
       <h3>Request</h3>
@@ -603,7 +691,7 @@
     
     <section id="api-formats-active">
       <h2><code>/api/formats/active</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1666'>app_get_active_formats</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1769'>app_get_active_formats</a></p>
       
       <p>Get the currently active game format</p>
       <h3>Request</h3>
@@ -614,7 +702,7 @@
     
     <section id="api-diagnostics-switches">
       <h2><code>/api/diagnostics/switches</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1685'>app_get_switch_diagnostics</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1792'>app_get_switch_diagnostics</a></p>
       
       <p>Get diagnostic information for all switches</p>
       <h3>Request</h3>
@@ -625,7 +713,7 @@
     
     <section id="api-update-check">
       <h2><code>/api/update/check</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1728'>app_updates_available</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1843'>app_updates_available</a></p>
       <p><strong>Cooldown:</strong> 10s</p>
       <p>Get the metadata for the latest available software version. This does not download or apply the update.</p>
       <h3>Request</h3>
@@ -642,18 +730,21 @@
     
     <section id="api-update-apply">
       <h2><code>/api/update/apply</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1763'>app_apply_update</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1878'>app_apply_update</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Download and apply a software update from the provided URL.</p>
       <h3>Request</h3>
       <h4>Body parameters</h4><ul><li><code>url</code> (string, required) - Signed update package URL</li><li><code>skip_signature_check</code> (bool, optional) - Bypass signature validation (for developer builds)</li></ul>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Streaming progress updates</li></ul><p><strong>Response body:</strong> Sequence of JSON log entries with ``log`` and ``percent`` fields</p><pre><code>{&quot;log&quot;: &quot;Starting update&quot;, &quot;percent&quot;: 0}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Streaming progress updates</li></ul><p><strong>Response body:</strong> Sequence of JSON log entries with ``log`` and ``percent`` fields</p><pre><code>{
+&quot;log&quot;: &quot;Starting update&quot;,
+&quot;percent&quot;: 0
+}</code></pre>
     </section>
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1812'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1931'>app_inAPMode</a></p>
       
       <p>Indicates if Vector is running in AP or app mode</p>
       <h3>Request</h3>
@@ -664,7 +755,7 @@
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1835'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1954'>app_inAPMode</a></p>
       
       <p>No description provided.</p>
       <h3>Request</h3>
@@ -675,7 +766,7 @@
     
     <section id="api-settings-set_vector_config">
       <h2><code>/api/settings/set_vector_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1840'>app_setWifi</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1959'>app_setWifi</a></p>
       
       <p>[AP Mode Only] Configure Wi-Fi credentials and default game</p>
       <h3>Request</h3>
