@@ -540,7 +540,10 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard export file returned</li></ul><p><strong>Response body:</strong> </p><pre><code>{</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard export file returned</li></ul><p><strong>Response body:</strong> </p><pre><code>{
+&quot;scores&quot;: {&quot;tournament&quot;: [{&quot;initials&quot;: &quot;AAA&quot;, &quot;score&quot;: 938479, &quot;index&quot;: 2, &quot;game&quot;: 0}],
+&quot;leaders&quot;: [{&quot;initials&quot;: &quot;MSM&quot;, &quot;date&quot;: &quot;02/04/2025&quot;, &quot;full_name&quot;: &quot;Maxwell Mullin&quot;, &quot;score&quot;: 2817420816}]},
+&quot;version&quot;: 1</code></pre>
     </section>
     
     <section id="api-import-scores">
@@ -628,7 +631,12 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{
+&quot;release_page&quot;: &quot;https://github.com/...&quot;,
+&quot;notes&quot;: &quot;Another Great Release! Here&#x27;s what we changed&quot;,
+&quot;published_at&quot;: &quot;2025-12-30T17:54:49+00:00&quot;,
+&quot;url&quot;: &quot;https://github.com/...&quot;,
+&quot;version&quot;: &quot;1.9.0&quot;</code></pre>
     </section>
     
     <section id="api-update-apply">
