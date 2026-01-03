@@ -4,10 +4,10 @@
 # This work is licensed under CC BY-NC 4.0
 
 """
-    Warped Pinball
-    
-    Fault indicator 
-    Supports Ws2812 multi color LED for enhanced fault reporting via BoardLED.py driver
+Warped Pinball
+
+Fault indicator 
+Supports Ws2812 multi color LED for enhanced fault reporting via BoardLED.py driver
 """
 
 import time,utime
