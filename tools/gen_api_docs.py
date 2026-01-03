@@ -93,8 +93,11 @@ def parse_structured_docstring(docstring: str) -> Optional[Dict[str, Any]]:
             stack.pop()
         return stack[-1]
 
-    for raw_line in block_lines:
+    idx = 0
+    while idx < len(block_lines):
+        raw_line = block_lines[idx]
         if not raw_line.strip() or raw_line.strip().startswith("#"):
+            idx += 1
             continue
         indent = len(raw_line) - len(raw_line.lstrip(" "))
         entry = current_container(indent)
@@ -140,9 +143,11 @@ def parse_structured_docstring(docstring: str) -> Optional[Dict[str, Any]]:
                     )
             else:
                 container.append(parse_scalar(item_line))
+            idx += 1
             continue
 
         if ":" not in line:
+            idx += 1
             continue
 
         key, value = line.split(":", 1)
@@ -155,8 +160,29 @@ def parse_structured_docstring(docstring: str) -> Optional[Dict[str, Any]]:
                 parent_container.append({})
             parent_container = parent_container[-1]
 
+        if key == "example" and (not value or value.startswith(("{", "["))):
+            collected: List[str] = []
+            if value:
+                collected.append(value)
+            look_ahead = idx + 1
+            while look_ahead < len(block_lines):
+                next_line = block_lines[look_ahead]
+                if not next_line.strip():
+                    collected.append("")
+                    look_ahead += 1
+                    continue
+                next_indent = len(next_line) - len(next_line.lstrip(" "))
+                if next_indent <= indent:
+                    break
+                collected.append(next_line.strip())
+                look_ahead += 1
+            parent_container[key] = "\n".join(collected).strip()
+            idx = look_ahead
+            continue
+
         if value:
             parent_container[key] = parse_scalar(value)
+            idx += 1
         else:
             new_container: Dict[str, Any] = {}
             parent_container[key] = new_container
@@ -168,6 +194,7 @@ def parse_structured_docstring(docstring: str) -> Optional[Dict[str, Any]]:
                     "key": key,
                 }
             )
+            idx += 1
 
     return root
 
