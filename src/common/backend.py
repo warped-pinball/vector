@@ -339,7 +339,10 @@ def get_challenge(request):
           description: Too many active challenges
       body:
         description: JSON containing a single challenge token.
-        example: {"challenge": "<hex>"}
+        example:
+            {
+                "challenge": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            }
     @end
     """
     global challenges
@@ -454,7 +457,10 @@ def app_game_config_filename(request):
           description: Active configuration returned
       body:
         description: JSON object identifying the configuration file in use
-        example: {"active_config": "AttackMars_11"}
+        example:
+            {
+                "active_config": "AttackMars_11"
+            }
     @end
     """
     import SharedState
@@ -478,6 +484,16 @@ def app_game_configs_list(request):
       body:
         description: Mapping of configuration filenames to human-readable titles
         example: {"F14_L1": {"name": "F14 Tomcat", "rom": "L1"}, "Taxi_L4": {"name": "Taxi", "rom": "L4"}}
+            {
+                "F14_L1": {
+                    "name": "F14 Tomcat",
+                    "rom": "L1"
+                },
+                "Taxi_L4": {
+                    "name": "Taxi",
+                    "rom": "L4"
+                }
+            }
     @end
     """
     from GameDefsLoad import list_game_configs
@@ -496,7 +512,12 @@ def app_game_status(request):
           description: Status returned
       body:
         description: JSON object describing current play state, score, and timers
-        example: {"GameActive": true, "BallInPlay": 2, "Scores": [1000, 0, 0, 0]}
+        example:
+            {
+                "GameActive": true,
+                "BallInPlay": 2,
+                "Scores": [1000, 0, 0, 0]
+            }
     @end
     """
     # TODO cache me
@@ -544,7 +565,15 @@ def app_leaderBoardRead(request):
           description: Leaderboard returned
       body:
         description: Sorted list of leaderboard entries with rank and relative times
-        example: [{"initials": "ABC", "score": 123456, "rank": 1, "ago": "2h"}]
+        example:
+            [
+                {
+                    "initials": "ABC",
+                    "score": 123456,
+                    "rank": 1,
+                    "ago": "2h"
+                }
+            ]
     @end
     """
     return get_scoreboard("leaders", reverse=True)
@@ -609,7 +638,14 @@ def app_tournamentRead(request):
           description: Tournament leaderboard returned
       body:
         description: List of tournament scores sorted by game order
-        example: [{"initials": "ABC", "score": 123456, "game": 1}]
+        example:
+            [
+                {
+                    "initials": "ABC",
+                    "score": 123456,
+                    "game": 1
+                }
+            ]
     @end
     """
     return get_scoreboard("tournament", sort_by="game")
@@ -666,7 +702,14 @@ def app_getClaimableScores(request):
           description: Claimable scores returned
       body:
         description: Collection of unclaimed score records
-        example: [{"score": 12345, "player_index": 0, "game": 1}]
+        example:
+            [
+                {
+                    "score": 12345,
+                    "player_index": 0,
+                    "game": 1
+                }
+            ]
     @end
     """
     from ScoreTrack import get_claim_score_list
@@ -721,7 +764,13 @@ def app_getPlayers(request):
           description: Player list returned
       body:
         description: Mapping of player IDs to initials and names
-        example: {"0": {"initials": "ABC", "name": "Alice"}}
+        example:
+            {
+                "0": {
+                    "initials": "ABC",
+                    "name": "Alice"
+                }
+            }
     @end
     """
     players = {}
@@ -808,7 +857,16 @@ def app_getScores(request):
           description: Player scores returned
       body:
         description: Sorted list of score entries with rank, initials, and timestamps
-        example: [{"score": 10000, "rank": 1, "initials": "ABC", "date": "2024-01-01", "ago": "1d"}]
+        example:
+            [
+                {
+                    "score": 10000,
+                    "rank": 1,
+                    "initials": "ABC",
+                    "date": "2024-01-01",
+                    "ago": "1d"
+                }
+            ]
     @end
     """
     from time import time
@@ -853,7 +911,15 @@ def app_personal_bests(request):
           description: Personal bests returned
       body:
         description: Leaderboard of each player's highest score
-        example: [{"player_id": 0, "initials": "ABC", "score": 12345, "rank": 1}]
+        example:
+            [
+                {
+                    "player_id": 0,
+                    "initials": "ABC",
+                    "score": 12345,
+                    "rank": 1
+                }
+            ]
     @end
     """
     from time import time
@@ -934,7 +1000,16 @@ def app_getAdjustmentStatus(request):
           description: Adjustment metadata returned
       body:
         description: List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support
-        example: {"profiles": [["Free Play", false, true], ["Arcade", true, true], ["", false, false], ["", false, false]], "adjustments_support": true}
+        example:
+            {
+                "profiles": [
+                    ["Free Play", false, true],
+                    ["Arcade", true, true],
+                    ["", false, false],
+                    ["", false, false]
+                ],
+                "adjustments_support": true
+            }
     @end
     """
     from Adjustments import get_adjustments_status
@@ -1038,7 +1113,11 @@ def app_getScoreCap(request):
           description: Claim methods returned
       body:
         description: All keys are available methods for entering initials, only enabled methods are true
-        example: {"on-machine": true, "web-ui": false}
+        example:
+            {
+                "on-machine": true,
+                "web-ui": false
+            }
     @end
     """
     record = ds_read_record("extras", 0)
@@ -1203,7 +1282,11 @@ def app_getMidnightMadness(request):
           description: Configuration returned
       body:
         description: Flags describing whether Midnight Madness is enabled and always on
-        example: {"enabled": true, "always": false}
+        example:
+            {
+                "enabled": true,
+                "always": false
+            }
     @end
     """
     record = ds_read_record("extras", 0)
@@ -1355,7 +1438,14 @@ def app_getAvailableSSIDs(request):
           description: Networks listed
       body:
         description: Array of SSID records with signal quality and configuration flag
-        example: [{"ssid": "MyNetwork", "rssi": -40, "configured": true}]
+        example:
+            [
+                {
+                    "ssid": "MyNetwork",
+                    "rssi": -40,
+                    "configured": true
+                }
+            ]
     @end
     """
     import scanwifi
@@ -1382,7 +1472,13 @@ def app_getPeers(request):
           description: Peer map returned
       body:
         description: Mapping of peer identifiers to network information
-        example: {"vector-1": {"ip": "192.168.0.11"}}
+        example:
+            {
+                "192.168.4.243": {
+                    "name": "Pinbot",
+                    "self": true
+                }
+            }
     @end
     """
     from discovery import get_peer_map
@@ -1608,7 +1704,14 @@ def app_list_available_formats(request):
           description: Formats returned
       body:
         description: Collection of available game formats with metadata and configuration options
-        example: [{"id": 0, "name": "Arcade", "description": "Manufacturer standard game play"}]
+        example:
+            [
+                {
+                    "id": 0,
+                    "name": "Arcade",
+                    "description": "Manufacturer standard game play"
+                }
+            ]
     @end
     """
     return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
@@ -1673,7 +1776,11 @@ def app_get_active_formats(request):
           description: Active format returned
       body:
         description: Current game format identifier and options
-        example: {"format_id": 1, "options": {"target": "11"}}
+        example:
+            {
+                "format_id": 1,
+                "options": {"target": "11"}
+            }
     @end
     """
 
@@ -1692,7 +1799,15 @@ def app_get_switch_diagnostics(request):
           description: Switch diagnostics returned
         body:
         description: Collection of switch records with row, column, value, and optional label
-        example: [{"row": 1, "col": 1, "val": 100, "label": "Left Flipper"}]
+        example:
+            [
+                {
+                    "row": 1,
+                    "col": 1,
+                    "val": 100,
+                    "label": "Left Flipper"
+                }
+            ]
     @end
     """
     switches = [
@@ -1781,7 +1896,11 @@ def app_apply_update(request):
           description: Streaming progress updates
       body:
         description: Sequence of JSON log entries with ``log`` and ``percent`` fields
-        example: {"log": "Starting update", "percent": 0}
+        example:
+            {
+                "log": "Starting update",
+                "percent": 0
+            }
     @end
     """
     from logger import logger_instance as Log
