@@ -1217,14 +1217,14 @@ def app_getMidnightMadness(request):
 def app_setMidnightMadness(request):
     """
     @api
-    summary: Update Midnight Madness configuration
+    summary: Set Midnight Madness configuration
     auth: true
     request:
       body:
         - name: always
           type: bool
           required: true
-          description: Keep Midnight Madness enabled at all times
+          description: Keep Midnight Madness enabled for all games
         - name: enabled
           type: bool
           required: true
@@ -1266,7 +1266,7 @@ def app_triggerMidnightMadness(request):
 def app_factoryReset(request):
     """
     @api
-    summary: Perform a full factory reset
+    summary: Perform a full factory reset of Vector and the pinball machine
     auth: true
     response:
       status_codes:
@@ -1305,7 +1305,7 @@ def app_factoryReset(request):
 def app_reboot(request):
     """
     @api
-    summary: Reboot the controller
+    summary: Reboot the Pinball machine
     auth: true
     response:
       status_codes:
@@ -1375,7 +1375,7 @@ def app_getAvailableSSIDs(request):
 def app_getPeers(request):
     """
     @api
-    summary: Discover other devices on the local network
+    summary: List other vector devices discovered on the local network
     response:
       status_codes:
         - code: 200
@@ -1397,7 +1397,7 @@ def app_getPeers(request):
 def app_setDateTime(request):
     """
     @api
-    summary: Set the device date and time
+    summary: Set Vector's date and time
     auth: true
     request:
       body:
@@ -1423,17 +1423,17 @@ def app_setDateTime(request):
 def app_getDateTime(request):
     """
     @api
-    summary: Read the current device time
+    summary: Read the current time according to Vector
     response:
       status_codes:
         - code: 200
           description: RTC timestamp returned
       body:
         description: Tuple containing RTC date/time fields
-        example: [2024, 5, 1, 0, 12, 0, 0, 0]
+        example: {"date": [2024, 1, 1, 0, 12, 0, 0]}
     @end
     """
-    return rtc.datetime(), 200
+    return {"date": list(rtc.datetime())}
 
 
 #
@@ -1443,7 +1443,7 @@ def app_getDateTime(request):
 def app_version(request):
     """
     @api
-    summary: Report software version
+    summary: Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.
     response:
       status_codes:
         - code: 200
@@ -1462,7 +1462,7 @@ def app_version(request):
 def app_install_fault(request):
     """
     @api
-    summary: Read current fault state
+    summary: Get the list of currently active faults
     response:
       status_codes:
         - code: 200
@@ -1488,10 +1488,13 @@ def app_export_leaderboard(request):
     response:
       status_codes:
         - code: 200
-          description: Export stream started
+        description: Leaderboard export file returned
       body:
-        description: File download containing leaderboard scores
-        example: "<binary stream>"
+        example: {
+            "scores": {"tournament": [{"initials": "AAA", "score": 938479, "index": 2, "game": 0}],
+            "leaders": [{"initials": "MSM", "date": "02/04/2025", "full_name": "Maxwell Mullin", "score": 2817420816}]},
+            "version": 1
+        }
     @end
     """
     from FileIO import download_scores
@@ -1536,8 +1539,7 @@ def app_memory_snapshot(request):
         - code: 200
           description: Snapshot streaming
       body:
-        description: Text stream of byte values separated by newlines
-        example: "0\n1\n2\n"
+        description: Text stream of byte values
     @end
     """
     ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
@@ -1557,7 +1559,6 @@ def app_getLogs(request):
           description: Log download streaming
       body:
         description: Log file content
-        example: "<log text>"
     @end
     """
     from FileIO import download_log
@@ -1598,12 +1599,44 @@ def get_available_formats():
 # 0 will always be default
 @add_route("/api/formats/available")
 def app_list_available_formats(request):
+    """
+    @api
+    summary: Get the list of available game formats
+    response:
+      status_codes:
+        - code: 200
+          description: Formats returned
+      body:
+        description: Collection of available game formats with metadata and configuration options
+        example: [{"id": 0, "name": "Arcade", "description": "Manufacturer standard game play"}]
+    @end
+    """
     return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
 
 
 # set current format
 @add_route("/api/formats/set", auth=True)
 def app_set_current_format(request):
+    """
+    @api
+    summary: Set the active game format
+    auth: true
+    request:
+        body:
+            - name: format_id
+                type: int
+                required: true
+                description: Format identifier to activate
+            - name: options
+                type: dict
+                required: false
+                description: Configuration options for the selected format
+    response:
+      status_codes:
+        - code: 200
+          description: Format set successfully
+    @end
+    """
     data = request.data
     if not isinstance(data, dict) or "format_id" not in data:
         return {"error": "Missing required field: format_id"}, 400
@@ -1631,12 +1664,37 @@ def app_set_current_format(request):
 # get active format(s)
 @add_route("/api/formats/active")
 def app_get_active_formats(request):
+    """
+    @api
+    summary: Get the currently active game format
+    response:
+        status_codes:
+        - code: 200
+          description: Active format returned
+      body:
+        description: Current game format identifier and options
+        example: {"format_id": 1, "options": {"target": "11"}}
+    @end
+    """
+
     return S.game_status.get("format", {"format_id": 0})
 
 
 # get switch diagnostics
 @add_route("/api/diagnostics/switches")
 def app_get_switch_diagnostics(request):
+    """
+    @api
+    summary: Get diagnostic information for all switches
+    response:
+        status_codes:
+        - code: 200
+          description: Switch diagnostics returned
+        body:
+        description: Collection of switch records with row, column, value, and optional label
+        example: [{"row": 1, "col": 1, "val": 100, "label": "Left Flipper"}]
+    @end
+    """
     switches = [
         (1, 1, 100, "Left Flipper"),
         (1, 2, 100, "Right Flipper"),
@@ -1670,14 +1728,21 @@ def app_get_switch_diagnostics(request):
 def app_updates_available(request):
     """
     @api
-    summary: Check the server for available updates
+    summary: Get the metadata for the latest available software version. This does not download or apply the update.
+        Compare the returned version to the current version to determine if an update is available.
     response:
       status_codes:
         - code: 200
           description: Update metadata returned
       body:
         description: JSON payload describing available updates
-        example: {"available": true, "version": "1.2.3"}
+        example: {
+            "release_page": "https://github.com/...",
+            "notes": "Another Great Release! Here's what we changed",
+            "published_at": "2025-12-30T17:54:49+00:00",
+            "url": "https://github.com/...",
+            "version": "1.9.0"
+        }
     @end
     """
     from mrequests.mrequests import get
@@ -1697,7 +1762,7 @@ def app_updates_available(request):
 def app_apply_update(request):
     """
     @api
-    summary: Apply a downloaded software update
+    summary: Download and apply a software update from the provided URL.
     auth: true
     request:
       body:
@@ -1708,7 +1773,7 @@ def app_apply_update(request):
         - name: skip_signature_check
           type: bool
           required: false
-          description: Bypass signature validation (for diagnostics only)
+          description: Bypass signature validation (for developer builds)
     response:
       status_codes:
         - code: 200
@@ -1746,7 +1811,7 @@ def add_app_mode_routes():
     def app_inAPMode(request):
         """
         @api
-        summary: Indicate that the device is running in app mode
+        summary: Indicates if Vector is running in AP or app mode
         response:
           status_codes:
             - code: 200
@@ -1767,25 +1832,14 @@ def add_ap_mode_routes():
 
     @add_route("/api/in_ap_mode")
     def app_inAPMode(request):
-        """
-        @api
-        summary: Indicate that the device is running in AP mode
-        response:
-          status_codes:
-            - code: 200
-              description: Mode reported
-          body:
-            description: Flag showing AP mode status
-            example: {"in_ap_mode": true}
-        @end
-        """
+        # This replaces the app mode version when in AP mode
         return {"in_ap_mode": True}
 
     @add_route("/api/settings/set_vector_config")
     def app_setWifi(request):
         """
         @api
-        summary: Configure Wi-Fi credentials and default game
+        summary: [AP Mode Only] Configure Wi-Fi credentials and default game
         request:
           body:
             - name: ssid
