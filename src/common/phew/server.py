@@ -15,14 +15,15 @@ from SPI_Store import write_16_fram
 
 from . import logging
 
+import FaultIndicator
+
 # from SPI_UpdateStore import initialize as sflash_initialize
 # from SPI_UpdateStore import tick as sflash_tick
 
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 rtc = RTC()
-led_board = machine.Pin(26, machine.Pin.OUT)
-led_board.low()  # low is ON
+
 
 _routes = {}
 catchall_handler = None
@@ -222,7 +223,7 @@ def copy_to_fram():
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
-        led_board.toggle()
+        FaultIndicator.toggleBoardLED()
 
 
 _scheduled_tasks = []
