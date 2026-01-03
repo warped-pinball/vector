@@ -903,14 +903,14 @@ def app_getLogs(request):
 # list format options
 def get_available_formats():
     return [
-        {"id": 0, "name": "Arcade", "Description": "Manufacturer standard game play", "enable_function": None},
-        {"id": 1, "name": "Practice", "Description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
+        {"id": 0, "name": "Arcade", "description": "Manufacturer standard game play", "enable_function": None},
+        {"id": 1, "name": "Practice", "description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
         {
             "id": 2,
             "name": "Golf",
-            "Description": "Hit a specific target in the least number of balls",
+            "description": "Hit a specific target in the least number of balls",
             "options": {
-                "Target": {
+                "target": {
                     "type": "select",
                     "options": {
                         "11": "Crazy Bobs",
@@ -935,6 +935,8 @@ def app_list_available_formats(request):
 @add_route("/api/formats/set", auth=True)
 def app_set_current_format(request):
     data = request.data
+    if not isinstance(data, dict) or "format_id" not in data:
+        return {"error": "Missing required field: format_id"}, 400
     format_id = data["format_id"]
     available_formats = get_available_formats()
     format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
@@ -997,6 +999,7 @@ def app_get_switch_diagnostics(request):
         }
         for switch in switches
     ]
+
 
 
 #
