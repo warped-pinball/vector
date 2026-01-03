@@ -10,14 +10,14 @@ Fault indicator
 Supports Ws2812 multi color LED for enhanced fault reporting via BoardLED.py driver
 """
 
-import time,utime
+import time
 import machine
 import SharedState
 import BoardLED as L
 import faults
 try:
     import rp2
-except:
+except ImportError:
     rp2 = None
 
 
@@ -85,11 +85,11 @@ def start():
 
   
 
-def _getNewFaults():
-    global x, sequence
+def _getNewFaults():    
     """
         Check SharedState for faults and update LED sequence accordingly
     """
+    global sequence
     # Extract fault codes from SharedState.faults
     fault_codes = [f.split(":")[0].split()[0] for f in SharedState.faults]
 

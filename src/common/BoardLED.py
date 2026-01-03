@@ -10,7 +10,7 @@
 import machine
 try:
     import rp2
-except:
+except ImportError:
     rp2 = None
 
 
@@ -27,7 +27,7 @@ WHITE   = 0x0C0C0C
 BLACK   = 0x000000
 
 
-#WS2812 serial driver with suuport for single color LED on same gpio
+# WS2812 serial driver with support for single color LED on same gpio
 @rp2.asm_pio(
     sideset_init=rp2.PIO.OUT_LOW,
     out_shiftdir=rp2.PIO.SHIFT_LEFT,
