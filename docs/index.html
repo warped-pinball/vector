@@ -415,9 +415,9 @@
       <h2><code>/api/time/set_midnight_madness</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1217'>app_setMidnightMadness</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>Update Midnight Madness configuration</p>
+      <p>Set Midnight Madness configuration</p>
       <h3>Request</h3>
-      <h4>Body parameters</h4><ul><li><code>always</code> (bool, required) - Keep Midnight Madness enabled at all times</li><li><code>enabled</code> (bool, required) - Enable timed Midnight Madness events</li></ul>
+      <h4>Body parameters</h4><ul><li><code>always</code> (bool, required) - Keep Midnight Madness enabled for all games</li><li><code>enabled</code> (bool, required) - Enable timed Midnight Madness events</li></ul>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
     </section>
@@ -437,7 +437,7 @@
       <h2><code>/api/settings/factory_reset</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1266'>app_factoryReset</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>Perform a full factory reset</p>
+      <p>Perform a full factory reset of Vector and the pinball machine</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -448,7 +448,7 @@
       <h2><code>/api/settings/reboot</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1305'>app_reboot</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>Reboot the controller</p>
+      <p>Reboot the Pinball machine</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -481,7 +481,7 @@
       <h2><code>/api/network/peers</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1375'>app_getPeers</a></p>
       
-      <p>Discover other devices on the local network</p>
+      <p>List other vector devices discovered on the local network</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -492,7 +492,7 @@
       <h2><code>/api/set_date</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1397'>app_setDateTime</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>Set the device date and time</p>
+      <p>Set Vector&#x27;s date and time</p>
       <h3>Request</h3>
       <h4>Body parameters</h4><ul><li><code>date</code> (list, required) - RTC tuple [year, month, day, hour, minute, second]</li></ul>
       <h3>Response</h3>
@@ -503,18 +503,18 @@
       <h2><code>/api/get_date</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1423'>app_getDateTime</a></p>
       
-      <p>Read the current device time</p>
+      <p>Read the current time according to Vector</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - RTC timestamp returned</li></ul><p><strong>Response body:</strong> Tuple containing RTC date/time fields</p><pre><code>[2024, 5, 1, 0, 12, 0, 0, 0]</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - RTC timestamp returned</li></ul><p><strong>Response body:</strong> Tuple containing RTC date/time fields</p><pre><code>{&quot;date&quot;: [2024, 1, 1, 0, 12, 0, 0]}</code></pre>
     </section>
     
     <section id="api-version">
       <h2><code>/api/version</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1443'>app_version</a></p>
       
-      <p>Report software version</p>
+      <p>Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -525,7 +525,7 @@
       <h2><code>/api/fault</code></h2>
       <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1462'>app_install_fault</a></p>
       
-      <p>Read current fault state</p>
+      <p>Get the list of currently active faults</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -540,12 +540,12 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Export stream started</li></ul><p><strong>Response body:</strong> File download containing leaderboard scores</p><pre><code>&quot;&lt;binary stream&gt;&quot;</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard export file returned</li></ul><p><strong>Response body:</strong> </p><pre><code>{</code></pre>
     </section>
     
     <section id="api-import-scores">
       <h2><code>/api/import/scores</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1503'>app_import_leaderboard</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1506'>app_import_leaderboard</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
       <p>Import leaderboard data from an uploaded file</p>
       <h3>Request</h3>
@@ -556,53 +556,53 @@
     
     <section id="api-memory-snapshot">
       <h2><code>/api/memory-snapshot</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1530'>app_memory_snapshot</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1533'>app_memory_snapshot</a></p>
       
       <p>Stream a snapshot of memory contents</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Snapshot streaming</li></ul><p><strong>Response body:</strong> Text stream of byte values separated by newlines</p><pre><code>&quot;0</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Snapshot streaming</li></ul><p><strong>Response body:</strong> Text stream of byte values</p>
     </section>
     
     <section id="api-logs">
       <h2><code>/api/logs</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1549'>app_getLogs</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1551'>app_getLogs</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 10s</p><p><strong>Single instance:</strong> Yes</p>
       <p>Download the system log file</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Log download streaming</li></ul><p><strong>Response body:</strong> Log file content</p><pre><code>&quot;&lt;log text&gt;&quot;</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Log download streaming</li></ul><p><strong>Response body:</strong> Log file content</p>
     </section>
     
     <section id="api-formats-available">
       <h2><code>/api/formats/available</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1600'>app_list_available_formats</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1601'>app_list_available_formats</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the list of available game formats</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Formats returned</li></ul><p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p><pre><code>[{&quot;id&quot;: 0, &quot;name&quot;: &quot;Arcade&quot;, &quot;description&quot;: &quot;Manufacturer standard game play&quot;}]</code></pre>
     </section>
     
     <section id="api-formats-set">
       <h2><code>/api/formats/set</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1606'>app_set_current_format</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1619'>app_set_current_format</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>No description provided.</p>
+      <p>Set the active game format</p>
       <h3>Request</h3>
-      <p>No parameters inferred.</p>
+      <h4>Body parameters</h4><ul><li><code>format_id</code> (int, required) - Format identifier to activate</li><li><code>options</code> (dict, optional) - Configuration options for the selected format</li></ul>
       <h3>Response</h3>
-      <p>No structured response documented.</p>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Format set successfully</li></ul>
     </section>
     
     <section id="api-formats-active">
       <h2><code>/api/formats/active</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1633'>app_get_active_formats</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1666'>app_get_active_formats</a></p>
       
-      <p>No description provided.</p>
+      <p>Get the currently active game format</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -611,9 +611,9 @@
     
     <section id="api-diagnostics-switches">
       <h2><code>/api/diagnostics/switches</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1639'>app_get_switch_diagnostics</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1685'>app_get_switch_diagnostics</a></p>
       
-      <p>No description provided.</p>
+      <p>Get diagnostic information for all switches</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -622,31 +622,31 @@
     
     <section id="api-update-check">
       <h2><code>/api/update/check</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1670'>app_updates_available</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1728'>app_updates_available</a></p>
       <p><strong>Cooldown:</strong> 10s</p>
-      <p>Check the server for available updates</p>
+      <p>Get the metadata for the latest available software version. This does not download or apply the update.</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{&quot;available&quot;: true, &quot;version&quot;: &quot;1.2.3&quot;}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{</code></pre>
     </section>
     
     <section id="api-update-apply">
       <h2><code>/api/update/apply</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1697'>app_apply_update</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1762'>app_apply_update</a></p>
       <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
-      <p>Apply a downloaded software update</p>
+      <p>Download and apply a software update from the provided URL.</p>
       <h3>Request</h3>
-      <h4>Body parameters</h4><ul><li><code>url</code> (string, required) - Signed update package URL</li><li><code>skip_signature_check</code> (bool, optional) - Bypass signature validation (for diagnostics only)</li></ul>
+      <h4>Body parameters</h4><ul><li><code>url</code> (string, required) - Signed update package URL</li><li><code>skip_signature_check</code> (bool, optional) - Bypass signature validation (for developer builds)</li></ul>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Streaming progress updates</li></ul><p><strong>Response body:</strong> Sequence of JSON log entries with ``log`` and ``percent`` fields</p><pre><code>{&quot;log&quot;: &quot;Starting update&quot;, &quot;percent&quot;: 0}</code></pre>
     </section>
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1746'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1811'>app_inAPMode</a></p>
       
-      <p>Indicate that the device is running in app mode</p>
+      <p>Indicates if Vector is running in AP or app mode</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
@@ -655,20 +655,20 @@
     
     <section id="api-in_ap_mode">
       <h2><code>/api/in_ap_mode</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1769'>app_inAPMode</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1834'>app_inAPMode</a></p>
       
-      <p>Indicate that the device is running in AP mode</p>
+      <p>No description provided.</p>
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Mode reported</li></ul><p><strong>Response body:</strong> Flag showing AP mode status</p><pre><code>{&quot;in_ap_mode&quot;: true}</code></pre>
+      <p>No structured response documented.</p>
     </section>
     
     <section id="api-settings-set_vector_config">
       <h2><code>/api/settings/set_vector_config</code></h2>
-      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1785'>app_setWifi</a></p>
+      <p><strong>Handler:</strong> <a href='../src/common/backend.py#L1839'>app_setWifi</a></p>
       
-      <p>Configure Wi-Fi credentials and default game</p>
+      <p>[AP Mode Only] Configure Wi-Fi credentials and default game</p>
       <h3>Request</h3>
       <h4>Body parameters</h4><ul><li><code>ssid</code> (string, required) - Wi-Fi network name</li><li><code>wifi_password</code> (string, required) - Wi-Fi network password</li><li><code>vector_password</code> (string, required) - Password for authenticated API access</li><li><code>game_config_filename</code> (string, required) - Game configuration filename to load</li></ul>
       <h3>Response</h3>
