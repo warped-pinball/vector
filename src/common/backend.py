@@ -1736,13 +1736,14 @@ def app_updates_available(request):
           description: Update metadata returned
       body:
         description: JSON payload describing available updates
-        example: {
-            "release_page": "https://github.com/...",
-            "notes": "Another Great Release! Here's what we changed",
-            "published_at": "2025-12-30T17:54:49+00:00",
-            "url": "https://github.com/...",
-            "version": "1.9.0"
-        }
+        example:
+            {
+                "release_page": "https://github.com/...",
+                "notes": "Another Great Release! Here's what we changed",
+                "published_at": "2025-12-30T17:54:49+00:00",
+                "url": "https://github.com/...",
+                "version": "1.9.0"
+            }
     @end
     """
     from mrequests.mrequests import get
