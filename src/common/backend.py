@@ -368,18 +368,8 @@ def get_challenge(request):
 def check_password(request):
     """
     @api
-    summary: Validate password proof
+    summary: Convenience method to verify credentials without side effects
     auth: true
-    request:
-      headers:
-        - name: x-auth-challenge
-          type: hex-string
-          required: true
-          description: Nonce provided by /api/auth/challenge
-        - name: x-auth-hmac
-          type: hex-string
-          required: true
-          description: HMAC signature over the challenge
     response:
       status_codes:
         - code: 200
@@ -414,7 +404,7 @@ for file_path in ls("web"):
 def app_reboot_game(request):
     """
     @api
-    summary: Power-cycle the connected game controller
+    summary: Power-cycle the pinball machine and restart the scheduled tasks
     auth: true
     response:
       status_codes:
@@ -438,14 +428,14 @@ def app_reboot_game(request):
 def app_game_name(request):
     """
     @api
-    summary: Get the current game name
+    summary: Get the human-friendly title of the active game configuration
     response:
       status_codes:
         - code: 200
           description: Active game returned
       body:
         description: Plain-text game name
-        example: "Vector"
+        example: "Attack from Mars"
     @end
     """
     import SharedState
@@ -457,14 +447,14 @@ def app_game_name(request):
 def app_game_config_filename(request):
     """
     @api
-    summary: Get the filename of the active game configuration
+    summary: Get the filename of the active game configuration. Note that on EM systems this is the same as the game name.
     response:
       status_codes:
         - code: 200
           description: Active configuration returned
       body:
         description: JSON object identifying the configuration file in use
-        example: {"active_config": "vector.json"}
+        example: {"active_config": "AttackMars_11"}
     @end
     """
     import SharedState
@@ -480,14 +470,14 @@ def app_game_config_filename(request):
 def app_game_configs_list(request):
     """
     @api
-    summary: List available game configuration files
+    summary: List all available game configuration files
     response:
       status_codes:
         - code: 200
           description: Configurations listed
       body:
         description: Mapping of configuration filenames to human-readable titles
-        example: {"vector.json": "Vector", "em_sample.json": "Sample EM"}
+        example: {"F14_L1": {"name": "F14 Tomcat", "rom": "L1"}, "Taxi_L4": {"name": "Taxi", "rom": "L4"}}
     @end
     """
     from GameDefsLoad import list_game_configs
@@ -495,14 +485,11 @@ def app_game_configs_list(request):
     return list_game_configs()
 
 
-game_status = {"GameActive": True, "BallInPlay": 2, "Scores": [0, 0, 0, 0], "GameTime": 213}
-
-
 @add_route("/api/game/status")
 def app_game_status(request):
     """
     @api
-    summary: Retrieve the current game status snapshot
+    summary: Retrieve the current game status such as ball in play, scores, and anything else the configured game supports
     response:
       status_codes:
         - code: 200
@@ -567,7 +554,7 @@ def app_leaderBoardRead(request):
 def app_scoreDelete(request):
     """
     @api
-    summary: Delete score entries from a leaderboard
+    summary: Delete one or more score entries from a leaderboard
     auth: true
     request:
       body:
@@ -639,7 +626,6 @@ def app_resetScores(request):
         - code: 200
           description: Scores cleared
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -652,14 +638,13 @@ def app_resetScores(request):
 def app_tournamentClear(request):
     """
     @api
-    summary: Clear tournament standings and reset counters
+    summary: Clear tournament standings and resets the game counter
     auth: true
     response:
       status_codes:
         - code: 200
           description: Tournament data cleared
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -674,7 +659,7 @@ def app_tournamentClear(request):
 def app_getClaimableScores(request):
     """
     @api
-    summary: List scores awaiting initials entry
+    summary: List recent claimable plays
     response:
       status_codes:
         - code: 200
@@ -703,7 +688,7 @@ def app_claimScore(request):
         - name: player_index
           type: int
           required: true
-          description: Player slot associated with the score
+          description: Player slot or position associated with the score
         - name: score
           type: int
           required: true
@@ -713,7 +698,6 @@ def app_claimScore(request):
         - code: 200
           description: Score claimed
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -730,13 +714,13 @@ def app_claimScore(request):
 def app_getPlayers(request):
     """
     @api
-    summary: List player records stored on the device
+    summary: List registered players
     response:
       status_codes:
         - code: 200
           description: Player list returned
       body:
-        description: Mapping of player indices to initials and names
+        description: Mapping of player IDs to initials and names
         example: {"0": {"initials": "ABC", "name": "Alice"}}
     @end
     """
@@ -763,7 +747,7 @@ def app_updatePlayer(request):
         - name: id
           type: int
           required: true
-          description: Player index in memory map
+          description: Player ID to update
         - name: initials
           type: string
           required: true
@@ -777,7 +761,6 @@ def app_updatePlayer(request):
         - code: 200
           description: Record updated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -928,7 +911,6 @@ def app_resetIndScores(request):
         - code: 200
           description: Scores cleared
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -951,8 +933,8 @@ def app_getAdjustmentStatus(request):
         - code: 200
           description: Adjustment metadata returned
       body:
-        description: List of tuples describing adjustment slots, activation, and whether data exists
-        example: [["Default", true, true]]
+        description: List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support
+        example: {"profiles": [["Free Play", false, true], ["Arcade", true, true], ["", false, false], ["", false, false]], "adjustments_support": true}
     @end
     """
     from Adjustments import get_adjustments_status
@@ -964,7 +946,7 @@ def app_getAdjustmentStatus(request):
 def app_setAdjustmentName(request):
     """
     @api
-    summary: Rename an adjustment set
+    summary: Set the name of an adjustment profile
     auth: true
     request:
       body:
@@ -981,7 +963,6 @@ def app_setAdjustmentName(request):
         - code: 200
           description: Name updated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -997,20 +978,19 @@ def app_setAdjustmentName(request):
 def app_captureAdjustments(request):
     """
     @api
-    summary: Capture current adjustments into a slot
+    summary: Capture current adjustments into a profile
     auth: true
     request:
       body:
         - name: index
           type: int
           required: true
-          description: Destination slot for captured adjustments
+          description: Destination profile for captured adjustments
     response:
       status_codes:
         - code: 200
           description: Adjustments stored
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1023,20 +1003,19 @@ def app_captureAdjustments(request):
 def app_restoreAdjustments(request):
     """
     @api
-    summary: Restore adjustments from a saved slot
+    summary: Restore adjustments from a saved profile
     auth: true
     request:
       body:
         - name: index
           type: int
           required: true
-          description: Adjustment slot to restore
+          description: Adjustment profile to restore
     response:
       status_codes:
         - code: 200
           description: Adjustments restored
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1058,7 +1037,7 @@ def app_getScoreCap(request):
         - code: 200
           description: Claim methods returned
       body:
-        description: Flags indicating where initials can be entered
+        description: All keys are available methods for entering initials, only enabled methods are true
         example: {"on-machine": true, "web-ui": false}
     @end
     """
@@ -1073,7 +1052,7 @@ def app_getScoreCap(request):
 def app_setScoreCap(request):
     """
     @api
-    summary: Configure score claim methods
+    summary: Configure which score claim methods are enabled
     auth: true
     request:
       body:
@@ -1090,7 +1069,6 @@ def app_setScoreCap(request):
         - code: 200
           description: Preferences updated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1138,7 +1116,6 @@ def app_setTournamentMode(request):
         - code: 200
           description: Setting saved
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1183,7 +1160,6 @@ def app_setShowIP(request):
         - code: 200
           description: Preference updated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1200,7 +1176,7 @@ def app_setShowIP(request):
 def app_midnightMadnessAvailable(request):
     """
     @api
-    summary: Report whether Midnight Madness mode is supported
+    summary: Report if Midnight Madness mode is supported
     response:
       status_codes:
         - code: 200
@@ -1258,7 +1234,6 @@ def app_setMidnightMadness(request):
         - code: 200
           description: Configuration saved
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1279,7 +1254,6 @@ def app_triggerMidnightMadness(request):
         - code: 200
           description: Event triggered
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1299,7 +1273,6 @@ def app_factoryReset(request):
         - code: 200
           description: Reset initiated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1339,7 +1312,6 @@ def app_reboot(request):
         - code: 200
           description: Reboot initiated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1438,7 +1410,6 @@ def app_setDateTime(request):
         - code: 200
           description: Clock updated
       body:
-        description: Empty body; generator emits OK
         example: "ok"
     @end
     """
@@ -1740,7 +1711,6 @@ def add_ap_mode_routes():
             - code: 200
               description: Configuration saved
           body:
-            description: Empty body; generator emits OK
             example: "ok"
         @end
         """
