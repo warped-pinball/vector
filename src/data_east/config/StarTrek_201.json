@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Star Trek",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 416
+    },
+    "DisplayMessage": {
+        "Type": 24,
+        "Address": 8000
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7009,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7747,
+        "ChecksumResultAdr": 8128
+    },
+    "HighScores": {
+        "Type": 20,
+        "ScoreAdr": 5752,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 5802,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7709
+    },
+    "InPlay": {
+        "Type": 20,
+        "Players": 418,
+        "PlayerUp": 415,
+        "ScoreAdr": 430,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}

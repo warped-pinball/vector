@@ -1,0 +1,51 @@
+{
+    "GameInfo": {
+        "GameName": "Generic Data East",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+
+    "Memory" : {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+
+    "BallInPlay": {
+        "Type": 0,
+        "Address": 0       
+    },
+
+     "InPlay": {
+        "Type": 0,
+        "GameActiveAdr": 0,
+        "GameActiveValue": 0,
+        "Players": 0,
+        "ScoreAdr": 0,
+        "ScoreBytes": 0
+    },
+
+    "DisplayMessage": {
+       "Type": 0,
+        "AddressS1": 0
+    },
+
+    "Adjustments" :{
+        "Type": 0,
+        "CustomMessageOn": 0,
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
+    },
+
+    "HighScores": {
+        "Type": 0,
+        "ScoreAdr": 0,
+        "BytesInScore": 0,
+        "ScoreSpacing": 0,
+        "InitialAdr": 0,
+        "InitialSpacing": 0,
+        "NumberOfScores": 4
+    }
+}

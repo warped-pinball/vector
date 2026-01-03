@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Batman",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 78
+    },
+    "DisplayMessage": {
+        "Type": 24,
+        "Address": 7820
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7742,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7751,
+        "ChecksumResultAdr": 7934
+    },
+    "HighScores": {
+        "Type": 20,
+        "ScoreAdr": 7576,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 7626,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7709
+    },
+    "InPlay": {
+        "Type": 20,
+        "Players": 135,
+        "PlayerUp": 134,
+        "ScoreAdr": 16,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}

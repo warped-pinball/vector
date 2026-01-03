@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Batman Forever",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 463
+    },
+    "DisplayMessage": {
+        "Type": 20,
+        "Address": 8002
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7009,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7807,
+        "ChecksumResultAdr": 8125
+    },
+    "HighScores": {
+        "Type": 25,
+        "ScoreAdr": 5756,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "Multiplier": 1,
+        "InitialAdr": 5818,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 25,
+        "Players": 465,
+        "PlayerUp": 462,
+        "ScoreAdr": 1757,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "Multiplier": 1
+    }
+}

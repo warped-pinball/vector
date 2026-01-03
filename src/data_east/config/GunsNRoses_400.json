@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Guns N Roses",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 392
+    },
+    "DisplayMessage": {
+        "Type": 20,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7694,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7807,
+        "ChecksumResultAdr": 8157
+    },
+    "HighScores": {
+        "Type": 24,
+        "ScoreAdr": 5756,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 5818,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 24,
+        "Players": 446,
+        "PlayerUp": 443,
+        "ScoreAdr": 5846,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}

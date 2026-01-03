@@ -1,0 +1,56 @@
+
+
+Configs all have a 'Type' entry in the JSON.
+Maybe should be alpha and be descriptive - but they are just numbers.
+Here is what they mean- -
+
+
+0:
+	OFF, not implemented feature
+
+1-8:  system 11
+	1: normal-ish ASCII, space=0x40
+	3: strange character table starts at 0 with numbers
+
+	
+9:    System 9
+	
+
+10-19: WPC
+    can use type 1 for ball in play (same as sys11)
+	
+
+20-29: DataEast
+
+	In-play scores
+	20 four byte scores, 7 byte spacing
+	24 has a break with fifth byte out of sequence at end
+	25 five bcd coded bytes in a row
+	27 seven digit score BCD one digit per byte
+	
+	
+	High Scores
+	20 all in a row, can have mulitplier of 10 optionally 
+	24 five bytes has a break after fourth byte, offset fixed 16 bytes
+	25 five bytes all in a row
+	27 BCD one digit per byte in a row - seven digits
+	
+	Ball inplay
+	type 20 - data east 0,1,2,3,4,5
+
+	Display message
+	Type 0: none/failure
+    Type 20: 12x3 = 36 chars
+    Type 21: 38x1 = 38 chars (RoboCop)
+    Type 22: 14x3 = 42 chars  alpha 
+    Type 23: 16x3 = 48 chars
+	Type 24: 24x2 but only 21 in each line visible - put "Message21" in name.txt
+  
+	
+	
+
+
+30-39: Classic bally and Stern
+
+
+

@@ -1,0 +1,52 @@
+{
+    "GameInfo": {
+        "GameName": "Hook",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 94
+    },
+    "DisplayMessage": {
+        "Type": 24,
+        "Address": 7784
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7774,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7783,
+        "ChecksumResultAdr": 7898
+    },
+    "HighScores": {
+        "Type": 24,
+        "ScoreAdr": 7380,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 7438,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7710
+    },
+    "InPlay": {
+        "Type": 24,
+        "Players": 151,
+        "PlayerUp": 150,
+        "ScoreAdr": 16,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    },
+    "Flippers": {
+        "Type": 10,
+        "Address": 6193
+    }
+}

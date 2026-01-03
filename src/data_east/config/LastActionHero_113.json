@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Last Action Hero",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 429
+    },
+    "DisplayMessage": {
+        "Type": 20,
+        "Address": 1458
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7755,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7807,
+        "ChecksumResultAdr": 8157
+    },
+    "HighScores": {
+        "Type": 24,
+        "ScoreAdr": 5756,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 5818,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 24,
+        "Players": 342,
+        "PlayerUp": 428,
+        "ScoreAdr": 5846,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}
