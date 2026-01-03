@@ -37,7 +37,7 @@ enableWS2812led = False
 timer = machine.Timer()
 LED_Out = None
 sequence = [L.BLACK, L.BLACK]
-
+index = 0
 
 def isChip2350():
     """
@@ -110,7 +110,6 @@ def _getNewFaults():
 
 
 
-index = 0
 def _timerCallBack(_):
     """
         timer to drive LED blinky blink - and get new FAULTS periodically
