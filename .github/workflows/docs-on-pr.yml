@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "src/common/backend.py"
+      - "tools/gen_api_docs.py"
 
 permissions:
   contents: write
