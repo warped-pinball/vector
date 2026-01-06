@@ -1,50 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vector HTTP API Authentication</title>
-  <style>
-    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
-    h1, h2, h3 { color: #e5e7eb; }
-    a { color: #38bdf8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
-    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
-    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
-    ol { padding-left: 1.25rem; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Authentication</h1>
-  <div class="panel">
-    <p>Authenticated routes require an HMAC signature tied to a one-time challenge token. Use this flow for any route marked as requiring authentication.</p>
-  </div>
-  <div class="panel">
-    <h2>Flow</h2>
-    <ol>
-      <li>Call <code>/api/auth/challenge</code> to receive a hexadecimal <code>challenge</code> string.</li>
-      <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
-      <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
-      <li>Send the protected request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
-      <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
-    </ol>
-  </div>
-  <div class="panel">
-    <h2>Examples</h2>
-    <p>Example message construction for <code>/api/settings/set_show_ip</code> without a request body:</p>
-    <pre><code>challenge = "deadbeef..."  # obtained from /api/auth/challenge
+  <a id="top"></a>
+  <header class="topbar">
+    <div class="nav">
+      <div class="brand">
+        <span>Vector docs</span>
+        <a class="nav-link" href="index.html#technical">Technical hub</a>
+      </div>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html#api-routes">API routes</a>
+        <a class="nav-link" href="#top">Back to top</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>Authentication</h1>
+        <p class="meta">Authenticated routes require an HMAC signature tied to a one-time challenge token. Use this flow for any route marked as requiring authentication.</p>
+      </div>
+      <div class="badge">
+        <span class="tag">HMAC-SHA256</span>
+        <span class="tag">Challenge + path + body</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Flow</h2>
+      <ol>
+        <li>Call <code>/api/auth/challenge</code> to receive a hexadecimal <code>challenge</code> string.</li>
+        <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
+        <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
+        <li>Send the protected request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
+        <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h2>Examples</h2>
+      <p>Example message construction for <code>/api/settings/set_show_ip</code> without a request body:</p>
+      <pre><code>challenge = "deadbeef..."  # obtained from /api/auth/challenge
 path = "/api/settings/set_show_ip"
 body = ""  # no payload for this route
 message = challenge + path + body</code></pre>
-    <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
-  </div>
-  <div class="panel">
-    <h2>Ready-to-run Python example</h2>
-    <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
-<pre><code>#!/usr/bin/env python3
+      <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Ready-to-run Python example</h2>
+      <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
+      <pre><code>#!/usr/bin/env python3
 import hashlib
 import hmac
 import requests
@@ -73,8 +85,10 @@ if __name__ == "__main__":
     resp = signed_get("/api/settings/set_show_ip")
     print("Authenticated response:", resp.status_code, resp.text)
 </code></pre>
-    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
-  </div>
-  <p><a href="index.html">Back to API reference</a></p>
+      <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
+    </div>
+
+    <p class="back-top"><a class="footer-link" href="#top">Back to top</a></p>
+  </main>
 </body>
 </html>

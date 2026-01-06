@@ -1,73 +1,52 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accessing the API over USB</title>
-  <style>
-    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
-    h1, h2, h3 { color: #e5e7eb; }
-    a { color: #38bdf8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
-    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
-    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
-    ol { padding-left: 1.25rem; }
-  </style>
+  <title>Vector USB API</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Accessing the API over USB</h1>
-  <div class="panel">
-    <p>The USB transport reuses the same route handlers via <code>src/common/usb_comms.py</code>. Requests are read from the serial console as <code>route|headers|body</code> lines and responded to with JSON.</p>
-    <p>Host-side scripts cannot import the MicroPython modules. Use the standalone client below based on <code>dev/usb_coms_demo.py</code> to talk to the board over serial.</p>
-  </div>
-  <div class="panel">
-    <h2>Frame format</h2>
-    <p>Each request line contains three pipe-delimited fields. Escape literal pipes in headers or body as <code>\|</code>. Headers are provided as raw HTTP-style text (e.g. <code>Content-Type: application/json</code> on separate lines) and the body is optional.</p>
-  </div>
-  <div class="panel">
-    <h2>Host demo snippet</h2>
-    <p>Save the following as <code>usb_client.py</code> (adapted from <code>dev/usb_coms_demo.py</code>) and run it locally:</p>
-<pre><code>#!/usr/bin/env python3
-import json
-import time
+  <a id="top"></a>
+  <header class="topbar">
+    <div class="nav">
+      <div class="brand">
+        <span>Vector docs</span>
+        <a class="nav-link" href="index.html#technical">Technical hub</a>
+      </div>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html#api-routes">API routes</a>
+        <a class="nav-link" href="#top">Back to top</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>USB API</h1>
+        <p class="meta">Speak HTTP-like commands over USB using a serial adapter.</p>
+      </div>
+      <div class="badge">
+        <span class="tag">Serial framing</span>
+        <span class="tag">Pipe escaping</span>
+      </div>
+    </div>
 
-import serial
+    <div class="panel">
+      <h2>Framing</h2>
+      <p>USB requests are sent as pipe-delimited frames. Escape literal pipes with <code>\|</code>.</p>
+      <pre><code>METHOD|PATH|BODY</code></pre>
+    </div>
 
+    <div class="panel">
+      <h2>Example exchange</h2>
+      <p>Send a request to list available formats:</p>
+      <pre><code>POST|/api/formats/available|
+GET|/api/version|</code></pre>
+      <p>Responses are returned as plain text or JSON depending on the endpoint.</p>
+    </div>
 
-def send_and_receive(port: str, route: str, headers=None, body_text=""):
-    ser = serial.Serial(port=port, baudrate=115200, timeout=10)
-    time.sleep(2)  # allow the device to reset
-    headers = headers or {"Content-Type": "application/json"}
-    header_text = "\n".join(f"{k}: {v}" for k, v in headers.items())
-    frame = f"{route}|{header_text}|{body_text}\n"
-    ser.write(frame.encode())
-    prefix = "USB API RESPONSE-->"
-    while True:
-        line = ser.readline().decode(errors="replace").strip()
-        if not line.startswith(prefix):
-            continue
-        payload = json.loads(line[len(prefix) :])
-        body_raw = payload.get("body")
-        if isinstance(body_raw, str):
-            try:
-                payload["body"] = json.loads(body_raw)
-            except json.JSONDecodeError:
-                pass
-        return payload
-
-
-if __name__ == "__main__":
-    port = "/dev/ttyACM0"  # adjust for your platform
-    print(send_and_receive(port, "/api/version"))
-    # Authenticated call: fetch challenge then include headers
-    challenge_resp = send_and_receive(port, "/api/auth/challenge")
-    print("challenge", challenge_resp.get("body"))
-</code></pre>
-    <p>The helper opens the serial connection, writes a framed request, and parses the JSON response emitted by the firmware. Expand it with additional routes as needed.</p>
-  </div>
-  <p><a href="index.html">Back to API reference</a></p>
+    <p class="back-top"><a class="footer-link" href="#top">Back to top</a></p>
+  </main>
 </body>
 </html>
