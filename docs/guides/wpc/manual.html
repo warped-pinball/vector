@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WPC Installation & Use Manual</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <strong>WPC Manual</strong>
+      <div class="links">
+        <a class="pill" href="../index.html">All guides</a>
+        <a class="pill" href="#toc">Contents</a>
+        <a class="pill" href="#hardware">Install</a>
+        <a class="pill" href="#wifi">WiFi setup</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>System WPC WiFi Module Installation and Use Manual</h1>
+        <p class="meta">How the SYSWPC.WiFi board installs, what the LEDs mean, and how to bring a classic Williams/Bally WPC machine online.</p>
+        <a class="btn" href="https://raw.githubusercontent.com/wiki/warped-pinball/vector/wiki-pdf/WPC/WPC%20Manual.pdf">Download as PDF</a>
+      </div>
+    </div>
+
+    <div class="panel" id="toc">
+      <h2>Table of contents</h2>
+      <ul class="toc">
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#indicators">Indicators and controls</a></li>
+        <li><a href="#disclaimer">Disclaimer</a></li>
+        <li><a href="#hardware">Hardware installation</a></li>
+        <li><a href="#wifi">Connecting to local WiFi</a></li>
+        <li><a href="#ip">IP addresses</a></li>
+        <li><a href="#operation">Operation</a></li>
+      </ul>
+    </div>
+
+    <div class="panel section" id="how-it-works">
+      <h2>How it works</h2>
+      <p>The board sits between the processor chip and the game’s main board so it can act like the RAM chip where settings are stored. Gameplay continues unchanged—the same software runs on the same processor—while <code>SYSWPC.Wifi</code> stores RAM values in on-board permanent memory. Installation requires no permanent modification or soldering.</p>
+    </div>
+
+    <div class="panel section" id="indicators">
+      <h2>Indicators and controls</h2>
+      <ul>
+        <li><strong>WiFi Status LED</strong>
+          <ul>
+            <li>Fast blink: AP mode</li>
+            <li>Slow blink: joining WiFi</li>
+            <li>Solid on: WiFi joined and active</li>
+          </ul>
+        </li>
+        <li><strong>WiFi Configure Button</strong>
+          <ul>
+            <li>Hold during power-up</li>
+            <li>Release when LED flashes for setup mode</li>
+          </ul>
+        </li>
+        <li><strong>Status LED</strong>
+          <ul>
+            <li>Fast blink indicates installation fault</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="panel section" id="disclaimer">
+      <h2>Disclaimer</h2>
+      <div class="alert">
+        <p>Removing classic game chips carries risk. Work with the game powered off but still grounded, discharge static before touching electronics, and double-check that sockets and ICs are fully seated. Incorrect fuse sizes or partially seated components can damage the machine. Warped Pinball provides email support but cannot be liable for damage.</p>
+      </div>
+    </div>
+
+    <div class="panel section" id="hardware">
+      <h2>Hardware installation</h2>
+      <ol>
+        <li>Carefully remove the processor (<code>MC6809</code>) and place it into the socket on the <code>SYS WPC.Wifi</code> board. Verify pins are straight and fully seated.</li>
+        <li>To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated, then place the round-pin chip carrier on top and press each pin firmly.</li>
+        <li>(Optional) Attach the adhesive standoff to the Warped Pinball board with the included plastic screw so it can adhere to a neighboring chip.</li>
+        <li>Insert the <code>SYS WPC.Wifi</code> board into the socket on the main board. Align all pins, press firmly, and confirm each corner is seated.</li>
+      </ol>
+      <h3>Supported games</h3>
+      <ul>
+        <li><strong>Early WPC</strong>: Black Rose, Bram Stoker’s Dracula, Creature from the Black Lagoon, Demolition Man, Doctor Who, Fish Tales, Funhouse, Gilligan’s Island, Harley-Davidson, Hurricane, Indiana Jones, Judge Dredd, Machine: Bride of Pinbot, Party Zone, Popeye Saves the Earth, Star Trek: TNG, Terminator 2, The Addams Family I &amp; II, The Getaway: High Speed II, Twilight Zone, White Water</li>
+        <li><strong>WPC-S &amp; WPC-95</strong>: Corvette, Dirty Harry, Indianapolis 500, JackBot, Johnny Mnemonic, No Fear: Dangerous Sports, Red and Ted’s Road Show, The Flintstones, The Shadow, Theatre of Magic, WHO Dunnit, World Cup Soccer</li>
+        <li><strong>WPC-95 (continued)</strong>: Attack from Mars, Cactus Canyon, Cirqus Voltaire, Congo, Junk Yard, Medieval Madness, Monster Bash, NBA Fastbreak, No Good Gofers, Safe Cracker, Scared Stiff, Tales of the Arabian Nights, The Champion Pub</li>
+      </ul>
+      <p>Connect the white wire with the attached micro clip to the main board reset circuit at <code>R22</code>. This synchronizes resets on power-up and is <strong>mandatory</strong>. Push the end of the handle to extend the clip and hook it as indicated.</p>
+      <p>After connection the game operates normally while the board provides NVRAM service. Configure WiFi to access advanced scoring, tournament, and other features.</p>
+    </div>
+
+    <div class="panel section" id="wifi">
+      <h2>Connecting to local WiFi</h2>
+      <ol>
+        <li>Power up the pinball machine; the WiFi status LED should blink fast.</li>
+        <li>On a phone or computer, open WiFi settings and join the <strong>Warped Pinball</strong> network. A no-internet warning is expected.</li>
+        <li>When prompted, tap <strong>Sign In</strong> or open a browser to reach the configuration screen.</li>
+        <li>On the configuration screen:
+          <ul>
+            <li>Select your local WiFi <strong>SSID</strong> and enter the password (case sensitive).</li>
+            <li>Choose your <strong>game</strong> from the dropdown (use <code>GenericWPC</code> if not listed; incorrect selection can cause erratic behavior).</li>
+            <li>Optionally set an <strong>Admin Password</strong> to protect actions like erasing scores and leaderboards.</li>
+            <li>If the board previously joined a network, the assigned IP address is shown at the bottom.</li>
+          </ul>
+        </li>
+        <li>Click <strong>Save</strong>. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
+          <ul>
+            <li>Slow blinking indicates the unit is locating the network.</li>
+            <li>Solid LED confirms a successful connection.</li>
+            <li>Slow blinking for several minutes means the join failed—power down, hold the WiFi setup button while powering up, release when the LED blinks fast, and repeat pairing.</li>
+          </ul>
+        </li>
+      </ol>
+      <p><strong>Pro Tip:</strong> To re-enter configuration mode later, hold the WiFi config button during power-up until the LED blinks rapidly.</p>
+    </div>
+
+    <div class="panel section" id="ip">
+      <h2>IP addresses</h2>
+      <p>Each machine receives an IP address from your router (for example <code>192.168.1.79</code>). Access the board by entering the IP in a browser and save it as a bookmark. Router DHCP assignments can change; the board periodically displays the current IP on the machine display. To keep the same address, log into your router, locate the device, and mark the entry as <strong>static</strong>.</p>
+      <p>Have a color Pin2DMD? Use the buttons on the display to set it to <strong>Williams/Bally Mode</strong>.</p>
+    </div>
+
+    <div class="panel" id="operation">
+      <h2>Operation</h2>
+      <ul>
+        <li>Navigation buttons are in the upper-right corner.</li>
+        <li>Tournament and personal best scoreboards are accessible via the banner.</li>
+        <li>Enter player full names under <strong>Players</strong>.</li>
+      </ul>
+      <p>Watch the <a href="https://youtu.be/eGVe5E9X-2I" target="_blank" rel="noopener noreferrer">features video</a> and send ideas via <a href="https://WarpedPinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>.</p>
+    </div>
+  </main>
+</body>
+</html>
