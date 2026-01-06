@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vector Documentation Hub</title>
+  <title>Vector HTTP API</title>
   <style>
     :root {
       color-scheme: dark;
@@ -40,104 +41,841 @@
       box-shadow: var(--shadow);
       margin-bottom: 1.75rem;
     }
+    .panel section { border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
     ul { list-style: none; padding-left: 0; }
-    ul li { margin: 0.35rem 0; }
+    ul li { margin: 0.3rem 0; }
+    .endpoint-list a { font-weight: 600; }
+    code { background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--code-border); }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--code-border);
+      overflow-x: auto;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }
     .meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
-    .nav-link { padding: 0.45rem 0.85rem; border-radius: 10px; border: 1px solid transparent; font-weight: 600; color: var(--text); }
-    .nav-link:hover { border-color: var(--panel-border); background: rgba(56,189,248,0.08); text-decoration: none; }
-    .badge { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+    .tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }
+    .topbar {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(12px);
+      background: rgba(13,17,23,0.9);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+      z-index: 20;
+    }
+    .topbar .nav { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
+    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(56,189,248,0.08);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+    .badge { display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
     .hero { display: grid; gap: 0.8rem; }
     .card-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
     .card { padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); height: 100%; }
     .card h3 { margin-top: 0; }
-    .section-heading { margin: 0 0 0.25rem 0; }
+    .cta { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; font-weight: 600; }
+    .toc-list { padding-left: 1rem; list-style: disc; color: var(--text); }
+    .toc-list li { margin: 0.25rem 0; }
+    .spacer { flex: 1 1 auto; }
+    .back-top { text-align: right; margin-top: 1rem; }
   </style>
 </head>
 <body>
   <a id="top"></a>
+  <header class="topbar">
+    <div class="nav">
+      <div class="badge">
+        <strong>Vector HTTP API</strong>
+        <a class="pill" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Release badge</a>
+        <img alt="Latest release" src="https://img.shields.io/github/v/release/warped-pinball/vector?label=release" />
+        <img alt="Last commit" src="https://img.shields.io/github/last-commit/warped-pinball/vector?label=updated" />
+      </div>
+      <div class="nav-links">
+        <a class="pill" href="#toc">Table of contents</a>
+        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
+        <a class="pill" href="https://warpedpinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>
+        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
+        <a class="pill" href="#top">Back to top</a>
+      </div>
+    </div>
+  </header>
   <main>
     <div class="panel hero">
       <div>
-        <h1 class="section-heading">Warped Pinball Vector documentation</h1>
-        <p class="meta">A single landing page for all of the Vector documentation. Choose a system-specific owner's guide or jump into the technical references for building and integrating mods.</p>
+        <h1>Vector HTTP API</h1>
+        <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Use this page as the landing pad for connectivity guides and endpoint documentation.</p>
       </div>
-      <div class="badge">
-        <a class="nav-link" href="#owners">Browse owner guides</a>
-        <a class="nav-link" href="#technical">Open technical docs</a>
-        <a class="nav-link" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
-        <a class="nav-link" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
-        <a class="nav-link" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a>
+      <div class="meta">
+        <span class="tag">Statically generated</span>
+        <span class="tag">MicroPython friendly</span>
       </div>
+      <p class="meta">Need authentication details? Visit the <a href="authentication.html">Authentication guide</a>.</p>
     </div>
 
-    <div class="panel" id="owners">
-      <h2 class="section-heading">Owner's guides</h2>
-      <p class="meta">Pick your system to find quick starts, installation manuals, and ROM handling notes.</p>
-      <div class="card-grid">
-        <div class="card">
-          <h3>WPC</h3>
-          <ul>
-            <li><a href="guides/wpc/quick-start.html">Quick start</a></li>
-            <li><a href="guides/wpc/manual.html">Installation &amp; use manual</a></li>
-            <li><a href="guides/wpc/add-rom.html">Add a ROM profile</a></li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>System 11</h3>
-          <ul>
-            <li><a href="guides/system11/quick-start.html">Quick start</a></li>
-            <li><a href="guides/system11/manual.html">Installation &amp; use manual</a></li>
-            <li><a href="guides/system11/add-rom.html">Add a ROM profile</a></li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>System 9</h3>
-          <ul>
-            <li><a href="guides/system9/manual.html">Installation &amp; use manual</a></li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Data East</h3>
-          <ul>
-            <li><span class="meta">Owner's documentation coming soon</span></li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Electromechanical (EM)</h3>
-          <ul>
-            <li><span class="meta">Owner's documentation coming soon</span></li>
-          </ul>
-        </div>
-      </div>
+    <div class="panel" id="toc">
+      <h2>Table of contents</h2>
+      <ul class="toc-list">
+        <li><a href="#connectivity">Connectivity guides</a></li>
+        <li><a href="#routes">Routes &amp; endpoints</a></li>
+      </ul>
     </div>
 
-    <div class="panel" id="technical">
-      <h2 class="section-heading">Mod maker &amp; technical guides</h2>
-      <p class="meta">Detailed references for developers integrating with the Vector platform.</p>
+    <div class="panel" id="connectivity">
+      <h2>Connectivity guides</h2>
       <div class="card-grid">
         <div class="card">
-          <h3>Routes &amp; endpoints</h3>
-          <p class="meta">Full API surface generated from the backend source.</p>
-          <a href="routes.html">Open API routes</a>
-        </div>
-        <div class="card">
-          <h3>Authentication &amp; network</h3>
-          <p class="meta">POST-only access patterns, HMAC signing, and sample scripts.</p>
-          <a href="authentication.html">Open authentication guide</a>
-        </div>
-        <div class="card">
-          <h3>API over USB</h3>
-          <p class="meta">Serial framing, escaping pipes, and host tooling.</p>
-          <a href="usb.html">Open USB guide</a>
+          <h3>HTTP over the network</h3>
+          <p class="meta">How to reach your Vector board over WiFi, including TLS notes and curl examples.</p>
+          <a class="cta" href="network.html">Open network guide →</a>
         </div>
         <div class="card">
           <h3>Peer discovery</h3>
-          <p class="meta">HELLO/FULL frames and desktop discovery helpers.</p>
-          <a href="discovery.html">Open discovery guide</a>
+          <p class="meta">Broadcasts, HELLO/FULL frames, and a ready-to-run desktop script.</p>
+          <a class="cta" href="discovery.html">Open discovery guide →</a>
         </div>
-        
+        <div class="card">
+          <h3>USB transport</h3>
+          <p class="meta">Serial framing, escaping pipes, and a host-side client to speak to the device.</p>
+          <a class="cta" href="usb.html">Open USB guide →</a>
+        </div>
+        <div class="card">
+          <h3>Authentication</h3>
+          <p class="meta">Login flow, JSON payloads, and how to attach session cookies to API calls.</p>
+          <a class="cta" href="authentication.html">Open authentication guide →</a>
+        </div>
       </div>
     </div>
+
+    <div class="panel" id="routes">
+      <div class="nav" style="gap: 0.5rem; align-items: baseline;">
+        <h2 style="margin: 0;">Routes &amp; endpoints</h2>
+        <div class="spacer"></div>
+        <a class="pill" href="#top">Back to top</a>
+      </div>
+      <p class="meta">Jump directly to a handler. Links open source on GitHub with accurate line numbers.</p>
+      <div class="endpoint-list"><ul class="endpoint-list"><li><a href='#api-auth-challenge'>/api/auth/challenge</a></li><li><a href='#api-auth-password_check'>/api/auth/password_check</a></li><li><a href='#api-game-reboot'>/api/game/reboot</a></li><li><a href='#api-game-name'>/api/game/name</a></li><li><a href='#api-game-active_config'>/api/game/active_config</a></li><li><a href='#api-game-configs_list'>/api/game/configs_list</a></li><li><a href='#api-game-status'>/api/game/status</a></li><li><a href='#api-leaders'>/api/leaders</a></li><li><a href='#api-score-delete'>/api/score/delete</a></li><li><a href='#api-tournament'>/api/tournament</a></li><li><a href='#api-leaders-reset'>/api/leaders/reset</a></li><li><a href='#api-tournament-reset'>/api/tournament/reset</a></li><li><a href='#api-scores-claimable'>/api/scores/claimable</a></li><li><a href='#api-scores-claim'>/api/scores/claim</a></li><li><a href='#api-players'>/api/players</a></li><li><a href='#api-player-update'>/api/player/update</a></li><li><a href='#api-player-scores'>/api/player/scores</a></li><li><a href='#api-personal-bests'>/api/personal/bests</a></li><li><a href='#api-player-scores-reset'>/api/player/scores/reset</a></li><li><a href='#api-adjustments-status'>/api/adjustments/status</a></li><li><a href='#api-adjustments-name'>/api/adjustments/name</a></li><li><a href='#api-adjustments-capture'>/api/adjustments/capture</a></li><li><a href='#api-adjustments-restore'>/api/adjustments/restore</a></li><li><a href='#api-settings-get_claim_methods'>/api/settings/get_claim_methods</a></li><li><a href='#api-settings-set_claim_methods'>/api/settings/set_claim_methods</a></li><li><a href='#api-settings-get_tournament_mode'>/api/settings/get_tournament_mode</a></li><li><a href='#api-settings-set_tournament_mode'>/api/settings/set_tournament_mode</a></li><li><a href='#api-settings-get_show_ip'>/api/settings/get_show_ip</a></li><li><a href='#api-settings-set_show_ip'>/api/settings/set_show_ip</a></li><li><a href='#api-time-midnight_madness_available'>/api/time/midnight_madness_available</a></li><li><a href='#api-time-get_midnight_madness'>/api/time/get_midnight_madness</a></li><li><a href='#api-time-set_midnight_madness'>/api/time/set_midnight_madness</a></li><li><a href='#api-time-trigger_midnight_madness'>/api/time/trigger_midnight_madness</a></li><li><a href='#api-settings-factory_reset'>/api/settings/factory_reset</a></li><li><a href='#api-settings-reboot'>/api/settings/reboot</a></li><li><a href='#api-last_ip'>/api/last_ip</a></li><li><a href='#api-available_ssids'>/api/available_ssids</a></li><li><a href='#api-network-peers'>/api/network/peers</a></li><li><a href='#api-set_date'>/api/set_date</a></li><li><a href='#api-get_date'>/api/get_date</a></li><li><a href='#api-version'>/api/version</a></li><li><a href='#api-fault'>/api/fault</a></li><li><a href='#api-export-scores'>/api/export/scores</a></li><li><a href='#api-import-scores'>/api/import/scores</a></li><li><a href='#api-memory-snapshot'>/api/memory-snapshot</a></li><li><a href='#api-logs'>/api/logs</a></li><li><a href='#api-formats-available'>/api/formats/available</a></li><li><a href='#api-formats-set'>/api/formats/set</a></li><li><a href='#api-formats-active'>/api/formats/active</a></li><li><a href='#api-diagnostics-switches'>/api/diagnostics/switches</a></li><li><a href='#api-update-check'>/api/update/check</a></li><li><a href='#api-update-apply'>/api/update/apply</a></li><li><a href='#api-in_ap_mode'>/api/in_ap_mode</a></li><li><a href='#api-in_ap_mode'>/api/in_ap_mode</a></li><li><a href='#api-settings-set_vector_config'>/api/settings/set_vector_config</a></li></ul></div>
+    </div>
+
+    <div class="panel">
+    <section id="api-auth-challenge">
+      <h2><code>/api/auth/challenge</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L329' target='_blank' rel='noopener noreferrer'>get_challenge</a></p>
+      
+      <p>Request a new authentication challenge</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Challenge issued</li><li><code>429</code> - Too many active challenges</li></ul><p><strong>Response body:</strong> JSON containing a single challenge token.</p><pre><code>{
+    &quot;challenge&quot;: &quot;0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&quot;
+}</code></pre>
+    </section>
+    
+    <section id="api-auth-password_check">
+      <h2><code>/api/auth/password_check</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L371' target='_blank' rel='noopener noreferrer'>check_password</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Convenience method to verify credentials without side effects</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Credentials accepted</li><li><code>401</code> - Credentials rejected</li></ul><p><strong>Response body:</strong> Simple acknowledgement string</p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-game-reboot">
+      <h2><code>/api/game/reboot</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L407' target='_blank' rel='noopener noreferrer'>app_reboot_game</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Power-cycle the pinball machine and restart the scheduled tasks</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reboot triggered</li></ul><p><strong>Response body:</strong> Empty body; returns OK on success</p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-game-name">
+      <h2><code>/api/game/name</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L431' target='_blank' rel='noopener noreferrer'>app_game_name</a></p>
+      
+      <p>Get the human-friendly title of the active game configuration</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Active game returned</li></ul><p><strong>Response body:</strong> Plain-text game name</p><pre><code>&quot;Attack from Mars&quot;</code></pre>
+    </section>
+    
+    <section id="api-game-active_config">
+      <h2><code>/api/game/active_config</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L450' target='_blank' rel='noopener noreferrer'>app_game_config_filename</a></p>
+      
+      <p>Get the filename of the active game configuration. Note that on EM systems this is the same as the game name.</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Active configuration returned</li></ul><p><strong>Response body:</strong> JSON object identifying the configuration file in use</p><pre><code>{
+    &quot;active_config&quot;: &quot;AttackMars_11&quot;
+}</code></pre>
+    </section>
+    
+    <section id="api-game-configs_list">
+      <h2><code>/api/game/configs_list</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L476' target='_blank' rel='noopener noreferrer'>app_game_configs_list</a></p>
+      
+      <p>List all available game configuration files</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}
+        {
+            &quot;F14_L1&quot;: {
+                &quot;name&quot;: &quot;F14 Tomcat&quot;,
+                &quot;rom&quot;: &quot;L1&quot;
+            },
+            &quot;Taxi_L4&quot;: {
+                &quot;name&quot;: &quot;Taxi&quot;,
+                &quot;rom&quot;: &quot;L4&quot;
+            }
+        }</code></pre>
+    </section>
+    
+    <section id="api-game-status">
+      <h2><code>/api/game/status</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L505' target='_blank' rel='noopener noreferrer'>app_game_status</a></p>
+      
+      <p>Retrieve the current game status such as ball in play, scores, and anything else the configured game supports</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Status returned</li></ul><p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p><pre><code>{
+    &quot;GameActive&quot;: true,
+    &quot;BallInPlay&quot;: 2,
+    &quot;Scores&quot;: [1000, 0, 0, 0]
+}</code></pre>
+    </section>
+    
+    <section id="api-leaders">
+      <h2><code>/api/leaders</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L558' target='_blank' rel='noopener noreferrer'>app_leaderBoardRead</a></p>
+      
+      <p>Fetch the main leaderboard</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard returned</li></ul><p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p><pre><code>[
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;rank&quot;: 1,
+        &quot;ago&quot;: &quot;2h&quot;
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-score-delete">
+      <h2><code>/api/score/delete</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L583' target='_blank' rel='noopener noreferrer'>app_scoreDelete</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Delete one or more score entries from a leaderboard</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>delete</code> (list, required) - Collection of score objects containing ``score`` and ``initials``.</li><li><code>list</code> (string, required) - Target list name (e.g. leaders or tournament)</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Scores removed</li></ul><p><strong>Response body:</strong> Confirmation indicator</p><pre><code>{&quot;success&quot;: true}</code></pre>
+    </section>
+    
+    <section id="api-tournament">
+      <h2><code>/api/tournament</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L631' target='_blank' rel='noopener noreferrer'>app_tournamentRead</a></p>
+      
+      <p>Read the tournament leaderboard</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament leaderboard returned</li></ul><p><strong>Response body:</strong> List of tournament scores sorted by game order</p><pre><code>[
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;game&quot;: 1
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-leaders-reset">
+      <h2><code>/api/leaders/reset</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L655' target='_blank' rel='noopener noreferrer'>app_resetScores</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Clear the main leaderboard</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Scores cleared</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-tournament-reset">
+      <h2><code>/api/tournament/reset</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L674' target='_blank' rel='noopener noreferrer'>app_tournamentClear</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Clear tournament standings and resets the game counter</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament data cleared</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-scores-claimable">
+      <h2><code>/api/scores/claimable</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L695' target='_blank' rel='noopener noreferrer'>app_getClaimableScores</a></p>
+      
+      <p>List recent claimable plays</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claimable scores returned</li></ul><p><strong>Response body:</strong> Collection of unclaimed score records</p><pre><code>[
+    {
+        &quot;score&quot;: 12345,
+        &quot;player_index&quot;: 0,
+        &quot;game&quot;: 1
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-scores-claim">
+      <h2><code>/api/scores/claim</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L721' target='_blank' rel='noopener noreferrer'>app_claimScore</a></p>
+      
+      <p>Apply initials to an unclaimed score</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>initials</code> (string, required) - Player initials to record</li><li><code>player_index</code> (int, required) - Player slot or position associated with the score</li><li><code>score</code> (int, required) - Score value to claim</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Score claimed</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-players">
+      <h2><code>/api/players</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L757' target='_blank' rel='noopener noreferrer'>app_getPlayers</a></p>
+      
+      <p>List registered players</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player list returned</li></ul><p><strong>Response body:</strong> Mapping of player IDs to initials and names</p><pre><code>{
+    &quot;0&quot;: {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;name&quot;: &quot;Alice&quot;
+    }
+}</code></pre>
+    </section>
+    
+    <section id="api-player-update">
+      <h2><code>/api/player/update</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L789' target='_blank' rel='noopener noreferrer'>app_updatePlayer</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Update a stored player record</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>id</code> (int, required) - Player ID to update</li><li><code>initials</code> (string, required) - Up to three alphabetic characters</li><li><code>full_name</code> (string, optional) - Player display name (truncated to 16 characters)</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Record updated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-player-scores">
+      <h2><code>/api/player/scores</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L844' target='_blank' rel='noopener noreferrer'>app_getScores</a></p>
+      
+      <p>Fetch all scores for a specific player</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>id</code> (int, required) - Player index to inspect</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Player scores returned</li></ul><p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p><pre><code>[
+    {
+        &quot;score&quot;: 10000,
+        &quot;rank&quot;: 1,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;date&quot;: &quot;2024-01-01&quot;,
+        &quot;ago&quot;: &quot;1d&quot;
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-personal-bests">
+      <h2><code>/api/personal/bests</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L904' target='_blank' rel='noopener noreferrer'>app_personal_bests</a></p>
+      
+      <p>Return the best score for each registered player</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Personal bests returned</li></ul><p><strong>Response body:</strong> Leaderboard of each player&#x27;s highest score</p><pre><code>[
+    {
+        &quot;player_id&quot;: 0,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 12345,
+        &quot;rank&quot;: 1
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-player-scores-reset">
+      <h2><code>/api/player/scores/reset</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L964' target='_blank' rel='noopener noreferrer'>app_resetIndScores</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Clear all scores for a single player</p>
+      <h3>Request</h3>
+      <h4>Query parameters</h4><ul><li><code>id</code> (int, required) - Player index whose scores should be erased</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Scores cleared</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-adjustments-status">
+      <h2><code>/api/adjustments/status</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L993' target='_blank' rel='noopener noreferrer'>app_getAdjustmentStatus</a></p>
+      
+      <p>Get the status of each adjustment bank</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustment metadata returned</li></ul><p><strong>Response body:</strong> List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support</p><pre><code>{
+    &quot;profiles&quot;: [
+        [&quot;Free Play&quot;, false, true],
+        [&quot;Arcade&quot;, true, true],
+        [&quot;&quot;, false, false],
+        [&quot;&quot;, false, false]
+    ],
+    &quot;adjustments_support&quot;: true
+}</code></pre>
+    </section>
+    
+    <section id="api-adjustments-name">
+      <h2><code>/api/adjustments/name</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1021' target='_blank' rel='noopener noreferrer'>app_setAdjustmentName</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Set the name of an adjustment profile</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Adjustment slot to rename</li><li><code>name</code> (string, required) - New name for the slot</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Name updated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-adjustments-capture">
+      <h2><code>/api/adjustments/capture</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1053' target='_blank' rel='noopener noreferrer'>app_captureAdjustments</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Capture current adjustments into a profile</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Destination profile for captured adjustments</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustments stored</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-adjustments-restore">
+      <h2><code>/api/adjustments/restore</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1078' target='_blank' rel='noopener noreferrer'>app_restoreAdjustments</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 5s</p>
+      <p>Restore adjustments from a saved profile</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>index</code> (int, required) - Adjustment profile to restore</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Adjustments restored</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-settings-get_claim_methods">
+      <h2><code>/api/settings/get_claim_methods</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1106' target='_blank' rel='noopener noreferrer'>app_getScoreCap</a></p>
+      
+      <p>Read score entry methods</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Claim methods returned</li></ul><p><strong>Response body:</strong> All keys are available methods for entering initials, only enabled methods are true</p><pre><code>{
+    &quot;on-machine&quot;: true,
+    &quot;web-ui&quot;: false
+}</code></pre>
+    </section>
+    
+    <section id="api-settings-set_claim_methods">
+      <h2><code>/api/settings/set_claim_methods</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1131' target='_blank' rel='noopener noreferrer'>app_setScoreCap</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Configure which score claim methods are enabled</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>on-machine</code> (bool, optional) - Allow initials entry on the physical game</li><li><code>web-ui</code> (bool, optional) - Allow initials entry via the web interface</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preferences updated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-settings-get_tournament_mode">
+      <h2><code>/api/settings/get_tournament_mode</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1164' target='_blank' rel='noopener noreferrer'>app_getTournamentMode</a></p>
+      
+      <p>Get whether tournament mode is enabled</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Tournament mode returned</li></ul><p><strong>Response body:</strong> Flag indicating tournament mode state</p><pre><code>{&quot;tournament_mode&quot;: true}</code></pre>
+    </section>
+    
+    <section id="api-settings-set_tournament_mode">
+      <h2><code>/api/settings/set_tournament_mode</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1182' target='_blank' rel='noopener noreferrer'>app_setTournamentMode</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Enable or disable tournament mode</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>tournament_mode</code> (bool, required) - New tournament mode setting</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Setting saved</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-settings-get_show_ip">
+      <h2><code>/api/settings/get_show_ip</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1209' target='_blank' rel='noopener noreferrer'>app_getShowIP</a></p>
+      
+      <p>Check whether the IP address is shown on the display</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preference returned</li></ul><p><strong>Response body:</strong> Flag indicating whether the IP is displayed</p><pre><code>{&quot;show_ip&quot;: true}</code></pre>
+    </section>
+    
+    <section id="api-settings-set_show_ip">
+      <h2><code>/api/settings/set_show_ip</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1226' target='_blank' rel='noopener noreferrer'>app_setShowIP</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Set whether the IP address should be shown on the display</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>show_ip</code> (bool, required) - Whether to show the IP address on screen</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Preference updated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-time-midnight_madness_available">
+      <h2><code>/api/time/midnight_madness_available</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1255' target='_blank' rel='noopener noreferrer'>app_midnightMadnessAvailable</a></p>
+      
+      <p>Report if Midnight Madness mode is supported</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Availability returned</li></ul><p><strong>Response body:</strong> Flag indicating if the game supports Midnight Madness</p><pre><code>{&quot;available&quot;: true}</code></pre>
+    </section>
+    
+    <section id="api-time-get_midnight_madness">
+      <h2><code>/api/time/get_midnight_madness</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1275' target='_blank' rel='noopener noreferrer'>app_getMidnightMadness</a></p>
+      
+      <p>Read Midnight Madness configuration</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration returned</li></ul><p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p><pre><code>{
+    &quot;enabled&quot;: true,
+    &quot;always&quot;: false
+}</code></pre>
+    </section>
+    
+    <section id="api-time-set_midnight_madness">
+      <h2><code>/api/time/set_midnight_madness</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1300' target='_blank' rel='noopener noreferrer'>app_setMidnightMadness</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Set Midnight Madness configuration</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>always</code> (bool, required) - Keep Midnight Madness enabled for all games</li><li><code>enabled</code> (bool, required) - Enable timed Midnight Madness events</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-time-trigger_midnight_madness">
+      <h2><code>/api/time/trigger_midnight_madness</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1331' target='_blank' rel='noopener noreferrer'>app_triggerMidnightMadness</a></p>
+      
+      <p>Immediately trigger Midnight Madness</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Event triggered</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-settings-factory_reset">
+      <h2><code>/api/settings/factory_reset</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1349' target='_blank' rel='noopener noreferrer'>app_factoryReset</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Perform a full factory reset of Vector and the pinball machine</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reset initiated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-settings-reboot">
+      <h2><code>/api/settings/reboot</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1388' target='_blank' rel='noopener noreferrer'>app_reboot</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Reboot the Pinball machine</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Reboot initiated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-last_ip">
+      <h2><code>/api/last_ip</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1413' target='_blank' rel='noopener noreferrer'>app_getLastIP</a></p>
+      
+      <p>Get the last known IP address</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - IP returned</li></ul><p><strong>Response body:</strong> Last recorded IP address</p><pre><code>{&quot;ip&quot;: &quot;192.168.0.10&quot;}</code></pre>
+    </section>
+    
+    <section id="api-available_ssids">
+      <h2><code>/api/available_ssids</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1431' target='_blank' rel='noopener noreferrer'>app_getAvailableSSIDs</a></p>
+      
+      <p>Scan for nearby Wi-Fi networks</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[
+    {
+        &quot;ssid&quot;: &quot;MyNetwork&quot;,
+        &quot;rssi&quot;: -40,
+        &quot;configured&quot;: true
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-network-peers">
+      <h2><code>/api/network/peers</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1465' target='_blank' rel='noopener noreferrer'>app_getPeers</a></p>
+      
+      <p>List other vector devices discovered on the local network</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Peer map returned</li></ul><p><strong>Response body:</strong> Mapping of peer identifiers to network information</p><pre><code>{
+    &quot;192.168.4.243&quot;: {
+        &quot;name&quot;: &quot;Pinbot&quot;,
+        &quot;self&quot;: true
+    }
+}</code></pre>
+    </section>
+    
+    <section id="api-set_date">
+      <h2><code>/api/set_date</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1493' target='_blank' rel='noopener noreferrer'>app_setDateTime</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Set Vector&#x27;s date and time</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>date</code> (list, required) - RTC tuple [year, month, day, hour, minute, second]</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Clock updated</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    
+    <section id="api-get_date">
+      <h2><code>/api/get_date</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1519' target='_blank' rel='noopener noreferrer'>app_getDateTime</a></p>
+      
+      <p>Read the current time according to Vector</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - RTC timestamp returned</li></ul><p><strong>Response body:</strong> Tuple containing RTC date/time fields</p><pre><code>{&quot;date&quot;: [2024, 1, 1, 0, 12, 0, 0]}</code></pre>
+    </section>
+    
+    <section id="api-version">
+      <h2><code>/api/version</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1539' target='_blank' rel='noopener noreferrer'>app_version</a></p>
+      
+      <p>Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Version returned</li></ul><p><strong>Response body:</strong> Current firmware version string</p><pre><code>{&quot;version&quot;: &quot;1.0.0&quot;}</code></pre>
+    </section>
+    
+    <section id="api-fault">
+      <h2><code>/api/fault</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1558' target='_blank' rel='noopener noreferrer'>app_install_fault</a></p>
+      
+      <p>Get the list of currently active faults</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Faults returned</li></ul><p><strong>Response body:</strong> Collection of fault flags and details</p><pre><code>{&quot;faults&quot;: []}</code></pre>
+    </section>
+    
+    <section id="api-export-scores">
+      <h2><code>/api/export/scores</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1580' target='_blank' rel='noopener noreferrer'>app_export_leaderboard</a></p>
+      
+      <p>Export all leaderboard data</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard export file returned</li></ul><p><strong>Response body:</strong> </p><pre><code>{
+        &quot;scores&quot;: {&quot;tournament&quot;: [{&quot;initials&quot;: &quot;AAA&quot;, &quot;score&quot;: 938479, &quot;index&quot;: 2, &quot;game&quot;: 0}],
+        &quot;leaders&quot;: [{&quot;initials&quot;: &quot;MSM&quot;, &quot;date&quot;: &quot;02/04/2025&quot;, &quot;full_name&quot;: &quot;Maxwell Mullin&quot;, &quot;score&quot;: 2817420816}]},
+        &quot;version&quot;: 1</code></pre>
+    </section>
+    
+    <section id="api-import-scores">
+      <h2><code>/api/import/scores</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1602' target='_blank' rel='noopener noreferrer'>app_import_leaderboard</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Import leaderboard data from an uploaded file</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>file</code> (bytes, required) - Score export file content</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Import completed</li></ul><p><strong>Response body:</strong> Success indicator</p><pre><code>{&quot;success&quot;: true}</code></pre>
+    </section>
+    
+    <section id="api-memory-snapshot">
+      <h2><code>/api/memory-snapshot</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1629' target='_blank' rel='noopener noreferrer'>app_memory_snapshot</a></p>
+      
+      <p>Stream a snapshot of memory contents</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Snapshot streaming</li></ul><p><strong>Response body:</strong> Text stream of byte values</p>
+    </section>
+    
+    <section id="api-logs">
+      <h2><code>/api/logs</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1647' target='_blank' rel='noopener noreferrer'>app_getLogs</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p><p><strong>Cooldown:</strong> 10s</p><p><strong>Single instance:</strong> Yes</p>
+      <p>Download the system log file</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Log download streaming</li></ul><p><strong>Response body:</strong> Log file content</p>
+    </section>
+    
+    <section id="api-formats-available">
+      <h2><code>/api/formats/available</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1697' target='_blank' rel='noopener noreferrer'>app_list_available_formats</a></p>
+      
+      <p>Get the list of available game formats</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Formats returned</li></ul><p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p><pre><code>[
+    {
+        &quot;id&quot;: 0,
+        &quot;name&quot;: &quot;Arcade&quot;,
+        &quot;description&quot;: &quot;Manufacturer standard game play&quot;
+    }
+]</code></pre>
+    </section>
+    
+    <section id="api-formats-set">
+      <h2><code>/api/formats/set</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1722' target='_blank' rel='noopener noreferrer'>app_set_current_format</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Set the active game format</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>format_id</code> (int, required) - Format identifier to activate</li><li><code>options</code> (dict, optional) - Configuration options for the selected format</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Format set successfully</li></ul>
+    </section>
+    
+    <section id="api-formats-active">
+      <h2><code>/api/formats/active</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1769' target='_blank' rel='noopener noreferrer'>app_get_active_formats</a></p>
+      
+      <p>Get the currently active game format</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <p>No structured response documented.</p>
+    </section>
+    
+    <section id="api-diagnostics-switches">
+      <h2><code>/api/diagnostics/switches</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1792' target='_blank' rel='noopener noreferrer'>app_get_switch_diagnostics</a></p>
+      
+      <p>Get diagnostic information for all switches</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <p>No structured response documented.</p>
+    </section>
+    
+    <section id="api-update-check">
+      <h2><code>/api/update/check</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1843' target='_blank' rel='noopener noreferrer'>app_updates_available</a></p>
+      <p><strong>Cooldown:</strong> 10s</p>
+      <p>Get the metadata for the latest available software version. This does not download or apply the update.</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{
+    &quot;release_page&quot;: &quot;https://github.com/...&quot;,
+    &quot;notes&quot;: &quot;Another Great Release! Here&#x27;s what we changed&quot;,
+    &quot;published_at&quot;: &quot;2025-12-30T17:54:49+00:00&quot;,
+    &quot;url&quot;: &quot;https://github.com/...&quot;,
+    &quot;version&quot;: &quot;1.9.0&quot;
+}</code></pre>
+    </section>
+    
+    <section id="api-update-apply">
+      <h2><code>/api/update/apply</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1878' target='_blank' rel='noopener noreferrer'>app_apply_update</a></p>
+      <p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>
+      <p>Download and apply a software update from the provided URL.</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>url</code> (string, required) - Signed update package URL</li><li><code>skip_signature_check</code> (bool, optional) - Bypass signature validation (for developer builds)</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Streaming progress updates</li></ul><p><strong>Response body:</strong> Sequence of JSON log entries with ``log`` and ``percent`` fields</p><pre><code>{
+    &quot;log&quot;: &quot;Starting update&quot;,
+    &quot;percent&quot;: 0
+}</code></pre>
+    </section>
+    
+    <section id="api-in_ap_mode">
+      <h2><code>/api/in_ap_mode</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1931' target='_blank' rel='noopener noreferrer'>app_inAPMode</a></p>
+      
+      <p>Indicates if Vector is running in AP or app mode</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Mode reported</li></ul><p><strong>Response body:</strong> Flag showing AP mode status</p><pre><code>{&quot;in_ap_mode&quot;: false}</code></pre>
+    </section>
+    
+    <section id="api-in_ap_mode">
+      <h2><code>/api/in_ap_mode</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1954' target='_blank' rel='noopener noreferrer'>app_inAPMode</a></p>
+      
+      <p>No description provided.</p>
+      <h3>Request</h3>
+      <p>No parameters inferred.</p>
+      <h3>Response</h3>
+      <p>No structured response documented.</p>
+    </section>
+    
+    <section id="api-settings-set_vector_config">
+      <h2><code>/api/settings/set_vector_config</code></h2>
+      <p><strong>Handler:</strong> <a href='https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1959' target='_blank' rel='noopener noreferrer'>app_setWifi</a></p>
+      
+      <p>[AP Mode Only] Configure Wi-Fi credentials and default game</p>
+      <h3>Request</h3>
+      <h4>Body parameters</h4><ul><li><code>ssid</code> (string, required) - Wi-Fi network name</li><li><code>wifi_password</code> (string, required) - Wi-Fi network password</li><li><code>vector_password</code> (string, required) - Password for authenticated API access</li><li><code>game_config_filename</code> (string, required) - Game configuration filename to load</li></ul>
+      <h3>Response</h3>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
+    </section>
+    <p class="back-top"><a href="#toc">↑ Back to table of contents</a></p></div>
   </main>
 </body>
 </html>

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import html
+import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -177,9 +178,15 @@ def parse_structured_docstring(docstring: str) -> Optional[Dict[str, Any]]:
                 next_indent = len(next_line) - len(next_line.lstrip(" "))
                 if next_indent <= indent:
                     break
-                collected.append(next_line.strip())
+                collected.append(next_line.rstrip("\n"))
                 look_ahead += 1
-            parent_container[key] = "\n".join(collected).strip()
+
+            if collected:
+                # Remove any common leading whitespace so nested structures keep their relative
+                # indentation while still fitting nicely in the rendered <pre> blocks.
+                parent_container[key] = textwrap.dedent("\n".join(collected)).strip("\n")
+            else:
+                parent_container[key] = ""
             idx = look_ahead
             continue
 
