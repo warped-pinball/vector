@@ -47,27 +47,19 @@
       position: sticky;
       top: 0;
       backdrop-filter: blur(12px);
-      background: rgba(13,17,23,0.9);
+      background: linear-gradient(90deg, rgba(13,17,23,0.95), rgba(13,17,23,0.85));
       border-bottom: 1px solid var(--panel-border);
-      padding: 1rem 0;
-      margin-bottom: 1rem;
+      padding: 0.75rem 0;
+      margin-bottom: 1.5rem;
       z-index: 20;
     }
-    .topbar .nav { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
-    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.8rem;
-      border-radius: 999px;
-      border: 1px solid var(--panel-border);
-      background: rgba(56,189,248,0.08);
-      color: var(--text);
-      font-weight: 600;
-      box-shadow: var(--shadow);
-    }
-    .badge { display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+    .topbar .nav { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.05rem; }
+    .brand span { padding: 0.3rem 0.75rem; border-radius: 10px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); box-shadow: var(--shadow); }
+    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+    .nav-link { padding: 0.45rem 0.85rem; border-radius: 10px; border: 1px solid transparent; font-weight: 600; color: var(--text); }
+    .nav-link:hover { border-color: var(--panel-border); background: rgba(56,189,248,0.08); text-decoration: none; }
+    .badge { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
     .hero { display: grid; gap: 0.8rem; }
     .card-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
     .card { padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); height: 100%; }
@@ -79,15 +71,15 @@
   <a id="top"></a>
   <header class="topbar">
     <div class="nav">
-      <div class="badge">
-        <strong>Vector documentation</strong>
-        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
-        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
+      <div class="brand">
+        <span>Vector documentation</span>
+        <a class="nav-link" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
+        <a class="nav-link" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
       </div>
       <div class="nav-links">
-        <a class="pill" href="#owners">Owner's guides</a>
-        <a class="pill" href="#technical">Mod maker &amp; technical guides</a>
-        <a class="pill" href="#top">Back to top</a>
+        <a class="nav-link" href="#owners">Owner's guides</a>
+        <a class="nav-link" href="#technical">Mod maker &amp; technical guides</a>
+        <a class="nav-link" href="#top">Back to top</a>
       </div>
     </div>
   </header>
@@ -98,9 +90,9 @@
         <p class="meta">A single landing page for all of the Vector documentation. Choose a system-specific owner's guide or jump into the technical references for building and integrating mods.</p>
       </div>
       <div class="badge">
-        <a class="pill" href="#owners">Browse owner guides</a>
-        <a class="pill" href="#technical">Open technical docs</a>
-        <a class="pill" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a>
+        <a class="nav-link" href="#owners">Browse owner guides</a>
+        <a class="nav-link" href="#technical">Open technical docs</a>
+        <a class="nav-link" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a>
       </div>
     </div>
 
@@ -155,9 +147,9 @@
           <a href="routes.html">Open API routes</a>
         </div>
         <div class="card">
-          <h3>API over network</h3>
-          <p class="meta">HTTP access, WiFi setup, and TLS notes.</p>
-          <a href="network.html">Open network guide</a>
+          <h3>Authentication &amp; network</h3>
+          <p class="meta">POST-only access patterns, HMAC signing, and sample scripts.</p>
+          <a href="authentication.html">Open authentication guide</a>
         </div>
         <div class="card">
           <h3>API over USB</h3>
@@ -169,11 +161,7 @@
           <p class="meta">HELLO/FULL frames and desktop discovery helpers.</p>
           <a href="discovery.html">Open discovery guide</a>
         </div>
-        <div class="card">
-          <h3>Authentication</h3>
-          <p class="meta">Login flow, payloads, and session handling.</p>
-          <a href="authentication.html">Open authentication guide</a>
-        </div>
+        
       </div>
     </div>
   </main>
