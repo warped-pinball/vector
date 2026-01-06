@@ -1,73 +1,260 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accessing the API over USB</title>
-  <style>
-    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
-    h1, h2, h3 { color: #e5e7eb; }
-    a { color: #38bdf8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
-    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; border: none; background: transparent; padding: 0; }
-    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
-    ol { padding-left: 1.25rem; }
-  </style>
-</head>
-<body>
-  <h1>Accessing the API over USB</h1>
-  <div class="panel">
-    <p>The USB transport reuses the same route handlers via <code>src/common/usb_comms.py</code>. Requests are read from the serial console as <code>route|headers|body</code> lines and responded to with JSON.</p>
-    <p>Host-side scripts cannot import the MicroPython modules. Use the standalone client below based on <code>dev/usb_coms_demo.py</code> to talk to the board over serial.</p>
-  </div>
-  <div class="panel">
-    <h2>Frame format</h2>
-    <p>Each request line contains three pipe-delimited fields. Escape literal pipes in headers or body as <code>\|</code>. Headers are provided as raw HTTP-style text (e.g. <code>Content-Type: application/json</code> on separate lines) and the body is optional.</p>
-  </div>
-  <div class="panel">
-    <h2>Host demo snippet</h2>
-    <p>Save the following as <code>usb_client.py</code> (adapted from <code>dev/usb_coms_demo.py</code>) and run it locally:</p>
-<pre><code>#!/usr/bin/env python3
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accessing the API over USB</title>
+    <style>
+      body {
+        font-family:
+          "Inter",
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 960px;
+        margin: 2.5rem auto;
+        padding: 0 1.5rem 3rem;
+        color: #e5e7eb;
+        background: #0d1117;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #e5e7eb;
+      }
+      a {
+        color: #38bdf8;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: #0b1221;
+        color: #f8fafc;
+        padding: 2px 6px;
+        border-radius: 6px;
+        border: 1px solid #1d2a3f;
+      }
+      pre {
+        background: #0b1221;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid #1d2a3f;
+        overflow-x: auto;
+      }
+      pre code {
+        display: block;
+        font-family: "Fira Code", "SFMono-Regular", Consolas, monospace;
+        line-height: 1.5;
+        border: none;
+        background: transparent;
+        padding: 0;
+      }
+      .panel {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 14px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        margin-bottom: 1.75rem;
+      }
+      ol {
+        padding-left: 1.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Accessing the API over USB</h1>
+    <div class="panel">
+      <p>
+        The USB transport reuses the same route handlers via
+        <code>src/common/usb_comms.py</code>. Requests are read from the serial
+        console as <code>route|headers|body</code> lines and responded to with
+        JSON.
+      </p>
+      <p>
+        Host-side scripts cannot import the MicroPython modules. Use the
+        standalone client below based on <code>dev/usb_coms_demo.py</code> to
+        talk to the board over serial.
+      </p>
+    </div>
+    <div class="panel">
+      <h2>Frame format</h2>
+      <p>
+        Each request line contains three pipe-delimited fields. Escape literal
+        pipes in headers or body as <code>\|</code>. Headers are provided as raw
+        HTTP-style text (e.g. <code>Content-Type: application/json</code> on
+        separate lines) and the body is optional.
+      </p>
+    </div>
+    <div class="panel">
+      <h2>Host demo snippet</h2>
+      <p>
+        Save the following as <code>usb_client.py</code> (adapted from
+        <code>dev/usb_coms_demo.py</code>) and run it locally:
+      </p>
+      <pre><code>
+  #!/usr/bin/env python3
+"""USB API client utilities for communicating with the device over serial.
+
+This module exposes a small helper class, :class:`UsbApiClient`, that wraps a
+serial connection and handles the wire protocol used by the device firmware.
+"""
+
+from __future__ import annotations
+
 import json
 import time
+from typing import Dict, Iterable, Union
 
 import serial
 
 
-def send_and_receive(port: str, route: str, headers=None, body_text=""):
-    ser = serial.Serial(port=port, baudrate=115200, timeout=10)
-    time.sleep(2)  # allow the device to reset
-    headers = headers or {"Content-Type": "application/json"}
-    header_text = "\n".join(f"{k}: {v}" for k, v in headers.items())
-    frame = f"{route}|{header_text}|{body_text}\n"
-    ser.write(frame.encode())
-    prefix = "USB API RESPONSE-->"
-    while True:
-        line = ser.readline().decode(errors="replace").strip()
-        if not line.startswith(prefix):
-            continue
-        payload = json.loads(line[len(prefix) :])
-        body_raw = payload.get("body")
-        if isinstance(body_raw, str):
-            try:
-                payload["body"] = json.loads(body_raw)
-            except json.JSONDecodeError:
-                pass
-        return payload
+def headers_to_text(headers: Union[str, Dict[str, str]]) -> str:
+    """Render a header mapping as a newline-delimited string."""
+    if isinstance(headers, str):
+        return headers
+    header_lines: Iterable[str] = (f"{name}: {value}" for name, value in headers.items())
+    return "\n".join(header_lines)
+
+
+class UsbApiClient:
+    """High-level client for the USB API protocol used by the device."""
+
+    def __init__(self, ser):
+        self.ser = ser
+
+    @classmethod
+    def from_device(
+        cls,
+        port: str = "/dev/ttyACM0",
+        baudrate: int = 115200,
+        timeout: int = 10,
+    ) -> "UsbApiClient":
+        ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+        time.sleep(2)
+        return cls(ser)
+
+    def close(self) -> None:
+        self.ser.close()
+
+    def send_and_receive(
+        self,
+        route: str,
+        payload: Union[Dict, str, None],
+        headers: Union[str, Dict[str, str]] | None = None,
+        body_text: str | None = None,
+        timeout: int = 10,
+    ):
+        if headers is None:
+            headers = {"Content-Type": "application/json"}
+
+        header_text = headers_to_text(headers)
+        if payload is None:
+            payload = {}
+        if body_text is None:
+            body_text = json.dumps(payload)
+
+        sections = [route, header_text, body_text]
+        escaped_sections = [section.replace("|", "\\|") for section in sections]
+        request = "|".join(escaped_sections) + "\n"
+
+        self.ser.write(request.encode())
+        self.ser.flush()
+
+        prefix = "USB API RESPONSE-->"
+        deadline = time.monotonic() + timeout
+
+        while time.monotonic() < deadline:
+            if self.ser.in_waiting:
+                line = self.ser.readline()
+                if not line:
+                    continue
+                text = line.decode(errors="replace").rstrip("\r\n")
+                if not text.startswith(prefix):
+                    continue
+                payload_text = text[len(prefix) :].strip()
+                try:
+                    data = json.loads(payload_text)
+                except json.JSONDecodeError:
+                    print(f"Failed to parse JSON: {payload_text}")
+                    continue
+
+                body_raw = data.get("body")
+                if isinstance(body_raw, str):
+                    try:
+                        data["body"] = json.loads(body_raw)
+                    except json.JSONDecodeError:
+                        # If body is not valid JSON, leave as string (expected for some responses)
+                        pass
+                return data
+            time.sleep(0.05)
+
+        raise TimeoutError("No response received within timeout period.")
+
+    def is_game_active(self) -> bool:
+        """Check if the game is active by sending a request to the device."""
+        try:
+            resp = self.send_and_receive(route="/api/game/status", payload=None)
+            return bool(resp["body"].get("GameActive", False))
+        except Exception:
+            return False
+
+
+def main():
+    # The port will probably need to be changed here
+    client = UsbApiClient.from_device(port="/dev/ttyACM0", timeout=10)
+
+    try:
+        print("Listening for responses. Press Ctrl+C to stop.")
+        while True:
+            # print out the game status
+            resp = client.send_and_receive(route="/api/game/status", payload=None)
+            print("Received response:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # print out the leaderboard
+            resp = client.send_and_receive(route="/api/leaders", payload=None)
+            print("Received response:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # list out all registered players
+            resp = client.send_and_receive(route="/api/players", payload=None)
+            print("Received response:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Add a new player
+            resp = client.send_and_receive(route="/api/player/update", payload={"id": 1, "full_name": "Tim Crowley", "initials": "TIM"})
+            print("Received response:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # check if a game is active
+            print("Checking if game is active...")
+            if client.is_game_active():
+                print("\tGame is active!")
+            else:
+                print("\tGame is not active.")
+            time.sleep(0.5)
+
+    except KeyboardInterrupt:
+        print("Stopped listening.")
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":
-    port = "/dev/ttyACM0"  # adjust for your platform
-    print(send_and_receive(port, "/api/version"))
-    # Authenticated call: fetch challenge then include headers
-    challenge_resp = send_and_receive(port, "/api/auth/challenge")
-    print("challenge", challenge_resp.get("body"))
+    main()
+
 </code></pre>
-    <p>The helper opens the serial connection, writes a framed request, and parses the JSON response emitted by the firmware. Expand it with additional routes as needed.</p>
-  </div>
-  <p><a href="index.html">Back to API reference</a></p>
-</body>
+      <p>
+        The helper opens the serial connection, writes a framed request, and
+        parses the JSON response emitted by the firmware. Expand it with
+        additional routes as needed.
+      </p>
+    </div>
+    <p><a href="index.html">Back to API reference</a></p>
+  </body>
 </html>
