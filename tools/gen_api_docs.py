@@ -948,13 +948,9 @@ if __name__ == "__main__":
 def write_docs(routes: List[RouteDoc]) -> None:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     html_content = build_html(routes)
+    # Only the route index is generated automatically; the supplemental
+    # guides are maintained as static files under docs/.
     (DOCS_DIR / "routes.html").write_text(html_content, encoding="utf-8")
-    (DOCS_DIR / "authentication.html").write_text(
-        build_authentication_html(), encoding="utf-8"
-    )
-    (DOCS_DIR / "network.html").write_text(build_network_html(), encoding="utf-8")
-    (DOCS_DIR / "discovery.html").write_text(build_discovery_html(), encoding="utf-8")
-    (DOCS_DIR / "usb.html").write_text(build_usb_html(), encoding="utf-8")
 
 
 def main() -> None:
