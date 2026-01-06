@@ -4,37 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vector HTTP API Authentication</title>
-  <style>
-    body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; }
-    h1, h2, h3 { color: #e5e7eb; }
-    a { color: #38bdf8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
-    pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; border: none; background: transparent; padding: 0; }
-    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
-    ol { padding-left: 1.25rem; }
-  </style>
+    <style>
+      body { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 960px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; color: #e5e7eb; background: #0d1117; line-height: 1.6; }
+      h1, h2, h3 { color: #e5e7eb; margin-bottom: 0.35rem; }
+      a { color: #38bdf8; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
+      pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
+      pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; border: none; background: transparent; padding: 0; white-space: pre; }
+      main { display: flex; flex-direction: column; gap: 1.5rem; }
+      section { padding-bottom: 1rem; border-bottom: 1px solid #1f2937; }
+      section:last-of-type { border-bottom: none; }
+      ol { padding-left: 1.25rem; }
+    </style>
 </head>
-<body>
-  <h1>Network access and authentication</h1>
-  <div class="panel">
-    <p>Every Vector HTTP route is served over standard HTTP using POST requests. Point your client at the board's IP address (for example <code>http://192.168.4.243</code>) and include a JSON payload when the route expects a body.</p>
-    <p>Routes marked as authenticated require an HMAC signature tied to a one-time challenge token. Use the flow below whenever authentication is required.</p>
-  </div>
-  <div class="panel">
-    <h2>Authentication flow</h2>
-    <ol>
-      <li>Call <code>/api/auth/challenge</code> with POST to receive a hexadecimal <code>challenge</code> string.</li>
-      <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
-      <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
-      <li>Send the protected POST request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
-      <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
-    </ol>
-  </div>
-  <div class="panel">
-    <h2>Ready-to-run Python example</h2>
-    <p>This script retrieves a challenge, signs a protected request, and prints the response using POST-only API calls.</p>
+  <body>
+    <main>
+      <header>
+        <h1>Network access and authentication</h1>
+        <p>Every Vector HTTP route is served over standard HTTP using POST requests. Point your client at the board's IP address (for example <code>http://192.168.4.243</code>) and include a JSON payload when the route expects a body.</p>
+        <p>Routes marked as authenticated require an HMAC signature tied to a one-time challenge token. Use the flow below whenever authentication is required.</p>
+      </header>
+      <section>
+        <h2>Authentication flow</h2>
+        <ol>
+          <li>Call <code>/api/auth/challenge</code> with POST to receive a hexadecimal <code>challenge</code> string.</li>
+          <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
+          <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
+          <li>Send the protected POST request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
+          <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>Ready-to-run Python example</h2>
+        <p>This script retrieves a challenge, signs a protected request, and prints the response using POST-only API calls.</p>
 <pre><code>import hashlib
 import hmac
 import json
@@ -71,8 +74,9 @@ resp = requests.post(
 )
 print("show_ip response:", resp.text)
 </code></pre>
-    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Always serialize the JSON body exactly as sent to the server when computing the signature.</p>
-  </div>
-  <p><a href="index.html">Back to API reference</a></p>
-</body>
+        <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Always serialize the JSON body exactly as sent to the server when computing the signature.</p>
+      </section>
+      <p><a href="index.html">Back to API reference</a></p>
+    </main>
+  </body>
 </html>
