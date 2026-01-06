@@ -10,8 +10,7 @@ python tools/gen_api_docs.py
 
 This rewrites `docs/index.html` with the latest routes discovered in `backend.py`, and regenerates the supplemental guides:
 
-- `docs/authentication.html` — authentication flow
-- `docs/network.html` — calling the HTTP API over the network
+- `docs/authentication.html` — network access and authentication flow
 - `docs/discovery.html` — peer discovery quickstart
 - `docs/usb.html` — USB transport framing and examples
 
