@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,68 +11,67 @@
     a:hover { text-decoration: underline; }
     code { background: #0b1221; color: #f8fafc; padding: 2px 6px; border-radius: 6px; border: 1px solid #1d2a3f; }
     pre { background: #0b1221; color: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #1d2a3f; overflow-x: auto; }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; line-height: 1.5; border: none; background: transparent; padding: 0; }
     .panel { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 1.75rem; }
     ol { padding-left: 1.25rem; }
   </style>
 </head>
 <body>
-  <h1>Authentication</h1>
+  <h1>Network access and authentication</h1>
   <div class="panel">
-    <p>Authenticated routes require an HMAC signature tied to a one-time challenge token. Use this flow for any route marked as requiring authentication.</p>
+    <p>Every Vector HTTP route is served over standard HTTP using POST requests. Point your client at the board's IP address (for example <code>http://192.168.4.243</code>) and include a JSON payload when the route expects a body.</p>
+    <p>Routes marked as authenticated require an HMAC signature tied to a one-time challenge token. Use the flow below whenever authentication is required.</p>
   </div>
   <div class="panel">
-    <h2>Flow</h2>
+    <h2>Authentication flow</h2>
     <ol>
-      <li>Call <code>/api/auth/challenge</code> to receive a hexadecimal <code>challenge</code> string.</li>
+      <li>Call <code>/api/auth/challenge</code> with POST to receive a hexadecimal <code>challenge</code> string.</li>
       <li>Build the message string by concatenating <code>challenge + request_path + raw_body</code>. If the request has no body, use an empty string for <code>raw_body</code>.</li>
       <li>Compute the HMAC-SHA256 digest of the message using the configured password as the key.</li>
-      <li>Send the protected request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
+      <li>Send the protected POST request with headers <code>x-auth-challenge</code> (the issued token) and <code>x-auth-hmac</code> (the hexadecimal digest).</li>
       <li>Challenges expire after 60 seconds and are removed once successfully used. Request a new challenge if you receive an expiration or invalid challenge error.</li>
     </ol>
   </div>
   <div class="panel">
-    <h2>Examples</h2>
-    <p>Example message construction for <code>/api/settings/set_show_ip</code> without a request body:</p>
-    <pre><code>challenge = "deadbeef..."  # obtained from /api/auth/challenge
-path = "/api/settings/set_show_ip"
-body = ""  # no payload for this route
-message = challenge + path + body</code></pre>
-    <p>Include the generated <code>x-auth-challenge</code> and <code>x-auth-hmac</code> headers in the subsequent request.</p>
-  </div>
-  <div class="panel">
     <h2>Ready-to-run Python example</h2>
-    <p>This script retrieves a challenge, signs a protected request, and prints the response. Save it locally and run with <code>python auth_demo.py</code>.</p>
-<pre><code>#!/usr/bin/env python3
-import hashlib
+    <p>This script retrieves a challenge, signs a protected request, and prints the response using POST-only API calls.</p>
+<pre><code>import hashlib
 import hmac
+import json
 import requests
 
-BASE_URL = "http://192.168.1.42"  # replace with your board IP
-PASSWORD = "your-password"         # the device password used for HMAC
+BASE_URL = "http://192.168.4.243"
+PASSWORD = "pinball"
 
 
-def signed_get(path: str):
-    challenge = requests.get(f"{BASE_URL}/api/auth/challenge", timeout=5).json()["challenge"]
-    message = (challenge + path).encode()
-    signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
-
-    return requests.get(
-        f"{BASE_URL}{path}",
-        headers={
-            "x-auth-challenge": challenge,
-            "x-auth-hmac": signature,
-        },
-        timeout=5,
-    )
+def post(path):
+    return requests.post(BASE_URL + path, timeout=5)
 
 
-if __name__ == "__main__":
-    print("Version:", requests.get(f"{BASE_URL}/api/version", timeout=5).json())
-    resp = signed_get("/api/settings/set_show_ip")
-    print("Authenticated response:", resp.status_code, resp.text)
+print("Version:", post("/api/version").json())
+
+# Authenticated example: toggle show_ip
+challenge = post("/api/auth/challenge").json()["challenge"]
+path = "/api/settings/set_show_ip"
+body = {"show_ip": True}
+body_json = json.dumps(body, separators=(',', ':'))
+message = (challenge + path + body_json).encode()
+print("Message bytes:", message)
+signature = hmac.new(PASSWORD.encode(), message, hashlib.sha256).hexdigest()
+
+resp = requests.post(
+    BASE_URL + path,
+    headers={
+        "Content-Type": "application/json",
+        "x-auth-challenge": challenge,
+        "x-auth-hmac": signature,
+    },
+    data=body_json,
+    timeout=5,
+)
+print("show_ip response:", resp.text)
 </code></pre>
-    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Reuse <code>signed_get</code> for any authenticated route.</p>
+    <p>Swap <code>BASE_URL</code> and <code>PASSWORD</code> for your device. Always serialize the JSON body exactly as sent to the server when computing the signature.</p>
   </div>
   <p><a href="index.html">Back to API reference</a></p>
 </body>

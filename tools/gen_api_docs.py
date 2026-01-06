@@ -14,6 +14,9 @@ from typing import Any, Dict, List, Optional
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_PATH = REPO_ROOT / "src" / "common" / "backend.py"
 DOCS_DIR = REPO_ROOT / "docs"
+REPO_URL = "https://github.com/warped-pinball/vector"
+WARP_URL = "https://warpedpinball.com"
+DEMO_URL = "https://vector.doze.dev"
 
 
 class RouteDoc:
@@ -372,7 +375,10 @@ def render_route(route: RouteDoc) -> str:
     doc = route.doc_block or {}
     summary = html.escape(str(doc.get("summary", ""))) if doc else ""
     description = summary or "No description provided."
-    handler_link = f"<a href='../src/common/backend.py#L{route.lineno}'>{html.escape(route.handler)}</a>"
+    handler_link = (
+        f"<a href='{REPO_URL}/blob/main/src/common/backend.py#L{route.lineno}'"
+        f" target='_blank' rel='noopener noreferrer'>{html.escape(route.handler)}</a>"
+    )
     auth_note = (
         "<p><strong>Authentication:</strong> Required – see <a href='authentication.html'>authentication guide</a>.</p>"
         if route.auth
@@ -421,7 +427,7 @@ def render_index(routes: List[RouteDoc]) -> str:
         f"<li><a href='#" + html.escape(r.path.strip('/').replace('/', '-') or 'root') + "'>" + html.escape(r.path) + "</a></li>"
         for r in routes
     )
-    return f"<ul>{items}</ul>"
+    return f"<ul class=\"endpoint-list\">{items}</ul>"
 
 
 def build_html(routes: List[RouteDoc]) -> str:
@@ -429,10 +435,10 @@ def build_html(routes: List[RouteDoc]) -> str:
     index = render_index(routes)
     return f"""
 <!DOCTYPE html>
-<html lang="en">
+<html lang=\"en\">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
   <title>Vector HTTP API</title>
   <style>
     :root {{
@@ -451,9 +457,9 @@ def build_html(routes: List[RouteDoc]) -> str:
     * {{ box-sizing: border-box; }}
     body {{
       font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      margin: 2.5rem auto;
+      margin: 0 auto;
       padding: 0 1.5rem 3rem;
-      max-width: 1024px;
+      max-width: 1100px;
       color: var(--text);
       background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
                   radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 25%),
@@ -470,6 +476,7 @@ def build_html(routes: List[RouteDoc]) -> str:
       box-shadow: var(--shadow);
       margin-bottom: 1.75rem;
     }}
+    .panel section {{ border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }}
     ul {{ list-style: none; padding-left: 0; }}
     ul li {{ margin: 0.3rem 0; }}
     .endpoint-list a {{ font-weight: 600; }}
@@ -484,21 +491,122 @@ def build_html(routes: List[RouteDoc]) -> str:
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
     }}
     pre code {{ display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }}
-    section {{ border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }}
     .meta {{ color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }}
     .tag {{ display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }}
+    .topbar {{
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(12px);
+      background: rgba(13,17,23,0.9);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+      z-index: 20;
+    }}
+    .topbar .nav {{ display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }}
+    .topbar .nav-links {{ display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }}
+    .pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(56,189,248,0.08);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }}
+    .badge {{ display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }}
+    .hero {{ display: grid; gap: 0.8rem; }}
+    .card-grid {{ display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }}
+    .card {{ padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); height: 100%; }}
+    .card h3 {{ margin-top: 0; }}
+    .cta {{ display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; font-weight: 600; }}
+    .toc-list {{ padding-left: 1rem; list-style: disc; color: var(--text); }}
+    .toc-list li {{ margin: 0.25rem 0; }}
+    .spacer {{ flex: 1 1 auto; }}
+    .back-top {{ text-align: right; margin-top: 1rem; }}
   </style>
 </head>
 <body>
-  <h1>Vector HTTP API</h1>
-  <div class="panel">
-    <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Refer to request parameter locations for specifics.</p>
-    <p class="meta">Authentication flow is documented separately in <a href="authentication.html">Authentication</a>.</p>
-    <p class="meta">Connectivity guides: <a href="network.html">HTTP over the network</a>, <a href="discovery.html">peer discovery</a>, and <a href="usb.html">USB transport</a>.</p>
-    <h2>Endpoints</h2>
-    <div class="endpoint-list">{index}</div>
-  </div>
-  <div class="panel">{sections}</div>
+  <a id=\"top\"></a>
+  <header class=\"topbar\">
+    <div class=\"nav\">
+      <div class=\"badge\">
+        <strong>Vector HTTP API</strong>
+        <a class=\"pill\" href=\"{REPO_URL}/releases/latest\" target=\"_blank\" rel=\"noopener noreferrer\">Release badge</a>
+        <img alt=\"Latest release\" src=\"https://img.shields.io/github/v/release/warped-pinball/vector?label=release\" />
+        <img alt=\"Last commit\" src=\"https://img.shields.io/github/last-commit/warped-pinball/vector?label=updated\" />
+      </div>
+      <div class=\"nav-links\">
+        <a class=\"pill\" href=\"#toc\">Table of contents</a>
+        <a class=\"pill\" href=\"{REPO_URL}\" target=\"_blank\" rel=\"noopener noreferrer\">Main repository</a>
+        <a class=\"pill\" href=\"{WARP_URL}\" target=\"_blank\" rel=\"noopener noreferrer\">WarpedPinball.com</a>
+        <a class=\"pill\" href=\"{DEMO_URL}\" target=\"_blank\" rel=\"noopener noreferrer\">Live demo</a>
+        <a class=\"pill\" href=\"#top\">Back to top</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class=\"panel hero\">
+      <div>
+        <h1>Vector HTTP API</h1>
+        <p class=\"meta\">Generated automatically from <code>src/common/backend.py</code>. Use this page as the landing pad for connectivity guides and endpoint documentation.</p>
+      </div>
+      <div class=\"meta\">
+        <span class=\"tag\">Statically generated</span>
+        <span class=\"tag\">MicroPython friendly</span>
+      </div>
+      <p class=\"meta\">Need authentication details? Visit the <a href=\"authentication.html\">Authentication guide</a>.</p>
+    </div>
+
+    <div class=\"panel\" id=\"toc\">
+      <h2>Table of contents</h2>
+      <ul class=\"toc-list\">
+        <li><a href=\"#connectivity\">Connectivity guides</a></li>
+        <li><a href=\"#routes\">Routes &amp; endpoints</a></li>
+      </ul>
+    </div>
+
+    <div class=\"panel\" id=\"connectivity\">
+      <h2>Connectivity guides</h2>
+      <div class=\"card-grid\">
+        <div class=\"card\">
+          <h3>HTTP over the network</h3>
+          <p class=\"meta\">How to reach your Vector board over WiFi, including TLS notes and curl examples.</p>
+          <a class=\"cta\" href=\"network.html\">Open network guide →</a>
+        </div>
+        <div class=\"card\">
+          <h3>Peer discovery</h3>
+          <p class=\"meta\">Broadcasts, HELLO/FULL frames, and a ready-to-run desktop script.</p>
+          <a class=\"cta\" href=\"discovery.html\">Open discovery guide →</a>
+        </div>
+        <div class=\"card\">
+          <h3>USB transport</h3>
+          <p class=\"meta\">Serial framing, escaping pipes, and a host-side client to speak to the device.</p>
+          <a class=\"cta\" href=\"usb.html\">Open USB guide →</a>
+        </div>
+        <div class=\"card\">
+          <h3>Authentication</h3>
+          <p class=\"meta\">Login flow, JSON payloads, and how to attach session cookies to API calls.</p>
+          <a class=\"cta\" href=\"authentication.html\">Open authentication guide →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class=\"panel\" id=\"routes\">
+      <div class=\"nav\" style=\"gap: 0.5rem; align-items: baseline;\">
+        <h2 style=\"margin: 0;\">Routes &amp; endpoints</h2>
+        <div class=\"spacer\"></div>
+        <a class=\"pill\" href=\"#top\">Back to top</a>
+      </div>
+      <p class=\"meta\">Jump directly to a handler. Links open source on GitHub with accurate line numbers.</p>
+      <div class=\"endpoint-list\">{index}</div>
+    </div>
+
+    <div class=\"panel\">{sections}<p class=\"back-top\"><a href=\"#toc\">↑ Back to table of contents</a></p></div>
+  </main>
 </body>
 </html>
 """
