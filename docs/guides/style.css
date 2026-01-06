@@ -104,3 +104,9 @@ th { background: rgba(56,189,248,0.08); }
 }
 .btn:hover { text-decoration: none; border-color: var(--accent); }
 .anchor { color: inherit; }
+
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+}
