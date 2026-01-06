@@ -380,7 +380,7 @@ def check_password(request):
         - code: 401
           description: Credentials rejected
       body:
-        description: Simple acknowledgement string
+        description: Acknowledgement string
         example: "ok"
     @end
     """
