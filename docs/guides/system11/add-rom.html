@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System 9 &amp; 11 ROM Profile</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <strong>System 9/11 ROM Profile</strong>
+      <div class="links">
+        <a class="pill" href="../index.html">All guides</a>
+        <a class="pill" href="#process">Process</a>
+        <a class="pill" href="#checklist">File checklist</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>System 9 &amp; 11 WiFi App Note: New Game ROM Profile</h1>
+        <p class="meta">Collect the data needed to add support for new System 9 or 11 titles.</p>
+        <a class="btn" href="https://raw.githubusercontent.com/wiki/warped-pinball/vector/wiki-pdf/System%2011/System%2011%20Add%20a%20Rom.pdf">Download as PDF</a>
+      </div>
+    </div>
+
+    <div class="panel section" id="process">
+      <h2>Overview</h2>
+      <p>Each System 9 or 11 title stores data in different memory locations and formats. The SYS9&amp;11.WiFi board needs a dedicated profile for gathering scores and leader data. Install the board and select <strong>GenericSYS11</strong> (works for System 9 too), then connect over Wi-Fi to use the browser interface.</p>
+      <div class="alert"><strong>Note:</strong> In Generic mode the board cannot show the IP address.</div>
+
+      <h3>Finding the IP address</h3>
+      <ol>
+        <li>Log into your Wi-Fi router and look up the IP address in connected devices.</li>
+        <li>Put the SYS11.WiFi board into Wi-Fi setup mode by holding the black button while powering up. Release after the LED blinks fast, connect with your phone, and read the IP at the bottom of the screen.</li>
+        <li>If another Warped Pinball board is powered on, the boards link within a few minutes. Click the game name in the top-left of the browser to switch between them.</li>
+      </ol>
+
+      <h3>Capturing memory snapshots</h3>
+      <ol>
+        <li>Factory reset the game (press advance to AD#70 and select <strong>Yes</strong> on SYS11). Wait for attract mode.</li>
+        <li>Download memory values from the Admin page. Save as <code>GameName_Baseline.txt</code>.</li>
+        <li>Start a single-player game and leave Ball 1 in the shooter lane. Save as <code>GameName_PL1_Ball1.txt</code>.</li>
+        <li>Play Ball 1, pause on Ball 2, and include the Player 1 score in the filename (replace <code>yyyyy</code>). Save as <code>GameName_PL1_Ball2_yyyyy.txt</code>.</li>
+        <li>Start a 3-player game, play through Ball 3, and record each score. Save as <code>GameName_PL3_Ball3_score1_score2_score3.txt</code>.</li>
+      </ol>
+
+      <h3>System 11 only</h3>
+      <ol start="6">
+        <li>Record high-score leader initials and values. Save as <code>GameName_leaderboard/txt</code>.</li>
+        <li>Enter service menu item 49 (Custom Message). Use <strong>Change</strong> and <strong>Advance</strong> to enter the message from the data sheet. Confirm it appears in attract mode. Save as <code>GameName_Message.txt</code>.</li>
+        <li>Turn the custom message <strong>OFF</strong> (AD#49). Save as <code>GameName_MessageOFF.txt</code>.</li>
+        <li>Record high-score initials and scores on the data sheet.</li>
+      </ol>
+
+      <h3>Additional snapshots</h3>
+      <ol start="10">
+        <li>Drop a coin and save as <code>GameName_Coin1.txt</code>.</li>
+        <li>Drop another coin and save as <code>GameName_Coin2.txt</code>.</li>
+        <li>Drop a third coin and save as <code>GameName_Coin3.txt</code>.</li>
+        <li>Send all files plus the completed data sheet (scan or photo) to <a href="mailto:Inventingfun@gmail.com">Inventingfun@gmail.com</a>.</li>
+        <li>When you receive <code>GameName.JSON</code>, download it via the Admin page. Enter Wi-Fi setup (hold button during power-up until fast blink) and select the new file.</li>
+        <li>Test the game: verify high-score recording, IP display in attract mode, and four high scores on the display.</li>
+      </ol>
+    </div>
+
+    <div class="panel" id="checklist">
+      <h2>File checklist</h2>
+      <ul>
+        <li><code>GameName_Baseline.txt</code></li>
+        <li><code>GameName_Ball1_xxx.txt</code></li>
+        <li><code>GameName_Ball2_xxx.txt</code></li>
+        <li><code>GameName_Ball3_xxxx.txt</code></li>
+        <li><code>GameName_GameOver.txt</code></li>
+        <li><code>GameName_Message.txt</code></li>
+        <li><code>GameName_MessageOFF.txt</code></li>
+        <li><code>GameName_Coin1.txt</code></li>
+        <li><code>GameName_Coin2.txt</code></li>
+        <li><code>GameName_Coin3.txt</code></li>
+      </ul>
+      <p class="meta">This Warped Pinball product is patent pending.</p>
+
+      <h3>Data sheet</h3>
+      <p><strong>Game Name:</strong> _______________________________<br>
+      <strong>ROM Version:</strong> _______________________________</p>
+
+      <h4>High scores (attract mode)</h4>
+      <ol>
+        <li>Initials ________ Score _______________</li>
+        <li>Initials ________ Score _______________</li>
+        <li>Initials ________ Score _______________</li>
+        <li>Initials ________ Score _______________</li>
+      </ol>
+
+      <h4>Custom message</h4>
+      <p>Provide the exact message entered.</p>
+
+      <h5>For 16-character × 3-line games</h5>
+      <pre><code>A A A
+(space × 10) A A A
+Fill between the B’s with punctuation (‘ / ” . @ *)
+B B B B B B
+Center line with periods:
+C C C C. C. Z. Z. 0 1 2 3 4 C C C</code></pre>
+
+      <h5>For 7-character × 6-line games</h5>
+      <pre><code>A A
+(space × 3) A A B B
+(space × 3) B B
+Fill between the C/Ds with punctuation (‘ / ” . @ *)
+C C C C D D D D
+Center line with periods:
+E E A. B. C. E E F F 0 1 2 F F</code></pre>
+    </div>
+  </main>
+</body>
+</html>

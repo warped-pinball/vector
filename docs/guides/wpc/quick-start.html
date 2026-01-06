@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WPC Quick Start</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <strong>WPC Quick Start</strong>
+      <div class="links">
+        <a class="pill" href="../index.html">All guides</a>
+        <a class="pill" href="#overview">Overview</a>
+        <a class="pill" href="#supported">Supported titles</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>System WPC WiFi Module Quick Start Guide</h1>
+        <p class="meta">Fast install steps plus LED references for Williams/Bally WPC boards.</p>
+        <a class="btn" href="https://raw.githubusercontent.com/wiki/warped-pinball/vector/wiki-pdf/WPC/WPC%20Quick%20Start.pdf">Download as PDF</a>
+      </div>
+    </div>
+
+    <div class="panel" id="overview">
+      <h2>Overview</h2>
+      <p>This quick start helps you install the Warped Pinball WiFi module. If this is your first install, watch the <a href="https://youtube.com/playlist?list=PLviUqcd3jBxrLbbLz9X2bv3VnlM3TLe6F&si=zwGBoLwztZszCIlE" target="_blank" rel="noopener noreferrer">installation videos</a>.</p>
+      <div class="section">
+        <div class="grid">
+          <div class="card">
+            <img src="https://github.com/user-attachments/assets/899e2cbc-99d7-4736-9838-44b0370bf979" alt="Basic interface buttons and LEDs" style="width:100%;border-radius:10px;" />
+          </div>
+          <div class="card">
+            <h4>WiFi Status LED</h4>
+            <ul>
+              <li><strong>Fast blink</strong>: Access Point (AP) mode</li>
+              <li><strong>Slow blink</strong>: Joining WiFi</li>
+              <li><strong>Solid on</strong>: WiFi joined and active</li>
+            </ul>
+            <h4>WiFi Configure Button</h4>
+            <p>Hold during power-up and release when the LED flashes to enter setup mode.</p>
+            <h4>Status LED</h4>
+            <ul>
+              <li><strong>Fast blink</strong>: Installation fault</li>
+              <li><strong>Solid on</strong>: Normal operation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <h3>Disclaimer</h3>
+        <p>Removing classic game chips carries risk. Damage is possible and not the responsibility of Warped Pinball. If you are unfamiliar with reseating chips, ask someone experienced to assist.</p>
+      </div>
+      <div class="section">
+        <h3>Hardware installation</h3>
+        <ol>
+          <li>Power off the game and locate the main processor (<code>MC6809</code>).</li>
+          <li>Carefully remove the processor and place it into the socket on the SYS WPC.WiFi board.</li>
+          <li>Identify your WPC main board style (three variants) and follow the matching photo.</li>
+          <li>Insert the pin strips into the main board socket, add the round-pin chip carrier, and seat the WiFi board.</li>
+          <li>Connect the white wire clip securely.</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h3>Online setup</h3>
+        <ol>
+          <li>Power the game.</li>
+          <li>Connect a phone to the <strong>WarpedPinball WiFi</strong> network.</li>
+          <li>Complete setup and join your local WiFi.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="panel" id="supported">
+      <h2>Supported titles</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Install photo</th>
+            <th>WPC version</th>
+            <th>Titles</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><img src="https://github.com/user-attachments/assets/26d4b1bf-9be6-4b3b-9cf9-5b71ff76a5d7" alt="Williams/Bally WPC install photo" style="width:220px;border-radius:10px;" /></td>
+            <td>Williams/Bally WPC</td>
+            <td>
+              <ul>
+                <li>Black Rose</li><li>Bram Stoker's Dracula</li><li>Creature from the Black Lagoon</li><li>Demolition Man</li><li>Doctor Who</li><li>Fish Tales</li><li>Funhouse</li><li>Gilligan's Island</li><li>Harley-Davidson</li><li>Hurricane</li><li>Indiana Jones</li><li>Judge Dredd</li><li>Machine: Bride of Pinbot</li><li>Party Zone</li><li>Popeye Saves the Earth</li><li>Star Trek: TNG</li><li>Terminator 2</li><li>The Addams Family I/II</li><li>The Getaway: High Speed II</li><li>Twilight Zone</li><li>White Water</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><img src="https://github.com/user-attachments/assets/2888dac3-a575-4b9d-b037-1703e4dea2a0" alt="Williams/Bally WPC-95 install photo" style="width:220px;border-radius:10px;" /></td>
+            <td>Williams/Bally WPC-95</td>
+            <td>
+              <ul>
+                <li>Corvette</li><li>Dirty Harry</li><li>Indianapolis 500</li><li>JackBot</li><li>Johnny Mnemonic</li><li>No Fear: Dangerous Sports</li><li>Red and Ted's Road Show</li><li>The Flintstones</li><li>The Shadow</li><li>Theatre of Magic</li><li>WHO Dunnit</li><li>World Cup Soccer</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><img src="https://github.com/user-attachments/assets/9b90fb67-893e-4b25-b5bf-bad0944858ac" alt="Midway/Williams WPC-95 install photo" style="width:220px;border-radius:10px;" /></td>
+            <td>Midway/Williams WPC-95</td>
+            <td>
+              <ul>
+                <li>Attack from Mars</li><li>Cactus Canyon</li><li>Cirqus Voltaire</li><li>Congo</li><li>Junk Yard</li><li>Medieval Madness</li><li>Monster Bash</li><li>NBA Fastbreak</li><li>No Good Gofers</li><li>Safe Cracker</li><li>Scared Stiff</li><li>Tales of the Arabian Nights</li><li>The Champion Pub</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="meta">This Warped Pinball product is patent pending.</p>
+    </div>
+  </main>
+</body>
+</html>

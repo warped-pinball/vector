@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System 11 Quick Start</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="nav">
+      <strong>System 11 Quick Start</strong>
+      <div class="links">
+        <a class="pill" href="../index.html">All guides</a>
+        <a class="pill" href="#steps">Install steps</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel hero">
+      <div>
+        <h1>System 11 WiFi Quick Start (v1.1)</h1>
+        <p class="meta">Fast-path instructions for installing the Warped Pinball System 11 WiFi board.</p>
+        <a class="btn" href="https://raw.githubusercontent.com/wiki/warped-pinball/vector/wiki-pdf/System%2011/System%2011%20Quick%20Start.pdf">Download as PDF</a>
+      </div>
+    </div>
+
+    <div class="panel" id="steps">
+      <p>Check out installation videos at <a href="https://WarpedPinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>. For System 9 installs, use the dedicated guide on the site.</p>
+      <ol>
+        <li>Power off the pinball machine.</li>
+        <li>Remove the main processor chip from the System 11 board. Place it into the Warped Pinball System 11 WiFi board’s 40-pin socket, matching pin #1 and checking for bent pins.</li>
+        <li>Insert the pin strips into the main board socket. Press firmly on each pin so it seats fully.</li>
+        <li>Insert the round-pin chip carrier into the socket strips.</li>
+        <li>Attach the sticky standoff and screw to the System 11 PCB and peel the backing.</li>
+        <li>Place the board into the main-board socket, confirm all pins are seated, and make sure the processor orientation matches the original.</li>
+        <li>Inspect the reset circuit for modifications. Clip the white wire at the junction of <code>R55</code> and <code>R56</code> (the trace connecting them).</li>
+        <li>Power on the game and connect a smartphone to the <strong>WarpedPinball</strong> WiFi network. Click <strong>Sign In</strong> if prompted.</li>
+        <li>Review the configuration page that appears.</li>
+        <li>Select your home WiFi SSID and password. Choose your game and software version from the dropdown. If not listed, select <strong>GenericSystem11</strong> and contact Warped Pinball.</li>
+        <li>Set a Pinball Admin password only if you want the Admin/Service page protected (it already requires being on your WiFi).</li>
+        <li>Click <strong>Save</strong>, wait one minute, then power off the game.</li>
+        <li>Power on and wait for the IP address to appear on the display (GenericSystem11 will not show one). Enter the IP on any device on the same WiFi—for example <code>192.168.1.189</code>.</li>
+      </ol>
+      <p>Enjoy the game and chase new high scores! Enter player names so everyone gets an individual best-score board.</p>
+      <p>Set adjustment numbers <strong>18</strong>, <strong>19</strong>, <strong>20</strong>, and <strong>21</strong> to zero to prevent the game from awarding credits when initials are entered.</p>
+      <p>Your kit includes a jumper wire for System 11 boot-up sound board issues and a plastic hex standoff for System 9 installations. Some games mount the main board upright—orientation may differ from photos.</p>
+      <p class="meta">This Warped Pinball product is patent pending.</p>
+    </div>
+  </main>
+</body>
+</html>
