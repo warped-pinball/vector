@@ -58,18 +58,6 @@
     pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; border: none; background: transparent; padding: 0; }
     .meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
     .tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }
-    .topbar {
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(12px);
-      background: rgba(13,17,23,0.9);
-      border-bottom: 1px solid var(--panel-border);
-      padding: 1rem 0;
-      margin-bottom: 1rem;
-      z-index: 20;
-    }
-    .topbar .nav { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
-    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -92,38 +80,25 @@
     .toc-list li { margin: 0.25rem 0; }
     .spacer { flex: 1 1 auto; }
     .back-top { text-align: right; margin-top: 1rem; }
+    pre code { white-space: pre; }
   </style>
 </head>
 <body>
   <a id="top"></a>
-  <header class="topbar">
-    <div class="nav">
-      <div class="badge">
-        <strong>Vector API Routes</strong>
-        <a class="pill" href="index.html">Docs home</a>
-        <a class="pill" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Release badge</a>
-        <img alt="Latest release" src="https://img.shields.io/github/v/release/warped-pinball/vector?label=release" />
-        <img alt="Last commit" src="https://img.shields.io/github/last-commit/warped-pinball/vector?label=updated" />
-      </div>
-      <div class="nav-links">
-        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
-        <a class="pill" href="https://warpedpinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>
-        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
-        <a class="pill" href="#top">Back to top</a>
-      </div>
-    </div>
-  </header>
   <main>
     <div class="panel hero">
       <div>
         <h1>Vector HTTP API</h1>
         <p class="meta">Generated automatically from <code>src/common/backend.py</code>. This page is dedicated to the route and endpoint documentation for the Vector API.</p>
       </div>
-      <div class="meta">
+      <div class="badge">
         <span class="tag">Statically generated</span>
         <span class="tag">MicroPython friendly</span>
+        <a class="pill" href="authentication.html">Authentication guide</a>
+        <a class="pill" href="index.html">Docs home</a>
+        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Repository</a>
+        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
       </div>
-      <p class="meta">Need authentication details? Visit the <a href="authentication.html">Authentication guide</a>.</p>
     </div>
 
     <div class="panel" id="routes">
@@ -204,16 +179,15 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}
-{
-&quot;F14_L1&quot;: {
-&quot;name&quot;: &quot;F14 Tomcat&quot;,
-&quot;rom&quot;: &quot;L1&quot;
-},
-&quot;Taxi_L4&quot;: {
-&quot;name&quot;: &quot;Taxi&quot;,
-&quot;rom&quot;: &quot;L4&quot;
-}
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{
+  "F14_L1": {
+    "name": "F14 Tomcat",
+    "rom": "L1"
+  },
+  "Taxi_L4": {
+    "name": "Taxi",
+    "rom": "L4"
+  }
 }</code></pre>
     </section>
     
@@ -613,11 +587,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[
-{
-&quot;ssid&quot;: &quot;MyNetwork&quot;,
-&quot;rssi&quot;: -40,
-&quot;configured&quot;: true
-}
+  {
+    "ssid": "MyNetwork",
+    "rssi": -40,
+    "configured": true
+  }
 ]</code></pre>
     </section>
     

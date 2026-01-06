@@ -43,20 +43,6 @@
     ul { list-style: none; padding-left: 0; }
     ul li { margin: 0.35rem 0; }
     .meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
-    .topbar {
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(12px);
-      background: linear-gradient(90deg, rgba(13,17,23,0.95), rgba(13,17,23,0.85));
-      border-bottom: 1px solid var(--panel-border);
-      padding: 0.75rem 0;
-      margin-bottom: 1.5rem;
-      z-index: 20;
-    }
-    .topbar .nav { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.05rem; }
-    .brand span { padding: 0.3rem 0.75rem; border-radius: 10px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); box-shadow: var(--shadow); }
-    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
     .nav-link { padding: 0.45rem 0.85rem; border-radius: 10px; border: 1px solid transparent; font-weight: 600; color: var(--text); }
     .nav-link:hover { border-color: var(--panel-border); background: rgba(56,189,248,0.08); text-decoration: none; }
     .badge { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
@@ -69,20 +55,6 @@
 </head>
 <body>
   <a id="top"></a>
-  <header class="topbar">
-    <div class="nav">
-      <div class="brand">
-        <span>Vector documentation</span>
-        <a class="nav-link" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
-        <a class="nav-link" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
-      </div>
-      <div class="nav-links">
-        <a class="nav-link" href="#owners">Owner's guides</a>
-        <a class="nav-link" href="#technical">Mod maker &amp; technical guides</a>
-        <a class="nav-link" href="#top">Back to top</a>
-      </div>
-    </div>
-  </header>
   <main>
     <div class="panel hero">
       <div>
@@ -92,6 +64,8 @@
       <div class="badge">
         <a class="nav-link" href="#owners">Browse owner guides</a>
         <a class="nav-link" href="#technical">Open technical docs</a>
+        <a class="nav-link" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
+        <a class="nav-link" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
         <a class="nav-link" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a>
       </div>
     </div>
