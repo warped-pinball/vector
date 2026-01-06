@@ -3,8 +3,6 @@ name: Generate API docs
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "src/common/backend.py"
 
 permissions:
   contents: write
