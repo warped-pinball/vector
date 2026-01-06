@@ -1,5 +1,8 @@
-#sepcial test version of system 11 ram intercept for DATA EAST
+#sepcial version of system 11 ram intercept for DATA EAST
 #  8K RAM!   Bus structure like System11
+
+
+# this one edited to support ADR_VMA on gpio 11  
 
 
 
@@ -26,7 +29,7 @@ A_SELECT_PIN = 27
 LED_PIN = 26
 SWITCH_PIN = 22
 WR_PIN = 12
-VMA_ADR_PIN = 13
+VMA_ADR_PIN = 11
 FIRST_ADR_PIN = 6
 FIRST_DATA_PIN = 14
 
@@ -41,7 +44,7 @@ def CatchVMA():
     wrap_target()
     label("start_adr")
     
-    wait(0, gpio, 13)   [14]  #wait for VMA+ADR to go active(low), assumme this hardware is set for total address validation    
+    wait(0, gpio, 11)   [14]  #wait for VMA+ADR to go active(low), assumme this hardware is set for total address validation    
     jmp (pin,"start_adr")    #confirm still active (low)
     
     set(pins,1)  [16]        #signal other pios ready to start  (gpio 22 high)    delay happens after set
@@ -183,8 +186,8 @@ def pio_start():
     sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=125000000, in_base=machine.Pin(FIRST_DATA_PIN), out_base=machine.Pin(FIRST_DATA_PIN)  )
 
     #   IN: Data Pins
-    sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22)  )
-    #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(13), set_base=machine.Pin(22) ,  sideset_base=machine.Pin(27))
+    sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(11), set_base=machine.Pin(22)  )
+    #sm_CatchVma = rp2.StateMachine(6, CatchVMA, freq=125000000, jmp_pin=machine.Pin(11), set_base=machine.Pin(22) ,  sideset_base=machine.Pin(27))
    
 
 

@@ -172,7 +172,7 @@ def update_leaderboard(new_entry):
     for entry in top_scores:
         # print(f"SCORE: Check for initials match: {entry['initials']} == {new_entry['initials']}, score: {entry['score']} == {new_entry['score']}")
         if entry["initials"] == "" and entry["score"] == new_entry["score"]:
-            print(" using claim - - - - - ")
+            #print(" using claim - - - - - ")
             entry["initials"] = new_entry["initials"]
             entry["full_name"] = new_entry["full_name"]
             DataStore.write_record("leaders", entry, top_scores.index(entry))
