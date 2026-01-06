@@ -1,120 +1,111 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vector HTTP API</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0d1117;
-      --panel: #111827;
-      --panel-border: #1f2937;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #38bdf8;
-      --code-bg: #0b1221;
-      --code-text: #f8fafc;
-      --code-border: #1d2a3f;
-      --shadow: 0 10px 30px rgba(0,0,0,0.35);
-    }
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      margin: 0 auto;
-      padding: 0 1.5rem 3rem;
-      max-width: 1100px;
-      color: var(--text);
-      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
-                  radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 25%),
-                  var(--bg);
-    }
-    h1, h2, h3 { color: var(--text); margin-top: 0; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
-      margin-bottom: 1.75rem;
-    }
-    .panel section { border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
-    ul { list-style: none; padding-left: 0; }
-    ul li { margin: 0.3rem 0; }
-    .endpoint-list a { font-weight: 600; }
-    code { background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--code-border); }
-    pre {
-      background: var(--code-bg);
-      color: var(--code-text);
-      padding: 1rem;
-      border-radius: 12px;
-      border: 1px solid var(--code-border);
-      overflow-x: auto;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-    }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }
-    .meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
-    .tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }
-    .topbar {
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(12px);
-      background: rgba(13,17,23,0.9);
-      border-bottom: 1px solid var(--panel-border);
-      padding: 1rem 0;
-      margin-bottom: 1rem;
-      z-index: 20;
-    }
-    .topbar .nav { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
-    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.8rem;
-      border-radius: 999px;
-      border: 1px solid var(--panel-border);
-      background: rgba(56,189,248,0.08);
-      color: var(--text);
-      font-weight: 600;
-      box-shadow: var(--shadow);
-    }
-    .badge { display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
-    .hero { display: grid; gap: 0.8rem; }
-    .card-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    .card { padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); height: 100%; }
-    .card h3 { margin-top: 0; }
-    .cta { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; font-weight: 600; }
-    .toc-list { padding-left: 1rem; list-style: disc; color: var(--text); }
-    .toc-list li { margin: 0.25rem 0; }
-    .spacer { flex: 1 1 auto; }
-    .back-top { text-align: right; margin-top: 1rem; }
-  </style>
+  <title>Vector Documentation Hub</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a id="top"></a>
   <header class="topbar">
     <div class="nav">
-      <div class="badge">
-        <strong>Vector HTTP API</strong>
-        <a class="pill" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Release badge</a>
-        <img alt="Latest release" src="https://img.shields.io/github/v/release/warped-pinball/vector?label=release" />
-        <img alt="Last commit" src="https://img.shields.io/github/last-commit/warped-pinball/vector?label=updated" />
+      <div class="brand">
+        <span>Vector documentation</span>
+        <a class="nav-link" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
+        <a class="nav-link" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
       </div>
       <div class="nav-links">
-        <a class="pill" href="#toc">Table of contents</a>
-        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
-        <a class="pill" href="https://warpedpinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>
-        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
-        <a class="pill" href="#top">Back to top</a>
+        <a class="nav-link" href="#owners">Owner's guides</a>
+        <a class="nav-link" href="#technical">Mod maker &amp; technical guides</a>
+        <a class="nav-link" href="#api-routes">API routes</a>
+        <a class="nav-link" href="#top">Back to top</a>
       </div>
     </div>
   </header>
   <main>
-    <div class="panel hero">
+<div class="panel hero">
+      <div>
+        <h1 class="section-heading">Warped Pinball Vector documentation</h1>
+        <p class="meta">A single landing page for all of the Vector documentation. Choose a system-specific owner's guide or jump into the technical references for building and integrating mods.</p>
+      </div>
+      <div class="badge">
+        <a class="nav-link" href="#owners">Browse owner guides</a>
+        <a class="nav-link" href="#technical">Open technical docs</a>
+        <a class="nav-link" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a>
+      </div>
+    </div>
+
+    <div class="panel" id="owners">
+      <h2 class="section-heading">Owner's guides</h2>
+      <p class="meta">Pick your system to find quick starts, installation manuals, and ROM handling notes.</p>
+      <div class="card-grid">
+        <div class="card">
+          <h3>WPC</h3>
+          <ul>
+            <li><a href="guides/wpc/quick-start.html">Quick start</a></li>
+            <li><a href="guides/wpc/manual.html">Installation &amp; use manual</a></li>
+            <li><a href="guides/wpc/add-rom.html">Add a ROM profile</a></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>System 11</h3>
+          <ul>
+            <li><a href="guides/system11/quick-start.html">Quick start</a></li>
+            <li><a href="guides/system11/manual.html">Installation &amp; use manual</a></li>
+            <li><a href="guides/system11/add-rom.html">Add a ROM profile</a></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>System 9</h3>
+          <ul>
+            <li><a href="guides/system9/manual.html">Installation &amp; use manual</a></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data East</h3>
+          <ul>
+            <li><span class="meta">Owner's documentation coming soon</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Electromechanical (EM)</h3>
+          <ul>
+            <li><span class="meta">Owner's documentation coming soon</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="technical">
+      <h2 class="section-heading">Mod maker &amp; technical guides</h2>
+      <p class="meta">Detailed references for developers integrating with the Vector platform.</p>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Routes &amp; endpoints</h3>
+          <p class="meta">Full API surface generated from the backend source.</p>
+          <a href="#api-routes">Open API routes</a>
+        </div>
+        <div class="card">
+          <h3>Authentication &amp; network</h3>
+          <p class="meta">POST-only access patterns, HMAC signing, and sample scripts.</p>
+          <a href="authentication.html">Open authentication guide</a>
+        </div>
+        <div class="card">
+          <h3>API over USB</h3>
+          <p class="meta">Serial framing, escaping pipes, and host tooling.</p>
+          <a href="usb.html">Open USB guide</a>
+        </div>
+        <div class="card">
+          <h3>Peer discovery</h3>
+          <p class="meta">HELLO/FULL frames and desktop discovery helpers.</p>
+          <a href="discovery.html">Open discovery guide</a>
+        </div>
+        
+      </div>
+    </div>
+    <div id="api-routes">
+<div class="panel hero">
       <div>
         <h1>Vector HTTP API</h1>
         <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Use this page as the landing pad for connectivity guides and endpoint documentation.</p>
@@ -876,6 +867,7 @@
       <h4>Status Codes</h4><ul><li><code>200</code> - Configuration saved</li></ul><p><strong>Response body:</strong> </p><pre><code>&quot;ok&quot;</code></pre>
     </section>
     <p class="back-top"><a href="#toc">↑ Back to table of contents</a></p></div>
+    </div>
   </main>
 </body>
 </html>
