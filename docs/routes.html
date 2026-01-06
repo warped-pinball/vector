@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vector API Routes</title>
+  <title>Vector HTTP API</title>
   <style>
     :root {
       color-scheme: dark;
@@ -55,9 +55,21 @@
       overflow-x: auto;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
     }
-    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; border: none; background: transparent; padding: 0; }
+    pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }
     .meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
     .tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }
+    .topbar {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(12px);
+      background: rgba(13,17,23,0.9);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+      z-index: 20;
+    }
+    .topbar .nav { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
+    .topbar .nav-links { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -80,24 +92,71 @@
     .toc-list li { margin: 0.25rem 0; }
     .spacer { flex: 1 1 auto; }
     .back-top { text-align: right; margin-top: 1rem; }
-    pre code { white-space: pre; }
   </style>
 </head>
 <body>
   <a id="top"></a>
+  <header class="topbar">
+    <div class="nav">
+      <div class="badge">
+        <strong>Vector HTTP API</strong>
+        <a class="pill" href="https://github.com/warped-pinball/vector/releases/latest" target="_blank" rel="noopener noreferrer">Release badge</a>
+        <img alt="Latest release" src="https://img.shields.io/github/v/release/warped-pinball/vector?label=release" />
+        <img alt="Last commit" src="https://img.shields.io/github/last-commit/warped-pinball/vector?label=updated" />
+      </div>
+      <div class="nav-links">
+        <a class="pill" href="#toc">Table of contents</a>
+        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Main repository</a>
+        <a class="pill" href="https://warpedpinball.com" target="_blank" rel="noopener noreferrer">WarpedPinball.com</a>
+        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
+        <a class="pill" href="#top">Back to top</a>
+      </div>
+    </div>
+  </header>
   <main>
     <div class="panel hero">
       <div>
         <h1>Vector HTTP API</h1>
-        <p class="meta">Generated automatically from <code>src/common/backend.py</code>. This page is dedicated to the route and endpoint documentation for the Vector API.</p>
+        <p class="meta">Generated automatically from <code>src/common/backend.py</code>. Use this page as the landing pad for connectivity guides and endpoint documentation.</p>
       </div>
-      <div class="badge">
+      <div class="meta">
         <span class="tag">Statically generated</span>
         <span class="tag">MicroPython friendly</span>
-        <a class="pill" href="authentication.html">Authentication guide</a>
-        <a class="pill" href="index.html">Docs home</a>
-        <a class="pill" href="https://github.com/warped-pinball/vector" target="_blank" rel="noopener noreferrer">Repository</a>
-        <a class="pill" href="https://vector.doze.dev" target="_blank" rel="noopener noreferrer">Live demo</a>
+      </div>
+      <p class="meta">Need authentication details? Visit the <a href="authentication.html">Authentication guide</a>.</p>
+    </div>
+
+    <div class="panel" id="toc">
+      <h2>Table of contents</h2>
+      <ul class="toc-list">
+        <li><a href="#connectivity">Connectivity guides</a></li>
+        <li><a href="#routes">Routes &amp; endpoints</a></li>
+      </ul>
+    </div>
+
+    <div class="panel" id="connectivity">
+      <h2>Connectivity guides</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>HTTP over the network</h3>
+          <p class="meta">How to reach your Vector board over WiFi, including TLS notes and curl examples.</p>
+          <a class="cta" href="network.html">Open network guide →</a>
+        </div>
+        <div class="card">
+          <h3>Peer discovery</h3>
+          <p class="meta">Broadcasts, HELLO/FULL frames, and a ready-to-run desktop script.</p>
+          <a class="cta" href="discovery.html">Open discovery guide →</a>
+        </div>
+        <div class="card">
+          <h3>USB transport</h3>
+          <p class="meta">Serial framing, escaping pipes, and a host-side client to speak to the device.</p>
+          <a class="cta" href="usb.html">Open USB guide →</a>
+        </div>
+        <div class="card">
+          <h3>Authentication</h3>
+          <p class="meta">Login flow, JSON payloads, and how to attach session cookies to API calls.</p>
+          <a class="cta" href="authentication.html">Open authentication guide →</a>
+        </div>
       </div>
     </div>
 
@@ -121,7 +180,7 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Challenge issued</li><li><code>429</code> - Too many active challenges</li></ul><p><strong>Response body:</strong> JSON containing a single challenge token.</p><pre><code>{
-&quot;challenge&quot;: &quot;0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&quot;
+    &quot;challenge&quot;: &quot;0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&quot;
 }</code></pre>
     </section>
     
@@ -167,7 +226,7 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Active configuration returned</li></ul><p><strong>Response body:</strong> JSON object identifying the configuration file in use</p><pre><code>{
-&quot;active_config&quot;: &quot;AttackMars_11&quot;
+    &quot;active_config&quot;: &quot;AttackMars_11&quot;
 }</code></pre>
     </section>
     
@@ -179,16 +238,17 @@
       <h3>Request</h3>
       <p>No parameters inferred.</p>
       <h3>Response</h3>
-      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{
-  "F14_L1": {
-    "name": "F14 Tomcat",
-    "rom": "L1"
-  },
-  "Taxi_L4": {
-    "name": "Taxi",
-    "rom": "L4"
-  }
-}</code></pre>
+      <h4>Status Codes</h4><ul><li><code>200</code> - Configurations listed</li></ul><p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p><pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}
+        {
+            &quot;F14_L1&quot;: {
+                &quot;name&quot;: &quot;F14 Tomcat&quot;,
+                &quot;rom&quot;: &quot;L1&quot;
+            },
+            &quot;Taxi_L4&quot;: {
+                &quot;name&quot;: &quot;Taxi&quot;,
+                &quot;rom&quot;: &quot;L4&quot;
+            }
+        }</code></pre>
     </section>
     
     <section id="api-game-status">
@@ -200,9 +260,9 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Status returned</li></ul><p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p><pre><code>{
-&quot;GameActive&quot;: true,
-&quot;BallInPlay&quot;: 2,
-&quot;Scores&quot;: [1000, 0, 0, 0]
+    &quot;GameActive&quot;: true,
+    &quot;BallInPlay&quot;: 2,
+    &quot;Scores&quot;: [1000, 0, 0, 0]
 }</code></pre>
     </section>
     
@@ -215,12 +275,12 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard returned</li></ul><p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p><pre><code>[
-{
-&quot;initials&quot;: &quot;ABC&quot;,
-&quot;score&quot;: 123456,
-&quot;rank&quot;: 1,
-&quot;ago&quot;: &quot;2h&quot;
-}
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;rank&quot;: 1,
+        &quot;ago&quot;: &quot;2h&quot;
+    }
 ]</code></pre>
     </section>
     
@@ -244,11 +304,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Tournament leaderboard returned</li></ul><p><strong>Response body:</strong> List of tournament scores sorted by game order</p><pre><code>[
-{
-&quot;initials&quot;: &quot;ABC&quot;,
-&quot;score&quot;: 123456,
-&quot;game&quot;: 1
-}
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;game&quot;: 1
+    }
 ]</code></pre>
     </section>
     
@@ -283,11 +343,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Claimable scores returned</li></ul><p><strong>Response body:</strong> Collection of unclaimed score records</p><pre><code>[
-{
-&quot;score&quot;: 12345,
-&quot;player_index&quot;: 0,
-&quot;game&quot;: 1
-}
+    {
+        &quot;score&quot;: 12345,
+        &quot;player_index&quot;: 0,
+        &quot;game&quot;: 1
+    }
 ]</code></pre>
     </section>
     
@@ -311,10 +371,10 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Player list returned</li></ul><p><strong>Response body:</strong> Mapping of player IDs to initials and names</p><pre><code>{
-&quot;0&quot;: {
-&quot;initials&quot;: &quot;ABC&quot;,
-&quot;name&quot;: &quot;Alice&quot;
-}
+    &quot;0&quot;: {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;name&quot;: &quot;Alice&quot;
+    }
 }</code></pre>
     </section>
     
@@ -338,13 +398,13 @@
       <h4>Body parameters</h4><ul><li><code>id</code> (int, required) - Player index to inspect</li></ul>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Player scores returned</li></ul><p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p><pre><code>[
-{
-&quot;score&quot;: 10000,
-&quot;rank&quot;: 1,
-&quot;initials&quot;: &quot;ABC&quot;,
-&quot;date&quot;: &quot;2024-01-01&quot;,
-&quot;ago&quot;: &quot;1d&quot;
-}
+    {
+        &quot;score&quot;: 10000,
+        &quot;rank&quot;: 1,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;date&quot;: &quot;2024-01-01&quot;,
+        &quot;ago&quot;: &quot;1d&quot;
+    }
 ]</code></pre>
     </section>
     
@@ -357,12 +417,12 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Personal bests returned</li></ul><p><strong>Response body:</strong> Leaderboard of each player&#x27;s highest score</p><pre><code>[
-{
-&quot;player_id&quot;: 0,
-&quot;initials&quot;: &quot;ABC&quot;,
-&quot;score&quot;: 12345,
-&quot;rank&quot;: 1
-}
+    {
+        &quot;player_id&quot;: 0,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 12345,
+        &quot;rank&quot;: 1
+    }
 ]</code></pre>
     </section>
     
@@ -386,13 +446,13 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Adjustment metadata returned</li></ul><p><strong>Response body:</strong> List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support</p><pre><code>{
-&quot;profiles&quot;: [
-[&quot;Free Play&quot;, false, true],
-[&quot;Arcade&quot;, true, true],
-[&quot;&quot;, false, false],
-[&quot;&quot;, false, false]
-],
-&quot;adjustments_support&quot;: true
+    &quot;profiles&quot;: [
+        [&quot;Free Play&quot;, false, true],
+        [&quot;Arcade&quot;, true, true],
+        [&quot;&quot;, false, false],
+        [&quot;&quot;, false, false]
+    ],
+    &quot;adjustments_support&quot;: true
 }</code></pre>
     </section>
     
@@ -438,8 +498,8 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Claim methods returned</li></ul><p><strong>Response body:</strong> All keys are available methods for entering initials, only enabled methods are true</p><pre><code>{
-&quot;on-machine&quot;: true,
-&quot;web-ui&quot;: false
+    &quot;on-machine&quot;: true,
+    &quot;web-ui&quot;: false
 }</code></pre>
     </section>
     
@@ -518,8 +578,8 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Configuration returned</li></ul><p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p><pre><code>{
-&quot;enabled&quot;: true,
-&quot;always&quot;: false
+    &quot;enabled&quot;: true,
+    &quot;always&quot;: false
 }</code></pre>
     </section>
     
@@ -587,11 +647,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Networks listed</li></ul><p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p><pre><code>[
-  {
-    "ssid": "MyNetwork",
-    "rssi": -40,
-    "configured": true
-  }
+    {
+        &quot;ssid&quot;: &quot;MyNetwork&quot;,
+        &quot;rssi&quot;: -40,
+        &quot;configured&quot;: true
+    }
 ]</code></pre>
     </section>
     
@@ -604,10 +664,10 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Peer map returned</li></ul><p><strong>Response body:</strong> Mapping of peer identifiers to network information</p><pre><code>{
-&quot;192.168.4.243&quot;: {
-&quot;name&quot;: &quot;Pinbot&quot;,
-&quot;self&quot;: true
-}
+    &quot;192.168.4.243&quot;: {
+        &quot;name&quot;: &quot;Pinbot&quot;,
+        &quot;self&quot;: true
+    }
 }</code></pre>
     </section>
     
@@ -664,9 +724,9 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Leaderboard export file returned</li></ul><p><strong>Response body:</strong> </p><pre><code>{
-&quot;scores&quot;: {&quot;tournament&quot;: [{&quot;initials&quot;: &quot;AAA&quot;, &quot;score&quot;: 938479, &quot;index&quot;: 2, &quot;game&quot;: 0}],
-&quot;leaders&quot;: [{&quot;initials&quot;: &quot;MSM&quot;, &quot;date&quot;: &quot;02/04/2025&quot;, &quot;full_name&quot;: &quot;Maxwell Mullin&quot;, &quot;score&quot;: 2817420816}]},
-&quot;version&quot;: 1</code></pre>
+        &quot;scores&quot;: {&quot;tournament&quot;: [{&quot;initials&quot;: &quot;AAA&quot;, &quot;score&quot;: 938479, &quot;index&quot;: 2, &quot;game&quot;: 0}],
+        &quot;leaders&quot;: [{&quot;initials&quot;: &quot;MSM&quot;, &quot;date&quot;: &quot;02/04/2025&quot;, &quot;full_name&quot;: &quot;Maxwell Mullin&quot;, &quot;score&quot;: 2817420816}]},
+        &quot;version&quot;: 1</code></pre>
     </section>
     
     <section id="api-import-scores">
@@ -711,11 +771,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Formats returned</li></ul><p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p><pre><code>[
-{
-&quot;id&quot;: 0,
-&quot;name&quot;: &quot;Arcade&quot;,
-&quot;description&quot;: &quot;Manufacturer standard game play&quot;
-}
+    {
+        &quot;id&quot;: 0,
+        &quot;name&quot;: &quot;Arcade&quot;,
+        &quot;description&quot;: &quot;Manufacturer standard game play&quot;
+    }
 ]</code></pre>
     </section>
     
@@ -761,11 +821,11 @@
       <p>No parameters inferred.</p>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Update metadata returned</li></ul><p><strong>Response body:</strong> JSON payload describing available updates</p><pre><code>{
-&quot;release_page&quot;: &quot;https://github.com/...&quot;,
-&quot;notes&quot;: &quot;Another Great Release! Here&#x27;s what we changed&quot;,
-&quot;published_at&quot;: &quot;2025-12-30T17:54:49+00:00&quot;,
-&quot;url&quot;: &quot;https://github.com/...&quot;,
-&quot;version&quot;: &quot;1.9.0&quot;
+    &quot;release_page&quot;: &quot;https://github.com/...&quot;,
+    &quot;notes&quot;: &quot;Another Great Release! Here&#x27;s what we changed&quot;,
+    &quot;published_at&quot;: &quot;2025-12-30T17:54:49+00:00&quot;,
+    &quot;url&quot;: &quot;https://github.com/...&quot;,
+    &quot;version&quot;: &quot;1.9.0&quot;
 }</code></pre>
     </section>
     
@@ -778,8 +838,8 @@
       <h4>Body parameters</h4><ul><li><code>url</code> (string, required) - Signed update package URL</li><li><code>skip_signature_check</code> (bool, optional) - Bypass signature validation (for developer builds)</li></ul>
       <h3>Response</h3>
       <h4>Status Codes</h4><ul><li><code>200</code> - Streaming progress updates</li></ul><p><strong>Response body:</strong> Sequence of JSON log entries with ``log`` and ``percent`` fields</p><pre><code>{
-&quot;log&quot;: &quot;Starting update&quot;,
-&quot;percent&quot;: 0
+    &quot;log&quot;: &quot;Starting update&quot;,
+    &quot;percent&quot;: 0
 }</code></pre>
     </section>
     
