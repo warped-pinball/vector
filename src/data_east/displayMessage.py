@@ -2,14 +2,13 @@
 
 
 
-
 # This file is part of the Warped Pinball SYS11Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
 display message handling (custom message shown on the pinball machine display)
 
-updated for system 9 - optionally shows IP address in high score display
+Data East - optionally shows IP address in high score display
 """
 
 from Shadow_Ram_Definitions import shadowRam

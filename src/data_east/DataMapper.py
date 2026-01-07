@@ -18,7 +18,6 @@ import faults
     
 
 
-
 def _bcd_to_int(bcd_bytes):
     """
     Convert BCD (Binary Coded Decimal) bytes from machine format to integer.
@@ -52,34 +51,40 @@ def _int_to_bcd(value, num_bytes):
         result[i] = (high_digit << 4) | low_digit
     return result
 
+
 def _initials_to_bytes(initials):   
     """
-       Simple ASCII encoding, padded to 3 bytes
+       ASCII encoded with limited character set
+       @ = ' ' in many cases...
+       Single 'A' = no initials entered at game end
     """
+     # Ensure initials is a string
+    if not isinstance(initials, str):
+        initials = str(initials) if initials else ""
+    
+    if not initials:
+        return "   "
+        
+    initials = initials.replace('@', ' ')  # Replace '@' with space
+
+    # Allow any character from ASCII 0x40 to 0x5A, convert lowercase to uppercase
+    clean = ""
+    for c in initials:
+        code = ord(c)
+        # Convert lowercase to uppercase if in a-z
+        if 0x61 <= code <= 0x7A:
+            code = code - 0x20
+        if 0x40 <= code <= 0x5A:
+            clean += chr(code)
+        
+    # Pad or truncate to 3 characters
+    clean = clean + ' ' * 3
+    clean = clean[:3]
+
     result = bytearray(3)
-    for i in range(min(3, len(initials))):
-        c = initials[i]
-        result[i] = ord(c) if ((c >= 'A' and c <= 'Z') or (c >= 'a' and c <= 'z') or (c >= '0' and c <= '9')) else ord(' ')
+    for i in range(3):
+        result[i] = ord(clean[i])
     return result
-
-
-
-def _bytes_to_initials(initial_bytes):   
-    """
-       Simple ASCII decoding
-    """
-    result = ""
-    for byte in initial_bytes[:3]:  # Typically 3 characters
-        if 32 <= byte <= 126:  # Printable ASCII range
-            result += chr(byte)
-        else:
-            result += " "
-    return result.strip()
-
-
-
-
-
 
 
 def read_high_scores():
@@ -308,10 +313,7 @@ def write_high_scores(highScores):
                 initials = highScores[idx][0]
                 if not isinstance(initials, str) or not initials:
                     initials = "   "
-                
-                # Validate and pad initials to 3 characters
-                initials = validate_initials(initials)
-                
+                                
                 # Convert to bytes (simple ASCII encoding)
                 initials_bytes = _initials_to_bytes(initials)                
                 shadowRam[initial_start : initial_start + 3] = initials_bytes
@@ -657,36 +659,5 @@ def format_text_lines(text, line_length, num_lines):
     return lines
 
 
-
-
-def validate_initials(initials):
-    """
-        Validate and sanitize player initials.
-    """
-    # Ensure initials is a string
-    if not isinstance(initials, str):
-        initials = str(initials) if initials else ""
-    
-    if not initials:
-        return "   "
-    
-    # Replace '@' with space
-    initials = initials.replace('@', ' ')
-
-    # Allow any character from ASCII 0x40 to 0x5A, convert lowercase to uppercase
-    clean = ""
-    for c in initials:
-        code = ord(c)
-        # Convert lowercase to uppercase if in a-z
-        if 0x61 <= code <= 0x7A:
-            code = code - 0x20
-        if 0x40 <= code <= 0x5A:
-            clean += chr(code)
-        
-    # Pad or truncate to 3 characters
-    clean = clean + ' ' * 3
-    clean = clean[:3]
-    
-    return clean
 
 
