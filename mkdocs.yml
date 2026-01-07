@@ -5,7 +5,6 @@ theme:
 nav:
   - Home: index.md
   - Guides:
-      - Guides overview: guides/index.md
       - WPC:
           - Quick start: guides/wpc/quick-start.md
           - Installation & use manual: guides/wpc/manual.md
