@@ -16,6 +16,8 @@ nav:
           - Add a ROM profile: guides/system11/add-rom.md
       - System 9:
           - Installation & use manual: guides/system9/manual.md
+      - Data East:
+          - Installation & use manual: guides/data_east/manual.md
   - Technical references:
       - API reference: routes.md
       - Authentication: authentication.md
