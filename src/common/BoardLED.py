@@ -8,10 +8,7 @@
     Low level driver for WS2812 combined with single color led legacy support
 """
 import machine
-try:
-    import rp2
-except ImportError:
-    rp2 = None
+import rp2
 
 
 # Color definitions for board LEDs
@@ -117,14 +114,22 @@ def ledOff():
      sm_led.exec("set(y, 1)") 
      ledState=0
 
-def ledtoggle():
+def ledtoggle(buttonHeld=False):
     # toggle also auto updates state!
     global ledState
-    if ledState==0:
-        ledOn()
+    if buttonHeld is False:
+        if ledState==0:
+            ledOn()        
+        else:
+            ledOff()
+        ledColor(lastColor)
     else:
-        ledOff()
-    ledColor(lastColor)
+        if ledState==0:
+            ledOn()     
+            ledColor(YELLOW)   
+        else:
+            ledOff()
+            ledColor(BLACK)
 
 def ledColor(c):
     global lastColor

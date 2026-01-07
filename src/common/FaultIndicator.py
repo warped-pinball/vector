@@ -15,10 +15,8 @@ import machine
 import SharedState
 import BoardLED as L
 import faults
-try:
-    import rp2
-except ImportError:
-    rp2 = None
+import rp2
+
 
 
 # Map each fault type to a list of colors for LED indication
@@ -34,7 +32,6 @@ FAULT_COLOR_SEQUENCES = {
 }
 
 enableWS2812led = False
-timer = machine.Timer()
 LED_Out = None
 sequence = [L.BLACK, L.BLACK]
 index = 0
@@ -52,18 +49,19 @@ def isChip2350():
     return False
 
 
-
-def toggleBoardLED():
+def toggleBoardLED(buttonHeld = False):
     """
         Legacy interface to led function
           -works if we are on a PICO1 without BoardLED running
           -works on PICO2 with BoardLED and only single color LED installed
           -runs with no effect on PICO2 with only ws2812 led installed
+
+          -button held for power up AP mode without timer resources running yet
     """
     global enableWS2812led
     if enableWS2812led is True:
         #ws2812 driver - control of single color LED
-        L.ledtoggle()
+        L.ledtoggle(buttonHeld)
     else:
         #old single color led only
         LED_Out.toggle()
@@ -79,7 +77,8 @@ def start():
         L.startUp()
         L.ledOff()
         L.ledColor(L.BLACK)
-        timer.init(period=790, mode=machine.Timer.PERIODIC, callback=_timerCallBack)
+        from phew.server import schedule
+        schedule(_faultIndicatorTimer, 1200, 770)       
     else:
         LED_Out = machine.Pin(26, machine.Pin.OUT)
 
@@ -110,7 +109,7 @@ def _getNewFaults():
 
 
 
-def _timerCallBack(_):
+def _faultIndicatorTimer(_):
     """
         timer to drive LED blinky blink - and get new FAULTS periodically
     """
