@@ -128,7 +128,7 @@ Vector is a modern hardware and software solution for classic pinball machines (
 ## Special Considerations
 
 - **No external dependencies**: System must work offline (no cloud services)
-- **Privacy-focused**: No data collection or phone-home functionality
+- **Privacy-focused**: No data collection or phone home functionality
 - **User control**: No automatic updates without permission
 - **Reliability**: System should handle power loss gracefully
 - **Debugging**: Use logger for development, minimize logging in production
