@@ -1,6 +1,6 @@
-# Vector HTTP API docs
+# Vector documentation
 
-The files in this directory are generated automatically from `src/common/backend.py` using the script `tools/gen_api_docs.py`. The generator works purely on static analysis and does **not** import the MicroPython runtime.
+The files in this directory are published with MkDocs (Material theme). The API reference is generated automatically from `src/common/backend.py` using `tools/gen_api_docs.py`. The generator works purely on static analysis and does **not** import the MicroPython runtime.
 
 ## Running locally
 
@@ -8,7 +8,7 @@ The files in this directory are generated automatically from `src/common/backend
 python tools/gen_api_docs.py
 ```
 
-This rewrites `docs/routes.html` with the latest routes discovered in `backend.py`. The supplemental guides in this directory are maintained as static files.
+This rewrites `docs/routes.md` with the latest routes discovered in `backend.py`. The supplemental guides in this directory are maintained as static Markdown files.
 
 ## Optional structured docstrings
 
