@@ -973,10 +973,54 @@ window.getGameStatus = async function () {
   const hasRecentGame =
     window.lastActiveGameTimestamp !== null &&
     now - window.lastActiveGameTimestamp < LIVE_GAME_END_HOLD_MS;
-  const effectiveData = hasRecentGame
-    ? window.lastActiveGameStatus
-    : data;
 
+  let effectiveData;
+  if (hasRecentGame) {
+    let isNewGame = false;
+
+    if (
+      data &&
+      data.GameActive === true &&
+      window.lastActiveGameStatus &&
+      window.lastActiveGameStatus.GameActive === true
+    ) {
+      const currentScores = Array.isArray(data.Scores) ? data.Scores : [];
+      const lastScores = Array.isArray(window.lastActiveGameStatus.Scores)
+        ? window.lastActiveGameStatus.Scores
+        : [];
+
+      const normalizeScore = function (value) {
+        const n = parseInt(value, 10);
+        return isNaN(n) ? 0 : n;
+      };
+
+      const allCurrentZero =
+        currentScores.length > 0 &&
+        currentScores.every(function (s) {
+          return normalizeScore(s) === 0;
+        });
+
+      const allLastZero =
+        lastScores.length > 0 &&
+        lastScores.every(function (s) {
+          return normalizeScore(s) === 0;
+        });
+
+      if (allCurrentZero && !allLastZero) {
+        isNewGame = true;
+      }
+    }
+
+    if (isNewGame) {
+      window.lastActiveGameStatus = data;
+      window.lastActiveGameTimestamp = now;
+      effectiveData = data;
+    } else {
+      effectiveData = window.lastActiveGameStatus;
+    }
+  } else {
+    effectiveData = data;
+  }
   // If game not active, hide status and exit
   if (!effectiveData || effectiveData.GameActive !== true) {
     gameStatus.classList.add("hide");
