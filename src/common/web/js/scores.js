@@ -640,7 +640,7 @@ window.getClaimableScores();
 
 // Keep showing the last live game briefly after it ends so players can read scores.
 // This is UI-only; backend reports the true game state.
-const LIVE_GAME_END_HOLD_MS = 15 * 1000;
+const POST_GAME_DISPLAY_HOLD_MS = 15 * 1000;
 
 // Store score history for animation calculations
 window.scoreHistory = {
@@ -972,7 +972,7 @@ window.getGameStatus = async function () {
 
   const hasRecentGame =
     window.lastActiveGameTimestamp !== null &&
-    now - window.lastActiveGameTimestamp < LIVE_GAME_END_HOLD_MS;
+    now - window.lastActiveGameTimestamp < POST_GAME_DISPLAY_HOLD_MS;
 
   let effectiveData;
   if (hasRecentGame) {
