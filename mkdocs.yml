@@ -2,6 +2,10 @@ site_name: Vector Documentation
 site_url: https://warped-pinball.github.io/vector/
 theme:
   name: material
+  palette:
+    - scheme: slate
+      primary: blue
+      accent: blue
 nav:
   - Home: index.md
   - Guides:
