@@ -965,7 +965,7 @@ window.getGameStatus = async function () {
   // Exit if no status element
   if (!gameStatus) return;
 
-  if (data.GameActive === true) {
+  if (data && data.GameActive === true) {
     window.lastActiveGameStatus = data;
     window.lastActiveGameTimestamp = now;
   }
