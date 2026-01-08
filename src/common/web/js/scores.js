@@ -942,10 +942,14 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
 /**
  * Update ball in play status
  * @param {Object} data - Game status data
+ * @param {boolean} showGameOver - Whether to display "Game Over" instead of ball number
  */
-window.updateBallInPlay = function (data) {
+window.updateBallInPlay = function (data, showGameOver) {
   const ballInPlay = document.getElementById("live-ball-in-play");
-  if (data.BallInPlay > 0) {
+  if (showGameOver) {
+    ballInPlay.innerText = "Game Over";
+    ballInPlay.classList.remove("hide");
+  } else if (data.BallInPlay > 0) {
     ballInPlay.innerText = `Ball in Play: ${data.BallInPlay}`;
     ballInPlay.classList.remove("hide");
   } else {
@@ -1072,7 +1076,9 @@ window.getGameStatus = async function () {
   }
 
   // Update ball in play display
-  window.updateBallInPlay(effectiveData);
+  // Show "Game Over" if we're in the hold period after game ended
+  const isInHoldPeriod = hasRecentGame && data && data.GameActive === false;
+  window.updateBallInPlay(effectiveData, isInHoldPeriod);
 };
 
 window.scoreEditMode = false;
