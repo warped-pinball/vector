@@ -79,7 +79,8 @@ def _initials_validate(initials):
             clean += ' '
         elif 0x40 <= code <= 0x5A:
             clean += chr(code)
-    if clean == "A":  #single A means timeout during intiials entry
+
+    if clean == "A":  #single A means timeout during intiials entry - clear for claim score
         clean = '   '
 
     # Pad or truncate to 3 characters
