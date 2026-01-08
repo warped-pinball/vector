@@ -1077,11 +1077,12 @@ window.getGameStatus = async function () {
 
   // Update ball in play display
   // Show "Game Over" if we're in the hold period after game ended
-  const isInHoldPeriod =
+  const shouldShowGameOver =
     hasRecentGame &&
-    (!data || data.GameActive === false) &&
+    data &&
+    data.GameActive === false &&
     effectiveData !== data;
-  window.updateBallInPlay(effectiveData, isInHoldPeriod);
+  window.updateBallInPlay(effectiveData, shouldShowGameOver);
 };
 
 window.scoreEditMode = false;
