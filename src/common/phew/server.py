@@ -1,7 +1,6 @@
 import time
 
 import faults
-import machine
 import ntptime
 import uasyncio
 from machine import RTC
@@ -14,8 +13,6 @@ from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_Store import write_16_fram
 
 from . import logging
-
-import FaultIndicator
 
 # from SPI_UpdateStore import initialize as sflash_initialize
 # from SPI_UpdateStore import tick as sflash_tick
@@ -223,7 +220,7 @@ def copy_to_fram():
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
-        FaultIndicator.toggleBoardLED()
+        faults.toggleBoardLED()
 
 
 _scheduled_tasks = []

@@ -18,8 +18,6 @@ from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
 
-import FaultIndicator
-
 Log = logger_instance
 
 # other gen I/O pin inits
@@ -31,9 +29,10 @@ timer = machine.Timer()
 
 
 def error_toggle(timer):
-    FaultIndicator.toggleBoardLED()
+    faults.toggleBoardLED()
 
-def set_error_led():   
+
+def set_error_led():
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
 
 
@@ -92,7 +91,7 @@ def check_ap_button():
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
-            FaultIndicator.toggleBoardLED(buttonHeld=True)
+            faults.toggleBoardLED(buttonHeld=True)
             time.sleep(0.1)
         time.sleep(3)
         return True  # AP mode
