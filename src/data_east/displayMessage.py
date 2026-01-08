@@ -45,7 +45,7 @@ def _blank():
     """
     str = " " * 48
     DataMapper.set_message(str)
-    DataMapper.message_off()
+    DataMapper.enable_message(False)
     
 
 

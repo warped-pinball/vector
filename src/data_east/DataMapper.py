@@ -68,7 +68,7 @@ def _initials_validate(initials):
     initials = initials.replace('@', ' ')  # Replace '@' with space
     # Allow any character from ASCII 0x40 to 0x5A, convert lowercase to uppercase
 
-    clean = ""
+    clean_str = ""
     for c in initials:
         code = ord(c)
         # Convert lowercase to uppercase if in a-z
@@ -76,22 +76,22 @@ def _initials_validate(initials):
             code = code - 0x20
         # Replace numbers (0-9) with space
         if 0x30 <= code <= 0x39:
-            clean += ' '
+            clean_str += ' '
         elif 0x40 <= code <= 0x5A:
-            clean += chr(code)
+            clean_str += chr(code)
 
-    if clean == "A":  #single A means timeout during intiials entry - clear for claim score
-        clean = '   '
+    if clean_str == "A":  #single A means timeout during intiials entry - clear for claim score
+        clean_str = '   '
 
     # Pad or truncate to 3 characters
-    clean = clean + ' ' * 3
-    clean = clean[:3]
+    clean_str = clean_str + ' ' * 3
+    clean_str = clean_str[:3]
    
-    result = bytearray(3)
+    result_bytes = bytearray(3)
     for i in range(3):
-        result[i] = ord(clean[i])
+        result_bytes[i] = ord(clean_str[i])
 
-    return clean, result
+    return clean_str, result_bytes
 
 
 def read_high_scores():
@@ -314,7 +314,7 @@ def write_high_scores(highScores):
                     initials = "   "
                                 
                 # Convert to bytes
-                initials_bytes = _initials_to_bytes(initials)                
+                _,initials_bytes = _initials_validate(initials)                
                 shadowRam[initial_start : initial_start + 3] = initials_bytes
         
         log.log(f"Successfully wrote {NumberOfScores} high scores to shadow RAM")
@@ -325,8 +325,6 @@ def write_high_scores(highScores):
         faults.raise_fault(faults.SFWR00, f"Error writing high scores: {e}")
         log.log(f"High score write error: {e}")
         return False
-
-
 
 
 def get_ball_in_play():
@@ -437,7 +435,6 @@ def get_in_play_data():
     return data
 
 
-
 def _set_adjustment_checksum():
     """
         calculate and write checksum into shadowram
@@ -453,12 +450,17 @@ def _set_adjustment_checksum():
 
 
 def turn_off_high_score_rewards():
+    """
+       turn_off_high_score_reward so it is not awarded on initials entry
+    """
     if S.gdata["Adjsutments"]["Type"] == 20:
         #DataStore.read_record("extras", 0)["enter_initials_on_game"]:
         print("SCORE: Disabling HS rewards")
         for key, value in S.gdata["HSRewards"].items():
             if key.startswith("HS"):  # Check if the key starts with 'HS'
                 shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
+
+        _set_adjustment_checksum()
 
 
 def set_message(message):
@@ -500,19 +502,20 @@ def set_message(message):
             if S.gdata["DisplayMessage"]["Type"]==24:
                 offset += 3
 
-        #enable message display
-        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=1
-
-        _set_adjustment_checksum()
+        enable_message(True)
+       
 
 
 
-def message_off():
+def enable_message(enable):
     """
-        turn off display of the custom message
-        fix checksum
+        turn on/off display of the custom message
+        fix checksum after messng with adjustment data
     """ 
-    shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=0
+    if enable:
+        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=1
+    else:
+        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=0
     _set_adjustment_checksum()
 
 
