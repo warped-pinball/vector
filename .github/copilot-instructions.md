@@ -21,10 +21,9 @@ Vector is a modern hardware and software solution for classic pinball machines (
 - **Linter**: flake8 with max line length 200, ignoring E203, W503, E242, E231, E241
 - **File Headers**: All Python files should include the CC BY-NC 4.0 license header:
   ```python
-  # This file is part of the Warped Pinball SYS11Wifi Project.
+  # This file is part of the Warped Pinball Vector Project.
   # https://creativecommons.org/licenses/by-nc/4.0/
   # This work is licensed under CC BY-NC 4.0
-  ```
 
 ### JavaScript/HTML/CSS
 - **Formatter**: Prettier (version 3.0.3)
