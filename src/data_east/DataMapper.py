@@ -52,7 +52,7 @@ def _int_to_bcd(value, num_bytes):
     return result
 
 
-def _initials_to_bytes(initials):   
+def _initials_validate(initials):   
     """
        ASCII encoded with limited character set
        @ = ' ' in many cases...
@@ -66,25 +66,31 @@ def _initials_to_bytes(initials):
         return "   "
         
     initials = initials.replace('@', ' ')  # Replace '@' with space
-
     # Allow any character from ASCII 0x40 to 0x5A, convert lowercase to uppercase
+
     clean = ""
     for c in initials:
         code = ord(c)
         # Convert lowercase to uppercase if in a-z
         if 0x61 <= code <= 0x7A:
             code = code - 0x20
-        if 0x40 <= code <= 0x5A:
+        # Replace numbers (0-9) with space
+        if 0x30 <= code <= 0x39:
+            clean += ' '
+        elif 0x40 <= code <= 0x5A:
             clean += chr(code)
-        
+    if clean == "A":  #single A means timeout during intiials entry
+        clean = '   '
+
     # Pad or truncate to 3 characters
     clean = clean + ' ' * 3
     clean = clean[:3]
-
+   
     result = bytearray(3)
     for i in range(3):
         result[i] = ord(clean[i])
-    return result
+
+    return clean, result
 
 
 def read_high_scores():
@@ -100,13 +106,6 @@ def read_high_scores():
     if "HighScores" not in S.gdata:
         log.log("HighScores configuration missing")
         return highScores
-
-    def _decode_initials(initial_bytes):
-        """
-        Custom decode for initials: replace '@' with ' ', allow only ASCII 0x40-0x5A. Returns empty string if result is single 'A'.
-        """
-        result = ''.join(' ' if b == 0x40 or not (0x41 <= b <= 0x5A) else chr(b) for b in initial_bytes[:3]).strip()
-        return '' if result == 'A' else result
         
     try:
         if S.gdata["HighScores"]["Type"] < 20:  
@@ -133,8 +132,6 @@ def read_high_scores():
         
                 scoreBytes = [shadowRam[scoreAddressMSB]]   #One MSbyte
                 scoreBytes.extend( shadowRam[scoreAddress : scoreAddress + 4] ) 
-
-                #print("raw bytes",idx,scoreBytes)
 
                 highScores[idx][1] = _bcd_to_int(scoreBytes)
                 if highScores[idx][1] < 1000:
@@ -168,8 +165,9 @@ def read_high_scores():
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * S.gdata["HighScores"]["InitialSpacing"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]               
                 try:
-                    highScores[idx][0] = _decode_initials(initials_bytes)                    
-                except (UnicodeDecodeError, ValueError) as e:
+                    initials_str = ''.join(chr(b) for b in initials_bytes)
+                    highScores[idx][0], bytes_val = _initials_validate(initials_str)
+                except Exception as e:
                     log.log(f"Invalid initials data at index {idx}: {e}")
                     highScores[idx][0] = ""
                     
@@ -314,7 +312,7 @@ def write_high_scores(highScores):
                 if not isinstance(initials, str) or not initials:
                     initials = "   "
                                 
-                # Convert to bytes (simple ASCII encoding)
+                # Convert to bytes
                 initials_bytes = _initials_to_bytes(initials)                
                 shadowRam[initial_start : initial_start + 3] = initials_bytes
         
