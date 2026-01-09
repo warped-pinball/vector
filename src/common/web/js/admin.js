@@ -186,6 +186,15 @@ async function loadSwitchDiagnostics() {
       maxCol = Math.max(maxCol, entry.col);
     });
 
+    // If all entries were filtered out or no valid grid dimensions were found,
+    // treat this the same as an unsupported/empty switch diagnostics case.
+    if (switchMap.size === 0 || maxRow === 0 || maxCol === 0) {
+      const unsupportedMessage =
+        "Switch diagnostics are not yet supported for this title.";
+      grid.textContent = unsupportedMessage;
+      if (infoPanel) infoPanel.classList.add("hide");
+      return;
+    }
     grid.innerHTML = "";
     grid.style.gridTemplateColumns = `auto repeat(${maxCol}, ${cellSizePx}px)`;
     grid.style.gridTemplateRows = `auto repeat(${maxRow}, ${cellSizePx}px)`;
