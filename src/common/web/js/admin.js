@@ -101,12 +101,7 @@ async function loadSwitchDiagnostics() {
   tooltip.className = "switch-tooltip";
   document.body.appendChild(tooltip);
 
-  const renderInfo = (details) => {
-    if (!details || !details.present) {
-      infoContent.textContent = "Click a switch with data to see its details.";
-      return;
-    }
-
+  const buildSwitchInfoLines = (details) => {
     const lines = [`Row: ${details.row}`, `Column: ${details.col}`];
 
     lines.push(`Value: ${details.value}`);
@@ -114,6 +109,17 @@ async function loadSwitchDiagnostics() {
     if (details.label) {
       lines.push(`Label: ${details.label}`);
     }
+
+    return lines;
+  };
+
+  const renderInfo = (details) => {
+    if (!details || !details.present) {
+      infoContent.textContent = "Click a switch with data to see its details.";
+      return;
+    }
+
+    const lines = buildSwitchInfoLines(details);
 
     infoContent.innerHTML = "";
     lines.forEach((line) => {
@@ -133,12 +139,7 @@ async function loadSwitchDiagnostics() {
   const showTooltip = (details, event) => {
     if (!details.present) return;
 
-    const lines = [`Row: ${details.row}`, `Column: ${details.col}`];
-    lines.push(`Value: ${details.value}`);
-
-    if (details.label) {
-      lines.push(`Label: ${details.label}`);
-    }
+    const lines = buildSwitchInfoLines(details);
 
     tooltip.innerHTML = "";
     lines.forEach((line) => {
