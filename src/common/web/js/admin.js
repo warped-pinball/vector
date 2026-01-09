@@ -107,10 +107,7 @@ async function loadSwitchDiagnostics() {
       return;
     }
 
-    const lines = [
-      `Row: ${details.row}`,
-      `Column: ${details.col}`,
-    ];
+    const lines = [`Row: ${details.row}`, `Column: ${details.col}`];
 
     lines.push(`Value: ${details.value}`);
 
@@ -118,9 +115,13 @@ async function loadSwitchDiagnostics() {
       lines.push(`Label: ${details.label}`);
     }
 
-    infoContent.innerHTML = lines
-      .map((line) => `<div class="switch-info-line">${line}</div>`)
-      .join("\n");
+    infoContent.innerHTML = "";
+    lines.forEach((line) => {
+      const div = document.createElement("div");
+      div.className = "switch-info-line";
+      div.textContent = line;
+      infoContent.appendChild(div);
+    });
   };
 
   renderInfo();
@@ -139,9 +140,13 @@ async function loadSwitchDiagnostics() {
       lines.push(`Label: ${details.label}`);
     }
 
-    tooltip.innerHTML = lines
-      .map((line) => `<div class="switch-info-line">${line}</div>`)
-      .join("");
+    tooltip.innerHTML = "";
+    lines.forEach((line) => {
+      const div = document.createElement("div");
+      div.className = "switch-info-line";
+      div.textContent = line;
+      tooltip.appendChild(div);
+    });
 
     const offset = 12;
     const { clientX, clientY } = event;
@@ -165,7 +170,7 @@ async function loadSwitchDiagnostics() {
 
     const switches = Array.isArray(payload)
       ? payload
-      : payload?.switches ?? [];
+      : (payload?.switches ?? []);
 
     if (!Array.isArray(switches) || switches.length === 0) {
       const unsupportedMessage =
