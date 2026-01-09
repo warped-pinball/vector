@@ -255,6 +255,7 @@ async function loadSwitchDiagnostics() {
             `Switch ${row}-${col}: no data available`,
           );
           cell.setAttribute("aria-disabled", "true");
+          cell.setAttribute("tabindex", "-1");
         } else {
           cell.textContent = `${row}${col}`;
           const value = Number(switchData.val);
