@@ -116,13 +116,13 @@ async function loadSwitchDiagnostics() {
     }
 
     // Use DOM manipulation instead of innerHTML to prevent XSS
-    infoContent.innerHTML = "";
-    lines.forEach((line) => {
+    const elements = lines.map((line) => {
       const div = document.createElement("div");
       div.className = "switch-info-line";
       div.textContent = line;
-      infoContent.appendChild(div);
+      return div;
     });
+    infoContent.replaceChildren(...elements);
   };
 
   renderInfo();
@@ -142,13 +142,13 @@ async function loadSwitchDiagnostics() {
     }
 
     // Use DOM manipulation instead of innerHTML to prevent XSS
-    tooltip.innerHTML = "";
-    lines.forEach((line) => {
+    const elements = lines.map((line) => {
       const div = document.createElement("div");
       div.className = "switch-info-line";
       div.textContent = line;
-      tooltip.appendChild(div);
+      return div;
     });
+    tooltip.replaceChildren(...elements);
 
     const offset = 12;
     const { clientX, clientY } = event;
