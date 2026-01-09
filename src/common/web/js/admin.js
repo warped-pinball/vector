@@ -200,18 +200,22 @@ async function loadSwitchDiagnostics() {
       return;
     }
     grid.innerHTML = "";
+    grid.setAttribute("role", "grid");
     grid.style.gridTemplateColumns = `auto repeat(${maxCol}, ${cellSizePx}px)`;
     grid.style.gridTemplateRows = `auto repeat(${maxRow}, ${cellSizePx}px)`;
 
     // Top-left spacer
     const spacer = document.createElement("div");
     spacer.classList.add("switch-header");
+    spacer.setAttribute("role", "presentation");
     grid.appendChild(spacer);
 
     // Column headers
     for (let col = 1; col <= maxCol; col += 1) {
       const header = document.createElement("div");
       header.classList.add("switch-header");
+      header.setAttribute("role", "columnheader");
+      header.setAttribute("aria-label", `Column ${col}`);
       header.textContent = col;
       grid.appendChild(header);
     }
@@ -221,12 +225,15 @@ async function loadSwitchDiagnostics() {
     for (let row = 1; row <= maxRow; row += 1) {
       const rowHeader = document.createElement("div");
       rowHeader.classList.add("switch-header");
+      rowHeader.setAttribute("role", "rowheader");
+      rowHeader.setAttribute("aria-label", `Row ${row}`);
       rowHeader.textContent = row;
       grid.appendChild(rowHeader);
 
       for (let col = 1; col <= maxCol; col += 1) {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
+        cell.setAttribute("role", "gridcell");
 
         const key = `${row}-${col}`;
         const switchData = switchMap.get(key);
@@ -243,18 +250,35 @@ async function loadSwitchDiagnostics() {
 
         if (!hasValue) {
           cell.classList.add("missing");
+          cell.setAttribute(
+            "aria-label",
+            `Switch ${row}-${col}: no data available`,
+          );
+          cell.setAttribute("aria-disabled", "true");
+          cell.setAttribute("tabindex", "-1");
         } else {
+          cell.setAttribute("tabindex", "0");
           cell.textContent = `${row}${col}`;
           const value = Number(switchData.val);
           let statusClass = "green";
+          let statusText = "good";
 
           if (value === 0) {
             statusClass = "red";
+            statusText = "needs attention";
           } else if (value < 50) {
             statusClass = "yellow";
+            statusText = "warning";
           }
 
           cell.classList.add(statusClass);
+
+          // Build descriptive aria-label
+          let ariaLabel = `Switch ${row}-${col}, status: ${statusText}, value: ${value}`;
+          if (details.label) {
+            ariaLabel += `, ${details.label}`;
+          }
+          cell.setAttribute("aria-label", ariaLabel);
         }
 
         cell.addEventListener("mouseenter", (event) => {
@@ -269,11 +293,12 @@ async function loadSwitchDiagnostics() {
 
         cell.addEventListener("mouseleave", hideTooltip);
 
-        cell.addEventListener("click", () => {
+        const handleActivation = () => {
           hideTooltip();
 
           if (selectedCell) {
             selectedCell.classList.remove("selected");
+            selectedCell.setAttribute("aria-selected", "false");
           }
 
           if (!details.present) {
@@ -284,8 +309,21 @@ async function loadSwitchDiagnostics() {
 
           selectedCell = cell;
           cell.classList.add("selected");
+          cell.setAttribute("aria-selected", "true");
           renderInfo(details);
-        });
+        };
+
+        cell.addEventListener("click", handleActivation);
+
+        // Only add keyboard event listener to enabled cells
+        if (hasValue) {
+          cell.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleActivation();
+            }
+          });
+        }
 
         grid.appendChild(cell);
       }

@@ -133,7 +133,9 @@
   }
 
   .switch-cell.selected {
-    box-shadow: 0 0 0 2px #60a5fa, inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 0 2px #60a5fa,
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
   .switch-info-panel {
@@ -162,7 +164,8 @@
     font-size: 0.85rem;
     line-height: 1.25rem;
     pointer-events: none;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
       0 4px 6px -4px rgba(0, 0, 0, 0.1);
     display: none;
   }
@@ -521,20 +524,32 @@
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
   </section>
   <section>
-    <h3>Switch Diagnostics</h3>
+    <h3 id="switch-diagnostics-heading">Switch Diagnostics</h3>
     <p>
       Check the health of your switch matrix. Each switch is marked
       green/yellow/red based on how many points have been scored since the last
       time it was closed.
     </p>
-    <button id="switch-diagnostics-refresh" class="secondary">
-      Refresh
-    </button>
+    <button id="switch-diagnostics-refresh" class="secondary">Refresh</button>
     <div class="switch-diagnostics">
-      <div class="switch-grid-container">
-        <div id="switch-diagnostics-grid" class="switch-grid"></div>
+      <div
+        class="switch-grid-container"
+        role="region"
+        aria-labelledby="switch-diagnostics-heading"
+      >
+        <div
+          id="switch-diagnostics-grid"
+          class="switch-grid"
+          aria-label="Switch matrix grid showing switch health status"
+        ></div>
       </div>
-      <div id="switch-info-panel" class="switch-info-panel">
+      <div
+        id="switch-info-panel"
+        class="switch-info-panel"
+        role="complementary"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         <h4>Switch Info</h4>
         <div id="switch-info-content" class="switch-info-content">
           Click a switch to see its details.
