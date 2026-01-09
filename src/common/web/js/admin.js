@@ -233,7 +233,6 @@ async function loadSwitchDiagnostics() {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
         cell.setAttribute("role", "gridcell");
-        cell.setAttribute("tabindex", "0");
 
         const key = `${row}-${col}`;
         const switchData = switchMap.get(key);
@@ -257,6 +256,7 @@ async function loadSwitchDiagnostics() {
           cell.setAttribute("aria-disabled", "true");
           cell.setAttribute("tabindex", "-1");
         } else {
+          cell.setAttribute("tabindex", "0");
           cell.textContent = `${row}${col}`;
           const value = Number(switchData.val);
           let statusClass = "green";
