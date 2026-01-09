@@ -1369,7 +1369,7 @@ No structured response documented.
 <a id="api-update-check"></a>
 ## `/api/update/check`
 
-- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1843)
+- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1852)
 - Cooldown: 10s
 
 Get the metadata for the latest available software version. This does not download or apply the update.
@@ -1399,7 +1399,7 @@ No parameters inferred.
 <a id="api-update-apply"></a>
 ## `/api/update/apply`
 
-- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1878)
+- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1887)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Download and apply a software update from the provided URL.
@@ -1429,7 +1429,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1931)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1940)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1453,7 +1453,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1954)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1963)
 
 
 No description provided.
@@ -1469,7 +1469,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1959)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1968)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
