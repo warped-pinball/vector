@@ -314,12 +314,15 @@ async function loadSwitchDiagnostics() {
 
         cell.addEventListener("click", handleActivation);
 
-        cell.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            handleActivation();
-          }
-        });
+        // Only add keyboard event listener to enabled cells
+        if (hasValue) {
+          cell.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleActivation();
+            }
+          });
+        }
 
         grid.appendChild(cell);
       }
