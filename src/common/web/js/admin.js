@@ -280,6 +280,14 @@ async function loadSwitchDiagnostics() {
   } catch (error) {
     console.error("Failed to load switch diagnostics", error);
     grid.textContent = "Failed to load switch diagnostics.";
+
+    // Ensure a clean error state: hide info panel and remove tooltip
+    if (infoPanel) {
+      infoPanel.classList.add("hide");
+    }
+    if (tooltip && tooltip.parentNode) {
+      tooltip.remove();
+    }
   } finally {
     if (refreshButton) refreshButton.disabled = false;
   }
