@@ -1,6 +1,11 @@
-# System 9 & 11 WiFi App Note: New Game ROM Profile
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+  <h1 style="margin: 0;">System 9 & 11 WiFi App Note: New Game ROM Profile</h1>
+  <button onclick="window.print()" style="white-space: nowrap;">
+    <span aria-hidden="true">🖨️</span> Print This Guide
+  </button>
+</div>
 
-Back to [all guides](../index.md).
+[Back to All Guides](../index.md)
 
 Collect the data needed to add support for new System 9 or 11 titles.
 
