@@ -74,7 +74,10 @@ def copy_files_to_pico(build_dir, pico_port):
 
 
 def restart_pico(pico_port):
-    print("Restarting the Pico...")
+    print("Restarting the Pico...disabled")
+    return
+
+
     cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
@@ -192,7 +195,7 @@ def main():
     parser.add_argument(
         "--wipe-config",
         action="store_true",
-        help="Wipe config data on Pico after copying.",
+        help="Wipe config data on Pico after copying (default: do not wipe).",
     )
     parser.add_argument(
         "--apply-local-config",
@@ -208,12 +211,17 @@ def main():
     args = parser.parse_args()
 
     pico_port = args.port if args.port else autodetect_pico_port()
+    print ("PICO PORT      ----------------->>> ", pico_port)
 
     wipe_pico(pico_port)
 
     copy_files_to_pico(args.build_dir, pico_port)
 
-    wipe_config_data(pico_port)
+    if args.wipe_config:
+        wipe_config_data(pico_port)
+        apply_local_config_to_pico(pico_port, config_file=config_file)
+    else:
+        print("Skipping wipe_config_data and apply_local_config_to_pico steps (default)")
 
     # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
     config_file = "dev/config.json"
@@ -224,9 +232,10 @@ def main():
     elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
         config_file = "dev/config_em.json"
 
-    apply_local_config_to_pico(pico_port, config_file=config_file)
+    # apply_local_config_to_pico(pico_port, config_file=config_file)
 
-    write_test_data(pico_port)
+    if args.test_data:
+        write_test_data(pico_port)
 
     restart_pico(pico_port)
 

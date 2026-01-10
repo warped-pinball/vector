@@ -11,27 +11,27 @@ HDWR00 = const("HDWR00: Unknown Hardware Error")
 HDWR01 = const("HDWR01: Early Bus Activity")
 HDWR02 = const("HDWR02: No Bus Activity")
 
-ALL_HDWR = [HDWR00, HDWR01, HDWR02]
+ALL_HDWR = [HDWR00[:6], HDWR01[:6], HDWR02[:6]]
 
 # Software Faults
 SFWR00 = const("SFWR00: Unknown Software Error")
 SFTW01 = const("SFTW01: Drop Through")
 SFTW02 = const("SFTW02: async loop interrupted")
 
-ALL_SFWR = [SFWR00, SFTW01, SFTW02]
+ALL_SFWR = [SFWR00[:6], SFTW01[:6], SFTW02[:6]]
 
 # Configuration Faults
 CONF00 = const("CONF00: Unknown Configuration Error")
 CONF01 = const("CONF01: Invalid Configuration")
 
-ALL_CONF = [CONF00, CONF01]
+ALL_CONF = [CONF00[:6], CONF01[:6]]
 
 # WiFi Faults
 WIFI00 = const("WIFI00: Unknown Wifi Error")
 WIFI01 = const("WIFI01: Invalid Wifi Credentials")
 WIFI02 = const("WIFI02: No Wifi Signal")
 
-ALL_WIFI = [WIFI00, WIFI01, WIFI02]
+ALL_WIFI = [WIFI00[:6], WIFI01[:6], WIFI02[:6]]
 
 DUNO00 = const("DUNO00: Unknown Error")
 ALL = ALL_HDWR + ALL_SFWR + ALL_CONF + ALL_WIFI + [DUNO00]
@@ -93,6 +93,7 @@ enableWS2812led = None
 LED_Out = None
 sequence = [L.BLACK]
 index = 0
+update_sequence_continuous=True
 
 
 def isChip2350():
@@ -102,7 +103,7 @@ def isChip2350():
     chip_id = os.uname().machine
 
     if "RP2350" in chip_id and rp2 is not None:
-        print("FLT_IND: Pico 2 (RP2350) detected")
+        print("FLTS: Pico 2 (RP2350) detected")
         return True
     return False
 
@@ -113,26 +114,30 @@ def init_led():
     """
     global LED_Out, timer, enableWS2812led
     enableWS2812led = isChip2350()
-    if enableWS2812led is None:
-        enableWS2812led = isChip2350()
-        if not enableWS2812led:
-            LED_Out = machine.Pin(26, machine.Pin.OUT)
-        else:
-            L.startUp()
-            L.ledOff()
-            L.ledColor(L.BLACK)
-            timer.init(period=790, mode=machine.Timer.PERIODIC, callback=_timerCallBack)
+   
+    if not enableWS2812led:
+        LED_Out = machine.Pin(26, machine.Pin.OUT)
+    else:
+        L.startUp()
+        L.ledOff()
+        L.ledColor(L.BLACK)
+        timer.init(period=790, mode=machine.Timer.PERIODIC, callback=_timerCallBack)
+
 
 
 def _timerCallBack(_):
     """
     Timer callback to update LED color based on fault sequence
     """
-    global index, sequence
+    global index, sequence, update_sequence_continuous
+
     # If the sequence has shortened or we reached the end, reset the index
     index = index if index < len(sequence) else 0
     L.ledColor(sequence[index])
-    index += 1
+    index = index + 1
+
+    if update_sequence_continuous is True:
+        update_led_sequence()
 
 
 def get_fault_led_sequence(fault):
@@ -140,23 +145,25 @@ def get_fault_led_sequence(fault):
 
     if fault in ALL_HDWR:
         seq.append(L.RED)  # Red blink
-        seq.append({HDWR00: L.MAGENTA, HDWR01: L.YELLOW, HDWR02: L.CYAN}[fault])
+        seq.append({HDWR00: L.PURPLE, HDWR01: L.YELLOW, HDWR02: L.WHITE}[fault])
     elif fault in ALL_SFWR:
         seq.append(L.YELLOW)  # Yellow blink
-        seq.append({SFWR00: L.MAGENTA, SFTW01: L.RED, SFTW02: L.CYAN}[fault])
+        seq.append({SFWR00: L.PURPLE, SFTW01: L.RED, SFTW02: L.WHITE}[fault])
     elif fault in ALL_WIFI:
         seq.append(L.BLUE)  # Blue blink
-        seq.append({WIFI00: L.MAGENTA, WIFI01: L.YELLOW, WIFI02: L.RED}[fault])
+        seq.append({WIFI00[:6]: L.PURPLE, WIFI01[:6]: L.YELLOW, WIFI02[:6]: L.RED}[fault])
     elif fault in ALL_CONF:
-        seq.append(L.CYAN)  # Cyan blink
-        seq.append({CONF00: L.MAGENTA, CONF01: L.YELLOW}[fault])
+        seq.append(L.WHITE)  # Cyan blink
+        seq.append({CONF00: L.PURPLE, CONF01: L.YELLOW}[fault])
     elif fault == DUNO00:
-        seq.append(L.MAGENTA)  # Magenta blink
+        seq.append(L.PURPLE) 
 
-    return seq if seq else [L.MAGENTA]  # Magenta for unknown fault
+    return seq if seq else [L.PURPLE]  # Magenta for unknown fault
 
 
-def update_led_sequence():
+def update_led_sequence():  
+    global update_sequence_continuous
+
     fault_codes = [f.split(":")[0] for f in S.faults]
     led_sequences = [get_fault_led_sequence(fault) for fault in fault_codes]
 
@@ -167,12 +174,31 @@ def update_led_sequence():
         combined_sequence.extend(seq)
         combined_sequence.extend(code_sep)
 
-    if not combined_sequence:
-        combined_sequence = [L.GREEN]  # All OK
+    #if no fault then report state on LED (single color, with DIM blinks)
+    if not combined_sequence:        
+        if getattr(S, "wifi_connected", False) is True:
+            combined_sequence = [L.GREEN, L.GREEN_DIM]        # All OK
+            update_sequence_continuous=False
+        else:
+            if getattr(S, "wifi_AP_mode", False) is True:
+                combined_sequence = [L.PURPLE,L.PURPLE_DIM]   # AP mode
+            else:
+                combined_sequence = [L.YELLOW,L.YELLOW_DIM,L.YELLOW_DIM]   # trying to connect (at powerup)
+    else:
+        update_sequence_continuous=False
 
-    global sequence, index
+    global sequence
     sequence = combined_sequence
-    index = 0
+
+
+
+
+
+init_led()
+
+
+
+
 
 
 def toggleBoardLED(buttonHeld=False):
@@ -184,7 +210,7 @@ def toggleBoardLED(buttonHeld=False):
 
       -button held for power up AP mode without timer resources running yet
     """
-    init_led()
+
     global enableWS2812led
     if enableWS2812led is True:
         # ws2812 driver - control of RGB LED
