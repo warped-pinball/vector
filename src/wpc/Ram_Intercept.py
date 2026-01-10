@@ -247,7 +247,6 @@ def pio_start():
     gpio_22 = machine.Pin(22, machine.Pin.OUT)
     gpio_rw = machine.Pin(WR_PIN, machine.Pin.IN)  
 
-    gpio_led = machine.Pin(26, machine.Pin.OUT)
 
     for pin_num in range(6, 14):  # range goes from 6 to 13
         machine.Pin(pin_num, machine.Pin.IN)
