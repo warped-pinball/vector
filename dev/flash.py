@@ -74,10 +74,6 @@ def copy_files_to_pico(build_dir, pico_port):
 
 
 def restart_pico(pico_port):
-    print("Restarting the Pico...disabled")
-    return
-
-
     cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
