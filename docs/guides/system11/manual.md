@@ -1,10 +1,9 @@
-<div style="position: fixed; top: 1rem; right: 1rem; z-index: 1000;">
-  <button onclick="window.print()">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+  <h1 style="margin: 0;">System 11 WiFi Module Installation and Use Manual</h1>
+  <button onclick="window.print()" style="white-space: nowrap;">
     <span aria-hidden="true">🖨️</span> Print This Guide
   </button>
 </div>
-
-# System 11 WiFi Module Installation and Use Manual
 
 [Back to All Guides](../index.md)
 
