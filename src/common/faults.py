@@ -99,7 +99,7 @@ timer = machine.Timer()
 enableWS2812led = False
 sequence = [L.BLACK]
 index = 0
-update_sequence_continuous = True
+update_sequence_continuous = 75 #about 1 minute at timer period of 790ms
 LED_Out = None
 
 
@@ -122,9 +122,10 @@ def initialize_board_LED():
             index = index if index < len(sequence) else 0
             L.ledColor(sequence[index])
             index = index + 1
-
-            if update_sequence_continuous is True:
+            
+            if update_sequence_continuous > 0:
                 update_led_sequence()
+                update_sequence_continuous -= 1
 
         L.startUp()
         L.ledOff()
@@ -156,7 +157,7 @@ def get_fault_led_sequence(fault):
 
 
 def update_led_sequence():
-    global update_sequence_continuous,sequence
+    global sequence
 
     led_sequences = [get_fault_led_sequence(fault) for fault in S.faults]
 
@@ -169,7 +170,6 @@ def update_led_sequence():
 
     if combined_sequence:
         sequence = combined_sequence
-        update_sequence_continuous = False
         return
 
     #no faults - get and report normal status
@@ -186,8 +186,7 @@ def update_led_sequence():
     if in_ap_mode():
         combined_sequence = [L.PURPLE, L.PURPLE_DIM]  # AP mode
     elif is_connected_to_wifi():
-        combined_sequence = [L.GREEN, L.GREEN_DIM]  # All OK
-        update_sequence_continuous = False
+        combined_sequence = [L.GREEN, L.GREEN_DIM]  # All OK        
     else:
         combined_sequence = [L.YELLOW, L.YELLOW_DIM, L.YELLOW_DIM]  # trying to connect (at powerup)
 
