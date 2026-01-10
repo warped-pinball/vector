@@ -2015,6 +2015,8 @@ def connect_to_wifi(initialize=False):
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
         return True
 
+    Pico_Led.start_slow_blink()
+
     from displayMessage import init as init_display
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
@@ -2040,7 +2042,7 @@ def connect_to_wifi(initialize=False):
                 faults.clear_fault(faults.ALL_WIFI)
 
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
-
+            Pico_Led.on()
             return True
 
     # If there's signal that means the credentials are wrong
@@ -2093,11 +2095,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        Pico_Led.start_slow_blink()
         connect_to_wifi(True)
-        from phew import is_connected_to_wifi
-        if is_connected_to_wifi():
-            Pico_Led.on()
         add_app_mode_routes()
         from phew.server import set_callback
 
