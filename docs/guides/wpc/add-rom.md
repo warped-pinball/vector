@@ -1,7 +1,12 @@
+<div style="position: fixed; top: 1rem; right: 1rem; z-index: 1000;">
+  <button onclick="window.print()">
+    <span aria-hidden="true">🖨️</span> Print This Guide
+  </button>
+</div>
+
 # WPC WiFi App Note: New Game ROM Profile
 
-<button onclick="window.location.href='../index.md'">Back to All Guides</button>
-<button onclick="window.print()">Print This Guide</button>
+[Back to All Guides](../index.md)
 
 Collect memory images so a new WPC title can be profiled for scoring and leaderboard support.
 

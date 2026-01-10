@@ -1,9 +1,12 @@
+<div style="position: fixed; top: 1rem; right: 1rem; z-index: 1000;">
+  <button onclick="window.print()">
+    <span aria-hidden="true">🖨️</span> Print This Guide
+  </button>
+</div>
+
 # WPC Vector Installation and Use Manual
 
-<button onclick="window.location.href='../index.md'">Back to All Guides</button>
-<button onclick="window.print()">Print This Guide</button>
-
-<button onclick="window.print()">Print This Guide</button>
+[Back to All Guides](../index.md)
 
 How the Vector board installs, what the LEDs mean, and how to bring a classic Williams/Bally WPC machine online.
 
