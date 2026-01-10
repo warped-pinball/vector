@@ -139,21 +139,21 @@ def initialize_board_LED():
 
 def get_fault_led_sequence(fault):
     seq = []
-    fault_code = fault[:6]
+    fault = fault[:6]
 
-    if fault_code in ALL_HDWR:
+    if fault in ALL_HDWR:
         seq.append(L.RED)  # Red blink
-        seq.append({HDWR00: L.PURPLE, HDWR01: L.YELLOW, HDWR02: L.WHITE}[fault])
-    elif fault_code in ALL_SFWR:
+        seq.append({HDWR00[:6]: L.PURPLE, HDWR01[:6]: L.YELLOW, HDWR02[:6]: L.WHITE}[fault])
+    elif fault in ALL_SFWR:
         seq.append(L.YELLOW)  # Yellow blink
-        seq.append({SFWR00: L.PURPLE, SFTW01: L.RED, SFTW02: L.WHITE}[fault])
-    elif fault_code in ALL_WIFI:
+        seq.append({SFWR00[:6]: L.PURPLE, SFTW01[:6]: L.RED, SFTW02[:6]: L.WHITE}[fault])
+    elif fault in ALL_WIFI:
         seq.append(L.BLUE)  # Blue blink
-        seq.append({WIFI00: L.PURPLE, WIFI01: L.YELLOW, WIFI02: L.RED}[fault])
-    elif fault_code in ALL_CONF:
+        seq.append({WIFI00[:6]: L.PURPLE, WIFI01[:6]: L.YELLOW, WIFI02[:6]: L.RED}[fault])
+    elif fault in ALL_CONF:
         seq.append(L.WHITE)  # Cyan blink
-        seq.append({CONF00: L.PURPLE, CONF01: L.YELLOW}[fault])
-    elif fault_code == DUNO00:
+        seq.append({CONF00[:6]: L.PURPLE, CONF01[:6]: L.YELLOW}[fault])
+    elif fault == DUNO00:
         seq.append(L.WHITE)
 
     return seq if seq else [L.WHITE]  # unknown fault
