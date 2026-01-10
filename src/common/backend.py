@@ -2040,8 +2040,7 @@ def connect_to_wifi(initialize=False):
                 faults.clear_fault(faults.ALL_WIFI)
 
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
-            import SharedState 
-            SharedState.wifi_connected = True
+          
             return True
 
     # If there's signal that means the credentials are wrong
@@ -2084,12 +2083,8 @@ def go(ap_mode):
 
         print("Starting in AP mode")
 
-        import SharedState 
-        SharedState.wifi_AP_mode = True
-
         from displayMessage import init as init_display
         init_display("000.000.000.000")
-        
         Pico_Led.start_fast_blink()
         add_ap_mode_routes()
         # send clients to the configure page
