@@ -638,6 +638,10 @@ window.getClaimableScores();
  * Manages live game status and animates score changes
  */
 
+// Keep showing the last live game briefly after it ends so players can read scores.
+// This is UI-only; backend reports the true game state.
+const POST_GAME_DISPLAY_HOLD_MS = 15 * 1000;
+
 // Store score history for animation calculations
 window.scoreHistory = {
   1: { changes: [], lastScore: 0, initialized: false },
@@ -645,6 +649,9 @@ window.scoreHistory = {
   3: { changes: [], lastScore: 0, initialized: false },
   4: { changes: [], lastScore: 0, initialized: false },
 };
+
+window.lastActiveGameStatus = null;
+window.lastActiveGameTimestamp = null;
 
 // Firework effect settings
 window.fireworkSettings = {
@@ -935,10 +942,14 @@ window.processScoreChange = function (scoreElement, playerId, newScore) {
 /**
  * Update ball in play status
  * @param {Object} data - Game status data
+ * @param {boolean} showGameOver - Whether to display "Game Over" instead of ball number (default: false)
  */
-window.updateBallInPlay = function (data) {
+window.updateBallInPlay = function (data, showGameOver = false) {
   const ballInPlay = document.getElementById("live-ball-in-play");
-  if (data.BallInPlay > 0) {
+  if (showGameOver) {
+    ballInPlay.innerText = "Game Over";
+    ballInPlay.classList.remove("hide");
+  } else if (data.BallInPlay > 0) {
     ballInPlay.innerText = `Ball in Play: ${data.BallInPlay}`;
     ballInPlay.classList.remove("hide");
   } else {
@@ -953,12 +964,69 @@ window.getGameStatus = async function () {
   // Fetch data from API
   const data = await window.fetchGameStatus();
   const gameStatus = document.getElementById("game-status");
+  const now = Date.now();
 
   // Exit if no status element
   if (!gameStatus) return;
 
+  if (data && data.GameActive === true) {
+    window.lastActiveGameStatus = data;
+    window.lastActiveGameTimestamp = now;
+  }
+
+  const hasRecentGame =
+    window.lastActiveGameTimestamp !== null &&
+    now - window.lastActiveGameTimestamp < POST_GAME_DISPLAY_HOLD_MS;
+
+  let effectiveData;
+  if (hasRecentGame) {
+    let isNewGame = false;
+
+    if (
+      data &&
+      data.GameActive === true &&
+      window.lastActiveGameStatus &&
+      window.lastActiveGameStatus.GameActive === true
+    ) {
+      const currentScores = Array.isArray(data.Scores) ? data.Scores : [];
+      const lastScores = Array.isArray(window.lastActiveGameStatus.Scores)
+        ? window.lastActiveGameStatus.Scores
+        : [];
+
+      const normalizeScore = function (value) {
+        const n = parseInt(value, 10);
+        return isNaN(n) ? 0 : n;
+      };
+
+      const allCurrentZero =
+        currentScores.length > 0 &&
+        currentScores.every(function (s) {
+          return normalizeScore(s) === 0;
+        });
+
+      const allLastZero =
+        lastScores.length > 0 &&
+        lastScores.every(function (s) {
+          return normalizeScore(s) === 0;
+        });
+
+      if (allCurrentZero && !allLastZero) {
+        isNewGame = true;
+      }
+    }
+
+    if (isNewGame) {
+      window.lastActiveGameStatus = data;
+      window.lastActiveGameTimestamp = now;
+      effectiveData = data;
+    } else {
+      effectiveData = window.lastActiveGameStatus;
+    }
+  } else {
+    effectiveData = data;
+  }
   // If game not active, hide status and exit
-  if (data.GameActive !== true) {
+  if (!effectiveData || effectiveData.GameActive !== true) {
     gameStatus.classList.add("hide");
     // Reset all scores to zero when game is not active
     const players = document.getElementById("live-players");
@@ -987,7 +1055,7 @@ window.getGameStatus = async function () {
 
     if (!tag || !scoreElement) continue;
 
-    const newScore = data.Scores[i - 1] || 0;
+    const newScore = effectiveData.Scores[i - 1] || 0;
 
     // Hide players with no score
     if (newScore === 0) {
@@ -1008,7 +1076,13 @@ window.getGameStatus = async function () {
   }
 
   // Update ball in play display
-  window.updateBallInPlay(data);
+  // Show "Game Over" if we're in the hold period after game ended
+  const shouldShowGameOver =
+    hasRecentGame &&
+    data &&
+    data.GameActive === false &&
+    effectiveData !== data;
+  window.updateBallInPlay(effectiveData, shouldShowGameOver);
 };
 
 window.scoreEditMode = false;

@@ -19,6 +19,18 @@ def read_configuration():
 
 
 def edit_configuration(config, extras):
+    # Empty the input buffer at the start
+    import sys
+    import select
+    while True:
+        if select.select([sys.stdin], [], [], 0)[0]:
+            try:
+                sys.stdin.read(1)
+            except Exception:
+                break
+        else:
+            break
+        
     print("Current Configuration:")
     for key, value in reversed(list(config.items())):
         print(f"{key}: ({value})")
