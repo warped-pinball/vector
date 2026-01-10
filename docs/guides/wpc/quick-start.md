@@ -62,4 +62,4 @@ Removing classic game chips carries risk. Damage is possible and not the respons
 | <img src="../../img/wpc/quick_start/WPC_RottenDog_install.jpg" alt="Midway/Williams WPC-95 install photo" width="280"> | RottenDog CPU | Any |
 
 
-This Warped Pinball product is patent pending.
+
