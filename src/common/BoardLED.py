@@ -12,16 +12,16 @@ import rp2
 
 
 # Color definitions for board LEDs
-RED     = 0x000C00
-GREEN   = 0x0C0000
+RED         = 0x000C00
+GREEN       = 0x0C0000
 GREEN_DIM   = 0x070000
-BLUE    = 0x00000C
+BLUE        = 0x00000C
 YELLOW      = 0x0C0C00
 YELLOW_DIM  = 0x050500
 PURPLE      = 0x000C0C 
 PURPLE_DIM  = 0x000505
-WHITE   = 0x0C0C0C
-BLACK   = 0x000000
+WHITE       = 0x0C0C0C
+BLACK       = 0x000000
 
 
 
@@ -140,29 +140,3 @@ def ledColor(c):
     sm_led.put(c<<8)
   
 
-
-# Basic test block for manual testing
-if __name__ == "__main__":
-    import time
-
-    print("BoardLED test: Starting up...")
-    startUp()
-
-    colors = [
-        ("RED", RED),
-        ("GREEN", GREEN),
-        ("BLUE", BLUE),
-        ("YELLOW", YELLOW),
-        ("PURPLE", PURPLE),
-        ("WHITE", WHITE),
-        ("BLACK", BLACK),
-    ]
-
-    for name, color in colors:
-        print(f"Setting LED color: {name}")
-        ledOn()
-        ledColor(color)
-        time.sleep(3)
-
-    print("Toggling LED off")
-    ledOff()

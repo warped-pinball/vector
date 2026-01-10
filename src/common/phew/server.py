@@ -220,7 +220,7 @@ def copy_to_fram():
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
-        faults.toggleBoardLED()
+        faults.toggle_board_LED()
 
 
 _scheduled_tasks = []
