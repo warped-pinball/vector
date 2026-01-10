@@ -26,7 +26,9 @@ AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 
 timer = machine.Timer()
+led_board = None
 
+faults.initialize_board_LED()
 
 def error_toggle(timer):
     faults.toggle_board_LED()
@@ -91,7 +93,7 @@ def check_ap_button():
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
-            faults.toggle_board_LED(buttonHeld=True)
+            faults.toggle_board_LED(button_held=True)
             time.sleep(0.1)
         time.sleep(3)
         return True  # AP mode
@@ -115,6 +117,8 @@ This work is licensed under CC BY-NC 4.0
 
 
 ap_mode = check_ap_button()
+print("Main: AP mode = ", ap_mode)
+
 bus_activity_fault = bus_activity_fault_check()
 if bus_activity_fault:
     set_error_led()

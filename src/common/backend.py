@@ -2093,8 +2093,11 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
+        Pico_Led.start_slow_blink()
         connect_to_wifi(True)
-        Pico_Led.on()
+        from phew import is_connected_to_wifi
+        if is_connected_to_wifi():
+            Pico_Led.on()
         add_app_mode_routes()
         from phew.server import set_callback
 

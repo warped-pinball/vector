@@ -115,10 +115,10 @@ def ledOff():
      sm_led.exec("set(y, 1)") 
      ledState=0
 
-def ledtoggle(buttonHeld=False):
+def ledtoggle(button_held=False):
     # toggle also auto updates state!
     global ledState
-    if buttonHeld is False:
+    if button_held is False:
         if ledState==0:
             ledOn()        
         else:

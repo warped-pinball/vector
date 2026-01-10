@@ -169,6 +169,7 @@ def update_led_sequence():
 
     if combined_sequence:
         sequence = combined_sequence
+        update_sequence_continuous = False
         return
 
     #no faults - get and report normal status
@@ -186,13 +187,14 @@ def update_led_sequence():
         combined_sequence = [L.PURPLE, L.PURPLE_DIM]  # AP mode
     elif is_connected_to_wifi():
         combined_sequence = [L.GREEN, L.GREEN_DIM]  # All OK
+        update_sequence_continuous = False
     else:
         combined_sequence = [L.YELLOW, L.YELLOW_DIM, L.YELLOW_DIM]  # trying to connect (at powerup)
 
     sequence = combined_sequence
 
 
-def toggle_board_LED(buttonHeld=False):
+def toggle_board_LED(button_held=False):
     """
     Legacy interface to led function
       -works if we are on a PICO1 without BoardLED running
@@ -204,7 +206,7 @@ def toggle_board_LED(buttonHeld=False):
     global enableWS2812led
     if enableWS2812led is True:
         # ws2812 driver - control of RGB LED
-        L.ledtoggle(buttonHeld)
+        L.ledtoggle(button_held)
 
     if LED_Out is not None:
         # old single color led only
