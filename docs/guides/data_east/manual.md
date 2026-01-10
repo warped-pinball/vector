@@ -1,6 +1,7 @@
 # Data East Installation and Use Manual
 
-Back to [all guides](../index.md).
+<button onclick="window.location.href='../index.md'">Back to All Guides</button>
+<button onclick="window.print()">Print This Guide</button>
 
 Indicators, installation steps, WiFi setup, and operational notes for Data East Vector.
 

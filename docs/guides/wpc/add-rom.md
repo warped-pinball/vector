@@ -1,6 +1,7 @@
 # WPC WiFi App Note: New Game ROM Profile
 
-Back to [all guides](../index.md).
+<button onclick="window.location.href='../index.md'">Back to All Guides</button>
+<button onclick="window.print()">Print This Guide</button>
 
 Collect memory images so a new WPC title can be profiled for scoring and leaderboard support.
 

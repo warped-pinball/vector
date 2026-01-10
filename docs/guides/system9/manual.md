@@ -1,6 +1,7 @@
 # System 9 WiFi Module Installation and Use Manual
 
-Back to [all guides](../index.md).
+<button onclick="window.location.href='../index.md'">Back to All Guides</button>
+<button onclick="window.print()">Print This Guide</button>
 
 Setup and operation details for SYS9.WiFi.
 

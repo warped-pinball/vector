@@ -1,6 +1,9 @@
 # WPC Vector Installation and Use Manual
 
-Back to [all guides](../index.md).
+<button onclick="window.location.href='../index.md'">Back to All Guides</button>
+<button onclick="window.print()">Print This Guide</button>
+
+<button onclick="window.print()">Print This Guide</button>
 
 How the Vector board installs, what the LEDs mean, and how to bring a classic Williams/Bally WPC machine online.
 
