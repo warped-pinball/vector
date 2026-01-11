@@ -5,7 +5,7 @@
   </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 How the Vector board installs, what the LEDs mean, and how to bring a classic Williams/Bally WPC machine online.
 

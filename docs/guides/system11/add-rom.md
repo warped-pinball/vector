@@ -5,7 +5,7 @@
   </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 Collect the data needed to add support for new System 9 or 11 titles.
 
