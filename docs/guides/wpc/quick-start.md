@@ -56,10 +56,7 @@ Removing classic game chips carries risk. Damage is possible and not the respons
 
 | Installation picture | WPC version | Titles |
 | --- | --- | --- |
-| <img src="../../img/wpc/quick_start/WPC_install.jpg" alt="Williams/Bally WPC install photo" width="280"> | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
-| <img src="../../img/wpc/quick_start/WPC_S_install.jpg" alt="Williams/Bally WPC-S install photo" width="280"> | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
-| <img src="../../img/wpc/quick_start/WPC_95_install.jpg" alt="Midway/Williams WPC-95 install photo" width="280"> | Williams/Bally WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
-| <img src="../../img/wpc/quick_start/WPC_RottenDog_install.jpg" alt="Midway/Williams WPC-95 install photo" width="280"> | RottenDog CPU | Any |
-
-
-
+| ![Williams/Bally WPC install photo](../../img/wpc/quick_start/WPC_install.png){ width=280 } | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
+| ![Williams/Bally WPC-S install photo](../../img/wpc/quick_start/WPC_S_install.jpg){ width=280 } | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
+| ![Midway/Williams WPC-95 install photo](../../img/wpc/quick_start/WPC_95_install.jpg){ width=280 } | Williams/Bally WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
+| ![Midway/Williams WPC-95 install photo](../../img/wpc/quick_start/WPC_RottenDog_install.jpg){ width=280 } | RottenDog CPU | Any |
