@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 from typing import Optional
@@ -40,7 +41,12 @@ def flash_single(system: str, port: Optional[str], write_config: Optional[str]) 
             args.append("--write-config")
         else:
             args.extend(["--write-config", write_config])
-    return run_python_script("dev/flash.py", args, wait=True)
+    # run_python_script(wait=True) returns a CompletedProcess. We want an int return code.
+    result = run_python_script("dev/flash.py", args, wait=True, check=False)
+    if isinstance(result, subprocess.CompletedProcess):
+        return result.returncode
+    # Defensive fallback (shouldn't happen with wait=True)
+    return int(getattr(result, "returncode", 1))
 
 
 def open_repl_wrapper(port: Optional[str]) -> None:
@@ -83,7 +89,7 @@ def main(argv: list[str]) -> int:
 
     open_repl_wrapper(args.port)
 
-    return
+    return 0
 
 
 if __name__ == "__main__":
