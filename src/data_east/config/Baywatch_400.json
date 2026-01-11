@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Baywatch",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 463
+    },
+    "DisplayMessage": {
+        "Type": 20,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7755,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7769,
+        "ChecksumResultAdr": 8157
+    },
+    "HighScores": {
+        "Type": 25,
+        "ScoreAdr": 5756,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "Multiplier": 1,
+        "InitialAdr": 5818,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 25,
+        "Players": 465,
+        "PlayerUp": 462,
+        "ScoreAdr": 1758,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "Multiplier": 1
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Leathal Weapon III",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 419
+    },
+    "DisplayMessage": {
+        "Type": 20,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 7009,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7769,
+        "ChecksumResultAdr": 8128
+    },
+    "HighScores": {
+        "Type": 24,
+        "ScoreAdr": 5756,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 5818,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 24,
+        "Players": 421,
+        "PlayerUp": 418,
+        "ScoreAdr": 433,
+        "BytesInScore": 5,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}
