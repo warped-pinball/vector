@@ -1,6 +1,11 @@
-# System WPC WiFi Module Quick Start Guide
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+    <h1 style="margin: 0;">System WPC WiFi Module Quick Start Guide</h1>
+    <button onclick="window.print()" style="white-space: nowrap;">
+        <span aria-hidden="true">🖨️</span> Print This Guide
+    </button>
+</div>
 
-Back to [all guides](../index.md).
+[Back to All Guides](../index.md)
 
 ## Overview
 
@@ -51,8 +56,10 @@ Removing classic game chips carries risk. Damage is possible and not the respons
 
 | Installation picture | WPC version | Titles |
 | --- | --- | --- |
-| <img src="https://github.com/user-attachments/assets/26d4b1bf-9be6-4b3b-9cf9-5b71ff76a5d7" alt="Williams/Bally WPC install photo" width="280"> | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
-| <img src="https://github.com/user-attachments/assets/2888dac3-a575-4b9d-b037-1703e4dea2a0" alt="Williams/Bally WPC-95 install photo" width="280"> | Williams/Bally WPC-95 | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
-| <img src="https://github.com/user-attachments/assets/9b90fb67-893e-4b25-b5bf-bad0944858ac" alt="Midway/Williams WPC-95 install photo" width="280"> | Midway/Williams WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
+| <img src="../../img/wpc/quick_start/WPC_install.jpg" alt="Williams/Bally WPC install photo" width="280"> | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
+| <img src="../../img/wpc/quick_start/WPC_S_install.jpg" alt="Williams/Bally WPC-S install photo" width="280"> | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
+| <img src="../../img/wpc/quick_start/WPC_95_install.jpg" alt="Midway/Williams WPC-95 install photo" width="280"> | Williams/Bally WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
+| <img src="../../img/wpc/quick_start/WPC_RottenDog_install.jpg" alt="Midway/Williams WPC-95 install photo" width="280"> | RottenDog CPU | Any |
 
-This Warped Pinball product is patent pending.
+
+
