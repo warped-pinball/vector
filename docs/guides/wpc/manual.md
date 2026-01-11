@@ -27,7 +27,7 @@ Vector sits between the processor chip and the game’s main board so it can act
 <table>
   <tr>
     <td style="vertical-align: top; padding-right: 16px;">
-      <img src="../../img/wpc/manual/WPC-Installation-manual_page_1_2.png" alt="img1" width="350">
+      ![img1](/img/wpc/manual/WPC-Installation-manual_page_1_2.png){ width=350 }
     </td>
     <td style="vertical-align: top;">
       <h3>WiFi Status LED</h3>
@@ -54,7 +54,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 | Installation picture | WPC version | Titles |
 | --- | --- | --- |
-| <img src="../../img/wpc/manual/WPC-Installation-manual_page_8_1.png" alt="Williams/Bally WPC install photo" width="280"> | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
+| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC-Installation-manual_page_8_1.png){ width=280 } | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
 | <img src="https://github.com/user-attachments/assets/2888dac3-a575-4b9d-b037-1703e4dea2a0" alt="Williams/Bally WPC-95 install photo" width="280"> | Williams/Bally WPC-95 | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
 | <img src="https://github.com/user-attachments/assets/9b90fb67-893e-4b25-b5bf-bad0944858ac" alt="Midway/Williams WPC-95 install photo" width="280"> | Midway/Williams WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
 
