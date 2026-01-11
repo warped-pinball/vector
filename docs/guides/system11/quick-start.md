@@ -1,6 +1,11 @@
-# System 11 WiFi Quick Start (v1.1)
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+  <h1 style="margin: 0;">System 11 WiFi Quick Start (v1.1)</h1>
+  <button onclick="window.print()" style="white-space: nowrap;">
+    <span aria-hidden="true">🖨️</span> Print This Guide
+  </button>
+</div>
 
-Back to [all guides](../index.md).
+
 
 Fast-path instructions for installing the Warped Pinball System 11 WiFi board.
 
