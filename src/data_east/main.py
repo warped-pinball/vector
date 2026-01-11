@@ -42,12 +42,10 @@ led_board = None
 
 
 def error_toggle(timer):
-    led_board.toggle()
+    faults.toggle_board_LED()
 
 
 def set_error_led():
-    global led_board
-    led_board = machine.Pin(26, machine.Pin.OUT)
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
 
 
@@ -106,7 +104,7 @@ def check_ap_button():
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
-            LED_Out.toggle()
+            faults.toggle_board_LED(button_held=True)
             time.sleep(0.1)
         time.sleep(3)
         return True  # AP mode
