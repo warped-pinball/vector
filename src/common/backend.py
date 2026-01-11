@@ -1559,6 +1559,18 @@ def app_version(request):
 
 @add_route("/api/uid")
 def app_uid(request):
+    """
+    @api
+    summary: Get the unique hardware identifier
+    response:
+      status_codes:
+        - code: 200
+          description: UID returned
+      body:
+        description: Unique hardware identifier as a hex string
+        example: {"uid": "1a2b3c4d5e6f"}
+    @end
+    """
     from machine import unique_id
 
     return {"uid": hexlify(unique_id()).decode()}
