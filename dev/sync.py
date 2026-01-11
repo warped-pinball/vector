@@ -2,22 +2,21 @@
 """Build firmware and flash boards using Python."""
 
 import argparse
-import os
 import json
-import subprocess
+import os
 import sys
-import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
-from detect_boards import detect_boards, detect_board_type
-from common import run_python_script, open_repl
+from detect_boards import detect_board_type, detect_boards
+
+from common import open_repl, run_python_script
 
 REPL_ATTEMPTS = 10
 REPL_DELAY = 1
 
 
-def flash_single(system: str, port: Optional[str]) -> int:
+def flash_single(system: str, port: Optional[str], write_config: Optional[str]) -> int:
     """Build *system* firmware and flash a single board."""
     hardware = system
     # If system is 'dev' or not a valid hardware folder under src, try to auto-detect
@@ -35,8 +34,12 @@ def flash_single(system: str, port: Optional[str]) -> int:
     args = [build_dir]
     if port:
         args.extend(["--port", port])
-    result = run_python_script("dev/flash.py", args, wait=True)
-    return result.returncode
+    if write_config is not None:
+        if write_config == "__DEFAULT__":
+            args.append("--write-config")
+        else:
+            args.extend(["--write-config", write_config])
+    return run_python_script("dev/flash.py", args, wait=True)
 
 
 def open_repl_wrapper(port: Optional[str]) -> None:
@@ -48,6 +51,13 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Build and flash Vector firmware")
     parser.add_argument("system", nargs="?", default="auto", help="Target system or 'auto'")
     parser.add_argument("port", nargs="?", help="Serial port for manual flashing")
+    parser.add_argument(
+        "--write-config",
+        nargs="?",
+        const="__DEFAULT__",
+        metavar="PATH",
+        help=("Pass through to flash.py: wipe config on Pico and write configuration from PATH. " "If provided with no PATH, uses the default config for the selected build_dir."),
+    )
     args = parser.parse_args(argv[1:])
 
     if args.system == "auto":
@@ -56,9 +66,9 @@ def main(argv: list[str]) -> int:
             print("No boards detected. Aborting.")
             return 1
         print("Boards detected:", json.dumps(mapping))
-        return build_and_flash(mapping)
+        return build_and_flash(mapping, write_config=args.write_config)
 
-    rc = flash_single(args.system, args.port)
+    rc = flash_single(args.system, args.port, args.write_config)
     if rc == 0:
         open_repl_wrapper(args.port)
     return rc

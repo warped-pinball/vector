@@ -1,0 +1,48 @@
+{
+    "GameInfo": {
+        "GameName": "Check Point",
+        "System": "DataEast",
+        "FileVer": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 20,
+        "Address": 78
+    },
+    "DisplayMessage": {
+        "Type": 0,
+        "Address": 0
+    },
+    "Adjustments": {
+        "Type": 20,
+        "CustomMessageOn": 0,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7749,
+        "ChecksumResultAdr": 7934
+    },
+    "HighScores": {
+        "Type": 20,
+        "ScoreAdr": 7582,
+        "BytesInScore": 6,
+        "ScoreSpacing": 4,
+        "Multiplier": 1,
+        "InitialAdr": 7628,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7707
+    },
+    "InPlay": {
+        "Type": 20,
+        "Players": 970,
+        "PlayerUp": 969,
+        "ScoreAdr": 16,
+        "BytesInScore": 4,
+        "ScoreSpacing": 4,
+        "Multiplier": 1
+    }
+}

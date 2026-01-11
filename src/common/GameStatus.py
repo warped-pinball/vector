@@ -54,27 +54,16 @@ def _get_ball_in_play():
     return 0
 
 
-END_HOLD_MS = 15_000
-end_hold_start = None
 gameActive = False
 
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global end_hold_start, gameActive
+    global gameActive
     data = {}
     try:
         ball = _get_ball_in_play()
-        if ball == 0:
-            if end_hold_start is None:
-                end_hold_start = time.ticks_ms()
-            else:
-                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
-                    gameActive = False
-        else:
-            # ball non 0
-            end_hold_start = None
-            gameActive = True
+        gameActive = ball != 0
 
         data["GameActive"] = gameActive
         data["BallInPlay"] = ball

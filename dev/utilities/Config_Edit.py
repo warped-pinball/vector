@@ -1,4 +1,14 @@
+
 import SPI_DataStore as datastore
+import sys
+if sys.platform == "win32":
+    import msvcrt
+
+def clear_keyboard_buffer():
+    if sys.platform == "win32":
+        while msvcrt.kbhit():
+            msvcrt.getch()
+    # For other platforms, could add termios/tty logic if needed
 
 
 def read_configuration():
@@ -9,12 +19,25 @@ def read_configuration():
 
 
 def edit_configuration(config, extras):
+    # Empty the input buffer at the start
+    import sys
+    import select
+    while True:
+        if select.select([sys.stdin], [], [], 0)[0]:
+            try:
+                sys.stdin.read(1)
+            except Exception:
+                break
+        else:
+            break
+        
     print("Current Configuration:")
     for key, value in reversed(list(config.items())):
         print(f"{key}: ({value})")
 
     print("\nEnter new values (type '-' to keep current value):")
     for key in reversed(list(config.keys())):
+        clear_keyboard_buffer()
         new_value = input(f"{key} ({config[key]}): ").strip()
         if new_value != "-":  # Only update if new_value is not "-"
             config[key] = new_value
@@ -25,6 +48,7 @@ def edit_configuration(config, extras):
 
     print("\nEnter new values (type '-' to keep current value):")
     for key in reversed(list(extras.keys())):
+        clear_keyboard_buffer()
         new_value = input(f"{key} ({extras[key]}): ").strip()
         if new_value != "-":  # Only update if new_value is not "-"
             if isinstance(extras[key], bool):

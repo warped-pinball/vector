@@ -1,0 +1,29 @@
+site_name: Vector Documentation
+site_url: https://warped-pinball.github.io/vector/
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: blue
+      accent: blue
+nav:
+  - Home: index.md
+  - Guides:
+      - WPC:
+          - Quick start: guides/wpc/quick-start.md
+          - Installation & use manual: guides/wpc/manual.md
+          - Add a ROM profile: guides/wpc/add-rom.md
+      - System 11:
+          - Quick start: guides/system11/quick-start.md
+          - Installation & use manual: guides/system11/manual.md
+          - Add a ROM profile: guides/system11/add-rom.md
+      - System 9:
+          - Installation & use manual: guides/system9/manual.md
+      - Data East:
+          - Installation & use manual: guides/data_east/manual.md
+  - Technical references:
+      - API reference: routes.md
+      - Authentication: authentication.md
+      - Network access: network.md
+      - USB transport: usb.md
+      - Peer discovery: discovery.md

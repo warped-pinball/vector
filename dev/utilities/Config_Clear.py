@@ -3,6 +3,7 @@
 
 import SPI_DataStore as datastore
 import SPI_Store
+import Adjustments
 from logger import logger_instance
 
 Log = logger_instance
@@ -12,6 +13,8 @@ def main():
     datastore.blankAll()
 
     Log.delete_log()
+
+    Adjustments.blank_all()
 
     """
     config = datastore.read_record("configuration")

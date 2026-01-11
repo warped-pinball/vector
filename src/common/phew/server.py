@@ -1,5 +1,6 @@
 import time
 
+import faults
 import machine
 import ntptime
 import uasyncio
@@ -20,6 +21,7 @@ from . import logging
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
 led_board = machine.Pin(26, machine.Pin.OUT)
 led_board.low()  # low is ON
+
 
 _routes = {}
 catchall_handler = None
@@ -222,7 +224,7 @@ def copy_to_fram():
     if MemIndex >= SRAM_DATA_LENGTH:
         MemIndex = 0
         print("FRAM: cycle complete")
-        led_board.toggle()
+        faults.toggle_board_LED()
 
 
 _scheduled_tasks = []
