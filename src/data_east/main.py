@@ -1,13 +1,8 @@
 # Data East
 
-
-
 #get DMA channels straight - allocate wifi channel now
 import Pico_Led
 Pico_Led.on()
-
-#import mmain
-
 
 # This file is part of the Warped Pinball Vector Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
@@ -30,16 +25,15 @@ from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
 
 Log = logger_instance
-
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
-LED_Out = machine.Pin(26, machine.Pin.OUT)
 
 timer = machine.Timer()
 led_board = None
 
+faults.initialize_board_LED()
 
 def error_toggle(timer):
     faults.toggle_board_LED()
