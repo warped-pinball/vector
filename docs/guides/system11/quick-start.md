@@ -5,7 +5,7 @@
   </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 Fast-path instructions for installing the Warped Pinball System 11 WiFi board.
 

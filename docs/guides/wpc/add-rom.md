@@ -5,7 +5,7 @@
   </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 Collect memory images so a new WPC title can be profiled for scoring and leaderboard support.
 
