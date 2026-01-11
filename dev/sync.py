@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
@@ -44,6 +45,7 @@ def flash_single(system: str, port: Optional[str], write_config: Optional[str]) 
 
 def open_repl_wrapper(port: Optional[str]) -> None:
     """Attempt to open an mpremote REPL, retrying briefly."""
+    print("Opening REPL...")
     open_repl(connect=port, attempts=REPL_ATTEMPTS, delay=REPL_DELAY)
 
 
@@ -66,12 +68,22 @@ def main(argv: list[str]) -> int:
             print("No boards detected. Aborting.")
             return 1
         print("Boards detected:", json.dumps(mapping))
-        return build_and_flash(mapping, write_config=args.write_config)
+        rc = build_and_flash(mapping, write_config=args.write_config)
+    else:
+        rc = flash_single(args.system, args.port, args.write_config)
 
-    rc = flash_single(args.system, args.port, args.write_config)
-    if rc == 0:
-        open_repl_wrapper(args.port)
-    return rc
+    if rc != 0:
+        print("Flashing failed: ", rc)
+        return rc
+
+    print("Flash complete.")
+
+    # delay briefly to allow the board to reset
+    time.sleep(0.5)
+
+    open_repl_wrapper(args.port)
+
+    return
 
 
 if __name__ == "__main__":

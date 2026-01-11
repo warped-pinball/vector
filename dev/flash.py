@@ -24,89 +24,59 @@ def autodetect_pico_port_or_exit():
 
 
 def wipe_pico(pico_port):
-    """Wipe the Pico filesystem using mpremote fs commands with logging."""
+    """Wipe the Pico filesystem by running a recursive delete directly on the device."""
     print("Wiping Pico's filesystem...")
-    # List root entries
-    ls = mpremote_run("fs", "ls", "/", connect=pico_port, capture_output=True)
-    if ls.returncode != 0:
-        print("mpremote fs ls failed:")
-        if ls.stdout:
-            print(ls.stdout)
-        if ls.stderr:
-            print(ls.stderr)
+
+    wipe_script = "\n".join(
+        [
+            "import os",
+            "",
+            "def _listdir(p):",
+            "    try:",
+            "        return os.listdir(p)",
+            "    except OSError:",
+            "        return os.listdir()",
+            "",
+            "def _rm_tree(p):",
+            "    # Try file first",
+            "    try:",
+            "        os.remove(p)",
+            "        return",
+            "    except OSError:",
+            "        pass",
+            "    # Then directory",
+            "    try:",
+            "        for name in _listdir(p):",
+            "            if name in ('.', '..'):",
+            "                continue",
+            "            _rm_tree(p + '/' + name)",
+            "        os.rmdir(p)",
+            "    except OSError:",
+            "        pass",
+            "",
+            "for name in _listdir('/'):",
+            "    if name in ('.', '..'):",
+            "        continue",
+            "    _rm_tree('/' + name)",
+        ]
+    )
+
+    try:
+        result = mpremote_exec(wipe_script, connect=pico_port, capture_output=True, timeout=10)
+    except subprocess.TimeoutExpired:
+        print("Error wiping Pico filesystem: operation timed out.")
         sys.exit(1)
-    text = ls.stdout or ""
-    # Parse entries per-line: mpremote may print sizes/metadata; take last token as name
-    entries: list[str] = []
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    for ln in lines:
-        token = ln.split()[-1].rstrip("/")
-        if token not in (".", ".."):
-            entries.append(token)
-    if not entries and text:
-        # Debug aid if parsing fails entirely
-        print("mpremote fs ls raw output:")
-        print(text)
-    # Deduplicate while preserving order
-    seen = set()
-    uniq = []
-    for e in entries:
-        if e not in seen:
-            seen.add(e)
-            uniq.append(e)
-    # Remove each entry using a safe per-entry recursive exec, with fs fallbacks
-    for name in uniq:
-        path = name if name.startswith("/") else f"/{name}"
-        print(f" - removing {path}")
-        remove_code = "\n".join(
-            [
-                "import os",
-                "def _rm(p):",
-                "    try:",
-                "        os.remove(p)",
-                "        return",
-                "    except OSError:",
-                "        pass",
-                "    try:",
-                "        for e in os.listdir(p):",
-                "            _rm(p + '/' + e)",
-                "        os.rmdir(p)",
-                "    except OSError:",
-                "        pass",
-                f"_rm('{path}')",
-            ]
-        )
-        try:
-            res = mpremote_exec(remove_code, connect=pico_port, capture_output=True, timeout=12)
-            if res.returncode == 0:
-                continue
-            else:
-                print(f"   exec removal returned {res.returncode}: falling back to fs")
-                if res.stdout:
-                    print(res.stdout)
-                if res.stderr:
-                    print(res.stderr)
-        except subprocess.TimeoutExpired:
-            print("   exec removal timed out; falling back to fs")
-        # Fallback attempts: try file rm, then dir rmdir
-        rm = mpremote_run("fs", "rm", path, connect=pico_port, capture_output=True)
-        if rm.returncode != 0 and not ((rm.stdout or "").find("ENOENT") != -1 or (rm.stderr or "").find("ENOENT") != -1):
-            rmdir = mpremote_run("fs", "rmdir", path, connect=pico_port, capture_output=True)
-            if rmdir.returncode != 0 and not ((rmdir.stdout or "").find("ENOENT") != -1 or (rmdir.stderr or "").find("ENOENT") != -1):
-                print(f"   failed to remove {path} via fs:")
-                if rm.stdout or rm.stderr:
-                    print("   rm output:")
-                    if rm.stdout:
-                        print(rm.stdout)
-                    if rm.stderr:
-                        print(rm.stderr)
-                if rmdir.stdout or rmdir.stderr:
-                    print("   rmdir output:")
-                    if rmdir.stdout:
-                        print(rmdir.stdout)
-                    if rmdir.stderr:
-                        print(rmdir.stderr)
-    print("Filesystem wipe complete.")
+
+    if result.returncode == 0:
+        print("Filesystem wipe complete.")
+        return
+
+    print("Error wiping Pico filesystem.")
+    if result.stdout:
+        print(result.stdout.strip())
+    if result.stderr:
+        print(result.stderr.strip())
+    sys.exit(1)
 
 
 def copy_files_to_pico(build_dir, pico_port):
