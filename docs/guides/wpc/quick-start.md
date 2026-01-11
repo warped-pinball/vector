@@ -5,7 +5,7 @@
     </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 ## Overview
 

@@ -5,7 +5,7 @@
   </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 Indicators, installation steps, WiFi setup, and operational notes for SYS11.WiFi.
 

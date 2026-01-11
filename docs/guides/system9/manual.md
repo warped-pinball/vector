@@ -5,7 +5,7 @@
    </button>
 </div>
 
-[Back to All Guides](../index.md)
+
 
 Setup and operation details for SYS9.WiFi.
 
