@@ -25,7 +25,7 @@ BLACK       = 0x000000
 
 
 
-# WS2812 serial driver with support for single color LED on same gpio
+# WS2812 serial driver with support for single color LED on same gpio  I=15
 @rp2.asm_pio(
     sideset_init=rp2.PIO.OUT_LOW,
     out_shiftdir=rp2.PIO.SHIFT_LEFT,
@@ -64,7 +64,7 @@ def ws2812():
 
     wrap()
     
-#low speed clock source for delays required in  ws2812()
+#low speed clock source for delays required in  ws2812()  I=3
 @rp2.asm_pio()
 def irq_clock():
     wrap_target()
@@ -85,14 +85,14 @@ def startUp():
     global sm_led
 
     clk_led = rp2.StateMachine(
-        6,               # state machine index
+        4,               # state machine index
         irq_clock,       
         freq=1_000_000,       
     )
     clk_led.active(1)
 
     sm_led = rp2.StateMachine(
-        7,              # state machine index
+        5,              # state machine index
         ws2812,         
         freq=8_000_000, 
         sideset_base=machine.Pin(26)
