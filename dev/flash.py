@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -74,11 +75,19 @@ def copy_files_to_pico(build_dir, pico_port):
 
 
 def restart_pico(pico_port):
-    cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"  # noqa: E702
-    result = subprocess.run(cmd, shell=True)
+    # Avoid shell quoting issues across platforms by using argv + shell=False.
+    # Prefer the mpremote executable if present; otherwise fall back to `python -m mpremote`.
+    mpremote_base_cmd = ["mpremote"] if shutil.which("mpremote") else [sys.executable, "-m", "mpremote"]
+
+    cmd = mpremote_base_cmd + ["connect", pico_port, "exec", "--no-follow", "import machine; machine.reset()"]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
     if result.returncode != 0:
         print("Error restarting the Pico.")
+        if result.stderr:
+            print(result.stderr.strip())
         sys.exit(1)
+
     print("Pico restarted.")
 
 
