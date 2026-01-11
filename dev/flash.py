@@ -74,7 +74,7 @@ def copy_files_to_pico(build_dir, pico_port):
 
 
 def restart_pico(pico_port):
-    cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
+    cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"  # noqa: E702
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error restarting the Pico.")
@@ -189,14 +189,14 @@ def main():
     )
     parser.add_argument("--wipe", action="store_true", help="Wipe Pico filesystem before copying files.")
     parser.add_argument(
-        "--wipe-config",
-        action="store_true",
-        help="Wipe config data on Pico after copying (default: do not wipe).",
-    )
-    parser.add_argument(
-        "--apply-local-config",
-        action="store_true",
-        help="Apply local config.json to Pico after copying.",
+        "--write-config",
+        nargs="?",
+        const="__DEFAULT__",
+        metavar="PATH",
+        help=(
+            "Wipe config on Pico and write configuration from PATH. "
+            "If provided with no PATH, uses the default config for the selected build_dir (dev/config.json, or dev/config_sys11.json/dev/config_wpc.json if present)."
+        ),
     )
     parser.add_argument(
         "--test-data",
@@ -207,28 +207,31 @@ def main():
     args = parser.parse_args()
 
     pico_port = args.port if args.port else autodetect_pico_port()
-    print ("PICO PORT      ----------------->>> ", pico_port)
+    print("PICO PORT      ----------------->>> ", pico_port)
 
     wipe_pico(pico_port)
 
     copy_files_to_pico(args.build_dir, pico_port)
 
-    if args.wipe_config:
+    if args.write_config is not None:
+        if args.write_config == "__DEFAULT__":
+            # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
+            config_file = "dev/config.json"
+            if args.build_dir == "build/sys11" and os.path.isfile("dev/config_sys11.json"):
+                config_file = "dev/config_sys11.json"
+            elif args.build_dir == "build/wpc" and os.path.isfile("dev/config_wpc.json"):
+                config_file = "dev/config_wpc.json"
+            elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
+                config_file = "dev/config_em.json"
+        else:
+            config_file = args.write_config
+
+        if not os.path.isfile(config_file):
+            print("Config file not found:", config_file)
+            sys.exit(1)
+
         wipe_config_data(pico_port)
         apply_local_config_to_pico(pico_port, config_file=config_file)
-    else:
-        print("Skipping wipe_config_data and apply_local_config_to_pico steps (default)")
-
-    # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
-    config_file = "dev/config.json"
-    if args.build_dir == "build/sys11" and os.path.isfile("dev/config_sys11.json"):
-        config_file = "dev/config_sys11.json"
-    elif args.build_dir == "build/wpc" and os.path.isfile("dev/config_wpc.json"):
-        config_file = "dev/config_wpc.json"
-    elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
-        config_file = "dev/config_em.json"
-
-    # apply_local_config_to_pico(pico_port, config_file=config_file)
 
     if args.test_data:
         write_test_data(pico_port)

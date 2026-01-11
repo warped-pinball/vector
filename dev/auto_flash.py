@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from itertools import cycle
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 def build_for_hardware(hardware: str, quiet: bool = False) -> str:
@@ -30,8 +30,9 @@ def build_for_hardware(hardware: str, quiet: bool = False) -> str:
     return build_dir
 
 
-def flash_port(build_dir: str, port: str, quiet: bool = False) -> subprocess.Popen:
+def flash_port(build_dir: str, port: str, quiet: bool = False, flash_args: Optional[List[str]] = None) -> subprocess.Popen:
     """Flash the firmware in *build_dir* to *port* asynchronously."""
+    extra = flash_args or []
     return subprocess.Popen(
         [
             "python",
@@ -39,13 +40,14 @@ def flash_port(build_dir: str, port: str, quiet: bool = False) -> subprocess.Pop
             build_dir,
             "--port",
             port,
-        ],
+        ]
+        + extra,
         stdout=subprocess.DEVNULL if quiet else None,
         stderr=subprocess.STDOUT if quiet else None,
     )
 
 
-def build_and_flash(mapping: Dict[str, List[str]]) -> int:
+def build_and_flash(mapping: Dict[str, List[str]], write_config: Optional[str] = None) -> int:
     """Build once per hardware then flash all ports in parallel.
 
     Returns the first non-zero flash return code, or ``0`` on success.
@@ -57,11 +59,18 @@ def build_and_flash(mapping: Dict[str, List[str]]) -> int:
     for hardware in mapping:
         build_dirs[hardware] = build_for_hardware(hardware, quiet)
 
+    flash_args: List[str] = []
+    if write_config is not None:
+        if write_config == "__DEFAULT__":
+            flash_args = ["--write-config"]
+        else:
+            flash_args = ["--write-config", write_config]
+
     processes: List[subprocess.Popen] = []
     for hardware, ports in mapping.items():
         build_dir = build_dirs[hardware]
         for port in ports:
-            processes.append(flash_port(build_dir, port, quiet))
+            processes.append(flash_port(build_dir, port, quiet, flash_args=flash_args))
 
     if not processes:
         return 0
