@@ -1,9 +1,5 @@
 # Data East
 
-#get DMA channels straight - allocate wifi channel now
-import Pico_Led
-Pico_Led.on()
-
 # This file is part of the Warped Pinball Vector Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
@@ -12,9 +8,20 @@ Pico_Led.on()
     fault check updated for early sys11 game compatibility
 """
 
+
+#allocate DMA - wifi chip channel now
+import Pico_Led
+Pico_Led.on()
+
+import sys
+import Shadow_Ram_Definitions_DE
+sys.modules['Shadow_Ram_Definitions'] = Shadow_Ram_Definitions_DE
+
+import Ram_InterceptDE
+sys.modules['Ram_Intercept'] = Ram_InterceptDE
+
 import resource
 import time
-
 import faults
 import GameDefsLoad
 import machine
