@@ -109,18 +109,94 @@
             ]
         }
     },
+    "Switches": {
+        "Type": 10,
+        "Address": 5975,
+        "Length": 64,
+        "Names": [
+            "",
+            "",
+            "Start Button",
+            "Plumb Bob Tilt",
+            "Outhole",
+            "Trough 1",
+            "Trough 2",
+            "Trough 3",
+            "Slam Tilt",
+            "Coin Door Closed",
+            "Ticket Opto",
+            "Always Closed",
+            "Left Outlane",
+            "Left Return Lane",
+            "Lt Stand-Up Tgt 1",
+            "Cast",
+            "Left Boat Exit",
+            "Right Boat Exit",
+            "Spinner",
+            "Reel Entry",
+            "Catapult",
+            "Reel 1",
+            "Reel 2",
+            "Captive Ball",
+            "Right Boat Entry",
+            "Left Boat Entry",
+            "Lie (E)",
+            "Lie (I)",
+            "Lie (L)",
+            "Ball Popper",
+            "Drop Target",
+            "",
+            "Left Jet",
+            "Center Jet",
+            "Right Jet",
+            "Rt Stand-Up Tgt 1",
+            "Rt Stand-Up Tgt 2",
+            "Ball Shooter",
+            "Left Sling",
+            "Right Sling",
+            "Extra Ball",
+            "Top Right Loop",
+            "Top Eight Hole",
+            "Top Left Loop",
+            "Right Return",
+            "Right Outlane",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+        ],
+        "Golf": {
+            "Spinner": 34,
+            "Captive Ball": 41,
+            "Casters Club": 47
+        }
+    },
     "Modes": {
         "Fish Caught": {
-            "Type": "EventCount",
             "Address": "0x515",
             "Length": 1,
-            "Format": "u8"
+            "Format": "u8",
+            "OffValue": 0
         },
         "Monster Fish": {
-            "Type": "BonusCountDown",
             "Address": "0x351",
             "Length": 2,
-            "Format": "BCD"
+            "Format": "BCD",
+            "OffValue": 49
         }
     }
 }
