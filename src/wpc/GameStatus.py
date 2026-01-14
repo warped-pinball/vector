@@ -1,5 +1,3 @@
-# WPC
-
 # This file is part of the Warped Pinball WPC-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
@@ -15,23 +13,22 @@ from logger import logger_instance
 
 log = logger_instance
 
-
-# Initialize the game status in SharedState
-# S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
+# Initialize fast poll status in SharedState
 S.game_status["game_active"] = False
 S.game_status["poll_state"] = 0
 
 
-gameActive = False
-
-
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global gameActive
 
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
+        
+        # Get mode data and add to report if available
+        modes = DataMapper.get_modes()
+        if modes and gameActive:
+            data["Modes"] = modes
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")

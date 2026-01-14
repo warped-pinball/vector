@@ -196,7 +196,8 @@
             "Address": "0x351",
             "Length": 2,
             "Format": "BCD",
-            "OffValue": 49
+            "OffValue": 49,
+            "Multiplier": 100000
         }
     }
 }

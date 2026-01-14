@@ -571,3 +571,87 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
                 break
     
     return in_play_scores
+
+
+def get_modes():
+    """
+    Read game mode data from shadow RAM.
+    
+    Reads mode-specific data (like mission progress, fish caught, etc.)
+    based on configuration in S.gdata["Modes"]. Each mode can have:
+    - Address: Memory address (hex string "0x515" or integer)
+    - Length: Number of bytes to read
+    - Format: Data format ("u8", "BCD", etc.)
+    - OffValue: Value threshold - mode excluded if value <= OffValue (optional)
+    - Multiplier: Multiply result by this value (optional)
+    
+    Returns:
+        dict: Dictionary with mode names as keys and their values
+              Only includes modes where value > OffValue
+              Returns empty dict if no modes configured
+              Example: {"Fish Caught": 5, "Monster Fish": 1234}
+    """
+    modes_data = {}
+    
+    # Check if Modes configuration exists
+    if "Modes" not in S.gdata:
+        return modes_data
+    
+    try:
+        for mode_name, mode_config in S.gdata["Modes"].items():
+            # Parse address (could be hex string like "0x515" or integer)
+            address = mode_config.get("Address", 0)
+            if isinstance(address, str):
+                # Convert hex string to integer
+                address = int(address, 16) if address.startswith("0x") else int(address)
+            
+            # Get configuration parameters
+            length = mode_config.get("Length", 1)
+            data_format = mode_config.get("Format", "u8")
+            multiplier = mode_config.get("Multiplier", 1)
+            off_value = mode_config.get("OffValue", None)
+            
+            # Read bytes from shadow RAM
+            mode_bytes = shadowRam[address : address + length]
+            
+            # Convert based on format
+            if data_format == "u8":
+                # Unsigned 8-bit integer
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            elif data_format == "BCD":
+                # BCD encoded
+                value = _bcd_to_int(mode_bytes)
+            elif data_format == "u16":
+                # Unsigned 16-bit integer (little-endian)
+                if len(mode_bytes) >= 2:
+                    value = mode_bytes[0] | (mode_bytes[1] << 8)
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            elif data_format == "u16be":
+                # Unsigned 16-bit integer (big-endian)
+                if len(mode_bytes) >= 2:
+                    value = (mode_bytes[0] << 8) | mode_bytes[1]
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            else:
+                # Unknown format, treat as raw byte value
+                log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode '{mode_name}'")
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            
+            # Only include mode if value > OffValue (if OffValue is specified)
+            if off_value is not None:
+                if value > off_value:
+                    modes_data[mode_name] = value * multiplier
+            else:
+                # No OffValue specified, always include
+                modes_data[mode_name] = value * multiplier
+    
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading modes: {e}")
+    
+    return modes_data
+
