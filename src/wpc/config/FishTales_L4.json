@@ -83,7 +83,7 @@
             "InitialAdr": 6061,
             "NumberOfScores": 1,
             "Spacing": 0,
-            "scores": [
+            "Scores": [
                 {
                     "address": 6058,
                     "length": 1,
@@ -198,6 +198,46 @@
             "Format": "BCD",
             "OffValue": 49,
             "Multiplier": 100000
+        }
+    },
+    "Formats": {
+        "Standard": {
+            "id": 0,
+            "description": "Normal game play"
+        },
+        "Limbo": {
+            "id": 1,
+            "description": "Score as low as possible",            
+        },
+        "LowBall": {
+            "id": 2,
+            "description": "Only the lowest scoring ball counts",
+        },
+        "Golf": {
+            "Id": 3,
+            "Description": "Hit a specific target in the least number of balls",
+            "Options": {                    
+                    "Select": {
+                        "Spinner": 34,
+                        "Captive Ball": 41,
+                        "Casters Club": 47
+                    }                    
+            }
+        },
+        "Practice": {
+            "Id": 4,
+            "Description": "Practice mode with unlimited balls and no score tracking",
+        },
+        "Decay": {
+            "Id": 5,
+            "Description": "Score decreases over time",
+            "Options": {
+                "Range": {
+                    "Low": 500,
+                    "High": 99000,
+                    "Deafult": 2000
+                }
+            }
         }
     }
 }

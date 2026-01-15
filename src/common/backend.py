@@ -1667,30 +1667,6 @@ def app_getLogs(request):
 #
 
 
-# list format options
-def get_available_formats():
-    return [
-        {"id": 0, "name": "Arcade", "description": "Manufacturer standard game play", "enable_function": None},
-        {"id": 1, "name": "Practice", "description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
-        {
-            "id": 2,
-            "name": "Golf",
-            "description": "Hit a specific target in the least number of balls",
-            "options": {
-                "target": {
-                    "type": "select",
-                    "options": {
-                        "11": "Crazy Bobs",
-                        "12": "Spinner",
-                        "13": "Left Outlane",
-                    },
-                    "default": "11",
-                }
-            },
-            "enable_function": None,
-        },
-    ]
-
 
 # 0 will always be default
 @add_route("/api/formats/available")
@@ -1708,12 +1684,14 @@ def app_list_available_formats(request):
             [
                 {
                     "id": 0,
-                    "name": "Arcade",
+                    "name": "Standard",
                     "description": "Manufacturer standard game play"
                 }
             ]
     @end
     """
+    from Formats import get_available_formats
+
     return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
 
 
@@ -1740,12 +1718,13 @@ def app_set_current_format(request):
           description: Format set successfully
     @end
     """
+    from Formats import get_format_by_id
+
     data = request.data
     if not isinstance(data, dict) or "format_id" not in data:
         return {"error": "Missing required field: format_id"}, 400
     format_id = data["format_id"]
-    available_formats = get_available_formats()
-    format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
+    format_dict = get_format_by_id(format_id)
     if not format_dict:
         return {"error": f"Invalid format id: {format_id}"}, 400
 
