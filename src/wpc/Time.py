@@ -20,7 +20,7 @@ import SharedState as S
 
 from Shadow_Ram_Definitions import SRAM_CLOCK_MINUTES, SRAM_CLOCK_HOURS
 from Ram_Intercept import enableClockCapture, disableClockCapture 
-from GameStatus import _get_ball_in_play
+from DataMapper import get_ball_in_play
 
 #this is the power up state
 Time_Enabeled = False #starts up in pio in off state
@@ -53,7 +53,7 @@ def update_game_time():
 
     if MM_Trigger_Active_Count == 0:
         if  DataStore.read_record("extras", 0)["WPCTimeOn"] == True:
-            if DataStore.read_record("extras", 0)["MM_Always"] == True and _get_ball_in_play()>1: 
+            if DataStore.read_record("extras", 0)["MM_Always"] == True and get_ball_in_play()>1: 
                 _midnight_now()    
             else:
                 import time
