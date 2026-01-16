@@ -149,7 +149,7 @@ def get_fault_led_sequence(fault):
         seq.append({SFWR00[:6]: L.PURPLE, SFTW01[:6]: L.RED, SFTW02[:6]: L.WHITE}[fault])
     elif fault in ALL_WIFI:
         seq.append(L.BLUE)  # Blue blink
-        seq.append({WIFI00[:6]: L.PURPLE, WIFI01[:6]: L.YELLOW, WIFI02[:6]: L.RED}[fault])
+        seq.append({WIFI00[:6]: L.RED, WIFI01[:6]: L.YELLOW, WIFI02[:6]: L.PURPLE}[fault])
     elif fault in ALL_CONF:
         seq.append(L.WHITE)  # Cyan blink
         seq.append({CONF00[:6]: L.PURPLE, CONF01[:6]: L.YELLOW}[fault])
