@@ -85,14 +85,14 @@
             "Spacing": 0,
             "Scores": [
                 {
-                    "address": 6058,
-                    "length": 1,
-                    "format": "u8"
+                    "Address": 6058,
+                    "Length": 1,
+                    "Format": "u8"
                 },
                 {
-                    "address": 6059,
-                    "length": 1,
-                    "format": "u8"
+                    "Address": 6059,
+                    "Length": 1,
+                    "Format": "u8"
                 }
             ]
         },
@@ -100,11 +100,11 @@
             "InitialAdr": 6066,
             "NumberOfScores": 1,
             "Spacing": 0,
-            "scores": [
+            "Scores": [
                 {
-                    "address": 6064,
-                    "length": 1,
-                    "format": "u8"
+                    "Address": 6064,
+                    "Length": 1,
+                    "Format": "u8"
                 }
             ]
         }
@@ -178,12 +178,7 @@
             "",
             "",
             ""
-        ],
-        "Golf": {
-            "Spinner": 34,
-            "Captive Ball": 41,
-            "Casters Club": 47
-        }
+        ]
     },
     "Modes": {
         "Fish Caught": {
@@ -202,31 +197,31 @@
     },
     "Formats": {
         "Standard": {
-            "id": 0,
-            "description": "Normal game play"
+            "Id": 0,
+            "Description": ""
         },
         "Limbo": {
-            "id": 1,
-            "description": "Score as low as possible",            
+            "Id": 1,
+            "Description": "Score as low as possible"
         },
         "LowBall": {
-            "id": 2,
-            "description": "Only the lowest scoring ball counts",
+            "Id": 2,
+            "Description": "Only the lowest scoring ball counts"
         },
         "Golf": {
             "Id": 3,
             "Description": "Hit a specific target in the least number of balls",
-            "Options": {                    
-                    "Select": {
-                        "Spinner": 34,
-                        "Captive Ball": 41,
-                        "Casters Club": 47
-                    }                    
+            "Options": {
+                "Select": {
+                    "Spinner": 34,
+                    "Captive Ball": 41,
+                    "Casters Club": 47
+                }
             }
         },
         "Practice": {
             "Id": 4,
-            "Description": "Practice mode with unlimited balls and no score tracking",
+            "Description": "Practice mode with unlimited balls and no score tracking"
         },
         "Decay": {
             "Id": 5,

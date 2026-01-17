@@ -383,6 +383,32 @@ def get_ball_in_play():
     return 0
 
 
+def write_ball_in_play(ball_number):
+
+    """
+    Write the current ball number in play to shadow RAM.
+    
+    WPC Type 1 ball tracking:
+    - Direct byte value at configured address
+    - 1-5 for balls in play, 0 for game over/not started
+    
+    Args:
+        ball_number: int - Ball number to write (0-5)
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        if S.gdata.get("BallInPlay", {}).get("Type") == 1:
+            ball_adr = S.gdata["BallInPlay"]["Address"]
+            shadowRam[ball_adr] = ball_number
+            return True
+    except Exception as e:
+        log.log(f"DATAMAPPER: error in write_ball_in_play: {e}")
+    
+    return False
+
+
 def get_player_up():
     """
     Get the current player number (whose turn it is).
@@ -441,6 +467,45 @@ def get_game_active():
     return False
 
 
+def get_live_scores():
+    scores = [0, 0, 0, 0]
+    try:
+        for idx in range(4):
+            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
+            scores[idx] = _bcd_to_int(score_bytes)
+    except Exception as e:
+        log.log(f"DATAMAPPER: error getting in-play scores: {e}")
+
+    return scores
+
+
+def write_live_scores(scores):
+    """
+    Write live scores to shadow RAM.
+    
+    Args:
+        scores: List of 4 integer scores [p1_score, p2_score, p3_score, p4_score]
+        
+    Returns:
+        bool: True if write was successful, False otherwise
+    """
+    try:
+        if not isinstance(scores, (list, tuple)) or len(scores) != 4:
+            log.log(f"DATAMAPPER: invalid scores format, expected list of 4 integers")
+            return False
+            
+        for idx in range(4):
+            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+            score_bcd = _int_to_bcd(scores[idx], S.gdata["InPlay"]["ScoreBytes"])
+            shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]] = score_bcd
+            
+        return True
+    except Exception as e:
+        log.log(f"DATAMAPPER: error writing in-play scores: {e}")
+        return False
+
+
 def get_in_play_data():
     """
     Get comprehensive in-play game data.
@@ -481,18 +546,9 @@ def get_in_play_data():
     # Get players in game
     data["PlayersInGame"] = get_players_in_game()
     
-    # Get live scores for all 4 players
-    try:
-        scores = [0, 0, 0, 0]
-        for idx in range(4):
-            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
-            scores[idx] = _bcd_to_int(score_bytes)
-        
-        data["Scores"] = scores
-    except Exception as e:
-        log.log(f"DATAMAPPER: error getting in-play scores: {e}")
-    
+    # Get live scores for all 4 players    
+    data["Scores"] = get_live_scores()
+   
     return data
 
 

@@ -1718,27 +1718,22 @@ def app_set_current_format(request):
           description: Format set successfully
     @end
     """
-    from Formats import get_format_by_id
+    from Formats import set_active_format
 
     data = request.data
     if not isinstance(data, dict) or "format_id" not in data:
         return {"error": "Missing required field: format_id"}, 400
+    
     format_id = data["format_id"]
-    format_dict = get_format_by_id(format_id)
-    if not format_dict:
+    options = data.get("options", {})
+    
+    # Set the active format with validation
+    if not set_active_format(format_id, options):
         return {"error": f"Invalid format id: {format_id}"}, 400
 
-    # Call enable function if it exists
-    enable_function = format_dict.get("enable_function", None)
-    if not enable_function:
-        raise NotImplementedError("Format enable function not implemented yet")
-
-    # Enable the format
-    enable_function(data.get("options", {}))
-
     S.game_status["format"] = {"format_id": format_id}
-    if "options" in data:
-        S.game_status["format"]["options"] = data["options"]
+    if options:
+        S.game_status["format"]["options"] = options
 
     return
 

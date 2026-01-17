@@ -20,6 +20,8 @@ from logger import logger_instance
 from systemConfig import SystemVersion
 from machine import Pin
 
+import Formats
+
 Log = logger_instance
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
@@ -136,6 +138,9 @@ reset_control.release(True)
 time.sleep(1)
 
 resource.go(True)
+
+
+Formats.test()
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402

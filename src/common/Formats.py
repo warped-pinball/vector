@@ -10,6 +10,11 @@ This module provides functions to retrieve and manage different game formats
 """
 
 import SharedState as S
+import DataMapper
+
+
+next_format_id = 0
+next_format_options = {}
 
 
 def get_available_formats():
@@ -18,77 +23,141 @@ def get_available_formats():
 
     Formats are defined in the game configuration JSON file under the "Formats" key.
     Each format can have optional configuration parameters for customization.
-
-    Returns:
-        list: List of format dictionaries, each containing:
-            - id (int): Unique format identifier
-            - name (str): Human-readable format name
-            - description (str): Brief description of the format
-            - options (dict, optional): Configuration options for the format
-            - enable_function (callable or None): Function to enable the format
-
     """
-    formats = []
+    # Default descriptions for common format names
+    default_descriptions = {
+        "Standard": "Classic pinball scoring - highest score wins",
+        "Practice": "Non-competitive practice mode for skill building",
+        "Golf": "Lowest score wins - try to minimize your points",
+        "Limbo": "Score as low as possible",
+        "LowBall": "Only the lowest scoring ball counts",
+        "Decay": "Score decreases over time",
+    }
 
     # Get formats from game configuration
     game_formats = S.gdata.get("Formats", {})
 
-    # Default format is always available (Standard/Arcade mode)
-    formats.append(
-        {
-            "id": 0,
-            "name": "Standard",
-            "description": "Manufacturer standard game play",
-            "enable_function": None,
-        }
-    )
+    # Fill in missing descriptions from default list
+    for format_name, format_data in game_formats.items():
+        # Check if description is missing or empty
+        if "Description" not in format_data or not format_data["Description"]:
+            # Look for matching description in default list
+            if format_name in default_descriptions:
+                format_data["Description"] = default_descriptions[format_name]
 
-    # Add formats from game configuration
-    format_id = 1
-    for format_name, format_config in game_formats.items():
-        if format_name == "Standard":
-            continue  # Skip, already added as id 0
-
-        format_entry = {
-            "id": format_id,
-            "name": format_name,
-            "description": format_config.get("description", f"{format_name} mode"),
-            "enable_function": None,
-        }
-
-        # Add options if they exist in the configuration
-        if "options" in format_config:
-            format_entry["options"] = format_config["options"]
-
-        formats.append(format_entry)
-        format_id += 1
-
-    return formats
+    return game_formats
 
 
-def get_format_by_id(format_id):
+
+def set_active_format(format_id, options=None):
     """
-    Get a specific format by its ID.
-
+    Set the active game format by its identifier.
+    
     Args:
-        format_id (int): The format ID to retrieve
-
+        format_id (int): The format ID to set as active
+        options (dict, optional): Configuration options for the selected format
+        
     Returns:
-        dict or None: The format dictionary if found, None otherwise
+        bool: True if format was found and set, False otherwise
     """
-    formats = get_available_formats()
-    return next((fmt for fmt in formats if fmt["id"] == format_id), None)
+    global next_format_id, next_format_options
+
+    # Get formats from game configuration
+    game_formats = S.gdata.get("Formats", {})
+    
+    # Verify the format_id exists in game_formats
+    for format_name, format_data in game_formats.items():
+        if format_data.get("Id") == format_id:
+            next_format_id = format_id
+
+            if options:
+                next_format_options = options
+            else:
+                next_format_options = {}
+
+            print(f"Formats: set active format to {format_name} (ID {format_id}) with options {next_format_options}") 
+            return True
+          
+    # Format ID not found
+    return False
 
 
-def get_format_by_name(format_name):
+
+
+def formats_run():
     """
-    Get a specific format by its name.
-
-    Args:
-        format_name (str): The format name to retrieve
-
-    Returns:
-        dict or None: The format dictionary if found, None otherwise
+    periodic tasks related to game formats.   
+        
     """
-    formats = get_available_formats()
-    return next((fmt for fmt in formats if fmt["name"] == format_name), None)
+    global next_format_id, next_format_options
+
+    """
+    ind=ind+1
+    if ind == 15:        
+        print("formats_chg to 0 - - - - - - - - - - - -  - - - - - ")
+        next_format_id=0
+        next_format_options = {}
+    """
+
+    #waiting to change format?
+    if S.active_format != next_format_id:
+        if DataMapper.get_game_active() is False:           
+            S.active_format = next_format_id
+            S.format_options = next_format_options   
+
+    if S.active_format == 0:
+        return
+
+
+
+
+
+
+
+    # Practice Mode - - - - - - - - - - - - - - - - - -
+    if S.active_format == 4:  
+
+        print("ACTIVE FORMAT 4")
+
+        if DataMapper.get_game_active() is True:
+            if next_format_id != 4:  #end on next ball drain
+                DataMapper.write_ball_in_play(5)
+            elif DataMapper.get_ball_in_play() >1:
+                DataMapper.write_ball_in_play(1)
+        
+            if S.format_options.get("max_score", 0)>0:
+                scores = DataMapper.get_live_scores()            
+                for idx in range(4):
+                    if scores[idx] >= S.format_options["max_score"]:
+                        scores[idx] = S.format_options["max_score"]
+                        DataMapper.write_live_scores(scores)
+                        break
+
+
+
+
+                    
+
+                   
+
+
+
+#intitialize
+from phew.server import schedule
+schedule(formats_run, 5000, 5000)
+S.active_format = 0
+
+
+
+
+def test():
+    print ("\n\n",get_available_formats(),"\n\n")
+
+  
+
+    print("set format 4 = ",set_active_format(4,{"max_score":20000}))
+
+    for attr in dir(S):
+        if not attr.startswith("__"):
+            print(f"{attr}: {getattr(S, attr)}")
+
