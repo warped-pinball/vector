@@ -79,6 +79,41 @@ async function getShowIP() {
   });
 }
 
+async function loadConfiguredSsidSignal() {
+  const nameElement = await window.waitForElementById("configured-ssid-name");
+  const rssiElement = await window.waitForElementById("configured-ssid-rssi");
+
+  try {
+    const response = await window.smartFetch(
+      "/api/available_ssids",
+      null,
+      false,
+    );
+    if (!response.ok) {
+      throw new Error(`ssid fetch failed: ${response.status}`);
+    }
+    const data = await response.json();
+    const configured = data.find((entry) => entry.configured);
+
+    if (!configured) {
+      nameElement.innerText = "Not connected";
+      rssiElement.innerText = "Unavailable";
+      return;
+    }
+
+    nameElement.innerText = configured.ssid ?? "Unknown SSID";
+    if (typeof configured.rssi === "number") {
+      rssiElement.innerText = `${configured.rssi} dBm`;
+    } else {
+      rssiElement.innerText = "Unknown";
+    }
+  } catch (error) {
+    console.error("Failed to load configured SSID signal strength", error);
+    nameElement.innerText = "Unavailable";
+    rssiElement.innerText = "Unavailable";
+  }
+}
+
 // Midnight Madness settings
 async function getMidnightMadness() {
   const response = await window.smartFetch(
@@ -146,6 +181,7 @@ if (typeof window !== "undefined") {
   tournamentModeToggle();
   getScoreClaimMethods();
   getShowIP();
+  loadConfiguredSsidSignal();
   initMidnightMadness();
 
   //
