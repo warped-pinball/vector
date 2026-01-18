@@ -51,7 +51,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_95_chip_location.png)
 
-Throughout the installation pay attention to pin #1 alignemnt:
+Throughout the installation pay attention to pin #1 alignment:
 
 <img src="../../img/wpc/manual/pin_one.png" alt="Pin one Photo" width="220">
 
