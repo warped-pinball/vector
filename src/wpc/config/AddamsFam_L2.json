@@ -81,16 +81,24 @@
     "Switches": {
         "Type": 10,
         "Address": 5975,
-        "Length": 64,
-        "List": {
-            "Center Swamp Million": 6005,
-            "Shooter Lane": 6007,
-            "Left Inlane2": 6028,
-            "Grave A": 6036
-        }
+        "Length": 64
     },
     "Flippers": {
         "Type": 10,
         "Address": 180
+    },
+    "Modes": {
+        "Mansion Rooms": {
+            "Address": "0x758",
+            "Length": 1,
+            "Format": "u8",
+            "OffValue": 0
+        },
+        "Seance": {
+            "Address": "0x6B7",
+            "Length": 1,
+            "Format": "u8",
+            "OffValue": 0
+        }
     }
 }
