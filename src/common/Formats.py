@@ -8,78 +8,176 @@ Game format mode management.
 This module provides functions to retrieve and manage different game formats
 (e.g., Standard, Practice, Golf, etc.) from game configuration files.
 """
-
 import SharedState as S
 import DataMapper
-
 
 next_format_id = 0
 next_format_options = {}
 
 
+"""
+    Default format definitions
+    formats idetified by NAME (Key)
+    only keys in JSON config file are used
+    config file overrides defaults from all parameters
+    -when selecting a format send in values that override defaults here and in json
+"""
+DEFAULT_FORMATS = {
+    "Standard": {
+        "Id": 0,
+        "Description": "Classic pinball scoring - highest score wins",
+    },
+    "Limbo": {
+        "Id": 1,
+        "Description": "Score as low as possible",
+        "Handler": practice_handler,
+        "Options": {
+            "GetPlayerID": {
+                "Name": "Collect Player Initials",
+                "Type": "fixed",
+                "Value": True
+            }
+        }    
+    },
+    "LowBall": {
+        "Id": 2,
+        "Description": "Only the lowest scoring ball counts",
+        "Options": {
+            "GetPlayerID": {
+                "Name": "Collect Player Initials",
+                "Type": "fixed",
+                "Value": True
+            }
+        }    
+    },
+    "Golf": {
+        "Id": 3,
+        "Description": "Hit a specific target in the least number of balls",
+        "Options": {
+            "GetPlayerID": {
+                "Name": "Collect Player Initials",
+                "Type": "fixed",
+                "Value": True
+            }
+        }    
+    },
+    "Practice": {
+        "Id": 4,
+        "Description": "Practice mode with unlimited balls and no score tracking",
+        "Handler": practice_handler,
+        "Options":{
+            "MaxScore": {
+                "Name": "Score Cap",
+                "Type": "fixed",
+                "Value": 0  #zero for no max
+            },
+            "GetPlayerID": {                
+                "Type": "fixed",
+                "Value": False
+            }
+        }    
+    },
+    "Decay": {
+        "Id": 5,
+        "Description": "Score decreases over time",
+        "Options": {
+            "ScoreDecay": {
+                "Name": "Decay per 10 seconds",
+                "type": "NumberRange",
+                "Range": {
+                    "Low": 100,
+                    "High": 39000,
+                    "Default": 3000
+                }
+            }
+        }    
+    },
+}
+
 def get_available_formats():
     """
-    Retrieve available game formats from the current game configuration.
-
-    Formats are defined in the game configuration JSON file under the "Formats" key.
-    Each format can have optional configuration parameters for customization.
+    Retrieve available game formats from the current game configuration,
+    overlaying config data onto defaults.
     """
-    # Default descriptions for common format names
-    default_descriptions = {
-        "Standard": "Classic pinball scoring - highest score wins",
-        "Practice": "Non-competitive practice mode for skill building",
-        "Golf": "Lowest score wins - try to minimize your points",
-        "Limbo": "Score as low as possible",
-        "LowBall": "Only the lowest scoring ball counts",
-        "Decay": "Score decreases over time",
-    }
+    game_formats_config = S.gdata.get("Formats", {})
+    result_formats = {}
 
-    # Get formats from game configuration
-    game_formats = S.gdata.get("Formats", {})
+    for name, config in game_formats_config.items():
+        base = DEFAULT_FORMATS.get(name, {})
+        result_formats[name] = _deep_merge(base, config)
 
-    # Fill in missing descriptions from default list
-    for format_name, format_data in game_formats.items():
-        # Check if description is missing or empty
-        if "Description" not in format_data or not format_data["Description"]:
-            # Look for matching description in default list
-            if format_name in default_descriptions:
-                format_data["Description"] = default_descriptions[format_name]
-
-    return game_formats
+    return result_formats
 
 
-
-def set_active_format(format_id, options=None):
+def _deep_merge(base, overlay):
     """
-    Set the active game format by its identifier.
+    Deep merge two dictionaries, with overlay values taking precedence.
+    """
+    result = base.copy()
     
-    Args:
-        format_id (int): The format ID to set as active
-        options (dict, optional): Configuration options for the selected format
-        
-    Returns:
-        bool: True if format was found and set, False otherwise
+    for key, value in overlay.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+            
+    return result
+
+
+
+def set_active_format(format_name, options=None):
+    """
+    Set the active game format by its name (key) in to "next_active_format"
+    Loads format settings in layers: defaults → config → runtime options
     """
     global next_format_id, next_format_options
 
     # Get formats from game configuration
-    game_formats = S.gdata.get("Formats", {})
-    
-    # Verify the format_id exists in game_formats
-    for format_name, format_data in game_formats.items():
-        if format_data.get("Id") == format_id:
-            next_format_id = format_id
+    game_formats_config = S.gdata.get("Formats", {})
+    if format_name not in game_formats_config and format_name not in DEFAULT_FORMATS:
+        return False
 
-            if options:
-                next_format_options = options
-            else:
-                next_format_options = {}
+    # Merge defaults and config
+    combined_format = _deep_merge(DEFAULT_FORMATS.get(format_name, {}), game_formats_config.get(format_name, {}))
+    next_format_id = combined_format.get("Id", 0)
 
-            print(f"Formats: set active format to {format_name} (ID {format_id}) with options {next_format_options}") 
-            return True
-          
-    # Format ID not found
-    return False
+    # Only keep keys in Options with a "Value" key
+    next_format_options = {}
+    opts = combined_format.get("Options", {})
+    for key, opt in opts.items():
+        if isinstance(opt, dict) and "Value" in opt:
+            next_format_options[key] = {"Value": opt["Value"]}
+
+    # Overlay runtime options
+    if options:
+        next_format_options = _deep_merge(next_format_options, options)
+
+    return True
+
+
+
+
+
+def practice_handler():
+    """
+    Run practice mode (keep at ball 1 in play)
+    """
+    if DataMapper.get_game_active() is True:
+            if next_format_id != 4:  #end on next ball drain
+                DataMapper.write_ball_in_play(5)
+                DataMapper.write_live_scores([1,1,1,1])  
+            elif DataMapper.get_ball_in_play() >1:
+                DataMapper.write_ball_in_play(1)
+        
+            if S.format_options.get("max_score", 0)>0:
+                scores = DataMapper.get_live_scores()            
+                for idx in range(4):
+                    if scores[idx] >= S.format_options["max_score"]:
+                        scores[idx] = S.format_options["max_score"]
+                        DataMapper.write_live_scores(scores)
+                        break
+
+
 
 
 
@@ -87,7 +185,7 @@ def set_active_format(format_id, options=None):
 def formats_run():
     """
     periodic tasks related to game formats.   
-        
+        call rate 5 seconds
     """
     global next_format_id, next_format_options
 
@@ -109,55 +207,69 @@ def formats_run():
         return
 
 
-
-
-
-
-
     # Practice Mode - - - - - - - - - - - - - - - - - -
     if S.active_format == 4:  
-
         print("ACTIVE FORMAT 4")
+        practice_mode_run()
 
-        if DataMapper.get_game_active() is True:
-            if next_format_id != 4:  #end on next ball drain
-                DataMapper.write_ball_in_play(5)
-            elif DataMapper.get_ball_in_play() >1:
-                DataMapper.write_ball_in_play(1)
-        
-            if S.format_options.get("max_score", 0)>0:
-                scores = DataMapper.get_live_scores()            
-                for idx in range(4):
-                    if scores[idx] >= S.format_options["max_score"]:
-                        scores[idx] = S.format_options["max_score"]
-                        DataMapper.write_live_scores(scores)
-                        break
-
-
-
-
+      
                     
 
                    
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #intitialize
 from phew.server import schedule
-schedule(formats_run, 5000, 5000)
+schedule(formats_run, 15000, 5000)
 S.active_format = 0
+S.format_options = {}
 
 
 
 
 def test():
-    print ("\n\n",get_available_formats(),"\n\n")
+    formats = get_available_formats()
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    for key, value in formats.items():
+        print(f"{key}: {value}\n")
 
   
+    p = {
+        "Target": {
+            "Name": "Switch or feature to hit",
+            "Value": 56
+        }
+    }
 
-    print("set format 4 = ",set_active_format(4,{"max_score":20000}))
+    print("set format 4 = ", set_active_format("Practice", p), "\n\n")
 
     for attr in dir(S):
         if not attr.startswith("__"):
             print(f"{attr}: {getattr(S, attr)}")
+
+
+
+
+
+    print("\n\n")
 

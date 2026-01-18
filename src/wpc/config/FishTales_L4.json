@@ -196,43 +196,48 @@
         }
     },
     "Formats": {
-        "Standard": {
-            "Id": 0,
-            "Description": ""
-        },
-        "Limbo": {
-            "Id": 1,
-            "Description": "Score as low as possible"
+        "Standard": {         
         },
         "LowBall": {
             "Id": 2,
-            "Description": "Only the lowest scoring ball counts"
+            "Description": "Only the lowest scoring ball counts JSON"
         },
         "Golf": {
             "Id": 3,
             "Description": "Hit a specific target in the least number of balls",
             "Options": {
-                "Select": {
-                    "Spinner": 34,
-                    "Captive Ball": 41,
-                    "Casters Club": 47
+                "Target": {
+                    "Name": "Switch or feature to hit",
+                    "Type": "Selection",
+                    "Choices": {
+                        "Spinner": 34,
+                        "Captive Ball": 41,
+                        "Casters Club": 47
+                    },
+                    "Value": 34
                 }
             }
         },
-        "Practice": {
-            "Id": 4,
-            "Description": "Practice mode with unlimited balls and no score tracking"
+        "Practice": {        
+            "Options":{
+                "MaxScore": {
+                    "Value": 9000000
+                }
+            }    
         },
         "Decay": {
             "Id": 5,
-            "Description": "Score decreases over time",
             "Options": {
-                "Range": {
-                    "Low": 500,
-                    "High": 99000,
-                    "Deafult": 2000
-                }
-            }
+                "ScoreDecay": {
+                    "Name": "Decay per 10 seconds",
+                    "Type": "NumberRange",
+                    "Range": {
+                        "Low": 500,
+                        "High": 9000,
+                        "Default": 2000
+                    }
+                }                
+            }    
         }
     }
 }
