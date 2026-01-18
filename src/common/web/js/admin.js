@@ -84,26 +84,20 @@ async function loadConfiguredSsidSignal() {
   const rssiElement = await window.waitForElementById("configured-ssid-rssi");
 
   try {
-    const response = await window.smartFetch(
-      "/api/available_ssids",
-      null,
-      false,
-    );
+    const response = await window.smartFetch("/api/wifi/status", null, false);
     if (!response.ok) {
       throw new Error(`ssid fetch failed: ${response.status}`);
     }
     const data = await response.json();
-    const configured = data.find((entry) => entry.configured);
-
-    if (!configured) {
+    if (!data.connected) {
       nameElement.innerText = "Not connected";
       rssiElement.innerText = "Unavailable";
       return;
     }
 
-    nameElement.innerText = configured.ssid ?? "Unknown SSID";
-    if (typeof configured.rssi === "number") {
-      rssiElement.innerText = `${configured.rssi} dBm`;
+    nameElement.innerText = data.ssid ?? "Unknown SSID";
+    if (typeof data.rssi === "number") {
+      rssiElement.innerText = `${data.rssi} dBm`;
     } else {
       rssiElement.innerText = "Unknown";
     }
