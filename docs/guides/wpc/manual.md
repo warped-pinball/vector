@@ -25,7 +25,7 @@ Vector sits between the processor chip and the game’s main board so it can act
 
 <!-- Two-column layout using a Markdown table -->
 
-| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_Board_Controls.png) | WIfi Status LED <br>-Fast blink: AP Mode <br>-Slow Blink: Joining Wifi<br>-Solid ON: Wifi joined<br><br>Wifi Configure Button: Hold during power up and release when LED flashes for AP setup mode<br><br>Status LED<br>-fast blink: installation fault |
+| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_Board_Controls.png) | WiFi Status LED <br>-Fast blink: AP Mode <br>-Slow Blink: Joining WiFi<br>-Solid ON: WiFi joined<br><br>WiFi Configure Button: Hold during power up and release when LED flashes for AP setup mode<br><br>Status LED<br>-fast blink: installation fault |
 | --- | --- |
 
 ## Disclaimer
@@ -51,7 +51,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_95_chip_location.png)
 
-Throughout the installation pay attention to pin #1 alignemnt:
+Throughout the installation pay attention to pin #1 alignment:
 
 <img src="../../img/wpc/manual/pin_one.png" alt="Pin one Photo" width="220">
 
@@ -59,7 +59,7 @@ Throughout the installation pay attention to pin #1 alignemnt:
 
 <img src="../../img/wpc/manual/pin_strip.jpg" alt="Pin strip Photo" width="180">
 
-3. Place the 40 pin socket into the pin strip headers (on some kit this headeer is already attached to the circuit board, you can skip this step) 
+3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
 
 <img src="../../img/wpc/manual/socket.jpg" alt="socket Photo" width="180">
@@ -68,7 +68,7 @@ Throughout the installation pay attention to pin #1 alignemnt:
 
 <img src="../../img/wpc/manual/standoff.png" alt="Pin standoff Photo" width="180">
 
-5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throught this installation.
+5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
 
 
