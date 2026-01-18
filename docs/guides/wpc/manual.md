@@ -68,7 +68,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 <img src="../../img/wpc/manual/standoff.png" alt="Pin standoff Photo" width="180">
 
-5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throught this installation.
+5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
 
 
