@@ -59,7 +59,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 <img src="../../img/wpc/manual/pin_strip.jpg" alt="Pin strip Photo" width="180">
 
-3. Place the 40 pin socket into the pin strip headers (on some kit this headeer is already attached to the circuit board, you can skip this step) 
+3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
 
 <img src="../../img/wpc/manual/socket.jpg" alt="socket Photo" width="180">
