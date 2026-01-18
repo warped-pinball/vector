@@ -711,3 +711,49 @@ def get_modes():
     
     return modes_data
 
+
+
+
+
+def get_switches():
+    """
+    Read switch values from shadow RAM based on the Switches section of S.gdata.
+
+    Returns:
+        list: List of switch values (integers), or empty list if not configured or unsupported type.
+    """
+    switches_cfg = S.gdata.get("Switches")
+    if not switches_cfg or switches_cfg.get("Type") != 10:
+        return []
+
+    address = switches_cfg.get("Address", 0)
+    length = switches_cfg.get("Length", 0)
+    try:
+        return [shadowRam[address + i] for i in range(length)]
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading switches: {e}")
+        return []
+
+
+
+
+def print_switches():
+    """
+    Print the switch names and their values in two columns.
+    Uses the list from get_switches() and the 'Names' list from S.gdata['Switches'].
+    If a name is empty, display 'NotUsed' instead.
+    """
+    switch_values = get_switches()
+    names = []
+    if "Switches" in S.gdata and "Names" in S.gdata["Switches"]:
+        names = S.gdata["Switches"]["Names"]
+    else:
+        names = ["NotUsed"] * len(switch_values)
+
+    for idx, value in enumerate(switch_values):
+        # Support list of lists: [name, number]
+        if idx < len(names) and isinstance(names[idx], list) and len(names[idx]) > 0:
+            name = names[idx][0] if names[idx][0] else "NotUsed"
+        else:
+            name = "NotUsed"
+        print(f"{name:<24} {value}")

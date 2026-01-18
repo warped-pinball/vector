@@ -30,7 +30,7 @@ DEFAULT_FORMATS = {
     "Limbo": {
         "Id": 1,
         "Description": "Score as low as possible",
-        "Handler": practice_handler,
+        #"Handler": practice_handler,
         "Options": {
             "GetPlayerID": {
                 "Name": "Collect Player Initials",
@@ -64,7 +64,7 @@ DEFAULT_FORMATS = {
     "Practice": {
         "Id": 4,
         "Description": "Practice mode with unlimited balls and no score tracking",
-        "Handler": practice_handler,
+        #"Handler": practice_handler,
         "Options":{
             "MaxScore": {
                 "Name": "Score Cap",

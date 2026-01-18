@@ -534,6 +534,26 @@ def CheckForNewScores(nState=[0]):
     # only run this if ball in play is enabled
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking       
 
+
+
+
+
+
+
+        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^SWITCHES^^^^^^^^^^^^^^^^^^")
+        import DataMapper
+        sw = DataMapper.print_switches()
+        print("\n\n")
+
+
+
+
+
+
+
+
+
+
         # waiting for a game to start
         if nState[0] == 1:      
 
