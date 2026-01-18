@@ -53,20 +53,20 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 Throughout the installation pay attention to pin #1 alignment:
 
-<img src="../../img/wpc/manual/pin_one.png" alt="Pin one Photo" width="220">
+![Pin one Photo](../../img/wpc/manual/pin_one.png){ width=220 }
 
 2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
 
-<img src="../../img/wpc/manual/pin_strip.jpg" alt="Pin strip Photo" width="180">
+![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg){ width=180 }
 
 3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
 
-<img src="../../img/wpc/manual/socket.jpg" alt="socket Photo" width="180">
+![socket Photo](../../img/wpc/manual/socket.jpg){ width=180 }
 
 4. (Optional) Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to a neighboring chip. <br>
 
-<img src="../../img/wpc/manual/standoff.png" alt="Pin standoff Photo" width="180">
+![Pin standoff Photo](../../img/wpc/manual/standoff.png){ width=180 }
 
 5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
@@ -88,16 +88,12 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED should blink fast.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-<p align="center">
-  <img src="../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png" alt="Pin standoff Photo" width="220">
-</p>
+![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
 
-<p align="center">
-  <img src="../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png" alt="Pin standoff Photo" width="220">
-</p>
+![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
 
 4. On the configuration screen:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
@@ -106,9 +102,7 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-<p align="center">
-  <img src="../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png" alt="Pin standoff Photo" width="220">
-</p>
+![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
 
 5. Click **Save**. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
    - Slow blinking indicates the unit is locating the network.
@@ -122,9 +116,7 @@ After connection the game operates normally while the Vector board provides NVRA
 Each machine receives an IP address from your router (for example `192.168.1.79`). Access Vector by entering the IP in a browser and save it as a bookmark. Router DHCP assignments can change; the Vector board periodically displays the current IP on the machine display. To keep the same address, log into your router, locate the device, and mark the entry as **static**.
 
 
-<p align="center">
-  <img src="../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png" alt="Pin standoff Photo" width="420">
-</p>
+![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png){ width=420 style="display:block; margin: 0 auto;" }
 
 Have a color Pin2DMD?   Use the buttons on the back of the display to set it to **Williams/Bally Mode**.
 
@@ -135,8 +127,6 @@ Have a color Pin2DMD?   Use the buttons on the back of the display to set it to 
 - Enter player full names under **Players**.
 
 
-<p align="center">
-  <img src="../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png" alt="Pin standoff Photo">
-</p>
+![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).
