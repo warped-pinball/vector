@@ -25,7 +25,7 @@ Vector sits between the processor chip and the game’s main board so it can act
 
 <!-- Two-column layout using a Markdown table -->
 
-| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_Board_Controls.png) | WIfi Status LED <br>-Fast blink: AP Mode <br>-Slow Blink: Joining Wifi<br>-Solid ON: Wifi joined<br><br>Wifi Configure Button: Hold during power up and release when LED flashes for AP setup mode<br><br>Status LED<br>-fast blink: installation fault |
+| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_Board_Controls.png) | WiFi Status LED <br>-Fast blink: AP Mode <br>-Slow Blink: Joining WiFi<br>-Solid ON: WiFi joined<br><br>WiFi Configure Button: Hold during power up and release when LED flashes for AP setup mode<br><br>Status LED<br>-fast blink: installation fault |
 | --- | --- |
 
 ## Disclaimer
