@@ -31,10 +31,10 @@ Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com).
 6. Place the board into the main-board socket, confirm all pins are seated, and make sure the processor orientation matches the original.
 7. Inspect the reset circuit for modifications. Clip the white wire at the junction of `R55` and `R56` (the trace connecting them).
 <br><br>
-Clip to location at R56 sand R55:
+Clip to location at R56 sand R55:<br>
 ![installed](../../img/sys11/clip_to_location.png)
 <br><br>
-Completed installation:
+Completed installation:<br>
 ![installed](../../img/sys11/sys11_installed.png)
 <br><br>
 8. Power on the game and connect a smartphone to the **WarpedPinball** WiFi network. Click **Sign In** if prompted.
