@@ -57,7 +57,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
 
-![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg){ width=180 }
+![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg)
 
 3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
