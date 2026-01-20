@@ -1427,38 +1427,40 @@ def app_getLastIP(request):
     return {"ip": ip_address}
 
 
-@add_route("/api/available_ssids")
-def app_getAvailableSSIDs(request):
+@add_route("/api/wifi/status")
+def app_getWifiStatus(request):
     """
     @api
-    summary: Scan for nearby Wi-Fi networks
+    summary: Get the configured Wi-Fi SSID and signal strength
     response:
       status_codes:
         - code: 200
-          description: Networks listed
+          description: Status returned
       body:
-        description: Array of SSID records with signal quality and configuration flag
+        description: Current Wi-Fi connection status
         example:
-            [
-                {
-                    "ssid": "MyNetwork",
-                    "rssi": -40,
-                    "configured": true
-                }
-            ]
+            {
+                "ssid": "MyNetwork",
+                "rssi": -40,
+                "connected": true
+            }
     @end
     """
-    import scanwifi
+    import network
+    from phew import is_connected_to_wifi
 
-    available_networks = scanwifi.scan_wifi2()
     ssid = ds_read_record("configuration", 0)["ssid"]
+    connected = is_connected_to_wifi()
+    rssi = None
 
-    for network in available_networks:
-        if network["ssid"] == ssid:
-            network["configured"] = True
-            break
+    if connected:
+        try:
+            wlan = network.WLAN(network.STA_IF)
+            rssi = wlan.status("rssi")
+        except Exception:
+            rssi = None
 
-    return available_networks
+    return {"ssid": ssid, "rssi": rssi, "connected": connected}
 
 
 @add_route("/api/network/peers")
@@ -2005,6 +2007,39 @@ def add_ap_mode_routes():
         )
 
         Pico_Led.off()
+
+    @add_route("/api/available_ssids")
+    def app_getAvailableSSIDs(request):
+        """
+        @api
+        summary: [AP Mode Only] Scan for nearby Wi-Fi networks
+        response:
+          status_codes:
+            - code: 200
+              description: Networks listed
+          body:
+            description: Array of SSID records with signal quality and configuration flag
+            example:
+                [
+                    {
+                        "ssid": "MyNetwork",
+                        "rssi": -40,
+                        "configured": true
+                    }
+                ]
+        @end
+        """
+        import scanwifi
+
+        available_networks = scanwifi.scan_wifi2()
+        ssid = ds_read_record("configuration", 0)["ssid"]
+
+        for network in available_networks:
+            if network["ssid"] == ssid:
+                network["configured"] = True
+                break
+
+        return available_networks
 
 
 def connect_to_wifi(initialize=False):
