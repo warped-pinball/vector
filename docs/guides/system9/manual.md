@@ -64,6 +64,7 @@ Warped Pinball offers email support and will assist when possible, but cannot be
 4. **Add the round pin chip carrier**
    - Place the round pin chip carrier on top of the headers.
    - Press down around the carrier to seat all pins securely.
+     Some kits ship with this connector pre-attached to the Vector board.  If so you may skip this step.
 
 ![Socket Photo](../../img/sys11/socket.jpg)
 
