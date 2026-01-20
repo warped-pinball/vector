@@ -341,6 +341,50 @@ async function loadSwitchDiagnostics() {
     }
   } finally {
     if (refreshButton) refreshButton.disabled = false;
+ }
+}
+
+async function loadConfiguredSsidSignal() {
+  const nameElement = await window.waitForElementById("configured-ssid-name");
+  const rssiElement = await window.waitForElementById("configured-ssid-rssi");
+  const qualityElement = await window.waitForElementById(
+    "configured-ssid-quality",
+  );
+
+  try {
+    const response = await window.smartFetch("/api/wifi/status", null, false);
+    if (!response.ok) {
+      throw new Error(`ssid fetch failed: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.connected) {
+      nameElement.innerText = "Not connected";
+      rssiElement.innerText = "Unavailable";
+      qualityElement.innerText = "Unavailable";
+      return;
+    }
+
+    nameElement.innerText = data.ssid ?? "Unknown SSID";
+    if (typeof data.rssi === "number") {
+      rssiElement.innerText = `${data.rssi} dBm`;
+      if (data.rssi >= -60) {
+        qualityElement.innerText = "Excellent";
+      } else if (data.rssi >= -70) {
+        qualityElement.innerText = "Good";
+      } else if (data.rssi >= -80) {
+        qualityElement.innerText = "Fair";
+      } else {
+        qualityElement.innerText = "Poor";
+      }
+    } else {
+      rssiElement.innerText = "Unknown";
+      qualityElement.innerText = "Unknown";
+    }
+  } catch (error) {
+    console.error("Failed to load configured SSID signal strength", error);
+    nameElement.innerText = "Unavailable";
+    rssiElement.innerText = "Unavailable";
+    qualityElement.innerText = "Unavailable";
   }
 }
 
@@ -949,4 +993,6 @@ if (typeof window !== "undefined") {
       },
     );
   };
+
+  loadConfiguredSsidSignal();
 }

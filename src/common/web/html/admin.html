@@ -522,6 +522,21 @@
       Download Memory Snapshot
     </button>
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
+    <fieldset style="margin-top: 1rem">
+      <legend>WiFi Status</legend>
+      <div>
+        <b>Configured SSID:</b>
+        <span id="configured-ssid-name">Loading...</span>
+      </div>
+      <div>
+        <b>Signal Strength:</b>
+        <span id="configured-ssid-rssi">Loading...</span>
+      </div>
+      <div>
+        <b>Signal Quality:</b>
+        <span id="configured-ssid-quality">Loading...</span>
+      </div>
+    </fieldset>
   </section>
   <section>
     <h3 id="switch-diagnostics-heading">Switch Diagnostics</h3>
