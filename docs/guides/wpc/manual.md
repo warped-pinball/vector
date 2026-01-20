@@ -102,7 +102,7 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-![Pin stetup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
 
 5. Click **Save**. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
    - Slow blinking indicates the unit is locating the network.
