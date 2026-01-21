@@ -129,8 +129,11 @@ def push_game_state(game_time, scores, ball_in_play, game_active):
 
 
 def push_end_of_game(game):
+    print("Pushing end of game:", game)
+    # [0, ['', 0], ['', 0], ['', 0], ['', 0]]
+
     # ensure list of tuples with initial, and score
-    plays = [play for play in game["plays"] if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0]
+    plays = [play for play in game[1:] if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0]
     if not plays:
         return
 
