@@ -129,7 +129,6 @@ def push_game_state(game_time, scores, ball_in_play, game_active):
 
 
 def push_end_of_game(game):
-    print("Pushing end of game:", game)
     # [0, ['', 0], ['', 0], ['', 0], ['', 0]]
 
     # ensure list of tuples with initial, and score
