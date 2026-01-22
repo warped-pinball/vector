@@ -227,6 +227,70 @@ def unsubscribe(switch_name, callback):
     return False
 
 
+def get_diagnostics():
+    """
+    Get diagnostic information for all switches.
+    
+    Returns a list of switch records with row, col, val (0-100%), and label.
+    The val represents how likely the switch is to be functional based on
+    how many times it has NOT been hit (switch_counts).
+    
+    Returns:
+        list: List of dicts with keys: row, col, val, label
+    """
+    diagnostics = []
+    
+    try:
+        if "Switches" not in S.gdata or "Names" not in S.gdata["Switches"]:
+            return diagnostics
+        
+        names = S.gdata["Switches"]["Names"]
+        
+        row=1
+        col=1
+        for idx, name_entry in enumerate(names):
+            if idx >= len(switch_counts):
+                break
+            
+            # Get switch name and sensitivity
+            if isinstance(name_entry, list) and len(name_entry) >= 1:
+                label = name_entry[0] if name_entry[0] else ""
+                sensitivity = name_entry[1] if name_entry[1] else 60
+            else:
+                label = ""
+                sensitivity = 0
+            
+            # Calculate health percentage (0-100%)
+            # count = 0 → health = 100%, count >= sensitivity → health = 0%
+            if sensitivity == 0:
+                health = 100
+            else:
+                count = switch_counts[idx]
+                health = max(0, min(100, 100 - (count * 100 // sensitivity))) 
+            
+            if label != "":
+                diagnostics.append({
+                    "row": row,
+                    "col": col,
+                    "val": health,
+                    "label": label
+                })
+
+            row=row+1
+            if row>8:
+                row=1
+                col=col+1
+
+        print("\n\n",diagnostics,"\n\n")    
+    
+    except Exception as e:
+        log.log(f"SWITCHES: Error in get_diagnostics: {e}")
+    
+    return diagnostics
+
+
+
+
 
 # Initialize and schedule polling
 from phew.server import schedule
