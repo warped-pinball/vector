@@ -715,12 +715,13 @@ def get_modes():
 
 
 
-def get_switches():
+def get_switches_tripped():
     """
-    Read switch values from shadow RAM based on the Switches section of S.gdata.
+    Read switch values from shadow RAM and return whether each switch is tripped.
 
     Returns:
-        list: List of switch values (integers), or empty list if not configured or unsupported type.
+        list: List of boolean values (True if switch value > 20, False otherwise), 
+              or empty list if not configured or unsupported type.
     """
     switches_cfg = S.gdata.get("Switches")
     if not switches_cfg or switches_cfg.get("Type") != 10:
@@ -729,12 +730,42 @@ def get_switches():
     address = switches_cfg.get("Address", 0)
     length = switches_cfg.get("Length", 0)
     try:
-        return [shadowRam[address + i] for i in range(length)]
+        return [shadowRam[address + i] > 20 for i in range(length)]
     except Exception as e:
         log.log(f"DATAMAPPER: Error reading switches: {e}")
         return []
 
 
+
+
+def write_switches_nominal():
+    """
+    Write a fixed value to all switch memory locations in shadow RAM.
+    Uses the same address and length from the Switches section as get_switches().
+    
+    Args:
+        value: The value to write to all switch locations (default: 20)
+        
+    Returns:
+        bool: True if successful, False if not configured or unsupported type
+    """
+    switches_cfg = S.gdata.get("Switches")
+    if not switches_cfg or switches_cfg.get("Type") != 10:
+        return False
+    
+    value=20  #for WPC
+    address = switches_cfg.get("Address", 0)
+    length = switches_cfg.get("Length", 0)
+    if address == 0 or length == 0:
+        return False
+    
+    try:
+        for i in range(length):
+            shadowRam[address + i] = value
+        return True
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error writing switches: {e}")
+        return False
 
 
 def print_switches():

@@ -29,15 +29,14 @@ DEFAULT_FORMATS = {
     },
     "Limbo": {
         "Id": 1,
-        "Description": "Score as low as possible",
-        #"Handler": practice_handler,
+        "Description": "Score as low as possible",        
         "Options": {
             "GetPlayerID": {
                 "Name": "Collect Player Initials",
                 "Type": "fixed",
                 "Value": True
             }
-        }    
+        }        
     },
     "LowBall": {
         "Id": 2,
@@ -48,7 +47,7 @@ DEFAULT_FORMATS = {
                 "Type": "fixed",
                 "Value": True
             }
-        }    
+        }       
     },
     "Golf": {
         "Id": 3,
@@ -93,6 +92,14 @@ DEFAULT_FORMATS = {
         }    
     },
 }
+
+
+FORMAT_HANDLERS = None
+
+def empty_handler():
+    pass
+    return
+
 
 def get_available_formats():
     """
@@ -210,12 +217,29 @@ def formats_run():
     # Practice Mode - - - - - - - - - - - - - - - - - -
     if S.active_format == 4:  
         print("ACTIVE FORMAT 4")
-        practice_mode_run()
+
+        # Example: Call the handler for format ID 4 (Practice)
+        format_id = 4
+        handler = FORMAT_HANDLERS[format_id]
+        if handler:
+            handler()
+        
 
       
                     
 
                    
+
+
+# List of handler functions indexed by format ID
+FORMAT_HANDLERS = [
+    empty_handler,              # 0: Standard
+    practice_handler,   # 1: Limbo
+    empty_handler,              # 2: LowBall
+    empty_handler,              # 3: Golf
+    empty_handler,      # 4: Practice
+    empty_handler,              # 5: Decay
+]
 
 
 

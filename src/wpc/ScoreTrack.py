@@ -539,12 +539,12 @@ def CheckForNewScores(nState=[0]):
 
 
 
-
+        """
         print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^SWITCHES^^^^^^^^^^^^^^^^^^")
         import DataMapper
         sw = DataMapper.print_switches()
         print("\n\n")
-
+        """
 
 
 
