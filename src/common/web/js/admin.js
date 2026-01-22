@@ -79,6 +79,315 @@ async function getShowIP() {
   });
 }
 
+async function loadSwitchDiagnostics() {
+  const grid = await window.waitForElementById("switch-diagnostics-grid");
+  grid.textContent = "Loading switch diagnostics...";
+  const infoPanel = await window.waitForElementById("switch-info-panel");
+  const infoContent = await window.waitForElementById("switch-info-content");
+  const refreshButton = await window.waitForElementById(
+    "switch-diagnostics-refresh",
+  );
+  const cellSizePx = 40;
+
+  if (infoPanel) infoPanel.classList.remove("hide");
+
+  if (refreshButton) refreshButton.disabled = true;
+
+  const existingTooltip = document.getElementById("switch-tooltip");
+  if (existingTooltip) existingTooltip.remove();
+
+  const tooltip = document.createElement("div");
+  tooltip.id = "switch-tooltip";
+  tooltip.className = "switch-tooltip";
+  document.body.appendChild(tooltip);
+
+  const buildSwitchInfoLines = (details) => {
+    const lines = [`Row: ${details.row}`, `Column: ${details.col}`];
+
+    lines.push(`Value: ${details.value}`);
+
+    if (details.label) {
+      lines.push(`Label: ${details.label}`);
+    }
+
+    return lines;
+  };
+
+  const renderInfo = (details) => {
+    if (!details || !details.present) {
+      infoContent.textContent = "Click a switch with data to see its details.";
+      return;
+    }
+
+    const lines = buildSwitchInfoLines(details);
+
+    infoContent.innerHTML = "";
+    lines.forEach((line) => {
+      const div = document.createElement("div");
+      div.className = "switch-info-line";
+      div.textContent = line;
+      infoContent.appendChild(div);
+    });
+  };
+
+  renderInfo();
+
+  const hideTooltip = () => {
+    tooltip.style.display = "none";
+  };
+
+  const showTooltip = (details, event) => {
+    if (!details.present) return;
+
+    const lines = buildSwitchInfoLines(details);
+
+    tooltip.innerHTML = "";
+    lines.forEach((line) => {
+      const div = document.createElement("div");
+      div.className = "switch-info-line";
+      div.textContent = line;
+      tooltip.appendChild(div);
+    });
+
+    const offset = 12;
+    const { clientX, clientY } = event;
+    tooltip.style.left = `${clientX + offset}px`;
+    tooltip.style.top = `${clientY + offset}px`;
+    tooltip.style.display = "block";
+  };
+
+  try {
+    const response = await window.smartFetch(
+      "/api/diagnostics/switches",
+      null,
+      false,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Switch diagnostics request failed: ${response.status}`);
+    }
+
+    const payload = await response.json();
+
+    const switches = Array.isArray(payload) ? payload : payload?.switches ?? [];
+
+    if (!Array.isArray(switches) || switches.length === 0) {
+      const unsupportedMessage =
+        "Switch diagnostics are not yet supported for this title.";
+      grid.textContent = unsupportedMessage;
+      if (infoPanel) infoPanel.classList.add("hide");
+      return;
+    }
+
+    const switchMap = new Map();
+    let maxRow = 0;
+    let maxCol = 0;
+
+    switches.forEach((entry) => {
+      if (!entry || entry.row == null || entry.col == null) return;
+      switchMap.set(`${entry.row}-${entry.col}`, entry);
+      maxRow = Math.max(maxRow, entry.row);
+      maxCol = Math.max(maxCol, entry.col);
+    });
+
+    // If all entries were filtered out or no valid grid dimensions were found,
+    // treat this the same as an unsupported/empty switch diagnostics case.
+    if (switchMap.size === 0 || maxRow === 0 || maxCol === 0) {
+      const unsupportedMessage =
+        "Switch diagnostics are not yet supported for this title.";
+      grid.textContent = unsupportedMessage;
+      if (infoPanel) infoPanel.classList.add("hide");
+      return;
+    }
+    grid.innerHTML = "";
+    grid.setAttribute("role", "grid");
+    grid.style.gridTemplateColumns = `auto repeat(${maxCol}, ${cellSizePx}px)`;
+    grid.style.gridTemplateRows = `auto repeat(${maxRow}, ${cellSizePx}px)`;
+
+    // Top-left spacer
+    const spacer = document.createElement("div");
+    spacer.classList.add("switch-header");
+    spacer.setAttribute("role", "presentation");
+    grid.appendChild(spacer);
+
+    // Column headers
+    for (let col = 1; col <= maxCol; col += 1) {
+      const header = document.createElement("div");
+      header.classList.add("switch-header");
+      header.setAttribute("role", "columnheader");
+      header.setAttribute("aria-label", `Column ${col}`);
+      header.textContent = col;
+      grid.appendChild(header);
+    }
+
+    let selectedCell = null;
+
+    for (let row = 1; row <= maxRow; row += 1) {
+      const rowHeader = document.createElement("div");
+      rowHeader.classList.add("switch-header");
+      rowHeader.setAttribute("role", "rowheader");
+      rowHeader.setAttribute("aria-label", `Row ${row}`);
+      rowHeader.textContent = row;
+      grid.appendChild(rowHeader);
+
+      for (let col = 1; col <= maxCol; col += 1) {
+        const cell = document.createElement("div");
+        cell.classList.add("switch-cell");
+        cell.setAttribute("role", "gridcell");
+
+        const key = `${row}-${col}`;
+        const switchData = switchMap.get(key);
+        const hasValue =
+          switchData && switchData.val !== undefined && switchData.val !== null;
+
+        const details = {
+          row,
+          col,
+          present: Boolean(hasValue),
+          value: hasValue ? Number(switchData.val) : null,
+          label: switchData?.label ?? "",
+        };
+
+        if (!hasValue) {
+          cell.classList.add("missing");
+          cell.setAttribute(
+            "aria-label",
+            `Switch ${row}-${col}: no data available`,
+          );
+          cell.setAttribute("aria-disabled", "true");
+          cell.setAttribute("tabindex", "-1");
+        } else {
+          cell.setAttribute("tabindex", "0");
+          cell.textContent = `${row}${col}`;
+          const value = Number(switchData.val);
+          let statusClass = "green";
+          let statusText = "good";
+
+          if (value === 0) {
+            statusClass = "red";
+            statusText = "needs attention";
+          } else if (value < 50) {
+            statusClass = "yellow";
+            statusText = "warning";
+          }
+
+          cell.classList.add(statusClass);
+
+          // Build descriptive aria-label
+          let ariaLabel = `Switch ${row}-${col}, status: ${statusText}, value: ${value}`;
+          if (details.label) {
+            ariaLabel += `, ${details.label}`;
+          }
+          cell.setAttribute("aria-label", ariaLabel);
+        }
+
+        cell.addEventListener("mouseenter", (event) => {
+          showTooltip(details, event);
+        });
+
+        cell.addEventListener("mousemove", (event) => {
+          if (tooltip.style.display === "block") {
+            showTooltip(details, event);
+          }
+        });
+
+        cell.addEventListener("mouseleave", hideTooltip);
+
+        const handleActivation = () => {
+          hideTooltip();
+
+          if (selectedCell) {
+            selectedCell.classList.remove("selected");
+            selectedCell.setAttribute("aria-selected", "false");
+          }
+
+          if (!details.present) {
+            renderInfo();
+            selectedCell = null;
+            return;
+          }
+
+          selectedCell = cell;
+          cell.classList.add("selected");
+          cell.setAttribute("aria-selected", "true");
+          renderInfo(details);
+        };
+
+        cell.addEventListener("click", handleActivation);
+
+        // Only add keyboard event listener to enabled cells
+        if (hasValue) {
+          cell.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleActivation();
+            }
+          });
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load switch diagnostics", error);
+    grid.textContent = "Failed to load switch diagnostics.";
+
+    // Ensure a clean error state: hide info panel and remove tooltip
+    if (infoPanel) {
+      infoPanel.classList.add("hide");
+    }
+    if (tooltip && tooltip.parentNode) {
+      tooltip.remove();
+    }
+  } finally {
+    if (refreshButton) refreshButton.disabled = false;
+ }
+}
+
+async function loadConfiguredSsidSignal() {
+  const nameElement = await window.waitForElementById("configured-ssid-name");
+  const rssiElement = await window.waitForElementById("configured-ssid-rssi");
+  const qualityElement = await window.waitForElementById(
+    "configured-ssid-quality",
+  );
+
+  try {
+    const response = await window.smartFetch("/api/wifi/status", null, false);
+    if (!response.ok) {
+      throw new Error(`ssid fetch failed: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.connected) {
+      nameElement.innerText = "Not connected";
+      rssiElement.innerText = "Unavailable";
+      qualityElement.innerText = "Unavailable";
+      return;
+    }
+
+    nameElement.innerText = data.ssid ?? "Unknown SSID";
+    if (typeof data.rssi === "number") {
+      rssiElement.innerText = `${data.rssi} dBm`;
+      if (data.rssi >= -60) {
+        qualityElement.innerText = "Excellent";
+      } else if (data.rssi >= -70) {
+        qualityElement.innerText = "Good";
+      } else if (data.rssi >= -80) {
+        qualityElement.innerText = "Fair";
+      } else {
+        qualityElement.innerText = "Poor";
+      }
+    } else {
+      rssiElement.innerText = "Unknown";
+      qualityElement.innerText = "Unknown";
+    }
+  } catch (error) {
+    console.error("Failed to load configured SSID signal strength", error);
+    nameElement.innerText = "Unavailable";
+    rssiElement.innerText = "Unavailable";
+    qualityElement.innerText = "Unavailable";
+  }
+}
+
 // Midnight Madness settings
 async function getMidnightMadness() {
   const response = await window.smartFetch(
@@ -147,6 +456,16 @@ if (typeof window !== "undefined") {
   getScoreClaimMethods();
   getShowIP();
   initMidnightMadness();
+  loadSwitchDiagnostics();
+
+  window
+    .waitForElementById("switch-diagnostics-refresh")
+    .then((refreshButton) => {
+      refreshButton.addEventListener("click", () => {
+        loadSwitchDiagnostics();
+      });
+    })
+    .catch(() => {});
 
   //
   // Adjustment Profiles
@@ -674,4 +993,6 @@ if (typeof window !== "undefined") {
       },
     );
   };
+
+  loadConfiguredSsidSignal();
 }
