@@ -1,5 +1,5 @@
 site_name: Vector Documentation
-site_url: https://warped-pinball.github.io/vector/
+site_url: https://docs.warpedpinball.com
 theme:
   name: material
   palette:
