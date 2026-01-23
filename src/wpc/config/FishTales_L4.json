@@ -122,6 +122,7 @@
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 0],
@@ -129,6 +130,8 @@
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
       ["Lt Stand-Up Tgt 1", 60],
+      ["Lt Stand-Ip Tgt 2", 60],
+
       ["Cast", 60],
       ["Left Boat Exit", 60],
       ["Right Boat Exit", 60],
@@ -137,15 +140,16 @@
       ["Catapult", 60],
       ["Reel 1", 60],
       ["Reel 2", 60],
+
       ["Captive Ball", 60],
       ["Right Boat Entry", 60],
       ["Left Boat Entry", 60],
       ["Lie (E)", 60],
       ["Lie (I)", 60],
       ["Lie (L)", 60],
-      ["Ball Popper", 60],
+      ["Casters Club", 60],
       ["Drop Target", 60],
-      ["", 0],
+
       ["Left Jet", 60],
       ["Center Jet", 60],
       ["Right Jet", 60],
@@ -154,9 +158,10 @@
       ["Ball Shooter", 60],
       ["Left Sling", 60],
       ["Right Sling", 60],
+
       ["Extra Ball", 60],
       ["Top Right Loop", 60],
-      ["Top Eight Hole", 60],
+      ["Top Eject Hole", 60],
       ["Top Left Loop", 60],
       ["Right Return", 60],
       ["Right Outlane", 60],
@@ -196,43 +201,61 @@
       }
   },
   "Formats": {
-      "Standard": {
-          "Id": 0,
-          "Description": "Normal game play"
-      },
-      "Limbo": {
-          "Id": 1,
-          "Description": "Score as low as possible"
-      },
-      "LowBall": {
+    "Standard": {
+        "Id": 0
+    },
+    "Limbo": {
+        "Id": 1
+    },
+    "LowBall": {
           "Id": 2,
           "Description": "Only the lowest scoring ball counts"
-      },
-      "Golf": {
-          "Id": 3,
-          "Description": "Hit a specific target in the least number of balls",
-          "Options": {
-              "Select": {
-                  "Spinner": 34,
-                  "Captive Ball": 41,
-                  "Casters Club": 47
-              }
-          }
-      },
-      "Practice": {
-          "Id": 4,
-          "Description": "Practice mode with unlimited balls and no score tracking"
-      },
-      "Decay": {
-          "Id": 5,
-          "Description": "Score decreases over time",
-          "Options": {
-              "Range": {
-                  "Low": 500,
-                  "High": 99000,
-                  "Deafult": 2000
-              }
-          }
-      }
+    },
+    "Golf": {
+        "Id": 3,
+        "Description": "Hit a specific target in the least number of balls",
+        "Options": {
+            "Target": {
+                "Name": "Target Switch",
+                "Type": "ListSelect",
+                "Value":          
+                    [
+                        "Spinner",
+                        "Captive Ball",
+                        "Casters Club"
+                    ],
+                "Value": "Casters Club"    
+            }
+        }
+    },
+    "Practice": {
+        "Id": 4,
+        "Description": "Practice mode with unlimited balls and no score tracking",
+        "Options":{
+            "MaxScore": {
+                "Name": "Score Cap",
+                "Type": "NumberRange",
+                "Range": {
+                    "Low": 10000,
+                    "High": 390000,
+                    "Value": 30000
+                }
+            }
+        }
+    },
+    "Decay": {
+        "Id": 5,
+        "Description": "Score decreases over time",
+        "Options": {
+            "ScoreDecay": {                
+                "Range": {
+                    "Low": 10000,
+                    "High": 390000,
+                    "Default": 30000
+                }
+            }
+        }
+    }
   }
 }
+

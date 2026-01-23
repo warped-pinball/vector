@@ -100,7 +100,7 @@ def _get_range_from_gamedef():
 def _fixChecksum():
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     if (cpyStart == 0 or cpyEnd == 0):
-        raise ValueError("No valid range found in game data 1")
+        raise ValueError("No valid range found in game data - fix checksum")
 
     chk = 0
     for adr in range(cpyStart, cpyEnd + 1):

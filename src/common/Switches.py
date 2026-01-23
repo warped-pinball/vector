@@ -66,6 +66,9 @@ def poll_switches():
         if not tripped:
             return
         
+        tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
+        print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
+
         DataMapper.write_switches_nominal()
 
         # Reset counts for any tripped switches      
@@ -77,6 +80,7 @@ def poll_switches():
                 if idx in switch_subscriptions:
                     for callback in switch_subscriptions[idx]:
                         try:
+                            print("SWITCHES CALLBACKKKKKKKKKKKKKKKKKK")
                             callback(idx)
                         except Exception as e:
                             log.log(f"SWITCHES: Error in callback for switch {idx}: {e}")
@@ -177,6 +181,7 @@ def subscribe(switch_name, callback):
     
     # Translate name to index
     switch_index = get_switch_index(switch_name)
+    print("SUBSCRIBE - - - - -   switch number  = ",switch_index)
     if switch_index < 0:
         log.log(f"SWITCHES: subscribe() - invalid switch name '{switch_name}'")
         return False

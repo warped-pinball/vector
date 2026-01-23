@@ -155,8 +155,8 @@ def read_high_scores():
             high_scores[idx][1] = _bcd_to_int(score_bytes)
             
             # Filter out very low scores (likely placeholders)
-            if high_scores[idx][1] < 1000:
-                high_scores[idx][1] = 0
+            #if high_scores[idx][1] < 1000:
+            #    high_scores[idx][1] = 0
         
         # Read Grand Champion score if configured (index 0)
         if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -168,8 +168,8 @@ def read_high_scores():
             max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
             
             # Filter out placeholder scores
-            if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:
-                high_scores[0][1] = 0
+            #if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:
+            #    high_scores[0][1] = 0
         
         # Read initials for regular high scores
         if "InitialAdr" in S.gdata["HighScores"]:
@@ -579,12 +579,12 @@ def remove_machine_scores(grand_champ_mode="Max"):
         for i in range(S.gdata["HighScores"]["BytesInScore"]):
             shadowRam[score_start + i] = 0
         
-        # Set placeholder score (60000, 50000, 40000, 30000)
-        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 2] = 0x10 * (6 - index)
+        # Set placeholder score (60, 50, 40, 30)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = 0x10 * (4 - index)
         
         # Set initials to 'AAA' (0x41 = 'A' in ASCII)
         for i in range(3):
-            shadowRam[initial_start + i] = 0x41
+            shadowRam[initial_start + i] = 0x41+i
     
     # Handle Grand Champion score
     if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -592,6 +592,7 @@ def remove_machine_scores(grand_champ_mode="Max"):
         
         if grand_champ_mode == "Max":
             # Set Grand Champion score to maximum (all 0x99)
+            print("GRAND CHAMP to MAX")
             for i in range(S.gdata["HighScores"]["BytesInScore"]):
                 shadowRam[score_start + i] = 0x99
         elif grand_champ_mode == "Zero":
