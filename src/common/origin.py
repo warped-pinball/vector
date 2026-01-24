@@ -1,3 +1,5 @@
+import time
+
 from discovery import send_sock
 from ujson import dumps
 from urandom import getrandbits
@@ -52,6 +54,16 @@ def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
             if _sim_current_player == 0:
                 _sim_ball_in_play += 1
                 if _sim_ball_in_play > 5:
+                    player_initials = ["MAX", "PSM", "TIM"]
+                    push_end_of_game([0, ["", 0], ["", 0], ["", 0], ["", 0]])
+                    # Send an "end_of_game" for the previous simulated game using the last simulated scores.
+                    plays = [0]
+                    for i in range(4):
+                        initials = player_initials[_randint(0, len(player_initials) - 1)]
+                        score = _sim_scores[i] if i < len(_sim_scores) else 0
+                        plays.append([initials, score])
+                    push_end_of_game(plays)
+
                     # Game over: reset ball to 0 and scores to 0 (visible "reset" frame)
                     _sim_ball_in_play = 0
                     _sim_scores = [0, 0, 0, 0]
@@ -122,14 +134,16 @@ def _push_game_state_real(game_time, scores, ball_in_play, game_active):
 
 def push_game_state(game_time, scores, ball_in_play, game_active):
     # Toggle simulation: comment the next line to disable simulated gameplay.
-    # return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
+    return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
 
     # Normal behavior: uncomment the next line to use real game state.
-    return _push_game_state_real(game_time, scores, ball_in_play, game_active)
+    # return _push_game_state_real(game_time, scores, ball_in_play, game_active)
 
 
 def push_end_of_game(game):
     # [0, ['', 0], ['', 0], ['', 0], ['', 0]]
+
+    print("Pushing end_of_game:", game)
 
     # ensure list of tuples with initial, and score
     plays = [play for play in game[1:] if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0]
@@ -137,3 +151,4 @@ def push_end_of_game(game):
         return
 
     send_origin_message("end_of_game", {"plays": plays})
+    time.sleep_ms(3000)  # brief pause to ensure message is sent before any reset/restart
