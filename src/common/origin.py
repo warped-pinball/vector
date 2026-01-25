@@ -1,5 +1,3 @@
-import time
-
 from discovery import send_sock
 from ujson import dumps
 from urandom import getrandbits
@@ -134,10 +132,10 @@ def _push_game_state_real(game_time, scores, ball_in_play, game_active):
 
 def push_game_state(game_time, scores, ball_in_play, game_active):
     # Toggle simulation: comment the next line to disable simulated gameplay.
-    return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
+    # return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
 
     # Normal behavior: uncomment the next line to use real game state.
-    # return _push_game_state_real(game_time, scores, ball_in_play, game_active)
+    return _push_game_state_real(game_time, scores, ball_in_play, game_active)
 
 
 def push_end_of_game(game):
@@ -151,4 +149,3 @@ def push_end_of_game(game):
         return
 
     send_origin_message("end_of_game", {"plays": plays})
-    time.sleep_ms(3000)  # brief pause to ensure message is sent before any reset/restart
