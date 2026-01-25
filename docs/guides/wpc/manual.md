@@ -37,19 +37,19 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 | Installation picture | WPC version | Titles |
 | --- | --- | --- |
 | ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_installed.jpg) | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
-| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_S_installed.jpg) | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
-| ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_95_installed.jpg) | Midway/Williams WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
+| ![Williams/Bally WPC S install photo](../../img/wpc/manual/WPC_S_installed.jpg) | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
+| ![Williams/Bally WPC 95 install photo](../../img/wpc/manual/WPC_95_installed.jpg) | Midway/Williams WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
 | ![Williams/Bally WPC RD install photo](../../img/wpc/manual/WPC_RD_installed.jpg) | WPC | Rotten Dog<br>aftermarket<br>Board<br>Installation |
 
 ## Hardware installation
 
 1. Carefully remove the processor (`MC6809`) and place it into the socket on the Vector board according to pin #1 designation. Verify pins are straight and fully seated. Chip locations are identified in these pictures (depending on your game model) <br><br>
 
-![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_chip_location.png)
+![Williams/Bally WPC chip location](../../img/wpc/manual/WPC_chip_location.png)
 
-![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_S_chip_location.png)
+![Williams/Bally WPC S chip location](../../img/wpc/manual/WPC_S_chip_location.png)
 
-![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_95_chip_location.png)
+![Williams/Bally WPC 95 chip location](../../img/wpc/manual/WPC_95_chip_location.png)
 
 Throughout the installation pay attention to pin #1 alignment:
 
@@ -57,7 +57,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
 
-![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg){ width=180 }
+![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg)
 
 3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
@@ -88,12 +88,12 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED should blink fast.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
 
-![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
 
 4. On the configuration screen:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
@@ -102,7 +102,7 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
 
 5. Click **Save**. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
    - Slow blinking indicates the unit is locating the network.
@@ -116,7 +116,7 @@ After connection the game operates normally while the Vector board provides NVRA
 Each machine receives an IP address from your router (for example `192.168.1.79`). Access Vector by entering the IP in a browser and save it as a bookmark. Router DHCP assignments can change; the Vector board periodically displays the current IP on the machine display. To keep the same address, log into your router, locate the device, and mark the entry as **static**.
 
 
-![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png){ width=420 style="display:block; margin: 0 auto;" }
+![Pin DMD Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png){ width=420 style="display:block; margin: 0 auto;" }
 
 Have a color Pin2DMD?   Use the buttons on the back of the display to set it to **Williams/Bally Mode**.
 
@@ -127,6 +127,6 @@ Have a color Pin2DMD?   Use the buttons on the back of the display to set it to 
 - Enter player full names under **Players**.
 
 
-![Pin standoff Photo](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
+![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).
