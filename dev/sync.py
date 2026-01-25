@@ -3,13 +3,16 @@
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
-from detect_boards import detect_boards
+from detect_boards import detect_board_type, detect_boards
+
+from common import open_repl, run_python_script
 
 REPL_ATTEMPTS = 10
 REPL_DELAY = 1
@@ -17,32 +20,44 @@ REPL_DELAY = 1
 
 def flash_single(system: str, port: Optional[str], write_config: Optional[str]) -> int:
     """Build *system* firmware and flash a single board."""
-    build_dir = build_for_hardware(system)
-    cmd = ["python", "dev/flash.py", build_dir]
+    hardware = system
+    # If system is 'dev' or not a valid hardware folder under src, try to auto-detect
+    if hardware == "dev" or not os.path.isdir(os.path.join("src", hardware)):
+        detected: Optional[str] = None
+        if port:
+            detected = detect_board_type(port)  # type: ignore[assignment]
+        if not detected:
+            mapping = detect_boards()
+            if len(mapping) == 1:
+                detected = next(iter(mapping.keys()))
+        if detected and os.path.isdir(os.path.join("src", detected)):
+            hardware = detected
+    build_dir = build_for_hardware(hardware)
+    args = [build_dir]
     if port:
-        cmd.extend(["--port", port])
+        args.extend(["--port", port])
     if write_config is not None:
         if write_config == "__DEFAULT__":
-            cmd.append("--write-config")
+            args.append("--write-config")
         else:
-            cmd.extend(["--write-config", write_config])
-    return subprocess.call(cmd)
+            args.extend(["--write-config", write_config])
+    # run_python_script(wait=True) returns a CompletedProcess. We want an int return code.
+    result = run_python_script("dev/flash.py", args, wait=True, check=False)
+    if isinstance(result, subprocess.CompletedProcess):
+        return result.returncode
+    # Defensive fallback (shouldn't happen with wait=True)
+    return int(getattr(result, "returncode", 1))
 
 
-def open_repl(port: Optional[str]) -> None:
+def open_repl_wrapper(port: Optional[str]) -> None:
     """Attempt to open an mpremote REPL, retrying briefly."""
-    cmd = ["mpremote"]
-    if port:
-        cmd.extend(["connect", port])
-    for _ in range(REPL_ATTEMPTS):
-        if subprocess.call(cmd) == 0:
-            break
-        time.sleep(REPL_DELAY)
+    print("Opening REPL...")
+    open_repl(connect=port, attempts=REPL_ATTEMPTS, delay=REPL_DELAY)
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Build and flash Vector firmware")
-    parser.add_argument("system", nargs="?", default="dev", help="Target system or 'auto'")
+    parser.add_argument("system", nargs="?", default="auto", help="Target system or 'auto'")
     parser.add_argument("port", nargs="?", help="Serial port for manual flashing")
     parser.add_argument(
         "--write-config",
@@ -59,12 +74,22 @@ def main(argv: list[str]) -> int:
             print("No boards detected. Aborting.")
             return 1
         print("Boards detected:", json.dumps(mapping))
-        return build_and_flash(mapping, write_config=args.write_config)
+        rc = build_and_flash(mapping, write_config=args.write_config)
+    else:
+        rc = flash_single(args.system, args.port, args.write_config)
 
-    rc = flash_single(args.system, args.port, args.write_config)
-    if rc == 0:
-        open_repl(args.port)
-    return rc
+    if rc != 0:
+        print("Flashing failed: ", rc)
+        return rc
+
+    print("Flash complete.")
+
+    # delay briefly to allow the board to reset
+    time.sleep(0.5)
+
+    open_repl_wrapper(args.port)
+
+    return 0
 
 
 if __name__ == "__main__":
