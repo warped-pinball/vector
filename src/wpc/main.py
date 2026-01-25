@@ -139,7 +139,7 @@ time.sleep(1)
 
 resource.go(True)
 
-
+Formats.intiialize()
 Formats.test()
 
 # launch wifi, and server. Should not return

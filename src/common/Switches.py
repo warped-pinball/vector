@@ -14,7 +14,6 @@ import SPI_DataStore
 import DataMapper
 import SharedState as S
 from logger import logger_instance
-
 log = logger_instance
 
 # Local storage for 72 switch counts
@@ -292,8 +291,6 @@ def get_diagnostics():
         log.log(f"SWITCHES: Error in get_diagnostics: {e}")
     
     return diagnostics
-
-
 
 
 

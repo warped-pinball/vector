@@ -1707,6 +1707,8 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
+            identified by NAME STRING
+
             - name: format_id
                 type: int
                 required: true
@@ -1724,17 +1726,21 @@ def app_set_current_format(request):
     from Formats import set_active_format
 
     data = request.data
-    if not isinstance(data, dict) or "format_id" not in data:
-        return {"error": "Missing required field: format_id"}, 400
+    if not isinstance(data, dict) or len(data) == 0:
+        return {"error": "Missing format data"}, 400
     
-    format_id = data["format_id"]
-    options = data.get("options", {})
+    # Extract the format name from the top level key
+    format_name = list(data.keys())[0]
+    format_data = data[format_name]
+    
+    # Extract Options section if it exists
+    options = format_data.get("Options", {})
     
     # Set the active format with validation
-    if not set_active_format(format_id, options):
-        return {"error": f"Invalid format id: {format_id}"}, 400
+    if not set_active_format(format_name, options):
+        return {"error": f"Invalid format: {format_name}"}, 400
 
-    S.game_status["format"] = {"format_id": format_id}
+    S.game_status["format"] = {"name": format_name}
     if options:
         S.game_status["format"]["options"] = options
 
@@ -1754,14 +1760,25 @@ def app_get_active_formats(request):
       body:
         description: Current game format identifier and options
         example:
-            {
-                "format_id": 1,
-                "options": {"target": "11"}
-            }
+           "Standard": {
+                "Id": 0,
+                "Description": "Classic pinball scoring - highest score wins",
+            },
+            "Limbo": {
+                "Id": 1,
+                "Description": "Score as low as possible",        
+                "Options": {
+                    "GetPlayerID": {
+                        "Name": "Collect Player Initials",
+                        "Type": "fixed",
+                        "Value": True
+                    }
+                }        
+            },
     @end
     """
-
-    return S.game_status.get("format", {"format_id": 0})
+    import Formats
+    return Formats.get_available_formats()
 
 
 # get switch diagnostics
@@ -1771,8 +1788,6 @@ def app_get_switch_diagnostics(request):
     @api
     summary: Get diagnostic information for all switches
     response:
-        status_codes:
-        - code: 200
           description: Switch diagnostics returned
         body:
         description: Collection of switch records with row, column, value, and optional label

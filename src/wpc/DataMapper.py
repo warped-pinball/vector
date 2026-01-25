@@ -354,6 +354,42 @@ def read_in_play_scores():
     return in_play_scores
 
 
+
+def get_live_scores(use_format=True):
+    """
+    Get live scores for all 4 players.
+    
+    If a Format is active (active_format != 0), pulls scores from Formats.player_scores.
+    Otherwise reads from WPC shadow RAM.
+    
+    Returns:
+        list: List of 4 integer scores [score1, score2, score3, score4]
+    """
+    scores = [0, 0, 0, 0]
+    
+    # Check if a Format is active
+    try:
+        if use_format is True and hasattr(S, 'active_format') and S.active_format != 0:
+            # Format is active - use player_scores from Formats module
+            import Formats
+            scores = list(Formats.player_scores)
+            return scores
+    except Exception as e:
+        log.log(f"DATAMAPPER: error getting format scores: {e}")
+    
+    # No active format - read from shadow RAM
+    try:
+        for idx in range(4):
+            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
+            scores[idx] = _bcd_to_int(score_bytes)
+    except Exception as e:
+        log.log(f"DATAMAPPER: error getting in-play scores: {e}")
+
+    return scores
+
+
+
 def get_ball_in_play():
     """
     Get the current ball number in play.
@@ -467,17 +503,6 @@ def get_game_active():
     return False
 
 
-def get_live_scores():
-    scores = [0, 0, 0, 0]
-    try:
-        for idx in range(4):
-            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-            score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
-            scores[idx] = _bcd_to_int(score_bytes)
-    except Exception as e:
-        log.log(f"DATAMAPPER: error getting in-play scores: {e}")
-
-    return scores
 
 
 def write_live_scores(scores):
@@ -628,6 +653,34 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
                 break
     
     return in_play_scores
+
+
+
+def get_flipper_state():
+    """
+    Read the flipper state from WPC shadow RAM.
+    
+    Returns the byte value at the configured flipper address if Type 10 is configured.
+    
+    Returns:
+        int: Flipper state byte value, or 0 if not configured
+    """
+    try:
+        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") == 10:
+            flipper_address = S.gdata["Flippers"]["Address"]
+            v=shadowRam[flipper_address]
+            left = (v & 0x80) != 0
+            right = (v & 0x20) != 0
+            return left,right
+
+    except Exception as e:
+        log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
+    
+    return 0
+
+
+
+
 
 
 def get_modes():
