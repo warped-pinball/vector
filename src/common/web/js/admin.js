@@ -258,7 +258,7 @@ async function loadSwitchDiagnostics() {
           cell.setAttribute("tabindex", "-1");
         } else {
           cell.setAttribute("tabindex", "0");
-          cell.textContent = `${row}${col}`;
+          cell.textContent = `${col}${row}`;
           const value = Number(switchData.val);
           let statusClass = "green";
           let statusText = "good";
@@ -341,7 +341,7 @@ async function loadSwitchDiagnostics() {
     }
   } finally {
     if (refreshButton) refreshButton.disabled = false;
- }
+  }
 }
 
 async function loadConfiguredSsidSignal() {
