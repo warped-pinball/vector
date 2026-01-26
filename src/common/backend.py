@@ -1835,7 +1835,16 @@ def app_get_switch_diagnostics(request):
         (5, 8, 100),
     ]
 
-    return [{"row": switch[0], "col": switch[1], "val": switch[2], "label": switch[3] if len(switch) > 3 else ""} for switch in switches]
+    return [
+        {
+            "row": switch[0],
+            "col": switch[1],
+            "val": switch[2],
+            "label": switch[3] if len(switch) > 3 else "",
+        }
+        for switch in switches
+    ]
+
 
 
 #
