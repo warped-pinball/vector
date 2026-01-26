@@ -252,7 +252,7 @@ async function loadSwitchDiagnostics() {
           cell.classList.add("missing");
           cell.setAttribute(
             "aria-label",
-            `Switch ${row}-${col}: no data available`,
+            `Switch ${col}-${row}: no data available`,
           );
           cell.setAttribute("aria-disabled", "true");
           cell.setAttribute("tabindex", "-1");
@@ -274,7 +274,7 @@ async function loadSwitchDiagnostics() {
           cell.classList.add(statusClass);
 
           // Build descriptive aria-label
-          let ariaLabel = `Switch ${row}-${col}, status: ${statusText}, value: ${value}`;
+          let ariaLabel = `Switch ${col}-${row}, status: ${statusText}, value: ${value}`;
           if (details.label) {
             ariaLabel += `, ${details.label}`;
           }
