@@ -252,13 +252,13 @@ async function loadSwitchDiagnostics() {
           cell.classList.add("missing");
           cell.setAttribute(
             "aria-label",
-            `Switch ${row}-${col}: no data available`,
+            `Switch ${col}-${row}: no data available`,
           );
           cell.setAttribute("aria-disabled", "true");
           cell.setAttribute("tabindex", "-1");
         } else {
           cell.setAttribute("tabindex", "0");
-          cell.textContent = `${row}${col}`;
+          cell.textContent = `${col}${row}`;
           const value = Number(switchData.val);
           let statusClass = "green";
           let statusText = "good";
@@ -274,7 +274,7 @@ async function loadSwitchDiagnostics() {
           cell.classList.add(statusClass);
 
           // Build descriptive aria-label
-          let ariaLabel = `Switch ${row}-${col}, status: ${statusText}, value: ${value}`;
+          let ariaLabel = `Switch ${col}-${row}, status: ${statusText}, value: ${value}`;
           if (details.label) {
             ariaLabel += `, ${details.label}`;
           }
@@ -341,7 +341,7 @@ async function loadSwitchDiagnostics() {
     }
   } finally {
     if (refreshButton) refreshButton.disabled = false;
- }
+  }
 }
 
 async function loadConfiguredSsidSignal() {
