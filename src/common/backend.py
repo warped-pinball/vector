@@ -1777,8 +1777,8 @@ def app_get_active_formats(request):
             },
     @end
     """
-    import Formats
-    return Formats.get_available_formats()
+    from Formats import get_available_formats
+    return get_available_formats()
 
 
 # get switch diagnostics

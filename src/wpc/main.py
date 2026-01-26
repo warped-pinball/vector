@@ -138,9 +138,7 @@ reset_control.release(True)
 time.sleep(1)
 
 resource.go(True)
-
-Formats.intiialize()
-Formats.test()
+Formats.initialize()
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402

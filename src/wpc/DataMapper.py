@@ -163,7 +163,7 @@ def read_high_scores():
             high_scores[0][1] = _bcd_to_int(score_bytes)
             
             # Calculate the maximum fake score (all BCD bytes set to 0x99)
-            max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
+            #max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
             
             # Filter out placeholder scores
             #if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:

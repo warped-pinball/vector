@@ -628,7 +628,7 @@ FORMAT_HANDLERS = [
 ]
 
 
-def intiialize():
+def initialize():
     # Initialize SharedState attributes if they don't exist
     if not hasattr(S, 'active_format'):
         S.active_format = 0
@@ -641,34 +641,4 @@ def intiialize():
 
 
 
-
-
-
-
-
-
-
-def test():
-    formats = get_available_formats()
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    for key, value in formats.items():
-        print(f"{key}: {value}\n")
-
-  
-    p = {
-        "Target": {
-            "Name": "Switch or feature to hit",
-            "Value": 56
-        }
-    }
-
-    z={}
-
-    print("**************************set format longest ball = ", set_active_format("LongestBall", z), "\n\n")
-
-    for attr in dir(S):
-        if not attr.startswith("__"):
-            print(f"{attr}: {getattr(S, attr)}")
-
-    print("\n\n")
 
