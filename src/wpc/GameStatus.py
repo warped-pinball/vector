@@ -29,6 +29,9 @@ def game_report():
         modes = DataMapper.get_modes()
         if modes and gameActive:
             data["Modes"] = modes
+        
+        # Add active format name
+        data["ActiveFormatName"] = getattr(S, "active_format_name", "Standard")
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")

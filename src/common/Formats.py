@@ -506,6 +506,7 @@ def formats_run():
     if S.active_format != next_format_id:
         if DataMapper.get_game_active() is False and game_state==0:           
             S.active_format = next_format_id
+            S.active_format_name = next((name for name, fmt in DEFAULT_FORMATS.items() if fmt.get("Id") == next_format_id), "Standard")
             S.format_options = next_format_options   
             log.log("FORMAT: engage waiting format")
             return                        
