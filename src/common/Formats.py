@@ -51,6 +51,7 @@ DEFAULT_FORMATS = {
     },
     "Limbo": {
         "Id": MODE_ID_LIMBO,
+        "Sort": "Reverse",
         "Description": "Score as low as possible",        
         "Options": {
             "GetPlayerID": {
@@ -62,6 +63,7 @@ DEFAULT_FORMATS = {
     },
     "LowBall": {
         "Id": MODE_ID_LOWBALL,
+        "Sort": "Normal",
         "Description": "Only the lowest scoring ball counts",
         "Options": {
             "GetPlayerID": {
@@ -73,6 +75,7 @@ DEFAULT_FORMATS = {
     },
     "Golf": {
         "Id": MODE_ID_GOLF,
+        "Sort": "Reverse",
         "Description": "Hit a specific target in the least number of balls",
         "Options": {
             "GetPlayerID": {
@@ -114,6 +117,7 @@ DEFAULT_FORMATS = {
     },
     "LongestBall": {
         "Id": MODE_ID_LONGESTBALL,
+        "Sort": "Normal",
         "Description": "Longest single ball play time wins",
         "Options": {
             "GetPlayerID": {
@@ -212,12 +216,6 @@ def practice_run():
                 DataMapper.write_live_scores(scores)
                 break
 
-def practice_close():
-    """Close practice mode"""
-    print("FORMATS: Practice mode closing")
-
-
-
 
 # ============================================================================
 # Low Ball Mode Handlers  (only low scoring ball counts)
@@ -287,7 +285,7 @@ def golf_init():
 def golf_run():
     """Run golf mode during gameplay"""
     global golf_ball_in_play, golf_player_up, golf_player_complete, player_scores
-    
+
     ball_in_play = DataMapper.get_ball_in_play()
     player_up = DataMapper.get_player_up()
     
@@ -344,6 +342,11 @@ def golf_hit_callback(switch_idx):
     Callback when the golf target switch is hit.
     Increments the current player's score (number of balls used).
     """
+
+    #safety in case of sunscription problem
+    if S.active_format != MODE_ID_GOLF:
+        return
+
     try:
         player_up = DataMapper.get_player_up()       
         
@@ -620,7 +623,7 @@ FORMAT_HANDLERS = [
     # 3: Golf
     [golf_init, golf_run, golf_close],
     # 4: Practice
-    [practice_init, practice_run, practice_close],
+    [practice_init, practice_run, empty_close],
     # 5: Decay
     [decay_init, decay_run, empty_close],
     # 6: Longest Ball
