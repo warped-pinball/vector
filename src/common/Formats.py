@@ -299,7 +299,7 @@ def golf_run():
         all_complete = True
         for idx in range(num_players):
             if not golf_player_complete[idx]:
-                if (player_scores[idx]<5000):
+                if (player_scores[idx]<7000):
                     all_complete = False
                 break
         
