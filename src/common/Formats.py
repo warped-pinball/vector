@@ -576,21 +576,25 @@ def formats_run():
     elif game_state == 3:  #wrap up
             print("\n\nFORMATS: Game all done - results are:")
             
-            # Get final scores
-            final_scores = DataMapper.read_high_scores()
+            # Get in-play scores (in player order) and high scores (sorted by score)
+            in_play_scores = DataMapper.read_in_play_scores()
+            high_scores = DataMapper.read_high_scores()
+            
+            # Match in-play scores with high score initials to preserve player order
+            final_scores_by_player = DataMapper.match_in_play_with_high_score_initials(in_play_scores, high_scores)
             num_players = DataMapper.get_players_in_game()
             
             # Print results for each player
             for idx in range(num_players):
                 player_num = idx + 1
-                initials = final_scores[player_num][0] if final_scores[player_num][0] else "___"
-                score = final_scores[player_num][1]
+                initials = final_scores_by_player[idx][0] if final_scores_by_player[idx][0] else "___"
+                score = final_scores_by_player[idx][1]
                 print(f"  Player {player_num} ({initials}): {score:,}")            
             
             try:
                 from origin import push_end_of_game
                 # Format: [gameCounter, [initials, score], [initials, score], [initials, score], [initials, score]]
-                game = [S.gameCounter, final_scores[1], final_scores[2], final_scores[3], final_scores[4]]
+                game = [S.gameCounter, final_scores_by_player[0], final_scores_by_player[1], final_scores_by_player[2], final_scores_by_player[3]]
                 push_end_of_game(game)
             except Exception as e:
                 log.log(f"FORMATS: Error pushing end of game to origin: {e}")
@@ -660,7 +664,7 @@ def test():
 
     z={}
 
-    print("**************************set format Decay = ", set_active_format("Decay", z), "\n\n")
+    print("**************************set format longest ball = ", set_active_format("LongestBall", z), "\n\n")
 
     for attr in dir(S):
         if not attr.startswith("__"):

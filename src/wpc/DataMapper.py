@@ -13,9 +13,7 @@ converting between machine formats and usable Python data structures.
 """
 
 from logger import logger_instance
-
 log = logger_instance
-
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
