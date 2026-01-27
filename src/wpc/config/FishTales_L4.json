@@ -112,23 +112,23 @@
   "Switches": {
     "Type": 10,
     "Address": 5975,
-    "Length": 48,
+    "Length": 46,
     "Names": [
-      ["", 0],
-      ["", 0],
+      [],
+      [],
       ["Start Button", 60],
-      ["Plumb Bob Tilt", 60],
+      ["Plumb Bob Tilt", 250],
       ["Outhole", 60],
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
-      ["Ticket Opto", 0],
-      ["Always Closed", 0],
+      ["Ticket Opto", 60],
+      ["Always Closed", 60],
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
-      ["Lt Stand-Up Tgt 1", 60],
+      ["Lt Stand-up Tgt 1", 60],
       ["Cast", 60],
       ["Left Boat Exit", 60],
       ["Right Boat Exit", 60],
@@ -140,17 +140,17 @@
       ["Captive Ball", 60],
       ["Right Boat Entry", 60],
       ["Left Boat Entry", 60],
-      ["Lie (E)", 60],
-      ["Lie (I)", 60],
-      ["Lie (L)", 60],
+      ["Lie (e)", 60],
+      ["Lie (i)", 60],
+      ["Lie (l)", 60],
       ["Ball Popper", 60],
       ["Drop Target", 60],
-      ["", 0],
+      [],
       ["Left Jet", 60],
       ["Center Jet", 60],
       ["Right Jet", 60],
-      ["Rt Stand-Up Tgt 1", 60],
-      ["Rt Stand-Up Tgt 2", 60],
+      ["Rt Stand-up Tgt 1", 60],
+      ["Rt Stand-up Tgt 2", 60],
       ["Ball Shooter", 60],
       ["Left Sling", 60],
       ["Right Sling", 60],
@@ -159,9 +159,7 @@
       ["Top Eight Hole", 60],
       ["Top Left Loop", 60],
       ["Right Return", 60],
-      ["Right Outlane", 60],
-      ["", 0],
-      ["", 0]
+      ["Right Outlane", 60]
     ]
   },
   "Flippers": {
@@ -188,17 +186,14 @@
           "Id": 0
       },
       "Limbo": {
-          "Id": 1,
-          "Sort": "Reverse"
+          "Id": 1
       },
       "LowBall": {
           "Id": 2,
-          "Sort": "Normal",
           "Description": "Only the lowest scoring ball counts"
       },
       "Golf": {
           "Id": 3,
-          "Sort": "Reverse",
           "Description": "Hit a specific target in the least number of balls",
           "Options": {
               "Target": {
@@ -218,26 +213,26 @@
           "Description": "Practice mode with unlimited balls and no score tracking",
           "Options": {
               "MaxScore": {
-                  "Name": "Score Cap, zero off",
+                  "Name": "Score Cap",
                   "Type": "NumberRange",
                   "Range": {
                       "Low": 10000,
                       "High": 400000
                   },
-                  "Value": 0
+                  "Value": 30000
               }
           }
       },
-      "Decay": {
+      "Half Life": {
           "Id": 5,
-          "Description": "Score decreases over time",
           "Options": {
               "ScoreDecay": {
+                  "type": "NumberRange",
                   "Range": {
-                      "Low": 10000,
-                      "High": 390000,
-                      "Default": 30000
-                  }
+                      "Low": 1,
+                      "High": 20
+                  },
+                  "Value": 4
               }
           }
       },
@@ -246,4 +241,3 @@
       }
   }
 }
-

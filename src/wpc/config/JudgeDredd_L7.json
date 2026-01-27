@@ -1,81 +1,151 @@
 {
-    "GameInfo": {
-        "GameName": "Judge Dredd",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 950,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7552,
-        "AddressS2": 7617,
-        "AddressS3": 7682,
-        "Length": 32,
-        "ChecksumStartAdr": 7552,
-        "ChecksumEndAdr": 7744,
-        "ChecksumResultAdr": 7745
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7265,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6053,
-        "PlayerUp": 1039,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Judge Dredd",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 950,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7552,
+      "AddressS2": 7617,
+      "AddressS3": 7682,
+      "Length": 32,
+      "ChecksumStartAdr": 7552,
+      "ChecksumEndAdr": 7744,
+      "ChecksumResultAdr": 7745
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7265,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7302,
+      "GrandChampInitAdr": 7299,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7296,
+      "ChecksumResultAdr": 7297,
+      "GCChecksumStartAdr": 7299,
+      "GCChecksumEndAdr": 7306,
+      "GCChecksumResultAdr": 7307
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 158,
+      "GameActiveValue": 0,
+      "Players": 6053,
+      "PlayerUp": 1039,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 63,
+    "Names": [
+      ["Left Fire Button", 60],
+      ["Right Fire Button", 60],
+      ["Credit Start", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Shoot Lane", 60],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["3 Bank Targets", 60],
+      ["Slam Tilt", 0],
+      ["Front Door Closed", 60],
+      ["Ticket Dispenser", 0],
+      ["Always Closed", 0],
+      ["Top Right Post", 60],
+      ["Captive Ball 1", 60],
+      ["Mystery", 60],
+      [],
+      ["Buy In Extra Ball", 60],
+      [],
+      ["Left Rollover", 60],
+      ["Inside Right Return", 60],
+      ["Top Center Rollover", 60],
+      ["Left Score Post", 60],
+      ["Subway Enter 1", 60],
+      ["Subway Enter 2", 60],
+      ["Right Ball Shooter", 60],
+      ["Right Outlane", 60],
+      ["Outside Right Return", 60],
+      ["Super Game", 60],
+      [],
+      [],
+      [],
+      [],
+      ["Left Sling 2", 60],
+      ["Right Sling 2", 60],
+      ["Captive Ball 2", 60],
+      ["Drop Target J", 60],
+      ["Drop Target U", 60],
+      ["Drop Target D", 60],
+      ["Drop Target G", 60],
+      ["Drop Target E", 60],
+      ["Globe Position 1", 60],
+      ["Crane Exit", 60],
+      ["Left Ramp To Lock", 60],
+      ["Left Ramp Exit", 60],
+      [],
+      ["Center Ramp Exit", 60],
+      ["Left Ramp Enter", 60],
+      ["Captive Ball 3", 60],
+      ["Magnet Over Ring", 60],
+      ["Top Right Opto", 60],
+      ["Left Popper", 60],
+      ["Right Popper", 60],
+      ["Top Ramp Exit", 60],
+      ["Right Ramp Exit", 60],
+      ["Globe Position 2", 60],
+      [],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      ["Trough 5", 60],
+      ["Trough 6", 60],
+      ["Top Trough", 60]
+    ]
+  }
 }

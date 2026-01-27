@@ -20,6 +20,7 @@ from logger import logger_instance
 from systemConfig import SystemVersion
 from machine import Pin
 
+import Switches
 import Formats
 
 Log = logger_instance
@@ -138,6 +139,7 @@ reset_control.release(True)
 time.sleep(1)
 
 resource.go(True)
+Switches.initialize()
 Formats.initialize()
 
 # launch wifi, and server. Should not return

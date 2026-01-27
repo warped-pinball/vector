@@ -34,7 +34,7 @@ MODE_ID_LIMBO = 1
 MODE_ID_LOWBALL = 2
 MODE_ID_GOLF = 3
 MODE_ID_PRACTICE = 4
-MODE_ID_DECAY = 5
+MODE_ID_HALF_LIFE = 5
 MODE_ID_LONGESTBALL = 6
 
 
@@ -100,12 +100,12 @@ DEFAULT_FORMATS = {
             }
         }    
     },
-    "Decay": {
-        "Id": MODE_ID_DECAY,
+    "Half Life": {
+        "Id": MODE_ID_HALF_LIFE,
         "Description": "Score decreases over time",
         "Options": {
             "ScoreDecay": {
-                "Name": "Decay percent per 2.5 seconds",
+                "Name": "Half Life percent per 2.5 seconds",
                 "type": "NumberRange",
                 "Range": {
                     "Low": 1,
@@ -388,27 +388,27 @@ def limbo_run():
 
 
 # ============================================================================
-# Decay Mode Handlers
+# Half Life Mode Handlers
 # ============================================================================
-score_decay_percent = 2  # Default value, will be overridden from config
-def decay_init():
-    """Initialize decay mode - pull scoreDecay value from config"""
-    global score_decay_percent, player_scores
+score_half_life_percent = 2  # Default value, will be overridden from config
+def half_life_init():
+    """Initialize half life mode - pull scoreDecay value from config"""
+    global score_half_life_percent, player_scores
     
     # Get the decay percentage from format options
-    score_decay_percent = S.format_options.get("ScoreDecay", {}).get("Value", 2)
+    score_half_life_percent = S.format_options.get("ScoreDecay", {}).get("Value", 2)
     player_scores = [0, 0, 0, 0]
-    print(f"FORMAT: Decay initialized with {score_decay_percent}%")
+    print(f"FORMAT: Half Life initialized with {score_half_life_percent}%")
 
-def decay_run():
-    """Decay run handler - reduce scores by percentage if above 10000"""
+def half_life_run():
+    """Half Life run handler - reduce scores by percentage if above 10000"""
     global player_scores
     
     current_scores = DataMapper.get_live_scores(use_format=False)
     
     player_up = DataMapper.get_player_up()-1
     if current_scores[player_up] > 10000:           
-        decay_amount = (current_scores[player_up] * score_decay_percent) // 100
+        decay_amount = (current_scores[player_up] * score_half_life_percent) // 100
         current_scores[player_up] -= decay_amount
 
     # Write the decayed scores back to shadow RAM and player_scores
@@ -624,8 +624,8 @@ FORMAT_HANDLERS = [
     [golf_init, golf_run, golf_close],
     # 4: Practice
     [practice_init, practice_run, empty_close],
-    # 5: Decay
-    [decay_init, decay_run, empty_close],
+    # 5: Half Life
+    [half_life_init, half_life_run, empty_close],
     # 6: Longest Ball
     [longest_ball_init, longest_ball_run, empty_close]
 ]

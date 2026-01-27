@@ -25,23 +25,36 @@ last_ball_in_play = 0
 last_player_up = 0
 last_game_active = False
 
+#switch system enable
+switch_system_on = False
+
 # Switch subscription system
 switch_subscriptions = {}
 
 
-def init():
+def initialize():
     """
     Initialize the switches module by loading switch counts from SPI storage.
     Should be called once at startup.
     """
-    global switch_counts, last_ball_in_play, last_player_up
+    global switch_counts, last_ball_in_play, last_player_up, switch_system_on
+    if S.gdata.get("Switches", {}).get("Type") != 10:
+        log.log("SWITCHES: Invalid or missing 'Switches'")
+        switch_system_on = False
+        return False
+
     try:
-        record = SPI_DataStore.read_record("switches")
-        switch_counts = record.get("switches", [0] * 72)
-        log.log(f"SWITCHES: Loaded {len(switch_counts)} switch counts from storage")
+        record = SPI_DataStore.read_record("switches")     #read from fram switch counts
+        switch_counts = record.get("switches", [0] * 72)   #max len is 72, most dont use all
+        log.log(f"SWITCHES: Loaded {len(switch_counts)} switches from storage")
 
         last_ball_in_play = DataMapper.get_ball_in_play()
         last_player_up = DataMapper.get_player_up()
+        switch_system_on = True
+
+        # Schedule polling
+        from phew.server import schedule
+        schedule(poll_switches, 15000, 5000) 
 
     except Exception as e:
         log.log(f"SWITCHES: Error loading switch counts: {e}")
@@ -58,15 +71,20 @@ def poll_switches():
     
     Every X calls, also checks for game state changes (ball_in_play, player_up, game over).
     """
-    global switch_counts, poll_counter, last_ball_in_play, last_player_up, last_game_active
+    global switch_counts, poll_counter, last_ball_in_play
+    global switch_system_on, last_player_up, last_game_active
     
+    if switch_system_on is False:
+        return
+
     try:
         tripped = DataMapper.get_switches_tripped()        
         if not tripped:
             return
-        
-        tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
-        print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
+
+        #diagnostic output 
+        #tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
+        #print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
 
         DataMapper.write_switches_nominal()
 
@@ -78,8 +96,7 @@ def poll_switches():
                 # Call any subscribed callbacks for this switch
                 if idx in switch_subscriptions:
                     for callback in switch_subscriptions[idx]:
-                        try:
-                            print("SWITCHES CALLBACKKKKKKKKKKKKKKKKKK")
+                        try:                    
                             callback(idx)
                         except Exception as e:
                             log.log(f"SWITCHES: Error in callback for switch {idx}: {e}")
@@ -137,12 +154,16 @@ def get_switch_index(switch_name):
     Returns:
         int: Switch index (0-71) or -1 if not found
     """
-    try:
-        if "Switches" not in S.gdata or "Names" not in S.gdata["Switches"]:
-            log.log("SWITCHES: No switch names configured in S.gdata")
+    global switch_system_on
+
+    if switch_system_on is False:
+        return -1
+    
+    try:        
+        names = S.gdata.get("Switches", {}).get("Names")
+        if not names:
+            log.log("SWITCHES: No 'Names' found in Switches")
             return -1
-        
-        names = S.gdata["Switches"]["Names"]
         for idx, name_entry in enumerate(names):
             # Support list of lists: [name, number]
             if isinstance(name_entry, list) and len(name_entry) > 0:
@@ -165,7 +186,7 @@ def subscribe(switch_name, callback):
     Subscribe to a specific switch trigger event.
     
     Args:
-        switch_name: Name of the switch to monitor (string)
+        switch_name: Name of the switch (string) or switch index (integer) to monitor
         callback: Function to call when switch is triggered. 
                   Callback will receive switch_index as argument.
     
@@ -173,17 +194,24 @@ def subscribe(switch_name, callback):
         bool: True if subscription successful, False otherwise
     """
     global switch_subscriptions
-    
+
     if not callable(callback):
         log.log(f"SWITCHES: subscribe() - callback must be callable")
         return False
     
-    # Translate name to index
-    switch_index = get_switch_index(switch_name)
-    print("SUBSCRIBE - - - - -   switch number  = ",switch_index)
-    if switch_index < 0:
-        log.log(f"SWITCHES: subscribe() - invalid switch name '{switch_name}'")
-        return False
+    # Determine if switch_name is an index or name
+    if isinstance(switch_name, int):
+        switch_index = switch_name
+        max_switch_index=S.gdata["Switches"]["Length"]
+        if switch_index < 0 or switch_index > max_switch_index:
+            log.log(f"SWITCHES: subscribe() - invalid switch index {switch_index}")
+            return False
+    else:
+        # Translate name to index
+        switch_index = get_switch_index(switch_name)
+        if switch_index < 0:
+            log.log(f"SWITCHES: subscribe() - invalid switch name '{switch_name}'")
+            return False
     
     if switch_index not in switch_subscriptions:
         switch_subscriptions[switch_index] = []
@@ -201,7 +229,7 @@ def unsubscribe(switch_name, callback):
     Unsubscribe from a specific switch trigger event.
     
     Args:
-        switch_name: Name of the switch to stop monitoring (string)
+        switch_name: Name of the switch (string) or switch index (integer) to stop monitoring
         callback: The callback function to remove
     
     Returns:
@@ -209,11 +237,18 @@ def unsubscribe(switch_name, callback):
     """
     global switch_subscriptions
     
-    # Translate name to index
-    switch_index = get_switch_index(switch_name)
-    if switch_index < 0:
-        log.log(f"SWITCHES: unsubscribe() - invalid switch name '{switch_name}'")
-        return False
+    # Determine if switch_name is an index or name
+    if isinstance(switch_name, int):
+        switch_index = switch_name
+        if switch_index < 0 or switch_index >= 72:
+            log.log(f"SWITCHES: unsubscribe() - invalid switch index {switch_index}")
+            return False
+    else:
+        # Translate name to index
+        switch_index = get_switch_index(switch_name)
+        if switch_index < 0:
+            log.log(f"SWITCHES: unsubscribe() - invalid switch name '{switch_name}'")
+            return False
     
     if switch_index not in switch_subscriptions:
         return False
@@ -241,13 +276,14 @@ def get_diagnostics():
     
     Returns:
         list: List of dicts with keys: row, col, val, label
-    """
+    """   
+    global switch_system_on
     diagnostics = []
+
+    if switch_system_on is False:
+        return diagnostics
     
     try:
-        if "Switches" not in S.gdata or "Names" not in S.gdata["Switches"]:
-            return diagnostics
-        
         names = S.gdata["Switches"]["Names"]
         
         row=1
@@ -291,13 +327,4 @@ def get_diagnostics():
         log.log(f"SWITCHES: Error in get_diagnostics: {e}")
     
     return diagnostics
-
-
-
-# Initialize and schedule polling
-from phew.server import schedule
-init()
-schedule(poll_switches, 15000, 5000)  # Poll every 5 seconds
-
-
 
