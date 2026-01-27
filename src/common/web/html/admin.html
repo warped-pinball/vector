@@ -75,6 +75,100 @@
   input[type="radio"]:disabled {
     opacity: 0;
   }
+
+  .switch-diagnostics {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .switch-grid-container {
+    display: inline-block;
+    padding: 0.5rem;
+    background: transparent;
+  }
+
+  .switch-grid {
+    display: grid;
+    gap: 0.35rem;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .switch-header {
+    font-weight: 600;
+  }
+
+  .switch-cell,
+  .switch-header {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+  }
+
+  .switch-cell {
+    cursor: pointer;
+  }
+  .switch-cell.green {
+    background-color: #16a34a;
+  }
+
+  .switch-cell.yellow {
+    background-color: #eab308;
+  }
+
+  .switch-cell.red {
+    background-color: #dc2626;
+  }
+
+  .switch-cell.missing {
+    background-color: #9ca3af;
+  }
+
+  .switch-cell.selected {
+    box-shadow:
+      0 0 0 2px #60a5fa,
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .switch-info-panel {
+    min-width: 220px;
+    padding: 0.75rem;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    background: transparent;
+  }
+
+  .switch-info-panel h4 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .switch-info-line {
+    margin: 0.25rem 0;
+    font-weight: 600;
+  }
+
+  .switch-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(31, 41, 55, 0.9);
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.25rem;
+    pointer-events: none;
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    display: none;
+  }
 </style>
 
 <div style="text-align: left">
@@ -443,6 +537,40 @@
         <span id="configured-ssid-quality">Loading...</span>
       </div>
     </fieldset>
+  </section>
+  <section>
+    <h3 id="switch-diagnostics-heading">Switch Diagnostics</h3>
+    <p>
+      Check the health of your switch matrix. Each switch is marked
+      green/yellow/red based on how many balls have been played since the last
+      time it was closed.
+    </p>
+    <button id="switch-diagnostics-refresh" class="secondary">Refresh</button>
+    <div class="switch-diagnostics">
+      <div
+        class="switch-grid-container"
+        role="region"
+        aria-labelledby="switch-diagnostics-heading"
+      >
+        <div
+          id="switch-diagnostics-grid"
+          class="switch-grid"
+          aria-label="Switch matrix grid showing switch health status"
+        ></div>
+      </div>
+      <div
+        id="switch-info-panel"
+        class="switch-info-panel"
+        role="complementary"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <h4>Switch Info</h4>
+        <div id="switch-info-content" class="switch-info-content">
+          Click a switch to see its details.
+        </div>
+      </div>
+    </div>
   </section>
   <section>
     <h2>Help</h2>

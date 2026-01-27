@@ -1,81 +1,159 @@
 {
-    "GameInfo": {
-        "GameName": "Star Trek: TNG",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 1043,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7557,
-        "AddressS2": 7622,
-        "AddressS3": 7687,
-        "Length": 32,
-        "ChecksumStartAdr": 7557,
-        "ChecksumEndAdr": 7749,
-        "ChecksumResultAdr": 7750
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 6,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7265,
-        "InitialSpacing": 9,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7306,
-        "GrandChampInitAdr": 7303,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7300,
-        "ChecksumResultAdr": 7301,
-        "GCChecksumStartAdr": 7303,
-        "GCChecksumEndAdr": 7311,
-        "GCChecksumResultAdr": 7312
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6057,
-        "PlayerUp": 840,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    }
+  "GameInfo": {
+      "GameName": "Star Trek: TNG",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 1043,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7557,
+      "AddressS2": 7622,
+      "AddressS3": 7687,
+      "Length": 32,
+      "ChecksumStartAdr": 7557,
+      "ChecksumEndAdr": 7749,
+      "ChecksumResultAdr": 7750
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7265,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7306,
+      "GrandChampInitAdr": 7303,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7300,
+      "ChecksumResultAdr": 7301,
+      "GCChecksumStartAdr": 7303,
+      "GCChecksumEndAdr": 7311,
+      "GCChecksumResultAdr": 7312
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6057,
+      "PlayerUp": 840,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5979,
+    "Length": 71,
+    "Names": [
+      ["Buy In Button", 60],
+      ["Right Fire Button", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["Right Return Lane", 60],
+      ["Right Outlane", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Made Middle Ramp", 60],
+      ["Always Closed", 0],
+      ["Enter Right Ramp", 60],
+      ["Left 45 Target", 60],
+      ["Center 45 Target", 60],
+      ["Right 45 Target", 60],
+      ["Borg Lock", 60],
+      ["Under Left Gun Sw 2", 60],
+      ["Under Right Gun Sw 2", 60],
+      ["Right Gun Shooter", 60],
+      ["Under Left Lock Sw 2", 60],
+      ["Under Left Gun Sw 1", 60],
+      ["Under Right Gun Sw 1", 60],
+      ["Left Gun Shooter", 60],
+      ["Under Left Lock Sw 1", 60],
+      ["Under Left Lock Sw 3", 60],
+      ["Under Left Lock Sw 4", 60],
+      ["Left Outer Loop", 60],
+      ["Under Top Hole", 60],
+      ["Under Left Hole", 60],
+      ["Under Borg Entry", 60],
+      ["Borg Entry", 60],
+      ["Left Bank Top", 60],
+      ["Left Bank Middle", 60],
+      ["Left Bank Bottom", 60],
+      ["Right Bank Top", 60],
+      ["Right Bank Middle", 60],
+      ["Right Bank Bottom", 60],
+      ["Top Drop Target", 60],
+      ["Right Outer Loop", 60],
+      ["Trough Lr 1", 60],
+      ["Trough Lr 2", 60],
+      ["Trough Lr 3", 60],
+      ["Trough Lr 4", 60],
+      ["Trough Lr 5", 60],
+      ["Trough Lr 6", 60],
+      ["Trough Up", 60],
+      ["Shooter", 60],
+      ["Left Jet", 60],
+      ["Right Jet", 60],
+      ["Bottom Jet", 60],
+      ["Right Sling", 60],
+      ["Left Sling", 60],
+      ["Top Lane Left", 60],
+      ["Top Lane Center", 60],
+      ["Top Lane Right", 60],
+      ["Time", 60],
+      ["Rift", 60],
+      ["Made Left Ramp", 60],
+      ["Q", 60],
+      ["Left 2x Shuttle", 60],
+      ["Right 2x Shuttle", 60],
+      ["Made Right Ramp", 60],
+      ["Enter Left Ramp", 60],
+      [],
+      ["Left Gun Mark", 60],
+      [],
+      [],
+      ["Right Gun Home", 60],
+      ["Right Gun Mark", 60],
+      ["Left Gun Home", 60]
+    ]
+  }
 }

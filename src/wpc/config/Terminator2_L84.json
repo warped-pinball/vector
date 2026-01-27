@@ -77,16 +77,5 @@
         "ScoreAdr": 5936,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
-    },
-    "Switches": {
-        "Type": 10,
-        "Address": 5975,
-        "Length": 64,
-        "List": {
-            "Target2": 6024,
-            "Target3": 6025,
-            "Target4": 6026,
-            "Target5 Low": 6027
-        }
     }
 }

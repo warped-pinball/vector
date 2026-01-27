@@ -1,81 +1,152 @@
 {
-    "GameInfo": {
-        "GameName": "Demolition Man",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 951,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7557,
-        "AddressS2": 7622,
-        "AddressS3": 7687,
-        "Length": 32,
-        "ChecksumStartAdr": 7557,
-        "ChecksumEndAdr": 7749,
-        "ChecksumResultAdr": 7750
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 6,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7265,
-        "InitialSpacing": 9,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7306,
-        "GrandChampInitAdr": 7303,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7300,
-        "ChecksumResultAdr": 7301,
-        "GCChecksumStartAdr": 7303,
-        "GCChecksumEndAdr": 7311,
-        "GCChecksumResultAdr": 7312
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6057,
-        "PlayerUp": 1048,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    }
+  "GameInfo": {
+      "GameName": "Demolition Man",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 951,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7557,
+      "AddressS2": 7622,
+      "AddressS3": 7687,
+      "Length": 32,
+      "ChecksumStartAdr": 7557,
+      "ChecksumEndAdr": 7749,
+      "ChecksumResultAdr": 7750
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7265,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7306,
+      "GrandChampInitAdr": 7303,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7300,
+      "ChecksumResultAdr": 7301,
+      "GCChecksumStartAdr": 7303,
+      "GCChecksumEndAdr": 7311,
+      "GCChecksumResultAdr": 7312
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6057,
+      "PlayerUp": 1048,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5979,
+    "Length": 64,
+    "Names": [
+      ["Ball Launch", 60],
+      ["Left Handle Button", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Outlane", 60],
+      ["Left Inlane", 60],
+      ["Right Inlane", 60],
+      ["Right Outlane", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy-in Button", 60],
+      ["Always Closed", 0],
+      ["Claw Position 1", 60],
+      ["Claw Position 2", 60],
+      ["Shooter Lane", 60],
+      [],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      ["Trough 5", 60],
+      ["Trough Jam", 60],
+      [],
+      ["Standup 5", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+      ["Left Jet Bumper", 60],
+      ["Top Slingshot", 60],
+      ["Right Jet Bumper", 60],
+      ["Right Ramp Enter", 60],
+      ["Right Ramp Exit", 60],
+      ["Right Freeway", 60],
+      ["Left Ramp Enter", 60],
+      ["Left Ramp Exit", 60],
+      ["Center Ramp", 60],
+      ["Upper Rebound", 60],
+      ["Left Loop", 60],
+      ["Standup 2", 60],
+      ["Standup 3", 60],
+      ["Standup 4", 60],
+      ["Side Ramp Enter", 60],
+      ["Side Ramp Exit", 60],
+      ["Left Rollover", 60],
+      ["Center Rollover", 60],
+      ["Right Rollover", 60],
+      ["Eject", 60],
+      ["Elevator Index", 60],
+      [],
+      ["Chase Car 1", 60],
+      ["Chase Car 2", 60],
+      ["Top Popper", 60],
+      ["Elevator Hold", 60],
+      [],
+      ["Bottom Popper", 60],
+      ["Eyeball Standup", 60],
+      ["Standup 1", 60],
+      ["Claw Capture Simon", 60],
+      ["Claw Sup Jets", 60],
+      ["Claw Prison Break", 60],
+      ["Claw Freeze", 60],
+      ["Claw Acmag", 60],
+      ["Upper Left Flipper Gate", 60],
+      ["Car Chase Standup", 60],
+      ["Lower Rebound", 60]
+    ]
+  }
 }
