@@ -9,7 +9,7 @@ import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
-from detect_boards import detect_boards
+from detect_boards import detect_boards, list_pico_ports
 
 REPL_ATTEMPTS = 10
 REPL_DELAY = 1
@@ -52,6 +52,10 @@ def main(argv: list[str]) -> int:
         help=("Pass through to flash.py: wipe config on Pico and write configuration from PATH. " "If provided with no PATH, uses the default config for the selected build_dir."),
     )
     args = parser.parse_args(argv[1:])
+
+    if args.system == "list":
+        print("\n".join(list_pico_ports()))
+        return
 
     if args.system == "auto":
         mapping = detect_boards()
