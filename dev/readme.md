@@ -37,7 +37,7 @@ python dev/sync.py sys11 /dev/ttyACM0
 
 The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
-Replace `/dev/ttyACM0` with your own port. You can list all available on your machine by running the following
+Replace `/dev/ttyACM0` with your own port. You can list all available on your machine by running:
 ```bash
 python dev/sync.py list
 ```
