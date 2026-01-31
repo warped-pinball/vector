@@ -263,6 +263,8 @@ def golf_init():
     """Initialize golf mode, called at game start each time"""
     global player_scores, golf_ball_in_play, golf_player_up, golf_player_complete, switch_callback_setup
 
+
+    print("GLF &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&   setup")
     # Subscribe to target hit event
     if switch_callback_setup is False:
         target_name = S.format_options.get("Target", {}).get("Value", "")
@@ -346,6 +348,9 @@ def golf_hit_callback(switch_idx):
     #safety in case of sunscription problem
     if S.active_format != MODE_ID_GOLF:
         return
+
+
+    print("switch hit ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
     try:
         player_up = DataMapper.get_player_up()       
@@ -516,6 +521,10 @@ def formats_run():
             
     if S.active_format == MODE_ID_STANDARD:
         return
+
+
+    print("Formats Run")
+ 
 
     #waiting for game to start
     if game_state == 0:
