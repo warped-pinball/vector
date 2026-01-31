@@ -473,15 +473,17 @@ window.cleanupRefreshes = function () {
 };
 
 /*
- * pollForElements: “poor man’s” DOM-ready. Once the scoreboard container
- * and nav are in the DOM, load the default leaderboard and THEN load players.
+ * Initialize scores page: Wait for scoreboard elements to be in the DOM,
+ * then load the default leaderboard and players.
  * We do NOT auto-update personal board until user selects from dropdown.
  */
-(function pollForElements() {
-  if (
-    document.getElementById("leaderboardArticles") &&
-    document.getElementById("score-board-nav")
-  ) {
+(async function initializeScoresPage() {
+  try {
+    // Wait for both required elements to be in the DOM
+    await window.waitForElementById("leaderboardArticles", 3000);
+    await window.waitForElementById("score-board-nav", 3000);
+
+    // Initialize the leaderboard
     window.updateLeaderboardArticles();
     window.startAutoRefreshForTab("leader-board");
 
@@ -500,8 +502,12 @@ window.cleanupRefreshes = function () {
       .catch(function (error) {
         console.error("Error fetching players:", error);
       });
-  } else {
-    setTimeout(pollForElements, 100);
+  } catch (error) {
+    console.error("Error initializing scores page:", error);
+    // If elements don't appear within timeout, log error but don't fail silently
+    console.error(
+      "Scores page elements not found. The page may not have loaded correctly.",
+    );
   }
 })();
 
