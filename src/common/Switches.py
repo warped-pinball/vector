@@ -88,14 +88,17 @@ def poll_switches():
     if switch_system_on is False:
         return
 
+
+    print("Switch poll@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
     try:
         tripped = DataMapper.get_switches_tripped()        
         if not tripped:
             return
 
         #diagnostic output 
-        #tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
-        #print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
+        tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
+        print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
 
         DataMapper.write_switches_nominal()
 
@@ -109,6 +112,7 @@ def poll_switches():
                     for callback in switch_subscriptions[idx]:
                         try:                    
                             callback(idx)
+                            print("SWITCH callllllllllllllllllllllback")
                         except Exception as e:
                             log.log(f"SWITCHES: Error in callback for switch {idx}: {e}")
         
@@ -203,6 +207,7 @@ def subscribe(switch_name, callback):
     
     # Determine if switch_name is an index or name
     if isinstance(switch_name, int):
+        print("SWITCH NUMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMBER",switch_name)
         switch_index = switch_name
         max_switch_index=S.gdata["Switches"]["Length"]
         if switch_index < 0 or switch_index > max_switch_index:

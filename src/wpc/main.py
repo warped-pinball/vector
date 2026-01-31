@@ -142,6 +142,10 @@ resource.go(True)
 Switches.initialize()
 Formats.initialize()
 
+
+Formats.set_active_format("Golf")
+
+
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402
 

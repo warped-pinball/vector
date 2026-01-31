@@ -325,7 +325,7 @@ def get_player_up():
     """
     Get the current player number (whose turn it is).
     
-    SYS11 stores player-up as 1-4 at configured address.
+    SYS11 stores player-up as 0-3 at configured address.
     
     Returns:
         int: Player number (1-4) or 0 if not available
@@ -333,7 +333,7 @@ def get_player_up():
     try:
         if "InPlay" in S.gdata and "PlayerUp" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["PlayerUp"]
-            return shadowRam[adr]
+            return shadowRam[adr]+1
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_player_up: {e}")
     
@@ -344,7 +344,7 @@ def get_players_in_game():
     """
     Get the number of players in the current game.
     
-    SYS11 stores player count (1-4) at configured address.
+    SYS11 stores player count (0-3) at configured address.
     
     Returns:
         int: Number of players (1-4) or 0 if not available
@@ -352,7 +352,7 @@ def get_players_in_game():
     try:
         if "InPlay" in S.gdata and "Players" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["Players"]
-            return shadowRam[adr]
+            return shadowRam[adr]+1
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
     
