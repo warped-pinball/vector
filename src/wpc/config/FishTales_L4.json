@@ -122,6 +122,7 @@
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 60],
@@ -129,6 +130,8 @@
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
       ["Lt Stand-up Tgt 1", 60],
+      ["Lt Stand-up Tgt 2", 60],
+
       ["Cast", 60],
       ["Left Boat Exit", 60],
       ["Right Boat Exit", 60],
@@ -137,15 +140,16 @@
       ["Catapult", 60],
       ["Reel 1", 60],
       ["Reel 2", 60],
+
       ["Captive Ball", 60],
       ["Right Boat Entry", 60],
       ["Left Boat Entry", 60],
       ["Lie (e)", 60],
       ["Lie (i)", 60],
       ["Lie (l)", 60],
-      ["Ball Popper", 60],
+      ["Casters Club", 60],
       ["Drop Target", 60],
-      [],
+      
       ["Left Jet", 60],
       ["Center Jet", 60],
       ["Right Jet", 60],

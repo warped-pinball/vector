@@ -351,10 +351,10 @@ def golf_hit_callback(switch_idx):
         player_up = DataMapper.get_player_up()       
         
         #golf_ball_in_play ==1 and
-        if DataMapper.get_ball_in_play() == 1:
-            if  player_scores[player_up - 1]<=1000 and player_scores[player_up - 1]>250 and golf_player_complete[player_up - 1] is True:
-                #reduce score on first ball, from 1000->500->250
-                player_scores[player_up - 1]=player_scores[player_up - 1]//2
+        #if DataMapper.get_ball_in_play() == 1:
+        if  player_scores[player_up - 1]<=1000 and player_scores[player_up - 1]>250 and golf_player_complete[player_up - 1] is True:
+            #reduce score on first ball, from 1000->750->500->250
+            player_scores[player_up - 1] -= 250   #player_scores[player_up - 1]//2
                    
         golf_player_complete[player_up - 1] = True  #player done!
 
@@ -511,7 +511,7 @@ def formats_run():
             S.active_format = next_format_id
             S.active_format_name = next((name for name, fmt in DEFAULT_FORMATS.items() if fmt.get("Id") == next_format_id), "Standard")
             S.format_options = next_format_options   
-            log.log("FORMAT: engage waiting format")
+            log.log("FORMAT: engage waiting format: ",S.active_format_name)
             return                        
             
     if S.active_format == MODE_ID_STANDARD:
