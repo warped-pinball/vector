@@ -53,7 +53,6 @@ def _push_game_state_sim(game_time, scores, ball_in_play, game_active):
                 _sim_ball_in_play += 1
                 if _sim_ball_in_play > 5:
                     player_initials = ["MAX", "PSM", "TIM"]
-                    push_end_of_game([0, ["", 0], ["", 0], ["", 0], ["", 0]])
                     # Send an "end_of_game" for the previous simulated game using the last simulated scores.
                     plays = [0]
                     for i in range(4):
@@ -132,10 +131,10 @@ def _push_game_state_real(game_time, scores, ball_in_play, game_active):
 
 def push_game_state(game_time, scores, ball_in_play, game_active):
     # Toggle simulation: comment the next line to disable simulated gameplay.
-    # return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
+    return _push_game_state_sim(game_time, scores, ball_in_play, game_active)
 
     # Normal behavior: uncomment the next line to use real game state.
-    return _push_game_state_real(game_time, scores, ball_in_play, game_active)
+    # return _push_game_state_real(game_time, scores, ball_in_play, game_active)
 
 
 def push_end_of_game(game):
