@@ -503,10 +503,9 @@ window.cleanupRefreshes = function () {
         console.error("Error fetching players:", error);
       });
   } catch (error) {
-    console.error("Error initializing scores page:", error);
-    // If elements don't appear within timeout, log error but don't fail silently
     console.error(
-      "Scores page elements not found. The page may not have loaded correctly.",
+      "Error initializing scores page. Elements may not have loaded correctly:",
+      error,
     );
   }
 })();
