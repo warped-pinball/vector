@@ -340,7 +340,7 @@ def find_player_by_initials(new_entry):
 
 def update_individual_score(new_entry):
     """upadate a players individual score board"""
-    initials = new_entry["initials"]
+    # initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
     if not playername or playername in [" ", "@@@", "   ", ""]:
@@ -537,6 +537,11 @@ def CheckForNewScores(nState=[0]):
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
         # waiting for a game to start
         if nState[0] == 1:
+            # Check if active_format exists and is not 0; if so, return early
+            # allows gam eis progress to finish in normal mode when format is activeated
+            if hasattr(S, "active_format") and getattr(S, "active_format", 0) != 0:
+                return
+
             GameEndCount = 0
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
