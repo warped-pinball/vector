@@ -9,7 +9,6 @@ Tracks switch activity by monitoring which switches have been tripped
 and maintains a local count for each switch. Counts are reset when
 switches are detected as tripped.
 """
-
 import SPI_DataStore
 import DataMapper
 import SharedState as S
@@ -32,12 +31,17 @@ switch_system_on = False
 switch_subscriptions = {}
 
 
+POLL_SWITCHES_mS = 5000
+POLL_GAME_STATE_CNT = 7
+
+
 def initialize():
     """
     Initialize the switches module by loading switch counts from SPI storage.
     Should be called once at startup.
     """
     global switch_counts, last_ball_in_play, last_player_up, switch_system_on
+    
     if S.gdata.get("Switches", {}).get("Type") != 10:
         log.log("SWITCHES: Invalid or missing 'Switches'")
         switch_system_on = False
@@ -51,10 +55,17 @@ def initialize():
         last_ball_in_play = DataMapper.get_ball_in_play()
         last_player_up = DataMapper.get_player_up()
         switch_system_on = True
+        
+
+
+        for i in range(40):
+            switch_counts[i]=100
+
+
 
         # Schedule polling
         from phew.server import schedule
-        schedule(poll_switches, 15000, 5000) 
+        schedule(poll_switches, 15000, POLL_SWITCHES_mS)
 
     except Exception as e:
         log.log(f"SWITCHES: Error loading switch counts: {e}")
@@ -103,7 +114,7 @@ def poll_switches():
         
         # Every X calls, check for game state changes (low impact)
         poll_counter += 1
-        if poll_counter >= 7:
+        if poll_counter > POLL_GAME_STATE_CNT:
             poll_counter = 0
             
             # Check for ball_in_play and player_up changes
@@ -154,27 +165,18 @@ def get_switch_index(switch_name):
     Returns:
         int: Switch index (0-71) or -1 if not found
     """
-    global switch_system_on
-
-    if switch_system_on is False:
+    if not switch_system_on:
         return -1
-    
-    try:        
+    try:
         names = S.gdata.get("Switches", {}).get("Names")
         if not names:
-            log.log("SWITCHES: No 'Names' found in Switches")
             return -1
-        for idx, name_entry in enumerate(names):
-            # Support list of lists: [name, number]
-            if isinstance(name_entry, list) and len(name_entry) > 0:
-                name = name_entry[0]
-            else:
-                name = name_entry
             
+        for idx, entry in enumerate(names):
+            # Extract name from [name, sensitivity] or plain string
+            name = entry[0] if isinstance(entry, list) and entry else entry
             if name == switch_name:
-                return idx
-        
-        log.log(f"SWITCHES: Switch name '{switch_name}' not found")
+                return idx        
         return -1
     except Exception as e:
         log.log(f"SWITCHES: Error in get_switch_index: {e}")
@@ -277,54 +279,50 @@ def get_diagnostics():
     Returns:
         list: List of dicts with keys: row, col, val, label
     """   
-    global switch_system_on
-    diagnostics = []
-
-    if switch_system_on is False:
-        return diagnostics
+    if not switch_system_on:
+        return []
     
     try:
-        names = S.gdata["Switches"]["Names"]
+        switches_data = S.gdata["Switches"]
         
-        row=1
-        col=1
-        for idx, name_entry in enumerate(names):
-            if idx >= len(switch_counts):
-                break
+        # Get switch definitions (either Names or Sensitivity format)
+        switch_defs = switches_data.get("Names") or switches_data.get("Sensitivity")
+        if not switch_defs:
+            log.log("SWITCHES: No 'Names' or 'Sensitivity' found in Switches")
+            return []
+        
+        use_names = "Names" in switches_data
+        diagnostics = []
+        
+        for idx, entry in enumerate(switch_defs[:len(switch_counts)]):
+            # Skip -1 entries (marked as unused in config)
+            if entry == -1 or entry is None:
+                continue
             
-            # Get switch name and sensitivity
-            if isinstance(name_entry, list) and len(name_entry) >= 1:
-                label = name_entry[0] if name_entry[0] else ""
-                sensitivity = name_entry[1] if name_entry[1] else 60
+            # Extract label and sensitivity
+            if use_names and isinstance(entry, list) and entry:
+                label = entry[0] or ""
+                sensitivity = entry[1] if len(entry) > 1 else 0
+            elif not use_names and isinstance(entry, int):
+                label = f"Switch {idx+1}"
+                sensitivity = entry
             else:
                 label = ""
                 sensitivity = 0
             
-            # Calculate health percentage (0-100%)
-            # count = 0 → health = 100%, count >= sensitivity → health = 0%
-            if sensitivity == 0:
-                health = 100
-            else:
-                count = switch_counts[idx]
-                health = max(0, min(100, 100 - (count * 100 // sensitivity))) 
+            if not label:
+                continue
             
-            if label != "":
-                diagnostics.append({
-                    "row": row,
-                    "col": col,
-                    "val": health,
-                    "label": label
-                })
-
-            row=row+1
-            if row>8:
-                row=1
-                col=col+1
-
-        print("\n\n",diagnostics,"\n\n")    
+            # Calculate health: 0% at sensitivity, 100% at count=0
+            health = 100 if sensitivity == 0 else max(0, 100 - (switch_counts[idx] * 100 // sensitivity))
+            
+            # Calculate grid position (8 rows per column)
+            col, row = divmod(idx, 8)
+            diagnostics.append({"row": row + 1, "col": col + 1, "val": health, "label": label})
     
     except Exception as e:
         log.log(f"SWITCHES: Error in get_diagnostics: {e}")
+        return []
     
     return diagnostics
 

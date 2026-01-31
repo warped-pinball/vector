@@ -11,6 +11,7 @@ import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
+import DataMapper
 from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
@@ -428,6 +429,13 @@ def update_tournament(new_entry):
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
+
+
+
+
+    print("################################   game status : ",DataMapper.get_in_play_data())
+
+
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
