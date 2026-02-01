@@ -8,24 +8,17 @@ import time
 from itertools import cycle
 from typing import Dict, List, Optional
 
+from common import run_python_script
+
 
 def build_for_hardware(hardware: str, quiet: bool = False) -> str:
     """Build firmware for *hardware* and return the build directory."""
     build_dir = f"build/{hardware}"
-    subprocess.run(
-        [
-            "python",
-            "dev/build.py",
-            "--build-dir",
-            build_dir,
-            "--source-dir",
-            "src",
-            "--target_hardware",
-            hardware,
-        ],
-        check=True,
-        stdout=subprocess.DEVNULL if quiet else None,
-        stderr=subprocess.STDOUT if quiet else None,
+    run_python_script(
+        "dev/build.py",
+        ["--build-dir", build_dir, "--source-dir", "src", "--target_hardware", hardware],
+        quiet=quiet,
+        wait=True,
     )
     return build_dir
 
@@ -33,17 +26,11 @@ def build_for_hardware(hardware: str, quiet: bool = False) -> str:
 def flash_port(build_dir: str, port: str, quiet: bool = False, flash_args: Optional[List[str]] = None) -> subprocess.Popen:
     """Flash the firmware in *build_dir* to *port* asynchronously."""
     extra = flash_args or []
-    return subprocess.Popen(
-        [
-            "python",
-            "dev/flash.py",
-            build_dir,
-            "--port",
-            port,
-        ]
-        + extra,
-        stdout=subprocess.DEVNULL if quiet else None,
-        stderr=subprocess.STDOUT if quiet else None,
+    return run_python_script(
+        "dev/flash.py",
+        [build_dir, "--port", port] + extra,
+        quiet=quiet,
+        wait=False,
     )
 
 

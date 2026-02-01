@@ -1,81 +1,132 @@
 {
-    "GameInfo": {
-        "GameName": "Hurricane",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 941,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7532,
-        "AddressS2": 7597,
-        "AddressS3": 7662,
-        "Length": 32,
-        "ChecksumStartAdr": 7532,
-        "ChecksumEndAdr": 7724,
-        "ChecksumResultAdr": 7725
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 7318,
-        "ChecksumEndAdr": 7529,
-        "ChecksumResultAdr": 7530
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7248,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7245,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7282,
-        "GrandChampInitAdr": 7279,
-        "ChecksumStartAdr": 7245,
-        "ChecksumEndAdr": 7276,
-        "ChecksumResultAdr": 7277,
-        "GCChecksumStartAdr": 7279,
-        "GCChecksumEndAdr": 7286,
-        "GCChecksumResultAdr": 7287
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 137,
-        "GameActiveValue": 0,
-        "Players": 6028,
-        "PlayerUp": 940,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Hurricane",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 941,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7532,
+      "AddressS2": 7597,
+      "AddressS3": 7662,
+      "Length": 32,
+      "ChecksumStartAdr": 7532,
+      "ChecksumEndAdr": 7724,
+      "ChecksumResultAdr": 7725
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 7318,
+      "ChecksumEndAdr": 7529,
+      "ChecksumResultAdr": 7530
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7248,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7245,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7282,
+      "GrandChampInitAdr": 7279,
+      "ChecksumStartAdr": 7245,
+      "ChecksumEndAdr": 7276,
+      "ChecksumResultAdr": 7277,
+      "GCChecksumStartAdr": 7279,
+      "GCChecksumEndAdr": 7286,
+      "GCChecksumResultAdr": 7287
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 137,
+      "GameActiveValue": 0,
+      "Players": 6028,
+      "PlayerUp": 940,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 44,
+    "Names": [
+      ["Right Flipper", 60],
+      ["Left Flipper", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Outhole", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Ticket Dispenser", 60],
+      ["Test Position Always Closed", 0],
+      ["Right Slingshot", 60],
+      ["Right Return", 60],
+      ["Right Outlane", 60],
+      ["Ball Shooter", 60],
+      ["Ferris Wheel", 60],
+      [],
+      ["Left Drop Target 1", 60],
+      ["Left Drop Target 2", 60],
+      ["Left Drop Target 3", 60],
+      ["Left Slingshot", 60],
+      ["Left Return", 60],
+      ["Left Outlane", 60],
+      [],
+      ["Right Stand Up 1", 60],
+      ["Right Stand Up 2", 60],
+      ["Right Stand Up 3", 60],
+      ["Right Stand Up 4", 60],
+      [],
+      [],
+      [],
+      ["Left Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Bottom Jet Bumper", 60],
+      [],
+      ["Dunk The Dummy", 60],
+      ["Left Juggler", 60],
+      ["Right Juggler", 60],
+      [],
+      ["Hurricane Entry", 60],
+      ["Hurricane Exit", 60],
+      ["Comet Entry", 60],
+      ["Comet Exit", 60]
+    ]
+  }
 }

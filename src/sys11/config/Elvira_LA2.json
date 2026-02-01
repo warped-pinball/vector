@@ -1,17 +1,14 @@
 {
     "GameInfo": {
         "GameName": "Elvira",
-        "System": "11B",
-        "FileVer": 1
+        "System": "11B"
     },
-
-    "Memory" : {
+    "Memory": {
         "Start": 0,
         "Length": 2048,
         "NvStart": 0,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 1,
         "Address": "0x38",
@@ -21,7 +18,6 @@
         "Ball4": "0xF4",
         "Ball5": "0xF5"
     },
-
     "DisplayMessage": {
         "Type": 2,
         "Address": "0x7B4",
@@ -29,29 +25,24 @@
         "Number": 3,
         "EnableByteAddress": "0x7B0"
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
         "ChecksumResultAdr": "0x7ED"
     },
-
     "HighScores": {
         "Type": 1,
         "ScoreAdr": "0x6FB",
         "InitialAdr": "0x70B",
         "BytesInScore": 4
     },
-
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
-        "PlayersInGame": "0xB2",
-        "PlayerUP": "0xB3",
-        "Warnings": "0xB9"
+        "PlayerUp": 179,
+        "Players": 178
     },
-
     "HSRewards": {
         "Type": 0,
         "HS1": 1937,
@@ -60,14 +51,23 @@
         "HS4": 1940,
         "DisableByte": 0
     },
-
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Type": 10,
+        "Address": 1536,
+        "Length": 64,
+        "Sensitivity": [
+                    250, 60, 60, 60, 60, 60, 60, 60,
+                    60, -1, 60, 60, 60, -1, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, -1, -1, -1,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, -1, -1, -1, -1, -1, -1
+                ]
     },
-
-    "CoinDrop": {
-        "Type": 0
+    "Flippers": {
+        "Type": 1,
+        "Address": 69
     }
 }

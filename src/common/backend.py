@@ -4,12 +4,12 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
-import faults
 import Pico_Led
 import SharedState as S
+import Switches
 import uctypes
 from ls import ls
-from machine import RTC
+from micropython import const
 from phew.server import add_route as phew_add_route
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
@@ -20,12 +20,11 @@ from ujson import dumps as json_dumps
 #
 # Constants
 #
-rtc = RTC()
-WIFI_MAX_ATTEMPTS = 2
-AP_NAME = "Warped Pinball"
+_WIFI_MAX_ATTEMPTS = const(2)
+_AP_NAME = const("Warped Pinball")
 # Authentication variables
 challenges = {}
-CHALLENGE_EXPIRATION_SECONDS = 60
+_CHALLENGE_EXPIRATION_SECONDS = const(60)
 
 
 #
@@ -296,7 +295,7 @@ def require_auth(handler):
             return deny_access("Invalid challenge")
 
         # confirm that the challenge has not expired
-        if (time() - challenges[client_challenge]) > CHALLENGE_EXPIRATION_SECONDS:
+        if (time() - challenges[client_challenge]) > _CHALLENGE_EXPIRATION_SECONDS:
             del challenges[client_challenge]
             return deny_access("Challenge expired")
 
@@ -349,7 +348,7 @@ def get_challenge(request):
 
     # remove expired challenges
     for challenge, timestamp in list(challenges.items()):
-        if (time() - timestamp) > CHALLENGE_EXPIRATION_SECONDS:
+        if (time() - timestamp) > _CHALLENGE_EXPIRATION_SECONDS:
             del challenges[challenge]
 
     # make sure there are no more than 10 challenges
@@ -1512,7 +1511,9 @@ def app_setDateTime(request):
     @end
     """
     date = [int(e) for e in request.json["date"]]
+    from machine import RTC
 
+    rtc = RTC()
     # rtc will calculate the day of the week for us
     rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
 
@@ -1531,6 +1532,9 @@ def app_getDateTime(request):
         example: {"date": [2024, 1, 1, 0, 12, 0, 0]}
     @end
     """
+    from machine import RTC
+
+    rtc = RTC()
     return {"date": list(rtc.datetime())}
 
 
@@ -1554,6 +1558,25 @@ def app_version(request):
     from systemConfig import SystemVersion
 
     return {"version": SystemVersion}
+
+
+@add_route("/api/uid")
+def app_uid(request):
+    """
+    @api
+    summary: Get the unique hardware identifier
+    response:
+      status_codes:
+        - code: 200
+          description: UID returned
+      body:
+        description: Unique hardware identifier as a hex string
+        example: {"uid": "1a2b3c4d5e6f"}
+    @end
+    """
+    from machine import unique_id
+
+    return {"uid": hexlify(unique_id()).decode()}
 
 
 @add_route("/api/fault")
@@ -1669,31 +1692,6 @@ def app_getLogs(request):
 #
 
 
-# list format options
-def get_available_formats():
-    return [
-        {"id": 0, "name": "Arcade", "description": "Manufacturer standard game play", "enable_function": None},
-        {"id": 1, "name": "Practice", "description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
-        {
-            "id": 2,
-            "name": "Golf",
-            "description": "Hit a specific target in the least number of balls",
-            "options": {
-                "target": {
-                    "type": "select",
-                    "options": {
-                        "11": "Crazy Bobs",
-                        "12": "Spinner",
-                        "13": "Left Outlane",
-                    },
-                    "default": "11",
-                }
-            },
-            "enable_function": None,
-        },
-    ]
-
-
 # 0 will always be default
 @add_route("/api/formats/available")
 def app_list_available_formats(request):
@@ -1710,13 +1708,22 @@ def app_list_available_formats(request):
             [
                 {
                     "id": 0,
-                    "name": "Arcade",
+                    "name": "Standard",
                     "description": "Manufacturer standard game play"
                 }
             ]
     @end
     """
-    return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
+    from Formats import get_available_formats
+
+    formats = get_available_formats()
+    result = []
+    for name, fmt in formats.items():
+        entry = dict(fmt)
+        if "name" not in entry:
+            entry["name"] = name
+        result.append(entry)
+    return result
 
 
 # set current format
@@ -1728,6 +1735,8 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
+            identified by NAME STRING
+
             - name: format_id
                 type: int
                 required: true
@@ -1742,26 +1751,26 @@ def app_set_current_format(request):
           description: Format set successfully
     @end
     """
+    from Formats import set_active_format
+
     data = request.data
-    if not isinstance(data, dict) or "format_id" not in data:
-        return {"error": "Missing required field: format_id"}, 400
-    format_id = data["format_id"]
-    available_formats = get_available_formats()
-    format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
-    if not format_dict:
-        return {"error": f"Invalid format id: {format_id}"}, 400
+    if not isinstance(data, dict) or len(data) == 0:
+        return {"error": "Missing format data"}, 400
 
-    # Call enable function if it exists
-    enable_function = format_dict.get("enable_function", None)
-    if not enable_function:
-        raise NotImplementedError("Format enable function not implemented yet")
+    # Extract the format name from the top level key
+    format_name = list(data.keys())[0]
+    format_data = data[format_name]
 
-    # Enable the format
-    enable_function(data.get("options", {}))
+    # Extract Options section if it exists
+    options = format_data.get("Options", {})
 
-    S.game_status["format"] = {"format_id": format_id}
-    if "options" in data:
-        S.game_status["format"]["options"] = data["options"]
+    # Set the active format with validation
+    if not set_active_format(format_name, options):
+        return {"error": f"Invalid format: {format_name}"}, 400
+
+    S.game_status["format"] = {"name": format_name}
+    if options:
+        S.game_status["format"]["options"] = options
 
     return
 
@@ -1779,14 +1788,27 @@ def app_get_active_formats(request):
       body:
         description: Current game format identifier and options
         example:
-            {
-                "format_id": 1,
-                "options": {"target": "11"}
-            }
+           "Standard": {
+                "Id": 0,
+                "Description": "Classic pinball scoring - highest score wins",
+            },
+            "Limbo": {
+                "Id": 1,
+                "Description": "Score as low as possible",
+                "Options": {
+                    "GetPlayerID": {
+                        "Name": "Collect Player Initials",
+                        "Type": "fixed",
+                        "Value": True
+                    }
+                }
+            },
     @end
     """
-
-    return S.game_status.get("format", {"format_id": 0})
+    result = {"id": getattr(S, "active_format", 0), "name": getattr(S, "active_format_name", "")}
+    if hasattr(S, "format_options") and S.format_options:
+        result["options"] = S.format_options
+    return result
 
 
 # get switch diagnostics
@@ -1796,8 +1818,6 @@ def app_get_switch_diagnostics(request):
     @api
     summary: Get diagnostic information for all switches
     response:
-        status_codes:
-        - code: 200
           description: Switch diagnostics returned
         body:
         description: Collection of switch records with row, column, value, and optional label
@@ -1812,39 +1832,7 @@ def app_get_switch_diagnostics(request):
             ]
     @end
     """
-    switches = [
-        (1, 1, 100, "Left Flipper"),
-        (1, 2, 100, "Right Flipper"),
-        (1, 3, 90),
-        (1, 4, 100),
-        (1, 5, 80),
-        (1, 6, 100),
-        (1, 7, 100, "Start Button"),
-        (2, 2, 100),
-        (2, 4, 50),
-        (2, 5, 100),
-        (2, 8, 100),
-        (3, 1, 10),
-        (3, 3, 100, "Shooter Lane"),
-        (3, 6, 100),
-        (4, 2, 0, "Tilt"),
-        (4, 5, 100),
-        (4, 7, 100),
-        (5, 4, 100),
-        (5, 6, 5),
-        (5, 8, 100),
-    ]
-
-    return [
-        {
-            "row": switch[0],
-            "col": switch[1],
-            "val": switch[2],
-            "label": switch[3] if len(switch) > 3 else "",
-        }
-        for switch in switches
-    ]
-
+    return Switches.get_diagnostics()
 
 
 #
@@ -2062,6 +2050,14 @@ def connect_to_wifi(initialize=False):
     Pico_Led.start_slow_blink()
 
     from displayMessage import init as init_display
+    from faults import (
+        ALL_WIFI,
+        WIFI01,
+        WIFI02,
+        clear_fault,
+        fault_is_raised,
+        raise_fault,
+    )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
 
@@ -2073,7 +2069,7 @@ def connect_to_wifi(initialize=False):
         return False
 
     # Try a few times before raising a fault
-    for i in range(WIFI_MAX_ATTEMPTS):
+    for i in range(_WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
         if phew_is_connected():
             # TODO remove ip address args and move to scheduler
@@ -2082,8 +2078,8 @@ def connect_to_wifi(initialize=False):
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults
-            if faults.fault_is_raised(faults.ALL_WIFI):
-                faults.clear_fault(faults.ALL_WIFI)
+            if fault_is_raised(ALL_WIFI):
+                clear_fault(ALL_WIFI)
 
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
             Pico_Led.on()
@@ -2095,10 +2091,10 @@ def connect_to_wifi(initialize=False):
     networks = scanwifi.scan_wifi2()
     for network in networks:
         if network["ssid"] == ssid:
-            faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+            raise_fault(WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
             return False
 
-    faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
+    raise_fault(WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
 
 
@@ -2135,7 +2131,7 @@ def go(ap_mode):
         add_ap_mode_routes()
         # send clients to the configure page
         set_callback(redirect)
-        ap = access_point(AP_NAME)
+        ap = access_point(_AP_NAME)
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
