@@ -1716,7 +1716,14 @@ def app_list_available_formats(request):
     """
     from Formats import get_available_formats
 
-    return get_available_formats()
+    formats = get_available_formats()
+    result = []
+    for name, fmt in formats.items():
+        entry = dict(fmt)
+        if "name" not in entry:
+            entry["name"] = name
+        result.append(entry)
+    return result
 
 
 # set current format
@@ -1798,9 +1805,10 @@ def app_get_active_formats(request):
             },
     @end
     """
-    from Formats import get_available_formats
-
-    return get_available_formats()
+    result = {"id": getattr(S, "active_format", 0), "name": getattr(S, "active_format_name", "")}
+    if hasattr(S, "format_options") and S.format_options:
+        result["options"] = S.format_options
+    return result
 
 
 # get switch diagnostics
