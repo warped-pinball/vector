@@ -65,7 +65,7 @@ def poll_fast():
 
     push_game_state(
         game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
-        scores=DataMapper.get_llive_scores(),
+        scores=DataMapper.get_live_scores(),
         ball_in_play=DataMapper.get_ball_in_play(),
         game_active=S.game_status["game_active"],
     )

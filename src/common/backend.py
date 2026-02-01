@@ -1716,7 +1716,7 @@ def app_list_available_formats(request):
     """
     from Formats import get_available_formats
 
-    return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
+    return get_available_formats()
 
 
 # set current format
