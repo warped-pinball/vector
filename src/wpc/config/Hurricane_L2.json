@@ -128,5 +128,9 @@
       ["Comet Entry", 60],
       ["Comet Exit", 60]
     ]
+  },
+  "Flippers": {
+      "Type": 11,
+      "Address": 35
   }
 }

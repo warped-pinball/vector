@@ -664,11 +664,15 @@ def get_flipper_state():
         int: Flipper state byte value, or 0 if not configured
     """
     try:
-        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") == 10:
+        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in  [10,11]:
             flipper_address = S.gdata["Flippers"]["Address"]
             v=shadowRam[flipper_address]
-            left = (v & 0x80) != 0
-            right = (v & 0x20) != 0
+            if S.gdata["Flippers"]["Type"]==10:
+                left = (v & 0x80) != 0
+                right = (v & 0x20) != 0
+            else:
+                left = (v & 0x02) != 0
+                right = (v & 0x01) != 0
             return left,right
 
     except Exception as e:

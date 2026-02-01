@@ -514,23 +514,30 @@ def get_flipper_state():
     """
     Read the flipper state from SYS11 shadow RAM.
     
-    Returns the byte value at the configured flipper address if Type 1 is configured.
+    Returns the flipper state (left, right) at the configured flipper address.
+    Type 1: Normal (left=bit1, right=bit0)
+    Type 2: Reversed (left=bit0, right=bit1)
     
     Returns:
-        int: Flipper state byte value, or 0 if not configured
+        tuple: (left, right) boolean values, or (0, 0) if not configured
     """
     try:
-        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") == 1:
+        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in [1, 2]:
             flipper_address = S.gdata["Flippers"]["Address"]
             v=shadowRam[flipper_address]
             left = (v & 0x02) != 0
             right = (v & 0x01) != 0
-            return left,right
+            
+            # Type 2: Reverse left and right
+            if S.gdata["Flippers"]["Type"] == 2:
+                return right, left
+            
+            return left, right
 
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
     
-    return 0
+    return 0, 0
 
 
 

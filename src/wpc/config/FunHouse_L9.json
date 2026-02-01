@@ -139,5 +139,9 @@
       ["Trap Door Closed", 60],
       ["Upper Right Jet Bumper", 60]
     ]
+  },
+  "Flippers": {
+      "Type": 11,
+      "Address": 32
   }
 }

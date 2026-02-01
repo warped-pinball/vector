@@ -140,5 +140,9 @@
       ["Drop Target", 60],
       ["Center Trough", 60]
     ]
+  },
+  "Flippers": {
+      "Type": 10,
+      "Address": 170
   }
 }
