@@ -1340,7 +1340,7 @@ No parameters inferred.
 <a id="api-formats-set"></a>
 ## `/api/formats/set`
 
-- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1730)
+- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1731)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set the active game format
@@ -1361,7 +1361,7 @@ Set the active game format
 <a id="api-formats-active"></a>
 ## `/api/formats/active`
 
-- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1779)
+- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1780)
 
 
 Get the currently active game format
@@ -1377,7 +1377,7 @@ No structured response documented.
 <a id="api-diagnostics-switches"></a>
 ## `/api/diagnostics/switches`
 
-- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1818)
+- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1816)
 
 
 Get diagnostic information for all switches
@@ -1393,7 +1393,7 @@ No structured response documented.
 <a id="api-update-check"></a>
 ## `/api/update/check`
 
-- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1844)
+- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1842)
 - Cooldown: 10s
 
 Get the metadata for the latest available software version. This does not download or apply the update.
@@ -1423,7 +1423,7 @@ No parameters inferred.
 <a id="api-update-apply"></a>
 ## `/api/update/apply`
 
-- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1879)
+- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1877)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Download and apply a software update from the provided URL.
@@ -1453,7 +1453,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1932)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1930)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1477,7 +1477,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1955)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1953)
 
 
 No description provided.
@@ -1493,7 +1493,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1960)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1958)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
@@ -1521,7 +1521,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2011)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2009)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks
