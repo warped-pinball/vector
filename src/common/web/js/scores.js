@@ -645,7 +645,7 @@ window.getClaimableScores();
 
 // Keep showing the last live game briefly after it ends so players can read scores.
 // This is UI-only; backend reports the true game state.
-const POST_GAME_DISPLAY_HOLD_MS = 15 * 1000;
+var POST_GAME_DISPLAY_HOLD_MS = 15 * 1000;
 
 // Store score history for animation calculations
 window.scoreHistory = {
