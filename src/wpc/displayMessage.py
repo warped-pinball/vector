@@ -50,10 +50,6 @@ def _set(ipAddress):
 
     print("MSG: set display message ", ipAddress)
 
-    #ipAddress = ipAddress.replace(".", " ")
-
-    print("MSG: set display message ", ipAddress)
-
     padding_total = 16 - len(ipAddress)
     left_padding = padding_total // 2
     right_padding = padding_total - left_padding        
@@ -76,6 +72,11 @@ def _set(ipAddress):
                 shadowRam[S.gdata["DisplayMessage"]["AddressS3"] + i] = ord(char)
 
         print("MSG: set display message ", padded_ip)
+
+        message_adr = S.gdata["Adjustments"].get("CustomMessageOn")
+        if message_adr is not None:
+            shadowRam[message_adr] = 1
+        
         _fixDisplayMessageChecksum()
 
 
@@ -120,6 +121,10 @@ def refresh():
     if show_ip_last_state==1 and DataStore.read_record("extras", 0)["show_ip_address"]==0:
         # turn off custom message                
         _blank()        
+        message_adr = S.gdata["Adjustments"].get("CustomMessageOn")
+        if message_adr is not None:
+            shadowRam[message_adr] = 0
+        _fixDisplayMessageChecksum()
         print("MSG: turned off")
         
     #refresh message    
