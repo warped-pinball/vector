@@ -1,0 +1,9022 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.warpedpinball.com/routes/">
+      
+      
+        <link rel="prev" href="../guides/data_east/manual/">
+      
+      
+        <link rel="next" href="../authentication/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>API reference - Vector Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#vector-http-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Vector Documentation" class="md-header__button md-logo" aria-label="Vector Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Vector Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Vector Documentation" class="md-nav__button md-logo" aria-label="Vector Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Vector Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WPC
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    WPC
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/wpc/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/wpc/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/wpc/add-rom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a ROM profile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System 11
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System 11
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/system11/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/system11/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/system11/add-rom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a ROM profile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System 9
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System 9
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/system9/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data East
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data East
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/data_east/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical references
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Technical references
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick links
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connectivity-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectivity guides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes &amp; endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiauthchallenge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/auth/challenge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/auth/challenge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiauthpassword_check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/auth/password_check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/auth/password_check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamereboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/reboot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/reboot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigameactive_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/active_config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/active_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigameconfigs_list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/configs_list
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/configs_list">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apileaders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/leaders
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/leaders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoredelete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/score/delete
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/score/delete">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitournament" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/tournament
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/tournament">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apileadersreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/leaders/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/leaders/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitournamentreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/tournament/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/tournament/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoresclaimable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/scores/claimable
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/scores/claimable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoresclaim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/scores/claim
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/scores/claim">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/players
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/players">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerupdate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/update
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/update">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apipersonalbests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/personal/bests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/personal/bests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerscoresreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/scores/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/scores/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentscapture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/capture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/capture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsrestore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/restore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/restore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_claim_methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_claim_methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_claim_methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_claim_methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_claim_methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_claim_methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_tournament_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_tournament_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_tournament_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_tournament_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_tournament_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_tournament_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_show_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_show_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_show_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_show_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_show_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_show_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimemidnight_madness_available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/midnight_madness_available
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/midnight_madness_available">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimeget_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/get_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/get_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimeset_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/set_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/set_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimetrigger_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/trigger_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/trigger_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsfactory_reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/factory_reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/factory_reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsreboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/reboot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/reboot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apilast_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/last_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/last_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiwifistatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/wifi/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/wifi/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apinetworkpeers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/network/peers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/network/peers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiset_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/set_date
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/set_date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiget_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/get_date
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/get_date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/version
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/version">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apifault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/fault
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiexportscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/export/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/export/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiimportscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/import/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/import/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apimemory-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/memory-snapshot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/memory-snapshot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apilogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/available
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/available">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/set
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/set">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/active
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/active">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apidiagnosticsswitches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/diagnostics/switches
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/diagnostics/switches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiupdatecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/update/check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/update/check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiupdateapply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/update/apply
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/update/apply">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiin_ap_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/in_ap_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/in_ap_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiin_ap_mode_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/in_ap_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/in_ap_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_vector_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_vector_config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_vector_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiavailable_ssids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/available_ssids
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/available_ssids">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    USB transport
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick links
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connectivity-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectivity guides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes &amp; endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiauthchallenge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/auth/challenge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/auth/challenge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiauthpassword_check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/auth/password_check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/auth/password_check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamereboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/reboot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/reboot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigameactive_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/active_config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/active_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigameconfigs_list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/configs_list
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/configs_list">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apigamestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/game/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/game/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apileaders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/leaders
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/leaders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoredelete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/score/delete
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/score/delete">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitournament" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/tournament
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/tournament">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apileadersreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/leaders/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/leaders/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitournamentreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/tournament/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/tournament/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoresclaimable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/scores/claimable
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/scores/claimable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiscoresclaim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/scores/claim
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/scores/claim">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/players
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/players">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerupdate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/update
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/update">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apipersonalbests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/personal/bests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/personal/bests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiplayerscoresreset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/player/scores/reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/player/scores/reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/name
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentscapture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/capture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/capture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiadjustmentsrestore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/adjustments/restore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/adjustments/restore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_claim_methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_claim_methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_claim_methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_claim_methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_claim_methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_claim_methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_tournament_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_tournament_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_tournament_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_tournament_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_tournament_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_tournament_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsget_show_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/get_show_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/get_show_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_show_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_show_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_show_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimemidnight_madness_available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/midnight_madness_available
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/midnight_madness_available">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimeget_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/get_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/get_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimeset_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/set_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/set_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apitimetrigger_midnight_madness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/time/trigger_midnight_madness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/time/trigger_midnight_madness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsfactory_reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/factory_reset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/factory_reset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsreboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/reboot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/reboot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apilast_ip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/last_ip
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/last_ip">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiwifistatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/wifi/status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/wifi/status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apinetworkpeers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/network/peers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/network/peers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiset_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/set_date
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/set_date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiget_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/get_date
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/get_date">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/version
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/version">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apifault" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/fault
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/fault">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiexportscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/export/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/export/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiimportscores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/import/scores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/import/scores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apimemory-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/memory-snapshot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/memory-snapshot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apilogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/available
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/available">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/set
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/set">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiformatsactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/formats/active
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/formats/active">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apidiagnosticsswitches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/diagnostics/switches
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/diagnostics/switches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiupdatecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/update/check
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/update/check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiupdateapply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/update/apply
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/update/apply">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiin_ap_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/in_ap_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/in_ap_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiin_ap_mode_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/in_ap_mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/in_ap_mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apisettingsset_vector_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/settings/set_vector_config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/settings/set_vector_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-parameters_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apiavailable_ssids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        /api/available_ssids
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="/api/available_ssids">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Response">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-codes_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="vector-http-api">Vector HTTP API</h1>
+<p>Generated automatically from <code>src/common/backend.py</code>. Use this page as the landing pad for connectivity guides and endpoint documentation.</p>
+<h2 id="quick-links">Quick links</h2>
+<ul>
+<li><a href="https://github.com/warped-pinball/vector">Main repository</a></li>
+<li><a href="https://github.com/warped-pinball/vector/releases/latest">Latest release</a></li>
+<li><a href="https://warpedpinball.com">WarpedPinball.com</a></li>
+<li><a href="https://vector.doze.dev">Live demo</a></li>
+</ul>
+<h2 id="connectivity-guides">Connectivity guides</h2>
+<ul>
+<li><a href="../authentication/">Authentication</a></li>
+<li><a href="../network/">Network access</a></li>
+<li><a href="../discovery/">Peer discovery</a></li>
+<li><a href="../usb/">USB transport</a></li>
+</ul>
+<h2 id="routes-endpoints">Routes &amp; endpoints</h2>
+<p>Jump directly to a handler. Links open source on GitHub with accurate line numbers.</p>
+<ul>
+<li><a href="#api-auth-challenge"><code>/api/auth/challenge</code></a></li>
+<li><a href="#api-auth-password_check"><code>/api/auth/password_check</code></a></li>
+<li><a href="#api-game-reboot"><code>/api/game/reboot</code></a></li>
+<li><a href="#api-game-name"><code>/api/game/name</code></a></li>
+<li><a href="#api-game-active_config"><code>/api/game/active_config</code></a></li>
+<li><a href="#api-game-configs_list"><code>/api/game/configs_list</code></a></li>
+<li><a href="#api-game-status"><code>/api/game/status</code></a></li>
+<li><a href="#api-leaders"><code>/api/leaders</code></a></li>
+<li><a href="#api-score-delete"><code>/api/score/delete</code></a></li>
+<li><a href="#api-tournament"><code>/api/tournament</code></a></li>
+<li><a href="#api-leaders-reset"><code>/api/leaders/reset</code></a></li>
+<li><a href="#api-tournament-reset"><code>/api/tournament/reset</code></a></li>
+<li><a href="#api-scores-claimable"><code>/api/scores/claimable</code></a></li>
+<li><a href="#api-scores-claim"><code>/api/scores/claim</code></a></li>
+<li><a href="#api-players"><code>/api/players</code></a></li>
+<li><a href="#api-player-update"><code>/api/player/update</code></a></li>
+<li><a href="#api-player-scores"><code>/api/player/scores</code></a></li>
+<li><a href="#api-personal-bests"><code>/api/personal/bests</code></a></li>
+<li><a href="#api-player-scores-reset"><code>/api/player/scores/reset</code></a></li>
+<li><a href="#api-adjustments-status"><code>/api/adjustments/status</code></a></li>
+<li><a href="#api-adjustments-name"><code>/api/adjustments/name</code></a></li>
+<li><a href="#api-adjustments-capture"><code>/api/adjustments/capture</code></a></li>
+<li><a href="#api-adjustments-restore"><code>/api/adjustments/restore</code></a></li>
+<li><a href="#api-settings-get_claim_methods"><code>/api/settings/get_claim_methods</code></a></li>
+<li><a href="#api-settings-set_claim_methods"><code>/api/settings/set_claim_methods</code></a></li>
+<li><a href="#api-settings-get_tournament_mode"><code>/api/settings/get_tournament_mode</code></a></li>
+<li><a href="#api-settings-set_tournament_mode"><code>/api/settings/set_tournament_mode</code></a></li>
+<li><a href="#api-settings-get_show_ip"><code>/api/settings/get_show_ip</code></a></li>
+<li><a href="#api-settings-set_show_ip"><code>/api/settings/set_show_ip</code></a></li>
+<li><a href="#api-time-midnight_madness_available"><code>/api/time/midnight_madness_available</code></a></li>
+<li><a href="#api-time-get_midnight_madness"><code>/api/time/get_midnight_madness</code></a></li>
+<li><a href="#api-time-set_midnight_madness"><code>/api/time/set_midnight_madness</code></a></li>
+<li><a href="#api-time-trigger_midnight_madness"><code>/api/time/trigger_midnight_madness</code></a></li>
+<li><a href="#api-settings-factory_reset"><code>/api/settings/factory_reset</code></a></li>
+<li><a href="#api-settings-reboot"><code>/api/settings/reboot</code></a></li>
+<li><a href="#api-last_ip"><code>/api/last_ip</code></a></li>
+<li><a href="#api-wifi-status"><code>/api/wifi/status</code></a></li>
+<li><a href="#api-network-peers"><code>/api/network/peers</code></a></li>
+<li><a href="#api-set_date"><code>/api/set_date</code></a></li>
+<li><a href="#api-get_date"><code>/api/get_date</code></a></li>
+<li><a href="#api-version"><code>/api/version</code></a></li>
+<li><a href="#api-fault"><code>/api/fault</code></a></li>
+<li><a href="#api-export-scores"><code>/api/export/scores</code></a></li>
+<li><a href="#api-import-scores"><code>/api/import/scores</code></a></li>
+<li><a href="#api-memory-snapshot"><code>/api/memory-snapshot</code></a></li>
+<li><a href="#api-logs"><code>/api/logs</code></a></li>
+<li><a href="#api-formats-available"><code>/api/formats/available</code></a></li>
+<li><a href="#api-formats-set"><code>/api/formats/set</code></a></li>
+<li><a href="#api-formats-active"><code>/api/formats/active</code></a></li>
+<li><a href="#api-diagnostics-switches"><code>/api/diagnostics/switches</code></a></li>
+<li><a href="#api-update-check"><code>/api/update/check</code></a></li>
+<li><a href="#api-update-apply"><code>/api/update/apply</code></a></li>
+<li><a href="#api-in_ap_mode"><code>/api/in_ap_mode</code></a></li>
+<li><a href="#api-in_ap_mode"><code>/api/in_ap_mode</code></a></li>
+<li><a href="#api-settings-set_vector_config"><code>/api/settings/set_vector_config</code></a></li>
+<li><a href="#api-available_ssids"><code>/api/available_ssids</code></a></li>
+</ul>
+<hr />
+<p><a id="api-auth-challenge"></a></p>
+<h2 id="apiauthchallenge"><code>/api/auth/challenge</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L329"><code>get_challenge</code></a></li>
+</ul>
+<p>Request a new authentication challenge</p>
+<h3 id="request">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response">Response</h3>
+<h4 id="status-codes">Status codes</h4>
+<ul>
+<li><code>200</code> - Challenge issued</li>
+<li><code>429</code> - Too many active challenges</li>
+</ul>
+<p><strong>Response body:</strong> JSON containing a single challenge token.</p>
+<pre><code>{
+    &quot;challenge&quot;: &quot;0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&quot;
+}
+</code></pre>
+<p><a id="api-auth-password_check"></a></p>
+<h2 id="apiauthpassword_check"><code>/api/auth/password_check</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L371"><code>check_password</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Convenience method to verify credentials without side effects</p>
+<h3 id="request_1">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_1">Response</h3>
+<h4 id="status-codes_1">Status codes</h4>
+<ul>
+<li><code>200</code> - Credentials accepted</li>
+<li><code>401</code> - Credentials rejected</li>
+</ul>
+<p><strong>Response body:</strong> Acknowledgement string</p>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-game-reboot"></a></p>
+<h2 id="apigamereboot"><code>/api/game/reboot</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L407"><code>app_reboot_game</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Power-cycle the pinball machine and restart the scheduled tasks</p>
+<h3 id="request_2">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_2">Response</h3>
+<h4 id="status-codes_2">Status codes</h4>
+<ul>
+<li><code>200</code> - Reboot triggered</li>
+</ul>
+<p><strong>Response body:</strong> Empty body; returns OK on success</p>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-game-name"></a></p>
+<h2 id="apigamename"><code>/api/game/name</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L431"><code>app_game_name</code></a></li>
+</ul>
+<p>Get the human-friendly title of the active game configuration</p>
+<h3 id="request_3">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_3">Response</h3>
+<h4 id="status-codes_3">Status codes</h4>
+<ul>
+<li><code>200</code> - Active game returned</li>
+</ul>
+<p><strong>Response body:</strong> Plain-text game name</p>
+<pre><code>&quot;Attack from Mars&quot;
+</code></pre>
+<p><a id="api-game-active_config"></a></p>
+<h2 id="apigameactive_config"><code>/api/game/active_config</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L450"><code>app_game_config_filename</code></a></li>
+</ul>
+<p>Get the filename of the active game configuration. Note that on EM systems this is the same as the game name.</p>
+<h3 id="request_4">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_4">Response</h3>
+<h4 id="status-codes_4">Status codes</h4>
+<ul>
+<li><code>200</code> - Active configuration returned</li>
+</ul>
+<p><strong>Response body:</strong> JSON object identifying the configuration file in use</p>
+<pre><code>{
+    &quot;active_config&quot;: &quot;AttackMars_11&quot;
+}
+</code></pre>
+<p><a id="api-game-configs_list"></a></p>
+<h2 id="apigameconfigs_list"><code>/api/game/configs_list</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L476"><code>app_game_configs_list</code></a></li>
+</ul>
+<p>List all available game configuration files</p>
+<h3 id="request_5">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_5">Response</h3>
+<h4 id="status-codes_5">Status codes</h4>
+<ul>
+<li><code>200</code> - Configurations listed</li>
+</ul>
+<p><strong>Response body:</strong> Mapping of configuration filenames to human-readable titles</p>
+<pre><code>{&quot;F14_L1&quot;: {&quot;name&quot;: &quot;F14 Tomcat&quot;, &quot;rom&quot;: &quot;L1&quot;}, &quot;Taxi_L4&quot;: {&quot;name&quot;: &quot;Taxi&quot;, &quot;rom&quot;: &quot;L4&quot;}}
+        {
+            &quot;F14_L1&quot;: {
+                &quot;name&quot;: &quot;F14 Tomcat&quot;,
+                &quot;rom&quot;: &quot;L1&quot;
+            },
+            &quot;Taxi_L4&quot;: {
+                &quot;name&quot;: &quot;Taxi&quot;,
+                &quot;rom&quot;: &quot;L4&quot;
+            }
+        }
+</code></pre>
+<p><a id="api-game-status"></a></p>
+<h2 id="apigamestatus"><code>/api/game/status</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L505"><code>app_game_status</code></a></li>
+</ul>
+<p>Retrieve the current game status such as ball in play, scores, and anything else the configured game supports</p>
+<h3 id="request_6">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_6">Response</h3>
+<h4 id="status-codes_6">Status codes</h4>
+<ul>
+<li><code>200</code> - Status returned</li>
+</ul>
+<p><strong>Response body:</strong> JSON object describing current play state, score, and timers</p>
+<pre><code>{
+    &quot;GameActive&quot;: true,
+    &quot;BallInPlay&quot;: 2,
+    &quot;Scores&quot;: [1000, 0, 0, 0]
+}
+</code></pre>
+<p><a id="api-leaders"></a></p>
+<h2 id="apileaders"><code>/api/leaders</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L558"><code>app_leaderBoardRead</code></a></li>
+</ul>
+<p>Fetch the main leaderboard</p>
+<h3 id="request_7">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_7">Response</h3>
+<h4 id="status-codes_7">Status codes</h4>
+<ul>
+<li><code>200</code> - Leaderboard returned</li>
+</ul>
+<p><strong>Response body:</strong> Sorted list of leaderboard entries with rank and relative times</p>
+<pre><code>[
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;rank&quot;: 1,
+        &quot;ago&quot;: &quot;2h&quot;
+    }
+]
+</code></pre>
+<p><a id="api-score-delete"></a></p>
+<h2 id="apiscoredelete"><code>/api/score/delete</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L583"><code>app_scoreDelete</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Delete one or more score entries from a leaderboard</p>
+<h3 id="request_8">Request</h3>
+<h4 id="body-parameters">Body parameters</h4>
+<ul>
+<li><code>delete</code> list required - Collection of score objects containing <code>score</code> and <code>initials</code>.</li>
+<li><code>list</code> string required - Target list name (e.g. leaders or tournament)</li>
+</ul>
+<h3 id="response_8">Response</h3>
+<h4 id="status-codes_8">Status codes</h4>
+<ul>
+<li><code>200</code> - Scores removed</li>
+</ul>
+<p><strong>Response body:</strong> Confirmation indicator</p>
+<pre><code>{&quot;success&quot;: true}
+</code></pre>
+<p><a id="api-tournament"></a></p>
+<h2 id="apitournament"><code>/api/tournament</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L631"><code>app_tournamentRead</code></a></li>
+</ul>
+<p>Read the tournament leaderboard</p>
+<h3 id="request_9">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_9">Response</h3>
+<h4 id="status-codes_9">Status codes</h4>
+<ul>
+<li><code>200</code> - Tournament leaderboard returned</li>
+</ul>
+<p><strong>Response body:</strong> List of tournament scores sorted by game order</p>
+<pre><code>[
+    {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 123456,
+        &quot;game&quot;: 1
+    }
+]
+</code></pre>
+<p><a id="api-leaders-reset"></a></p>
+<h2 id="apileadersreset"><code>/api/leaders/reset</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L655"><code>app_resetScores</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Clear the main leaderboard</p>
+<h3 id="request_10">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_10">Response</h3>
+<h4 id="status-codes_10">Status codes</h4>
+<ul>
+<li><code>200</code> - Scores cleared</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-tournament-reset"></a></p>
+<h2 id="apitournamentreset"><code>/api/tournament/reset</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L674"><code>app_tournamentClear</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Clear tournament standings and resets the game counter</p>
+<h3 id="request_11">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_11">Response</h3>
+<h4 id="status-codes_11">Status codes</h4>
+<ul>
+<li><code>200</code> - Tournament data cleared</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-scores-claimable"></a></p>
+<h2 id="apiscoresclaimable"><code>/api/scores/claimable</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L695"><code>app_getClaimableScores</code></a></li>
+</ul>
+<p>List recent claimable plays</p>
+<h3 id="request_12">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_12">Response</h3>
+<h4 id="status-codes_12">Status codes</h4>
+<ul>
+<li><code>200</code> - Claimable scores returned</li>
+</ul>
+<p><strong>Response body:</strong> Collection of unclaimed score records</p>
+<pre><code>[
+    {
+        &quot;score&quot;: 12345,
+        &quot;player_index&quot;: 0,
+        &quot;game&quot;: 1
+    }
+]
+</code></pre>
+<p><a id="api-scores-claim"></a></p>
+<h2 id="apiscoresclaim"><code>/api/scores/claim</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L721"><code>app_claimScore</code></a></li>
+</ul>
+<p>Apply initials to an unclaimed score</p>
+<h3 id="request_13">Request</h3>
+<h4 id="body-parameters_1">Body parameters</h4>
+<ul>
+<li><code>initials</code> string required - Player initials to record</li>
+<li><code>player_index</code> int required - Player slot or position associated with the score</li>
+<li><code>score</code> int required - Score value to claim</li>
+</ul>
+<h3 id="response_13">Response</h3>
+<h4 id="status-codes_13">Status codes</h4>
+<ul>
+<li><code>200</code> - Score claimed</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-players"></a></p>
+<h2 id="apiplayers"><code>/api/players</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L757"><code>app_getPlayers</code></a></li>
+</ul>
+<p>List registered players</p>
+<h3 id="request_14">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_14">Response</h3>
+<h4 id="status-codes_14">Status codes</h4>
+<ul>
+<li><code>200</code> - Player list returned</li>
+</ul>
+<p><strong>Response body:</strong> Mapping of player IDs to initials and names</p>
+<pre><code>{
+    &quot;0&quot;: {
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;name&quot;: &quot;Alice&quot;
+    }
+}
+</code></pre>
+<p><a id="api-player-update"></a></p>
+<h2 id="apiplayerupdate"><code>/api/player/update</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L789"><code>app_updatePlayer</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Update a stored player record</p>
+<h3 id="request_15">Request</h3>
+<h4 id="body-parameters_2">Body parameters</h4>
+<ul>
+<li><code>id</code> int required - Player ID to update</li>
+<li><code>initials</code> string required - Up to three alphabetic characters</li>
+<li><code>full_name</code> string optional - Player display name (truncated to 16 characters)</li>
+</ul>
+<h3 id="response_15">Response</h3>
+<h4 id="status-codes_15">Status codes</h4>
+<ul>
+<li><code>200</code> - Record updated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-player-scores"></a></p>
+<h2 id="apiplayerscores"><code>/api/player/scores</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L844"><code>app_getScores</code></a></li>
+</ul>
+<p>Fetch all scores for a specific player</p>
+<h3 id="request_16">Request</h3>
+<h4 id="body-parameters_3">Body parameters</h4>
+<ul>
+<li><code>id</code> int required - Player index to inspect</li>
+</ul>
+<h3 id="response_16">Response</h3>
+<h4 id="status-codes_16">Status codes</h4>
+<ul>
+<li><code>200</code> - Player scores returned</li>
+</ul>
+<p><strong>Response body:</strong> Sorted list of score entries with rank, initials, and timestamps</p>
+<pre><code>[
+    {
+        &quot;score&quot;: 10000,
+        &quot;rank&quot;: 1,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;date&quot;: &quot;2024-01-01&quot;,
+        &quot;ago&quot;: &quot;1d&quot;
+    }
+]
+</code></pre>
+<p><a id="api-personal-bests"></a></p>
+<h2 id="apipersonalbests"><code>/api/personal/bests</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L904"><code>app_personal_bests</code></a></li>
+</ul>
+<p>Return the best score for each registered player</p>
+<h3 id="request_17">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_17">Response</h3>
+<h4 id="status-codes_17">Status codes</h4>
+<ul>
+<li><code>200</code> - Personal bests returned</li>
+</ul>
+<p><strong>Response body:</strong> Leaderboard of each player's highest score</p>
+<pre><code>[
+    {
+        &quot;player_id&quot;: 0,
+        &quot;initials&quot;: &quot;ABC&quot;,
+        &quot;score&quot;: 12345,
+        &quot;rank&quot;: 1
+    }
+]
+</code></pre>
+<p><a id="api-player-scores-reset"></a></p>
+<h2 id="apiplayerscoresreset"><code>/api/player/scores/reset</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L964"><code>app_resetIndScores</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Clear all scores for a single player</p>
+<h3 id="request_18">Request</h3>
+<h4 id="query-parameters">Query parameters</h4>
+<ul>
+<li><code>id</code> int required - Player index whose scores should be erased</li>
+</ul>
+<h3 id="response_18">Response</h3>
+<h4 id="status-codes_18">Status codes</h4>
+<ul>
+<li><code>200</code> - Scores cleared</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-adjustments-status"></a></p>
+<h2 id="apiadjustmentsstatus"><code>/api/adjustments/status</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L993"><code>app_getAdjustmentStatus</code></a></li>
+</ul>
+<p>Get the status of each adjustment bank</p>
+<h3 id="request_19">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_19">Response</h3>
+<h4 id="status-codes_19">Status codes</h4>
+<ul>
+<li><code>200</code> - Adjustment metadata returned</li>
+</ul>
+<p><strong>Response body:</strong> List of adjustment profiles with [Name, Active, Exists], along with a flag indicating overall support</p>
+<pre><code>{
+    &quot;profiles&quot;: [
+        [&quot;Free Play&quot;, false, true],
+        [&quot;Arcade&quot;, true, true],
+        [&quot;&quot;, false, false],
+        [&quot;&quot;, false, false]
+    ],
+    &quot;adjustments_support&quot;: true
+}
+</code></pre>
+<p><a id="api-adjustments-name"></a></p>
+<h2 id="apiadjustmentsname"><code>/api/adjustments/name</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1021"><code>app_setAdjustmentName</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Set the name of an adjustment profile</p>
+<h3 id="request_20">Request</h3>
+<h4 id="body-parameters_4">Body parameters</h4>
+<ul>
+<li><code>index</code> int required - Adjustment slot to rename</li>
+<li><code>name</code> string required - New name for the slot</li>
+</ul>
+<h3 id="response_20">Response</h3>
+<h4 id="status-codes_20">Status codes</h4>
+<ul>
+<li><code>200</code> - Name updated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-adjustments-capture"></a></p>
+<h2 id="apiadjustmentscapture"><code>/api/adjustments/capture</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1053"><code>app_captureAdjustments</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Capture current adjustments into a profile</p>
+<h3 id="request_21">Request</h3>
+<h4 id="body-parameters_5">Body parameters</h4>
+<ul>
+<li><code>index</code> int required - Destination profile for captured adjustments</li>
+</ul>
+<h3 id="response_21">Response</h3>
+<h4 id="status-codes_21">Status codes</h4>
+<ul>
+<li><code>200</code> - Adjustments stored</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-adjustments-restore"></a></p>
+<h2 id="apiadjustmentsrestore"><code>/api/adjustments/restore</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1078"><code>app_restoreAdjustments</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+<li>Cooldown: 5s</li>
+</ul>
+<p>Restore adjustments from a saved profile</p>
+<h3 id="request_22">Request</h3>
+<h4 id="body-parameters_6">Body parameters</h4>
+<ul>
+<li><code>index</code> int required - Adjustment profile to restore</li>
+</ul>
+<h3 id="response_22">Response</h3>
+<h4 id="status-codes_22">Status codes</h4>
+<ul>
+<li><code>200</code> - Adjustments restored</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-settings-get_claim_methods"></a></p>
+<h2 id="apisettingsget_claim_methods"><code>/api/settings/get_claim_methods</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1106"><code>app_getScoreCap</code></a></li>
+</ul>
+<p>Read score entry methods</p>
+<h3 id="request_23">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_23">Response</h3>
+<h4 id="status-codes_23">Status codes</h4>
+<ul>
+<li><code>200</code> - Claim methods returned</li>
+</ul>
+<p><strong>Response body:</strong> All keys are available methods for entering initials, only enabled methods are true</p>
+<pre><code>{
+    &quot;on-machine&quot;: true,
+    &quot;web-ui&quot;: false
+}
+</code></pre>
+<p><a id="api-settings-set_claim_methods"></a></p>
+<h2 id="apisettingsset_claim_methods"><code>/api/settings/set_claim_methods</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1131"><code>app_setScoreCap</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Configure which score claim methods are enabled</p>
+<h3 id="request_24">Request</h3>
+<h4 id="body-parameters_7">Body parameters</h4>
+<ul>
+<li><code>on-machine</code> bool optional - Allow initials entry on the physical game</li>
+<li><code>web-ui</code> bool optional - Allow initials entry via the web interface</li>
+</ul>
+<h3 id="response_24">Response</h3>
+<h4 id="status-codes_24">Status codes</h4>
+<ul>
+<li><code>200</code> - Preferences updated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-settings-get_tournament_mode"></a></p>
+<h2 id="apisettingsget_tournament_mode"><code>/api/settings/get_tournament_mode</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1164"><code>app_getTournamentMode</code></a></li>
+</ul>
+<p>Get whether tournament mode is enabled</p>
+<h3 id="request_25">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_25">Response</h3>
+<h4 id="status-codes_25">Status codes</h4>
+<ul>
+<li><code>200</code> - Tournament mode returned</li>
+</ul>
+<p><strong>Response body:</strong> Flag indicating tournament mode state</p>
+<pre><code>{&quot;tournament_mode&quot;: true}
+</code></pre>
+<p><a id="api-settings-set_tournament_mode"></a></p>
+<h2 id="apisettingsset_tournament_mode"><code>/api/settings/set_tournament_mode</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1182"><code>app_setTournamentMode</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Enable or disable tournament mode</p>
+<h3 id="request_26">Request</h3>
+<h4 id="body-parameters_8">Body parameters</h4>
+<ul>
+<li><code>tournament_mode</code> bool required - New tournament mode setting</li>
+</ul>
+<h3 id="response_26">Response</h3>
+<h4 id="status-codes_26">Status codes</h4>
+<ul>
+<li><code>200</code> - Setting saved</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-settings-get_show_ip"></a></p>
+<h2 id="apisettingsget_show_ip"><code>/api/settings/get_show_ip</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1209"><code>app_getShowIP</code></a></li>
+</ul>
+<p>Check whether the IP address is shown on the display</p>
+<h3 id="request_27">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_27">Response</h3>
+<h4 id="status-codes_27">Status codes</h4>
+<ul>
+<li><code>200</code> - Preference returned</li>
+</ul>
+<p><strong>Response body:</strong> Flag indicating whether the IP is displayed</p>
+<pre><code>{&quot;show_ip&quot;: true}
+</code></pre>
+<p><a id="api-settings-set_show_ip"></a></p>
+<h2 id="apisettingsset_show_ip"><code>/api/settings/set_show_ip</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1226"><code>app_setShowIP</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Set whether the IP address should be shown on the display</p>
+<h3 id="request_28">Request</h3>
+<h4 id="body-parameters_9">Body parameters</h4>
+<ul>
+<li><code>show_ip</code> bool required - Whether to show the IP address on screen</li>
+</ul>
+<h3 id="response_28">Response</h3>
+<h4 id="status-codes_28">Status codes</h4>
+<ul>
+<li><code>200</code> - Preference updated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-time-midnight_madness_available"></a></p>
+<h2 id="apitimemidnight_madness_available"><code>/api/time/midnight_madness_available</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1255"><code>app_midnightMadnessAvailable</code></a></li>
+</ul>
+<p>Report if Midnight Madness mode is supported</p>
+<h3 id="request_29">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_29">Response</h3>
+<h4 id="status-codes_29">Status codes</h4>
+<ul>
+<li><code>200</code> - Availability returned</li>
+</ul>
+<p><strong>Response body:</strong> Flag indicating if the game supports Midnight Madness</p>
+<pre><code>{&quot;available&quot;: true}
+</code></pre>
+<p><a id="api-time-get_midnight_madness"></a></p>
+<h2 id="apitimeget_midnight_madness"><code>/api/time/get_midnight_madness</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1275"><code>app_getMidnightMadness</code></a></li>
+</ul>
+<p>Read Midnight Madness configuration</p>
+<h3 id="request_30">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_30">Response</h3>
+<h4 id="status-codes_30">Status codes</h4>
+<ul>
+<li><code>200</code> - Configuration returned</li>
+</ul>
+<p><strong>Response body:</strong> Flags describing whether Midnight Madness is enabled and always on</p>
+<pre><code>{
+    &quot;enabled&quot;: true,
+    &quot;always&quot;: false
+}
+</code></pre>
+<p><a id="api-time-set_midnight_madness"></a></p>
+<h2 id="apitimeset_midnight_madness"><code>/api/time/set_midnight_madness</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1300"><code>app_setMidnightMadness</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Set Midnight Madness configuration</p>
+<h3 id="request_31">Request</h3>
+<h4 id="body-parameters_10">Body parameters</h4>
+<ul>
+<li><code>always</code> bool required - Keep Midnight Madness enabled for all games</li>
+<li><code>enabled</code> bool required - Enable timed Midnight Madness events</li>
+</ul>
+<h3 id="response_31">Response</h3>
+<h4 id="status-codes_31">Status codes</h4>
+<ul>
+<li><code>200</code> - Configuration saved</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-time-trigger_midnight_madness"></a></p>
+<h2 id="apitimetrigger_midnight_madness"><code>/api/time/trigger_midnight_madness</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1331"><code>app_triggerMidnightMadness</code></a></li>
+</ul>
+<p>Immediately trigger Midnight Madness</p>
+<h3 id="request_32">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_32">Response</h3>
+<h4 id="status-codes_32">Status codes</h4>
+<ul>
+<li><code>200</code> - Event triggered</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-settings-factory_reset"></a></p>
+<h2 id="apisettingsfactory_reset"><code>/api/settings/factory_reset</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1349"><code>app_factoryReset</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Perform a full factory reset of Vector and the pinball machine</p>
+<h3 id="request_33">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_33">Response</h3>
+<h4 id="status-codes_33">Status codes</h4>
+<ul>
+<li><code>200</code> - Reset initiated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-settings-reboot"></a></p>
+<h2 id="apisettingsreboot"><code>/api/settings/reboot</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1388"><code>app_reboot</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Reboot the Pinball machine</p>
+<h3 id="request_34">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_34">Response</h3>
+<h4 id="status-codes_34">Status codes</h4>
+<ul>
+<li><code>200</code> - Reboot initiated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-last_ip"></a></p>
+<h2 id="apilast_ip"><code>/api/last_ip</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1413"><code>app_getLastIP</code></a></li>
+</ul>
+<p>Get the last known IP address</p>
+<h3 id="request_35">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_35">Response</h3>
+<h4 id="status-codes_35">Status codes</h4>
+<ul>
+<li><code>200</code> - IP returned</li>
+</ul>
+<p><strong>Response body:</strong> Last recorded IP address</p>
+<pre><code>{&quot;ip&quot;: &quot;192.168.0.10&quot;}
+</code></pre>
+<p><a id="api-wifi-status"></a></p>
+<h2 id="apiwifistatus"><code>/api/wifi/status</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1431"><code>app_getWifiStatus</code></a></li>
+</ul>
+<p>Get the configured Wi-Fi SSID and signal strength</p>
+<h3 id="request_36">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_36">Response</h3>
+<h4 id="status-codes_36">Status codes</h4>
+<ul>
+<li><code>200</code> - Status returned</li>
+</ul>
+<p><strong>Response body:</strong> Current Wi-Fi connection status</p>
+<pre><code>{
+    &quot;ssid&quot;: &quot;MyNetwork&quot;,
+    &quot;rssi&quot;: -40,
+    &quot;connected&quot;: true
+}
+</code></pre>
+<p><a id="api-network-peers"></a></p>
+<h2 id="apinetworkpeers"><code>/api/network/peers</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1467"><code>app_getPeers</code></a></li>
+</ul>
+<p>List other vector devices discovered on the local network</p>
+<h3 id="request_37">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_37">Response</h3>
+<h4 id="status-codes_37">Status codes</h4>
+<ul>
+<li><code>200</code> - Peer map returned</li>
+</ul>
+<p><strong>Response body:</strong> Mapping of peer identifiers to network information</p>
+<pre><code>{
+    &quot;192.168.4.243&quot;: {
+        &quot;name&quot;: &quot;Pinbot&quot;,
+        &quot;self&quot;: true
+    }
+}
+</code></pre>
+<p><a id="api-set_date"></a></p>
+<h2 id="apiset_date"><code>/api/set_date</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1495"><code>app_setDateTime</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Set Vector's date and time</p>
+<h3 id="request_38">Request</h3>
+<h4 id="body-parameters_11">Body parameters</h4>
+<ul>
+<li><code>date</code> list required - RTC tuple [year, month, day, hour, minute, second]</li>
+</ul>
+<h3 id="response_38">Response</h3>
+<h4 id="status-codes_38">Status codes</h4>
+<ul>
+<li><code>200</code> - Clock updated</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-get_date"></a></p>
+<h2 id="apiget_date"><code>/api/get_date</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1521"><code>app_getDateTime</code></a></li>
+</ul>
+<p>Read the current time according to Vector</p>
+<h3 id="request_39">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_39">Response</h3>
+<h4 id="status-codes_39">Status codes</h4>
+<ul>
+<li><code>200</code> - RTC timestamp returned</li>
+</ul>
+<p><strong>Response body:</strong> Tuple containing RTC date/time fields</p>
+<pre><code>{&quot;date&quot;: [2024, 1, 1, 0, 12, 0, 0]}
+</code></pre>
+<p><a id="api-version"></a></p>
+<h2 id="apiversion"><code>/api/version</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1541"><code>app_version</code></a></li>
+</ul>
+<p>Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.</p>
+<h3 id="request_40">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_40">Response</h3>
+<h4 id="status-codes_40">Status codes</h4>
+<ul>
+<li><code>200</code> - Version returned</li>
+</ul>
+<p><strong>Response body:</strong> Current firmware version string</p>
+<pre><code>{&quot;version&quot;: &quot;1.0.0&quot;}
+</code></pre>
+<p><a id="api-fault"></a></p>
+<h2 id="apifault"><code>/api/fault</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1560"><code>app_install_fault</code></a></li>
+</ul>
+<p>Get the list of currently active faults</p>
+<h3 id="request_41">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_41">Response</h3>
+<h4 id="status-codes_41">Status codes</h4>
+<ul>
+<li><code>200</code> - Faults returned</li>
+</ul>
+<p><strong>Response body:</strong> Collection of fault flags and details</p>
+<pre><code>{&quot;faults&quot;: []}
+</code></pre>
+<p><a id="api-export-scores"></a></p>
+<h2 id="apiexportscores"><code>/api/export/scores</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1582"><code>app_export_leaderboard</code></a></li>
+</ul>
+<p>Export all leaderboard data</p>
+<h3 id="request_42">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_42">Response</h3>
+<h4 id="status-codes_42">Status codes</h4>
+<ul>
+<li><code>200</code> - Leaderboard export file returned</li>
+</ul>
+<pre><code>{
+        &quot;scores&quot;: {&quot;tournament&quot;: [{&quot;initials&quot;: &quot;AAA&quot;, &quot;score&quot;: 938479, &quot;index&quot;: 2, &quot;game&quot;: 0}],
+        &quot;leaders&quot;: [{&quot;initials&quot;: &quot;MSM&quot;, &quot;date&quot;: &quot;02/04/2025&quot;, &quot;full_name&quot;: &quot;Maxwell Mullin&quot;, &quot;score&quot;: 2817420816}]},
+        &quot;version&quot;: 1
+</code></pre>
+<p><a id="api-import-scores"></a></p>
+<h2 id="apiimportscores"><code>/api/import/scores</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1604"><code>app_import_leaderboard</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Import leaderboard data from an uploaded file</p>
+<h3 id="request_43">Request</h3>
+<h4 id="body-parameters_12">Body parameters</h4>
+<ul>
+<li><code>file</code> bytes required - Score export file content</li>
+</ul>
+<h3 id="response_43">Response</h3>
+<h4 id="status-codes_43">Status codes</h4>
+<ul>
+<li><code>200</code> - Import completed</li>
+</ul>
+<p><strong>Response body:</strong> Success indicator</p>
+<pre><code>{&quot;success&quot;: true}
+</code></pre>
+<p><a id="api-memory-snapshot"></a></p>
+<h2 id="apimemory-snapshot"><code>/api/memory-snapshot</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1631"><code>app_memory_snapshot</code></a></li>
+</ul>
+<p>Stream a snapshot of memory contents</p>
+<h3 id="request_44">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_44">Response</h3>
+<h4 id="status-codes_44">Status codes</h4>
+<ul>
+<li><code>200</code> - Snapshot streaming</li>
+</ul>
+<p><strong>Response body:</strong> Text stream of byte values</p>
+<p><a id="api-logs"></a></p>
+<h2 id="apilogs"><code>/api/logs</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1649"><code>app_getLogs</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+<li>Cooldown: 10s</li>
+<li>Single instance: Yes</li>
+</ul>
+<p>Download the system log file</p>
+<h3 id="request_45">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_45">Response</h3>
+<h4 id="status-codes_45">Status codes</h4>
+<ul>
+<li><code>200</code> - Log download streaming</li>
+</ul>
+<p><strong>Response body:</strong> Log file content</p>
+<p><a id="api-formats-available"></a></p>
+<h2 id="apiformatsavailable"><code>/api/formats/available</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1699"><code>app_list_available_formats</code></a></li>
+</ul>
+<p>Get the list of available game formats</p>
+<h3 id="request_46">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_46">Response</h3>
+<h4 id="status-codes_46">Status codes</h4>
+<ul>
+<li><code>200</code> - Formats returned</li>
+</ul>
+<p><strong>Response body:</strong> Collection of available game formats with metadata and configuration options</p>
+<pre><code>[
+    {
+        &quot;id&quot;: 0,
+        &quot;name&quot;: &quot;Arcade&quot;,
+        &quot;description&quot;: &quot;Manufacturer standard game play&quot;
+    }
+]
+</code></pre>
+<p><a id="api-formats-set"></a></p>
+<h2 id="apiformatsset"><code>/api/formats/set</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1724"><code>app_set_current_format</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Set the active game format</p>
+<h3 id="request_47">Request</h3>
+<h4 id="body-parameters_13">Body parameters</h4>
+<ul>
+<li><code>format_id</code> int required - Format identifier to activate</li>
+<li><code>options</code> dict optional - Configuration options for the selected format</li>
+</ul>
+<h3 id="response_47">Response</h3>
+<h4 id="status-codes_47">Status codes</h4>
+<ul>
+<li><code>200</code> - Format set successfully</li>
+</ul>
+<p><a id="api-formats-active"></a></p>
+<h2 id="apiformatsactive"><code>/api/formats/active</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1771"><code>app_get_active_formats</code></a></li>
+</ul>
+<p>Get the currently active game format</p>
+<h3 id="request_48">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_48">Response</h3>
+<p>No structured response documented.</p>
+<p><a id="api-diagnostics-switches"></a></p>
+<h2 id="apidiagnosticsswitches"><code>/api/diagnostics/switches</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1794"><code>app_get_switch_diagnostics</code></a></li>
+</ul>
+<p>Get diagnostic information for all switches</p>
+<h3 id="request_49">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_49">Response</h3>
+<p>No structured response documented.</p>
+<p><a id="api-update-check"></a></p>
+<h2 id="apiupdatecheck"><code>/api/update/check</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1845"><code>app_updates_available</code></a></li>
+<li>Cooldown: 10s</li>
+</ul>
+<p>Get the metadata for the latest available software version. This does not download or apply the update.</p>
+<h3 id="request_50">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_50">Response</h3>
+<h4 id="status-codes_48">Status codes</h4>
+<ul>
+<li><code>200</code> - Update metadata returned</li>
+</ul>
+<p><strong>Response body:</strong> JSON payload describing available updates</p>
+<pre><code>{
+    &quot;release_page&quot;: &quot;https://github.com/...&quot;,
+    &quot;notes&quot;: &quot;Another Great Release! Here's what we changed&quot;,
+    &quot;published_at&quot;: &quot;2025-12-30T17:54:49+00:00&quot;,
+    &quot;url&quot;: &quot;https://github.com/...&quot;,
+    &quot;version&quot;: &quot;1.9.0&quot;
+}
+</code></pre>
+<p><a id="api-update-apply"></a></p>
+<h2 id="apiupdateapply"><code>/api/update/apply</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1880"><code>app_apply_update</code></a></li>
+<li>Authentication: Required (see <a href="../authentication/">Authentication guide</a>).</li>
+</ul>
+<p>Download and apply a software update from the provided URL.</p>
+<h3 id="request_51">Request</h3>
+<h4 id="body-parameters_14">Body parameters</h4>
+<ul>
+<li><code>url</code> string required - Signed update package URL</li>
+<li><code>skip_signature_check</code> bool optional - Bypass signature validation (for developer builds)</li>
+</ul>
+<h3 id="response_51">Response</h3>
+<h4 id="status-codes_49">Status codes</h4>
+<ul>
+<li><code>200</code> - Streaming progress updates</li>
+</ul>
+<p><strong>Response body:</strong> Sequence of JSON log entries with <code>log</code> and <code>percent</code> fields</p>
+<pre><code>{
+    &quot;log&quot;: &quot;Starting update&quot;,
+    &quot;percent&quot;: 0
+}
+</code></pre>
+<p><a id="api-in_ap_mode"></a></p>
+<h2 id="apiin_ap_mode"><code>/api/in_ap_mode</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1933"><code>app_inAPMode</code></a></li>
+</ul>
+<p>Indicates if Vector is running in AP or app mode</p>
+<h3 id="request_52">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_52">Response</h3>
+<h4 id="status-codes_50">Status codes</h4>
+<ul>
+<li><code>200</code> - Mode reported</li>
+</ul>
+<p><strong>Response body:</strong> Flag showing AP mode status</p>
+<pre><code>{&quot;in_ap_mode&quot;: false}
+</code></pre>
+<p><a id="api-in_ap_mode"></a></p>
+<h2 id="apiin_ap_mode_1"><code>/api/in_ap_mode</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1956"><code>app_inAPMode</code></a></li>
+</ul>
+<p>No description provided.</p>
+<h3 id="request_53">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_53">Response</h3>
+<p>No structured response documented.</p>
+<p><a id="api-settings-set_vector_config"></a></p>
+<h2 id="apisettingsset_vector_config"><code>/api/settings/set_vector_config</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1961"><code>app_setWifi</code></a></li>
+</ul>
+<p>[AP Mode Only] Configure Wi-Fi credentials and default game</p>
+<h3 id="request_54">Request</h3>
+<h4 id="body-parameters_15">Body parameters</h4>
+<ul>
+<li><code>ssid</code> string required - Wi-Fi network name</li>
+<li><code>wifi_password</code> string required - Wi-Fi network password</li>
+<li><code>vector_password</code> string required - Password for authenticated API access</li>
+<li><code>game_config_filename</code> string required - Game configuration filename to load</li>
+</ul>
+<h3 id="response_54">Response</h3>
+<h4 id="status-codes_51">Status codes</h4>
+<ul>
+<li><code>200</code> - Configuration saved</li>
+</ul>
+<pre><code>&quot;ok&quot;
+</code></pre>
+<p><a id="api-available_ssids"></a></p>
+<h2 id="apiavailable_ssids"><code>/api/available_ssids</code></h2>
+<ul>
+<li><strong>Handler:</strong> <a href="https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2012"><code>app_getAvailableSSIDs</code></a></li>
+</ul>
+<p>[AP Mode Only] Scan for nearby Wi-Fi networks</p>
+<h3 id="request_55">Request</h3>
+<p>No parameters inferred.</p>
+<h3 id="response_55">Response</h3>
+<h4 id="status-codes_52">Status codes</h4>
+<ul>
+<li><code>200</code> - Networks listed</li>
+</ul>
+<p><strong>Response body:</strong> Array of SSID records with signal quality and configuration flag</p>
+<pre><code>[
+    {
+        &quot;ssid&quot;: &quot;MyNetwork&quot;,
+        &quot;rssi&quot;: -40,
+        &quot;configured&quot;: true
+    }
+]
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
