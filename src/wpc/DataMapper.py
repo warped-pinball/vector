@@ -367,7 +367,7 @@ def get_live_scores(use_format=True):
     
     # Check if a Format is active
     try:
-        if use_format is True and hasattr(S, 'active_format') and S.active_format != 0:
+        if use_format is True and S.active_format.get("Id", 0) != 0:
             # Format is active - use player_scores from Formats module
             import Formats
             scores = list(Formats.player_scores)
@@ -575,7 +575,7 @@ def get_in_play_data():
     return data
 
 
-def remove_machine_scores(grand_champ_mode="Max"):
+def remove_machine_scores():
     """
     Remove/reset machine high scores to prepare for forced initial entry.
     
@@ -588,6 +588,8 @@ def remove_machine_scores(grand_champ_mode="Max"):
     
     WPC Type 10 only.
     """
+    grand_champ_mode="Max"
+
     if S.gdata.get("HighScores", {}).get("Type") != 10:
         return
     

@@ -435,6 +435,7 @@ def CheckForNewScores(nState=[0]):
 
     print("################################   game status : ",DataMapper.get_in_play_data())
 
+    print(" game active ", shadowRam[0xAF],shadowRam[0x8F])
 
 
     if nState[0] == 0:  # power up init
@@ -459,6 +460,12 @@ def CheckForNewScores(nState=[0]):
         Ball5Value = S.gdata["BallInPlay"]["Ball5"]
 
         if nState[0] == 1:  # waiting for a game to start
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
+                return
+                
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]

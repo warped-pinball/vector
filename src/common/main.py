@@ -18,6 +18,7 @@ from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
 import Switches
+import Formats
 
 Log = logger_instance
 
@@ -143,6 +144,10 @@ time.sleep(4)
 
 resource.go(True)
 Switches.initialize()
+Formats.initialize()
+
+
+#for test Formats.set_active_format("Half Life")
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa

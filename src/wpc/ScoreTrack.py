@@ -536,9 +536,9 @@ def CheckForNewScores(nState=[0]):
         # waiting for a game to start
         if nState[0] == 1:      
 
-            # Check if active_format exists and is not 0; if so, return early
-            #allows gam eis progress to finish in normal mode when format is activeated
-            if hasattr(S, "active_format") and getattr(S, "active_format", 0) != 0:
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
                 return
 
             GameEndCount = 0
