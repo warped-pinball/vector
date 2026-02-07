@@ -14,7 +14,10 @@ from logger import logger_instance
 log = logger_instance
 
 #FORMAT RUN call timer in mS
-CALL_TIMER = 1500
+CALL_TIMER = 1200
+#system 11 normal initials timeout ~ 40 seconds per player
+#WPC normal initials timeout is = 60 seconds 
+OVER_COUNTER = 60000//CALL_TIMER
 
 # Handler state var values
 HANDLER_INIT = 0
@@ -29,7 +32,7 @@ FORMAT_HANDLERS = []
 player_scores=[0,0,0,0]
 saved_high_scores = None 
 
-mode_ball_in_play=0  #storej to detect change during play
+mode_ball_in_play=0  #store to detect change during play
 mode_player_up=0
 
 MODE_ID_STANDARD = 0
@@ -103,12 +106,12 @@ DEFAULT_FORMATS = {
             }
         }    
     },
-    "Half Life": {
+    "HalfLife": {
         "Id": MODE_ID_HALF_LIFE,
         "Description": "Score decreases over time",
         "Options": {
             "ScoreDecay": {
-                "Name": "Half Life percent per 2.5 seconds",
+                "Name": "Half Life percent per 2 seconds",
                 "type": "NumberRange",
                 "Range": {
                     "Low": 1,
@@ -207,6 +210,7 @@ def practice_init():
 
 def practice_run():
     """Run practice mode (keep at ball 1 in play)"""
+    global next_format
     if next_format.get("Id", 0) != MODE_ID_PRACTICE:  # end on next ball drain
         DataMapper.write_ball_in_play(5)
         DataMapper.write_live_scores([1, 1, 1, 1])
@@ -222,6 +226,8 @@ def practice_run():
                 DataMapper.write_live_scores(scores)
                 break
 
+    return DataMapper.get_game_active() 
+
 
 # ============================================================================
 # Low Ball Mode Handlers  (only low scoring ball counts)
@@ -235,8 +241,16 @@ def lowball_init():
     # Initialize lowball_scores to all zeroes
     lowball_scores = [[0 for _ in range(4)] for _ in range(5)]
 
+
 def lowball_run():
-    global mode_ball_in_play, mode_player_up, player_scores, lowball_scores
+    global mode_ball_in_play, mode_player_up, player_scores, lowball_scores   
+
+    ball_in_play = DataMapper.get_ball_in_play()
+
+    #copy all players scores to lowball
+    if ball_in_play > 0:
+        lowball_scores[ball_in_play - 1] = DataMapper.get_live_scores(use_format=False)
+
     # Update player_scores with the lowest non-zero score for each player
     for player_idx in range(4):
         scores = [lowball_scores[ball][player_idx] for ball in range(5) if lowball_scores[ball][player_idx] > 0]
@@ -244,19 +258,15 @@ def lowball_run():
 
     print("FORMAT: lowball scores:",lowball_scores)
 
-    #if the ball in play changes set all scores to 0
-    ball_in_play = DataMapper.get_ball_in_play()
+    #if the ball in play changes set all scores to 0    
     if ball_in_play != mode_ball_in_play and ball_in_play != 0:
         print("FORMAT: set live scores to zero")
         DataMapper.write_live_scores([0,0,0,0])
-
-    #copy all players scores to lowball
-    if ball_in_play > 0:
-        lowball_scores[ball_in_play - 1] = DataMapper.get_live_scores(use_format=False)
-
     mode_ball_in_play=ball_in_play
 
-  
+    return DataMapper.get_game_active()
+   
+
 
 
 
@@ -290,7 +300,8 @@ def golf_init():
     golf_ball_in_play = 1
     golf_player_up = 1
     golf_player_complete = [False, False, False, False]
-    player_scores = [1000, 1000, 1000, 1000]
+    players_in_game = DataMapper.get_players_in_game()
+    player_scores = [1_000_000 if i < players_in_game else 0 for i in range(4)]
 
 
 def golf_run():
@@ -299,6 +310,13 @@ def golf_run():
 
     ball_in_play = DataMapper.get_ball_in_play()
     player_up = DataMapper.get_player_up()
+    players_in_game = DataMapper.get_players_in_game()
+
+    #new players join
+    for player_idx in range(players_in_game):
+        if player_scores[player_idx] == 0:
+            player_scores[player_idx] = 1_000_000
+
     
     if ball_in_play != golf_ball_in_play or player_up != golf_player_up:
         #had a change in ball or player - update scores etc
@@ -308,7 +326,7 @@ def golf_run():
         all_complete = True
         for idx in range(num_players):
             if not golf_player_complete[idx]:
-                if (player_scores[idx]<6000):
+                if (player_scores[idx]<6_000_000):
                     all_complete = False
                 break
         
@@ -324,9 +342,9 @@ def golf_run():
             if ball_in_play ==1:
                 golf_player_up = player_up
             else:
-                #so we have ball 2 for the player currently up, if they are not done score=score*2
+                #so we have ball 2 for the player currently up, if they are not done score up
                 if golf_player_complete[player_up-1]==False:
-                    player_scores[player_up - 1]=player_scores[player_up - 1] + 1000
+                    player_scores[player_up - 1]=player_scores[player_up - 1] + 1_000_000
 
             if (ball_in_play >2):
                 DataMapper.write_ball_in_play(2)            
@@ -336,6 +354,7 @@ def golf_run():
     
     #always re-write scores - 
     DataMapper.write_live_scores(player_scores)
+    return DataMapper.get_game_active()
 
 def golf_close():
     """Close golf mode and unsubscribe from target"""
@@ -357,14 +376,14 @@ def golf_hit_callback(switch_idx):
     if S.active_format.get("Id", 0) != MODE_ID_GOLF:
         return
 
-    print("FORMAT: Golf switch hit")
-
+    #print("FORMAT: Golf switch hit --------------------------------------------------------------------")
     try:
         player_up = DataMapper.get_player_up()       
-        
-        if  player_scores[player_up - 1]<=1000 and player_scores[player_up - 1]>250 and golf_player_complete[player_up - 1] is True:
-            #reduce score on first ball, from 1000->750->500->250
-            player_scores[player_up - 1] -= 250 
+
+        if DataMapper.get_ball_in_play()==1 or DataMapper.get_ball_in_play()==5:
+            if  player_scores[player_up - 1]<=1_000_000 and player_scores[player_up - 1]>250_000 and golf_player_complete[player_up - 1] is True:
+                #reduce score on first ball, from 1,000,000->750,000->500,00->250,000
+                player_scores[player_up - 1] -= 250_000 
                    
         golf_player_complete[player_up - 1] = True  #player done!
 
@@ -392,7 +411,7 @@ def golf_hit_callback(switch_idx):
 def limbo_run():
     global player_scores
     player_scores = DataMapper.get_live_scores(use_format=False)
-    return
+    return DataMapper.get_game_active()
 
 
 
@@ -406,14 +425,18 @@ def half_life_init():
     global score_half_life_percent, player_scores
     
     # Get the decay percentage from format options
-    score_half_life_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 2)
+    config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 2)
+    # Normalize to actual call rate: convert from "per 2000ms" to "per CALL_TIMER ms"
+    # If CALL_TIMER=1200ms, we want (1200/2000) of the configured percent per call
+    score_half_life_percent = max(2, (config_percent * CALL_TIMER) // 2000 )
+
     player_scores = [0, 0, 0, 0]
     print(f"FORMAT: Half Life initialized with {score_half_life_percent}%")
 
 def half_life_run():
     """Half Life run handler - reduce scores by percentage if above 10000"""
     global player_scores
-    
+
     current_scores = DataMapper.get_live_scores(use_format=False)
     
     if DataMapper.get_game_active() is True:
@@ -426,7 +449,7 @@ def half_life_run():
             DataMapper.write_live_scores(current_scores)
 
     player_scores = current_scores
-
+    return DataMapper.get_game_active()
 
 # ============================================================================
 # Longest Ball Mode Handlers
@@ -446,6 +469,8 @@ def longest_ball_init():
     player_game_scores = [0, 0, 0, 0]
     player_scores = [0, 0, 0, 0]
 
+
+HOLD_TIMER_COUNT = max(1, 4100//CALL_TIMER)
 def longest_ball_run():
     """longest play time ball"""
     global flipper_up_counter, score_static_counter, longest_ball_scores, player_game_scores
@@ -471,7 +496,7 @@ def longest_ball_run():
 
     if flipper_up_counter<2 and score_static_counter<2:
         # award time
-        longest_ball_scores[ball_in_play-1][player_up-1] += 250
+        longest_ball_scores[ball_in_play-1][player_up-1] += (CALL_TIMER//10)
         player_scores[player_up-1] = longest_ball_scores[ball_in_play-1][player_up-1]
 
     print("FORMAT: LongestBall scores:",longest_ball_scores)
@@ -482,7 +507,9 @@ def longest_ball_run():
         for player_idx in range(4):
             scores = [longest_ball_scores[ball][player_idx] for ball in range(5)]
             player_scores[player_idx] = max(scores)
-          
+        return False
+    
+    return True
   
 
 # ============================================================================
@@ -494,7 +521,7 @@ def empty_init():
 
 def empty_run():
     """Empty run handler"""
-    pass
+    return DataMapper.get_game_active()
 
 def empty_close():
     """Empty close handler"""
@@ -507,13 +534,15 @@ def empty_close():
 # ============================================================================
 game_state =0
 GameEndCount =0
+last_high_score_count =0
+in_play_scores_hold = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 def formats_run():
     """
     periodic tasks related to game formats.   
-        call rate 5 seconds
+        call rate CALL_TIMER milli-seconds
     """
-    global next_format, game_state, GameEndCount, player_scores, saved_high_scores
+    global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold
 
     # Waiting to change format?
     active_id = S.active_format.get("Id", 0)
@@ -554,68 +583,80 @@ def formats_run():
         print("FORMAT: game end check")     
         handlers = FORMAT_HANDLERS[active_id]       
         try:
-            handlers[HANDLER_RUN]()
+            game_active = handlers[HANDLER_RUN]()
         except Exception as e:
             log.log(f"FORMAT: Error running format {active_id}: {e}")
+            game_active = DataMapper.get_game_active()
 
-        if DataMapper.get_game_active() is False:              
+        if game_active is False:              
             game_state = 2
-            GameEndCount = 0
+            GameEndCount = OVER_COUNTER
 
              
-    # Game over wait for intiials
+    # Game over wait for initials
     elif game_state == 2:    
         get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
         if get_player_id:
-            GameEndCount += 1    #wait for intials   
+            GameEndCount -= 1    #wait for intials   
             if DataMapper.get_game_active() is True:
-                   GameEndCount = 99  #if game starts - get out!
+                   game_state = 3  
                    log.log("FORMAT: game started while waiting for intials")
+            else:
+                in_play_scores_hold = DataMapper.read_in_play_scores()
+
         else:
-            GameEndCount = 99  #dont wait for intials
+            game_state = 3  
             print("FORMAT: Do not wait for intiials")
 
-        if GameEndCount > 80:
-            game_state = 3  
-            GameEndCount = 0
+        if GameEndCount <= 0:    
+            game_state = 3   # timeout           
         else:
             scores = DataMapper.read_high_scores()
             print("FORMAT: high score read:",scores)
-            high_score_count = 0
+            
             # Check high scores - handle both WPC (5 scores) and SYS11 (4 scores) formats
+            high_score_count = 0
             for x in range(0, min(5, len(scores))):
-                if scores[x][1] > 100 and len(scores[x][0]) > 2:  #score and initials in 
+                alpha_count = sum(1 for c in scores[x][0] if c.isalpha())
+                if scores[x][1] > 100 and alpha_count > 2:  #score and three initials are in 
                     high_score_count += 1
 
-            log.log(f"FORMAT: game over, high score count {high_score_count}")
-
             if high_score_count >= DataMapper.get_players_in_game():                
-                game_state=3
+                game_state=3        
+            elif last_high_score_count != high_score_count:
+                GameEndCount = OVER_COUNTER # renew timeout for next player to enter intiials
+                last_high_score_count=high_score_count
+
+            #print(f"\nFORMAT: game over, high score count $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  {high_score_count}")
+          
+           
          
     elif game_state == 3:  #wrap up
-            print("\n\nFORMAT: Game all done - results are:")
-            
             # Get in-play scores (in player order) and high scores (sorted by score)
-            in_play_scores = DataMapper.read_in_play_scores()  #these are recorded by machine , not c=necissarily a format result
+            in_play_scores = in_play_scores_hold #DataMapper.read_in_play_scores()  #these are recorded by machine , not neccissarily a format result
             high_scores = DataMapper.read_high_scores()
             
-            #print(" in play scores",in_play_scores)
-            #print(" high scores : ",high_scores)            
+            print(" in play scores",in_play_scores)
+            print(" high scores : ",high_scores)            
 
             # Match in-play scores with high score initials to preserve player order
             final_scores_by_player = DataMapper.match_in_play_with_high_score_initials(in_play_scores, high_scores)
-            num_players = DataMapper.get_players_in_game()
             
-            print("FORMAT: final scores:",final_scores_by_player)  
+            # Replace scores in final_scores_by_player with format-adjusted scores from player_scores
+            for player_idx in range(len(final_scores_by_player)):
+                if player_idx < len(player_scores):
+                    final_scores_by_player[player_idx][1] = player_scores[player_idx]            
 
-            # Print results for each player
-            for idx in range(num_players):
-                player_num = idx + 1
-                initials = final_scores_by_player[idx][0] if final_scores_by_player[idx][0] else "___"
-                score = player_scores[idx]  #final_scores_by_player[idx][1]
-
-                print(f"  Player {player_num} ({initials}): {score:,}")            
+            # Build scores list
+            #scores = []
+            #for idx in range(4):                
+            #    initials = final_scores_by_player[idx][0] if final_scores_by_player[idx][0] else ""
+            #    score = player_scores[idx]              
+            #    scores.append([initials, score])
             
+            log.log(f"FORMAT: RESULTS: {{Id:{active_id}, Scores:{final_scores_by_player}}}")
+            
+
             '''
             try:
                 from origin import push_end_of_game
@@ -632,6 +673,9 @@ def formats_run():
                 saved_high_scores = None
 
             game_state=0
+
+    else:
+        game_state=0
 
 
 
@@ -663,6 +707,5 @@ def initialize():
   
     # Schedule periodic format tasks
     from phew.server import schedule
-    #schedule(formats_run, 15000, 2500)
-    schedule(formats_run, 15000, CALL_TIMER)
+    schedule(formats_run, 12000, CALL_TIMER)
 

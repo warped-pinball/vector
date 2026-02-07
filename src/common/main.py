@@ -147,7 +147,8 @@ Switches.initialize()
 Formats.initialize()
 
 
-#for test Formats.set_active_format("Half Life")
+#for test
+Formats.set_active_format("HalfLife")
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa

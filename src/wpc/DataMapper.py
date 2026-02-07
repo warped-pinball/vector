@@ -607,9 +607,9 @@ def remove_machine_scores():
         # Set placeholder score (60, 50, 40, 30)
         shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = 0x10 * (4 - index)
         
-        # Set initials to 'AAA' (0x41 = 'A' in ASCII)
+        # Set initials to '   ' 
         for i in range(3):
-            shadowRam[initial_start + i] = 0x41+i
+            shadowRam[initial_start + i] = 0x20
     
     # Handle Grand Champion score
     if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -639,6 +639,9 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     one of the high scores. This function copies the initials from the
     high score list to the in-play score list for matching scores.
     
+    Each high score initial is used only once to prevent duplicate assignments
+    when players have identical scores.
+    
     Args:
         in_play_scores: List of [initials, score] pairs from in-play data
         high_scores: List of [initials, score] pairs from high score data
@@ -646,12 +649,15 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     Returns:
         list: Updated in_play_scores with initials filled in where matches found
     """
+    used_high_score_indices = []
+
     for in_play_score in in_play_scores:
-        for high_score in high_scores:
-            if in_play_score[1] == high_score[1] and in_play_score[1] != 0:
-                in_play_score[0] = high_score[0]  # Copy initials over
+        for high_score_idx, high_score in enumerate(high_scores):
+            if high_score_idx not in used_high_score_indices and in_play_score[1] == high_score[1] and in_play_score[1] != 0:
+                in_play_score[0] = high_score[0]
+                used_high_score_indices.append(high_score_idx)
                 break
-    
+
     return in_play_scores
 
 

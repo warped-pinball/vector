@@ -95,7 +95,7 @@
       "Practice": {
           "Id": 4
       },
-      "Half Life": {
+      "HalfLife": {
           "Id": 5,
           "Options": {
               "ScoreDecay": {
