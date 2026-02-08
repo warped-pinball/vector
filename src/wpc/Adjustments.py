@@ -110,8 +110,8 @@ def _fixChecksum():
     # Store MSByte and LSByte
     msb = (chk >> 8) & 0xFF
     lsb = chk & 0xFF
-    print("ADJ: Old Checksum: ---------------- ", hex(shadowRam[chkAdr]), hex(shadowRam[chkAdr+1]))
-    print("ADJ: New Checksum: ---------------- ", hex(msb), hex(lsb))
+    #print("ADJ: Old Checksum: ", hex(shadowRam[chkAdr]), hex(shadowRam[chkAdr+1]))
+    print("ADJ: Checksum:", hex(msb), hex(lsb))
     shadowRam[chkAdr] = msb
     shadowRam[chkAdr + 1] = lsb
 
@@ -295,50 +295,3 @@ def get_adjustments_status():
 
     return {"adjustments_support": adjustments_support, "profiles": profile_status}
 
-
-if __name__ == "__main__":
-
-    def fill_shadow_ram_with_pattern(pattern):
-        """Fill shadowRam from cpyStart to cpyEnd with a given pattern."""
-        cpyStart, cpyEnd = 6141, 7160  # johnny 
-        pattern_length = len(pattern)
-        print(len(shadowRam), cpyStart, cpyEnd, pattern_length)
-        for i in range(0,  cpyEnd-cpyStart):
-            #print(i)
-            shadowRam[i+cpyStart] = pattern[i % pattern_length]
-
-    import GameDefsLoad
-    GameDefsLoad.go()
-
-    fill_shadow_ram_with_pattern([1, 2, 3, 4])
-    store_adjustments(0)
-    print("store 0 done")
-    fill_shadow_ram_with_pattern([0x0B, 0xCC, 0xEE])
-    store_adjustments(1)
-    print("store 1 done")
-    fill_shadow_ram_with_pattern([0x11, 0x22, 0x33, 0x44])
-    store_adjustments(2)
-    print("store 2 done")
-    fill_shadow_ram_with_pattern([8, 7, 6, 5])
-    store_adjustments(3)
-    print("store 3 done")
-
-    restore_adjustments(0, reset=False)
-    print("A0:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
-    restore_adjustments(1, reset=False)
-    print("A1:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
-    restore_adjustments(2, reset=False)
-    print("A2:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
-    restore_adjustments(3, reset=False)
-    print("A3:",   " ".join(f"{b:02X}" for b in shadowRam[6141:6141+16]))
-
-    import time
-
-    start_time = time.ticks_ms()
-
-    i = get_active_adjustment()
-    print("ACTIVE= ", get_active_adjustment())
-
-    end_time = time.ticks_ms()
-    execution_time_ms = time.ticks_diff(end_time, start_time)
-    print(f"Execution time: {execution_time_ms} ms")

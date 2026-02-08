@@ -142,11 +142,6 @@ resource.go(True)
 Switches.initialize()
 Formats.initialize()
 
-
-#for test
-Formats.set_active_format("LongestBall")
-
-
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402
 
