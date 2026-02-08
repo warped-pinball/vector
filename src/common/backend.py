@@ -901,6 +901,36 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/mode/champs")
+def app_getModeChamps(request):
+    """
+    @api
+    summary: Fetch mode champions data from the game
+    response:
+      status_codes:
+        - code: 200
+          description: Mode champions data returned
+      body:
+        description: Dictionary of mode champions with initials and scores
+        example:
+            {
+                "Biggest Liar": {
+                    "initials": "ABC",
+                    "scores": [25, 8]
+                },
+                "Top Boat Rocker": {
+                    "initials": "XYZ",
+                    "scores": [42]
+                }
+            }
+    @end
+    """
+    import DataMapper
+    
+    mode_champs = DataMapper.get_mode_champs()
+    return json_dumps(mode_champs), 200
+
+
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
     """

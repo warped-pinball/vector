@@ -852,3 +852,187 @@ def print_switches():
         else:
             name = "NotUsed"
         print(f"{name:<24} {value}")
+
+
+
+
+def get_modes():
+    """
+    Read game mode data from shadow RAM.
+    
+    Reads mode-specific data (like mission progress, fish caught, etc.)
+    based on configuration in S.gdata["Modes"]. Each mode can have:
+    - Address: Memory address (hex string "0x515" or integer)
+    - Length: Number of bytes to read
+    - Format: Data format ("u8", "BCD", etc.)
+    - OffValue: Value threshold - mode excluded if value <= OffValue (optional)
+    - Multiplier: Multiply result by this value (optional)
+    
+    Returns:
+        dict: Dictionary with mode names as keys and their values
+              Only includes modes where value > OffValue
+              Returns empty dict if no modes configured
+              Example: {"Fish Caught": 5, "Monster Fish": 1234}
+    """
+    modes_data = {}
+    
+    # Check if Modes configuration exists
+    if "Modes" not in S.gdata:
+        return modes_data
+    
+    try:
+        for mode_name, mode_config in S.gdata["Modes"].items():
+            # Parse address (could be hex string like "0x515" or integer)
+            address = mode_config.get("Address", 0)
+            if isinstance(address, str):
+                # Convert hex string to integer
+                address = int(address, 16) if address.startswith("0x") else int(address)
+            
+            # Get configuration parameters
+            length = mode_config.get("Length", 1)
+            data_format = mode_config.get("Format", "u8")
+            multiplier = mode_config.get("Multiplier", 1)
+            off_value = mode_config.get("OffValue", None)
+            
+            # Read bytes from shadow RAM
+            mode_bytes = shadowRam[address : address + length]
+            
+            # Convert based on format
+            if data_format == "u8":
+                # Unsigned 8-bit integer
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            elif data_format == "BCD":
+                # BCD encoded
+                value = _bcd_to_int(mode_bytes)
+            elif data_format == "u16":
+                # Unsigned 16-bit integer (little-endian)
+                if len(mode_bytes) >= 2:
+                    value = mode_bytes[0] | (mode_bytes[1] << 8)
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            elif data_format == "u16be":
+                # Unsigned 16-bit integer (big-endian)
+                if len(mode_bytes) >= 2:
+                    value = (mode_bytes[0] << 8) | mode_bytes[1]
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            else:
+                # Unknown format, treat as raw byte value
+                log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode '{mode_name}'")
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            
+            # Only include mode if value > OffValue (if OffValue is specified)
+            if off_value is not None:
+                if value > off_value:
+                    modes_data[mode_name] = value * multiplier
+            else:
+                # No OffValue specified, always include
+                modes_data[mode_name] = value * multiplier
+    
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading modes: {e}")
+    
+    return modes_data
+
+
+
+def get_mode_champs():
+    """
+    Read mode champion data from shadow RAM.
+    
+    Reads mode champion scores and initials based on configuration in 
+    S.gdata["ModeChamps"]. Each mode champion can have:
+    - InitialAdr: Address for champion initials (3 bytes ASCII)
+    - NumberOfScores: Number of champion slots for this mode
+    - Spacing: Spacing between multiple champion entries
+    - Scores: List of score components, each with:
+        - Address: Memory address (integer)
+        - Length: Number of bytes to read
+        - Format: Data format ("u8", "BCD", "u16", "u16be", etc.)
+    
+    Returns:
+        dict: Dictionary with mode names as keys and their champion data
+              Each mode contains {"initials": str, "scores": [int, ...]}
+              Returns empty dict if no mode champs configured
+              Example: {"Biggest Liar": {"initials": "ABC", "scores": [25, 8]}}
+    """
+    champs_data = {}
+    
+    # Check if ModeChamps configuration exists
+    if "ModeChamps" not in S.gdata:
+        return champs_data
+    
+    try:
+        for mode_name, mode_config in S.gdata["ModeChamps"].items():
+            # Get configuration parameters
+            initial_adr = mode_config.get("InitialAdr", 0)
+            scores_config = mode_config.get("Scores", [])
+            
+            # Read initials (3 bytes ASCII)
+            initials = ""
+            if initial_adr > 0:
+                try:
+                    initials_bytes = shadowRam[initial_adr : initial_adr + 3]
+                    initials = bytes(initials_bytes).decode("ascii").strip()
+                    # Filter out placeholder/invalid initials
+                    if initials in ["???", "   ", "\x00\x00\x00"]:
+                        initials = ""
+                except Exception:
+                    initials = ""
+            
+            # Read score components
+            score_values = []
+            for score_component in scores_config:
+                address = score_component.get("Address", 0)
+                length = score_component.get("Length", 1)
+                data_format = score_component.get("Format", "u8")
+                
+                # Read bytes from shadow RAM
+                score_bytes = shadowRam[address : address + length]
+                
+                # Convert based on format
+                if data_format == "u8":
+                    # Unsigned 8-bit integer
+                    value = score_bytes[0] if len(score_bytes) > 0 else 0
+                elif data_format == "BCD":
+                    # BCD encoded
+                    value = _bcd_to_int(score_bytes)
+                elif data_format == "u16":
+                    # Unsigned 16-bit integer (little-endian)
+                    if len(score_bytes) >= 2:
+                        value = score_bytes[0] | (score_bytes[1] << 8)
+                    elif len(score_bytes) == 1:
+                        value = score_bytes[0]
+                    else:
+                        value = 0
+                elif data_format == "u16be":
+                    # Unsigned 16-bit integer (big-endian)
+                    if len(score_bytes) >= 2:
+                        value = (score_bytes[0] << 8) | score_bytes[1]
+                    elif len(score_bytes) == 1:
+                        value = score_bytes[0]
+                    else:
+                        value = 0
+                else:
+                    # Unknown format, treat as raw byte value
+                    log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode champ '{mode_name}'")
+                    value = score_bytes[0] if len(score_bytes) > 0 else 0
+                
+                score_values.append(value)
+            
+            # Store mode champion data
+            champs_data[mode_name] = {
+                "initials": initials,
+                "scores": score_values
+            }
+    
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading mode champs: {e}")
+    
+    return champs_data
+
+
