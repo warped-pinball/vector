@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Upper Ramp Switch", 60],
       ["S Of Step Lower Left", 60],
       ["Upper Left Jet Bumper", 60],
+
       ["Slam Tilt", 0],
       ["Front Door", 60],
       [],
@@ -99,6 +97,7 @@
       ["Steps Lights Extra Ball", 60],
       ["Lock Mech Center", 60],
       ["Lock Mech Left", 60],
+
       ["P Of Step Lower Right", 60],
       ["Top Superdog Standup Target", 60],
       ["Upper Left Gangway Rollunder", 60],
@@ -107,6 +106,7 @@
       ["Steps 500000", 200],
       ["Center Superdog Standup Target", 60],
       ["Steps Track Upper", 60],
+
       ["Left Slingshot Kicker", 60],
       ["Left Flipper Return Lane", 60],
       ["Left Outlane", 60],
@@ -115,6 +115,7 @@
       ["Rudys Hideout Kickbig", 200],
       ["Left Ball Shooter", 60],
       ["Ramp Exit Track", 200],
+
       ["Dummy Jaw Opto", 60],
       ["Right Outlane", 60],
       ["Right Slingshot Kicker", 60],
@@ -123,6 +124,7 @@
       ["Ramp Entrance", 60],
       ["Jet Bumper Lane", 60],
       ["Tunnel Kickout", 60],
+
       ["Right Inside Flipper Return Lane", 60],
       ["Right Ball Shooter", 60],
       ["Right Trough", 60],
@@ -131,6 +133,7 @@
       ["Upper Right Gangway Lane", 60],
       ["Lower Right Drop Hole", 60],
       ["Lower Jet Bumper", 60],
+
       ["Right Outside Flipper Return Lane", 60],
       ["Left Trough", 60],
       ["Outhole", 60],
@@ -143,5 +146,49 @@
   "Flippers": {
       "Type": 11,
       "Address": 32
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Golf": {
+          "Id": 3,
+          "Options": {
+              "Target": {
+                  "Name": "Target Switch",
+                  "Type": "ListSelect",
+                  "List": [
+                      "Upper Right Loop Switch",
+                      "Lower Right Drop Hole"
+                  ],
+                  "Value": "Upper Right Loop Switch"
+              }
+          }
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5,
+          "Options": {
+              "ScoreDecay": {
+                  "type": "NumberRange",
+                  "Range": {
+                      "Low": 1,
+                      "High": 20
+                  },
+                  "Value": 4
+              }
+          }
+      },
+      "LongestBall": {
+          "Id": 6
+      }
   }
 }

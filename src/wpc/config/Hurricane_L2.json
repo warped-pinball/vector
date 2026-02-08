@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 137,
@@ -91,6 +88,7 @@
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Dispenser", 60],
@@ -99,6 +97,7 @@
       ["Right Return", 60],
       ["Right Outlane", 60],
       ["Ball Shooter", 60],
+
       ["Ferris Wheel", 60],
       [],
       ["Left Drop Target 1", 60],
@@ -107,6 +106,7 @@
       ["Left Slingshot", 60],
       ["Left Return", 60],
       ["Left Outlane", 60],
+
       [],
       ["Right Stand Up 1", 60],
       ["Right Stand Up 2", 60],
@@ -115,6 +115,7 @@
       [],
       [],
       [],
+
       ["Left Jet Bumper", 60],
       ["Right Jet Bumper", 60],
       ["Bottom Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Left Juggler", 60],
       ["Right Juggler", 60],
       [],
+
       ["Hurricane Entry", 60],
       ["Hurricane Exit", 60],
       ["Comet Entry", 60],
@@ -132,5 +134,49 @@
   "Flippers": {
       "Type": 11,
       "Address": 35
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Golf": {
+          "Id": 3,
+          "Options": {
+              "Target": {
+                  "Name": "Target Switch",
+                  "Type": "ListSelect",
+                  "List": [
+                      "Dunk The Dummy",
+                      "Comet Exit"
+                  ],
+                  "Value": "Dunk The Dummy"
+              }
+          }
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5,
+          "Options": {
+              "ScoreDecay": {
+                  "type": "NumberRange",
+                  "Range": {
+                      "Low": 1,
+                      "High": 20
+                  },
+                  "Value": 4
+              }
+          }
+      },
+      "LongestBall": {
+          "Id": 6
+      }
   }
 }

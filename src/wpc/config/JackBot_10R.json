@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 129,
@@ -91,6 +88,7 @@
       ["High Drop Target", 60],
       ["Center Drop Target", 60],
       ["Low Drop Target", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy Extra Ball", 60],
@@ -99,6 +97,7 @@
       ["Left Flipper Lane", 60],
       ["Right Flipper Lane", 60],
       ["Right Outlane", 60],
+
       ["Trough Jam", 60],
       ["Trough 1", 60],
       ["Trough 2", 60],
@@ -107,6 +106,7 @@
       ["Ramp Exit", 60],
       ["Ramp Entrance", 60],
       ["Target Under Ramp", 60],
+
       ["Visor Left", 60],
       ["Visor Right", 60],
       ["Visor Center", 60],
@@ -115,6 +115,7 @@
       ["Left Eject", 60],
       ["Right Eject", 60],
       ["Right Eject Lower", 60],
+
       ["5-bank Target 1 (upper)", 60],
       ["5-bank Target 2", 60],
       ["5-bank Target 3", 60],
@@ -123,6 +124,7 @@
       ["Vortex Upper", 60],
       ["Vortex Center", 60],
       ["Vortex Lower", 60],
+
       ["Upper Jet Bumper", 60],
       ["Left Jet Bumper", 60],
       ["Lower Jet Bumper", 60],
@@ -136,5 +138,50 @@
   "Flippers": {
       "Type": 10,
       "Address": 161
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Golf": {
+          "Id": 3,
+          "Options": {
+              "Target": {
+                  "Name": "Target Switch",
+                  "Type": "ListSelect",
+                  "List": [
+                      "Hit Me Target",
+                      "Upper Right Loop Switch",
+                      "Lower Right Drop Hole"
+                  ],
+                  "Value": "Hit Me Target"
+              }
+          }
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5,
+          "Options": {
+              "ScoreDecay": {
+                  "type": "NumberRange",
+                  "Range": {
+                      "Low": 1,
+                      "High": 20
+                  },
+                  "Value": 4
+              }
+          }
+      },
+      "LongestBall": {
+          "Id": 6
+      }
   }
 }

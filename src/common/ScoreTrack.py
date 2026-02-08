@@ -430,14 +430,6 @@ def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
 
-
-
-
-    print("################################   game status : ",DataMapper.get_in_play_data())
-
-    print(" game active ", shadowRam[0xAF],shadowRam[0x8F])
-
-
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
         if DataStore.read_record("extras", 0)["show_ip_address"] is False or S.gdata["HighScores"]["Type"] in [1, 2, 3]:
@@ -450,6 +442,7 @@ def CheckForNewScores(nState=[0]):
             shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
             shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
             shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
+
 
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]

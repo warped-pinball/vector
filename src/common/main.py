@@ -148,7 +148,8 @@ Formats.initialize()
 
 
 #for test
-Formats.set_active_format("HalfLife")
+Formats.set_active_format("LongestBall")
+
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa

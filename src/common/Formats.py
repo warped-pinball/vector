@@ -196,18 +196,13 @@ def set_active_format(format_name, options=None):
     next_format["Name"] = format_name
 
     log.log(f"FORMAT: next format {format_name} id = {next_format.get('Id', 0)}")
-    #print("\nNEXT FORMAT ------------------------- ",next_format,"\n")
 
     return True
 
 
 # ============================================================================
-# Practice Mode Handlers
+# Practice Mode Handler
 # ============================================================================
-def practice_init():
-    """Initialize practice mode"""
-    print("FORMAT: Practice mode initializing")
-
 def practice_run():
     """Run practice mode (keep at ball 1 in play)"""
     global next_format
@@ -233,9 +228,10 @@ def practice_run():
 # Low Ball Mode Handlers  (only low scoring ball counts)
 # ============================================================================
 lowball_scores = [[0 for _ in range(4)] for _ in range(5)]  #[ball][player]
+
 def lowball_init():
     """Initialize lowball mode"""
-    global mode_ball_in_play, mode_player_up,lowball_scores
+    global mode_ball_in_play, mode_player_up, lowball_scores
     mode_ball_in_play=1
     mode_player_up=1
     # Initialize lowball_scores to all zeroes
@@ -255,16 +251,17 @@ def lowball_run():
     for player_idx in range(4):
         scores = [lowball_scores[ball][player_idx] for ball in range(5) if lowball_scores[ball][player_idx] > 0]
         player_scores[player_idx] = min(scores) if scores else 0
-
-    print("FORMAT: lowball scores:",lowball_scores)
-
+   
     #if the ball in play changes set all scores to 0    
     if ball_in_play != mode_ball_in_play and ball_in_play != 0:
-        print("FORMAT: set live scores to zero")
+        print("FORMAT: LowBall live score reset")
         DataMapper.write_live_scores([0,0,0,0])
     mode_ball_in_play=ball_in_play
 
-    return DataMapper.get_game_active()
+    game_over=DataMapper.get_game_active()
+    if game_over is True:
+        print("FORMAT: end of game lowball scores:",lowball_scores)
+    return game_over
    
 
 
@@ -282,7 +279,7 @@ def golf_init():
     """Initialize golf mode, called at game start each time"""
     global player_scores, golf_ball_in_play, golf_player_up, golf_player_complete, switch_callback_setup
 
-    print("FORMAT: Golf Init, options:",S.active_format.get("Options", {}))
+    print("FORMAT: Golf init, options:",S.active_format.get("Options", {}))
 
     # Subscribe to target hit event
     if switch_callback_setup is False:
@@ -331,7 +328,7 @@ def golf_run():
                 break
         
         if all_complete:
-            log.log("FORMAT: Golf game end")
+            log.log("FORMAT: Golf game complete")
             # End the game
             DataMapper.write_ball_in_play(5)
 
@@ -356,6 +353,7 @@ def golf_run():
     DataMapper.write_live_scores(player_scores)
     return DataMapper.get_game_active()
 
+
 def golf_close():
     """Close golf mode and unsubscribe from target"""
     global switch_callback_setup
@@ -376,7 +374,6 @@ def golf_hit_callback(switch_idx):
     if S.active_format.get("Id", 0) != MODE_ID_GOLF:
         return
 
-    #print("FORMAT: Golf switch hit --------------------------------------------------------------------")
     try:
         player_up = DataMapper.get_player_up()       
 
@@ -497,16 +494,15 @@ def longest_ball_run():
     if flipper_up_counter<2 and score_static_counter<2:
         # award time
         longest_ball_scores[ball_in_play-1][player_up-1] += (CALL_TIMER//10)
-        player_scores[player_up-1] = longest_ball_scores[ball_in_play-1][player_up-1]
-
-    print("FORMAT: LongestBall scores:",longest_ball_scores)
+        player_scores[player_up-1] = longest_ball_scores[ball_in_play-1][player_up-1]    
 
     #if game is ending - put the best single ball times in 
     if DataMapper.get_game_active() is False:
+        print("FORMAT: Longest Ball scores:",longest_ball_scores)    
         # Find the highest (best) score for each player across all balls
         for player_idx in range(4):
             scores = [longest_ball_scores[ball][player_idx] for ball in range(5)]
-            player_scores[player_idx] = max(scores)
+            player_scores[player_idx] = max(scores)        
         return False
     
     return True
@@ -563,6 +559,8 @@ def formats_run():
     if game_state == 0:
         if DataMapper.get_game_active() is True:  #game started
             game_state=1
+            S.gameCounter = (S.gameCounter + 1) % 100
+            
             #remove machine high scores?
             get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
             if get_player_id:
@@ -625,54 +623,41 @@ def formats_run():
                 game_state=3        
             elif last_high_score_count != high_score_count:
                 GameEndCount = OVER_COUNTER # renew timeout for next player to enter intiials
-                last_high_score_count=high_score_count
-
-            #print(f"\nFORMAT: game over, high score count $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  {high_score_count}")
-          
+                last_high_score_count=high_score_count  
            
          
     elif game_state == 3:  #wrap up
-            # Get in-play scores (in player order) and high scores (sorted by score)
-            in_play_scores = in_play_scores_hold #DataMapper.read_in_play_scores()  #these are recorded by machine , not neccissarily a format result
-            high_scores = DataMapper.read_high_scores()
-            
-            print(" in play scores",in_play_scores)
-            print(" high scores : ",high_scores)            
+        # Get in-play scores (in player order) and high scores (sorted by score)
+        in_play_scores = in_play_scores_hold #DataMapper.read_in_play_scores()  #these are recorded by machine , not neccissarily a format result
+        high_scores = DataMapper.read_high_scores()
+        
+        print(" in play scores",in_play_scores)
+        print(" high scores : ",high_scores)            
 
-            # Match in-play scores with high score initials to preserve player order
-            final_scores_by_player = DataMapper.match_in_play_with_high_score_initials(in_play_scores, high_scores)
-            
-            # Replace scores in final_scores_by_player with format-adjusted scores from player_scores
-            for player_idx in range(len(final_scores_by_player)):
-                if player_idx < len(player_scores):
-                    final_scores_by_player[player_idx][1] = player_scores[player_idx]            
+        # Match in-play scores with high score initials to preserve player order
+        final_scores_by_player = DataMapper.match_in_play_with_high_score_initials(in_play_scores, high_scores)
+        
+        # Replace scores in final_scores_by_player with format-adjusted scores from player_scores
+        for player_idx in range(len(final_scores_by_player)):
+            if player_idx < len(player_scores):
+                final_scores_by_player[player_idx][1] = player_scores[player_idx]            
+        
+        log.log(f"FORMAT: RESULTS: {{Id:{active_id}, Scores:{final_scores_by_player}}}")
+                    
+        try:
+            from origin import push_end_of_game
+            # Format: [gameCounter, [initials, score], [initials, score], [initials, score], [initials, score]]
+            game = [S.gameCounter, final_scores_by_player[0], final_scores_by_player[1], final_scores_by_player[2], final_scores_by_player[3]]
+            push_end_of_game(game)
+        except Exception as e:
+            log.log(f"FORMATS: Error pushing end of game to origin: {e}")            
 
-            # Build scores list
-            #scores = []
-            #for idx in range(4):                
-            #    initials = final_scores_by_player[idx][0] if final_scores_by_player[idx][0] else ""
-            #    score = player_scores[idx]              
-            #    scores.append([initials, score])
-            
-            log.log(f"FORMAT: RESULTS: {{Id:{active_id}, Scores:{final_scores_by_player}}}")
-            
+        # Restore original high scores if they were saved
+        if saved_high_scores is not None:
+            DataMapper.write_high_scores(saved_high_scores)
+            saved_high_scores = None
 
-            '''
-            try:
-                from origin import push_end_of_game
-                # Format: [gameCounter, [initials, score], [initials, score], [initials, score], [initials, score]]
-                game = [S.gameCounter, final_scores_by_player[0], final_scores_by_player[1], final_scores_by_player[2], final_scores_by_player[3]]
-                push_end_of_game(game)
-            except Exception as e:
-                log.log(f"FORMATS: Error pushing end of game to origin: {e}")
-            '''
-
-            # Restore original high scores if they were saved
-            if saved_high_scores is not None:
-                DataMapper.write_high_scores(saved_high_scores)
-                saved_high_scores = None
-
-            game_state=0
+        game_state=0
 
     else:
         game_state=0
@@ -691,7 +676,7 @@ FORMAT_HANDLERS = [
     # 3: Golf
     [golf_init, golf_run, golf_close],
     # 4: Practice
-    [practice_init, practice_run, empty_close],
+    [empty_init, practice_run, empty_close],
     # 5: Half Life
     [half_life_init, half_life_run, empty_close],
     # 6: Longest Ball
