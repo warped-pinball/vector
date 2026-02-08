@@ -926,7 +926,7 @@ def app_getModeChamps(request):
     @end
     """
     import DataMapper
-    
+
     mode_champs = DataMapper.get_mode_champs()
     return json_dumps(mode_champs), 200
 
@@ -1700,7 +1700,6 @@ def app_getLogs(request):
 #
 
 
-
 # 0 will always be default
 @add_route("/api/formats/available")
 def app_list_available_formats(request):
@@ -1725,7 +1724,7 @@ def app_list_available_formats(request):
     """
     from Formats import get_available_formats
 
-    return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
+    return get_available_formats()
 
 
 # set current format
@@ -1758,14 +1757,14 @@ def app_set_current_format(request):
     data = request.data
     if not isinstance(data, dict) or len(data) == 0:
         return {"error": "Missing format data"}, 400
-    
+
     # Extract the format name from the top level key
     format_name = list(data.keys())[0]
     format_data = data[format_name]
-    
+
     # Extract Options section if it exists
     options = format_data.get("Options", {})
-    
+
     # Set the active format with validation
     if not set_active_format(format_name, options):
         return {"error": f"Invalid format: {format_name}"}, 400
@@ -1796,18 +1795,19 @@ def app_get_active_formats(request):
             },
             "Limbo": {
                 "Id": 1,
-                "Description": "Score as low as possible",        
+                "Description": "Score as low as possible",
                 "Options": {
                     "GetPlayerID": {
                         "Name": "Collect Player Initials",
                         "Type": "fixed",
                         "Value": True
                     }
-                }        
+                }
             },
     @end
     """
     from Formats import get_available_formats
+
     return get_available_formats()
 
 
@@ -1833,7 +1833,6 @@ def app_get_switch_diagnostics(request):
     @end
     """
     return Switches.get_diagnostics()
-
 
 
 #
