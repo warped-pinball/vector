@@ -8,6 +8,9 @@ Switch monitoring and tracking module.
 Tracks switch activity by monitoring which switches have been tripped
 and maintains a local count for each switch. Counts are reset when
 switches are detected as tripped.
+
+Note: MicroPython uses cooperative multitasking (single-threaded event loop).
+Scheduled tasks don't preempt each other, so no synchronization is needed.
 """
 import SPI_DataStore
 import DataMapper
@@ -89,8 +92,9 @@ def poll_switches():
         DataMapper.write_switches_nominal()
 
         # Reset counts for any tripped switches
+        # Use enumerate to avoid index errors
         for idx, is_tripped in enumerate(tripped):
-            if idx < len(switch_counts) and is_tripped:                
+            if idx < len(switch_counts) and is_tripped:
                 switch_counts[idx] = 0
         
         # Call callbacks only for subscribed switches that are tripped
@@ -139,7 +143,9 @@ def save_switches():
     """
     global switch_counts
     try:
-        record = {"switches": switch_counts}
+        # Capture snapshot of counts to avoid partial reads during save
+        counts_snapshot = list(switch_counts)
+        record = {"switches": counts_snapshot}
         SPI_DataStore.write_record("switches", record)
         log.log("SWITCHES: Saved switch counts to storage")
     except Exception as e:

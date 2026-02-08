@@ -838,7 +838,7 @@ def print_switches():
     Uses the list from get_switches() and the 'Names' list from S.gdata['Switches'].
     If a name is empty, display 'NotUsed' instead.
     """
-    switch_values = get_switches()
+    switch_values =  get_switches_tripped()
     names = []
     if "Switches" in S.gdata and "Names" in S.gdata["Switches"]:
         names = S.gdata["Switches"]["Names"]
