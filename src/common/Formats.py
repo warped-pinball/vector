@@ -169,6 +169,20 @@ def _deep_merge(base, overlay):
     return result
 
 
+def get_active_format():
+    """
+    returns the active format 
+    NOTE: a format can be waiting to become active - that only happens when game active is false
+    """
+    return S.active_format
+
+
+def get_next_up_format():
+    """
+    returns the next up (pending) format 
+    """
+    return next_format
+
 
 def set_active_format(format_name, options=None):
     """
@@ -687,8 +701,10 @@ FORMAT_HANDLERS = [
 def initialize():
     # Initialize SharedState attributes and global next_format
     global next_format
-    S.active_format = {"Id": 0, "Options": {}}
-    next_format = {"Id": 0, "Options": {}}
+    S.active_format = DEFAULT_FORMATS["Standard"].copy()
+    S.active_format["Name"] = "Standard"
+    next_format = DEFAULT_FORMATS["Standard"].copy()
+    next_format["Name"] = "Standard"
   
     # Schedule periodic format tasks
     from phew.server import schedule

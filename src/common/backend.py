@@ -1713,17 +1713,27 @@ def app_list_available_formats(request):
       body:
         description: Collection of available game formats with metadata and configuration options
         example:
-            [
-                {
-                    "id": 0,
-                    "name": "Standard",
-                    "description": "Manufacturer standard game play"
+            {
+               "LowBall": {
+                    "Id": 2,
+                    "Description": "Only the lowest scoring ball counts",
+                    "Options": {
+                        "GetPlayerID": {
+                            "Value": true,
+                            "Name": "Collect Player Initials",
+                            "Type": "fixed"
+                        }
+                    },
+                    "Sort": "Normal"
+                },
+                "Standard": {
+                    "Id": 0,
+                    "Description": "Classic pinball scoring - highest score wins"
                 }
-            ]
+            }
     @end
     """
     from Formats import get_available_formats
-
     return get_available_formats()
 
 
@@ -1788,12 +1798,15 @@ def app_get_active_formats(request):
           description: Active format returned
       body:
         description: Current game format identifier and options
-        example:
-           "Standard": {
+        examples:
+            {
+                "Name": "Standard",
                 "Id": 0,
                 "Description": "Classic pinball scoring - highest score wins",
-            },
-            "Limbo": {
+            }
+
+            {
+                "Name": "Limbo",
                 "Id": 1,
                 "Description": "Score as low as possible",
                 "Options": {
@@ -1802,13 +1815,15 @@ def app_get_active_formats(request):
                         "Type": "fixed",
                         "Value": True
                     }
-                }
-            },
+                },
+                "Sort": "Reverse"
+            }
+
     @end
     """
-    from Formats import get_available_formats
+    from Formats import get_active_format
+    return get_active_format()
 
-    return get_available_formats()
 
 
 # get switch diagnostics
