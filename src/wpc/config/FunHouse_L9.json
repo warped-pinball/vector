@@ -1,81 +1,194 @@
 {
-    "GameInfo": {
-        "GameName": "Fun House",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 1038,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7552,
-        "AddressS2": 7617,
-        "AddressS3": 7682,
-        "Length": 32,
-        "ChecksumStartAdr": 7552,
-        "ChecksumEndAdr": 7744,
-        "ChecksumResultAdr": 7745
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7265,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 135,
-        "GameActiveValue": 0,
-        "Players": 6036,
-        "PlayerUp": 1038,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Fun House",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 1038,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7552,
+      "AddressS2": 7617,
+      "AddressS3": 7682,
+      "Length": 32,
+      "ChecksumStartAdr": 7552,
+      "ChecksumEndAdr": 7744,
+      "ChecksumResultAdr": 7745
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7265,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7302,
+      "GrandChampInitAdr": 7299,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7296,
+      "ChecksumResultAdr": 7297,
+      "GCChecksumStartAdr": 7299,
+      "GCChecksumEndAdr": 7306,
+      "GCChecksumResultAdr": 7307
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 135,
+      "GameActiveValue": 0,
+      "Players": 6036,
+      "PlayerUp": 1038,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 55,
+    "Names": [
+      ["Right Flipper", 60],
+      ["Left Flipper", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Steps Lights Frenzy", 60],
+      ["Upper Ramp Switch", 60],
+      ["S Of Step Lower Left", 60],
+      ["Upper Left Jet Bumper", 60],
+
+      ["Slam Tilt", 0],
+      ["Front Door", 60],
+      [],
+      ["Test Position Always Closed", 0],
+      ["Lock Mech Right", 200],
+      ["Steps Lights Extra Ball", 60],
+      ["Lock Mech Center", 60],
+      ["Lock Mech Left", 60],
+
+      ["P Of Step Lower Right", 60],
+      ["Top Superdog Standup Target", 60],
+      ["Upper Left Gangway Rollunder", 60],
+      ["Bottom Superdog Standup Target", 60],
+      ["Steps Track Lower", 60],
+      ["Steps 500000", 200],
+      ["Center Superdog Standup Target", 60],
+      ["Steps Track Upper", 60],
+
+      ["Left Slingshot Kicker", 60],
+      ["Left Flipper Return Lane", 60],
+      ["Left Outlane", 60],
+      ["Wind Tunnel Hole", 60],
+      ["Trap Door", 120],
+      ["Rudys Hideout Kickbig", 200],
+      ["Left Ball Shooter", 60],
+      ["Ramp Exit Track", 200],
+
+      ["Dummy Jaw Opto", 60],
+      ["Right Outlane", 60],
+      ["Right Slingshot Kicker", 60],
+      ["T Of Step Upper Left", 60],
+      ["Steps Superdog Opto", 60],
+      ["Ramp Entrance", 60],
+      ["Jet Bumper Lane", 60],
+      ["Tunnel Kickout", 60],
+
+      ["Right Inside Flipper Return Lane", 60],
+      ["Right Ball Shooter", 60],
+      ["Right Trough", 60],
+      ["E Of Step Upper Center", 60],
+      ["Dummy Eject Hole", 60],
+      ["Upper Right Gangway Lane", 60],
+      ["Lower Right Drop Hole", 60],
+      ["Lower Jet Bumper", 60],
+
+      ["Right Outside Flipper Return Lane", 60],
+      ["Left Trough", 60],
+      ["Outhole", 60],
+      ["Center Trough", 60],
+      ["Upper Right Loop Switch", 60],
+      ["Trap Door Closed", 60],
+      ["Upper Right Jet Bumper", 60]
+    ]
+  },
+  "Flippers": {
+      "Type": 11,
+      "Address": 32
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Golf": {
+          "Id": 3,
+          "Options": {
+              "Target": {
+                  "Name": "Target Switch",
+                  "Type": "ListSelect",
+                  "List": [
+                      "Upper Right Loop Switch",
+                      "Lower Right Drop Hole"
+                  ],
+                  "Value": "Upper Right Loop Switch"
+              }
+          }
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5,
+          "Options": {
+              "ScoreDecay": {
+                  "type": "NumberRange",
+                  "Range": {
+                      "Low": 1,
+                      "High": 20
+                  },
+                  "Value": 4
+              }
+          }
+      },
+      "LongestBall": {
+          "Id": 6
+      }
+  }
 }

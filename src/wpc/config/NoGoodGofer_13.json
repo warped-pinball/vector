@@ -1,81 +1,150 @@
 {
-    "GameInfo": {
-        "GameName": "No Good Gofers",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 953,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7656,
-        "AddressS2": 7721,
-        "AddressS3": 7786,
-        "Length": 32,
-        "ChecksumStartAdr": 7656,
-        "ChecksumEndAdr": 7848,
-        "ChecksumResultAdr": 7849
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 7042,
-        "ChecksumStartAdr": 7001,
-        "ChecksumEndAdr": 7258,
-        "ChecksumResultAdr": 7259
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7366,
-        "BytesInScore": 6,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7363,
-        "InitialSpacing": 9,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7405,
-        "GrandChampInitAdr": 7401,
-        "ChecksumStartAdr": 7363,
-        "ChecksumEndAdr": 7398,
-        "ChecksumResultAdr": 7399,
-        "GCChecksumStartAdr": 7401,
-        "GCChecksumEndAdr": 7409,
-        "GCChecksumResultAdr": 7410
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5913,
-        "PlayerUp": 952,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    }
+  "GameInfo": {
+      "GameName": "No Good Gofers",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 953,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7656,
+      "AddressS2": 7721,
+      "AddressS3": 7786,
+      "Length": 32,
+      "ChecksumStartAdr": 7656,
+      "ChecksumEndAdr": 7848,
+      "ChecksumResultAdr": 7849
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7042,
+      "ChecksumStartAdr": 7001,
+      "ChecksumEndAdr": 7258,
+      "ChecksumResultAdr": 7259
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7366,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7363,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7405,
+      "GrandChampInitAdr": 7401,
+      "ChecksumStartAdr": 7363,
+      "ChecksumEndAdr": 7398,
+      "ChecksumResultAdr": 7399,
+      "GCChecksumStartAdr": 7401,
+      "GCChecksumEndAdr": 7409,
+      "GCChecksumResultAdr": 7410
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 5913,
+      "PlayerUp": 952,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5835,
+    "Length": 62,
+    "Names": [
+      [],
+      ["Left Ramp Make", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Center Ramp Make", 60],
+      ["Left Outlane", 60],
+      ["Right Inlane", 60],
+      ["Shooter Groove", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Jet Advance Standup", 60],
+      ["Always Closed", 0],
+      ["Underground Pass", 60],
+      ["Left Inlane", 60],
+      ["Right Outlane", 60],
+      ["Kickback", 60],
+      ["Trough Eject", 60],
+      ["Trough Ball 1", 60],
+      ["Trough Ball 2", 60],
+      ["Trough Ball 3", 60],
+      ["Trough Ball 4", 60],
+      ["Trough Ball 5", 60],
+      ["Trough Ball 6", 60],
+      ["Jet Popper", 60],
+      ["Left Gofer Down", 60],
+      ["Right Gofer Down", 60],
+      [],
+      ["Putt Out Popper", 60],
+      ["Right Popper Jam", 60],
+      ["Right Popper", 60],
+      ["Left Ramp Down", 60],
+      ["Right Ramp Down", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+      ["Top Jet Bumper", 60],
+      ["Middle Jet Bumper", 60],
+      ["Bottom Jet Bumper", 60],
+      ["Top Skill Shot", 60],
+      ["Middle Skill Shot", 60],
+      ["Lower Skill Shot", 60],
+      ["Left Spinner", 60],
+      ["Right Spinner", 60],
+      ["Inner Wheel Opto", 60],
+      ["Outer Wheel Opto", 60],
+      ["Left Gofer 1", 60],
+      ["Left Gofer 2", 60],
+      ["Behind Left Gofer", 60],
+      ["Hole In One Made", 60],
+      ["Left Cart Path", 60],
+      ["Right Cart Path", 60],
+      ["Right Ramp Make", 60],
+      ["Golf Cart", 60],
+      ["Right Gofer 1", 60],
+      ["Right Gofer 2", 60],
+      ["Advance Trap Value", 60],
+      ["Sand Trap Eject", 60],
+      ["Kick Advance", 60],
+      ["K1 Of Kick", 60],
+      ["I Of Kick", 60],
+      ["C Of Kick", 60],
+      ["K2 Of Kick", 60],
+      ["Captive Ball", 60]
+    ]
+  }
 }
