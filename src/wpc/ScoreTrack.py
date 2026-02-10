@@ -550,15 +550,14 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             # players could be putting in initials from last game in the event of top 5 score, always check here
-            check_for_machine_high_scores(True)
-            # if (DataStore.read_record("extras", 0)["enter_initials_on_game"] == False):
-            # only call if new score or initials????
+            check_for_machine_high_scores(True)           
+            # only call if new score or initials?
             place_machine_scores()
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 2
-                # Game Started!
+                #Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:

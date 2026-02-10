@@ -805,7 +805,7 @@ def get_switches_tripped():
 def write_switches_nominal():
     """
     Write a fixed value to all switch memory locations in shadow RAM.
-    Uses the same address and length from the Switches section as get_switches().
+    Uses the same address and length from the Switches section as get_switches_tripped().
     
     Args:
         value: The value to write to all switch locations (default: 20)
@@ -835,7 +835,7 @@ def write_switches_nominal():
 def print_switches():
     """
     Print the switch names and their values in two columns.
-    Uses the list from get_switches() and the 'Names' list from S.gdata['Switches'].
+    Uses the list from get_switches_tripped() and the 'Names' list from S.gdata['Switches'].
     If a name is empty, display 'NotUsed' instead.
     """
     switch_values =  get_switches_tripped()
