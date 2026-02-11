@@ -54,6 +54,10 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv[1:])
 
     if args.system == "list":
+        print("\n".join(detect_boards()))
+        return
+
+    if args.system == "ports":
         print("\n".join(list_pico_ports()))
         return
 
