@@ -21,35 +21,20 @@ S.game_status["game_active"] = False
 S.game_status["poll_state"] = 0
 
 
-END_HOLD_MS = 15_000
-end_hold_start = None
 gameActive = False
 
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global end_hold_start, gameActive
+    global gameActive
 
     try:
-        # read ball once and use the value in the conditional
         data = DataMapper.get_in_play_data()
-        if data["GameActive"] != True:
-            # game is not active
-            if end_hold_start is None:
-                end_hold_start = time.ticks_ms()
-            else:
-                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
-                    gameActive = False
-        else:
-            # game is active
-            end_hold_start = None
-            gameActive = True
+        gameActive = data["GameActive"]
 
-        data["GameActive"] = gameActive
-        
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
-        
+
     return data
 
 

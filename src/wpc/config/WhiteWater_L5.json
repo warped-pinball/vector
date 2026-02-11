@@ -1,81 +1,151 @@
 {
-    "GameInfo": {
-        "GameName": "White Water",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 950,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7552,
-        "AddressS2": 7617,
-        "AddressS3": 7682,
-        "Length": 32,
-        "ChecksumStartAdr": 7552,
-        "ChecksumEndAdr": 7744,
-        "ChecksumResultAdr": 7745
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7265,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6053,
-        "PlayerUp": 1039,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "White Water",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 950,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7552,
+      "AddressS2": 7617,
+      "AddressS3": 7682,
+      "Length": 32,
+      "ChecksumStartAdr": 7552,
+      "ChecksumEndAdr": 7744,
+      "ChecksumResultAdr": 7745
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7265,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7302,
+      "GrandChampInitAdr": 7299,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7296,
+      "ChecksumResultAdr": 7297,
+      "GCChecksumStartAdr": 7299,
+      "GCChecksumEndAdr": 7306,
+      "GCChecksumResultAdr": 7307
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6053,
+      "PlayerUp": 1039,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 63,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Outhole", 60],
+      ["Left Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Center Jet Bumper", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
+      ["Left Outlane", 60],
+      ["Left Flipper Lane", 60],
+      ["Right Flipper Lane", 60],
+      ["Right Outlane", 60],
+      ["River R2", 60],
+      ["River E", 60],
+      ["River V", 60],
+      ["River I", 60],
+      ["River R1", 60],
+      ["3 Bank Top", 60],
+      ["3 Bank Center", 60],
+      ["3 Bank Lower", 60],
+      ["Light Lock Left", 60],
+      ["Light Lock Right", 60],
+      ["Left Loop", 60],
+      ["Right Loop", 60],
+      ["Secret Passage", 60],
+      ["Left Ramp Enter", 60],
+      ["Rapids Enter", 60],
+      ["Canyon Entrance", 60],
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Ball Shooter", 60],
+      ["Lower Jet Arena", 60],
+      ["Right Jet Arena", 60],
+      ["Extra Ball", 60],
+      ["Canyon Main", 60],
+      ["Bigfoot Cave", 60],
+      ["Whirlpool Popper", 60],
+      ["Whirlpool Exit", 60],
+      ["Lockup Right", 60],
+      ["Lockup Center", 60],
+      ["Lockup Left", 60],
+      ["Left Ramp Main", 60],
+      [],
+      ["Disaster Drop Enter", 60],
+      ["Rapids Ramp Main", 60],
+      [],
+      ["Hot Foot Upper", 60],
+      ["Hot Foot Lower", 60],
+      ["Disaster Drop Main", 60],
+      ["Right Trough", 60],
+      ["Center Trough", 60],
+      ["Left Trough", 60],
+      [],
+      [],
+      [],
+      [],
+      [],
+      ["Bigfoot Opto 1", 60],
+      ["Bigfoot Opto 2", 60]
+    ]
+  }
 }
