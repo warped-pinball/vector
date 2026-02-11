@@ -47,7 +47,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--write-config",
         nargs="?",
-        const="__DEFAULT__",
+        default="__DEFAULT__",
         metavar="PATH",
         help=("Pass through to flash.py: wipe config on Pico and write configuration from PATH. " "If provided with no PATH, uses the default config for the selected build_dir."),
     )
