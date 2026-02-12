@@ -20,7 +20,7 @@ S.game_status["poll_state"] = 0
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-
+    
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
