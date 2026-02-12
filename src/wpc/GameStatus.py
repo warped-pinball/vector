@@ -7,11 +7,9 @@ Game Status
 """
 
 import time
-
 import DataMapper
 import SharedState as S
 from logger import logger_instance
-from origin import push_game_state
 
 log = logger_instance
 
@@ -26,14 +24,14 @@ def game_report():
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
-
+        
         # Get mode data and add to report if available
         modes = DataMapper.get_modes()
         if modes and gameActive:
             data["Modes"] = modes
-
+        
         # Add active format name
-        data["ActiveFormatName"] = getattr(S, "active_format_name", "Standard")
+        data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")

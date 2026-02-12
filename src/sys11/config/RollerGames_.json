@@ -51,7 +51,7 @@
         "Address": 1518,
         "Length": 64,
         "Sensitivity": [
-                   250, 60, 60, 60, 60, 60, 60, 60,
+                    250, 60, 60, 60, 60, 60, 60, 60,
                     60, -1, 60, 60, 60, -1, -1, 60,
                     -1, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60,
@@ -67,5 +67,48 @@
     "Flippers": {
         "Type": 1,
         "Address": 69
+    },
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "PlayerUp": 179,
+        "Players": 178,
+        "GameActive": 175
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Golf": {
+            "Id": 3,
+            "Options": {
+                "Target": {
+                    "Name": "Target Switch Number",
+                    "Type": "Fixed",
+                    "Value": 16,
+                    "Text": "The Pit"
+                }
+            }
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
     }
 }

@@ -367,7 +367,7 @@ def get_live_scores(use_format=True):
     
     # Check if a Format is active
     try:
-        if use_format is True and hasattr(S, 'active_format') and S.active_format != 0:
+        if use_format is True and S.active_format.get("Id", 0) != 0:
             # Format is active - use player_scores from Formats module
             import Formats
             scores = list(Formats.player_scores)
@@ -575,7 +575,7 @@ def get_in_play_data():
     return data
 
 
-def remove_machine_scores(grand_champ_mode="Max"):
+def remove_machine_scores():
     """
     Remove/reset machine high scores to prepare for forced initial entry.
     
@@ -588,6 +588,8 @@ def remove_machine_scores(grand_champ_mode="Max"):
     
     WPC Type 10 only.
     """
+    grand_champ_mode="Max"
+
     if S.gdata.get("HighScores", {}).get("Type") != 10:
         return
     
@@ -605,9 +607,9 @@ def remove_machine_scores(grand_champ_mode="Max"):
         # Set placeholder score (60, 50, 40, 30)
         shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = 0x10 * (4 - index)
         
-        # Set initials to 'AAA' (0x41 = 'A' in ASCII)
+        # Set initials to '   ' 
         for i in range(3):
-            shadowRam[initial_start + i] = 0x41+i
+            shadowRam[initial_start + i] = 0x20
     
     # Handle Grand Champion score
     if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -637,6 +639,9 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     one of the high scores. This function copies the initials from the
     high score list to the in-play score list for matching scores.
     
+    Each high score initial is used only once to prevent duplicate assignments
+    when players have identical scores.
+    
     Args:
         in_play_scores: List of [initials, score] pairs from in-play data
         high_scores: List of [initials, score] pairs from high score data
@@ -644,12 +649,15 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     Returns:
         list: Updated in_play_scores with initials filled in where matches found
     """
+    used_high_score_indices = []
+
     for in_play_score in in_play_scores:
-        for high_score in high_scores:
-            if in_play_score[1] == high_score[1] and in_play_score[1] != 0:
-                in_play_score[0] = high_score[0]  # Copy initials over
+        for high_score_idx, high_score in enumerate(high_scores):
+            if high_score_idx not in used_high_score_indices and in_play_score[1] == high_score[1] and in_play_score[1] != 0:
+                in_play_score[0] = high_score[0]
+                used_high_score_indices.append(high_score_idx)
                 break
-    
+
     return in_play_scores
 
 
@@ -664,11 +672,15 @@ def get_flipper_state():
         int: Flipper state byte value, or 0 if not configured
     """
     try:
-        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") == 10:
+        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in  [10,11]:
             flipper_address = S.gdata["Flippers"]["Address"]
             v=shadowRam[flipper_address]
-            left = (v & 0x80) != 0
-            right = (v & 0x20) != 0
+            if S.gdata["Flippers"]["Type"]==10:
+                left = (v & 0x80) != 0
+                right = (v & 0x20) != 0
+            else:
+                left = (v & 0x02) != 0
+                right = (v & 0x01) != 0
             return left,right
 
     except Exception as e:
@@ -793,7 +805,7 @@ def get_switches_tripped():
 def write_switches_nominal():
     """
     Write a fixed value to all switch memory locations in shadow RAM.
-    Uses the same address and length from the Switches section as get_switches().
+    Uses the same address and length from the Switches section as get_switches_tripped().
     
     Args:
         value: The value to write to all switch locations (default: 20)
@@ -823,10 +835,10 @@ def write_switches_nominal():
 def print_switches():
     """
     Print the switch names and their values in two columns.
-    Uses the list from get_switches() and the 'Names' list from S.gdata['Switches'].
+    Uses the list from get_switches_tripped() and the 'Names' list from S.gdata['Switches'].
     If a name is empty, display 'NotUsed' instead.
     """
-    switch_values = get_switches()
+    switch_values =  get_switches_tripped()
     names = []
     if "Switches" in S.gdata and "Names" in S.gdata["Switches"]:
         names = S.gdata["Switches"]["Names"]
@@ -840,3 +852,187 @@ def print_switches():
         else:
             name = "NotUsed"
         print(f"{name:<24} {value}")
+
+
+
+
+def get_modes():
+    """
+    Read game mode data from shadow RAM.
+    
+    Reads mode-specific data (like mission progress, fish caught, etc.)
+    based on configuration in S.gdata["Modes"]. Each mode can have:
+    - Address: Memory address (hex string "0x515" or integer)
+    - Length: Number of bytes to read
+    - Format: Data format ("u8", "BCD", etc.)
+    - OffValue: Value threshold - mode excluded if value <= OffValue (optional)
+    - Multiplier: Multiply result by this value (optional)
+    
+    Returns:
+        dict: Dictionary with mode names as keys and their values
+              Only includes modes where value > OffValue
+              Returns empty dict if no modes configured
+              Example: {"Fish Caught": 5, "Monster Fish": 1234}
+    """
+    modes_data = {}
+    
+    # Check if Modes configuration exists
+    if "Modes" not in S.gdata:
+        return modes_data
+    
+    try:
+        for mode_name, mode_config in S.gdata["Modes"].items():
+            # Parse address (could be hex string like "0x515" or integer)
+            address = mode_config.get("Address", 0)
+            if isinstance(address, str):
+                # Convert hex string to integer
+                address = int(address, 16) if address.startswith("0x") else int(address)
+            
+            # Get configuration parameters
+            length = mode_config.get("Length", 1)
+            data_format = mode_config.get("Format", "u8")
+            multiplier = mode_config.get("Multiplier", 1)
+            off_value = mode_config.get("OffValue", None)
+            
+            # Read bytes from shadow RAM
+            mode_bytes = shadowRam[address : address + length]
+            
+            # Convert based on format
+            if data_format == "u8":
+                # Unsigned 8-bit integer
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            elif data_format == "BCD":
+                # BCD encoded
+                value = _bcd_to_int(mode_bytes)
+            elif data_format == "u16":
+                # Unsigned 16-bit integer (little-endian)
+                if len(mode_bytes) >= 2:
+                    value = mode_bytes[0] | (mode_bytes[1] << 8)
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            elif data_format == "u16be":
+                # Unsigned 16-bit integer (big-endian)
+                if len(mode_bytes) >= 2:
+                    value = (mode_bytes[0] << 8) | mode_bytes[1]
+                elif len(mode_bytes) == 1:
+                    value = mode_bytes[0]
+                else:
+                    value = 0
+            else:
+                # Unknown format, treat as raw byte value
+                log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode '{mode_name}'")
+                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
+            
+            # Only include mode if value > OffValue (if OffValue is specified)
+            if off_value is not None:
+                if value > off_value:
+                    modes_data[mode_name] = value * multiplier
+            else:
+                # No OffValue specified, always include
+                modes_data[mode_name] = value * multiplier
+    
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading modes: {e}")
+    
+    return modes_data
+
+
+
+def get_mode_champs():
+    """
+    Read mode champion data from shadow RAM.
+    
+    Reads mode champion scores and initials based on configuration in 
+    S.gdata["ModeChamps"]. Each mode champion can have:
+    - InitialAdr: Address for champion initials (3 bytes ASCII)
+    - NumberOfScores: Number of champion slots for this mode
+    - Spacing: Spacing between multiple champion entries
+    - Scores: List of score components, each with:
+        - Address: Memory address (integer)
+        - Length: Number of bytes to read
+        - Format: Data format ("u8", "BCD", "u16", "u16be", etc.)
+    
+    Returns:
+        dict: Dictionary with mode names as keys and their champion data
+              Each mode contains {"initials": str, "scores": [int, ...]}
+              Returns empty dict if no mode champs configured
+              Example: {"Biggest Liar": {"initials": "ABC", "scores": [25, 8]}}
+    """
+    champs_data = {}
+    
+    # Check if ModeChamps configuration exists
+    if "ModeChamps" not in S.gdata:
+        return champs_data
+    
+    try:
+        for mode_name, mode_config in S.gdata["ModeChamps"].items():
+            # Get configuration parameters
+            initial_adr = mode_config.get("InitialAdr", 0)
+            scores_config = mode_config.get("Scores", [])
+            
+            # Read initials (3 bytes ASCII)
+            initials = ""
+            if initial_adr > 0:
+                try:
+                    initials_bytes = shadowRam[initial_adr : initial_adr + 3]
+                    initials = bytes(initials_bytes).decode("ascii").strip()
+                    # Filter out placeholder/invalid initials
+                    if initials in ["???", "   ", "\x00\x00\x00"]:
+                        initials = ""
+                except Exception:
+                    initials = ""
+            
+            # Read score components
+            score_values = []
+            for score_component in scores_config:
+                address = score_component.get("Address", 0)
+                length = score_component.get("Length", 1)
+                data_format = score_component.get("Format", "u8")
+                
+                # Read bytes from shadow RAM
+                score_bytes = shadowRam[address : address + length]
+                
+                # Convert based on format
+                if data_format == "u8":
+                    # Unsigned 8-bit integer
+                    value = score_bytes[0] if len(score_bytes) > 0 else 0
+                elif data_format == "BCD":
+                    # BCD encoded
+                    value = _bcd_to_int(score_bytes)
+                elif data_format == "u16":
+                    # Unsigned 16-bit integer (little-endian)
+                    if len(score_bytes) >= 2:
+                        value = score_bytes[0] | (score_bytes[1] << 8)
+                    elif len(score_bytes) == 1:
+                        value = score_bytes[0]
+                    else:
+                        value = 0
+                elif data_format == "u16be":
+                    # Unsigned 16-bit integer (big-endian)
+                    if len(score_bytes) >= 2:
+                        value = (score_bytes[0] << 8) | score_bytes[1]
+                    elif len(score_bytes) == 1:
+                        value = score_bytes[0]
+                    else:
+                        value = 0
+                else:
+                    # Unknown format, treat as raw byte value
+                    log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode champ '{mode_name}'")
+                    value = score_bytes[0] if len(score_bytes) > 0 else 0
+                
+                score_values.append(value)
+            
+            # Store mode champion data
+            champs_data[mode_name] = {
+                "initials": initials,
+                "scores": score_values
+            }
+    
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading mode champs: {e}")
+    
+    return champs_data
+
+

@@ -899,6 +899,36 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/mode/champs")
+def app_getModeChamps(request):
+    """
+    @api
+    summary: Fetch mode champions data from the game
+    response:
+      status_codes:
+        - code: 200
+          description: Mode champions data returned
+      body:
+        description: Dictionary of mode champions with initials and scores
+        example:
+            {
+                "Biggest Liar": {
+                    "initials": "ABC",
+                    "scores": [25, 8]
+                },
+                "Top Boat Rocker": {
+                    "initials": "XYZ",
+                    "scores": [42]
+                }
+            }
+    @end
+    """
+    import DataMapper
+
+    mode_champs = DataMapper.get_mode_champs()
+    return json_dumps(mode_champs), 200
+
+
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
     """
@@ -1705,25 +1735,28 @@ def app_list_available_formats(request):
       body:
         description: Collection of available game formats with metadata and configuration options
         example:
-            [
-                {
-                    "id": 0,
-                    "name": "Standard",
-                    "description": "Manufacturer standard game play"
+            {
+               "LowBall": {
+                    "Id": 2,
+                    "Description": "Only the lowest scoring ball counts",
+                    "Options": {
+                        "GetPlayerID": {
+                            "Value": true,
+                            "Name": "Collect Player Initials",
+                            "Type": "fixed"
+                        }
+                    },
+                    "Sort": "Normal"
+                },
+                "Standard": {
+                    "Id": 0,
+                    "Description": "Classic pinball scoring - highest score wins"
                 }
-            ]
+            }
     @end
     """
     from Formats import get_available_formats
-
-    formats = get_available_formats()
-    result = []
-    for name, fmt in formats.items():
-        entry = dict(fmt)
-        if "name" not in entry:
-            entry["name"] = name
-        result.append(entry)
-    return result
+    return get_available_formats()
 
 
 # set current format
@@ -1787,12 +1820,15 @@ def app_get_active_formats(request):
           description: Active format returned
       body:
         description: Current game format identifier and options
-        example:
-           "Standard": {
+        examples:
+            {
+                "Name": "Standard",
                 "Id": 0,
                 "Description": "Classic pinball scoring - highest score wins",
-            },
-            "Limbo": {
+            }
+
+            {
+                "Name": "Limbo",
                 "Id": 1,
                 "Description": "Score as low as possible",
                 "Options": {
@@ -1801,14 +1837,15 @@ def app_get_active_formats(request):
                         "Type": "fixed",
                         "Value": True
                     }
-                }
-            },
+                },
+                "Sort": "Reverse"
+            }
+
     @end
     """
-    result = {"id": getattr(S, "active_format", 0), "name": getattr(S, "active_format_name", "")}
-    if hasattr(S, "format_options") and S.format_options:
-        result["options"] = S.format_options
-    return result
+    from Formats import get_active_format
+    return get_active_format()
+
 
 
 # get switch diagnostics

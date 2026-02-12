@@ -8,6 +8,9 @@ Switch monitoring and tracking module.
 Tracks switch activity by monitoring which switches have been tripped
 and maintains a local count for each switch. Counts are reset when
 switches are detected as tripped.
+
+Note: MicroPython uses cooperative multitasking (single-threaded event loop).
+Scheduled tasks don't preempt each other, so no synchronization is needed.
 """
 import SPI_DataStore
 import DataMapper
@@ -31,8 +34,8 @@ switch_system_on = False
 switch_subscriptions = {}
 
 
-POLL_SWITCHES_mS = 5000
-POLL_GAME_STATE_CNT = 7
+POLL_SWITCHES_mS = 1700 #5000
+POLL_GAME_STATE_CNT = 17
 
 
 def initialize():
@@ -55,13 +58,6 @@ def initialize():
         last_ball_in_play = DataMapper.get_ball_in_play()
         last_player_up = DataMapper.get_player_up()
         switch_system_on = True
-        
-
-
-        for i in range(40):
-            switch_counts[i]=100
-
-
 
         # Schedule polling
         from phew.server import schedule
@@ -93,24 +89,22 @@ def poll_switches():
         if not tripped:
             return
 
-        #diagnostic output 
-        #tripped_indexes = [idx for idx, is_tripped in enumerate(tripped) if is_tripped]
-        #print("\nSWITCHES TRIPPED:", tripped_indexes,"\n")
-
         DataMapper.write_switches_nominal()
 
-        # Reset counts for any tripped switches      
+        # Reset counts for any tripped switches
+        # Use enumerate to avoid index errors
         for idx, is_tripped in enumerate(tripped):
-            if idx < len(switch_counts) and is_tripped:                
+            if idx < len(switch_counts) and is_tripped:
                 switch_counts[idx] = 0
-                
-                # Call any subscribed callbacks for this switch
-                if idx in switch_subscriptions:
-                    for callback in switch_subscriptions[idx]:
-                        try:                    
-                            callback(idx)
-                        except Exception as e:
-                            log.log(f"SWITCHES: Error in callback for switch {idx}: {e}")
+        
+        # Call callbacks only for subscribed switches that are tripped
+        for switch_idx, callbacks in switch_subscriptions.items():
+            if switch_idx < len(tripped) and tripped[switch_idx]:
+                for callback in callbacks:
+                    try:
+                        callback(switch_idx)
+                    except Exception as e:
+                        log.log(f"SWITCHES: Error in callback for switch {switch_idx}: {e}")
         
         # Every X calls, check for game state changes (low impact)
         poll_counter += 1
@@ -126,14 +120,15 @@ def poll_switches():
                 last_ball_in_play = current_ball                                   
                 last_player_up = current_player
                 if last_ball_in_play !=0:
-                    for idx in range(len(switch_counts)):
-                        if switch_counts[idx] < 251:
-                            switch_counts[idx] += 1
+                    switch_counts = [min(count + 1, 251) for count in switch_counts]
+                    #for idx in range(len(switch_counts)):
+                    #    if switch_counts[idx] < 251:
+                    #        switch_counts[idx] += 1
 
             # game over? time to save to fram?
             game_active=DataMapper.get_game_active()
             if last_game_active is True and game_active is False:
-                print(f"SWITCHES: Game over, save switches")
+                log.log(f"SWITCHES: Game over, save switches")
                 save_switches()
             last_game_active=game_active    
                       
@@ -148,7 +143,9 @@ def save_switches():
     """
     global switch_counts
     try:
-        record = {"switches": switch_counts}
+        # Capture snapshot of counts to avoid partial reads during save
+        counts_snapshot = list(switch_counts)
+        record = {"switches": counts_snapshot}
         SPI_DataStore.write_record("switches", record)
         log.log("SWITCHES: Saved switch counts to storage")
     except Exception as e:

@@ -534,12 +534,13 @@ def CheckForNewScores(nState=[0]):
         _fixChecksum()
 
     # only run this if ball in play is enabled
-    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
+    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking       
         # waiting for a game to start
-        if nState[0] == 1:
-            # Check if active_format exists and is not 0; if so, return early
-            # allows gam eis progress to finish in normal mode when format is activeated
-            if hasattr(S, "active_format") and getattr(S, "active_format", 0) != 0:
+        if nState[0] == 1:      
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
                 return
 
             GameEndCount = 0
@@ -551,15 +552,14 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             # players could be putting in initials from last game in the event of top 5 score, always check here
-            check_for_machine_high_scores(True)
-            # if (DataStore.read_record("extras", 0)["enter_initials_on_game"] == False):
-            # only call if new score or initials????
+            check_for_machine_high_scores(True)           
+            # only call if new score or initials?
             place_machine_scores()
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 2
-                # Game Started!
+                #Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"]:

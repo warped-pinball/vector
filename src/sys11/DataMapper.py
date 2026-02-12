@@ -114,8 +114,8 @@ def read_high_scores():
             high_scores[idx][1] = _bcd_to_int(score_bytes)
             
             # Filter out very low scores (likely placeholders)
-            if high_scores[idx][1] < 1000:
-                high_scores[idx][1] = 0
+            #if high_scores[idx][1] < 100:
+            #    high_scores[idx][1] = 0
         
         # Read initials for high scores (Type 1, 2, 3 only - Type 9 has no initials)
         if "InitialAdr" in S.gdata["HighScores"]:
@@ -256,7 +256,7 @@ def get_live_scores(use_format=True):
     
     # Check if a Format is active
     try:
-        if use_format is True and hasattr(S, 'active_format') and S.active_format != 0:
+        if use_format is True and S.active_format.get("Id", 0) != 0:
             # Format is active - use player_scores from Formats module
             import Formats
             scores = list(Formats.player_scores)
@@ -301,8 +301,8 @@ def write_ball_in_play(ball_number):
     Write the current ball number in play to shadow RAM.
     
     SYS11 Type 1 ball tracking:
-    - Direct byte value at configured address
-    - 1-5 for balls in play, 0 for game over/not started
+    - Maps ball number (1-5) to configured token value (Ball1-Ball5)
+    - 0 for game over/not started
     
     Args:
         ball_number: int - Ball number to write (0-5)
@@ -312,8 +312,21 @@ def write_ball_in_play(ball_number):
     """
     try:
         if S.gdata.get("BallInPlay", {}).get("Type") == 1:
-            ball_adr = S.gdata["BallInPlay"]["Address"]
-            shadowRam[ball_adr] = ball_number
+            ball_config = S.gdata["BallInPlay"]
+            ball_adr = ball_config["Address"]
+            
+            # Map ball number to token value
+            reverse_mapping = {
+                0: 0,
+                1: ball_config["Ball1"],
+                2: ball_config["Ball2"],
+                3: ball_config["Ball3"],
+                4: ball_config["Ball4"],
+                5: ball_config["Ball5"]
+            }
+            
+            token = reverse_mapping.get(ball_number, 0)
+            shadowRam[ball_adr] = token
             return True
     except Exception as e:
         log.log(f"DATAMAPPER: error in write_ball_in_play: {e}")
@@ -363,9 +376,21 @@ def get_game_active():
     """
     Check if a game is currently active.
     
+    If GameActive configuration exists in InPlay, uses that address.
+    Otherwise falls back to checking if ball_in_play is non-zero.
+    
     Returns:
         bool: True if game is active, False otherwise
     """
+    try:
+        if "InPlay" in S.gdata and "GameActive" in S.gdata["InPlay"]:
+            # Use dedicated GameActive address if configured
+            game_active_adr = S.gdata["InPlay"]["GameActive"]
+            return shadowRam[game_active_adr] == 0
+    except Exception as e:
+        log.log(f"DATAMAPPER: error reading GameActive address: {e}")
+    
+    # Fallback to ball in play check
     return 0 != get_ball_in_play()
 
 
@@ -459,7 +484,7 @@ def remove_machine_scores():
         return
     
     log.log(f"DATAMAPPER: Remove machine scores type {S.gdata['HighScores']['Type']}")
-    
+   
     # Reset 4 high scores
     for index in range(4):
         score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
@@ -469,7 +494,7 @@ def remove_machine_scores():
             shadowRam[score_start + i] = 0
         
         # Set placeholder score (50, 40, 30, 20)
-        shadowRam[score_start + 2] = 5 - index
+        shadowRam[score_start + 3] = (5 - index)*0x10
         
         # Set initials based on type
         if "InitialAdr" in S.gdata["HighScores"]:
@@ -485,6 +510,7 @@ def remove_machine_scores():
                     shadowRam[initial_start + i] = 0x00
 
 
+
 def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     """
     Match in-play scores with high score initials.
@@ -493,6 +519,9 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     one of the high scores. This function copies the initials from the
     high score list to the in-play score list for matching scores.
     
+    Each high score initial is used only once to prevent duplicate assignments
+    when players have identical scores.
+    
     Args:
         in_play_scores: List of [initials, score] pairs from in-play data
         high_scores: List of [initials, score] pairs from high score data
@@ -500,10 +529,13 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     Returns:
         list: Updated in_play_scores with initials filled in where matches found
     """
+    used_high_score_indices = []
+    
     for in_play_score in in_play_scores:
-        for high_score in high_scores:
-            if in_play_score[1] == high_score[1] and in_play_score[1] != 0:
-                in_play_score[0] = high_score[0]  # Copy initials over
+        for high_score_idx, high_score in enumerate(high_scores):
+            if high_score_idx not in used_high_score_indices and in_play_score[1] == high_score[1] and in_play_score[1] != 0:
+                in_play_score[0] = high_score[0]
+                used_high_score_indices.append(high_score_idx)
                 break
     
     return in_play_scores
@@ -514,23 +546,30 @@ def get_flipper_state():
     """
     Read the flipper state from SYS11 shadow RAM.
     
-    Returns the byte value at the configured flipper address if Type 1 is configured.
+    Returns the flipper state (left, right) at the configured flipper address.
+    Type 1: Normal (left=bit1, right=bit0)
+    Type 2: Reversed (left=bit0, right=bit1)
     
     Returns:
-        int: Flipper state byte value, or 0 if not configured
+        tuple: (left, right) boolean values, or (0, 0) if not configured
     """
     try:
-        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") == 1:
+        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in [1, 2]:
             flipper_address = S.gdata["Flippers"]["Address"]
             v=shadowRam[flipper_address]
             left = (v & 0x02) != 0
             right = (v & 0x01) != 0
-            return left,right
+            
+            # Type 2: Reverse left and right
+            if S.gdata["Flippers"]["Type"] == 2:
+                return right, left
+            
+            return left, right
 
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
     
-    return 0
+    return 0, 0
 
 
 

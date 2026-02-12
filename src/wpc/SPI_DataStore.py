@@ -113,7 +113,7 @@ def serialize(record, structure_name):
         )
     elif structure_name == "extras":
         if record.get("enable") is None:
-            enable = 0  # 32 bit (4 bytes)
+            enable = 0                          # 32 bit (4 bytes)
             if record.get("enter_initials_on_game", True):
                 enable |= 0x01
             if record.get("claim_scores", True):
