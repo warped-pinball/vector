@@ -11,6 +11,7 @@ import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
+import DataMapper
 from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
@@ -442,6 +443,7 @@ def CheckForNewScores(nState=[0]):
             shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
             shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
 
+
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
         Ball1Value = S.gdata["BallInPlay"]["Ball1"]
@@ -451,6 +453,12 @@ def CheckForNewScores(nState=[0]):
         Ball5Value = S.gdata["BallInPlay"]["Ball5"]
 
         if nState[0] == 1:  # waiting for a game to start
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
+                return
+                
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]

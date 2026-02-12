@@ -1,81 +1,151 @@
 {
-    "GameInfo": {
-        "GameName": "Theatre of Magic",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 944,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7553,
-        "AddressS2": 7618,
-        "AddressS3": 7683,
-        "Length": 32,
-        "ChecksumStartAdr": 7553,
-        "ChecksumEndAdr": 7745,
-        "ChecksumResultAdr": 7746
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7160,
-        "ChecksumResultAdr": 7161
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7268,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7265,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7302,
-        "GrandChampInitAdr": 7299,
-        "ChecksumStartAdr": 7265,
-        "ChecksumEndAdr": 7296,
-        "ChecksumResultAdr": 7297,
-        "GCChecksumStartAdr": 7299,
-        "GCChecksumEndAdr": 7306,
-        "GCChecksumResultAdr": 7307
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5909,
-        "PlayerUp": 776,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Theatre of Magic",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 944,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7553,
+      "AddressS2": 7618,
+      "AddressS3": 7683,
+      "Length": 32,
+      "ChecksumStartAdr": 7553,
+      "ChecksumEndAdr": 7745,
+      "ChecksumResultAdr": 7746
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7160,
+      "ChecksumResultAdr": 7161
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7268,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7265,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7302,
+      "GrandChampInitAdr": 7299,
+      "ChecksumStartAdr": 7265,
+      "ChecksumEndAdr": 7296,
+      "ChecksumResultAdr": 7297,
+      "GCChecksumStartAdr": 7299,
+      "GCChecksumEndAdr": 7306,
+      "GCChecksumResultAdr": 7307
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 5909,
+      "PlayerUp": 776,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5831,
+    "Length": 63,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Shooter Lane", 60],
+      [],
+      [],
+      [],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy In", 60],
+      ["Always Closed", 0],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["Right Return Lane", 60],
+      ["Right Outlane", 60],
+      ["Trough Jam", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      ["Subway Opto", 60],
+      ["Spinner", 60],
+      ["Right Lower Target", 60],
+      ["Lock 1", 60],
+      ["Lock 2", 60],
+      ["Lock 3", 60],
+      ["Popper", 60],
+      ["Left Drain Eddy", 60],
+      [],
+      ["Subway Micro", 60],
+      ["Right Drain Eddy", 60],
+      ["Left Bank Target", 60],
+      ["Captive Ball Rest", 60],
+      ["Right Lane Enter", 60],
+      ["Left Lane Enter", 60],
+      ["Cube Position 4", 60],
+      ["Cube Position 1", 60],
+      ["Cube Position 2", 60],
+      ["Cube Position 3", 60],
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Bottom Jet", 60],
+      ["Middle Jet", 60],
+      ["Top Jet", 60],
+      ["Top Lane 1", 60],
+      ["Top Lane 2", 60],
+      [],
+      ["Center Ramp Exit", 60],
+      [],
+      ["Right Ramp Exit", 60],
+      ["Right Ramp Exit 2", 60],
+      ["Center Ramp Enter", 60],
+      ["Right Ramp Enter", 60],
+      ["Captive Ball Top", 60],
+      ["Loop Left", 60],
+      ["Loop Right", 60],
+      ["Center Ramp Targets", 60],
+      ["Vanish Lock 1", 60],
+      ["Vanish Lock 2", 60],
+      ["Trunk Hit", 60],
+      ["Right Lane Exit", 60],
+      ["Left Lane Exit", 60]
+    ]
+  }
 }

@@ -7,6 +7,7 @@ from time import sleep, time
 import faults
 import Pico_Led
 import SharedState as S
+import Switches
 import uctypes
 from ls import ls
 from machine import RTC
@@ -900,6 +901,36 @@ def app_getScores(request):
     return json_dumps(scores), 200
 
 
+@add_route("/api/mode/champs")
+def app_getModeChamps(request):
+    """
+    @api
+    summary: Fetch mode champions data from the game
+    response:
+      status_codes:
+        - code: 200
+          description: Mode champions data returned
+      body:
+        description: Dictionary of mode champions with initials and scores
+        example:
+            {
+                "Biggest Liar": {
+                    "initials": "ABC",
+                    "scores": [25, 8]
+                },
+                "Top Boat Rocker": {
+                    "initials": "XYZ",
+                    "scores": [42]
+                }
+            }
+    @end
+    """
+    import DataMapper
+
+    mode_champs = DataMapper.get_mode_champs()
+    return json_dumps(mode_champs), 200
+
+
 @add_route("/api/personal/bests")
 def app_personal_bests(request):
     """
@@ -1427,38 +1458,40 @@ def app_getLastIP(request):
     return {"ip": ip_address}
 
 
-@add_route("/api/available_ssids")
-def app_getAvailableSSIDs(request):
+@add_route("/api/wifi/status")
+def app_getWifiStatus(request):
     """
     @api
-    summary: Scan for nearby Wi-Fi networks
+    summary: Get the configured Wi-Fi SSID and signal strength
     response:
       status_codes:
         - code: 200
-          description: Networks listed
+          description: Status returned
       body:
-        description: Array of SSID records with signal quality and configuration flag
+        description: Current Wi-Fi connection status
         example:
-            [
-                {
-                    "ssid": "MyNetwork",
-                    "rssi": -40,
-                    "configured": true
-                }
-            ]
+            {
+                "ssid": "MyNetwork",
+                "rssi": -40,
+                "connected": true
+            }
     @end
     """
-    import scanwifi
+    import network
+    from phew import is_connected_to_wifi
 
-    available_networks = scanwifi.scan_wifi2()
     ssid = ds_read_record("configuration", 0)["ssid"]
+    connected = is_connected_to_wifi()
+    rssi = None
 
-    for network in available_networks:
-        if network["ssid"] == ssid:
-            network["configured"] = True
-            break
+    if connected:
+        try:
+            wlan = network.WLAN(network.STA_IF)
+            rssi = wlan.status("rssi")
+        except Exception:
+            rssi = None
 
-    return available_networks
+    return {"ssid": ssid, "rssi": rssi, "connected": connected}
 
 
 @add_route("/api/network/peers")
@@ -1667,31 +1700,6 @@ def app_getLogs(request):
 #
 
 
-# list format options
-def get_available_formats():
-    return [
-        {"id": 0, "name": "Arcade", "description": "Manufacturer standard game play", "enable_function": None},
-        {"id": 1, "name": "Practice", "description": "Practice mode with unlimited balls and no score tracking", "enable_function": None},
-        {
-            "id": 2,
-            "name": "Golf",
-            "description": "Hit a specific target in the least number of balls",
-            "options": {
-                "target": {
-                    "type": "select",
-                    "options": {
-                        "11": "Crazy Bobs",
-                        "12": "Spinner",
-                        "13": "Left Outlane",
-                    },
-                    "default": "11",
-                }
-            },
-            "enable_function": None,
-        },
-    ]
-
-
 # 0 will always be default
 @add_route("/api/formats/available")
 def app_list_available_formats(request):
@@ -1705,16 +1713,28 @@ def app_list_available_formats(request):
       body:
         description: Collection of available game formats with metadata and configuration options
         example:
-            [
-                {
-                    "id": 0,
-                    "name": "Arcade",
-                    "description": "Manufacturer standard game play"
+            {
+               "LowBall": {
+                    "Id": 2,
+                    "Description": "Only the lowest scoring ball counts",
+                    "Options": {
+                        "GetPlayerID": {
+                            "Value": true,
+                            "Name": "Collect Player Initials",
+                            "Type": "fixed"
+                        }
+                    },
+                    "Sort": "Normal"
+                },
+                "Standard": {
+                    "Id": 0,
+                    "Description": "Classic pinball scoring - highest score wins"
                 }
-            ]
+            }
     @end
     """
-    return [{k: v for k, v in fmt.items() if k != "enable_function"} for fmt in get_available_formats()]
+    from Formats import get_available_formats
+    return get_available_formats()
 
 
 # set current format
@@ -1726,6 +1746,8 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
+            identified by NAME STRING
+
             - name: format_id
                 type: int
                 required: true
@@ -1740,26 +1762,26 @@ def app_set_current_format(request):
           description: Format set successfully
     @end
     """
+    from Formats import set_active_format
+
     data = request.data
-    if not isinstance(data, dict) or "format_id" not in data:
-        return {"error": "Missing required field: format_id"}, 400
-    format_id = data["format_id"]
-    available_formats = get_available_formats()
-    format_dict = next((fmt for fmt in available_formats if fmt["id"] == format_id), None)
-    if not format_dict:
-        return {"error": f"Invalid format id: {format_id}"}, 400
+    if not isinstance(data, dict) or len(data) == 0:
+        return {"error": "Missing format data"}, 400
 
-    # Call enable function if it exists
-    enable_function = format_dict.get("enable_function", None)
-    if not enable_function:
-        raise NotImplementedError("Format enable function not implemented yet")
+    # Extract the format name from the top level key
+    format_name = list(data.keys())[0]
+    format_data = data[format_name]
 
-    # Enable the format
-    enable_function(data.get("options", {}))
+    # Extract Options section if it exists
+    options = format_data.get("Options", {})
 
-    S.game_status["format"] = {"format_id": format_id}
-    if "options" in data:
-        S.game_status["format"]["options"] = data["options"]
+    # Set the active format with validation
+    if not set_active_format(format_name, options):
+        return {"error": f"Invalid format: {format_name}"}, 400
+
+    S.game_status["format"] = {"name": format_name}
+    if options:
+        S.game_status["format"]["options"] = options
 
     return
 
@@ -1776,15 +1798,32 @@ def app_get_active_formats(request):
           description: Active format returned
       body:
         description: Current game format identifier and options
-        example:
+        examples:
             {
-                "format_id": 1,
-                "options": {"target": "11"}
+                "Name": "Standard",
+                "Id": 0,
+                "Description": "Classic pinball scoring - highest score wins",
             }
+
+            {
+                "Name": "Limbo",
+                "Id": 1,
+                "Description": "Score as low as possible",
+                "Options": {
+                    "GetPlayerID": {
+                        "Name": "Collect Player Initials",
+                        "Type": "fixed",
+                        "Value": True
+                    }
+                },
+                "Sort": "Reverse"
+            }
+
     @end
     """
+    from Formats import get_active_format
+    return get_active_format()
 
-    return S.game_status.get("format", {"format_id": 0})
 
 
 # get switch diagnostics
@@ -1794,8 +1833,6 @@ def app_get_switch_diagnostics(request):
     @api
     summary: Get diagnostic information for all switches
     response:
-        status_codes:
-        - code: 200
           description: Switch diagnostics returned
         body:
         description: Collection of switch records with row, column, value, and optional label
@@ -1810,30 +1847,7 @@ def app_get_switch_diagnostics(request):
             ]
     @end
     """
-    switches = [
-        (1, 1, 100, "Left Flipper"),
-        (1, 2, 100, "Right Flipper"),
-        (1, 3, 90),
-        (1, 4, 100),
-        (1, 5, 80),
-        (1, 6, 100),
-        (1, 7, 100, "Start Button"),
-        (2, 2, 100),
-        (2, 4, 50),
-        (2, 5, 100),
-        (2, 8, 100),
-        (3, 1, 10),
-        (3, 3, 100, "Shooter Lane"),
-        (3, 6, 100),
-        (4, 2, 0, "Tilt"),
-        (4, 5, 100),
-        (4, 7, 100),
-        (5, 4, 100),
-        (5, 6, 5),
-        (5, 8, 100),
-    ]
-
-    return [{"row": switch[0], "col": switch[1], "val": switch[2], "label": switch[3] if len(switch) > 3 else ""} for switch in switches]
+    return Switches.get_diagnostics()
 
 
 #
@@ -2005,6 +2019,39 @@ def add_ap_mode_routes():
         )
 
         Pico_Led.off()
+
+    @add_route("/api/available_ssids")
+    def app_getAvailableSSIDs(request):
+        """
+        @api
+        summary: [AP Mode Only] Scan for nearby Wi-Fi networks
+        response:
+          status_codes:
+            - code: 200
+              description: Networks listed
+          body:
+            description: Array of SSID records with signal quality and configuration flag
+            example:
+                [
+                    {
+                        "ssid": "MyNetwork",
+                        "rssi": -40,
+                        "configured": true
+                    }
+                ]
+        @end
+        """
+        import scanwifi
+
+        available_networks = scanwifi.scan_wifi2()
+        ssid = ds_read_record("configuration", 0)["ssid"]
+
+        for network in available_networks:
+            if network["ssid"] == ssid:
+                network["configured"] = True
+                break
+
+        return available_networks
 
 
 def connect_to_wifi(initialize=False):

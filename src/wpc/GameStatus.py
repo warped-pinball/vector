@@ -13,17 +13,13 @@ from logger import logger_instance
 
 log = logger_instance
 
-# Initialize fast poll status and game timing in SharedState
+# Initialize fast poll status in SharedState
 S.game_status["game_active"] = False
 S.game_status["poll_state"] = 0
-S.game_status["time_game_start"] = 0
-S.game_status["time_game_end"] = 0
-S.game_status["number_of_players"] = 0
 
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    data={}
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
@@ -32,6 +28,9 @@ def game_report():
         modes = DataMapper.get_modes()
         if modes and gameActive:
             data["Modes"] = modes
+        
+        # Add active format name
+        data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")

@@ -79,16 +79,6 @@
         "ScoreBytes": 6,
         "ScoreSpacing": 7
     },
-    "Switches": {
-        "Type": 10,
-        "Address": 5835,
-        "Length": 64,
-        "List": {
-            "Left Out Lane": 5839,
-            "Crazy Bobs": 5865,
-            "Spinner": 5866
-        }
-    },
     "Flippers": {
         "Type": 10,
         "Address": 167

@@ -1,81 +1,136 @@
 {
-    "GameInfo": {
-        "GameName": "Jack Bot",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 947,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7812,
-        "AddressS2": 7877,
-        "AddressS3": 7942,
-        "Length": 32,
-        "ChecksumStartAdr": 7812,
-        "ChecksumEndAdr": 8004,
-        "ChecksumResultAdr": 8005
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 7198,
-        "ChecksumStartAdr": 7157,
-        "ChecksumEndAdr": 7414,
-        "ChecksumResultAdr": 7415
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7522,
-        "BytesInScore": 6,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7519,
-        "InitialSpacing": 9,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7560,
-        "GrandChampInitAdr": 7557,
-        "ChecksumStartAdr": 7519,
-        "ChecksumEndAdr": 7554,
-        "ChecksumResultAdr": 7555,
-        "GCChecksumStartAdr": 7557,
-        "GCChecksumEndAdr": 7565,
-        "GCChecksumResultAdr": 7566
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 129,
-        "GameActiveValue": 0,
-        "Players": 5897,
-        "PlayerUp": 946,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    }
+  "GameInfo": {
+      "GameName": "Jack Bot",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 947,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7812,
+      "AddressS2": 7877,
+      "AddressS3": 7942,
+      "Length": 32,
+      "ChecksumStartAdr": 7812,
+      "ChecksumEndAdr": 8004,
+      "ChecksumResultAdr": 8005
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7198,
+      "ChecksumStartAdr": 7157,
+      "ChecksumEndAdr": 7414,
+      "ChecksumResultAdr": 7415
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7522,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7519,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7560,
+      "GrandChampInitAdr": 7557,
+      "ChecksumStartAdr": 7519,
+      "ChecksumEndAdr": 7554,
+      "ChecksumResultAdr": 7555,
+      "GCChecksumStartAdr": 7557,
+      "GCChecksumEndAdr": 7565,
+      "GCChecksumResultAdr": 7566
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 129,
+      "GameActiveValue": 0,
+      "Players": 5897,
+      "PlayerUp": 946,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5835,
+    "Length": 48,
+    "Names": [
+      ["Lower Left 10 Point", 60],
+      ["Upper Left 10 Point", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Ramp Is Down", 60],
+      ["High Drop Target", 60],
+      ["Center Drop Target", 60],
+      ["Low Drop Target", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy Extra Ball", 60],
+      ["Always Closed", 60],
+      ["Left Outlane", 60],
+      ["Left Flipper Lane", 60],
+      ["Right Flipper Lane", 60],
+      ["Right Outlane", 60],
+      ["Trough Jam", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      ["Ramp Exit", 60],
+      ["Ramp Entrance", 60],
+      ["Target Under Ramp", 60],
+      ["Visor Left", 60],
+      ["Visor Right", 60],
+      ["Visor Center", 60],
+      ["Visor Top", 60],
+      ["Visor Far Left Eject", 60],
+      ["Left Eject", 60],
+      ["Right Eject", 60],
+      ["Right Eject Lower", 60],
+      ["5-bank Target 1 (upper)", 60],
+      ["5-bank Target 2", 60],
+      ["5-bank Target 3", 60],
+      ["5-bank Target 4", 60],
+      ["5-bank Target 5 (lower)", 60],
+      ["Vortex Upper", 60],
+      ["Vortex Center", 60],
+      ["Vortex Lower", 60],
+      ["Upper Jet Bumper", 60],
+      ["Left Jet Bumper", 60],
+      ["Lower Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Left Slingshot", 60],
+      ["Right 10 Point", 60],
+      ["Hit Me Target", 60],
+      ["Ball Shooter", 60]
+    ]
+  }
 }

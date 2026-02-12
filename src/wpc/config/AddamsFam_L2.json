@@ -78,11 +78,6 @@
         "ScoreBytes": 5,
         "ScoreSpacing": 6
     },
-    "Switches": {
-        "Type": 10,
-        "Address": 5975,
-        "Length": 64
-    },
     "Flippers": {
         "Type": 10,
         "Address": 180

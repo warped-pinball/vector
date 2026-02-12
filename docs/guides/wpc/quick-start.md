@@ -11,28 +11,9 @@
 
 This quick start helps you install the Warped Pinball WiFi module. If this is your first install, watch the [installation videos](https://youtube.com/playlist?list=PLviUqcd3jBxrLbbLz9X2bv3VnlM3TLe6F&si=zwGBoLwztZszCIlE).
 
-<table>
-    <tr>
-        <td style="vertical-align: top; padding-right: 16px;">
-            <img src="https://github.com/user-attachments/assets/899e2cbc-99d7-4736-9838-44b0370bf979" alt="Basic interface buttons and LEDs" width="350">
-        </td>
-        <td style="vertical-align: top;">
-            <h3>WiFi Status LED</h3>
-            <ul>
-                <li><strong>Fast blink</strong>: Access Point (AP) mode</li>
-                <li><strong>Slow blink</strong>: Joining WiFi</li>
-                <li><strong>Solid on</strong>: WiFi joined and active</li>
-            </ul>
-            <h3>WiFi Configure Button</h3>
-            <p>Hold during power-up and release when the LED flashes to enter setup mode.</p>
-            <h3>Status LED</h3>
-            <ul>
-                <li><strong>Fast blink</strong>: Installation fault</li>
-                <li><strong>Solid on</strong>: Normal operation</li>
-            </ul>
-        </td>
-    </tr>
-</table>
+| | |
+| --- | --- |
+| ![Basic interface buttons and LEDs](https://github.com/user-attachments/assets/899e2cbc-99d7-4736-9838-44b0370bf979){ width=350 } | **WiFi Status LED**<br>- **Fast blink**: Access Point (AP) mode<br>- **Slow blink**: Joining WiFi<br>- **Solid on**: WiFi joined and active<br><br>**WiFi Configure Button**<br>Hold during power-up and release when the LED flashes to enter setup mode.<br><br>**Status LED**<br>- **Fast blink**: Installation fault<br>- **Solid on**: Normal operation |
 
 ### Disclaimer
 

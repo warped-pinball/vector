@@ -1,81 +1,151 @@
 {
-    "GameInfo": {
-        "GameName": "Monster Bash",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 947,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7593,
-        "AddressS2": 7658,
-        "AddressS3": 7723,
-        "Length": 32,
-        "ChecksumStartAdr": 7593,
-        "ChecksumEndAdr": 7785,
-        "ChecksumResultAdr": 7786
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7200,
-        "ChecksumResultAdr": 7201
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7308,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7305,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7342,
-        "GrandChampInitAdr": 7339,
-        "ChecksumStartAdr": 7305,
-        "ChecksumEndAdr": 7336,
-        "ChecksumResultAdr": 7337,
-        "GCChecksumStartAdr": 7339,
-        "GCChecksumEndAdr": 7346,
-        "GCChecksumResultAdr": 7347
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "CoinDrop": {
-        "Type": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5909,
-        "PlayerUp": 946,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Monster Bash",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 947,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7593,
+      "AddressS2": 7658,
+      "AddressS3": 7723,
+      "Length": 32,
+      "ChecksumStartAdr": 7593,
+      "ChecksumEndAdr": 7785,
+      "ChecksumResultAdr": 7786
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7200,
+      "ChecksumResultAdr": 7201
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7308,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7305,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7342,
+      "GrandChampInitAdr": 7339,
+      "ChecksumStartAdr": 7305,
+      "ChecksumEndAdr": 7336,
+      "ChecksumResultAdr": 7337,
+      "GCChecksumStartAdr": 7339,
+      "GCChecksumEndAdr": 7346,
+      "GCChecksumResultAdr": 7347
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "CoinDrop": {
+      "Type": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 5909,
+      "PlayerUp": 946,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5831,
+    "Length": 63,
+    "Names": [
+      ["Launch Button", 60],
+      ["Dracula Standup Top", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Dracula Standup Bottom", 60],
+      ["Left Outlane", 60],
+      ["Right Return Lane", 60],
+      ["Shooter Lane", 60],
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Tomb Treasure", 60],
+      ["Always Closed", 0],
+      ["Dracula Target", 60],
+      ["Left Return Lane", 60],
+      ["Right Outlane", 60],
+      ["Left Eject", 60],
+      ["Trough Eject", 60],
+      ["Trough Ball 1", 60],
+      ["Trough Ball 2", 60],
+      ["Trough Ball 3", 60],
+      ["Trough Ball 4", 60],
+      ["Right Popper", 60],
+      [],
+      [],
+      [],
+      ["Left Flipper Opto", 60],
+      ["Right Flipper Opto", 60],
+      ["Left Blue Target", 60],
+      ["Center Blue Target", 60],
+      ["Right Blue Target", 60],
+      ["Left Flipper Proximity Sensor", 60],
+      ["Right Flipper Proximity Sensor", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+      ["Left Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Bottom Jet Bumper", 60],
+      ["Left Top Lane", 60],
+      ["Center Top Lane", 60],
+      ["Right Top Lane", 60],
+      ["Left Loop Low", 60],
+      ["Left Loop High", 60],
+      ["Right Loop Low", 60],
+      ["Right Loop High", 60],
+      ["Center Loop", 60],
+      ["Left Ramp Enter", 60],
+      ["Left Ramp Exit", 60],
+      ["Center Ramp Enter", 60],
+      ["Right Ramp Enter", 60],
+      ["Right Ramp Exit", 60],
+      ["Right Ramp Lock", 60],
+      ["Dracula Position 5", 60],
+      ["Dracula Position 4", 60],
+      ["Dracula Position 3", 60],
+      ["Dracula Position 2", 60],
+      ["Dracula Position 1", 60],
+      ["Up Down Bank Up", 60],
+      ["Up Down Bank Down", 60],
+      ["Frank Table Down", 60],
+      ["Frank Table Up", 60],
+      ["Left Up Down Bank Target", 60],
+      ["Right Up Down Bank Target", 60],
+      ["Frank Hit", 60]
+    ]
+  }
 }
