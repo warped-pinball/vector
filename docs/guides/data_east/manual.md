@@ -12,6 +12,7 @@ How the Vector board installs, what the LEDs mean, and how to bring a classic Da
 ## Table of contents
 
 - [How it works](#how-it-works)
+- [LED codes](#led-codes)
 - [Indicators and controls](#indicators-and-controls)
 - [Disclaimer](#disclaimer)
 - [Supported games](#supported-games)
@@ -26,8 +27,53 @@ Vector sits between the processor chip and the game's main board so it can act l
 
 <!-- Two-column layout using a Markdown table -->
 
-| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg){ width=300 } | Status LED:<br>Yellow-Yellow  Trying to join Wifi<br>Green-Green   Wifi joined, all OK<br>Purple-Purple  AP mode  join with your phone<br><br>Red-Yellow  Hardware Installation issue<br>Blue-Yellow  Wifi Password Wrong<br>Blue-Purple  Wifi network not found |
+| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg) | Status LED:<br>Yellow-Yellow  Trying to join Wifi<br>Green-Green   Wifi joined, all OK<br>Purple-Purple  AP mode  join with your phone<br><br>Red-Yellow  Hardware Installation issue<br>Blue-Yellow  Wifi Password Wrong<br>Blue-Purple  Wifi network not found |
 | --- | --- |
+
+## LED codes
+
+The Status LED uses color combinations to indicate system status and faults. Each fault code consists of two color blinks separated by a brief pause.
+
+### Normal Operation
+| LED Pattern | Status |
+| --- | --- |
+| Yellow-Yellow (dim) | Trying to join WiFi at startup |
+| Green-Green (dim) | WiFi connected, all systems OK |
+| Purple-Purple (dim) | AP mode - join with your phone |
+
+### Hardware Faults (First blink: RED)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Red-Yellow | HDWR01 | Early Bus Activity |
+| Red-White | HDWR02 | No Bus Activity |
+| Red-Purple | HDWR00 | Unknown Hardware Error |
+
+### WiFi Faults (First blink: BLUE)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Blue-Yellow | WIFI01 | Invalid WiFi Credentials (wrong password) |
+| Blue-Purple | WIFI02 | No WiFi Signal (network not found) |
+| Blue-Red | WIFI00 | Unknown WiFi Error |
+
+### Configuration Faults (First blink: WHITE)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| White-Yellow | CONF01 | Invalid Configuration |
+| White-Purple | CONF00 | Unknown Configuration Error |
+
+### Software Faults (First blink: YELLOW)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Yellow-Red | SFTW01 | Drop Through |
+| Yellow-White | SFTW02 | Async loop interrupted |
+| Yellow-Purple | SFWR00 | Unknown Software Error |
+
+### Other
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| White | DUNO00 | Unknown Error |
+
+**Note:** Multiple faults will be displayed in sequence with a pause (black) between each fault code.
 
 ## Disclaimer
 
