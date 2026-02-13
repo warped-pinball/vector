@@ -158,7 +158,7 @@ class TestValidateRequiredFields:
 class TestEndToEnd:
     """Integration tests for the full validation flow."""
 
-    def test_malformed_json_is_caught(self, tmp_path):
+    def test_malformed_json_is_caught(self, tmp_path, monkeypatch):
         """Malformed JSON files are detected and reported."""
         from dev.ci.validate_json_configs import main
 
@@ -171,20 +171,13 @@ class TestEndToEnd:
         # Mock tracked_json_files to return our test file
         import dev.ci.validate_json_configs as validator
 
-        original_tracked = validator.tracked_json_files
-        original_root = validator.REPO_ROOT
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(validator, "tracked_json_files", lambda: [Path("config.json")])
 
-        try:
-            validator.REPO_ROOT = repo_dir
-            validator.tracked_json_files = lambda: [Path("config.json")]
+        exit_code = main()
+        assert exit_code == 1
 
-            exit_code = main()
-            assert exit_code == 1
-        finally:
-            validator.tracked_json_files = original_tracked
-            validator.REPO_ROOT = original_root
-
-    def test_non_object_top_level_is_caught(self, tmp_path):
+    def test_non_object_top_level_is_caught(self, tmp_path, monkeypatch):
         """Non-object top-level JSON values are detected."""
         from dev.ci.validate_json_configs import main
 
@@ -197,20 +190,13 @@ class TestEndToEnd:
 
         import dev.ci.validate_json_configs as validator
 
-        original_tracked = validator.tracked_json_files
-        original_root = validator.REPO_ROOT
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(validator, "tracked_json_files", lambda: [Path("src/em/config/game.json")])
 
-        try:
-            validator.REPO_ROOT = repo_dir
-            validator.tracked_json_files = lambda: [Path("src/em/config/game.json")]
+        exit_code = main()
+        assert exit_code == 1
 
-            exit_code = main()
-            assert exit_code == 1
-        finally:
-            validator.tracked_json_files = original_tracked
-            validator.REPO_ROOT = original_root
-
-    def test_valid_configs_pass(self, tmp_path):
+    def test_valid_configs_pass(self, tmp_path, monkeypatch):
         """Valid JSON configs pass validation."""
         from dev.ci.validate_json_configs import main
 
@@ -225,20 +211,13 @@ class TestEndToEnd:
 
         import dev.ci.validate_json_configs as validator
 
-        original_tracked = validator.tracked_json_files
-        original_root = validator.REPO_ROOT
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(validator, "tracked_json_files", lambda: [Path("src/em/config/game.json")])
 
-        try:
-            validator.REPO_ROOT = repo_dir
-            validator.tracked_json_files = lambda: [Path("src/em/config/game.json")]
+        exit_code = main()
+        assert exit_code == 0
 
-            exit_code = main()
-            assert exit_code == 0
-        finally:
-            validator.tracked_json_files = original_tracked
-            validator.REPO_ROOT = original_root
-
-    def test_unmatched_paths_are_skipped(self, tmp_path):
+    def test_unmatched_paths_are_skipped(self, tmp_path, monkeypatch):
         """JSON files that don't match any rule are skipped without error."""
         from dev.ci.validate_json_configs import main
 
@@ -249,15 +228,8 @@ class TestEndToEnd:
 
         import dev.ci.validate_json_configs as validator
 
-        original_tracked = validator.tracked_json_files
-        original_root = validator.REPO_ROOT
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(validator, "tracked_json_files", lambda: [Path("other.json")])
 
-        try:
-            validator.REPO_ROOT = repo_dir
-            validator.tracked_json_files = lambda: [Path("other.json")]
-
-            exit_code = main()
-            assert exit_code == 0
-        finally:
-            validator.tracked_json_files = original_tracked
-            validator.REPO_ROOT = original_root
+        exit_code = main()
+        assert exit_code == 0
