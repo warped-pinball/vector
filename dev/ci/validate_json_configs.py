@@ -34,7 +34,7 @@ def rule_for_path(path: str) -> dict | None:
     return None
 
 
-def validate_required_fields(path: str, payload: dict, rule: dict) -> list[str]:
+def validate_required_fields(payload: dict, rule: dict) -> list[str]:
     errors: list[str] = []
     for top_level, required_nested in rule["required"].items():
         section = payload.get(top_level)
@@ -69,7 +69,7 @@ def main() -> int:
             errors.append(f"{relative_path}: expected top-level JSON object")
             continue
 
-        field_errors = validate_required_fields(str(relative_path), payload, rule)
+        field_errors = validate_required_fields(payload, rule)
         for field_error in field_errors:
             errors.append(f"{relative_path} [{rule['name']}]: {field_error}")
 
