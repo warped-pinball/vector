@@ -13,7 +13,6 @@ How the Vector board installs, what the LEDs mean, and how to bring a classic Da
 
 - [How it works](#how-it-works)
 - [LED codes](#led-codes)
-- [Indicators and controls](#indicators-and-controls)
 - [Disclaimer](#disclaimer)
 - [Supported games](#supported-games)
 - [Hardware installation](#hardware-installation)
