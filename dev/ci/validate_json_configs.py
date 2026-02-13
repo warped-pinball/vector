@@ -9,7 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from json_config_schema import SCHEMA_RULES
+try:
+    from .json_config_schema import SCHEMA_RULES
+except ImportError:
+    from json_config_schema import SCHEMA_RULES
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
