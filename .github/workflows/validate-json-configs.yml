@@ -2,13 +2,6 @@ name: Validate JSON configs
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "**/*.json"
-      - "dev/ci/validate_json_configs.py"
-      - "dev/ci/json_config_schema.py"
-      - ".github/workflows/validate-json-configs.yml"
-  push:
     paths:
       - "**/*.json"
       - "dev/ci/validate_json_configs.py"
