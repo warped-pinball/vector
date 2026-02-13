@@ -26,7 +26,7 @@ Vector sits between the processor chip and the game's main board so it can act l
 
 <!-- Two-column layout using a Markdown table -->
 
-| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg) | Status LED:<br>Yellow-Yellow  Trying to join Wifi<br>Green-Green   Wifi joined, all OK<br>Purple-Purple  AP mode  join with your phone<br><br>Red-Yellow  Hardware Installation issue<br>Blue-Yellow  Wifi Password Wrong<br>Blue-Purple  Wifi network not found |
+| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg) | Status LED:<br>Yellow-Yellow  Trying to join WiFi<br>Green-Green   WiFi joined, all OK<br>Purple-Purple  AP mode - join with your phone<br><br>Red-Yellow  Hardware installation issue<br>Blue-Yellow  WiFi password incorrect<br>Blue-Purple  WiFi network not found |
 | --- | --- |
 
 ## LED codes
@@ -82,7 +82,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 | Installation picture | System | Titles |
 | --- | --- | --- |
-| ![Data East install photo](../../img/data_east/DataEast_Installed.jpg) | Data East | Back to the Future<br>Batman<br>Checkpoint<br>Guns N' Roses<br>Hook<br>Jurassic Park<br>Last Action Hero<br>Lethal Weapon 3<br>Monday Night Football<br>Phantom of the Opera<br>RAD Mobile<br>Robocop<br>Rocky and Bullwinkle<br>Secret Service<br>Simpsons Pinball Party<br>Star Trek 25th Anniversary<br>Star Wars<br>Tales from the Crypt<br>TMNT<br>The Who's Tommy Pinball Wizard |
+| ![Data East install photo](../../img/data_east/DataEast_Installed.jpg) | Data East | Back to the Future<br>Batman<br>Baywatch<br>Checkpoint<br>Frankenstein<br>Guns N' Roses<br>Hook<br>Jurassic Park<br>Last Action Hero<br>Laser War<br>Lethal Weapon 3<br>Maverick<br>Monday Night Football<br>Phantom of the Opera<br>Playboy<br>RAD Mobile<br>Robocop<br>Rocky and Bullwinkle<br>Secret Service<br>The Simpsons<br>Star Trek 25th Anniversary<br>Star Wars<br>Tales from the Crypt<br>Time Machine<br>TMNT<br>Torpedo Alley<br>The Who's Tommy Pinball Wizard |
 
 ## Hardware installation
 
@@ -101,7 +101,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 ![socket Photo](../../img/data_east/socket.jpg){ width=180 }
 
-4. Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to th eboard surface when installed. <br>
+4. Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to the board surface when installed. <br>
 
 ![Pin standoff Photo](../../img/data_east/Data_East_standoff.jpg)
 
