@@ -14,6 +14,7 @@ import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
 from Shadow_Ram_Definitions import shadowRam
+import DataMapper
 
 log = logger_instance
 
@@ -507,11 +508,12 @@ def update_tournament(new_entry):
 
 
 GameEndCount = 0
-
+intials_capture_this_game=False
+live_scores = None
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount
+    global nGameIdleCounter, GameEndCount, intials_capture_this_game, live_scores
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -561,15 +563,22 @@ def CheckForNewScores(nState=[0]):
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
-                    _remove_machine_scores()
+                    #_remove_machine_scores()
+                    DataMapper.prepare_initials_capture()
+                    intials_capture_this_game = True
+                else:
+                    intials_capture_this_game = False
                 S.gameCounter = (S.gameCounter + 1) % 100
 
 
         # waiting for game to end
         elif nState[0] == 2:
             print("SCORE: game end check ")
-            print(_read_machine_score(UseHighScores=True))
+            #print(_read_machine_score(UseHighScores=True))
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
+                #get and store player scores - convert to [[initials, score], ...] format
+                score_values = DataMapper.get_live_scores()
+                live_scores = [["", score_values[i]] for i in range(4)]
                 nState[0] = 3
 
         # game over, wait for intiials to be entered
@@ -584,37 +593,40 @@ def CheckForNewScores(nState=[0]):
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 4
 
-            # game has ended but players can be putting in initials now, wait for scores to show up
-            if S.gdata["HighScores"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
-                # how many players? wait for all initials to go in and fake scores to be replaced
+            if intials_capture_this_game is True:
+                #waiting for players to input intials
+                high_scores = DataMapper.get_initials_entered()
+                high_score_count = sum(1 for score in high_scores if score[1] > 1000)
+                print("SCORE: waiting for initials, count = ", high_score_count, " players = ", DataMapper.get_players_in_game())
 
-                # grand champ score is maxed out so no player gets it
-                scores = _read_machine_score(UseHighScores=True)
-                high_score_count = 0
-                high_score_count = sum(1 for x in range(1, 5) if scores[x][1] > 10000)
-
-                if high_score_count >= shadowRam[S.gdata["InPlay"]["Players"]]:
-                    print("SCORE: initials are all entered now")
+                if high_score_count >= DataMapper.get_players_in_game():
+                    print("SCORE: done - got all players intials")
+                    #all scores in - wrap up
                     nState[0] = 4
-                print("SCORE: waiting for initials, count = ", high_score_count, " players = ", shadowRam[S.gdata["InPlay"]["Players"]])
+
             else:
                 # go ahead and end game, on game initials are not enabled
                 print("SCORE: game over, not waiting for initials")
                 nState[0] = 4
 
-        # game over clean up process
-        elif nState[0] == 4:
+
+        # game over clean up process - dont wait so no elif...
+        if nState[0] == 4:
             # game over - back to top state
             nState[0] = 1
-            if DataStore.read_record("extras", 0)["enter_initials_on_game"] == False:
+
+            if intials_capture_this_game == False:
                 # in play scores
                 log.log("SCORE: end, use in-play scores")
-                scores = _read_machine_score(UseHighScores=False)
+                scores = live_scores
 
             else:
                 # high scores
                 log.log("SCORE: end, use high scores")
-                scores = _read_machine_score(UseHighScores=True)[1:]  # remove grand champ
+                high_scores = DataMapper.get_initials_entered()
+                # Match the in-play scores with newly entered initials
+                scores = DataMapper.match_in_play_with_high_score_initials(live_scores, high_scores)
+                #scores = _read_machine_score(UseHighScores=True)[1:]  # remove grand champ
 
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 for i in range(0, 4):
@@ -628,8 +640,6 @@ def CheckForNewScores(nState=[0]):
             # Update claim list
             game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
 
-            # Set any placeholder scores less than 10000 to zero and no initials
-            game = [game[0]] + [("", 0) if score[1] < 10000 else score for score in game[1:]]
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory
