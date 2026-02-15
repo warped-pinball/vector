@@ -19,11 +19,11 @@
         "Address": 8001
     },
     "Adjustments": {
-        "Type": 20,
+        "Type": 0,
         "CustomMessageOn": 7755,
-        "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7769,
-        "ChecksumResultAdr": 8157
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0
     },
     "HighScores": {
         "Type": 25,
