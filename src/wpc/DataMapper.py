@@ -221,10 +221,10 @@ def get_initials_entered():
     
     # Read current high scores (index 0 = GC, 1-4 = regular high scores)
     current_scores = read_high_scores()
-    print("SCORE get init = scores =",current_scores)
-    i=0
+    print("SCORE get init  scores:",current_scores)
+    i = 0
 
-    # Proces the 5 high score positions
+    # Process the 5 high score positions
     for idx in range(5):
         score = current_scores[idx][1]
         initials = current_scores[idx][0]
@@ -234,7 +234,7 @@ def get_initials_entered():
         # 2. Score must NOT match the stored grand champion (that's not new)
         if score > 1000 and score != stored_grand_champion["score"]:
             new_entries[i] = [initials, score]
-            i=i+1
+            i = i + 1
     
     print(f"DATAMAPPER: New initials entered: {new_entries}")
     return new_entries

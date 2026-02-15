@@ -86,11 +86,11 @@ def claim_score(initials, player_index, score):
 
     # condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
-    i_intials = ""
+    i_initials = ""
     for c in initials:
         if "A" <= c <= "Z":
-            i_intials += c
-    initials = (i_intials + "   ")[:3]
+            i_initials += c
+    initials = (i_initials + "   ")[:3]
 
     if initials in ["@@@", "   ", "???", ""]:
         return
@@ -120,7 +120,7 @@ def _place_game_in_claim_list(game):
 
 def _read_machine_score(UseHighScores=True):
     """read machine scores - in play and highscores
-    and if HighScores is True try to get intials from highscore area
+    and if HighScores is True try to get initials from highscore area
     """
     high_scores = [["", 0], ["", 0], ["", 0], ["", 0], ["", 0]]
     in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
@@ -176,7 +176,7 @@ def _read_machine_score(UseHighScores=True):
                 if high_scores[0][0] in ["???", "", None, "   "]:
                     high_scores[0][0] = ""
 
-        # if we have high scores, intials AND in-play socres, put initials to the in play scores
+        # if we have high scores, initials AND in-play scores, put initials to the in play scores
         for in_play_score in in_play_scores:
             for high_score in high_scores:
                 if in_play_score[1] == high_score[1]:
@@ -227,12 +227,12 @@ def place_machine_scores():
     """write four (plus grand champ?) highest scores & initials from storage to machine memory"""
     global top_scores
 
-    # possible high score intials are empty if there was a reset / reboot etc
+    # possible high score initials are empty if there was a reset / reboot etc
     # games do not like empties!
     for index in range(5):  # incase of grand champ - 5 scores
         if len(top_scores[index]["initials"]) != 3:
             top_scores[index]["initials"] = "   "
-            # top_scores[index]["score"] = 100  only change intials, not score (blank initials happen with good scores sometimes)
+            # top_scores[index]["score"] = 100  only change initials, not score (blank initials happen with good scores sometimes)
 
     if S.gdata["HighScores"]["Type"] == 10:
         print("SCORE: Place WPC machine scores")
@@ -303,7 +303,7 @@ def _remove_machine_scores(GrandChamp="Max"):
             shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 2] = 0x10 * (6 - index)
 
             for i in range(3):
-                shadowRam[initial_start + i] = 0x41  # intials all 'A'
+                shadowRam[initial_start + i] = 0x41  # initials all 'A'
 
         # set grand champion score to max, so all players will be int he normal 1-4 places
         # Or near zero for reset leaderboard function
@@ -323,7 +323,7 @@ def _remove_machine_scores(GrandChamp="Max"):
 
 
 def find_player_by_initials(new_entry):
-    """find players name from list of intials with names from storage"""
+    """find players name from list of initials with names from storage"""
     findInitials = new_entry["initials"]
     if findInitials == "" or findInitials is None:
         return ("", -1)
@@ -508,12 +508,12 @@ def update_tournament(new_entry):
 
 
 GameEndCount = 0
-intials_capture_this_game=False
+initials_capture_this_game=False
 live_scores = None
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount, intials_capture_this_game, live_scores
+    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -565,9 +565,9 @@ def CheckForNewScores(nState=[0]):
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                     #_remove_machine_scores()
                     DataMapper.prepare_initials_capture()
-                    intials_capture_this_game = True
+                    initials_capture_this_game = True
                 else:
-                    intials_capture_this_game = False
+                    initials_capture_this_game = False
                 S.gameCounter = (S.gameCounter + 1) % 100
 
 
@@ -593,14 +593,14 @@ def CheckForNewScores(nState=[0]):
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 4
 
-            if intials_capture_this_game is True:
-                #waiting for players to input intials
+            if initials_capture_this_game is True:
+                #waiting for players to input initials
                 high_scores = DataMapper.get_initials_entered()
                 high_score_count = sum(1 for score in high_scores if score[1] > 1000)
                 print("SCORE: waiting for initials, count = ", high_score_count, " players = ", DataMapper.get_players_in_game())
 
                 if high_score_count >= DataMapper.get_players_in_game():
-                    print("SCORE: done - got all players intials")
+                    print("SCORE: done - got all players initials")
                     #all scores in - wrap up
                     nState[0] = 4
 
@@ -615,7 +615,7 @@ def CheckForNewScores(nState=[0]):
             # game over - back to top state
             nState[0] = 1
 
-            if intials_capture_this_game == False:
+            if initials_capture_this_game == False:
                 # in play scores
                 log.log("SCORE: end, use in-play scores")
                 scores = live_scores
