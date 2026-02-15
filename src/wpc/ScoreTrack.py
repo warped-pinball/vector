@@ -509,7 +509,7 @@ def update_tournament(new_entry):
 
 GameEndCount = 0
 initials_capture_this_game=False
-live_scores = None
+live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
