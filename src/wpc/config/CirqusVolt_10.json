@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Top Eddy", 60],
       ["Right In Lane", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Right Loop Upper", 60],
@@ -99,6 +97,7 @@
       ["Left In Lane", 60],
       ["Left Outlane", 60],
       ["Inner Loop Right", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Popper Opto", 60],
       ["Wow Targets", 60],
       ["Top Targets", 60],
+
       ["Left Lane", 60],
       ["Ring Master Up", 60],
       ["Ring Master Middle", 60],
@@ -115,6 +115,7 @@
       ["Trough Upper", 60],
       ["Trough Middle", 60],
       ["Left Loop Enter", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Upper Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Skill Shot", 60],
       ["Right Outlane", 60],
       ["Ring N G", 60],
+
       ["Light Standup Target", 60],
       ["Lock Standup Target", 60],
       ["Ramp Enter", 60],
@@ -131,6 +133,7 @@
       ["Ramp Lock Low", 60],
       ["Ramp Lock Middle", 60],
       ["Ramp Lock High", 60],
+
       ["Left Saucer", 60],
       ["Right Saucer", 60],
       [],

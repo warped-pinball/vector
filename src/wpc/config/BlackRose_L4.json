@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,14 +88,16 @@
       ["Right Trough", 60],
       ["Center Trough", 60],
       ["Left Trough", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
-      ["Ticket Opto", 60],
-      ["Always Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
       ["Shooter", 60],
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
       ["Left Sling", 60],
+
       ["Bottom Standup Bottom", 60],
       ["Bottom Standup Middle", 60],
       ["Bottom Standup Top", 60],
@@ -107,6 +106,7 @@
       ["Right Outlane", 60],
       ["Right Return Lane", 60],
       ["Right Slingshot", 60],
+
       ["Middle Standup Top", 60],
       ["Middle Standup Middle", 60],
       ["Middle Standup Bottom", 60],
@@ -115,6 +115,7 @@
       ["Left Jet", 60],
       ["Right Jet", 60],
       ["Bottom Jet", 60],
+
       ["Top Standup Bottom", 60],
       ["Top Standup Middle", 60],
       ["Top Standup Top", 60],
@@ -123,6 +124,7 @@
       ["Right Ramp Made", 60],
       ["Jet Bumpers", 60],
       ["Subway Top", 60],
+
       ["Backboard Ramp", 60],
       ["Lockup", 60],
       ["Lockup 2", 60],
@@ -131,6 +133,7 @@
       ["Jet Bumpers Exit", 60],
       ["Jet Bumper Enter", 60],
       ["Lockup Enter", 60],
+
       ["Middle Ramp", 60],
       [],
       [],

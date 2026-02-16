@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Right Outlane Top", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 0],
@@ -99,6 +97,7 @@
       ["N Of Indy Lane", 60],
       ["D Of Indy Lane", 60],
       ["Y Of Indy Lane", 60],
+
       ["Left Eject", 60],
       ["Exit Idol", 60],
       ["Left Slingshot", 60],
@@ -107,6 +106,7 @@
       ["Right Jet", 60],
       ["Bottom Jet", 60],
       ["Center Standup", 60],
+
       ["Left Ramp Enter", 60],
       ["Right Ramp Enter", 60],
       ["Top Idol Enter", 60],
@@ -115,6 +115,7 @@
       ["Top Post", 60],
       ["Subway Lockup", 60],
       ["Right Slingshot", 60],
+
       ["U Of Adventure Target", 60],
       ["R Of Adventure Target", 60],
       ["E Of Adventure Target", 60],
@@ -123,6 +124,7 @@
       ["Right Loop Top", 60],
       ["Right Loop Bottom", 60],
       ["Right Outlane Bottom", 60],
+
       ["A Of Adventure Target", 60],
       ["D Of Adventure Target", 60],
       ["V Of Adventure Target", 60],
@@ -131,6 +133,7 @@
       ["Mini Middle Top Left", 60],
       ["Mini Middle Bottom Left", 60],
       ["Mini Bottom Left", 60],
+
       ["Captive Ball Front", 60],
       ["Mini Top Hole", 60],
       ["Mini Bottom Hole", 60],
@@ -139,6 +142,7 @@
       ["Mini Middle Top Right", 60],
       ["Mini Middle Bottom Right", 60],
       ["Mini Bottom Right", 60],
+
       ["Trough 6", 60],
       ["Trough 5", 60],
       ["Trough 4", 60],
@@ -147,6 +151,7 @@
       ["Trough 1", 60],
       ["Top Trough", 60],
       ["Shooter", 60],
+
       ["Wheel Position 1", 60],
       ["Wheel Position 2", 60],
       ["Wheel Position 3", 60],

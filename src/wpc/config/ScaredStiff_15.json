@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Kickback", 60],
       ["Right Flipper Lane", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy In Button", 60],
@@ -99,6 +97,7 @@
       ["Left Flipper Lane", 60],
       ["Right Outlane", 60],
       ["Single Standup", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Right Popper", 60],
       ["Left Kickout", 60],
       ["Crate Entrance", 60],
+
       ["Coffin Left", 60],
       ["Coffin Center", 60],
       ["Coffin Right", 60],
@@ -115,6 +115,7 @@
       ["Left Ramp Made", 60],
       ["Right Ramp Made", 60],
       ["Coffin Entrance", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Upper Jet", 60],
@@ -123,6 +124,7 @@
       ["Upper Slingshot", 60],
       ["Crate Sensor", 60],
       ["Left Loop", 60],
+
       ["Three Bank Upper", 60],
       ["Three Bank Middle", 60],
       ["Three Bank Lower", 60],
@@ -131,6 +133,7 @@
       ["Right Leaper", 60],
       ["Left Ramp 10 Point", 60],
       ["Right Loop", 60],
+
       ["Left Skull Lane", 60],
       ["Center Skull Lane", 60],
       ["Right Skull Lane", 60],
