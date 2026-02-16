@@ -108,6 +108,11 @@ def has_labeled_switch_defs(rec: ConfigRecord) -> bool:
 
 def supports_live_scores(rec: ConfigRecord) -> bool:
     inplay_type = get_path(rec.data, "InPlay.Type", 0)
+
+    # EM live scoring is sensor-driven and not gated by InPlay.Type in config.
+    if rec.system_family == "EM":
+        return True
+
     if rec.system_family == "WPC":
         return inplay_type == 10
     if rec.system_family == "SYS11":
