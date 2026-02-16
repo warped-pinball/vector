@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Export feature-support game lists from config JSON files to CSV.
+"""Export game feature support from config JSON files into CSV.
 
 Default output:
-- live_scores.csv
-- switch_diagnostics.csv
-- special_formats.csv
+- game_features.csv (one row per distinct title + MPU)
 
 Design goals:
-- Distinct game names only (no ROM filename dependency)
-- Feature rules are centralized and easy to extend
+- Distinct game names grouped by MPU/system family
+- Centralized, modular feature rules that are easy to extend
 - Optional MPU/system filtering per run
-- Optional JSON path query mode for ad-hoc list generation
+- Optional JSON path query mode for ad-hoc feature exploration
 """
 
 from __future__ import annotations
@@ -21,11 +19,12 @@ import glob
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable
 
 
 DEFAULT_CONFIG_GLOB = "src/*/config/*.json"
 DEFAULT_OUT_DIR = Path("dev/generated/game_features")
+DEFAULT_CONSOLIDATED_CSV = "game_features.csv"
 
 KNOWN_FORMATS = {
     "Standard",
@@ -104,8 +103,6 @@ def has_labeled_switch_defs(rec: ConfigRecord) -> bool:
 # Add a new exported feature by:
 #   1) adding a new `supports_<feature>()` predicate in this section,
 #   2) registering it in `build_feature_rules()` below.
-#
-# This keeps the "what defines support" logic isolated per feature.
 # =============================================================================
 
 
@@ -131,48 +128,25 @@ def supports_special_formats(rec: ConfigRecord) -> bool:
     return any(name in KNOWN_FORMATS for name in formats.keys())
 
 
+def get_known_formats(rec: ConfigRecord) -> list[str]:
+    formats = get_path(rec.data, "Formats", {})
+    if not isinstance(formats, dict):
+        return []
+    return sorted([name for name in formats.keys() if name in KNOWN_FORMATS], key=str.casefold)
+
+
 def build_feature_rules() -> dict[str, FeatureRule]:
-    """Return all built-in feature extractors.
-
-    Structure note:
-    - each block below represents one output CSV file,
-    - each block points to one focused predicate function.
-
-    This function is intended as the single "registry" breakpoint for adding
-    future feature exports.
-    """
     return {
-        # ---------------------------------------------------------------------
-        # live_scores.csv
-        # How support is detected:
-        # - WPC: InPlay.Type == 10
-        # - SYS11: InPlay.Type == 1
-        # - DATA_EAST: InPlay.Type in [20..29]
-        # ---------------------------------------------------------------------
         "live_scores": FeatureRule(
             name="live_scores",
             description="Games where runtime live score paths are enabled by InPlay.Type.",
             predicate=supports_live_scores,
         ),
-
-        # ---------------------------------------------------------------------
-        # switch_diagnostics.csv
-        # How support is detected:
-        # - Switches.Type == 10
-        # - AND at least one usable switch definition exists (Names/Sensitivity)
-        # ---------------------------------------------------------------------
         "switch_diagnostics": FeatureRule(
             name="switch_diagnostics",
             description="Games where switch diagnostics can return labeled switch health entries.",
             predicate=supports_switch_diagnostics,
         ),
-
-        # ---------------------------------------------------------------------
-        # special_formats.csv
-        # How support is detected:
-        # - Formats object exists in config
-        # - AND it includes one or more known format names
-        # ---------------------------------------------------------------------
         "special_formats": FeatureRule(
             name="special_formats",
             description="Games defining one or more known special format entries.",
@@ -206,20 +180,70 @@ def load_records(config_glob: str) -> list[ConfigRecord]:
 
 
 # =============================================================================
-# CSV output + ad-hoc query helpers
+# Consolidated CSV output
 # =============================================================================
 
 
-def write_game_csv(path: Path, game_names: Iterable[str]) -> None:
+def write_consolidated_csv(path: Path, records: list[ConfigRecord]) -> None:
+    """Write one large CSV with each title + MPU and all features as columns.
+
+    Dedupe key is (game_name, system_family), so multiple ROM revisions collapse
+    into one row per title/MPU.
+    """
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for rec in records:
+        key = (rec.game_name, rec.system_family)
+        row = rows.setdefault(
+            key,
+            {
+                "game_name": rec.game_name,
+                "mpu": rec.system_family,
+                "live_scores": False,
+                "switch_diagnostics": False,
+                "special_formats": False,
+                "formats": set(),
+            },
+        )
+
+        for feature_name, rule in FEATURE_RULES.items():
+            if rule.predicate(rec):
+                row[feature_name] = True
+
+        row["formats"].update(get_known_formats(rec))
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["game_name"])
-        for name in sorted(set(game_names), key=str.casefold):
-            writer.writerow([name])
+        writer.writerow([
+            "game_name",
+            "mpu",
+            "live_scores",
+            "switch_diagnostics",
+            "special_formats",
+            "formats",
+        ])
+
+        sorted_rows = sorted(rows.values(), key=lambda r: (str(r["mpu"]).casefold(), str(r["game_name"]).casefold()))
+        for row in sorted_rows:
+            writer.writerow(
+                [
+                    row["game_name"],
+                    row["mpu"],
+                    "yes" if row["live_scores"] else "no",
+                    "yes" if row["switch_diagnostics"] else "no",
+                    "yes" if row["special_formats"] else "no",
+                    ";".join(sorted(row["formats"], key=str.casefold)),
+                ]
+            )
 
 
-def apply_json_query(records: list[ConfigRecord], dotted_path: str, op: str, value: str | None) -> list[str]:
+# =============================================================================
+# Optional ad-hoc query mode
+# =============================================================================
+
+
+def apply_json_query(records: list[ConfigRecord], dotted_path: str, op: str, value: str | None) -> list[ConfigRecord]:
     def _match(rec: ConfigRecord) -> bool:
         current = get_path(rec.data, dotted_path, None)
         if op == "exists":
@@ -234,28 +258,22 @@ def apply_json_query(records: list[ConfigRecord], dotted_path: str, op: str, val
             return str(value) in str(current)
         raise ValueError(f"Unsupported op: {op}")
 
-    return [rec.game_name for rec in records if _match(rec)]
+    return [rec for rec in records if _match(rec)]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config-glob", default=DEFAULT_CONFIG_GLOB)
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
-    parser.add_argument(
-        "--feature",
-        action="append",
-        choices=sorted(FEATURE_RULES.keys()),
-        help="Feature(s) to export. Default exports all built-ins.",
-    )
+    parser.add_argument("--out-file", default=DEFAULT_CONSOLIDATED_CSV)
     parser.add_argument(
         "--systems",
         nargs="*",
         help="Optional normalized system filter: WPC SYS11 DATA_EAST",
     )
 
-    # Ad-hoc query mode (optional reusable hook for future feature discovery)
-    parser.add_argument("--query-name", help="Name for ad-hoc query output CSV")
-    parser.add_argument("--query-path", help="Dotted JSON path for ad-hoc query")
+    # Optional query mode: filter input configs before consolidated export
+    parser.add_argument("--query-path", help="Dotted JSON path for ad-hoc filter")
     parser.add_argument("--query-op", choices=["exists", "eq", "contains"], default="exists")
     parser.add_argument("--query-value", help="Value for eq/contains query ops")
 
@@ -270,19 +288,12 @@ def main() -> None:
         wanted = {s.upper() for s in args.systems}
         records = [r for r in records if r.system_family in wanted]
 
-    out_dir = Path(args.out_dir)
-    features = args.feature or list(FEATURE_RULES.keys())
+    if args.query_path:
+        records = apply_json_query(records, args.query_path, args.query_op, args.query_value)
 
-    for feature_name in features:
-        rule = FEATURE_RULES[feature_name]
-        games = [rec.game_name for rec in records if rule.predicate(rec)]
-        write_game_csv(out_dir / f"{feature_name}.csv", games)
-        print(f"wrote {feature_name}.csv ({len(set(games))} games)")
-
-    if args.query_name and args.query_path:
-        games = apply_json_query(records, args.query_path, args.query_op, args.query_value)
-        write_game_csv(out_dir / f"{args.query_name}.csv", games)
-        print(f"wrote {args.query_name}.csv ({len(set(games))} games)")
+    out_path = Path(args.out_dir) / args.out_file
+    write_consolidated_csv(out_path, records)
+    print(f"wrote {out_path} ({len(records)} config rows scanned)")
 
 
 if __name__ == "__main__":
