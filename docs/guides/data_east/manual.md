@@ -99,7 +99,7 @@ Throughout the installation pay attention to pin #1 alignment:
 3. Place the 40 pin socket into the pin strip headers. Press firmly all the way around. Make sure all pins are fully seated now.
 
 
-![socket Photo](../../img/data_east/socket.jpg){ width=180 }
+![socket Photo](../../img/data_east/socket.jpg)
 
 4. Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to the board surface when installed. <br>
 
@@ -114,12 +114,12 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED will start Yellow then flash Purple.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png)
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
 
-![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png)
 
 4. On the configuration screen:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
@@ -128,12 +128,12 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png)
 
 5. Click **Save**. Power-cycle the game to apply settings. On the next boot:
    - Yellow blinking indicates the unit is locating the network.
    - Green blinking LED confirms a successful connection.
-   - Slow blinking for several minutes means the join failed—power down, hold the WiFi setup button while powering up, release when the LED blinks purple, and repeat pairing.
+   - Check the LED table above for all fault codes.  If Wifi join fails power down, hold the WiFi setup button while powering up, release when the LED blinks purple, and repeat pairing.
 
 **Pro Tip:** To re-enter configuration mode later, hold the WiFi config button during power-up and release when the LED blinks rapidly.
 
@@ -148,8 +148,8 @@ Most Data East games display the IP address in attract mode with spaces separati
 - Navigation buttons are in the upper-right corner.
 - Tournament and personal best scoreboards are accessible via the banner.
 - Enter player full names under **Players**.
+- Check out the Admin panel for configuration save/restore and software updates
 
-
-![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
+![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png)
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).
