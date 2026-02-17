@@ -91,7 +91,7 @@
 
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
-      ["Ticket Dispenser", 60],
+      ["Ticket Dispenser", 0],
       ["Test Position Always Closed", 0],
       ["Right Slingshot", 60],
       ["Right Return", 60],

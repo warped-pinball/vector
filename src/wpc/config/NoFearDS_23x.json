@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 129,
@@ -91,6 +88,7 @@
       ["Spinner", 60],
       ["Right Outlane", 60],
       ["Right Return", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy Extra Ball", 60],
@@ -99,6 +97,7 @@
       ["Left Return", 60],
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
+
       ["Trough Stack", 60],
       ["Trough 1 Right", 60],
       ["Trough 2", 60],
@@ -107,6 +106,7 @@
       [],
       ["Center Trough Enter", 60],
       ["Left Trough Enter", 60],
+
       ["Right Popper", 60],
       ["Right Popper 2", 60],
       [],
@@ -115,6 +115,7 @@
       ["Left Magnet", 60],
       ["Center Magnet", 60],
       ["Right Magnet", 60],
+
       ["Drop Target", 60],
       [],
       [],
@@ -123,6 +124,7 @@
       ["Light Kickback Bottom", 60],
       ["Light Kickback Top", 60],
       ["Right Loop", 60],
+
       ["Eject Hole", 60],
       ["Left Loop", 60],
       ["Left Ramp Enter", 60],

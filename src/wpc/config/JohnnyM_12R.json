@@ -66,9 +66,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -92,6 +89,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Right Outlane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy In Button", 60],
@@ -100,6 +98,7 @@
       ["Right Slingshot", 60],
       ["Left Standup Target", 60],
       ["Right Standup Target", 60],
+
       ["Trough Jam", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -108,6 +107,7 @@
       ["Ball Popper 1", 60],
       ["Y Hand Home", 60],
       ["Right Rubber", 60],
+
       ["Left Ramp Enter", 60],
       ["Left Ramp Made", 60],
       ["Drop Target", 60],
@@ -116,6 +116,7 @@
       ["Right Jet Bumper", 60],
       ["Crazy Bobs", 60],
       ["Spinner", 60],
+
       ["Cyber Matrix 11", 60],
       ["Cyber Matrix 21", 60],
       ["Cyber Matrix 31", 60],
@@ -124,6 +125,7 @@
       ["Left Loop", 60],
       ["Right Loop", 60],
       ["Inner Loop Entry", 60],
+
       ["Cyber Matrix 12", 60],
       ["Cyber Matrix 22", 60],
       ["Cyber Matrix 32", 60],
@@ -132,6 +134,7 @@
       ["Right Jet Lane", 60],
       ["Right Hand Control", 60],
       ["Left Hand Control", 60],
+
       ["Cyber Matrix 13", 60],
       ["Cyber Matrix 23", 60],
       ["Cyber Matrix 33", 60],

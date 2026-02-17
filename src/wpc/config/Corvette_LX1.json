@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Spinner", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy In Button", 60],
@@ -99,6 +97,7 @@
       ["Second Gear", 60],
       ["Third Gear", 60],
       ["Fourth Gear", 60],
+
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
       ["Trough Ball 3", 60],
@@ -107,6 +106,7 @@
       ["Pit Stop Popper", 60],
       ["Trough Eject", 60],
       ["Inner Loop Entry", 60],
+
       ["Zr1 Bottom Entry", 60],
       ["Zr1 Top Entry", 60],
       ["Skid Pad Entry", 60],
@@ -115,6 +115,7 @@
       ["Left Standup 3", 60],
       ["Left Standup 2", 60],
       ["Left Standup 1", 60],
+
       ["Left Race Start", 60],
       ["Right Race Start", 60],
       [],
@@ -123,6 +124,7 @@
       ["Right Race Encoder", 60],
       ["Route 66 Kickout", 60],
       ["Skid Route 66 Exit", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Left Jet", 60],
@@ -131,6 +133,7 @@
       ["Left Rollover", 60],
       ["Middle Rollover", 60],
       ["Right Rollover", 60],
+
       ["Zr1 Full Left", 60],
       ["Zr1 Full Right", 60],
       [],
@@ -139,6 +142,7 @@
       ["Zr1 Lock Ball 1", 60],
       ["Zr1 Lock Ball 2", 60],
       ["Zr1 Lock Ball 3", 60],
+
       ["Million Standup", 60],
       ["Skid Pad Standup", 60],
       ["Right Standup", 60],

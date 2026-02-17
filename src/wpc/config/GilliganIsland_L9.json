@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Trough Left", 60],
       ["Trough Right", 60],
       ["Outhole", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 60],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Right Outlane", 60],
+
       ["Payoff Middle Left", 60],
       ["Right 10 Points", 60],
       ["Left Lock", 60],
@@ -107,6 +106,7 @@
       ["Left Bank Left", 60],
       ["Left Bank Middle", 60],
       ["Left Bank Right", 60],
+
       ["Left Jet", 60],
       ["Right Jet", 60],
       ["Bottom Jet", 60],
@@ -115,6 +115,7 @@
       ["Right Bank Left", 60],
       ["Right Bank Middle", 60],
       ["Right Bank Right", 60],
+
       ["N Oflagoon", 60],
       ["O2 Of Lagoon", 60],
       ["O1 Of Lagoon", 60],
@@ -123,6 +124,7 @@
       ["L Of Lagoon", 60],
       ["Ramp Stand Up", 60],
       ["Jet 10 Points", 60],
+
       ["Island Entrance", 60],
       ["Ramp Status", 60],
       ["Left Loop", 60],
@@ -131,6 +133,7 @@
       ["Ball Popper", 60],
       ["Top Eject", 60],
       ["Top Right", 60],
+
       ["Payoff Top Left", 60],
       ["Payoff Top Right", 60],
       ["Payoff Bottom Right", 60],
@@ -139,6 +142,7 @@
       ["Wheel Lock", 60],
       ["Wheel Opto", 60],
       ["Shooter", 60],
+
       [],
       [],
       ["Top Left Loop", 60],

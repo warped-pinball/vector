@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 129,
@@ -91,6 +88,7 @@
       ["Left Subway", 60],
       ["Center Subway", 60],
       ["Center Shot", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door", 60],
       [],
@@ -99,6 +97,7 @@
       ["A Of Paid", 60],
       ["I Of Paid", 60],
       ["D Of Paid", 60],
+
       [],
       [],
       ["Bottom Jet", 60],
@@ -107,6 +106,7 @@
       ["Left Ramp Enter", 60],
       ["Lower Right Popper", 60],
       ["Ramp Up Down", 60],
+
       ["Cola", 60],
       ["Hot Dog", 60],
       ["Popcorn", 60],
@@ -115,6 +115,7 @@
       ["Right Jet", 60],
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
+
       ["Left Out Lane", 60],
       ["Left Return Lane", 60],
       ["Start Combo", 60],
@@ -123,6 +124,7 @@
       ["Right Trough", 60],
       ["Center Trough", 60],
       ["Left Trough", 60],
+
       ["Right Ramp Exit", 60],
       ["Left Ramp Exit", 60],
       ["Center Lane Exit", 60],
