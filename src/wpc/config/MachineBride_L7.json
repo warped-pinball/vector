@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Flipper Lane", 60],
       ["Right Flipper Lane", 60],
       ["Right Outlane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 0],
@@ -99,6 +97,7 @@
       ["Center Trough", 60],
       ["Left Trough", 60],
       ["Left Standup", 60],
+
       ["Skill Shot 50k", 60],
       ["Skill Shot 75k", 60],
       ["Skill Shot 100k", 60],
@@ -107,6 +106,7 @@
       ["Right Top Standup", 60],
       ["Right Bottom Standup", 60],
       ["Outhole", 60],
+
       ["Right Ramp Made", 60],
       [],
       ["Left Loop", 60],
@@ -115,6 +115,7 @@
       ["Under Playfield Kickback", 60],
       ["Enter Head", 60],
       [],
+
       ["Spinner", 60],
       ["Shooter", 60],
       ["Upper Right Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Jet Bumper Sling", 60],
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
+
       [],
       [],
       ["Head Left Eye", 60],
@@ -131,6 +133,7 @@
       [],
       ["Face Position", 60],
       [],
+
       ["Wireform Top", 60],
       ["Wireform Bottom", 60],
       ["Enter Mini Playfield", 60],

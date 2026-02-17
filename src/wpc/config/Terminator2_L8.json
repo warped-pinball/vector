@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Trough Center", 60],
       ["Trough Right", 60],
       ["Outhole", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Dispenser", 0],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Right Outlane", 60],
+
       ["Gun Loaded", 60],
       ["Gun Mark", 60],
       ["Gun Home", 60],
@@ -107,6 +106,7 @@
       ["Mid Left Standup Target", 60],
       ["Mid Center Standup Target", 60],
       ["Mid Right Standup Target", 60],
+
       ["Left Jet", 60],
       ["Right Jet", 60],
       ["Bottom Jet", 60],
@@ -115,6 +115,7 @@
       ["Top Right Standup Target", 60],
       ["Mid Right Standup Target", 60],
       ["Bottom Right Standup Target", 60],
+
       ["Left Lock", 60],
       [],
       ["Low Escape Route", 60],
@@ -123,6 +124,7 @@
       ["Top Lane Left", 60],
       ["Top Lane Center", 60],
       ["Top Lane Right", 60],
+
       ["Left Ramp Entry", 60],
       ["Left Ramp Made", 60],
       ["Right Ramp Entry", 60],
@@ -131,6 +133,7 @@
       ["High Chase Loop", 60],
       [],
       [],
+
       ["Target 1 High", 60],
       ["Target 2", 60],
       ["Target 3", 60],

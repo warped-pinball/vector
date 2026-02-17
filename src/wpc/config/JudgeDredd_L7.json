@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 158,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
       ["3 Bank Targets", 60],
+
       ["Slam Tilt", 0],
       ["Front Door Closed", 60],
       ["Ticket Dispenser", 0],
@@ -99,6 +97,7 @@
       ["Captive Ball 1", 60],
       ["Mystery", 60],
       [],
+
       ["Buy In Extra Ball", 60],
       [],
       ["Left Rollover", 60],
@@ -107,6 +106,7 @@
       ["Left Score Post", 60],
       ["Subway Enter 1", 60],
       ["Subway Enter 2", 60],
+
       ["Right Ball Shooter", 60],
       ["Right Outlane", 60],
       ["Outside Right Return", 60],
@@ -115,6 +115,7 @@
       [],
       [],
       [],
+
       ["Left Sling 2", 60],
       ["Right Sling 2", 60],
       ["Captive Ball 2", 60],
@@ -123,6 +124,7 @@
       ["Drop Target D", 60],
       ["Drop Target G", 60],
       ["Drop Target E", 60],
+
       ["Globe Position 1", 60],
       ["Crane Exit", 60],
       ["Left Ramp To Lock", 60],
@@ -131,6 +133,7 @@
       ["Center Ramp Exit", 60],
       ["Left Ramp Enter", 60],
       ["Captive Ball 3", 60],
+
       ["Magnet Over Ring", 60],
       ["Top Right Opto", 60],
       ["Left Popper", 60],
@@ -139,6 +142,7 @@
       ["Right Ramp Exit", 60],
       ["Globe Position 2", 60],
       [],
+
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],

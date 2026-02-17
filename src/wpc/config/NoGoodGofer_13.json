@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Inlane", 60],
       ["Shooter Groove", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Jet Advance Standup", 60],
@@ -99,6 +97,7 @@
       ["Left Inlane", 60],
       ["Right Outlane", 60],
       ["Kickback", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Trough Ball 5", 60],
       ["Trough Ball 6", 60],
       ["Jet Popper", 60],
+
       ["Left Gofer Down", 60],
       ["Right Gofer Down", 60],
       [],
@@ -115,6 +115,7 @@
       ["Right Popper", 60],
       ["Left Ramp Down", 60],
       ["Right Ramp Down", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Top Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Top Skill Shot", 60],
       ["Middle Skill Shot", 60],
       ["Lower Skill Shot", 60],
+
       ["Left Spinner", 60],
       ["Right Spinner", 60],
       ["Inner Wheel Opto", 60],
@@ -131,6 +133,7 @@
       ["Left Gofer 2", 60],
       ["Behind Left Gofer", 60],
       ["Hole In One Made", 60],
+
       ["Left Cart Path", 60],
       ["Right Cart Path", 60],
       ["Right Ramp Make", 60],
@@ -139,6 +142,7 @@
       ["Right Gofer 2", 60],
       ["Advance Trap Value", 60],
       ["Sand Trap Eject", 60],
+
       ["Kick Advance", 60],
       ["K1 Of Kick", 60],
       ["I Of Kick", 60],

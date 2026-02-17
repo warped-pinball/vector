@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Return Lane", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       [],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Outlane", 60],
       ["Right Eject", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Left Popper", 60],
       ["Castle Gate", 60],
       ["Catapult", 60],
+
       ["Moat Enter", 60],
       [],
       [],
@@ -115,6 +115,7 @@
       ["Right Troll Under Playfield", 60],
       ["Left Top Lane", 60],
       ["Right Top Lane", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Left Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Drawbridge Up", 60],
       ["Drawbridge Down", 60],
       ["Tower Exit", 60],
+
       ["Left Ramp Enter", 60],
       ["Left Ramp Exit", 60],
       ["Right Ramp Enter", 60],
@@ -131,6 +133,7 @@
       ["Left Loop High", 60],
       ["Right Loop Low", 60],
       ["Right Loop High", 60],
+
       ["Right Bank Top", 60],
       ["Right Bank Middle", 60],
       ["Right Bank Bottom", 60],
