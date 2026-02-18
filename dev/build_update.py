@@ -24,7 +24,7 @@ compatible_configurations = {
     "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0."]),
     "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "em": all_combos(["2w"], ["1.26.0.preview"]),
-    "data_east": all_combos(["2w"], ["1.25.0."]),
+    "data_east": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "whitestar": all_combos(["2w"], ["1.25.0."]),
 }
 
