@@ -14,7 +14,6 @@ try:
 except ImportError:
     from json_config_schema import SCHEMA_RULES
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -61,20 +60,20 @@ def main() -> int:
             with file_path.open("r", encoding="utf-8") as json_file:
                 payload = json.load(json_file)
         except Exception as exc:  # pragma: no cover - explicit error reporting path
-            errors.append(f"{relative_path}: invalid JSON ({exc})")
+            errors.append(f"{relative_path.as_posix()}: invalid JSON ({exc})")
             continue
 
-        rule = rule_for_path(str(relative_path))
+        rule = rule_for_path(relative_path.as_posix())
         if rule is None:
             continue
 
         if not isinstance(payload, dict):
-            errors.append(f"{relative_path}: expected top-level JSON object")
+            errors.append(f"{relative_path.as_posix()}: expected top-level JSON object")
             continue
 
-        field_errors = validate_required_fields(str(relative_path), payload, rule)
+        field_errors = validate_required_fields(relative_path.as_posix(), payload, rule)
         for field_error in field_errors:
-            errors.append(f"{relative_path} [{rule['name']}]: {field_error}")
+            errors.append(f"{relative_path.as_posix()} [{rule['name']}]: {field_error}")
 
     if errors:
         print("JSON validation failed:")
