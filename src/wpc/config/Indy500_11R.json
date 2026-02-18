@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Left Flipper Lane", 60],
       ["Right Flipper Lane", 60],
       ["Right Outlane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy-in Button", 60],
@@ -99,6 +97,7 @@
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Three Bank Upper", 60],
+
       ["Three Bank Center", 60],
       ["Three Bank Lower", 60],
       [],
@@ -107,6 +106,7 @@
       ["Left Ramp Made", 60],
       ["Left Loop", 60],
       ["Right Loop", 60],
+
       ["Top Trough", 60],
       ["Trough 1 Right", 60],
       ["Trough 2", 60],
@@ -115,6 +115,7 @@
       ["Left Ramp Standup", 60],
       ["Turbo Wrench", 60],
       ["Jet Bumper Wrench", 60],
+
       ["Left Lane", 60],
       ["Center Lane", 60],
       ["Right Lane", 60],
@@ -123,6 +124,7 @@
       ["Left Lightup", 60],
       ["Center Lightup", 60],
       ["Right Lightup", 60],
+
       ["Upper Popper", 60],
       ["Turbo Popper", 60],
       ["Turbo Ball Sense", 60],
@@ -131,6 +133,7 @@
       ["Turbo Index", 60],
       [],
       [],
+
       [],
       ["Left Jet", 60],
       ["Right Jet", 60],

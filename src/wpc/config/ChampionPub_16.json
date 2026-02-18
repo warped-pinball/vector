@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 155,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Return", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ball Launch", 60],
@@ -99,6 +97,7 @@
       ["Left Return", 60],
       ["Right Outlane", 60],
       ["Popper", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Left Jab Made", 60],
       ["Corner Eject", 60],
       ["Right Jab Made", 60],
+
       ["Boxer Pole Center", 60],
       ["Behind Left Scoop", 60],
       ["Behind Right Scoop", 60],
@@ -115,6 +115,7 @@
       ["Bag Pole Center", 60],
       ["Boxer Pole Right", 60],
       ["Boxer Pole Left", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Three Bank Bottom", 60],
@@ -123,6 +124,7 @@
       ["Right Half Guy", 60],
       ["Lock Up 2", 60],
       ["Lock Up 3", 60],
+
       ["Left Scoop Up", 60],
       ["Right Scoop Up", 60],
       ["Thrown Towel", 60],
@@ -131,6 +133,7 @@
       ["Boxer Gut 1", 60],
       ["Boxer Gut 2", 60],
       ["Boxer Head", 60],
+
       ["Exit Rope", 60],
       ["Enter Speed Bag", 60],
       ["Danger Zone", 60],

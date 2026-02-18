@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 158,
@@ -91,6 +88,7 @@
       ["Striker 3 High", 60],
       ["Right Return Lane", 60],
       ["Right Outlane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy Extra Ball", 60],
@@ -99,6 +97,7 @@
       ["Kickback Upper", 60],
       ["Spinner", 60],
       ["Light Kickback", 60],
+
       ["Trough 1 Right", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
@@ -107,6 +106,7 @@
       ["Trough Stack", 60],
       ["Light Magna Goalie", 60],
       ["Ball Shooter", 60],
+
       ["Goal Trough", 60],
       ["Goal Popper Opto", 60],
       ["Goalie Is Left", 60],
@@ -115,6 +115,7 @@
       [],
       ["Travel Lane Rollover", 60],
       ["Goalie Target", 60],
+
       ["Skill Shot Front", 60],
       ["Skill Shot Center", 60],
       ["Skill Shot Rear", 60],
@@ -123,6 +124,7 @@
       ["Left Eject Hole", 60],
       [],
       [],
+
       ["Rollover 1 High", 60],
       ["Rollover 2", 60],
       ["Rollover 3", 60],
@@ -131,6 +133,7 @@
       ["Striker 1 Left", 60],
       ["Striker 2 Center", 60],
       [],
+
       ["Left Ramp Diverted", 60],
       ["Left Ramp Entrance", 60],
       [],
@@ -139,6 +142,7 @@
       ["Lock Mech Low", 60],
       ["Lock Mech High", 60],
       ["Right Ramp Exit", 60],
+
       ["Left Jet Bumper", 60],
       ["Upper Jet Bumper", 60],
       ["Lower Jet Bumper", 60],

@@ -156,7 +156,7 @@ def deserialize(data, structure_name):
                 "full_name": name.decode().strip("\0"),
             }
         except Exception:
-            return {"intials": " ", "full_name": " "}
+            return {"initials": " ", "full_name": " "}
     elif structure_name == "leaders":
         try:
             initials, name, date, score = struct.unpack("<3s16s10sQ", data)
