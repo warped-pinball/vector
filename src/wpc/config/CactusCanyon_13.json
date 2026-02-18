@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Return Lane", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 60],
       ["Coin Door Closed", 60],
       [],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Outlane", 60],
       ["Bottom Right Standup", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Left Loop Bottom", 60],
       ["Right Loop Bottom", 60],
       [],
+
       ["Mine Popper", 60],
       ["Saloon Popper", 60],
       [],
@@ -115,6 +115,7 @@
       ["Beer Mug Switch", 60],
       ["Left Bonus X Lane", 60],
       ["Jet Exit", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Left Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Right Loop Top", 60],
       ["Right Bonus X Lane", 60],
       ["Left Loop Top", 60],
+
       ["Drop 1 Left", 60],
       ["Drop 2 Left Center", 60],
       ["Drop 3 Right Center", 60],
@@ -131,6 +133,7 @@
       ["Right Ramp Enter", 60],
       ["Skill Bowl", 60],
       ["Bottom Right Ramp", 60],
+
       ["Train Encoder", 60],
       ["Train Home", 60],
       ["Saloon Gate", 60],
@@ -139,6 +142,7 @@
       [],
       ["Mine Home", 60],
       ["Mine Encoder", 60],
+
       [],
       ["Center Ramp Enter", 60],
       ["Left Ramp Make", 60],

@@ -92,7 +92,7 @@
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy Extra Ball", 60],
-      ["Always Closed", 60],
+      ["Always Closed", 0],
       ["Left Outlane", 60],
       ["Left Flipper Lane", 60],
       ["Right Flipper Lane", 60],

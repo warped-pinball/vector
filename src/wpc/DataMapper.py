@@ -17,6 +17,9 @@ log = logger_instance
 import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
+# Global to store grand champion data for initial capture comparison
+stored_grand_champion = {"initials": "", "score": 0}
+
 
 def _bcd_to_int(score_bytes):
     """
@@ -152,22 +155,11 @@ def read_high_scores():
             score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
             high_scores[idx][1] = _bcd_to_int(score_bytes)
             
-            # Filter out very low scores (likely placeholders)
-            #if high_scores[idx][1] < 1000:
-            #    high_scores[idx][1] = 0
-        
         # Read Grand Champion score if configured (index 0)
         if "GrandChampScoreAdr" in S.gdata["HighScores"]:
             score_start = S.gdata["HighScores"]["GrandChampScoreAdr"]
             score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
             high_scores[0][1] = _bcd_to_int(score_bytes)
-            
-            # Calculate the maximum fake score (all BCD bytes set to 0x99)
-            #max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
-            
-            # Filter out placeholder scores
-            #if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:
-            #    high_scores[0][1] = 0
         
         # Read initials for regular high scores
         if "InitialAdr" in S.gdata["HighScores"]:
@@ -202,6 +194,50 @@ def read_high_scores():
         log.log(f"High score read error: {e}")
     
     return high_scores
+
+
+def get_initials_entered():
+    """
+    Identify which high scores have been newly entered after prepare_initials_capture().
+    
+    Compares current high scores against placeholder values and the stored grand champion
+    to determine which scores represent new player entries. Used to detect when players
+    have entered their initials after achieving high scores.
+    
+    Logic:
+    - Top 4 scores: Any score > 1000 is considered a real entry (not a placeholder)
+    - Grand Champion: Compares against stored_grand_champion to detect if it changed
+    - Excludes the stored grand champion score from the results (not a "new" entry)
+    
+    Returns:
+        list: List of 4 [initials, score] pairs for positions 1-4
+              Contains actual data for new entries, ["", 0] for non-new entries
+              Example: [["ABC", 50000], ["", 0], ["XYZ", 30000], ["", 0]]
+    """
+    global stored_grand_champion
+    
+    # Initialize return list with empty entries
+    new_entries = [["", 0], ["", 0], ["", 0], ["", 0]]
+    
+    # Read current high scores (index 0 = GC, 1-4 = regular high scores)
+    current_scores = read_high_scores()
+    print("SCORE get init  scores:",current_scores)
+    i = 0
+
+    # Process the 5 high score positions
+    for idx in range(5):
+        score = current_scores[idx][1]
+        initials = current_scores[idx][0]
+        
+        # Check if this is a new entry:
+        # 1. Score must be > 1000 (not a placeholder like 60, 50, 40, 30)
+        # 2. Score must NOT match the stored grand champion (that's not new)
+        if score > 1000 and score != stored_grand_champion["score"]:
+            new_entries[i] = [initials, score]
+            i = i + 1
+    
+    print(f"DATAMAPPER: New initials entered: {new_entries}")
+    return new_entries
 
 
 def write_high_scores(high_scores):
@@ -575,6 +611,10 @@ def get_in_play_data():
     return data
 
 
+
+
+
+
 def remove_machine_scores():
     """
     Remove/reset machine high scores to prepare for forced initial entry.
@@ -626,6 +666,61 @@ def remove_machine_scores():
                 shadowRam[score_start + i] = 0x00
             # Set small placeholder score (9000)
             shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 2] = 0x90
+    
+    # Update checksums
+    fix_high_score_checksum()
+
+
+def prepare_initials_capture():
+    """
+    Prepare for forced initial capture by recording grand champion and clearing high scores.
+    
+    Records the current grand champion score and initials in a global for later comparison,
+    but does NOT modify them in shadow RAM. Clears the 4 regular high scores (positions 1-4)
+    with placeholder values to force initial entry.
+    
+    WPC Type 10 only.
+    """
+    global stored_grand_champion
+    
+    if S.gdata.get("HighScores", {}).get("Type") != 10:
+        return
+    
+    print("DATAMAPPER: Prepare initials capture")
+    
+    # Read and store current Grand Champion score and initials
+    if "GrandChampScoreAdr" in S.gdata["HighScores"]:
+        score_start = S.gdata["HighScores"]["GrandChampScoreAdr"]
+        score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
+        stored_grand_champion["score"] = _bcd_to_int(score_bytes)
+        
+        # Read Grand Champion initials if configured
+        if "GrandChampInitAdr" in S.gdata["HighScores"]:
+            initial_start = S.gdata["HighScores"]["GrandChampInitAdr"]
+            initials_bytes = shadowRam[initial_start : initial_start + 3]
+            
+            try:
+                stored_grand_champion["initials"] = bytes(initials_bytes).decode("ascii")
+            except Exception:
+                stored_grand_champion["initials"] = ""
+        
+        log.log(f"DATAMAPPER: Stored GC: {stored_grand_champion['initials']}, Score: {stored_grand_champion['score']}")
+    
+    # Reset 4 regular high scores (same as remove_machine_scores)
+    for index in range(4):
+        score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
+        initial_start = S.gdata["HighScores"]["InitialAdr"] + index * S.gdata["HighScores"]["InitialSpacing"]
+        
+        # Clear score to 0
+        for i in range(S.gdata["HighScores"]["BytesInScore"]):
+            shadowRam[score_start + i] = 0
+        
+        # Set placeholder score (60, 50, 40, 30)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 1] = 0x10 * (4 - index)
+        
+        # Set initials to '   '
+        for i in range(3):
+            shadowRam[initial_start + i] = 0x20
     
     # Update checksums
     fix_high_score_checksum()

@@ -122,8 +122,8 @@
 
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
-      ["Ticket Opto", 60],
-      ["Always Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
       ["Left Outlane", 60],
       ["Left Return Lane", 60],
       ["Lt Stand-up Tgt 1", 60],

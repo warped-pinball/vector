@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Center Trough", 60],
       ["Left Trough", 60],
       ["Outhole", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy-in Button", 60],
@@ -99,6 +97,7 @@
       ["Trough Proximity", 60],
       ["Ball Shooter", 60],
       ["Rocket Kicker", 60],
+
       ["Left Jet Bumper", 60],
       ["Right Jet Bumper", 60],
       ["Lower Jet Bumper", 60],
@@ -107,6 +106,7 @@
       ["Left Outlane", 60],
       ["Left Inlane 1", 60],
       ["Left Inlane 2", 60],
+
       ["Dead End", 60],
       ["The Camera", 60],
       ["Player Piano", 60],
@@ -115,6 +115,7 @@
       ["Mini Playfield Right 2", 60],
       ["Clock Millions", 60],
       ["Lower Left 5 Million", 60],
+
       ["Gumball Popper Lane", 60],
       ["Hitch Hiker", 60],
       ["Left Ramp Enter", 60],
@@ -123,6 +124,7 @@
       ["Gumball Exit", 60],
       ["Slot Proximity", 60],
       ["Slot Kickout", 60],
+
       ["Lower Side", 60],
       ["Center Skill", 60],
       ["Upper Skill", 60],
@@ -131,6 +133,7 @@
       ["Middle Right 5 Million 1", 60],
       ["Middle Right 5 Million 2", 60],
       ["Lower Right 5 Million", 60],
+
       [],
       ["Auto Fire Kicker", 60],
       ["Right Ramp", 60],
@@ -139,6 +142,7 @@
       ["Mini Playfield Exit", 60],
       ["Middle Left 5 Million", 60],
       ["Upper Left 5 Million", 60],
+
       ["Lower Right Magnet", 60],
       [],
       ["Left Magnet", 60],
@@ -147,6 +151,7 @@
       [],
       ["Gumball Enter", 60],
       ["Lock Lower", 60],
+
       ["Clock 15 Minutes", 60],
       ["Clock 00 Minutes", 60],
       ["Clock 45 Minutes", 60],

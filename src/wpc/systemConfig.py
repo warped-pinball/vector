@@ -2,7 +2,7 @@ vectorSystem = "wpc"
 updatesURL = "http://software.warpedpinball.com/vector/wpc/latest.json"
 
 # Firmware version for the WPC build
-SystemVersion = "1.6.0"
+SystemVersion = "1.7.0"
 
 
 # System specific scheduled tasks
