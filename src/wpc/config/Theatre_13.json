@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       [],
       [],
       [],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy In", 60],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Return Lane", 60],
       ["Right Outlane", 60],
+
       ["Trough Jam", 60],
       ["Trough 1", 60],
       ["Trough 2", 60],
@@ -107,6 +106,7 @@
       ["Subway Opto", 60],
       ["Spinner", 60],
       ["Right Lower Target", 60],
+
       ["Lock 1", 60],
       ["Lock 2", 60],
       ["Lock 3", 60],
@@ -115,6 +115,7 @@
       [],
       ["Subway Micro", 60],
       ["Right Drain Eddy", 60],
+
       ["Left Bank Target", 60],
       ["Captive Ball Rest", 60],
       ["Right Lane Enter", 60],
@@ -123,6 +124,7 @@
       ["Cube Position 1", 60],
       ["Cube Position 2", 60],
       ["Cube Position 3", 60],
+
       ["Left Sling", 60],
       ["Right Sling", 60],
       ["Bottom Jet", 60],
@@ -131,6 +133,7 @@
       ["Top Lane 1", 60],
       ["Top Lane 2", 60],
       [],
+
       ["Center Ramp Exit", 60],
       [],
       ["Right Ramp Exit", 60],
@@ -139,6 +142,7 @@
       ["Right Ramp Enter", 60],
       ["Captive Ball Top", 60],
       ["Loop Left", 60],
+
       ["Loop Right", 60],
       ["Center Ramp Targets", 60],
       ["Vanish Lock 1", 60],

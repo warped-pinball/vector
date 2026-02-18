@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Return Lane", 60],
       ["Shooter Lane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Tomb Treasure", 60],
@@ -99,6 +97,7 @@
       ["Left Return Lane", 60],
       ["Right Outlane", 60],
       ["Left Eject", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Right Popper", 60],
       [],
       [],
+
       [],
       ["Left Flipper Opto", 60],
       ["Right Flipper Opto", 60],
@@ -115,6 +115,7 @@
       ["Right Blue Target", 60],
       ["Left Flipper Proximity Sensor", 60],
       ["Right Flipper Proximity Sensor", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Left Jet Bumper", 60],
@@ -123,6 +124,7 @@
       ["Left Top Lane", 60],
       ["Center Top Lane", 60],
       ["Right Top Lane", 60],
+
       ["Left Loop Low", 60],
       ["Left Loop High", 60],
       ["Right Loop Low", 60],
@@ -131,6 +133,7 @@
       ["Left Ramp Enter", 60],
       ["Left Ramp Exit", 60],
       ["Center Ramp Enter", 60],
+
       ["Right Ramp Enter", 60],
       ["Right Ramp Exit", 60],
       ["Right Ramp Lock", 60],
@@ -139,6 +142,7 @@
       ["Dracula Position 3", 60],
       ["Dracula Position 2", 60],
       ["Dracula Position 1", 60],
+
       ["Up Down Bank Up", 60],
       ["Up Down Bank Down", 60],
       ["Frank Table Down", 60],

@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Outlane", 60],
       ["Right Outlane", 60],
       ["Ball Shooter", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       [],
@@ -99,6 +97,7 @@
       ["Left Return", 60],
       ["Right Return", 60],
       ["Left Orbit", 60],
+
       ["Trough Eject", 60],
       ["Trough Ball 1", 60],
       ["Trough Ball 2", 60],
@@ -107,6 +106,7 @@
       ["Lockup 1 Front", 60],
       ["Lockup 2 Rear", 60],
       [],
+
       ["Kickback", 60],
       ["Left Big Kick", 60],
       ["Token Chute Jam", 60],
@@ -115,6 +115,7 @@
       ["Top Jet", 60],
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
+
       ["A1 Of Alarm Standup", 60],
       ["L Of Alarm Standup", 60],
       ["A2 Of Alarm Standup", 60],
@@ -123,6 +124,7 @@
       ["Vari Target C", 60],
       ["Vari Target B", 60],
       ["Vari Target A", 60],
+
       ["Top Left 3 Bank Top", 60],
       ["Top Left 3 Bank Middle", 60],
       ["Top Left 3 Bank Bottom", 60],
@@ -131,6 +133,7 @@
       ["Top Right 3 Bank Top", 60],
       ["Top Left Lane", 60],
       ["Top Popper", 60],
+
       ["Bottom Left 3 Bank Top", 60],
       ["Bottom Left 3 Bank Middle", 60],
       ["Bottom Left 3 Bank Bottom", 60],
@@ -139,6 +142,7 @@
       ["Bottom Right 3 Bank Top", 60],
       ["Bank Kickout", 60],
       ["Top Right Lane", 60],
+
       ["Left Token Level", 60],
       ["Right Token Level", 60],
       ["Ramp Entrance", 60],

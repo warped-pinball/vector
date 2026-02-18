@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,
@@ -91,6 +88,7 @@
       ["Upper 3bank Left Target I", 60],
       ["Upper 3bank Center Target X", 60],
       ["Upper 3bank Right Target I", 60],
+
       ["Slam", 0],
       ["Door Closed", 60],
       ["Extra Ball Button", 60],
@@ -99,6 +97,7 @@
       ["Upper Left Single Target", 60],
       ["Left Lane Rollover", 60],
       ["Inner Left Lane Rollover", 60],
+
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
@@ -107,6 +106,7 @@
       ["Ball Popper", 60],
       ["Right Ramp Enter", 60],
       ["Left Ramp Enter", 60],
+
       ["4 Bank 1 Drop Target", 60],
       ["4 Bank 2 Drop Target", 60],
       ["4 Bank 3 Drop Target", 60],
@@ -115,6 +115,7 @@
       ["3 Bank 2 Drop Target", 60],
       ["3 Bank 3 Drop Target", 60],
       ["Center Lane Rollover", 60],
+
       ["Left N Right 3 Bank Bottom Target", 60],
       ["Left N Right 3 Bank Middle Target", 60],
       ["Left N Right 3 Bank Upper Target", 60],
@@ -123,6 +124,7 @@
       ["Dicta Bird Target", 60],
       [],
       [],
+
       ["Left Sling", 60],
       ["Right Sling", 60],
       ["Top Left Jet", 60],
@@ -131,6 +133,7 @@
       ["Top Left Rollover D", 60],
       ["Top Center Rollover I", 60],
       ["Top Right Rollover G", 60],
+
       ["Left Out Rollover", 60],
       ["Left Return Rollover", 60],
       ["Right Return Rollover", 60],

@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Inlane", 60],
       ["Right Inlane", 60],
       ["Right Outlane", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Buy-in Button", 60],
@@ -99,6 +97,7 @@
       ["Claw Position 2", 60],
       ["Shooter Lane", 60],
       [],
+
       ["Trough 1", 60],
       ["Trough 2", 60],
       ["Trough 3", 60],
@@ -107,6 +106,7 @@
       ["Trough Jam", 60],
       [],
       ["Standup 5", 60],
+
       ["Left Slingshot", 60],
       ["Right Slingshot", 60],
       ["Left Jet Bumper", 60],
@@ -115,6 +115,7 @@
       ["Right Ramp Enter", 60],
       ["Right Ramp Exit", 60],
       ["Right Freeway", 60],
+
       ["Left Ramp Enter", 60],
       ["Left Ramp Exit", 60],
       ["Center Ramp", 60],
@@ -123,6 +124,7 @@
       ["Standup 2", 60],
       ["Standup 3", 60],
       ["Standup 4", 60],
+
       ["Side Ramp Enter", 60],
       ["Side Ramp Exit", 60],
       ["Left Rollover", 60],
@@ -131,6 +133,7 @@
       ["Eject", 60],
       ["Elevator Index", 60],
       [],
+
       ["Chase Car 1", 60],
       ["Chase Car 2", 60],
       ["Top Popper", 60],
@@ -139,6 +142,7 @@
       ["Bottom Popper", 60],
       ["Eyeball Standup", 60],
       ["Standup 1", 60],
+
       ["Claw Capture Simon", 60],
       ["Claw Sup Jets", 60],
       ["Claw Prison Break", 60],

@@ -65,9 +65,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "CoinDrop": {
-      "Type": 0
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 141,
@@ -91,6 +88,7 @@
       ["Left Jet Bumper", 60],
       ["Right Jet Bumper", 60],
       ["Center Jet Bumper", 60],
+
       ["Slam Tilt", 0],
       ["Coin Door Closed", 60],
       ["Ticket Opto", 0],
@@ -99,6 +97,7 @@
       ["Left Flipper Lane", 60],
       ["Right Flipper Lane", 60],
       ["Right Outlane", 60],
+
       ["River R2", 60],
       ["River E", 60],
       ["River V", 60],
@@ -107,6 +106,7 @@
       ["3 Bank Top", 60],
       ["3 Bank Center", 60],
       ["3 Bank Lower", 60],
+
       ["Light Lock Left", 60],
       ["Light Lock Right", 60],
       ["Left Loop", 60],
@@ -115,6 +115,7 @@
       ["Left Ramp Enter", 60],
       ["Rapids Enter", 60],
       ["Canyon Entrance", 60],
+
       ["Left Sling", 60],
       ["Right Sling", 60],
       ["Ball Shooter", 60],
@@ -123,6 +124,7 @@
       ["Extra Ball", 60],
       ["Canyon Main", 60],
       ["Bigfoot Cave", 60],
+
       ["Whirlpool Popper", 60],
       ["Whirlpool Exit", 60],
       ["Lockup Right", 60],
@@ -131,6 +133,7 @@
       ["Left Ramp Main", 60],
       [],
       ["Disaster Drop Enter", 60],
+
       ["Rapids Ramp Main", 60],
       [],
       ["Hot Foot Upper", 60],
@@ -139,6 +142,7 @@
       ["Right Trough", 60],
       ["Center Trough", 60],
       ["Left Trough", 60],
+
       [],
       [],
       [],
