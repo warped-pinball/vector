@@ -37,7 +37,16 @@ python dev/sync.py sys11 /dev/ttyACM0
 
 The script builds the project, wipes the Pico, copies the files and connects to the REPL.
 
-To automatically detect and flash all connected boards, run:
+Replace `/dev/ttyACM0` with your own port. You can list all detected boards/ports connected to your machine by running:
+```bash
+python dev/sync.py list
+```
+Alteratively, you can list *all* serial ports on your machine, but won't label if it's a warped board:
+```bash
+python dev/sync.py list
+```
+
+Alternatively, To automatically detect and flash all connected boards, run:
 
 ```bash
 python dev/sync.py auto
