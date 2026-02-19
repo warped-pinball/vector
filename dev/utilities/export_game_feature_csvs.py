@@ -2,7 +2,7 @@
 """Export game feature support from config JSON files into CSV.
 
 Default output:
-- game_features.csv (one row per distinct title + MPU)
+- specialfeatures.csv (one row per distinct title + MPU)
 
 Design goals:
 - Distinct game names grouped by MPU/system family
@@ -23,8 +23,8 @@ from typing import Any, Callable
 
 
 DEFAULT_CONFIG_GLOB = "src/*/config/*.json"
-DEFAULT_OUT_DIR = Path("dev/generated/game_features")
-DEFAULT_CONSOLIDATED_CSV = "game_features.csv"
+DEFAULT_OUT_DIR = Path("dev/generated")
+DEFAULT_CONSOLIDATED_CSV = "specialfeatures.csv"
 
 KNOWN_FORMATS = {
     "Standard",
