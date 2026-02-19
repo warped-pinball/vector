@@ -151,7 +151,7 @@ window.updateLeaderboardArticles = function () {
 };
 
 /*
- * updateTournamentArticles: 4 equally wide columns => Game, Rank, Initials, Score
+ * updateTournamentArticles: 4 equally wide columns => Game, Order, Initials, Score
  */
 window.updateTournamentArticles = function () {
   //If we're in delete mode, don't refresh the board!!!!
@@ -161,7 +161,7 @@ window.updateTournamentArticles = function () {
 
   var columns = [
     { header: "Game", key: "game" },
-    { header: "Rank", key: "rank" },
+    { header: "Order", key: "rank" },
     { header: "Initials", key: "initials" },
     { header: "Score", key: "score" },
   ];
