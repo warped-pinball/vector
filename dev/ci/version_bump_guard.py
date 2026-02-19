@@ -65,7 +65,8 @@ def _run_git(*args: str) -> str:
 
 
 def changed_files(base_ref: str, head_ref: str) -> list[str]:
-    output = _run_git("diff", "--name-only", base_ref, head_ref)
+    merge_base = _run_git("merge-base", base_ref, head_ref)
+    output = _run_git("diff", "--name-only", f"{merge_base}...{head_ref}")
     return [line.strip() for line in output.splitlines() if line.strip()]
 
 
@@ -92,8 +93,9 @@ def touches_scope(paths: Iterable[str], prefixes: tuple[str, ...]) -> bool:
 
 def evaluate_rules(changed: Iterable[str], rule_results: dict[str, bool]) -> list[str]:
     failures: list[str] = []
+    changed_list = list(changed)
     for rule in RULES:
-        if not touches_scope(changed, rule.scope_prefixes):
+        if not touches_scope(changed_list, rule.scope_prefixes):
             continue
         if not rule_results.get(rule.name, False):
             prefixes = ", ".join(rule.scope_prefixes)

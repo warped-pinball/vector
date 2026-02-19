@@ -3,6 +3,13 @@ name: Version bump guard
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/common/**"
+      - "src/em/**"
+      - "src/sys11/**"
+      - "src/wpc/**"
+      - "src/data_east/**"
+      - "src/whitestar/**"
 
 jobs:
   version-bump:

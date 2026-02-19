@@ -35,3 +35,23 @@ def test_evaluate_rules_fails_for_missing_required_bumps() -> None:
     assert "src/common/SharedState.py" in failures[0]
     assert "src/data_east/" in failures[1]
     assert "src/data_east/systemConfig.py" in failures[1]
+
+
+def test_evaluate_rules_reports_all_missing_bumps() -> None:
+    changed = [
+        "src/common/backend.py",
+        "src/em/DiagDisplay.py",
+        "src/sys11/DataMapper.py",
+    ]
+    results = {
+        "common shared-state version": False,
+        "EM system config version": False,
+        "System11 system config version": False,
+    }
+
+    failures = vbg.evaluate_rules(changed, results)
+
+    assert len(failures) == 3
+    assert any("src/common/SharedState.py" in failure for failure in failures)
+    assert any("src/em/systemConfig.py" in failure for failure in failures)
+    assert any("src/sys11/systemConfig.py" in failure for failure in failures)
