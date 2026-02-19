@@ -1,4 +1,4 @@
-[![GitHub Release](https://badgen.net/github/release/warped-pinball/vector)](https://github.com/warped-pinball/vector/releases)
+[![GitHub Release](https://badgen.net/github/release/warped-pinball/vector/stable)](https://github.com/warped-pinball/vector/releases)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC-blue)](https://github.com/warped-pinball/vector/tree/main?tab=License-1-ov-file)
 [![GitHub issues](https://img.shields.io/github/issues/warped-pinball/vector)](https://github.com/warped-pinball/vector/issues)
 [![GitHub last commit](https://badgen.net/github/last-commit/warped-pinball/vector)](https://github.com/warped-pinball/vector/commits/main)
