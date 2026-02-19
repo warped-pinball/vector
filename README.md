@@ -14,6 +14,8 @@ Read the docs: [docs.warpedpinball.com](https://docs.warpedpinball.com)
 
 Check us out: [Warped Pinball](https://warpedpinball.com)
 
+Get your Vector: [shop.warpedpinball.com](https://shop.warpedpinball.com)
+
 ## Features
 
 - **ZERO subscriptions or dependencies** There are no servers to fail, no services to pay for. You don't even really need to connect to the internet. We don't (and can't) control your device in any way once you purchase it. You may *optionally* install our free updates.
