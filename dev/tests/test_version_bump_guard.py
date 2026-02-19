@@ -11,7 +11,7 @@ def test_touches_scope_detects_prefix() -> None:
 def test_evaluate_rules_passes_when_required_versions_changed() -> None:
     changed = ["src/common/backend.py", "src/em/sensorRead.py"]
     results = {
-        "common shared-state version": True,
+        "common shared-state version (all src changes)": True,
         "EM system config version": True,
     }
 
@@ -23,7 +23,7 @@ def test_evaluate_rules_passes_when_required_versions_changed() -> None:
 def test_evaluate_rules_fails_for_missing_required_bumps() -> None:
     changed = ["src/common/backend.py", "src/data_east/DataMapper.py", "src/wpc/ScoreTrack.py"]
     results = {
-        "common shared-state version": False,
+        "common shared-state version (all src changes)": False,
         "Data East system config version": False,
         "WPC system config version": True,
     }
@@ -44,7 +44,7 @@ def test_evaluate_rules_reports_all_missing_bumps() -> None:
         "src/sys11/DataMapper.py",
     ]
     results = {
-        "common shared-state version": False,
+        "common shared-state version (all src changes)": False,
         "EM system config version": False,
         "System11 system config version": False,
     }
@@ -55,3 +55,16 @@ def test_evaluate_rules_reports_all_missing_bumps() -> None:
     assert any("src/common/SharedState.py" in failure for failure in failures)
     assert any("src/em/systemConfig.py" in failure for failure in failures)
     assert any("src/sys11/systemConfig.py" in failure for failure in failures)
+
+
+def test_em_change_also_requires_common_bump() -> None:
+    changed = ["src/em/sensorRead.py"]
+    results = {
+        "common shared-state version (all src changes)": False,
+        "EM system config version": True,
+    }
+
+    failures = vbg.evaluate_rules(changed, results)
+
+    assert len(failures) == 1
+    assert "src/common/SharedState.py" in failures[0]

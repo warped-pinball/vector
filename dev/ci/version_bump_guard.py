@@ -22,8 +22,8 @@ class VersionRule:
 
 RULES: tuple[VersionRule, ...] = (
     VersionRule(
-        name="common shared-state version",
-        scope_prefixes=("src/common/",),
+        name="common shared-state version (all src changes)",
+        scope_prefixes=("src/",),
         version_file="src/common/SharedState.py",
         version_pattern=VECTOR_VERSION_PATTERN,
     ),
