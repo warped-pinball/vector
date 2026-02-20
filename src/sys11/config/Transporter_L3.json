@@ -4,18 +4,15 @@
         "System": "11B",
         "FileVer": 1
     },
-
     "Definition": {
         "version": 1
     },
-
-    "Memory" : {
+    "Memory": {
         "Start": 0,
         "Length": 2048,
         "NvStart": 0,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 1,
         "Address": "0x38",
@@ -25,7 +22,6 @@
         "Ball4": "0x04",
         "Ball5": "0x05"
     },
-
     "DisplayMessage": {
         "Type": 2,
         "Address": "0x7B4",
@@ -33,21 +29,18 @@
         "Number": 3,
         "EnableByteAddress": "0x7B0"
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
         "ChecksumResultAdr": "0x7E6"
     },
-
     "HighScores": {
         "Type": 1,
         "ScoreAdr": "0x70F",
         "InitialAdr": "0x71F",
         "BytesInScore": 4
     },
-
     "HSRewards": {
         "Type": 0,
         "HS1": 1937,
@@ -56,13 +49,11 @@
         "HS4": 1940,
         "DisableByte": 0
     },
-
     "Switches": {
         "Type": 0,
         "Address": 56,
         "Length": 23
     },
-
     "CoinDrop": {
         "Type": 0
     }

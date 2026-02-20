@@ -3,14 +3,12 @@
         "GameName": "Diner",
         "System": "11c"
     },
-
-    "Memory" : {
+    "Memory": {
         "Start": 0,
         "Length": 2048,
         "NvStart": 0,
         "NvLength": 2048
     },
-
     "BallInPlay": {
         "Type": 1,
         "Address": 56,
@@ -20,7 +18,6 @@
         "Ball4": "0x04",
         "Ball5": "0x05"
     },
-
     "DisplayMessage": {
         "Type": 3,
         "Address": "0x7B4",
@@ -28,29 +25,25 @@
         "Number": 3,
         "EnableByteAddress": "0x7B0"
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7E3",
         "ChecksumResultAdr": "0x7E6"
     },
-
     "HighScores": {
         "Type": 3,
         "ScoreAdr": "0x70E",
         "InitialAdr": "0x71E",
         "BytesInScore": 4
     },
-
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
-        "PlayersInGame": "0xA9",
-        "PlayerUP": "0xAA",
-        "Warnings": "0xB0"
+        "Players": 169,
+        "PlayerUp": 170,
+        "GameActive": 166
     },
-
     "HSRewards": {
         "Type": 0,
         "HS1": 1937,
@@ -59,16 +52,38 @@
         "HS4": 1940,
         "DisableByte": 0
     },
-
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Type": 10,
+        "Address": 1535,
+        "Length": 64,
+        "Sensitivity": [
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60
+                ]
     },
-
+    "Flippers": {
+        "Type": 1,
+        "Address": 69
+    },
     "CoinDrop": {
         "Type": 0
+    },
+    "InPlayScores": {
+        "Type": 1,
+        "ScoreAdr": "0x200",
+        "ZeroNibble": 0,
+        "BytesInScore": 4
+    },
+    "InPlayInfo": {
+        "Type": 1,
+        "PlayersInGame": "0xA9",
+        "PlayerUP": "0xAA",
+        "Warnings": "0xB0"
     }
-
-
 }
