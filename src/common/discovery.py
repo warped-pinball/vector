@@ -145,8 +145,8 @@ class DiscoveryMessage:
             return DiscoveryMessage(MessageType.HELLO, name=name)
 
         if mtype == MessageType.FULL:
-            #print(f"Decoding FULL message with length {len(data)}")
-            #print(f"Data: {data}")
+            # print(f"Decoding FULL message with length {len(data)}")
+            # print(f"Data: {data}")
             if len(data) < 2:
                 return None
             count = data[1]
@@ -204,8 +204,8 @@ def _get_local_name_bytes():
     return str_name.encode("utf-8")
 
 
-def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", DISCOVERY_PORT)) -> None:
-    #print(f"DISCOVERY: Sending message to {addr}: {msg}")
+def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", _DISCOVERY_PORT)) -> None:
+    # print(f"DISCOVERY: Sending message to {addr}: {msg}")
 
     global send_sock
     _setup_sockets()
@@ -243,7 +243,7 @@ def is_registry():
 def _add_or_update(ip_bytes, name):
     """Insert or update a peer keeping ``known_devices`` sorted."""
     global known_devices
-    #print(f"DISCOVERY: Adding/updating device {bytes_to_ip(ip_bytes)} with name {name.decode('utf-8', 'ignore')}")
+    # print(f"DISCOVERY: Adding/updating device {bytes_to_ip(ip_bytes)} with name {name.decode('utf-8', 'ignore')}")
 
     if ip_bytes == _get_local_ip_bytes():
         return
@@ -267,7 +267,7 @@ def registry_should_broadcast():
     if is_registry():
         broadcast_full_list()
     else:
-        #print("DISCOVERY: The registry should broadcast, but I am not the registry.")
+        # print("DISCOVERY: The registry should broadcast, but I am not the registry.")
         pass
     # elif len(known_devices) > 0:
     #     pending_ping = registry_ip_bytes()
