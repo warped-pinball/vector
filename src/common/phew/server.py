@@ -291,7 +291,6 @@ def create_schedule(ap_mode: bool = False):
     from GameStatus import poll_fast
     from usb_comms import usb_request_handler
 
-    # from origin import check_in
     #
     # one time tasks
     #
