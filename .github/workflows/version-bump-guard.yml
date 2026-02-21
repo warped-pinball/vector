@@ -5,6 +5,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "src/**"
+      - "dev/ci/version_bump_guard.py"
+      - ".github/workflows/version-bump-guard.yml"
 
 jobs:
   version-bump:
