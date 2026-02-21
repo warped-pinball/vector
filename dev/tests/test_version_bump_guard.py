@@ -68,3 +68,41 @@ def test_em_change_also_requires_common_bump() -> None:
 
     assert len(failures) == 1
     assert "src/common/SharedState.py" in failures[0]
+
+
+def test_semver_patch_bump() -> None:
+    semver = vbg.SemVer.parse("1.6.9", "test.py")
+
+    assert str(semver.bump_patch()) == "1.6.10"
+
+
+def test_analyze_rule_requires_patch_when_pr_not_higher(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.5.2",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+
+    assert outcome.requires_bump is True
+    assert outcome.target_version == "1.5.3"
+
+
+def test_analyze_rule_passes_when_pr_is_higher(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.6.0",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+
+    assert outcome.requires_bump is False
+    assert outcome.target_version is None
