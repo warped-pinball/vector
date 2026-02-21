@@ -19,8 +19,6 @@ from . import logging
 
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
-led_board = machine.Pin(26, machine.Pin.OUT)
-led_board.low()  # low is ON
 
 
 _routes = {}
