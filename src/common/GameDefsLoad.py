@@ -10,10 +10,11 @@
 import json
 from gc import collect as gc_collect
 
-import faults
 import SharedState
 import SPI_DataStore
+from faults import CONF00, CONF01, raise_fault
 from logger import logger_instance
+
 Log = logger_instance
 
 
@@ -47,10 +48,7 @@ safe_defaults = {
     "CoinDrop": {"Type": 0},
 }
 
-safe_defaults_wpc = {"Memory" : {"Start": 1,"Length": 8192,"NvStart": 2048,"NvLength": 2048} }
-
-
-
+safe_defaults_wpc = {"Memory": {"Start": 1, "Length": 8192, "NvStart": 2048, "NvLength": 2048}}
 
 
 def parse_config_line(line):
@@ -110,7 +108,8 @@ def go(safe_mode=False):
     data = safe_defaults.copy()
     try:
         from systemConfig import vectorSystem
-        if vectorSystem == "wpc":            
+
+        if vectorSystem == "wpc":
             data["Memory"] = safe_defaults_wpc["Memory"].copy()
     except Exception as e:
         Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")
@@ -122,20 +121,20 @@ def go(safe_mode=False):
             all_configs = list_game_configs()
 
             if config_filename not in all_configs.keys():
-                faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
+                raise_fault(CONF01, f"Game config {config_filename} not found")
                 data = safe_defaults
             else:
                 config_data = find_config_in_file(config_filename)
                 if config_data:
                     data = config_data
                 else:
-                    faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
+                    raise_fault(CONF01, f"Error loading game config {config_filename}")
                     data = safe_defaults
 
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")
-            faults.raise_fault(faults.CONF00)
+            raise_fault(CONF00)
             data = safe_defaults
 
     # This isn't wrapped in try/except because if this fails we want to stop execution

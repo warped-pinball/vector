@@ -7,10 +7,9 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
@@ -20,7 +19,7 @@ top_mem = const(32767)
 memory_map = {
     "MapVersion": {"start": top_mem - 16, "size": 16, "count": 1},
     "names": {"start": top_mem - 16 - (20 * 30), "size": 20, "count": numberOfPlayers},
-    "leaders": {"start": top_mem - 16 - (20 * 30) - (38 * 20), "size": 38, "count": 20},   #s=38
+    "leaders": {"start": top_mem - 16 - (20 * 30) - (38 * 20), "size": 38, "count": 20},  # s=38
     "tournament": {
         "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100),
         "size": 14,
@@ -90,18 +89,18 @@ def serialize(record, structure_name):
             record["initials"].encode(),
             record["full_name"].encode(),
             record["date"].encode(),
-            record["score"],                         # I integer (4 bytes)  - - move to Q  (8 bytes)
+            record["score"],  # I integer (4 bytes)  - - move to Q  (8 bytes)
         )
     elif structure_name == "tournament":
         return struct.pack(
-            "<3sQBB",                             # I->Q
+            "<3sQBB",  # I->Q
             record["initials"].encode(),
             record["score"],
             record["game"],
             record["index"],
         )
     elif structure_name == "individual":
-        return struct.pack("<Q10s", record["score"], record["date"].encode())    #I->Q
+        return struct.pack("<Q10s", record["score"], record["date"].encode())  # I->Q
     elif structure_name == "MapVersion":
         return struct.pack("<16s", record["version"].encode())
     elif structure_name == "configuration":
@@ -123,9 +122,9 @@ def serialize(record, structure_name):
                 enable |= 0x04
             if record.get("tournament_mode", True):
                 enable |= 0x08
-            if record.get("WPCTimeOn", True):     #was "flag5"
+            if record.get("WPCTimeOn", True):  # was "flag5"
                 enable |= 0x10
-            if record.get("MM_Always", True):     #was "flag6"
+            if record.get("MM_Always", True):  # was "flag6"
                 enable |= 0x20
         else:
             enable = record["enable"]
@@ -212,7 +211,7 @@ def deserialize(data, structure_name):
                 "show_ip_address": bool(enable & 0x04),
                 "tournament_mode": bool(enable & 0x08),
                 "WPCTimeOn": bool(enable & 0x10),
-                "MM_Always": bool(enable & 0x20)
+                "MM_Always": bool(enable & 0x20),
             }
         except Exception:
             Log.log("DATSTORE: fault extras")

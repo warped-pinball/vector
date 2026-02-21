@@ -1,47 +1,51 @@
 # This file is part of the Warped Pinball SYSEM-Wifi Project.
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
-'''
+"""
 EM
 Game Status
 
-'''
+"""
 import time
-#from Shadow_Ram_Definitions import shadowRam
+
+import ScoreTrack
+
+# from Shadow_Ram_Definitions import shadowRam
 import SharedState as S
 from logger import logger_instance
+from origin import push_game_state
+
 log = logger_instance
 
 # Initialize the game status in SharedState
 S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
 
-import ScoreTrack 
-
 
 def _get_machine_score(player):
-    """get score  from scoretrack module"""    
+    """get score  from scoretrack module"""
     return ScoreTrack.getPlayerScore(player)
 
+
 def _get_ball_in_play():
-    """Get the ball in play number. 0 if game over."""    
-    return 1        
-  
+    """Get the ball in play number. 0 if game over."""
+    return 1
+
 
 def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
     try:
-        #data["BallInPlay"] = _get_ball_in_play()
+        # data["BallInPlay"] = _get_ball_in_play()
 
-        data["GameActive"]=S.game_status["game_active"]
-       
+        data["GameActive"] = S.game_status["game_active"]
+
         data["Scores"] = [
             _get_machine_score(0),
             _get_machine_score(1),
             _get_machine_score(2),
             _get_machine_score(3),
         ]
-        
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data
@@ -66,3 +70,14 @@ def poll_fast():
     else:
         S.game_status["poll_state"] = 0
 
+    push_game_state(
+        game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
+        scores=[
+            _get_machine_score(0),
+            _get_machine_score(1),
+            _get_machine_score(2),
+            _get_machine_score(3),
+        ],
+        ball_in_play=_get_ball_in_play(),
+        game_active=S.game_status["game_active"],
+    )

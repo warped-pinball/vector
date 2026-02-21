@@ -45,7 +45,7 @@
         "GameActive": 165
     },
     "HSRewards": {
-        "Type": 0,
+        "Type": 1,
         "HS1": 1937,
         "HS2": 1938,
         "HS3": 1939,

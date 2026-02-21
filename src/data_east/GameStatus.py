@@ -9,14 +9,17 @@ Game Status
 """
 
 import time
+
 import DataMapper
 import SharedState as S
 from logger import logger_instance
+from origin import push_game_state
+
 log = logger_instance
 
 
 # Initialize the game status in SharedState
-#S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
+# S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
 S.game_status["game_active"] = False
 S.game_status["poll_state"] = 0
 
@@ -38,12 +41,10 @@ def game_report():
     return data
 
 
-
-
 # this is called at 4 calls per second
 def poll_fast():
     """
-        Poll for game start and end time.
+    Poll for game start and end time.
     """
     ps = S.game_status["poll_state"]
     if ps == 0:
@@ -61,3 +62,10 @@ def poll_fast():
             S.game_status["poll_state"] = 2
     else:
         S.game_status["poll_state"] = 0
+
+    push_game_state(
+        game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
+        scores=DataMapper.get_live_scores(),
+        ball_in_play=DataMapper.get_ball_in_play(),
+        game_active=S.game_status["game_active"],
+    )

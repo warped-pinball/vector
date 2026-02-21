@@ -7,9 +7,11 @@ Game Status
 """
 
 import time
+
 import DataMapper
 import SharedState as S
 from logger import logger_instance
+from origin import push_game_state
 
 log = logger_instance
 
@@ -20,16 +22,16 @@ S.game_status["poll_state"] = 0
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    
+
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
-        
+
         # Get mode data and add to report if available
         modes = DataMapper.get_modes()
         if modes and gameActive:
             data["Modes"] = modes
-        
+
         # Add active format name
         data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
 
@@ -60,3 +62,10 @@ def poll_fast():
             S.game_status["poll_state"] = 2
     else:
         S.game_status["poll_state"] = 0
+
+    push_game_state(
+        game_time=int((time.ticks_ms() - S.game_status["time_game_start"]) / 1000) if S.game_status["game_active"] and S.game_status["time_game_start"] is not None else 0,
+        scores=DataMapper.get_live_scores(),
+        ball_in_play=DataMapper.get_ball_in_play(),
+        game_active=S.game_status["game_active"],
+    )

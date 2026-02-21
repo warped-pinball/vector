@@ -10,10 +10,10 @@ import resource
 import time
 
 import faults
-import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
 import reset_control
+from GameDefsLoad import go as GameDefsLoadGo
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
@@ -31,6 +31,7 @@ timer = machine.Timer()
 led_board = None
 
 faults.initialize_board_LED()
+
 
 def error_toggle(timer):
     faults.toggle_board_LED()
@@ -131,9 +132,9 @@ if bus_activity_fault:
 # load up Game Definitions
 
 if not bus_activity_fault and not ap_mode:
-    GameDefsLoad.go()
+    GameDefsLoadGo()
 else:
-    GameDefsLoad.go(safe_mode=True)
+    GameDefsLoadGo(safe_mode=True)
 
 if not bus_activity_fault:
     MemoryMain.go()
