@@ -10,15 +10,13 @@ import resource
 import time
 
 import faults
+import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
 import reset_control
-from GameDefsLoad import go as GameDefsLoadGo
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
-import Switches
-import Formats
 
 Log = logger_instance
 
@@ -26,18 +24,19 @@ Log = logger_instance
 SW_pin = machine.Pin(22, machine.Pin.IN)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
+LED_Out = machine.Pin(26, machine.Pin.OUT)
 
 timer = machine.Timer()
 led_board = None
 
-faults.initialize_board_LED()
-
 
 def error_toggle(timer):
-    faults.toggle_board_LED()
+    led_board.toggle()
 
 
 def set_error_led():
+    global led_board
+    led_board = machine.Pin(26, machine.Pin.OUT)
     timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
 
 
@@ -96,7 +95,7 @@ def check_ap_button():
         # now blink LED for a bit
         start_time = time.time()
         while time.time() - start_time < 3:
-            faults.toggle_board_LED(button_held=True)
+            LED_Out.toggle()
             time.sleep(0.1)
         time.sleep(3)
         return True  # AP mode
@@ -120,8 +119,6 @@ This work is licensed under CC BY-NC 4.0
 
 
 ap_mode = check_ap_button()
-print("Main: AP mode = ", ap_mode)
-
 bus_activity_fault = bus_activity_fault_check()
 if bus_activity_fault:
     set_error_led()
@@ -132,9 +129,9 @@ if bus_activity_fault:
 # load up Game Definitions
 
 if not bus_activity_fault and not ap_mode:
-    GameDefsLoadGo()
+    GameDefsLoad.go()
 else:
-    GameDefsLoadGo(safe_mode=True)
+    GameDefsLoad.go(safe_mode=True)
 
 if not bus_activity_fault:
     MemoryMain.go()
@@ -144,8 +141,6 @@ reset_control.release(True)
 time.sleep(4)
 
 resource.go(True)
-Switches.initialize()
-Formats.initialize()
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa

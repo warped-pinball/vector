@@ -1,23 +1,27 @@
 {
     "GameInfo": {
         "GameName": "Cyclone",
-        "System": "11B"
+        "System": "11B",
+        "FileVer": 1
     },
-    "Memory": {
+
+    "Memory" : {
         "Start": 0,
         "Length": 2048,
         "NvStart": 0,
         "NvLength": 2048
     },
+
     "BallInPlay": {
         "Type": 1,
         "Address": 56,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
+        "Ball1": "0x01",
+        "Ball2": "0x02",
+        "Ball3": "0x03",
+        "Ball4": "0x04",
+        "Ball5": "0x05"
     },
+
     "DisplayMessage": {
         "Type": 1,
         "Address": "0x7B4",
@@ -25,86 +29,39 @@
         "Number": 6,
         "EnableByteAddress": "0x7B0"
     },
-    "Adjustments": {
+
+    "Adjustments" :{
         "Type": 1,
         "ChecksumStartAdr": "0x780",
         "ChecksumEndAdr": "0x7DD",
         "ChecksumResultAdr": "0x7E5"
     },
+
     "HighScores": {
         "Type": 1,
         "ScoreAdr": "0x70F",
         "InitialAdr": "0x71F",
         "BytesInScore": 4
     },
+
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x200",
-        "PlayerUp": 169,
-        "Players": 168,
-        "GameActive": 165
+        "PlayersInGame": "0xA9"
     },
+
     "HSRewards": {
-        "Type": 1,
+        "Type": 0,
         "HS1": 1937,
         "HS2": 1938,
         "HS3": 1939,
         "HS4": 1940,
         "DisableByte": 0
     },
+
     "Switches": {
-        "Type": 10,
-        "Address": 1552,
-        "Length": 64,
-        "Sensitivity": [
-                    120, -1, 120, 250, 250, 250, 120, 120,
-                    120, 120, 120, -1, 120, 120, 120, 120,
-                    120, 120, 120, 120, 120, 120, 120, 120,
-                    120, 120, 120, 120, 120, 120, 120, 120,
-                    -1, 120, 120, 120, 120, -1, -1, -1,
-                    120, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, 120, 120, 120, 120,
-                    120, 120, 120, 120, 120, 120, 120, 120
-                ]
-    },
-    "Flippers": {
-        "Type": 2,
-        "Address": 69
-    },
-    "Formats": {
-        "Standard": {
-            "Id": 0
-        },
-        "Limbo": {
-            "Id": 1
-        },
-        "LowBall": {
-            "Id": 2
-        },
-        "Golf": {
-            "Id": 3,
-            "Options": {
-                "Target": {
-                    "Name": "Target Switch Number",
-                    "Type": "Fixed",
-                    "Value": 32,
-                    "Text": "Comet Ramp"
-                }
-            }
-        },
-        "Practice": {
-            "Id": 4
-        },
-        "HalfLife": {
-            "Id": 5,
-            "Options": {
-                "ScoreDecay": {
-                    "Value": 8
-                }
-            }
-        },
-        "LongestBall": {
-            "Id": 6
-        }
+        "Type": 0,
+        "Address": 56,
+        "Length": 23
     }
 }

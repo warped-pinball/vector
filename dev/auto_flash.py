@@ -6,35 +6,46 @@ import subprocess
 import sys
 import time
 from itertools import cycle
-from typing import Dict, List, Optional
-
-from common import run_python_script
+from typing import Dict, List
 
 
 def build_for_hardware(hardware: str, quiet: bool = False) -> str:
     """Build firmware for *hardware* and return the build directory."""
     build_dir = f"build/{hardware}"
-    run_python_script(
-        "dev/build.py",
-        ["--build-dir", build_dir, "--source-dir", "src", "--target_hardware", hardware],
-        quiet=quiet,
-        wait=True,
+    subprocess.run(
+        [
+            "python",
+            "dev/build.py",
+            "--build-dir",
+            build_dir,
+            "--source-dir",
+            "src",
+            "--target_hardware",
+            hardware,
+        ],
+        check=True,
+        stdout=subprocess.DEVNULL if quiet else None,
+        stderr=subprocess.STDOUT if quiet else None,
     )
     return build_dir
 
 
-def flash_port(build_dir: str, port: str, quiet: bool = False, flash_args: Optional[List[str]] = None) -> subprocess.Popen:
+def flash_port(build_dir: str, port: str, quiet: bool = False) -> subprocess.Popen:
     """Flash the firmware in *build_dir* to *port* asynchronously."""
-    extra = flash_args or []
-    return run_python_script(
-        "dev/flash.py",
-        [build_dir, "--port", port] + extra,
-        quiet=quiet,
-        wait=False,
+    return subprocess.Popen(
+        [
+            "python",
+            "dev/flash.py",
+            build_dir,
+            "--port",
+            port,
+        ],
+        stdout=subprocess.DEVNULL if quiet else None,
+        stderr=subprocess.STDOUT if quiet else None,
     )
 
 
-def build_and_flash(mapping: Dict[str, List[str]], write_config: Optional[str] = None) -> int:
+def build_and_flash(mapping: Dict[str, List[str]]) -> int:
     """Build once per hardware then flash all ports in parallel.
 
     Returns the first non-zero flash return code, or ``0`` on success.
@@ -46,18 +57,11 @@ def build_and_flash(mapping: Dict[str, List[str]], write_config: Optional[str] =
     for hardware in mapping:
         build_dirs[hardware] = build_for_hardware(hardware, quiet)
 
-    flash_args: List[str] = []
-    if write_config is not None:
-        if write_config == "__DEFAULT__":
-            flash_args = ["--write-config"]
-        else:
-            flash_args = ["--write-config", write_config]
-
     processes: List[subprocess.Popen] = []
     for hardware, ports in mapping.items():
         build_dir = build_dirs[hardware]
         for port in ports:
-            processes.append(flash_port(build_dir, port, quiet, flash_args=flash_args))
+            processes.append(flash_port(build_dir, port, quiet))
 
     if not processes:
         return 0

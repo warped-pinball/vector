@@ -4,9 +4,10 @@ SPI Data (player names, scores, wifi config, tournament scores, some extra confi
 """
 import struct
 
+from micropython import const
+
 import SPI_Store as fram
 from logger import logger_instance
-from micropython import const
 
 Log = logger_instance
 
@@ -38,11 +39,6 @@ memory_map = {
         "size": 48,
         "count": 1,
     },
-    "switches": {
-        "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1) - (48 * 1) - (72 * 1),
-        "size": 72,
-        "count": 1,
-    },
 }
 
 
@@ -55,7 +51,6 @@ def show_mem_map():
     memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
     memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
     memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
-    memory_map["switches"]["start"] = memory_map["extras"]["start"] - (memory_map["switches"]["size"] * memory_map["switches"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
@@ -126,10 +121,6 @@ def serialize(record, structure_name):
         else:
             enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
-    elif structure_name == "switches":
-        # Pack 72 bytes
-        switch_bytes = record.get("switches", [0] * 72)
-        return struct.pack("<72B", *switch_bytes)
     else:
         raise ValueError("Unknown structure name")
 
@@ -224,13 +215,6 @@ def deserialize(data, structure_name):
                 "flag5": False,
                 "flag6": False,
             }
-    elif structure_name == "switches":
-        try:
-            switch_bytes = struct.unpack("<72B", data)
-            return {"switches": list(switch_bytes)}
-        except Exception:
-            Log.log("DATSTORE: fault switches")
-            return {"switches": [0] * 72}
     else:
         raise ValueError("Unknown structure name")
 
@@ -251,7 +235,6 @@ def blankStruct(structure_name):
         "Gpassword": "",
         "gamename": "GenericSystem11_",
         "other": 1,
-        "switches": [0] * 72,
     }
     structure = memory_map[structure_name]
     if "sets" in structure:
@@ -278,7 +261,6 @@ def blankAll():
     blankStruct("individual")
     blankStruct("configuration")
     blankStruct("extras")
-    blankStruct("switches")
     record1 = {"version": "Map Ver: 1.0"}
     write_record("MapVersion", record1, index=0)
 

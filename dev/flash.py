@@ -8,75 +8,53 @@ import sys
 import time
 from pathlib import Path
 
-from common import autodetect_pico_port, mpremote_exec, mpremote_run
-
 REPL_RETRY_DELAY = 1
 REPL_MAX_RETRIES = 5
 BUILD_DIR_DEFAULT = "build"
 
 
-def autodetect_pico_port_or_exit():
-    port = autodetect_pico_port()
-    if port:
-        return port
-    print("Unable to detect Pico port using mpremote. Please specify the correct port manually.")
+def autodetect_pico_port():
+    """Auto-detect the Pico port using mpremote. Returns port or exits on failure."""
+    try:
+        result = subprocess.run(
+            "mpremote connect list",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode == 0:
+            output = result.stdout.decode().strip()
+            if output:
+                # first line, first token
+                return output.split("\n")[0].split()[0]
+        print("Unable to detect Pico port using mpremote. Please specify the correct port manually.")
+    except Exception as e:
+        print(f"Error detecting Pico port: {e}")
     sys.exit(1)
 
 
 def wipe_pico(pico_port):
-    """Wipe the Pico filesystem by running a recursive delete directly on the device."""
+    """Wipe the Pico filesystem."""
     print("Wiping Pico's filesystem...")
-
-    wipe_script = "\n".join(
+    mpython = "\n".join(
         [
             "import os",
-            "",
-            "def _listdir(p):",
+            "def remove(path):",
             "    try:",
-            "        return os.listdir(p)",
+            "        os.remove(path)",
             "    except OSError:",
-            "        return os.listdir()",
-            "",
-            "def _rm_tree(p):",
-            "    # Try file first",
-            "    try:",
-            "        os.remove(p)",
-            "        return",
-            "    except OSError:",
-            "        pass",
-            "    # Then directory",
-            "    try:",
-            "        for name in _listdir(p):",
-            "            if name in ('.', '..'):",
-            "                continue",
-            "            _rm_tree(p + '/' + name)",
-            "        os.rmdir(p)",
-            "    except OSError:",
-            "        pass",
-            "",
-            "for name in _listdir('/'):",
-            "    if name in ('.', '..'):",
-            "        continue",
-            "    _rm_tree('/' + name)",
+            "        for entry in os.listdir(path):",
+            "            remove('/'.join((path, entry)))",
+            "        os.rmdir(path)",
+            "for entry in os.listdir('/'):",
+            "    remove('/' + entry)",
         ]
     )
-
-    try:
-        result = mpremote_exec(wipe_script, connect=pico_port, capture_output=True, timeout=10)
-    except subprocess.TimeoutExpired:
-        print("Error wiping Pico filesystem: operation timed out.")
+    cmd = f'mpremote connect {pico_port} exec "{mpython}"'
+    result = subprocess.run(cmd, shell=True)
+    if result.returncode != 0:
+        print("Error wiping Pico's filesystem.")
         sys.exit(1)
-
-    if result.returncode == 0:
-        print("Filesystem wipe complete.")
-        return
-
-    print("Error wiping Pico filesystem.")
-    if result.stdout:
-        print(result.stdout.strip())
-    if result.stderr:
-        print(result.stderr.strip())
-    sys.exit(1)
 
 
 def copy_files_to_pico(build_dir, pico_port):
@@ -85,7 +63,8 @@ def copy_files_to_pico(build_dir, pico_port):
     original_dir = os.getcwd()
     os.chdir(build_dir)
     try:
-        result = mpremote_run("fs", "cp", "-r", ".", ":", connect=pico_port)
+        cmd = f"mpremote connect {pico_port} fs cp -r . :"
+        result = subprocess.run(cmd, shell=True)
         if result.returncode != 0:
             print("Error copying files to Pico.")
             sys.exit(1)
@@ -96,29 +75,21 @@ def copy_files_to_pico(build_dir, pico_port):
 
 def restart_pico(pico_port):
     print("Restarting the Pico...")
-    result = mpremote_exec("import machine; machine.reset()", connect=pico_port, no_follow=True)
+    cmd = f"mpremote connect {pico_port} exec --no-follow 'import machine; machine.reset()'"
+    result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
         print("Error restarting the Pico.")
-        if result.stderr:
-            print(result.stderr.strip())
         sys.exit(1)
-
     print("Pico restarted.")
 
 
 def wipe_config_data(pico_port):
     print("Wiping config data on Pico...")
-    script = "\n".join(
-        [
-            "import SPI_DataStore as datastore",
-            "datastore.blankAll()",
-            "import Adjustments",
-            "Adjustments.blank_all()",
-        ]
-    )
+    script = "\n".join(["import SPI_DataStore as datastore", "datastore.blankAll()", "import Adjustments", "Adjustments.blank_all()"])
+    cmd = f'mpremote connect {pico_port} exec "{script}"'
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = mpremote_exec(script, connect=pico_port)
+        result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
             break
         print(f"Error wiping config on Pico. Retrying... ({attempt + 1})")
@@ -145,9 +116,10 @@ def apply_local_config_to_pico(pico_port, config_file="dev/config.json"):
         config_script_lines.append(f"config['{key}'] = '{value}'")
     config_script_lines.append("datastore.write_record('configuration', config)")
 
+    cmd = f"mpremote connect {pico_port} exec \"{';'.join(config_script_lines)}\""
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = mpremote_exec(";".join(config_script_lines), connect=pico_port)
+        result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
             print("Configuration updated successfully on Pico.")
             return
@@ -189,9 +161,10 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
         + [f"ScoreTrack.update_individual_score({json.dumps(record)})" for record in test_data["individual"]]
     )
 
+    cmd = f"mpremote connect {pico_port} exec '{test_data_script}'"
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = mpremote_exec(test_data_script, connect=pico_port)
+        result = subprocess.run(cmd, shell=True)
         if result.returncode == 0:
             break
         print(f"Error writing test data to Pico. Retrying... ({attempt + 1})")
@@ -217,14 +190,14 @@ def main():
     )
     parser.add_argument("--wipe", action="store_true", help="Wipe Pico filesystem before copying files.")
     parser.add_argument(
-        "--write-config",
-        nargs="?",
-        const="__DEFAULT__",
-        metavar="PATH",
-        help=(
-            "Wipe config on Pico and write configuration from PATH. "
-            "If provided with no PATH, uses the default config for the selected build_dir (dev/config.json, or dev/config_sys11.json/dev/config_wpc.json if present)."
-        ),
+        "--wipe-config",
+        action="store_true",
+        help="Wipe config data on Pico after copying.",
+    )
+    parser.add_argument(
+        "--apply-local-config",
+        action="store_true",
+        help="Apply local config.json to Pico after copying.",
     )
     parser.add_argument(
         "--test-data",
@@ -234,34 +207,26 @@ def main():
     parser.add_argument("--restart", action="store_true", help="Restart Pico after flashing.")
     args = parser.parse_args()
 
-    pico_port = args.port if args.port else autodetect_pico_port_or_exit()
+    pico_port = args.port if args.port else autodetect_pico_port()
 
     wipe_pico(pico_port)
 
     copy_files_to_pico(args.build_dir, pico_port)
 
-    if args.write_config is not None:
-        if args.write_config == "__DEFAULT__":
-            # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
-            config_file = "dev/config.json"
-            if args.build_dir == "build/sys11" and os.path.isfile("dev/config_sys11.json"):
-                config_file = "dev/config_sys11.json"
-            elif args.build_dir == "build/wpc" and os.path.isfile("dev/config_wpc.json"):
-                config_file = "dev/config_wpc.json"
-            elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
-                config_file = "dev/config_em.json"
-        else:
-            config_file = args.write_config
+    wipe_config_data(pico_port)
 
-        if not os.path.isfile(config_file):
-            print("Config file not found:", config_file)
-            sys.exit(1)
+    # Optionally sync a specific config file for that OS if it exists, else default to dev/config.json.
+    config_file = "dev/config.json"
+    if args.build_dir == "build/sys11" and os.path.isfile("dev/config_sys11.json"):
+        config_file = "dev/config_sys11.json"
+    elif args.build_dir == "build/wpc" and os.path.isfile("dev/config_wpc.json"):
+        config_file = "dev/config_wpc.json"
+    elif args.build_dir == "build/em" and os.path.isfile("dev/config_em.json"):
+        config_file = "dev/config_em.json"
 
-        wipe_config_data(pico_port)
-        apply_local_config_to_pico(pico_port, config_file=config_file)
+    apply_local_config_to_pico(pico_port, config_file=config_file)
 
-    if args.test_data:
-        write_test_data(pico_port)
+    write_test_data(pico_port)
 
     restart_pico(pico_port)
 
