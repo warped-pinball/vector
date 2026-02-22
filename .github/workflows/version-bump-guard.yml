@@ -8,22 +8,41 @@ on:
       - "dev/ci/version_bump_guard.py"
       - ".github/workflows/version-bump-guard.yml"
 
+permissions:
+  contents: write
+
 jobs:
   version-bump:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Validate required version bumps
+      - name: Apply required patch version bumps
         run: |
           python dev/ci/version_bump_guard.py \
             --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}"
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --apply \
+            --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push version bumps
+        run: |
+          if git diff --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/common/SharedState.py src/em/systemConfig.py src/sys11/systemConfig.py src/wpc/systemConfig.py src/data_east/systemConfig.py src/whitestar/systemConfig.py
+          git commit -m "ci: auto-bump required patch versions [skip ci]"
+          git push origin HEAD:${{ github.head_ref }}
