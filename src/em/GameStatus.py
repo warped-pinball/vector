@@ -46,6 +46,9 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
+        data["ActiveFormatId"] = S.active_format.get("Id", 0)
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data

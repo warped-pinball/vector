@@ -33,7 +33,10 @@ def game_report():
 
     try:
         data = DataMapper.get_in_play_data()
-        gameActive = data["GameActive"]
+        # gameActive = data["GameActive"]
+
+        data["ActiveFormatName"] = "Standard"
+        data["ActiveFormatId"] = 0
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
