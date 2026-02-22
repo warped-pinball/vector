@@ -64,12 +64,7 @@ def spi_master_16bit():
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
 
-    #nop()                   .side(0)   [3]
     wrap()
-
-
-
-
 
 
 
@@ -302,6 +297,8 @@ def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
     global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
 
+    print("SENSOR: Calibrate sensor circuit start")
+
     #check existing cal from spi datastore
     cal_high = S.gdata.get("sensorlevels")[1]
     cal_low = S.gdata.get("sensorlevels")[0]
@@ -311,9 +308,9 @@ def calibrate():
         lowCalThres=cal_low
         hiPwm.duty_u16(cal_high)
         highCalThres=cal_high
-        return
+        #return
 
-    print("SENSOR: Calibrate sensor circuit")
+    print("SENSOR: Calibrate sensor circuit - run CAL")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
     time.sleep(0.4)  
@@ -358,7 +355,7 @@ def calibrate():
                 break
 
 
-    #print("\nSENSOR: calibration complete:",lowCal,highCal)
+    print("\nSENSOR: calibration complete:",lowCal,highCal)
     lowCalThres = int(lowCal*0.88)   #0.9
     lowPwm.duty_u16(lowCalThres)
     highCalThres = int(highCal*1.12)  #1.1

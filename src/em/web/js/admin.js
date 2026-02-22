@@ -1,4 +1,4 @@
-// ------------------ Setup / Calibration Helpers ------------------
+﻿// ------------------ Setup / Sensitivity Helpers ------------------
 
 // Helper: show modal by id
 async function showModal(id) {
@@ -76,11 +76,6 @@ async function initSetupUI() {
   } catch (e) {}
 }
 
-// Configurable threshold for switching messages (percent)
-// Change this value to adjust when the UI prompts the user to allow the ball to drain
-const CALIBRATION_MESSAGE_THRESHOLD = 80;
-// Minimum number of recorded games required to allow starting the learning process
-const CALIBRATION_MIN_GAMES_REQUIRED = 1;
 
 async function loadConfiguredSsidSignal() {
   const nameElement = document.getElementById("configured-ssid-name");
@@ -150,397 +145,202 @@ async function saveGameConfig() {
   }
 }
 
-// Delete all calibration games (calls API and refreshes UI)
-window.deleteCalibrationGames = async function () {
-  await confirmAction("delete all stored calibration games", async () => {
+// ------------------ Sensitivity Controls ------------------
+
+// Sensitivity: 1–100%
+const SENSITIVITY_MIN = 1;
+const SENSITIVITY_MAX = 100;
+const SENSITIVITY_STEP = 1;
+const SENSITIVITY_DEFAULT = 50;
+
+// Timing sensitivity: decade columns in descending order, value range 1–16
+const TIMING_ADJ_LABELS = ["10000s", "1000s", "100s", "10s", "1s"];
+const TIMING_ADJ_DEFAULT_SCORE = 8;
+const TIMING_ADJ_DEFAULT_RESET = 8;
+const TIMING_ADJ_MIN = 1;
+const TIMING_ADJ_MAX = 16;
+
+// Build an adjuster group element (label, up button, value display, down button)
+// colorClass: "score" (red), "reset" (blue), or "" for plain
+function buildAdjGroup(label, value, colorClass, onUp, onDown) {
+  const group = document.createElement("div");
+  group.className = "adj-group";
+
+  const lbl = document.createElement("div");
+  lbl.className = "adj-group-label";
+  lbl.textContent = label;
+
+  const btnClass = "secondary adj-btn" + (colorClass ? " adj-btn-" + colorClass : "");
+  const valClass = "adj-value" + (colorClass ? " adj-val-" + colorClass : "");
+
+  const upBtn = document.createElement("button");
+  upBtn.className = btnClass;
+  upBtn.textContent = "\u25b2";
+  upBtn.addEventListener("click", onUp);
+
+  const valDisplay = document.createElement("div");
+  valDisplay.className = valClass;
+  valDisplay.textContent = String(value);
+
+  const downBtn = document.createElement("button");
+  downBtn.className = btnClass;
+  downBtn.textContent = "\u25bc";
+  downBtn.addEventListener("click", onDown);
+
+  group.appendChild(lbl);
+  group.appendChild(upBtn);
+  group.appendChild(valDisplay);
+  group.appendChild(downBtn);
+
+  return { group, valDisplay };
+}
+
+// Global sensitivity (0â€“100%)
+async function initSensitivityUI() {
+  let value = SENSITIVITY_DEFAULT;
+
+  try {
+    const resp = await window.smartFetch("/api/em/get_sensitivity", null, false);
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      if (data.sensitivity != null) value = Math.min(SENSITIVITY_MAX, Math.max(SENSITIVITY_MIN, Number(data.sensitivity)));
+    }
+  } catch (e) {
+    // use default
+  }
+
+  const display = document.getElementById("sensitivity-value");
+  const upBtn = document.getElementById("sensitivity-up");
+  const downBtn = document.getElementById("sensitivity-down");
+
+  function updateDisplay() {
+    if (display) display.textContent = value + "%";
+  }
+
+  async function saveSensitivity() {
     try {
-      const resp = await window.smartFetch(
-        "/api/em/delete_calibration_games",
-        null,
-        true,
-      );
-      if (!resp.ok) throw new Error("delete failed");
-      refreshRecordedGamesCount();
+      await window.smartFetch("/api/em/set_sensitivity", { sensitivity: value }, true);
     } catch (e) {
-      console.error("Failed to delete calibration games", e);
-      alert("Failed to delete calibration games");
+      console.error("Failed to save sensitivity", e);
     }
-  });
-};
+  }
 
-// Fetch recorded games count and update the UI. Enables start button only when count === total
-async function refreshRecordedGamesCount() {
-  try {
-    const resp = await window.smartFetch(
-      "/api/em/recorded_games_count",
-      null,
-      false,
-    );
-    if (!resp.ok) return;
-    const data = await resp.json();
-    const status = document.getElementById("recorded-games-status");
-    const startBtn = document.getElementById("start-learning");
-    if (status)
-      status.textContent = `Recorded: ${data.count || 0}/${data.total || 4}`;
-    if (startBtn) {
-      // enable start when at least the minimum number of games have been recorded
-      if ((data.count || 0) >= CALIBRATION_MIN_GAMES_REQUIRED) {
-        startBtn.disabled = false;
-      } else {
-        startBtn.disabled = true;
+  if (upBtn) {
+    upBtn.addEventListener("click", async () => {
+      if (value < SENSITIVITY_MAX) {
+        value = Math.min(SENSITIVITY_MAX, value + SENSITIVITY_STEP);
+        updateDisplay();
+        await saveSensitivity();
       }
-    }
-  } catch (e) {
-    console.error("Failed to refresh recorded games count", e);
-  }
-}
-
-// Start recording a calibration game - opens modal and streams progress
-window.startRecordingCalibration = async function () {
-  const modal = await showModal("calibration-modal");
-  const rawLog = document.getElementById("calibration-log");
-  const message = document.getElementById("calibration-message");
-  const progress = document.getElementById("calibration-progress");
-  const results = document.getElementById("calibration-results");
-  const endBtn = document.getElementById("end-calibration-game");
-
-  // Use global threshold constant
-
-  // reset UI
-  if (rawLog) rawLog.textContent = "";
-  if (message) message.textContent = "Keep going";
-  if (progress) progress.value = 0;
-  if (results) results.style.display = "none";
-
-  // Ensure header, paragraph and end button are visible for a new recording
-  try {
-    const modalHeader = modal.querySelector("header");
-    const modalPara = modal.querySelector("article > p");
-    if (modalHeader) modalHeader.style.display = "";
-    if (modalPara) modalPara.style.display = "";
-    if (endBtn) endBtn.style.display = "";
-    if (message) message.style.display = "";
-    if (progress) progress.style.display = "";
-    if (rawLog) rawLog.style.display = "none"; // keep raw log hidden by default
-  } catch (e) {}
-
-  // We'll need to allow the user to manually end the calibration. Keep a flag and a reader reference.
-  let reader = null;
-  let stopRequested = false;
-
-  // wire end button to stop the stream and show results
-  if (endBtn) {
-    endBtn.onclick = async () => {
-      stopRequested = true;
-      // close the stream by canceling reader if active
-      try {
-        if (reader) await reader.cancel();
-      } catch (e) {
-        // ignore
-      }
-      // Request final scores form from server (or show whatever we've received so far)
-      // For now we'll try to fetch a final payload from the server via a separate endpoint if available
-      // Fallback: show the results form with empty payload
-      await buildScoresForm([]);
-      // hide the recording UI parts since recording is finished
-      if (message) message.style.display = "none";
-      if (progress) progress.style.display = "none";
-      if (rawLog) rawLog.style.display = "none";
-      if (results) results.style.display = "block";
-      // refresh recorded games count after user ends
-      refreshRecordedGamesCount();
-    };
-  }
-
-  try {
-    const resp = await window.smartFetch(
-      "/api/em/record_calibration_game",
-      null,
-      true,
-    );
-    if (!resp.ok) {
-      alert("Failed to start calibration recording");
-      return;
-    }
-
-    reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    while (!done && !stopRequested) {
-      const { value, done: d } = await reader.read();
-      done = d;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        // keep raw JSON in hidden log for debugging
-        if (rawLog) rawLog.textContent += chunk;
-
-        // Handle concatenated JSON objects like: {"progress":10}{"progress":20}
-        let msgs = chunk.split("}{");
-        for (let i = 0; i < msgs.length; i++) {
-          if (i !== 0) msgs[i] = "{" + msgs[i];
-          if (i !== msgs.length - 1) msgs[i] = msgs[i] + "}";
-        }
-
-        for (const s of msgs) {
-          const line = s.trim();
-          if (!line) continue;
-          try {
-            const msg = JSON.parse(line);
-            // support both 'progress' and 'percent' keys
-            const pct =
-              msg.percent != null
-                ? msg.percent
-                : msg.progress != null
-                ? msg.progress
-                : null;
-            if (pct != null && progress) progress.value = pct;
-            // update static message based on threshold
-            if (pct != null && message) {
-              if (pct >= CALIBRATION_MESSAGE_THRESHOLD) {
-                message.textContent = "Allow your ball to drain";
-              } else {
-                message.textContent = "Keep going";
-              }
-            }
-            if (msg.log && rawLog) rawLog.textContent += "\n" + msg.log;
-            if (msg.complete) {
-              await buildScoresForm(msg.payload || []);
-              // hide the recording UI parts since recording is finished
-              if (message) message.style.display = "none";
-              if (progress) progress.style.display = "none";
-              if (rawLog) rawLog.style.display = "none";
-              if (results) results.style.display = "block";
-              // refresh recorded games count after a game has been recorded
-              refreshRecordedGamesCount();
-            }
-          } catch (e) {
-            // not json, ignore
-          }
-        }
-      }
-    }
-  } catch (e) {
-    if (!stopRequested) {
-      console.error("Calibration recording failed:", e);
-      alert("Calibration recording failed.");
-    }
-  }
-};
-
-async function buildScoresForm(payloadScores) {
-  // Try to load server-side config if available; otherwise fall back to inputs
-  let totalPlayers =
-    parseInt(document.getElementById("total-players").value, 10) || 1;
-  let reelsPerPlayer =
-    parseInt(document.getElementById("score-reels").value, 10) || 1;
-  let dummyReels =
-    parseInt(document.getElementById("dummy-reels").value, 10) || 0;
-
-  try {
-    const resp = await window.smartFetch("/api/em/get_config", null, false);
-    if (resp && resp.ok) {
-      const cfg = await resp.json();
-      if (cfg.players != null)
-        totalPlayers = Number(cfg.players) || totalPlayers;
-      if (cfg.reels_per_player != null)
-        reelsPerPlayer = Number(cfg.reels_per_player) || reelsPerPlayer;
-      if (cfg.dummy_reels != null)
-        dummyReels = Number(cfg.dummy_reels) || dummyReels;
-    }
-  } catch (e) {
-    // ignore — use existing DOM values
-  }
-
-  const form = document.getElementById("calibration-scores-form");
-  form.innerHTML = "";
-
-  // Show instruction under the heading
-  const instr = document.getElementById("calibration-instructions");
-  if (instr) {
-    instr.textContent = `Enter full scores for each player. Include dummy reel zeros where appropriate (dummy reels: ${dummyReels}).`;
-    instr.style.display = "block";
-  }
-
-  // Prefill inputs with zeros equal to reelsPerPlayer + dummyReels
-  const prefillCount = reelsPerPlayer + dummyReels;
-
-  for (let p = 0; p < totalPlayers; p++) {
-    const playerDiv = document.createElement("div");
-    playerDiv.style.marginBottom = "0.5rem";
-
-    // Only create a single label + input per player (remove duplicate title element)
-    const label = document.createElement("label");
-    label.textContent = `Player ${p + 1}: `;
-    const input = document.createElement("input");
-    input.type = "text";
-    input.inputMode = "numeric";
-    input.pattern = "[0-9]*";
-    input.placeholder = `enter ${prefillCount} digits (numbers only)`;
-
-    // If payloadScores was provided and contains this player's values, use them; otherwise prefill zeros
-    const existingVals =
-      (payloadScores && payloadScores[p] && payloadScores[p].slice()) || [];
-    if (existingVals.length) {
-      // show as contiguous digits (no commas)
-      input.value = existingVals.join("");
-    } else {
-      // Start empty; user can enter fewer than expected digits without padding
-      input.value = "";
-    }
-
-    // enforce digits only and max length
-    input.addEventListener("input", () => {
-      const maxLen = prefillCount;
-      input.value = input.value.replace(/\D+/g, "").slice(0, maxLen);
     });
-
-    input.style.width = "18rem";
-    input.name = `player-${p}-reel-values`;
-    label.appendChild(input);
-    playerDiv.appendChild(label);
-
-    form.appendChild(playerDiv);
   }
 
-  // hide pre-recording UI so the modal effectively becomes the score-entry modal
-  try {
-    const modal = document.getElementById("calibration-modal");
-    const modalHeader = modal.querySelector("header");
-    const modalPara = modal.querySelector("article > p");
-    const endBtn = document.getElementById("end-calibration-game");
-    if (modalHeader) modalHeader.style.display = "none";
-    if (modalPara) modalPara.style.display = "none";
-    if (endBtn) endBtn.style.display = "none";
-    // also hide progress and message elements
-    const message = document.getElementById("calibration-message");
-    const progress = document.getElementById("calibration-progress");
-    const rawLog = document.getElementById("calibration-log");
-    if (message) message.style.display = "none";
-    if (progress) progress.style.display = "none";
-    if (rawLog) rawLog.style.display = "none";
-  } catch (e) {}
-
-  const saveBtn = document.getElementById("save-calibration-scores");
-  if (saveBtn) {
-    saveBtn.onclick = async (e) => {
-      e.preventDefault();
-      await saveCalibrationScores();
-    };
+  if (downBtn) {
+    downBtn.addEventListener("click", async () => {
+      if (value > SENSITIVITY_MIN) {
+        value = Math.max(SENSITIVITY_MIN, value - SENSITIVITY_STEP);
+        updateDisplay();
+        await saveSensitivity();
+      }
+    });
   }
+
+  updateDisplay();
 }
 
-async function saveCalibrationScores() {
-  // Prefer server-provided config (players/reels/dummy) if available
-  let totalPlayers =
-    parseInt(document.getElementById("total-players").value, 10) || 1;
-  let reelsPerPlayer =
-    parseInt(document.getElementById("score-reels").value, 10) || 1;
-  let dummyReels =
-    parseInt(document.getElementById("dummy-reels").value, 10) || 0;
+// Timing filter: per-decade score (red) and reset (blue) depth adjusters, 1–16
+// p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths
+async function initTimingSensitivityUI() {
+  const N = TIMING_ADJ_LABELS.length;
+  let p1_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+  let p1_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+  let p2_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+  let p2_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+
   try {
-    const resp = await window.smartFetch("/api/em/get_config", null, false);
+    const resp = await window.smartFetch("/api/em/get_timing_sensitivity", null, false);
     if (resp && resp.ok) {
-      const cfg = await resp.json();
-      if (cfg.players != null)
-        totalPlayers = Number(cfg.players) || totalPlayers;
-      if (cfg.reels_per_player != null)
-        reelsPerPlayer = Number(cfg.reels_per_player) || reelsPerPlayer;
-      if (cfg.dummy_reels != null)
-        dummyReels = Number(cfg.dummy_reels) || dummyReels;
+      const data = await resp.json();
+      if (Array.isArray(data.p1_score) && data.p1_score.length === N) p1_score = data.p1_score.map(Number);
+      if (Array.isArray(data.p1_reset) && data.p1_reset.length === N) p1_reset = data.p1_reset.map(Number);
+      if (Array.isArray(data.p2_score) && data.p2_score.length === N) p2_score = data.p2_score.map(Number);
+      if (Array.isArray(data.p2_reset) && data.p2_reset.length === N) p2_reset = data.p2_reset.map(Number);
     }
   } catch (e) {
-    // ignore and use DOM values
+    // use defaults
   }
 
-  const scores = []; // final integers, one per player
-  const expected = reelsPerPlayer + dummyReels;
-
-  for (let p = 0; p < totalPlayers; p++) {
-    const el = document.querySelector(`input[name="player-${p}-reel-values"]`);
-    const raw = (el ? el.value : "").replace(/\D+/g, "").slice(0, expected);
-    // build digits array
-    let digits = raw.split("").map((c) => c.charCodeAt(0) - 48);
-    // compose into one integer
-    const value = digits.reduce((n, d) => n * 10 + (d | 0), 0);
-    scores.push(value);
+  async function saveTimingSensitivity() {
+    try {
+      await window.smartFetch("/api/em/set_timing_sensitivity",
+        { p1_score, p1_reset, p2_score, p2_reset }, true);
+    } catch (e) {
+      console.error("Failed to save timing sensitivity", e);
+    }
   }
 
-  try {
-    const resp = await window.smartFetch(
-      "/api/em/set_calibration_scores",
-      { scores: scores }, // now [12340, 45670, ...]
-      true,
-    );
-    if (!resp.ok) throw new Error("save failed");
-    document.getElementById("calibration-modal").close();
-    // refresh recorded games count after saving
-    refreshRecordedGamesCount();
-  } catch (e) {
-    console.error("Failed to save calibration scores", e);
-    alert("Failed to save calibration scores");
-  }
-}
+  function buildPlayerRow(containerId, scoreArr, resetArr) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
 
-window.startLearningProcess = async function () {
-  // Show modal and stream progress
-  const modal = await showModal("learning-modal");
-  const log = document.getElementById("learning-log");
-  const progress = document.getElementById("learning-progress");
-  if (log) log.textContent = "";
-  if (progress) progress.value = 0;
+    TIMING_ADJ_LABELS.forEach((label, i) => {
+      const col = document.createElement("div");
+      col.className = "decade-col";
 
-  try {
-    const resp = await window.smartFetch(
-      "/api/em/start_learning_process",
-      null,
-      true,
-    );
-    if (!resp.ok) throw new Error("learn start failed");
+      const colLbl = document.createElement("div");
+      colLbl.className = "decade-col-label";
+      colLbl.textContent = label;
+      col.appendChild(colLbl);
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    while (!done) {
-      const { value, done: d } = await reader.read();
-      done = d;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        if (log) log.textContent += chunk;
-        // handle concatenated JSON objects
-        let msgs = chunk.split("}{");
-        for (let i = 0; i < msgs.length; i++) {
-          if (i !== 0) msgs[i] = "{" + msgs[i];
-          if (i !== msgs.length - 1) msgs[i] = msgs[i] + "}";
-        }
-        for (const s of msgs) {
-          const line = s.trim();
-          if (!line) continue;
-          try {
-            const obj = JSON.parse(line);
-            const pct =
-              obj.percent != null
-                ? obj.percent
-                : obj.progress != null
-                ? obj.progress
-                : null;
-            if (pct != null && progress) progress.value = pct;
-          } catch (e) {
-            // ignore
+      // Red adjuster — score (detection) depth
+      const { group: sg, valDisplay: sv } = buildAdjGroup(
+        "Score", scoreArr[i], "score",
+        async () => {
+          if (scoreArr[i] < TIMING_ADJ_MAX) {
+            scoreArr[i] = Math.min(TIMING_ADJ_MAX, scoreArr[i] + 1);
+            sv.textContent = String(scoreArr[i]);
+            await saveTimingSensitivity();
+          }
+        },
+        async () => {
+          if (scoreArr[i] > TIMING_ADJ_MIN) {
+            scoreArr[i] = Math.max(TIMING_ADJ_MIN, scoreArr[i] - 1);
+            sv.textContent = String(scoreArr[i]);
+            await saveTimingSensitivity();
           }
         }
-      }
-    }
-    // close modal when done
-    if (modal) modal.close();
-    refreshRecordedGamesCount();
-  } catch (e) {
-    console.error("Failed to start learning process", e);
-    alert("Failed to start learning process");
-    try {
-      if (modal) modal.close();
-    } catch (err) {}
+      );
+      col.appendChild(sg);
+
+      // Blue adjuster — reset (hold-off) depth
+      const { group: rg, valDisplay: rv } = buildAdjGroup(
+        "Reset", resetArr[i], "reset",
+        async () => {
+          if (resetArr[i] < TIMING_ADJ_MAX) {
+            resetArr[i] = Math.min(TIMING_ADJ_MAX, resetArr[i] + 1);
+            rv.textContent = String(resetArr[i]);
+            await saveTimingSensitivity();
+          }
+        },
+        async () => {
+          if (resetArr[i] > TIMING_ADJ_MIN) {
+            resetArr[i] = Math.max(TIMING_ADJ_MIN, resetArr[i] - 1);
+            rv.textContent = String(resetArr[i]);
+            await saveTimingSensitivity();
+          }
+        }
+      );
+      col.appendChild(rg);
+
+      container.appendChild(col);
+    });
   }
-};
+
+  buildPlayerRow("timing-adj-p1", p1_score, p1_reset);
+  buildPlayerRow("timing-adj-p2", p2_score, p2_reset);
+}
+
 
 //
 // Settings
@@ -599,8 +399,9 @@ async function getScoreClaimMethods() {
 tournamentModeToggle();
 getScoreClaimMethods();
 initSetupUI();
-// populate recorded games status on load
-refreshRecordedGamesCount();
+initSensitivityUI();
+initTimingSensitivityUI();
+startSensorActivityPolling();
 
 // wire save button
 const saveGameConfigBtn = document.getElementById("save-game-config");
@@ -610,6 +411,32 @@ if (saveGameConfigBtn) {
     e.preventDefault();
     await saveGameConfig();
   });
+}
+
+// Sensor activity indicator lamp — polls /api/em/sensor_activity at ~5 Hz
+function startSensorActivityPolling() {
+  const lamp = document.getElementById("sensor-activity-lamp");
+  if (!lamp) return;
+
+  const POLL_MS = 200;      // poll interval
+  const LIT_MS  = 500;      // how long to stay green after a hit
+  let litUntil  = 0;
+
+  async function poll() {
+    try {
+      const resp = await window.smartFetch("/api/em/sensor_activity", null, false);
+      if (resp && resp.ok) {
+        const data = await resp.json();
+        if (data.active) litUntil = Date.now() + LIT_MS;
+      }
+    } catch (e) {
+      // ignore — lamp just stays dark
+    }
+    lamp.style.background = Date.now() < litUntil ? "#2ecc71" : "#444";
+    setTimeout(poll, POLL_MS);
+  }
+
+  poll();
 }
 
 //

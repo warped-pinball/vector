@@ -12,6 +12,16 @@ import time
 from logger import logger_instance
 log = logger_instance
 
+@add_route("/api/em/sensor_activity")
+def sensor_activity(request):
+    """Return whether any sensor channel fired within the last 600 ms.
+    Polled by the admin page indicator lamp at ~5 Hz.
+    """
+    age = time.ticks_diff(time.ticks_ms(), S.sensor_last_hit_ms)
+    active = (age < 600)
+    return {"active": active, "age_ms": age}
+
+
 @add_route("/api/em/set_config", auth=True)
 def em_config(request):
     # Coerce and validate incoming values. client may send numbers rather than strings
@@ -50,6 +60,88 @@ def get_em_config(request):
         "dummy_reels":  int(S.gdata["dummy_reels"]),
     }
     return config
+
+
+@add_route("/api/em/get_sensitivity")
+def get_sensitivity(request):
+    """Return the global detection sensitivity (1–100)."""
+    sensitivity = S.gdata.get("sensitivity", 50)
+    print(f"EMSEN: get_sensitivity -> {sensitivity}")
+    return {"sensitivity": int(sensitivity)}
+
+
+@add_route("/api/em/set_sensitivity", auth=True)
+def set_sensitivity(request):
+    """Set the global detection sensitivity (1–100)."""
+    print(f"EMSEN: set_sensitivity raw request data: {request.data}")
+    try:
+        value = int(request.data.get("sensitivity", 50))
+        value = max(1, min(100, value))
+    except Exception:
+        value = 50
+    S.gdata["sensitivity"] = value
+    from ScoreTrack import saveState
+    saveState()
+    print(f"EMSEN: set_sensitivity saved -> {value}")
+    log.log(f"EMSEN: sensitivity set to {value}")
+    return {"status": "ok", "sensitivity": value}
+
+
+_TIMING_ADJ_COUNT = 5
+_TIMING_ADJ_DEFAULT = [8, 8, 8, 8, 8]
+
+
+@add_route("/api/em/get_timing_sensitivity")
+def get_timing_sensitivity(request):
+    """Return per-player timing sensitivity arrays (5 values each, 1–16).
+    Keys: p1_score, p1_reset, p2_score, p2_reset.
+    """
+    def _get(key):
+        v = list(S.gdata.get(key, _TIMING_ADJ_DEFAULT))
+        if len(v) != _TIMING_ADJ_COUNT:
+            v = _TIMING_ADJ_DEFAULT[:]
+        return v
+
+    p1_score = _get("timing_p1_score")
+    p1_reset = _get("timing_p1_reset")
+    p2_score = _get("timing_p2_score")
+    p2_reset = _get("timing_p2_reset")
+    print(f"EMSEN: get_timing_sensitivity -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
+    return {"p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
+
+
+@add_route("/api/em/set_timing_sensitivity", auth=True)
+def set_timing_sensitivity(request):
+    """Set per-player timing sensitivity arrays (5 values each, 1–16).
+    Expects: p1_score, p1_reset, p2_score, p2_reset.
+    """
+    print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
+
+    def _coerce(raw):
+        try:
+            out = [max(1, min(16, int(v))) for v in raw]
+        except Exception:
+            out = _TIMING_ADJ_DEFAULT[:]
+        if len(out) != _TIMING_ADJ_COUNT:
+            out = _TIMING_ADJ_DEFAULT[:]
+        return out
+
+    d = request.data or {}
+    p1_score = _coerce(d.get("p1_score", _TIMING_ADJ_DEFAULT))
+    p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT))
+    p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT))
+    p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT))
+
+    S.gdata["timing_p1_score"] = p1_score
+    S.gdata["timing_p1_reset"] = p1_reset
+    S.gdata["timing_p2_score"] = p2_score
+    S.gdata["timing_p2_reset"] = p2_reset
+
+    from ScoreTrack import saveState
+    saveState()
+    print(f"EMSEN: set_timing_sensitivity saved -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
+    log.log(f"EMSEN: timing p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
+    return {"status": "ok", "p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
 
 
 @add_route("/api/em/record_calibration_game", auth=True)

@@ -884,6 +884,10 @@ def processAndRun():
     # send to display green digit leds
     displayMessage.setSensorLeds(allActivesChannels)
 
+    # stamp SharedState for web indicator lamp
+    if allActivesChannels:
+        S.sensor_last_hit_ms = time.ticks_ms()
+
     # 10->0 truncate, except let last one acculmulate
     if digitsPerPlayer > 0:
         for i in (0, 1, 2, 3):

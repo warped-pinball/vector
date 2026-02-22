@@ -75,6 +75,86 @@
   input[type="radio"]:disabled {
     opacity: 0;
   }
+
+  /* Sensitivity and Timing Adjuster Controls */
+  .adj-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 3.5rem;
+  }
+
+  .adj-group-label {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--muted-color, #888);
+    text-align: center;
+  }
+
+  .adj-value {
+    font-weight: bold;
+    min-width: 2.5rem;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .adj-btn {
+    width: 100%;
+    padding: 0.15rem 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .timing-adj-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .sensitivity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Decade column: layout only, no border */
+  .decade-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 4rem;
+  }
+
+  .decade-col-label {
+    font-weight: bold;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  /* Red = score/detection depth */
+  .adj-val-score { color: #c0392b; }
+  .adj-btn-score { color: #c0392b !important; border-color: #c0392b !important; }
+
+  /* Blue = reset/hold-off depth */
+  .adj-val-reset { color: #2471a3; }
+  .adj-btn-reset { color: #2471a3 !important; border-color: #2471a3 !important; }
+
+  .timing-legend {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .timing-legend-score { color: #c0392b; font-weight: bold; }
+  .timing-legend-reset { color: #2471a3; font-weight: bold; }
 </style>
 
 <div style="text-align: left">
@@ -106,114 +186,43 @@
       </button>
     </fieldset>
     <h3>Calibration</h3>
+
     <div style="margin-top: 1rem">
-      <button
-        id="record-calibration"
-        onclick="window.startRecordingCalibration()"
-      >
-        Record Calibration Game
-      </button>
-      <span
-        id="recorded-games-status"
-        style="margin-left: 1rem; font-weight: bold"
-      >
-        Recorded: 0/4
-      </span>
+      <label><b>Sensitivity:</b></label>
+      <div class="sensitivity-row">
+        <button class="secondary outline adj-btn" id="sensitivity-down" style="width: auto; padding: 0.3rem 0.8rem">&#9660;</button>
+        <span id="sensitivity-value" class="adj-value" style="min-width: 2rem">50%</span>
+        <button class="secondary outline adj-btn" id="sensitivity-up" style="width: auto; padding: 0.3rem 0.8rem">&#9650;</button>
+        <span id="sensor-activity-lamp"
+          style="display:inline-block; width:1.1rem; height:1.1rem; border-radius:50%;
+                 background:#444; margin-left:0.75rem; vertical-align:middle;
+                 transition: background 0.1s;" title="Sensor activity"></span>
+      </div>
     </div>
 
-    <div style="margin-top: 0.5rem">
-      <button
-        id="start-learning"
-        onclick="window.startLearningProcess()"
-        disabled
-      >
-        Start Learning Process
-      </button>
-      <button
-        id="delete-calibration-games"
-        class="danger"
-        style="margin-left: 1rem"
-        onclick="window.deleteCalibrationGames()"
-      >
-        Delete Calibration Games
-      </button>
+    <div style="margin-top: 1.5rem">
+      <label><b>Player 1 Timing Filter:</b></label>
+      <div class="timing-legend">
+        <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+        <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+      </div>
+      <div class="timing-adj-row" id="timing-adj-p1">
+        <!-- dynamically populated by admin.js -->
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem">
+      <label><b>Player 2 Timing Filter:</b></label>
+      <div class="timing-legend">
+        <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+        <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+      </div>
+      <div class="timing-adj-row" id="timing-adj-p2">
+        <!-- dynamically populated by admin.js -->
+      </div>
     </div>
   </section>
 
-  <!-- Calibration modal (shows streaming progress, then score input form) -->
-  <dialog id="calibration-modal">
-    <article>
-      <header>
-        <h2>Recording Calibration - Please play the game</h2>
-      </header>
-      <p>
-        <b
-          >Do not close this window or disconnect while recording is in
-          progress.</b
-        >
-      </p>
-
-      <!-- Hidden raw log (kept for debug) -->
-      <code
-        id="calibration-log"
-        style="
-          display: none;
-          width: 100%;
-          height: 160px;
-          overflow: auto;
-          white-space: pre-wrap;
-          padding-bottom: 1em;
-        "
-      ></code>
-
-      <!-- User-facing static message that changes with progress -->
-      <div
-        id="calibration-message"
-        style="
-          width: 100%;
-          height: 160px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.2rem;
-        "
-      >
-        Keep going
-      </div>
-
-      <progress
-        id="calibration-progress"
-        value="0"
-        max="100"
-        style="width: 100%"
-      ></progress>
-
-      <div style="margin-top: 0.5rem">
-        <button id="end-calibration-game">
-          End Calibration & Record Scores
-        </button>
-      </div>
-
-      <div id="calibration-results" style="display: none; margin-top: 1rem">
-        <h3>Enter Scores for Calibration Game</h3>
-        <div
-          id="calibration-instructions"
-          style="margin-top: 0.5rem; font-style: italic; display: none"
-        ></div>
-        <form id="calibration-scores-form">
-          <!-- dynamically filled -->
-        </form>
-        <div style="margin-top: 0.5rem">
-          <button id="save-calibration-scores">Save Calibration Scores</button>
-          <button
-            onclick="document.getElementById('calibration-modal').close();"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </article>
-  </dialog>
 
   <h2>Settings</h2>
   <hr />
@@ -477,31 +486,3 @@
   </article>
 </dialog>
 
-<!-- Learning modal (shows progress while processing calibration games) -->
-<dialog id="learning-modal">
-  <article>
-    <header>
-      <h2>Processing Calibration Games</h2>
-    </header>
-    <p>
-      <b>Please wait while your calibration games are processed.</b>
-    </p>
-    <code
-      id="learning-log"
-      style="
-        display: none;
-        width: 100%;
-        height: 120px;
-        overflow: auto;
-        white-space: pre-wrap;
-        padding-bottom: 1em;
-      "
-    ></code>
-    <progress
-      id="learning-progress"
-      value="0"
-      max="100"
-      style="width: 100%"
-    ></progress>
-  </article>
-</dialog>
