@@ -21,7 +21,7 @@ def send_origin_message(message_type, data):
         print("Error sending origin message:", e)
 
 
-def push_game_state(game_time, scores, ball_in_play, game_active):
+def push_game_state():
     try:
         send_origin_message("game_state", game_report())
     except NameError:
