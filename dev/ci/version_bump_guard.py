@@ -156,6 +156,14 @@ def analyze_rule(rule: VersionRule, changed: Iterable[str], base_ref: str, head_
 
     base_semver = SemVer.parse(base_version, rule.version_file)
     head_semver = SemVer.parse(head_version, rule.version_file)
+
+    if head_semver < base_semver:
+        raise RuntimeError(
+            f"Version downgrade detected in {rule.version_file}: "
+            f"base branch has {base_version} but PR branch has {head_version}. "
+            f"Versions must not be downgraded."
+        )
+
     if head_semver > base_semver:
         return RuleOutcome(
             rule=rule,

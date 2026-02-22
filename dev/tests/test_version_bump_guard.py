@@ -1,3 +1,5 @@
+import pytest
+
 from dev.ci import version_bump_guard as vbg
 
 
@@ -252,7 +254,7 @@ def test_apply_bumps_raises_when_pattern_does_not_match(tmp_path) -> None:
     assert False, "apply_bumps did not raise RuntimeError when pattern failed to match"
 
 
-def test_analyze_rule_requires_patch_when_pr_is_lower(monkeypatch) -> None:
+def test_analyze_rule_raises_on_version_downgrade(monkeypatch) -> None:
     rule = vbg.RULES[1]
     changed = ["src/em/GameStatus.py"]
 
@@ -262,7 +264,5 @@ def test_analyze_rule_requires_patch_when_pr_is_lower(monkeypatch) -> None:
         lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.5.1",
     )
 
-    outcome = vbg.analyze_rule(rule, changed, "base", "head")
-
-    assert outcome.requires_bump is True
-    assert outcome.target_version == "1.5.3"
+    with pytest.raises(RuntimeError, match="downgrade"):
+        vbg.analyze_rule(rule, changed, "base", "head")
