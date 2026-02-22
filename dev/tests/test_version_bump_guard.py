@@ -106,3 +106,19 @@ def test_analyze_rule_passes_when_pr_is_higher(monkeypatch) -> None:
 
     assert outcome.requires_bump is False
     assert outcome.target_version is None
+
+
+def test_analyze_rule_requires_patch_when_pr_is_lower(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.5.1",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+
+    assert outcome.requires_bump is True
+    assert outcome.target_version == "1.5.3"
