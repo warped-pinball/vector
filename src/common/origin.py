@@ -1,5 +1,4 @@
 from discovery import send_sock
-from GameStatus import game_report
 from machine import unique_id
 from ubinascii import hexlify
 from ujson import dumps
@@ -23,7 +22,10 @@ def send_origin_message(message_type, data):
 
 
 def push_game_state(game_time, scores, ball_in_play, game_active):
-    send_origin_message("game_state", game_report())
+    try:
+        send_origin_message("game_state", game_report())
+    except NameError:
+        from GameStatus import game_report  # noqa F401
 
 
 def push_end_of_game(game):
