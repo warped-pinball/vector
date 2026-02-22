@@ -70,4 +70,4 @@ def poll_fast():
     else:
         S.game_status["poll_state"] = 0
 
-    push_game_state()
+    push_game_state(game_report())

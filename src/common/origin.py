@@ -21,11 +21,8 @@ def send_origin_message(message_type, data):
         print("Error sending origin message:", e)
 
 
-def push_game_state():
-    try:
-        send_origin_message("game_state", game_report())
-    except NameError:
-        from GameStatus import game_report  # noqa F401
+def push_game_state(game_report):
+    send_origin_message("game_state", game_report)
 
 
 def push_end_of_game(game):
