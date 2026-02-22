@@ -20,8 +20,10 @@ import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC, Pin
 from ScoreTrackFilter_viper import _viper_process
+from origin import push_game_state
 
 log = logger_instance
+
 import gc
 
 rtc = RTC()
@@ -1280,6 +1282,7 @@ def CheckForNewScores(nState=[0]):
             S.game_status["game_active"] = True
             print("SCORE: Game Start")
             nState[0] = 2
+            push_game_state()
 
     elif nState[0] == 2:  # waiting for game to end
         # process data in storeage...
@@ -1305,6 +1308,7 @@ def CheckForNewScores(nState=[0]):
 
             game = [S.gameCounter, ["", getPlayerScore(0)], ["", getPlayerScore(1)], ["", getPlayerScore(2)], ["", getPlayerScore(3)]]
             _place_game_in_claim_list(game)
+            push_game_state()
 
             # game over
             nState[0] = 1

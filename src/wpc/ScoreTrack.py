@@ -15,8 +15,10 @@ from logger import logger_instance
 from machine import RTC
 from Shadow_Ram_Definitions import shadowRam
 import DataMapper
+from origin import push_game_state
 
 log = logger_instance
+
 
 rtc = RTC()
 top_scores = []
@@ -569,6 +571,7 @@ def CheckForNewScores(nState=[0]):
                 else:
                     initials_capture_this_game = False
                 S.gameCounter = (S.gameCounter + 1) % 100
+                push_game_state()
 
 
         # waiting for game to end
@@ -641,6 +644,7 @@ def CheckForNewScores(nState=[0]):
             game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
 
             _place_game_in_claim_list(game)
+            push_game_state()
 
             # put high scores back in machine memory
             if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:

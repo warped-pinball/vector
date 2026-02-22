@@ -12,9 +12,11 @@ import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
 import DataMapper
+from origin import push_game_state
 from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
+
 
 rtc = RTC()
 top_scores = []
@@ -474,6 +476,7 @@ def CheckForNewScores(nState=[0]):
                 nGameIdleCounter = 0
                 _remove_machine_scores()
                 S.gameCounter = (S.gameCounter + 1) % 100
+                push_game_state()
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
@@ -498,6 +501,7 @@ def CheckForNewScores(nState=[0]):
 
                 game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
                 _place_game_in_claim_list(game)
+                push_game_state()
 
                 # put high scores back in machine memory
                 place_machine_scores()
