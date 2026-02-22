@@ -12,8 +12,10 @@ import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 log = logger_instance
+
 from machine import RTC
 import DataMapper
+from origin import push_game_state
 
 rtc = RTC()
 top_scores = []
@@ -349,6 +351,7 @@ def CheckForNewScores():
                     
                 S.gameCounter = (S.gameCounter + 1) % 100
                 print(f"SCORE: New game counter = {S.gameCounter}")
+                push_game_state()
 
         # waiting for game to end
         elif _game_state == STATE_PLAYING:
@@ -418,6 +421,7 @@ def CheckForNewScores():
 
                     print(f"SCORE: Cleaned game scores: {game}")
                     _place_game_in_claim_list(game)
+                    push_game_state()
 
                     # put high scores back in machine memory
                     if  DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:        
