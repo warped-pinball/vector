@@ -179,7 +179,7 @@ def analyze_rule(rule: VersionRule, changed: Iterable[str], base_ref: str, head_
 def apply_bumps(outcomes: Iterable[RuleOutcome]) -> list[str]:
     updated_files: list[str] = []
     for outcome in outcomes:
-        if not outcome.requires_bump or outcome.target_version is None:
+        if not outcome.requires_bump:
             continue
 
         path = Path(outcome.rule.version_file)
