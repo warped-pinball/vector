@@ -1,9 +1,9 @@
 import time
 
 import faults
+import machine
 import ntptime
 import uasyncio
-from machine import RTC
 from ScoreTrack import (
     CheckForNewScores,
     check_for_machine_high_scores,
@@ -19,7 +19,6 @@ from . import logging
 
 
 ntptime.host = "pool.ntp.org"  # Setting a specific NTP server
-rtc = RTC()
 
 
 _routes = {}
@@ -204,6 +203,9 @@ def update_time(retry=1):
 
 
 def initialize_timedate():
+    from machine import RTC
+
+    rtc = RTC()
     update_time(1)
     year, month, day, _, _, _, _, _ = rtc.datetime()
     print("   Current UTC Date (Y/M/D): ", year, month, day)
@@ -257,7 +259,7 @@ async def run_scheduled():
                     t[0]()  # t[0] is func
                     # print(f"Task {t[0].__name__} took {time.ticks_diff(time.ticks_ms(), start_time)}ms")
                 except Exception as e:
-                    logging.error(f"Error running scheduled task: {e}")
+                    logging.error(f"Error running scheduled task: {str(t[0])} {e}")
 
                 # reschedule or remove tasks
                 if t[1] is None:  # t[1] is freq
@@ -285,6 +287,7 @@ def create_schedule(ap_mode: bool = False):
     from backend import connect_to_wifi
     from discovery import broadcast_hello, listen, ping_random_peer
     from displayMessage import refresh
+    from faults import ALL_HDWR, fault_is_raised
     from GameStatus import poll_fast
     from usb_comms import usb_request_handler
 
@@ -316,7 +319,7 @@ def create_schedule(ap_mode: bool = False):
     schedule(CheckForNewScores, 15000, 5000)
 
     # only if there are no hardware faults
-    if not faults.fault_is_raised(faults.ALL_HDWR):
+    if not fault_is_raised(ALL_HDWR):
         # copy ram values to fram every 0.1 seconds
         schedule(copy_to_fram, 0, 100)
 
@@ -345,7 +348,9 @@ def run(ap_mode: bool, host="0.0.0.0", port=80):
 
     print("Server: Loop Forever")
     loop.run_forever()
-    faults.raise_fault(faults.SFTW02)
+    from faults import SFTW02, raise_fault
+
+    raise_fault(SFTW02)
 
 
 def stop():
