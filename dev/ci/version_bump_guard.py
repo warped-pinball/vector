@@ -186,7 +186,7 @@ def apply_bumps(outcomes: Iterable[RuleOutcome]) -> list[str]:
         text = path.read_text(encoding="utf-8")
         updated_text, replacements = re.subn(
             outcome.rule.version_pattern,
-            lambda match: match.group(0).replace(match.group(1), outcome.target_version or ""),
+            lambda match: match.group(0).replace(match.group(1), outcome.target_version),
             text,
             count=1,
         )
