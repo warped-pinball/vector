@@ -44,5 +44,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/common/SharedState.py src/em/systemConfig.py src/sys11/systemConfig.py src/wpc/systemConfig.py src/data_east/systemConfig.py src/whitestar/systemConfig.py
-          git commit -m "ci: auto-bump required patch versions"
+          git commit -m "ci: auto-bump required patch versions [skip ci]"
           git push
