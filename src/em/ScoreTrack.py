@@ -542,7 +542,7 @@ stateCount = 0
 
 # called from phew schedeuler
 def processSensorData():
-    """called each 1 or 2 seconds.  watch game active and decide when to operate on data
+    """called each every 800mS.    watch game active and decide when to operate on data
     coming in from sensor module -  either store for learning or process for live scores"""
     global stateVar, stateCount, gameover
     global lastValue, segmentMS, gameHistory, gameHistoryTime, gameHistoryIndex
