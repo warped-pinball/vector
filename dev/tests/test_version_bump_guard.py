@@ -1,3 +1,5 @@
+import pytest
+
 from dev.ci import version_bump_guard as vbg
 
 
@@ -68,3 +70,199 @@ def test_em_change_also_requires_common_bump() -> None:
 
     assert len(failures) == 1
     assert "src/common/SharedState.py" in failures[0]
+
+
+def test_semver_patch_bump() -> None:
+    semver = vbg.SemVer.parse("1.6.9", "test.py")
+
+    assert str(semver.bump_patch()) == "1.6.10"
+
+
+def test_analyze_rule_requires_patch_when_pr_not_higher(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.5.2",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+
+    assert outcome.requires_bump is True
+    assert outcome.target_version == "1.5.3"
+
+
+def test_analyze_rule_passes_when_pr_is_higher(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.6.0",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+
+    assert outcome.requires_bump is False
+    assert outcome.target_version is None
+
+
+def test_write_summary_no_relevant_changes(monkeypatch, tmp_path) -> None:
+    # No files in the PR touch any configured rule scopes, so analyze_rule should
+    # report no required bumps and write_summary should still produce a summary file.
+    changed: list[str] = []
+
+    # Ensure any version lookups are deterministic, even though no rule should match.
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.0.0",
+    )
+
+    outcomes = [vbg.analyze_rule(rule, changed, "base", "head") for rule in vbg.RULES]
+
+    summary_file = tmp_path / "summary_no_changes.md"
+    vbg.write_summary(outcomes, str(summary_file))
+
+    text = summary_file.read_text(encoding="utf-8")
+
+    assert text.strip() != ""
+    # Summary should look like Markdown (start with a heading).
+    assert text.lstrip().startswith("#")
+
+
+def test_write_summary_with_required_bump(monkeypatch, tmp_path) -> None:
+    # Force a rule where the PR version is not higher than base, requiring a bump.
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+    assert outcome.requires_bump is True
+
+    summary_file = tmp_path / "summary_required_bump.md"
+    vbg.write_summary([outcome], str(summary_file))
+
+    text = summary_file.read_text(encoding="utf-8")
+
+    assert text.strip() != ""
+    assert text.lstrip().startswith("#")
+    # The summary should mention a bump or similar wording for missing versions.
+    assert "bump" in text.lower()
+
+
+def test_write_summary_with_already_higher_version(monkeypatch, tmp_path) -> None:
+    # Force a rule where the PR version is already higher than base; no bump required.
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.6.0",
+    )
+
+    outcome = vbg.analyze_rule(rule, changed, "base", "head")
+    assert outcome.requires_bump is False
+
+    summary_file = tmp_path / "summary_already_higher.md"
+    vbg.write_summary([outcome], str(summary_file))
+
+    text = summary_file.read_text(encoding="utf-8")
+
+    assert text.strip() != ""
+    assert text.lstrip().startswith("#")
+    # The summary should not report missing bumps in this case.
+    assert "bump" not in text.lower() or "already" in text.lower()
+
+
+def test_apply_bumps_updates_version_file(tmp_path) -> None:
+    # Create a temporary version file with a simple semantic version string
+    version_file = tmp_path / "version_file.py"
+    original_content = '__version__ = "1.2.3"\n'
+    version_file.write_text(original_content)
+
+    # Regex with three capture groups: prefix, version, suffix
+    pattern = r'(__version__\s*=\s*")(\d+\.\d+\.\d+)(")'
+
+    class DummyRule:
+        def __init__(self, description, scope, file_path, pattern):
+            self.description = description
+            self.scope = scope
+            self.file_path = file_path
+            self.pattern = pattern
+
+    class DummyOutcome:
+        def __init__(self, rule, requires_bump, target_version):
+            self.rule = rule
+            self.requires_bump = requires_bump
+            self.target_version = target_version
+
+    rule = DummyRule("test apply_bumps", (), str(version_file), pattern)
+    outcome = DummyOutcome(rule=rule, requires_bump=True, target_version="1.2.4")
+
+    # Call apply_bumps and assert that it reports the updated file
+    updated_files = vbg.apply_bumps([outcome], dry_run=False)
+
+    assert updated_files == [str(version_file)]
+
+    # Verify that the file content was updated with the target version
+    updated_content = version_file.read_text()
+    assert '__version__ = "1.2.4"' in updated_content
+    assert "1.2.3" not in updated_content
+
+
+def test_apply_bumps_raises_when_pattern_does_not_match(tmp_path) -> None:
+    # Create a file that does not contain a version string matching the pattern
+    version_file = tmp_path / "no_match_version_file.py"
+    version_file.write_text("no version here\n")
+
+    pattern = r'(__version__\s*=\s*")(\d+\.\d+\.\d+)(")'
+
+    class DummyRule:
+        def __init__(self, description, scope, file_path, pattern):
+            self.description = description
+            self.scope = scope
+            self.file_path = file_path
+            self.pattern = pattern
+
+    class DummyOutcome:
+        def __init__(self, rule, requires_bump, target_version):
+            self.rule = rule
+            self.requires_bump = requires_bump
+            self.target_version = target_version
+
+    rule = DummyRule("test apply_bumps no match", (), str(version_file), pattern)
+    outcome = DummyOutcome(rule=rule, requires_bump=True, target_version="1.2.4")
+
+    # When the regex pattern does not match the file contents, apply_bumps should raise
+    try:
+        vbg.apply_bumps([outcome], dry_run=False)
+    except RuntimeError:
+        # Expected path: pattern did not match and apply_bumps signaled an error
+        return
+
+    # If no exception was raised, the behavior is incorrect for this test case
+    assert False, "apply_bumps did not raise RuntimeError when pattern failed to match"
+
+
+def test_analyze_rule_raises_on_version_downgrade(monkeypatch) -> None:
+    rule = vbg.RULES[1]
+    changed = ["src/em/GameStatus.py"]
+
+    monkeypatch.setattr(
+        vbg,
+        "version_at_ref",
+        lambda ref, file_path, pattern: "1.5.2" if ref == "base" else "1.5.1",
+    )
+
+    with pytest.raises(RuntimeError, match="downgrade"):
+        vbg.analyze_rule(rule, changed, "base", "head")
