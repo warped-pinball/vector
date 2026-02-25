@@ -114,22 +114,22 @@ def main():
         while True:
             # print out the game status
             resp = client.send_and_receive(route="/api/game/status", payload=None)
-            print("Received response:" + json.dumps(resp["body"]))
+            print("Status:" + json.dumps(resp["body"]))
             time.sleep(0.5)
 
             # print out the leaderboard
             resp = client.send_and_receive(route="/api/leaders", payload=None)
-            print("Received response:" + json.dumps(resp["body"]))
+            print("Leaderboard:" + json.dumps(resp["body"]))
             time.sleep(0.5)
 
             # list out all registered players
             resp = client.send_and_receive(route="/api/players", payload=None)
-            print("Received response:" + json.dumps(resp["body"]))
+            print("Players:" + json.dumps(resp["body"]))
             time.sleep(0.5)
 
             # Add a new player
             resp = client.send_and_receive(route="/api/player/update", payload={"id": 1, "full_name": "Tim Crowley", "initials": "TIM"})
-            print("Received response:" + json.dumps(resp["body"]))
+            print("Player Update:" + json.dumps(resp["body"]))
             time.sleep(0.5)
 
             # check if a game is active
