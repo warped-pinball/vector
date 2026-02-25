@@ -6,11 +6,15 @@ from ujson import dumps
 previous_packet = None
 
 
-def send_origin_message(message_type, data):
+def send_origin_message(message_type, data=None):
+    print(f"Sending origin message: {message_type} with data: {data}")
     global previous_packet
     try:
         uid = hexlify(unique_id()).decode()
-        packet = dumps({"machine_id": uid, "type": message_type, "data": data})
+        if data:
+            packet = dumps({"machine_id": uid, "type": message_type, "data": data})
+        else:
+            packet = dumps({"machine_id": uid, "type": message_type})
 
         if packet == previous_packet:
             return  # Skip sending duplicate packet
@@ -36,3 +40,7 @@ def push_end_of_game(game):
         return
 
     send_origin_message("end_of_game", {"plays": plays})
+
+
+def push_reset():
+    send_origin_message("reset")

@@ -1,7 +1,6 @@
 import time
 
 import faults
-import machine
 import ntptime
 import uasyncio
 from ScoreTrack import (
@@ -289,6 +288,7 @@ def create_schedule(ap_mode: bool = False):
     from displayMessage import refresh
     from faults import ALL_HDWR, fault_is_raised
     from GameStatus import poll_fast
+    from origin import push_reset
     from usb_comms import usb_request_handler
 
     #
@@ -327,6 +327,9 @@ def create_schedule(ap_mode: bool = False):
     if not ap_mode:
         # announce our presence once after boot
         schedule(broadcast_hello, 10000)
+
+        # push reset message once after boot
+        schedule(push_reset, 11000)
 
         # listen for others every 1.5 seconds
         schedule(listen, 10500, 1500)
