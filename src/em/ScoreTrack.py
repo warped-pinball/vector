@@ -863,6 +863,14 @@ def processRisingEdge(sc, risingEdge):
 def processAndRun():
     """pull data from ram buffer and feed to score module - for active game running"""
     global last_sc, sensorScores, carryThresholds
+
+    def _count_set_bits(v):
+        c = 0
+        while v:
+            v &= v - 1
+            c += 1
+        return c
+
     allActivesChannels = 0
 
     start_time = time.ticks_ms()  # Start timer
@@ -874,8 +882,8 @@ def processAndRun():
         sc = processBitFilter(d & sensorBitMask)
 
         # keep all channels that go active for led display
-        allActivesChannels = allActivesChannels | sc
-
+        allActivesChannels = allActivesChannels | d #sc
+        
         # Detect rising edges on all 32 bits at once
         risingEdge = (~last_sc) & sc
         processRisingEdge(sc, risingEdge)
@@ -884,8 +892,20 @@ def processAndRun():
     # send to display green digit leds
     displayMessage.setSensorLeds(allActivesChannels)
 
+    # set SharedState for admin sensitivity indicator: off / green / red
+    maskedActivesChannels = allActivesChannels & sensorBitMask
+
+    if maskedActivesChannels == 0:
+        S.sensor_activity_level = 0
+    elif _count_set_bits(maskedActivesChannels) == 1:
+        S.sensor_activity_level = 1
+    else:
+        S.sensor_activity_level = 2
+
+    print("          sensor level - - - - - -   ", S.sensor_activity_level, hex(maskedActivesChannels), x)
+
     # stamp SharedState for web indicator lamp
-    if allActivesChannels:
+    if maskedActivesChannels:
         S.sensor_last_hit_ms = time.ticks_ms()
 
     # 10->0 truncate, except let last one acculmulate

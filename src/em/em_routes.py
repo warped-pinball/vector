@@ -14,12 +14,22 @@ log = logger_instance
 
 @add_route("/api/em/sensor_activity")
 def sensor_activity(request):
-    """Return whether any sensor channel fired within the last 600 ms.
-    Polled by the admin page indicator lamp at ~5 Hz.
+    """Return sensor activity state for the admin sensitivity indicator.
+
+    state: "off"   -> no channels active
+           "green" -> exactly one channel active
+           "red"   -> more than one channel active
     """
     age = time.ticks_diff(time.ticks_ms(), S.sensor_last_hit_ms)
     active = (age < 600)
-    return {"active": active, "age_ms": age}
+    level = int(getattr(S, "sensor_activity_level", 0))
+    if level <= 0:
+        state = "off"
+    elif level == 1:
+        state = "green"
+    else:
+        state = "red"
+    return {"active": active, "age_ms": age, "level": level, "state": state}
 
 
 @add_route("/api/em/set_config", auth=True)
@@ -72,19 +82,51 @@ def get_sensitivity(request):
 
 @add_route("/api/em/set_sensitivity", auth=True)
 def set_sensitivity(request):
-    """Set the global detection sensitivity (1–100)."""
+    """Set global detection sensitivity (0–100) and apply sensor thresholds."""
     print(f"EMSEN: set_sensitivity raw request data: {request.data}")
     try:
         value = int(request.data.get("sensitivity", 50))
-        value = max(1, min(100, value))
+        value = max(0, min(100, value))
     except Exception:
         value = 50
-    S.gdata["sensitivity"] = value
+
+    try:
+        import sensorRead
+
+        value, low_thres, high_thres = sensorRead.setSensitivityPercent(value)
+        print(f"EMSEN: thresholds set low={low_thres} high={high_thres}")
+    except Exception as e:
+        print(f"EMSEN: threshold apply failed: {e}")
+        S.gdata["sensitivity"] = value
+
     from ScoreTrack import saveState
     saveState()
     print(f"EMSEN: set_sensitivity saved -> {value}")
     log.log(f"EMSEN: sensitivity set to {value}")
     return {"status": "ok", "sensitivity": value}
+
+
+@add_route("/api/em/recalibrate_sensors", auth=True)
+def recalibrate_sensors(request):
+    """Force sensor calibration and then re-apply current sensitivity percent."""
+    print("EMSEN: recalibrate_sensors start")
+    try:
+        import sensorRead
+
+        sensorRead.calibrate()
+        sensitivity = int(S.gdata.get("sensitivity", 50))
+        sensitivity, low_thres, high_thres = sensorRead.setSensitivityPercent(sensitivity)
+
+        from ScoreTrack import saveState
+
+        saveState()
+        print(f"EMSEN: recalibrate complete low={low_thres} high={high_thres} sensitivity={sensitivity}")
+        log.log(f"EMSEN: recalibrate complete low={low_thres} high={high_thres} sensitivity={sensitivity}")
+        return {"status": "ok", "sensitivity": sensitivity, "low": low_thres, "high": high_thres}
+    except Exception as e:
+        print(f"EMSEN: recalibrate failed: {e}")
+        log.log(f"EMSEN: recalibrate failed: {e}")
+        return {"status": "error", "message": str(e)}, 500
 
 
 _TIMING_ADJ_COUNT = 5

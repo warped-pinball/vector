@@ -147,8 +147,8 @@ async function saveGameConfig() {
 
 // ------------------ Sensitivity Controls ------------------
 
-// Sensitivity: 1–100%
-const SENSITIVITY_MIN = 1;
+// Sensitivity: 0–100%
+const SENSITIVITY_MIN = 0;
 const SENSITIVITY_MAX = 100;
 const SENSITIVITY_STEP = 1;
 const SENSITIVITY_DEFAULT = 50;
@@ -212,6 +212,7 @@ async function initSensitivityUI() {
   const display = document.getElementById("sensitivity-value");
   const upBtn = document.getElementById("sensitivity-up");
   const downBtn = document.getElementById("sensitivity-down");
+  const recalBtn = document.getElementById("sensitivity-recalibrate");
 
   function updateDisplay() {
     if (display) display.textContent = value + "%";
@@ -241,6 +242,29 @@ async function initSensitivityUI() {
         value = Math.max(SENSITIVITY_MIN, value - SENSITIVITY_STEP);
         updateDisplay();
         await saveSensitivity();
+      }
+    });
+  }
+
+  if (recalBtn) {
+    recalBtn.addEventListener("click", async () => {
+      const prevText = recalBtn.textContent;
+      recalBtn.disabled = true;
+      recalBtn.textContent = "Calibrating...";
+      try {
+        const resp = await window.smartFetch("/api/em/recalibrate_sensors", {}, true);
+        if (!resp || !resp.ok) {
+          throw new Error(`recalibrate failed: ${resp ? resp.status : "no response"}`);
+        }
+        recalBtn.textContent = "Done";
+      } catch (e) {
+        console.error("Failed to recalibrate sensors", e);
+        recalBtn.textContent = "Failed";
+      } finally {
+        setTimeout(() => {
+          recalBtn.textContent = prevText || "Recalibrate";
+          recalBtn.disabled = false;
+        }, 1200);
       }
     });
   }
@@ -418,21 +442,25 @@ function startSensorActivityPolling() {
   const lamp = document.getElementById("sensor-activity-lamp");
   if (!lamp) return;
 
-  const POLL_MS = 200;      // poll interval
-  const LIT_MS  = 500;      // how long to stay green after a hit
-  let litUntil  = 0;
+  const POLL_MS = 200; // poll interval
 
   async function poll() {
     try {
       const resp = await window.smartFetch("/api/em/sensor_activity", null, false);
       if (resp && resp.ok) {
         const data = await resp.json();
-        if (data.active) litUntil = Date.now() + LIT_MS;
+        if (data.state === "green") {
+          lamp.style.background = "#2ecc71";
+        } else if (data.state === "red") {
+          lamp.style.background = "#e74c3c";
+        } else {
+          lamp.style.background = "#444";
+        }
       }
     } catch (e) {
       // ignore — lamp just stays dark
+      lamp.style.background = "#444";
     }
-    lamp.style.background = Date.now() < litUntil ? "#2ecc71" : "#444";
     setTimeout(poll, POLL_MS);
   }
 

@@ -292,10 +292,12 @@ def gameActive():
 
 lowCalThres=32000
 highCalThres=32000
+sensitivityBaseLow = 32000
+sensitivityBaseHigh = 32000
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
+    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres,sensitivityBaseLow,sensitivityBaseHigh
 
     print("SENSOR: Calibrate sensor circuit start")
 
@@ -356,12 +358,64 @@ def calibrate():
 
 
     print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.88)   #0.9
+    lowCalThres = int(lowCal*0.6)   #0.9
     lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.12)  #1.1
+    highCalThres = int(highCal*1.4)  #1.1
     hiPwm.duty_u16(highCalThres)
+    sensitivityBaseLow = lowCalThres
+    sensitivityBaseHigh = highCalThres
     log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
+
+
+def setSensitivityPercent(percent):
+    """Set sensor thresholds from 0..100% sensitivity.
+
+    0% keeps full calibrated threshold spread.
+    100% collapses thresholds to the same midpoint value.
+    """
+    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
+
+    try:
+        pct = int(percent)
+    except Exception:
+        pct = 50
+    pct = max(0, min(100, pct))
+
+    # initialize baseline from current values if needed
+    if sensitivityBaseHigh <= sensitivityBaseLow:
+        sensitivityBaseLow = int(lowCalThres)
+        sensitivityBaseHigh = int(highCalThres)
+
+    base_low = int(sensitivityBaseLow)
+    base_high = int(sensitivityBaseHigh)
+    if base_high < base_low:
+        base_low, base_high = base_high, base_low
+
+    spread = base_high - base_low
+    midpoint = (base_low + base_high) // 2
+
+    # linearly shrink spread as sensitivity rises; 100% => spread=0 (equal thresholds)
+    new_spread = (spread * (100 - pct)) // 100
+    lowCalThres = midpoint - (new_spread // 2)
+    highCalThres = lowCalThres + new_spread
+
+    # hard clamp and ordering
+    lowCalThres = max(0, min(65535, int(lowCalThres)))
+    highCalThres = max(0, min(65535, int(highCalThres)))
+    if highCalThres < lowCalThres:
+        highCalThres = lowCalThres
+
+    lowPwm.duty_u16(lowCalThres)
+    hiPwm.duty_u16(highCalThres)
+
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][0] = lowCalThres
+        S.gdata["sensorlevels"][1] = highCalThres
+
+    S.gdata["sensitivity"] = pct
+    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres} (sensitivity={pct}%)")
+    return pct, lowCalThres, highCalThres
 
 
 

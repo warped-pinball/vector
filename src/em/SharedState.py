@@ -24,3 +24,7 @@ run_learning_game = False
 # Timestamp (ticks_ms) of the most recent sensor channel activation.
 # Written by ScoreTrack.processAndRun(); read by the sensor-activity poll endpoint.
 sensor_last_hit_ms = 0
+
+# Sensor activity level for admin sensitivity indicator.
+# 0 = off (no channels), 1 = green (one channel), 2 = red (more than one channel).
+sensor_activity_level = 0
