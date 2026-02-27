@@ -1756,6 +1756,7 @@ def app_list_available_formats(request):
     @end
     """
     from Formats import get_available_formats
+
     return get_available_formats()
 
 
@@ -1768,42 +1769,38 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
-            identified by NAME STRING
-
             - name: format_id
-                type: int
-                required: true
-                description: Format identifier to activate
+              type: int
+              required: false
+              description: Format identifier to activate
+            - name: format_name
+              type: string
+              required: false
+              description: Format name to activate
             - name: options
-                type: dict
-                required: false
-                description: Configuration options for the selected format
+              type: dict
+              required: false
+              description: Configuration options for the selected format
     response:
       status_codes:
         - code: 200
           description: Format set successfully
+        - code: 400
+          description: Missing or invalid format identifier
     @end
     """
     from Formats import set_active_format
 
     data = request.data
-    if not isinstance(data, dict) or len(data) == 0:
-        return {"error": "Missing format data"}, 400
-
-    # Extract the format name from the top level key
-    format_name = list(data.keys())[0]
-    format_data = data[format_name]
 
     # Extract Options section if it exists
-    options = format_data.get("Options", {})
+    format_id = data.get("format_id", data.get("format_name", None))
+    if format_id is None:
+        return {"error": "Missing format_id"}, 400
 
     # Set the active format with validation
-    if not set_active_format(format_name, options):
-        return {"error": f"Invalid format: {format_name}"}, 400
-
-    S.game_status["format"] = {"name": format_name}
-    if options:
-        S.game_status["format"]["options"] = options
+    if not set_active_format(format_id, data.get("Options", {})):
+        return {"error": f"Invalid format: {format_id}"}, 400
 
     return
 
@@ -1844,8 +1841,8 @@ def app_get_active_formats(request):
     @end
     """
     from Formats import get_active_format
-    return get_active_format()
 
+    return get_active_format()
 
 
 # get switch diagnostics
