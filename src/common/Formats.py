@@ -187,17 +187,35 @@ def get_next_up_format():
 def set_active_format(format_name, options=None):
     """
     Set the active game format by its name (key) in to "next_format"
+    OR you may pass the Id - Id is preferred as name strings may change but Ids will remain unique for all time
     Loads format settings in layers: defaults → config → runtime options
     """
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
     game_formats_config = S.gdata.get("Formats", {})
-    if format_name not in game_formats_config or format_name not in DEFAULT_FORMATS:
+    selected_name = format_name
+
+    if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
+        # Fallback: if caller passed a numeric format id (int or numeric string), resolve to a configured format name
+        format_id = None
+        if isinstance(format_name, int) and not isinstance(format_name, bool):
+            format_id = format_name
+        elif isinstance(format_name, str) and format_name.isdigit():
+            format_id = int(format_name)
+
+        if format_id is not None:
+            selected_name = None
+            for name in game_formats_config:
+                if name in DEFAULT_FORMATS and DEFAULT_FORMATS[name].get("Id") == format_id:
+                    selected_name = name
+                    break
+
+    if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
         return False
 
     # Merge defaults and config: game_formats_config takes priority over DEFAULT_FORMATS
-    combined_format = _deep_merge(DEFAULT_FORMATS.get(format_name, {}), game_formats_config.get(format_name, {}))
+    combined_format = _deep_merge(DEFAULT_FORMATS.get(selected_name, {}), game_formats_config.get(selected_name, {}))
 
     # Apply incoming options (highest priority) to the Options section
     if options and isinstance(options, dict):
@@ -207,9 +225,9 @@ def set_active_format(format_name, options=None):
 
     next_format = combined_format.copy()
     # Store the format name for reference
-    next_format["Name"] = format_name
+    next_format["Name"] = selected_name
 
-    log.log(f"FORMAT: next format {format_name} id = {next_format.get('Id', 0)}")
+    log.log(f"FORMAT: next format {selected_name} id = {next_format.get('Id', 0)}")
 
     return True
 
