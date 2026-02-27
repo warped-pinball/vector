@@ -7,7 +7,6 @@ previous_packet = None
 
 
 def send_origin_message(message_type, data=None):
-    print(f"Sending origin message: {message_type} with data: {data}")
     global previous_packet
     try:
         uid = hexlify(unique_id()).decode()
@@ -19,6 +18,7 @@ def send_origin_message(message_type, data=None):
         if packet == previous_packet:
             return  # Skip sending duplicate packet
 
+        print(f"Sending origin message: {message_type} with data: {data}")
         send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
         previous_packet = packet
     except Exception as e:
