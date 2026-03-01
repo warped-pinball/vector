@@ -155,6 +155,41 @@
 
   .timing-legend-score { color: #c0392b; font-weight: bold; }
   .timing-legend-reset { color: #2471a3; font-weight: bold; }
+
+  .timing-section {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .timing-section-main {
+    min-width: 0;
+    flex: 1 1 28rem;
+  }
+
+  .live-player-score {
+    min-width: 10rem;
+    flex: 0 0 13rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 0.2rem;
+  }
+
+  .live-player-score-label {
+    font-size: 0.8rem;
+    color: var(--muted-color, #888);
+  }
+
+  .live-player-score-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--color, inherit);
+    line-height: 1.2;
+  }
 </style>
 
 <div style="text-align: left">
@@ -170,15 +205,15 @@
         </div>
         <div>
           <label for="total-players"><b>Total Players:</b></label>
-          <input id="total-players" type="number" min="1" value="4" />
+          <input id="total-players" type="number" min="1" max="4" value="4" />
         </div>
         <div>
           <label for="score-reels"><b>Score Reels per Player:</b></label>
-          <input id="score-reels" type="number" min="1" value="1" />
+          <input id="score-reels" type="number" min="1" max="5" value="1" />
         </div>
         <div>
           <label for="dummy-reels"><b>Dummy Reels:</b></label>
-          <input id="dummy-reels" type="number" min="0" value="0" />
+          <input id="dummy-reels" type="number" min="0" max="4" value="0" />
         </div>
       </div>
       <button id="save-game-config" style="margin-left: 1rem; display: none">
@@ -201,25 +236,37 @@
       </div>
     </div>
 
-    <div style="margin-top: 1.5rem">
-      <label><b>Player 1 Timing Filter:</b></label>
-      <div class="timing-legend">
-        <span class="timing-legend-score">&#9632; Score (detection depth)</span>
-        <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+    <div style="margin-top: 1.5rem" class="timing-section">
+      <div class="timing-section-main">
+        <label><b>Player 1 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p1">
+          <!-- dynamically populated by admin.js -->
+        </div>
       </div>
-      <div class="timing-adj-row" id="timing-adj-p1">
-        <!-- dynamically populated by admin.js -->
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 1 Score</div>
+        <div class="live-player-score-value" id="live-score-p1">0</div>
       </div>
     </div>
 
-    <div style="margin-top: 1.5rem">
-      <label><b>Player 2 Timing Filter:</b></label>
-      <div class="timing-legend">
-        <span class="timing-legend-score">&#9632; Score (detection depth)</span>
-        <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+    <div style="margin-top: 1.5rem" class="timing-section">
+      <div class="timing-section-main">
+        <label><b>Player 2 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p2">
+          <!-- dynamically populated by admin.js -->
+        </div>
       </div>
-      <div class="timing-adj-row" id="timing-adj-p2">
-        <!-- dynamically populated by admin.js -->
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 2 Score</div>
+        <div class="live-player-score-value" id="live-score-p2">0</div>
       </div>
     </div>
   </section>

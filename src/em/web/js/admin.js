@@ -26,13 +26,13 @@ async function initSetupUI() {
       }
       if (players && (cfg.total_players != null || cfg.players != null)) {
         // server may return 'players' or 'total_players'
-        players.value = Number(cfg.total_players ?? cfg.players) || 0;
+        players.value = clampTotalPlayers(cfg.total_players ?? cfg.players);
       }
       if (reels && (cfg.score_reels != null || cfg.reels_per_player != null)) {
-        reels.value = Number(cfg.score_reels ?? cfg.reels_per_player) || 0;
+        reels.value = clampScoreReels(cfg.score_reels ?? cfg.reels_per_player);
       }
       if (dummy && cfg.dummy_reels != null)
-        dummy.value = Number(cfg.dummy_reels) || 0;
+        dummy.value = clampDummyReels(cfg.dummy_reels);
       serverCfgLoaded = true;
     }
   } catch (e) {
@@ -45,14 +45,29 @@ async function initSetupUI() {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("change", () => {
+      const playersInput = document.getElementById("total-players");
+      const clampedTotalPlayers = clampTotalPlayers(playersInput ? playersInput.value : 1);
+      if (playersInput) {
+        playersInput.value = String(clampedTotalPlayers);
+      }
+
+      const reelsInput = document.getElementById("score-reels");
+      const clampedScoreReels = clampScoreReels(reelsInput ? reelsInput.value : 1);
+      if (reelsInput) {
+        reelsInput.value = String(clampedScoreReels);
+      }
+
+      const dummyInput = document.getElementById("dummy-reels");
+      const clampedDummyReels = clampDummyReels(dummyInput ? dummyInput.value : 0);
+      if (dummyInput) {
+        dummyInput.value = String(clampedDummyReels);
+      }
+
       const data = {
         name: document.getElementById("game-name").value,
-        total_players:
-          parseInt(document.getElementById("total-players").value, 10) || 1,
-        score_reels:
-          parseInt(document.getElementById("score-reels").value, 10) || 1,
-        dummy_reels:
-          parseInt(document.getElementById("dummy-reels").value, 10) || 0,
+        total_players: clampedTotalPlayers,
+        score_reels: clampedScoreReels,
+        dummy_reels: clampedDummyReels,
       };
       try {
         localStorage.setItem("game_config", JSON.stringify(data));
@@ -68,10 +83,9 @@ async function initSetupUI() {
     const stored = JSON.parse(localStorage.getItem("game_config") || "null");
     if (stored && !serverCfgLoaded) {
       document.getElementById("game-name").value = stored.name || "";
-      document.getElementById("total-players").value =
-        stored.total_players || 1;
-      document.getElementById("score-reels").value = stored.score_reels || 1;
-      document.getElementById("dummy-reels").value = stored.dummy_reels || 0;
+      document.getElementById("total-players").value = clampTotalPlayers(stored.total_players || 1);
+      document.getElementById("score-reels").value = clampScoreReels(stored.score_reels || 1);
+      document.getElementById("dummy-reels").value = clampDummyReels(stored.dummy_reels || 0);
     }
   } catch (e) {}
 }
@@ -125,13 +139,29 @@ async function loadConfiguredSsidSignal() {
 
 // Save game configuration to server (calls existing endpoint if available)
 async function saveGameConfig() {
+  const totalPlayers = clampTotalPlayers(document.getElementById("total-players").value);
+  const playersInput = document.getElementById("total-players");
+  if (playersInput) {
+    playersInput.value = String(totalPlayers);
+  }
+
+  const scoreReels = clampScoreReels(document.getElementById("score-reels").value);
+  const reelsInput = document.getElementById("score-reels");
+  if (reelsInput) {
+    reelsInput.value = String(scoreReels);
+  }
+
+  const dummyReels = clampDummyReels(document.getElementById("dummy-reels").value);
+  const dummyInput = document.getElementById("dummy-reels");
+  if (dummyInput) {
+    dummyInput.value = String(dummyReels);
+  }
+
   const data = {
     name: document.getElementById("game-name").value,
-    players: parseInt(document.getElementById("total-players").value, 10) || 1,
-    reels_per_player:
-      parseInt(document.getElementById("score-reels").value, 10) || 1,
-    dummy_reels:
-      parseInt(document.getElementById("dummy-reels").value, 10) || 0,
+    players: totalPlayers,
+    reels_per_player: scoreReels,
+    dummy_reels: dummyReels,
   };
 
   try {
@@ -153,12 +183,48 @@ const SENSITIVITY_MAX = 100;
 const SENSITIVITY_STEP = 1;
 const SENSITIVITY_DEFAULT = 50;
 
-// Timing sensitivity: decade columns in descending order, value range 1–16
-const TIMING_ADJ_LABELS = ["10000s", "1000s", "100s", "10s", "1s"];
+// Timing sensitivity: 5 decade columns in descending order, value range 1–16
+const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
 const TIMING_ADJ_DEFAULT_SCORE = 8;
 const TIMING_ADJ_DEFAULT_RESET = 8;
 const TIMING_ADJ_MIN = 1;
 const TIMING_ADJ_MAX = 16;
+const TIMING_ADJ_COLUMN_COUNT = TIMING_ADJ_BASE_LABELS.length;
+const TOTAL_PLAYERS_MIN = 1;
+const TOTAL_PLAYERS_MAX = 4;
+const SCORE_REELS_MIN = 1;
+const SCORE_REELS_MAX = 5;
+const DUMMY_REELS_MIN = 0;
+const DUMMY_REELS_MAX = 4;
+
+function clampTotalPlayers(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return TOTAL_PLAYERS_MIN;
+  return Math.min(TOTAL_PLAYERS_MAX, Math.max(TOTAL_PLAYERS_MIN, parsed));
+}
+
+function clampScoreReels(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return SCORE_REELS_MIN;
+  return Math.min(SCORE_REELS_MAX, Math.max(SCORE_REELS_MIN, parsed));
+}
+
+function clampDummyReels(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return DUMMY_REELS_MIN;
+  return Math.min(DUMMY_REELS_MAX, Math.max(DUMMY_REELS_MIN, parsed));
+}
+
+function getConfiguredDummyReels() {
+  const dummyInput = document.getElementById("dummy-reels");
+  if (!dummyInput) return DUMMY_REELS_MIN;
+  return clampDummyReels(dummyInput.value);
+}
+
+function getTimingAdjLabels(dummyReels) {
+  const zeros = "0".repeat(Math.max(0, Number(dummyReels) || 0));
+  return TIMING_ADJ_BASE_LABELS.map((base) => base + zeros + "s");
+}
 
 // Build an adjuster group element (label, up button, value display, down button)
 // colorClass: "score" (red), "reset" (blue), or "" for plain
@@ -275,7 +341,7 @@ async function initSensitivityUI() {
 // Timing filter: per-decade score (red) and reset (blue) depth adjusters, 1–16
 // p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths
 async function initTimingSensitivityUI() {
-  const N = TIMING_ADJ_LABELS.length;
+  const N = TIMING_ADJ_COLUMN_COUNT;
   let p1_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
   let p1_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
   let p2_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
@@ -303,12 +369,12 @@ async function initTimingSensitivityUI() {
     }
   }
 
-  function buildPlayerRow(containerId, scoreArr, resetArr) {
+  function buildPlayerRow(containerId, scoreArr, resetArr, labels) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = "";
 
-    TIMING_ADJ_LABELS.forEach((label, i) => {
+    labels.forEach((label, i) => {
       const col = document.createElement("div");
       col.className = "decade-col";
 
@@ -361,8 +427,20 @@ async function initTimingSensitivityUI() {
     });
   }
 
-  buildPlayerRow("timing-adj-p1", p1_score, p1_reset);
-  buildPlayerRow("timing-adj-p2", p2_score, p2_reset);
+  function renderTimingRows() {
+    const labels = getTimingAdjLabels(getConfiguredDummyReels());
+    buildPlayerRow("timing-adj-p1", p1_score, p1_reset, labels);
+    buildPlayerRow("timing-adj-p2", p2_score, p2_reset, labels);
+  }
+
+  renderTimingRows();
+
+  const dummyInput = document.getElementById("dummy-reels");
+  if (dummyInput && !dummyInput.dataset.timingLabelsBound) {
+    dummyInput.addEventListener("input", renderTimingRows);
+    dummyInput.addEventListener("change", renderTimingRows);
+    dummyInput.dataset.timingLabelsBound = "1";
+  }
 }
 
 
@@ -426,6 +504,7 @@ initSetupUI();
 initSensitivityUI();
 initTimingSensitivityUI();
 startSensorActivityPolling();
+startLivePlayerScorePolling();
 
 // wire save button
 const saveGameConfigBtn = document.getElementById("save-game-config");
@@ -460,6 +539,38 @@ function startSensorActivityPolling() {
     } catch (e) {
       // ignore — lamp just stays dark
       lamp.style.background = "#444";
+    }
+    setTimeout(poll, POLL_MS);
+  }
+
+  poll();
+}
+
+// Live player score indicators beside timing filter controls
+function startLivePlayerScorePolling() {
+  const p1El = document.getElementById("live-score-p1");
+  const p2El = document.getElementById("live-score-p2");
+  if (!p1El && !p2El) return;
+
+  const POLL_MS = 1000;
+
+  function formatScore(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "0";
+    return Math.trunc(n).toLocaleString();
+  }
+
+  async function poll() {
+    try {
+      const resp = await window.smartFetch("/api/game/status", null, false);
+      if (resp && resp.ok) {
+        const data = await resp.json();
+        const scores = Array.isArray(data.Scores) ? data.Scores : [];
+        if (p1El) p1El.textContent = formatScore(scores[0] ?? 0);
+        if (p2El) p2El.textContent = formatScore(scores[1] ?? 0);
+      }
+    } catch (e) {
+      // keep last displayed values on transient errors
     }
     setTimeout(poll, POLL_MS);
   }

@@ -5,7 +5,7 @@
 Score Track
     This module is responsible for tracking scores and updating the leaderboard.
 
-    EM version
+    EM version_viper_process
 
 """
 import array
@@ -20,7 +20,7 @@ import SharedState as S
 import SPI_DataStore as DataStore
 import uctypes
 from logger import logger_instance
-from machine import RTC, Timer
+from machine import Pin, RTC, Timer
 from ScoreTrackFilter_viper import _viper_process
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 
@@ -50,6 +50,8 @@ segmentMS = 0
 # gpio1 = Pin(1, Pin.OUT)
 # gpio1.value(not gpio1.value())
 
+
+
 # Game History storage area and state machine defines
 GAME_HIST_SIZE = 10000
 gameHistory = None  # allocate lazily when capturing learning game
@@ -63,7 +65,7 @@ GAMEHIST_STATUS_OVERFLOW = 2
 gameHistoryStatus = GAMEHIST_STATUS_EMPTY
 
 # default pauses (can be overridden from EMData/S.gdata in _loadState)
-PROCESS_START_PAUSE = 8
+PROCESS_START_PAUSE = 20 #8
 PROCESS_END_PAUSE = 5
 
 gameover = False
@@ -126,7 +128,7 @@ def initialize():
     """
     from phew.server import schedule
 
-    schedule(processSensorData, 1000, 800)
+    schedule(processSensorData, 1000, 800)    
 
     loadState()
     # from displayMessage import init
@@ -167,7 +169,7 @@ def loadState():
 
     # load start/end pause values from configuration (EMData -> S.gdata)
     # keys are "startpause" and "endpause"; fall back to current defaults if missing
-    PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
+    #PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
     PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
     print("SCORE: pauses= ", PROCESS_START_PAUSE, PROCESS_END_PAUSE)
 
@@ -207,6 +209,45 @@ def loadState():
 
 def saveState():
     """store working config back to SPI_DataStore"""
+    def _coerce_timing_array(raw, fallback):
+        try:
+            vals = [int(v) for v in raw]
+        except Exception:
+            vals = list(fallback)
+        if len(vals) != 5:
+            vals = list(fallback)
+        out = []
+        for v in vals:
+            if v < 0:
+                v = 0
+            if v > DEPTH:
+                v = DEPTH
+            out.append(int(v))
+        return out
+
+    def _apply_player_timing(player_index, score_key, reset_key):
+        base = int(player_index) * 8
+
+        # UI order is [10000s, 1000s, 100s, 10s, 1s] while channel bits are
+        # [1s, 10s, 100s, 1000s, 10000s] at offsets [0..4].
+        def _ch_for_ui_idx(ui_idx):
+            return base + (4 - int(ui_idx))
+
+        default_score = [int(scoreDepths[_ch_for_ui_idx(d)]) for d in range(5)]
+        default_reset = [int(resetDepths[_ch_for_ui_idx(d)]) for d in range(5)]
+
+        score_vals = _coerce_timing_array(S.gdata.get(score_key, default_score), default_score)
+        reset_vals = _coerce_timing_array(S.gdata.get(reset_key, default_reset), default_reset)
+
+        for d in range(5):
+            ch = _ch_for_ui_idx(d)
+            setScoreMask(ch, score_vals[d], reset_vals[d])
+
+    # Timing arrays from API map to channel groups as player*8 + digit(0..4)
+    # P1: ch 0..4, P2: ch 8..12
+    _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
+    _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+
     # Build 64-byte filtermasks: for channel 0..31 store (scoreDepth, resetDepth)
     fm = bytearray(64)
     for ch in range(32):
@@ -239,7 +280,8 @@ def saveState():
         # DataStore.write_record("configuration",0)
 
         DataStore.write_record("EMData", S.gdata)
-        print("EMData updated from globals (filtermasks, carrythresholds).", S.gdata)
+        #print("EMData updated from globals (filtermasks, carrythresholds).", S.gdata)
+        printMasks()
     except Exception as e:
         print("Error writing EMData:", e)
 
@@ -254,6 +296,9 @@ def setScoreMask(bit, scoreDepth, resetDepth):
       resetDepth  - same semantics for reset_mask
     """
     global score_mask, reset_mask, scoreDepths, resetDepths
+
+
+    print("SCORE: setting score mask",bit,scoreDepth,resetDepth)
 
     if not (0 <= bit < 32):
         log.log("SCORE: bit - out of range 0..31")
@@ -882,7 +927,7 @@ def processAndRun():
         sc = processBitFilter(d & sensorBitMask)
 
         # keep all channels that go active for led display
-        allActivesChannels = allActivesChannels | d #sc
+        allActivesChannels = allActivesChannels | sc
         
         # Detect rising edges on all 32 bits at once
         risingEdge = (~last_sc) & sc
@@ -926,7 +971,7 @@ def processAndRun():
     end_time = time.ticks_ms()
     elapsed = time.ticks_diff(end_time, start_time)
     print("SCORE: samples=", x, "process/Run time:", elapsed, "ms")
-    print("SCORE: scores,", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
+    #print("SCORE: scores,", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
 
     return
 

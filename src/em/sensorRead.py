@@ -25,12 +25,20 @@ log = logger_instance
 # Pin assignments
 PIO_MISO_PIN = 12  
 PIO_SCK_PIN  = 10  
+DIAG_OUTPUT_PIN = 1
+GPIO11_OUTPUT_PIN = 11
 PIO_CS_PIN   = 13  # CS (or Load...)
 ANALOG_HI_GPIO = 19
 ANALOG_LOW_GPIO = 18
 
 #MISO data pin init
 machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_DOWN)
+
+#GPIO11 output init
+machine.Pin(GPIO11_OUTPUT_PIN, machine.Pin.OUT, value=1)
+
+#GPIO1 diagnostic output init
+machine.Pin(DIAG_OUTPUT_PIN, machine.Pin.OUT, value=0)
 
 #analog thresholds PWMs
 hiPwm = machine.PWM(machine.Pin(19))
@@ -59,25 +67,34 @@ def spi_master_16bit():
     push(noblock)
 
     #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 2)   # set(y, 19)
+    set(y, 2)   .side(2) # set(y, 19)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
+
+
+    set(y, 2)   .side(0)  # set(y, 19)
+    label("delay2")
+    nop()                   [1]
+    jmp(y_dec, "delay2")     [7]
+
+
 
     wrap()
 
 
 
 
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH) 
 def spi_master_16bit_invert():
    
     wrap_target()
 
-    mov(isr,invert(null))
+    mov(isr,invert(null))   .side(0)
 
-    set(x, 7)                          #init first transfer bit length
-    set(pins, 1)             [7]        #set load pin high
+    set(pins, 1)                [3] #[7]        #set load pin high
+    set(x, 7)                   [3]       #init first transfer bit length   
+    nop()                       [3]
 
     label("MSbitloop")         
     nop()                    .side(0)  [1]
@@ -101,13 +118,31 @@ def spi_master_16bit_invert():
     push(noblock)
 
     #Delay loop for pause between reads - set up for 0.775mS cycle
-    set(y, 11)     # set(y, 19)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [7]
+    set(y, 11)    .side(2)   # set(y, 11)    
+    label("delay2")
+    nop()                   [3]
+    nop()  [2]
+    jmp(y_dec, "delay2")    [3]
+
 
     wrap()
 
+
+
+    """
+    set(y, 11)    .side(2) # set(y, 11)    
+    label("delay")
+    nop()                   [1]
+    jmp(y_dec, "delay")     [2]  #[7]
+
+    set(y, 11)    .side(0)   # set(y, 11)    
+    label("delay2")
+    nop()                   [1]
+    jmp(y_dec, "delay2")     [2] #[7]
+
+
+    wrap()
+    """
 
 
 

@@ -12,8 +12,6 @@ import resource
 import time
 
 import sensorRead
-sensorRead.initialize()
-
 
 import faults
 import GameDefsLoad
@@ -109,12 +107,14 @@ if not ap_mode:
 else:
     GameDefsLoad.go(safe_mode=True)
 
-sensorRead.calibrate()
+
+#initialization order is important
 ScoreTrack.initialize()
+sensorRead.initialize()
 resource.go(True)
 
 # launch wifi, and server. Should not return
-from backend import go  # noqa: E402
+from backend import go  # noqa: E402SCORE: scores
 print("MAIN: Launching Wifi AP mode=", ap_mode)
 go(ap_mode)
 Log.log("MAIN: drop through fault")
