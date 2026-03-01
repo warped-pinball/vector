@@ -35,7 +35,14 @@ def push_end_of_game(game):
     print("Pushing end_of_game:", game)
 
     # ensure list of tuples with initial, and score
-    plays = [play for play in game[1:] if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0]
+    plays = []
+    for play in game[1:]:
+        if len(play) == 2 and isinstance(play[0], str) and isinstance(play[1], int) and play[1] != 0:
+            if isinstance(play, tuple):
+                plays.append(list(play))
+            else:
+                plays.append(play)
+
     if not plays:
         return
 
