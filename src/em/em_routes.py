@@ -23,7 +23,9 @@ def sensor_activity(request):
     age = time.ticks_diff(time.ticks_ms(), S.sensor_last_hit_ms)
     active = (age < 600)
     level = int(getattr(S, "sensor_activity_level", 0))
-    if level <= 0:
+    if not active:
+        state = "off"
+    elif level <= 0:
         state = "off"
     elif level == 1:
         state = "green"
@@ -131,37 +133,50 @@ def recalibrate_sensors(request):
 
 _TIMING_ADJ_COUNT = 5
 _TIMING_ADJ_DEFAULT = [8, 8, 8, 8, 8]
+_TIMING_ADJ_MIN = 1
+_TIMING_ADJ_SCORE_MAX = 10
+_TIMING_ADJ_RESET_MAX = 15
 
 
 @add_route("/api/em/get_timing_sensitivity")
 def get_timing_sensitivity(request):
-    """Return per-player timing sensitivity arrays (5 values each, 1–16).
+    """Return per-player timing sensitivity arrays (5 values each).
+    Score values are 1–10. Reset values are 1–15.
     Keys: p1_score, p1_reset, p2_score, p2_reset.
     """
-    def _get(key):
+    def _get(key, value_max):
         v = list(S.gdata.get(key, _TIMING_ADJ_DEFAULT))
         if len(v) != _TIMING_ADJ_COUNT:
             v = _TIMING_ADJ_DEFAULT[:]
-        return v
+        out = []
+        for item in v:
+            try:
+                num = int(item)
+            except Exception:
+                num = _TIMING_ADJ_DEFAULT[len(out)]
+            num = max(_TIMING_ADJ_MIN, min(value_max, num))
+            out.append(num)
+        return out
 
-    p1_score = _get("timing_p1_score")
-    p1_reset = _get("timing_p1_reset")
-    p2_score = _get("timing_p2_score")
-    p2_reset = _get("timing_p2_reset")
+    p1_score = _get("timing_p1_score", _TIMING_ADJ_SCORE_MAX)
+    p1_reset = _get("timing_p1_reset", _TIMING_ADJ_RESET_MAX)
+    p2_score = _get("timing_p2_score", _TIMING_ADJ_SCORE_MAX)
+    p2_reset = _get("timing_p2_reset", _TIMING_ADJ_RESET_MAX)
     print(f"EMSEN: get_timing_sensitivity -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
     return {"p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
 
 
 @add_route("/api/em/set_timing_sensitivity", auth=True)
 def set_timing_sensitivity(request):
-    """Set per-player timing sensitivity arrays (5 values each, 1–16).
+    """Set per-player timing sensitivity arrays (5 values each).
+    Score values are 1–10. Reset values are 1–15.
     Expects: p1_score, p1_reset, p2_score, p2_reset.
     """
     print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
 
-    def _coerce(raw):
+    def _coerce(raw, value_max):
         try:
-            out = [max(1, min(16, int(v))) for v in raw]
+            out = [max(_TIMING_ADJ_MIN, min(value_max, int(v))) for v in raw]
         except Exception:
             out = _TIMING_ADJ_DEFAULT[:]
         if len(out) != _TIMING_ADJ_COUNT:
@@ -169,10 +184,10 @@ def set_timing_sensitivity(request):
         return out
 
     d = request.data or {}
-    p1_score = _coerce(d.get("p1_score", _TIMING_ADJ_DEFAULT))
-    p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT))
-    p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT))
-    p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT))
+    p1_score = _coerce(d.get("p1_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
+    p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
+    p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
+    p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
 
     S.gdata["timing_p1_score"] = p1_score
     S.gdata["timing_p1_reset"] = p1_reset

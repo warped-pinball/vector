@@ -183,12 +183,14 @@ const SENSITIVITY_MAX = 100;
 const SENSITIVITY_STEP = 1;
 const SENSITIVITY_DEFAULT = 50;
 
-// Timing sensitivity: 5 decade columns in descending order, value range 1–16
+// Timing sensitivity: 5 decade columns in descending order.
+// Score range: 1–10, Reset range: 1–15
 const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
 const TIMING_ADJ_DEFAULT_SCORE = 8;
 const TIMING_ADJ_DEFAULT_RESET = 8;
 const TIMING_ADJ_MIN = 1;
-const TIMING_ADJ_MAX = 16;
+const TIMING_ADJ_SCORE_MAX = 10;
+const TIMING_ADJ_RESET_MAX = 15;
 const TIMING_ADJ_COLUMN_COUNT = TIMING_ADJ_BASE_LABELS.length;
 const TOTAL_PLAYERS_MIN = 1;
 const TOTAL_PLAYERS_MAX = 4;
@@ -224,6 +226,25 @@ function getConfiguredDummyReels() {
 function getTimingAdjLabels(dummyReels) {
   const zeros = "0".repeat(Math.max(0, Number(dummyReels) || 0));
   return TIMING_ADJ_BASE_LABELS.map((base) => base + zeros + "s");
+}
+
+function clampTimingAdjScore(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_SCORE;
+  return Math.min(TIMING_ADJ_SCORE_MAX, Math.max(TIMING_ADJ_MIN, Math.trunc(n)));
+}
+
+function clampTimingAdjReset(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_RESET;
+  return Math.min(TIMING_ADJ_RESET_MAX, Math.max(TIMING_ADJ_MIN, Math.trunc(n)));
+}
+
+function coerceTimingArray(raw, fallback, clampFn) {
+  if (!Array.isArray(raw) || raw.length !== TIMING_ADJ_COLUMN_COUNT) {
+    return fallback.slice();
+  }
+  return raw.map((v) => clampFn(v));
 }
 
 // Build an adjuster group element (label, up button, value display, down button)
@@ -338,7 +359,7 @@ async function initSensitivityUI() {
   updateDisplay();
 }
 
-// Timing filter: per-decade score (red) and reset (blue) depth adjusters, 1–16
+// Timing filter: per-decade score (red) and reset (blue) depth adjusters
 // p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths
 async function initTimingSensitivityUI() {
   const N = TIMING_ADJ_COLUMN_COUNT;
@@ -351,10 +372,10 @@ async function initTimingSensitivityUI() {
     const resp = await window.smartFetch("/api/em/get_timing_sensitivity", null, false);
     if (resp && resp.ok) {
       const data = await resp.json();
-      if (Array.isArray(data.p1_score) && data.p1_score.length === N) p1_score = data.p1_score.map(Number);
-      if (Array.isArray(data.p1_reset) && data.p1_reset.length === N) p1_reset = data.p1_reset.map(Number);
-      if (Array.isArray(data.p2_score) && data.p2_score.length === N) p2_score = data.p2_score.map(Number);
-      if (Array.isArray(data.p2_reset) && data.p2_reset.length === N) p2_reset = data.p2_reset.map(Number);
+      p1_score = coerceTimingArray(data.p1_score, p1_score, clampTimingAdjScore);
+      p1_reset = coerceTimingArray(data.p1_reset, p1_reset, clampTimingAdjReset);
+      p2_score = coerceTimingArray(data.p2_score, p2_score, clampTimingAdjScore);
+      p2_reset = coerceTimingArray(data.p2_reset, p2_reset, clampTimingAdjReset);
     }
   } catch (e) {
     // use defaults
@@ -387,8 +408,8 @@ async function initTimingSensitivityUI() {
       const { group: sg, valDisplay: sv } = buildAdjGroup(
         "Score", scoreArr[i], "score",
         async () => {
-          if (scoreArr[i] < TIMING_ADJ_MAX) {
-            scoreArr[i] = Math.min(TIMING_ADJ_MAX, scoreArr[i] + 1);
+          if (scoreArr[i] < TIMING_ADJ_SCORE_MAX) {
+            scoreArr[i] = Math.min(TIMING_ADJ_SCORE_MAX, scoreArr[i] + 1);
             sv.textContent = String(scoreArr[i]);
             await saveTimingSensitivity();
           }
@@ -407,8 +428,8 @@ async function initTimingSensitivityUI() {
       const { group: rg, valDisplay: rv } = buildAdjGroup(
         "Reset", resetArr[i], "reset",
         async () => {
-          if (resetArr[i] < TIMING_ADJ_MAX) {
-            resetArr[i] = Math.min(TIMING_ADJ_MAX, resetArr[i] + 1);
+          if (resetArr[i] < TIMING_ADJ_RESET_MAX) {
+            resetArr[i] = Math.min(TIMING_ADJ_RESET_MAX, resetArr[i] + 1);
             rv.textContent = String(resetArr[i]);
             await saveTimingSensitivity();
           }
