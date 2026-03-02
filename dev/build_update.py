@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 import os
+import zlib
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,8 @@ from cryptography.hazmat.primitives.asymmetric import padding
 BUILD_DIR = "build"
 SOURCE_DIR = "src"
 OUTPUT_FILE = "update.json"
+MIN_COMPRESS_WBITS = 5
+MAX_COMPRESS_WBITS = 7
 
 
 def all_combos(pico_list, micropython_list):
@@ -86,8 +89,9 @@ def build_update_metadata(target_hardware: str, version: str) -> dict:
 def make_file_line(
     file_path: str,
     file_contents: bytes,
+    execute: bool,
     custom_log: Optional[str] = None,
-    execute: bool = False,
+    wbits: Optional[int] = None,
 ) -> str:
     """
     Create a single line representing one file's update entry:
@@ -107,6 +111,8 @@ def make_file_line(
     }
     if execute:
         file_meta["execute"] = True
+    if wbits is not None:
+        file_meta["wbits"] = wbits
 
     meta_json = json.dumps(file_meta, separators=(",", ":"))
     return f"{file_path}{meta_json}{b64_data}"
@@ -205,6 +211,47 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
     )
 
 
+def build_compression_enablement_code() -> str:
+    """Create an executable update line that enforces reboot when updater code is first installed."""
+    code = "\n".join(
+        [
+            "import update",
+            "supports = getattr(update, 'supports_compression', False)",
+            "if not supports:",
+            "    raise RuntimeError('Compression support has been installed. Reboot the board and re-apply this update.')",
+            "",
+        ]
+    )
+    return make_file_line(
+        "enable_compression.py",
+        code.encode("utf-8"),
+        custom_log="Checking compression support",
+        execute=True,
+    )
+
+
+def maybe_compress_file(path: str, contents: bytes, *, execute: bool) -> tuple[bytes, Optional[int]]:
+    """Return potentially compressed bytes and matching wbits metadata for a file entry."""
+    if execute or path == "update.py":
+        return contents, None
+
+    best_payload = contents
+    best_wbits = None
+    for wbits in range(MIN_COMPRESS_WBITS, MAX_COMPRESS_WBITS + 1):
+        try:
+            compressor = zlib.compressobj(level=9, wbits=wbits)
+        except ValueError:
+            continue
+        compressed = compressor.compress(contents) + compressor.flush()
+        if len(compressed) < len(best_payload):
+            best_payload = compressed
+            best_wbits = wbits
+
+    if best_wbits is None:
+        return contents, None
+    return best_payload, best_wbits
+
+
 def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
     """
     Compute the SHA256 over 'data'.
@@ -244,9 +291,12 @@ def build_update_file(
     if any(name in compatible_configurations for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
-    file_lines = [build_update_metadata(target_hardware, version), build_confirm_compatibility_code(target_hardware), build_remove_extra_files_code(build_dir)]
+    file_lines = [
+        build_update_metadata(target_hardware, version),
+        build_confirm_compatibility_code(target_hardware),
+    ]
 
-    # 2b) everything else in build_dir
+    # write update.py first so the enablement check validates the updated updater module
     for root, _, files in os.walk(build_dir):
         for file_name in files:
             file_path = Path(root) / file_name
@@ -254,7 +304,21 @@ def build_update_file(
             if relative_path == "remove_extra_files.py":
                 continue
             contents = get_file_contents(file_path)
-            file_lines.append(make_file_line(relative_path, contents, custom_log=f"Uploading {relative_path}"))
+            if relative_path == "update.py":
+                file_lines.append(make_file_line(relative_path, contents, custom_log=f"Uploading {relative_path}", execute=False))
+
+    file_lines.append(build_compression_enablement_code())
+    file_lines.append(build_remove_extra_files_code(build_dir))
+
+    for root, _, files in os.walk(build_dir):
+        for file_name in files:
+            file_path = Path(root) / file_name
+            relative_path = os.path.relpath(file_path, build_dir).replace("\\", "/")
+            if relative_path in {"remove_extra_files.py", "update.py"}:
+                continue
+            contents = get_file_contents(file_path)
+            payload, wbits = maybe_compress_file(relative_path, contents, execute=False)
+            file_lines.append(make_file_line(relative_path, payload, custom_log=f"Uploading {relative_path}", execute=False, wbits=wbits))
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.

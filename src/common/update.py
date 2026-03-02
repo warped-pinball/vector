@@ -1,3 +1,6 @@
+supports_compression = True
+
+
 def read_last_significant_line(path):
     """
     Returns the last non-whitespace line from 'path' in bytes.
@@ -241,6 +244,7 @@ def apply_update(url, skip_signature_check=False):
 
 def write_files():
     from binascii import a2b_base64
+    from io import BytesIO
     from json import loads as json_loads
     from os import remove
 
@@ -303,6 +307,7 @@ def write_files():
                 pass
 
             # write the file
+            compressed_chunks = bytearray() if metadata.get("wbits") is not None else None
             with open(path, "wb") as out_f:
                 while True:
                     # I tried using a buufer here, but it's very tricky
@@ -310,10 +315,29 @@ def write_files():
                     if not chunk:
                         break
                     if chunk.endswith("\n"):
-                        out_f.write(a2b_base64(chunk[:-1]))
+                        decoded = a2b_base64(chunk[:-1])
+                        if compressed_chunks is None:
+                            out_f.write(decoded)
+                        else:
+                            compressed_chunks.extend(decoded)
                         break
                     else:
-                        out_f.write(a2b_base64(chunk))
+                        decoded = a2b_base64(chunk)
+                        if compressed_chunks is None:
+                            out_f.write(decoded)
+                        else:
+                            compressed_chunks.extend(decoded)
+
+            if compressed_chunks is not None:
+                from deflate import DeflateIO, ZLIB
+
+                with open(path, "wb") as out_f:
+                    with DeflateIO(BytesIO(compressed_chunks), ZLIB, metadata["wbits"]) as deflated:
+                        while True:
+                            raw = deflated.read(128)
+                            if not raw:
+                                break
+                            out_f.write(raw)
 
             # if execute is true, run the file
             if metadata.get("execute", False):
