@@ -139,16 +139,14 @@ def download_update(url):
     percent_per_chunk = buffer_size * (end_percent - start_percent) / total_length
 
     percent = start_percent
-    buff = bytearray(buffer_size)
-    view = memoryview(buff)
 
     with open("update.json", "wb") as f:
         while True:
-            n = response.readinto(view)
-            if not n:
+            chunk = response.read(buffer_size)
+            if not chunk:
                 break
 
-            f.write(view[:n])
+            f.write(chunk)
 
             percent += percent_per_chunk * ((end_percent - percent) / percent)
             yield {"percent": percent}
