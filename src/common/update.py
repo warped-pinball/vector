@@ -199,26 +199,6 @@ def apply_update(url, skip_signature_check=False):
     machine_reset()
 
 
-def crc16_of_file(path: str) -> str:
-    def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
-        for byte in data:
-            crc ^= byte << 8
-            for _ in range(8):
-                if crc & 0x8000:
-                    crc = (crc << 1) ^ 0x1021
-                else:
-                    crc <<= 1
-                crc &= 0xFFFF
-        return crc
-
-    crc = 0xFFFF
-    with open(path, "rb") as file:
-        while chunk := file.read(1024):
-            crc = crc16_ccitt(chunk, crc)
-
-    return f"{crc:04X}"
-
-
 def write_files():
     from binascii import a2b_base64
     from json import loads as json_loads
