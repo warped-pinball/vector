@@ -154,7 +154,7 @@ def download_update(url):
     response.close()
 
 
-class low_memory_mode:
+class LowMemoryMode:
     def __enter__(self):
         # halt the schedule so we aren't allocating ram for other tasks
         import phew.server
@@ -199,7 +199,7 @@ class low_memory_mode:
 
 
 def apply_update(url, skip_signature_check=False):
-    with low_memory_mode():
+    with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
 
