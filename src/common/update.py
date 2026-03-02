@@ -162,15 +162,18 @@ class low_memory_mode:
         phew.server._halt_schedule = True
 
         # drop the state for discovery since we can recover it
-        import discovery
+        try:
+            import discovery
 
-        discovery.send_sock.close()
-        discovery.recv_sock.close()
+            discovery.send_sock.close()
+            discovery.recv_sock.close()
 
-        discovery.send_sock = None
-        discovery.recv_sock = None
+            discovery.send_sock = None
+            discovery.recv_sock = None
 
-        discovery.known_devices = []
+            discovery.known_devices = []
+        except Exception as e:
+            print("Unable to shut down discovery sockets:", e)
 
         from gc import collect as gc_collect
 
@@ -179,10 +182,13 @@ class low_memory_mode:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # reintroduce ourselves and reinitialize the sockets
-        from discovery import broadcast_hello, listen
+        try:
+            from discovery import broadcast_hello, listen
 
-        broadcast_hello()
-        listen()
+            broadcast_hello()
+            listen()
+        except Exception as e:
+            print("Unable to reinitialize discovery sockets:", e)
 
         # resume the task schedule
         import phew.server
