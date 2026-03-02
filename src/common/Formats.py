@@ -42,6 +42,7 @@ MODE_ID_GOLF = 3
 MODE_ID_PRACTICE = 4
 MODE_ID_HALF_LIFE = 5
 MODE_ID_LONGESTBALL = 6
+MODE_ID_ONEBALL = 7
 
 
 """
@@ -128,6 +129,18 @@ DEFAULT_FORMATS = {
         "Id": MODE_ID_LONGESTBALL,
         "Sort": "Normal",
         "Description": "Longest single ball play time wins",
+        "Options": {
+            "GetPlayerID": {
+                "Name": "Collect Player Initials",
+                "Type": "fixed",
+                "Value": True
+            }
+        }                  
+    },
+    "OneBall": {
+        "Id": MODE_ID_ONEBALL,
+        "Sort": "Normal",
+        "Description": "Only one ball to play",
         "Options": {
             "GetPlayerID": {
                 "Name": "Collect Player Initials",
@@ -540,6 +553,21 @@ def longest_ball_run():
     return True
   
 
+
+def one_ball_run():
+    """
+    one ball only - just end the game after one ball
+    """
+    global player_scores
+    ball_in_play = DataMapper.get_ball_in_play()
+    if ball_in_play<5:
+        DataMapper.write_ball_in_play(5)
+
+    player_scores = DataMapper.get_live_scores(use_format=False)
+    return DataMapper.get_game_active()
+
+
+
 # ============================================================================
 # Stub Mode Handlers
 # ============================================================================
@@ -642,11 +670,14 @@ def formats_run():
             game_state = 3   # timeout           
         else:
             scores = DataMapper.read_high_scores()
+            if len(scores) >= 5:
+                scores = scores[-4:]
+
             print("FORMAT: high score read:",scores)
             
             # Check high scores - handle both WPC (5 scores) and SYS11 (4 scores) formats
             high_score_count = 0
-            for x in range(0, min(5, len(scores))):
+            for x in range(0, len(scores)):
                 alpha_count = sum(1 for c in scores[x][0] if c.isalpha())
                 if scores[x][1] > 100 and alpha_count > 2:  #score and three initials are in 
                     high_score_count += 1
@@ -712,7 +743,9 @@ FORMAT_HANDLERS = [
     # 5: Half Life
     [half_life_init, half_life_run, empty_close],
     # 6: Longest Ball
-    [longest_ball_init, longest_ball_run, empty_close]
+    [longest_ball_init, longest_ball_run, empty_close],
+    # 7: One Ball
+    [empty_init, one_ball_run, empty_close]
 ]
 
 
