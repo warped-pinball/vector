@@ -40,25 +40,19 @@ def parse_config_line(line):
 
 
 def iter_config_lines():
-    """Yield config lines from compressed (preferred) or plain JSONL file."""
-    config_paths = ("config/all.jsonl.z", "config/all.jsonl")
-    for config_path in config_paths:
-        try:
-            if config_path.endswith(".z"):
-                with open(config_path, "rb") as f:
-                    with deflate.DeflateIO(f, deflate.ZLIB, 8) as zipped_file:
-                        for line in zipped_file:
-                            yield line.decode("utf-8") if isinstance(line, bytes) else line
-            else:
-                with open(config_path, "r") as f:
-                    for line in f:
-                        yield line
-            return
-        except OSError:
-            continue
-        except Exception as e:
-            Log.log(f"Error opening config file {config_path}: {e}")
-            return
+    """Yield config lines one at a time from the compressed config file."""
+    try:
+        with open("config/all.jsonl.z", "rb") as f:
+            with deflate.DeflateIO(f, deflate.ZLIB, 8) as zipped_file:
+                while True:
+                    line = zipped_file.readline()
+                    if not line:
+                        break
+                    line = line.strip()
+                    if line:
+                        yield line.decode("utf-8")
+    except Exception as e:
+        Log.log(f"Error opening config file config/all.jsonl.z: {e}")
 
 
 def find_config_in_file(target_filename):
