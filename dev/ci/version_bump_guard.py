@@ -104,6 +104,38 @@ def changed_files(base_ref: str, head_ref: str) -> list[str]:
     return [line.strip() for line in output.splitlines() if line.strip()]
 
 
+def common_python_changed_excluding_vector_version(base_ref: str, head_ref: str) -> bool:
+    """Return True when src/common python logic changed outside the VectorVersion line.
+
+    This is used to decide whether all hardware SystemVersion values must be bumped.
+    """
+
+    changed = changed_files(base_ref, head_ref)
+    common_python_files = [
+        path
+        for path in changed
+        if str(PurePosixPath(path)).startswith("src/common/") and path.endswith(".py")
+    ]
+    if not common_python_files:
+        return False
+
+    for file_path in common_python_files:
+        if file_path != "src/common/SharedState.py":
+            return True
+
+        diff_output = _run_git("diff", "-U0", f"{base_ref}...{head_ref}", "--", file_path)
+        for line in diff_output.splitlines():
+            if not line or line[0] not in "+-":
+                continue
+            if line.startswith(("+++", "---")):
+                continue
+            if re.search(VECTOR_VERSION_PATTERN, line[1:]):
+                continue
+            return True
+
+    return False
+
+
 def _extract_version(text: str, pattern: str, file_path: str) -> str:
     match = re.search(pattern, text)
     if not match:
@@ -250,10 +282,19 @@ def main() -> int:
     args = parser.parse_args()
 
     changed = changed_files(args.base, args.head)
+    common_non_vector_changed = common_python_changed_excluding_vector_version(args.base, args.head)
     outcomes: list[RuleOutcome] = []
     for rule in RULES:
         try:
-            outcomes.append(analyze_rule(rule, changed, args.base, args.head))
+            rule_changed = changed
+            if (
+                rule.version_pattern == SYSTEM_VERSION_PATTERN
+                and not touches_scope(changed, rule.scope_prefixes)
+                and common_non_vector_changed
+            ):
+                rule_changed = [*changed, rule.scope_prefixes[0]]
+
+            outcomes.append(analyze_rule(rule, rule_changed, args.base, args.head))
         except subprocess.CalledProcessError as exc:
             print(f"Failed to read {rule.version_file}: {exc}")
             return 2
