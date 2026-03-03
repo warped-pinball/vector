@@ -129,29 +129,30 @@ def download_update(url):
         },
     )
 
-    if response.status_code != 200:
-        raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
+    try:
+        if response.status_code != 200:
+            raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
 
-    start_percent = 2
-    end_percent = 30
-    total_length = 500000
-    buffer_size = 512
-    percent_per_chunk = buffer_size * (end_percent - start_percent) / total_length
+        start_percent = 2
+        end_percent = 30
+        total_length = 500000
+        buffer_size = 512
+        percent_per_chunk = buffer_size * (end_percent - start_percent) / total_length
 
-    percent = start_percent
+        percent = start_percent
 
-    with open("update.json", "wb") as f:
-        while True:
-            chunk = response.read(buffer_size)
-            if not chunk:
-                break
+        with open("update.json", "wb") as f:
+            while True:
+                chunk = response.read(buffer_size)
+                if not chunk:
+                    break
 
-            f.write(chunk)
+                f.write(chunk)
 
-            percent += percent_per_chunk * ((end_percent - percent) / percent)
-            yield {"percent": percent}
-
-    response.close()
+                percent += percent_per_chunk * ((end_percent - percent) / percent)
+                yield {"percent": percent}
+    finally:
+        response.close()
 
 
 class LowMemoryMode:
@@ -191,9 +192,12 @@ class LowMemoryMode:
             print("Unable to reinitialize discovery sockets:", e)
 
         # resume the task schedule
-        import phew.server
+        try:
+            from phew.server import restart_schedule
 
-        phew.server._halt_schedule = False
+            restart_schedule()
+        except Exception as e:
+            print("Unable to restart task schedule:", e)
 
         return False  # don't suppress exceptions
 
