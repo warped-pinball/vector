@@ -10,6 +10,8 @@
 import json
 from gc import collect as gc_collect
 
+import deflate
+
 import faults
 import SharedState
 import SPI_DataStore
@@ -70,15 +72,36 @@ def parse_config_line(line):
         return None, None
 
 
+def iter_config_lines():
+    """Yield config lines from compressed (preferred) or plain JSONL file."""
+    config_paths = ("config/all.jsonl.z", "config/all.jsonl")
+    for config_path in config_paths:
+        try:
+            if config_path.endswith(".z"):
+                with open(config_path, "rb") as f:
+                    with deflate.DeflateIO(f, deflate.ZLIB, 8) as zipped_file:
+                        for line in zipped_file:
+                            yield line.decode("utf-8") if isinstance(line, bytes) else line
+            else:
+                with open(config_path, "r") as f:
+                    for line in f:
+                        yield line
+            return
+        except OSError:
+            continue
+        except Exception as e:
+            Log.log(f"Error opening config file {config_path}: {e}")
+            return
+
+
 def find_config_in_file(target_filename):
     """Read the JSONL file line by line until we find the requested config."""
     try:
-        with open("config/all.jsonl", "r") as f:
-            for line in f:
-                filename, data = parse_config_line(line.strip())
-                gc_collect()
-                if filename == target_filename:
-                    return data
+        for line in iter_config_lines():
+            filename, data = parse_config_line(line.strip())
+            gc_collect()
+            if filename == target_filename:
+                return data
     except Exception as e:
         Log.log(f"Error reading config file: {e}")
         return None
@@ -89,15 +112,14 @@ def list_game_configs():
     """List all the game configuration files on the device"""
     configs = {}
     try:
-        with open("config/all.jsonl", "r") as f:
-            for line in f:
-                filename, data = parse_config_line(line.strip())
-                gc_collect()
-                if filename and data:
-                    configs[filename] = {
-                        "name": data["GameInfo"]["GameName"],
-                        "rom": filename.split("_")[-1],
-                    }
+        for line in iter_config_lines():
+            filename, data = parse_config_line(line.strip())
+            gc_collect()
+            if filename and data:
+                configs[filename] = {
+                    "name": data["GameInfo"]["GameName"],
+                    "rom": filename.split("_")[-1],
+                }
     except Exception as e:
         Log.log(f"Error listing game configs: {e}")
         return {}

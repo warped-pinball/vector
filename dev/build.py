@@ -3,6 +3,7 @@
 import argparse
 import gzip
 import json
+import zlib
 import math
 import os
 import shutil
@@ -185,23 +186,26 @@ class Builder:
 
     @step_report
     def combine_json_configs(self):
-        """Combine JSON files in build/config into all.jsonl."""
+        """Combine JSON files in build/config into a deflate-compressed all.jsonl.z file."""
         print("Combining JSON config files...")
         config_dir = os.path.join(self.build_dir, "config")
         if not os.path.isdir(config_dir):
             print("No 'config' directory found; skipping.")
             return
-        output_path = os.path.join(config_dir, "all.jsonl")
-        with open(output_path, "w") as outfile:
+        output_path = os.path.join(config_dir, "all.jsonl.z")
+        compressor = zlib.compressobj(level=9, wbits=8)
+        with open(output_path, "wb") as outfile:
             for root, dirs, files in os.walk(config_dir):
                 for file in files:
-                    if file.endswith(".json") and file != "all.jsonl":
+                    if file.endswith(".json"):
                         file_path = os.path.join(root, file)
                         with open(file_path, "r") as f:
                             data = json.load(f)
                         file_name = os.path.splitext(file)[0]
-                        outfile.write(f"{file_name}{json.dumps(data, separators=(',',':'))}\n")
+                        line = f"{file_name}{json.dumps(data, separators=(',',':'))}\n"
+                        outfile.write(compressor.compress(line.encode("utf-8")))
                         os.remove(file_path)
+            outfile.write(compressor.flush())
 
     @step_report
     def zip_files(self):
