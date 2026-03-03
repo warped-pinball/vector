@@ -7,11 +7,17 @@ import SPI_Store as fram
 # If no FramMap module is available, fall back to common defaults.
 try:
     from FramMap import LOGGER_CONFIG
-    AddressStart = LOGGER_CONFIG["AddressStart"]
-    LoggerLength = LOGGER_CONFIG["LoggerLength"]
-except Exception:
+except ImportError:
+    # FramMap module not available: use safe common defaults (System11 layout)
     AddressStart = 0x2400
     LoggerLength = 0x1FFF
+else:
+    # FramMap is present: configuration must be valid or we fail fast
+    try:
+        AddressStart = LOGGER_CONFIG["AddressStart"]
+        LoggerLength = LOGGER_CONFIG["LoggerLength"]
+    except (KeyError, TypeError) as exc:
+        raise RuntimeError("Invalid LOGGER_CONFIG in FramMap: missing or malformed AddressStart/LoggerLength") from exc
 
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6
