@@ -67,7 +67,7 @@ async function smartFetch(url, data = false, auth = true) {
     const urlObj = new URL(url, window.location.origin);
     const data_str = data ? JSON.stringify(data) : "";
     const msg = challenge + urlObj.pathname + urlObj.search + data_str;
-    const hmacHex = sha256.hmac(password, msg);
+    const hmacHex = await computeHmacSha256Hex(password, msg);
     headers["X-Auth-HMAC"] = hmacHex;
     headers["X-Auth-challenge"] = challenge;
   }
@@ -82,6 +82,30 @@ async function smartFetch(url, data = false, auth = true) {
     window.logout();
   }
   return response;
+}
+
+async function computeHmacSha256Hex(key, message) {
+  const encoder = new TextEncoder();
+  const cryptoKey = await window.crypto.subtle.importKey(
+    "raw",
+    encoder.encode(key),
+    {
+      name: "HMAC",
+      hash: "SHA-256",
+    },
+    false,
+    ["sign"],
+  );
+
+  const signature = await window.crypto.subtle.sign(
+    "HMAC",
+    cryptoKey,
+    encoder.encode(message),
+  );
+
+  return Array.from(new Uint8Array(signature), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 window.smartFetch = smartFetch;
