@@ -80,8 +80,10 @@ def iter_config_lines():
             if config_path.endswith(".z"):
                 with open(config_path, "rb") as f:
                     with deflate.DeflateIO(f, deflate.ZLIB, 8) as zipped_file:
-                        for line in zipped_file:
-                            yield line.decode("utf-8") if isinstance(line, bytes) else line
+                        content = zipped_file.read()
+                        for raw_line in content.split(b"\n"):
+                            if raw_line:
+                                yield raw_line.decode("utf-8")
             else:
                 with open(config_path, "r") as f:
                     for line in f:
