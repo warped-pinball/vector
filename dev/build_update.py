@@ -153,7 +153,6 @@ def build_confirm_compatibility_code(target_hardware: str) -> bytes:
         ]
     )
 
-    print(code)
     return make_file_line(
         "confirm_compatibility.py",
         code.encode("utf-8"),
@@ -244,17 +243,14 @@ def build_update_file(
     if any(name in compatible_configurations for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
-    file_lines = [build_update_metadata(target_hardware, version), build_confirm_compatibility_code(target_hardware), build_remove_extra_files_code(build_dir)]
+    update_file_path = build_dir_path / "update.mpy"
 
-    # 2b) everything else in build_dir
-    for root, _, files in os.walk(build_dir):
-        for file_name in files:
-            file_path = Path(root) / file_name
-            relative_path = os.path.relpath(file_path, build_dir).replace("\\", "/")
-            if relative_path == "remove_extra_files.py":
-                continue
-            contents = get_file_contents(file_path)
-            file_lines.append(make_file_line(relative_path, contents, custom_log=f"Uploading {relative_path}"))
+    file_lines = [
+        build_update_metadata(target_hardware, version),
+        build_confirm_compatibility_code(target_hardware),
+        # build_remove_extra_files_code(build_dir)
+        make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
+    ]
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
