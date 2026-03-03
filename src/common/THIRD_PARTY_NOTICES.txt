@@ -1,9 +1,28 @@
-The MIT License (MIT)
+Third-Party Notices
+===================
 
-Python-RSA copyright 2011 Sybren A. Stüvel <sybren@stuvel.eu>
+This project incorporates the following third-party software components,
+each provided under the MIT License (see below).
+
+-------------------------------------------------------------------------------
+phew
+https://github.com/pimoroni/phew
+Copyright (c) 2022 Pimoroni Ltd
+
+-------------------------------------------------------------------------------
+mrequests
+https://github.com/SpotlightKid/mrequests
+Copyright (c) 2016-2018 Paul Sokolovsky
+Copyright (c) 2020-2024 Christopher Arndt
+
+-------------------------------------------------------------------------------
+rsa (MicroPython port)
 https://github.com/sybrenstuvel/python-rsa/
+Copyright 2011 Sybren A. Stüvel <sybren@stuvel.eu>
+Modified by Brent Rubell for Adafruit Industries, 2019
 
-Modified by Brent Rubell for Adafrut Industries, 2019
+-------------------------------------------------------------------------------
+MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -73,7 +73,9 @@ class Builder:
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
-        shutil.copytree(os.path.join(self.source_dir, "common"), self.build_dir)
+
+        common_src = os.path.join(self.source_dir, "common")
+        shutil.copytree(common_src, self.build_dir)
 
         sys_src_path = os.path.join(self.source_dir, self.target_hardware)
         for root, dirs, files in os.walk(sys_src_path):
