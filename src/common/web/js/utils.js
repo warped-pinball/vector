@@ -87,9 +87,7 @@ async function smartFetch(url, data = false, auth = true) {
 async function computeHmacSha256Hex(key, message) {
   // Prefer Web Crypto when available in a secure context
   const hasWebCrypto =
-    (typeof window.isSecureContext === "undefined" || window.isSecureContext) &&
-    window.crypto &&
-    window.crypto.subtle;
+    window.crypto && window.crypto.subtle;
 
   if (hasWebCrypto) {
     const encoder = new TextEncoder();
