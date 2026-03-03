@@ -66,13 +66,22 @@ class Builder:
         self.source_dir = source_dir
         self.target_hardware = target_hardware
 
+    @staticmethod
+    def _is_subdir_license(file, root, src_base):
+        """Return True if file is a LICENSE file not at the root of src_base."""
+        if not file.upper().startswith("LICENSE"):
+            return False
+        return os.path.relpath(root, src_base) != "."
+
     @step_report
     def copy_files_to_build(self):
         """Copy all files from source_dir to build_dir."""
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
-        shutil.copytree(os.path.join(self.source_dir, "common"), self.build_dir)
+
+        common_src = os.path.join(self.source_dir, "common")
+        shutil.copytree(common_src, self.build_dir, ignore=lambda root, files: [f for f in files if self._is_subdir_license(f, root, common_src)])
 
         sys_src_path = os.path.join(self.source_dir, self.target_hardware)
         for root, dirs, files in os.walk(sys_src_path):
@@ -81,6 +90,8 @@ class Builder:
             if not os.path.exists(dest_dir):
                 os.makedirs(dest_dir)
             for file in files:
+                if self._is_subdir_license(file, root, sys_src_path):
+                    continue
                 src_file = os.path.join(root, file)
                 dest_file = os.path.join(dest_dir, file)
                 shutil.copy2(src_file, dest_file)
