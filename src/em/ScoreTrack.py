@@ -122,6 +122,32 @@ sensorBitMask = 0x0000F0F
 digitsPerPlayer = 1
 
 
+def reset_live_scores_on_boot():
+    """Reset all live scoring state so EM boots with zeroed scores."""
+    global sensorScores, actualScores, carryCount, last_sc, scoreState
+    global stateVar, stateCount, gameover, nGameIdleCounter
+    global lastValue, segmentMS
+
+    sensorScores = [[0 for _ in range(8)] for _ in range(4)]
+    actualScores = [0, 0, 0, 0]
+    carryCount = [0] * 32
+
+    last_sc = 0
+    scoreState = 0
+    stateVar = PROCESS_IDLE
+    stateCount = 0
+    gameover = False
+    nGameIdleCounter = 0
+    lastValue = 0
+    segmentMS = 0
+
+    S.game_status["game_active"] = False
+
+    # Drain any stale sensor words left in SRAM ring buffer.
+    for _ in range(5):
+        processEmpty()
+
+
 def initialize():
     """
     one time power up Initialize
@@ -130,6 +156,7 @@ def initialize():
 
     schedule(processSensorData, 1000, 800)    
 
+    reset_live_scores_on_boot()
     loadState()
     # from displayMessage import init
     displayMessage.init()
@@ -243,10 +270,17 @@ def saveState():
             ch = _ch_for_ui_idx(d)
             setScoreMask(ch, score_vals[d], reset_vals[d])
 
+        return score_vals, reset_vals
+
     # Timing arrays from API map to channel groups as player*8 + digit(0..4)
     # P1: ch 0..4, P2: ch 8..12
-    _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
-    _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+    p1_score_vals, p1_reset_vals = _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
+    p2_score_vals, p2_reset_vals = _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+
+    S.gdata["timing_p1_score"] = p1_score_vals
+    S.gdata["timing_p1_reset"] = p1_reset_vals
+    S.gdata["timing_p2_score"] = p2_score_vals
+    S.gdata["timing_p2_reset"] = p2_reset_vals
 
     # Build 64-byte filtermasks: for channel 0..31 store (scoreDepth, resetDepth)
     fm = bytearray(64)

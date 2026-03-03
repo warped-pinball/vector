@@ -15,7 +15,22 @@ from logger import logger_instance
 Log = logger_instance
 
 
-safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "dummy_reels": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "startpause": 5,"endpause":5,"sensorlevels": [0, 0]}
+safe_defaults = {
+    "gamename": "EM Generic",
+    "players": 1,
+    "digits": 4,
+    "dummy_reels": 0,
+    "filtermasks": bytes(64),
+    "carrythresholds": bytes(32),
+    "startpause": 5,
+    "endpause": 5,
+    "sensorlevels": [0, 0],
+    "sensitivity": 50,
+    "timing_p1_score": [8, 8, 8, 8, 8],
+    "timing_p1_reset": [8, 8, 8, 8, 8],
+    "timing_p2_score": [8, 8, 8, 8, 8],
+    "timing_p2_reset": [8, 8, 8, 8, 8],
+}
 
 
 def parse_config_line(line):

@@ -145,6 +145,8 @@ def serialize(record, structure_name):
         #   I : sensorlevels[1]
         #   I : startpause
         #   I : endpause
+        #   B : sensitivity (0..100)
+        # 20s : timing arrays [p1_score(5), p1_reset(5), p2_score(5), p2_reset(5)]
         name = record.get("gamename", "")
         if not isinstance(name, (bytes, bytearray)):
             name = str(name).encode()
@@ -182,9 +184,34 @@ def serialize(record, structure_name):
                 s1 = int(record.get("sensorlevels", [0, 0])[1]) & 0xFFFFFFFF
 
         startpause = int(record.get("startpause", 0)) & 0xFFFFFFFF
-        endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF      
+        endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF
 
-        packed = struct.pack("<40sBBI64s32sIIII", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause)
+        sensitivity = int(record.get("sensitivity", 50))
+        sensitivity = max(0, min(100, sensitivity))
+
+        def _coerce_timing(raw, default, lo, hi):
+            try:
+                vals = [int(v) for v in raw]
+            except Exception:
+                vals = list(default)
+            if len(vals) != 5:
+                vals = list(default)
+            out = bytearray(5)
+            for i, v in enumerate(vals):
+                if v < lo:
+                    v = lo
+                if v > hi:
+                    v = hi
+                out[i] = int(v) & 0xFF
+            return bytes(out)
+
+        p1_score = _coerce_timing(record.get("timing_p1_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
+        p1_reset = _coerce_timing(record.get("timing_p1_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
+        p2_score = _coerce_timing(record.get("timing_p2_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
+        p2_reset = _coerce_timing(record.get("timing_p2_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
+        timing_blob = p1_score + p1_reset + p2_score + p2_reset
+
+        packed = struct.pack("<40sBBI64s32sIIIIB20s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -286,7 +313,31 @@ def deserialize(data, structure_name):
             }
     elif structure_name == "EMData":
         try:
-            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause = struct.unpack("<40sBBI64s32sIIII", data)            
+            def _coerce_loaded_timing(values, default, lo, hi):
+                out = []
+                if len(values) != 5:
+                    values = list(default)
+                for i, v in enumerate(values):
+                    try:
+                        n = int(v)
+                    except Exception:
+                        n = int(default[i])
+                    if n < lo:
+                        n = lo
+                    if n > hi:
+                        n = hi
+                    out.append(int(n))
+                return out
+
+            fmt_new = "<40sBBI64s32sIIIIB20s"
+            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
+            timing_blob = bytes(timing_blob)
+
+            p1_score_raw = list(timing_blob[0:5])
+            p1_reset_raw = list(timing_blob[5:10])
+            p2_score_raw = list(timing_blob[10:15])
+            p2_reset_raw = list(timing_blob[15:20])
+
             return {
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),
@@ -297,6 +348,11 @@ def deserialize(data, structure_name):
                 "sensorlevels": [int(s0), int(s1)],
                 "startpause": int(startpause),
                 "endpause": int(endpause),
+                "sensitivity": max(0, min(100, int(sensitivity))),
+                "timing_p1_score": _coerce_loaded_timing(p1_score_raw, [8, 8, 8, 8, 8], 1, 10),
+                "timing_p1_reset": _coerce_loaded_timing(p1_reset_raw, [8, 8, 8, 8, 8], 1, 15),
+                "timing_p2_score": _coerce_loaded_timing(p2_score_raw, [8, 8, 8, 8, 8], 1, 10),
+                "timing_p2_reset": _coerce_loaded_timing(p2_reset_raw, [8, 8, 8, 8, 8], 1, 15),
             }
         except Exception:
             Log.log("DATSTORE: fault EMData Load")
@@ -310,6 +366,11 @@ def deserialize(data, structure_name):
                 "sensorlevels": [0, 0],
                 "startpause": 5,
                 "endpause": 9,
+                "sensitivity": 50,
+                "timing_p1_score": [8, 8, 8, 8, 8],
+                "timing_p1_reset": [8, 8, 8, 8, 8],
+                "timing_p2_score": [8, 8, 8, 8, 8],
+                "timing_p2_reset": [8, 8, 8, 8, 8],
             }
     else:
         raise ValueError("Unknown structure name")
@@ -334,8 +395,16 @@ def blankStruct(structure_name):
     }
     # default EMData
     if structure_name == "EMData":
-        # Fill filtermasks and carrythresholds with incrementing counts
-        filtermasks = bytes([i % 256 for i in range(64)])
+        # Manufacturing defaults:
+        # - score depth = 3 for all channels
+        # - reset depth = 9 for all channels
+        # filtermasks stores [scoreDepth, resetDepth] per channel (32 channels -> 64 bytes)
+        filtermasks = bytearray(64)
+        for ch in range(32):
+            filtermasks[ch * 2] = 3
+            filtermasks[ch * 2 + 1] = 9
+        filtermasks = bytes(filtermasks)
+
         carrythresholds = bytes([i % 256 for i in range(32)])
         fake_entry = {
             "gamename": "EM Game",
@@ -347,6 +416,11 @@ def blankStruct(structure_name):
             "sensorlevels": [0, 0],
             "startpause": 8,
             "endpause": 5,
+            "sensitivity": 70,
+            "timing_p1_score": [3, 3, 3, 3, 3],
+            "timing_p1_reset": [9, 9, 9, 9, 9],
+            "timing_p2_score": [3, 3, 3, 3, 3],
+            "timing_p2_reset": [9, 9, 9, 9, 9],
         }
     structure = memory_map[structure_name]
     if "sets" in structure:
