@@ -85,27 +85,45 @@ async function smartFetch(url, data = false, auth = true) {
 }
 
 async function computeHmacSha256Hex(key, message) {
-  const encoder = new TextEncoder();
-  const cryptoKey = await window.crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    {
-      name: "HMAC",
-      hash: "SHA-256",
-    },
-    false,
-    ["sign"],
-  );
+  // Prefer Web Crypto when available in a secure context
+  const hasWebCrypto =
+    (typeof window.isSecureContext === "undefined" || window.isSecureContext) &&
+    window.crypto &&
+    window.crypto.subtle;
 
-  const signature = await window.crypto.subtle.sign(
-    "HMAC",
-    cryptoKey,
-    encoder.encode(message),
-  );
+  if (hasWebCrypto) {
+    const encoder = new TextEncoder();
+    const cryptoKey = await window.crypto.subtle.importKey(
+      "raw",
+      encoder.encode(key),
+      {
+        name: "HMAC",
+        hash: "SHA-256",
+      },
+      false,
+      ["sign"],
+    );
 
-  return Array.from(new Uint8Array(signature), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
+    const signature = await window.crypto.subtle.sign(
+      "HMAC",
+      cryptoKey,
+      encoder.encode(message),
+    );
+
+    return Array.from(new Uint8Array(signature), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+  }
+
+  // Fallback: use js-sha256 HMAC if it is available globally.
+  // This allows authenticated requests to work over plain HTTP.
+  if (typeof sha256 !== "undefined" && typeof sha256.hmac === "function") {
+    return sha256.hmac(key, message);
+  }
+
+  throw new Error(
+    "No available HMAC-SHA256 implementation (Web Crypto and js-sha256 are both unavailable).",
+  );
 }
 
 window.smartFetch = smartFetch;
