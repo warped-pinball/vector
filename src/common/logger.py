@@ -3,9 +3,15 @@ import gc
 import SPI_Store as fram
 
 # FRAM map configuration
-from FramMap import LOGGER_CONFIG
-AddressStart = LOGGER_CONFIG["AddressStart"]
-LoggerLength = LOGGER_CONFIG["LoggerLength"]
+# Prefer target-specific FramMap (e.g. wpc/data_east) when present.
+# If no FramMap module is available, fall back to common defaults.
+try:
+    from FramMap import LOGGER_CONFIG
+    AddressStart = LOGGER_CONFIG["AddressStart"]
+    LoggerLength = LOGGER_CONFIG["LoggerLength"]
+except Exception:
+    AddressStart = 0x2400
+    LoggerLength = 0x1FFF
 
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6
