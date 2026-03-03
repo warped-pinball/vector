@@ -3,14 +3,14 @@ import gc
 import SPI_Store as fram
 
 # FRAM map configuration
-# Prefer target-specific FramMap (e.g. wpc/data_east) when present.
-# If no FramMap module is available, fall back to common defaults.
+# If no FramMap module is available, fall back to legacy/System11 logger defaults (not universally safe for other targets).
 try:
     from FramMap import LOGGER_CONFIG
-except ImportError:
-    # FramMap module not available: use safe common defaults (System11 layout)
-    AddressStart = 0x2400
-    LoggerLength = 0x1FFF
+    AddressStart = LOGGER_CONFIG["AddressStart"]
+    LoggerLength = LOGGER_CONFIG["LoggerLength"]
+except Exception:
+    AddressStart = 0x2400  # legacy/System11 logger region start
+    LoggerLength = 0x1FFF  # legacy/System11 logger region length
 else:
     # FramMap is present: configuration must be valid or we fail fast
     try:
