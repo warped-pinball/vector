@@ -266,3 +266,31 @@ def test_analyze_rule_raises_on_version_downgrade(monkeypatch) -> None:
 
     with pytest.raises(RuntimeError, match="downgrade"):
         vbg.analyze_rule(rule, changed, "base", "head")
+
+
+def test_common_python_changed_excluding_vector_version_for_non_shared_state(monkeypatch) -> None:
+    monkeypatch.setattr(vbg, "changed_files", lambda base, head: ["src/common/backend.py"])
+
+    assert vbg.common_python_changed_excluding_vector_version("base", "head") is True
+
+
+def test_common_python_changed_excluding_vector_version_ignores_vector_only(monkeypatch) -> None:
+    monkeypatch.setattr(vbg, "changed_files", lambda base, head: ["src/common/SharedState.py"])
+    monkeypatch.setattr(
+        vbg,
+        "_run_git",
+        lambda *args: 'diff --git a/src/common/SharedState.py b/src/common/SharedState.py\n--- a/src/common/SharedState.py\n+++ b/src/common/SharedState.py\n@@ -1 +1 @@\n-VectorVersion = "1.0.0"\n+VectorVersion = "1.0.1"',
+    )
+
+    assert vbg.common_python_changed_excluding_vector_version("base", "head") is False
+
+
+def test_common_python_changed_excluding_vector_version_detects_other_shared_state_edits(monkeypatch) -> None:
+    monkeypatch.setattr(vbg, "changed_files", lambda base, head: ["src/common/SharedState.py"])
+    monkeypatch.setattr(
+        vbg,
+        "_run_git",
+        lambda *args: 'diff --git a/src/common/SharedState.py b/src/common/SharedState.py\n--- a/src/common/SharedState.py\n+++ b/src/common/SharedState.py\n@@ -3 +3 @@\n-class Foo:\n+class Bar:',
+    )
+
+    assert vbg.common_python_changed_excluding_vector_version("base", "head") is True
