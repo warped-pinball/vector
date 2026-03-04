@@ -108,9 +108,8 @@ class DiscoveryMessage:
     # ------------------------------------------------------------------ encoding
     def encode(self):
         if self.type == MessageType.HELLO and self.name is not None:
-            uid = _get_uid_bytes()
             name_bytes = self.name[:_MAX_NAME_LENGTH]
-            return bytes([MessageType.HELLO, len(name_bytes)]) + name_bytes + bytes([len(uid)]) + uid
+            return bytes([MessageType.HELLO, len(name_bytes)]) + name_bytes
 
         if self.type == MessageType.FULL and self.peers is not None:
             peers_list = list(self.peers)
@@ -177,13 +176,6 @@ class DiscoveryMessage:
             return DiscoveryMessage(MessageType.OFFLINE, ip=data[1:5])
 
         raise ValueError(f"Unknown message type {mtype} in data: {data}")
-
-
-def _get_uid_bytes():
-    """Return the board's unique hardware identifier as raw bytes."""
-    from machine import unique_id
-
-    return unique_id()
 
 
 def ip_to_bytes(ip_str):
