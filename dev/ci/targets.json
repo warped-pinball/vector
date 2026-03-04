@@ -8,6 +8,16 @@
     "raw_filename": "sys11-update.json"
   },
   {
+    "id": "sys11_tiny",
+    "label": "Sys11 (Tiny)",
+    "hardware_id": "sys11",
+    "config_path": "src/sys11/systemConfig.py",
+    "output": "update_sys11_tiny.json",
+    "artifact": "sys11-tiny-update.json",
+    "raw_filename": "sys11-tiny-update.json",
+    "tiny": true
+  },
+  {
     "id": "wpc",
     "label": "WPC",
     "config_path": "src/wpc/systemConfig.py",

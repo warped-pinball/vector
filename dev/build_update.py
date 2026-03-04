@@ -229,11 +229,14 @@ def build_update_file(
     version: str,
     private_key_path: Optional[str],
     target_hardware: str = "sys11",
+    tiny: bool = False,
 ):
     """
     1) Create one JSON line of metadata at the top.
     2) Then a line per file in 'build_dir' (plus remove_extra_files.py).
     3) Finally one line containing {"sha256": "...", "signature": "..."} at the bottom.
+
+    When ``tiny`` is True only ``update.mpy`` is included instead of all files.
     """
 
     build_dir_path = Path(build_dir)
@@ -243,14 +246,22 @@ def build_update_file(
     if any(name in compatible_configurations for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
-    update_file_path = build_dir_path / "update.mpy"
-
     file_lines = [
         build_update_metadata(target_hardware, version),
         build_confirm_compatibility_code(target_hardware),
-        # build_remove_extra_files_code(build_dir)
-        make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
     ]
+
+    if tiny:
+        update_file_path = build_dir_path / "update.mpy"
+        file_lines.append(
+            make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
+        )
+    else:
+        for root, _, files in os.walk(build_dir_path):
+            for file_name in sorted(files):
+                file_path = Path(root) / file_name
+                relative_path = os.path.relpath(file_path, build_dir_path).replace("\\", "/")
+                file_lines.append(make_file_line(relative_path, get_file_contents(str(file_path))))
 
     # 3) Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
@@ -280,6 +291,7 @@ def main():
         help="Target system for the update (e.g., data_east, sys11, whitestar, wpc, em, etc.)",
     )
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
+    parser.add_argument("--tiny", action="store_true", help="Build a tiny update containing only update.mpy.")
     args = parser.parse_args()
 
     build_dir = resolve_build_dir(args.build_dir, args.target_hardware)
@@ -289,6 +301,7 @@ def main():
         version=args.version,
         private_key_path=args.private_key,
         target_hardware=args.target_hardware,
+        tiny=args.tiny,
     )
 
 
