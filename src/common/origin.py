@@ -1,19 +1,26 @@
+from binascii import crc32
+
 from discovery import send_sock
 from machine import unique_id
+from SPI_DataStore import read_record as ds_read_record
 from ubinascii import hexlify
 from ujson import dumps
 
 previous_packet = None
 
 
+def get_machine_id():
+    message = hexlify(unique_id()).decode() + ds_read_record("configuration", 0).get("gamename", "")
+    return (crc32(message.encode()) & 0xFFFFFFFF).to_bytes(4, "big").hex()
+
+
 def send_origin_message(message_type, data=None):
     global previous_packet
     try:
-        uid = hexlify(unique_id()).decode()
         if data:
-            packet = dumps({"machine_id": uid, "type": message_type, "data": data})
+            packet = dumps({"machine_id": get_machine_id(), "type": message_type, "data": data})
         else:
-            packet = dumps({"machine_id": uid, "type": message_type})
+            packet = dumps({"machine_id": get_machine_id(), "type": message_type})
 
         if packet == previous_packet:
             return  # Skip sending duplicate packet

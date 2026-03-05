@@ -1590,23 +1590,23 @@ def app_version(request):
     return {"version": SystemVersion}
 
 
-@add_route("/api/uid")
-def app_uid(request):
+@add_route("/api/machine_id")
+def app_machine_id(request):
     """
     @api
-    summary: Get the unique hardware identifier
+    summary: Get the unique identifier for this Vector installation (hardware + configuration)
     response:
       status_codes:
         - code: 200
-          description: UID returned
+          description: Machine ID returned
       body:
-        description: Unique hardware identifier as a hex string
-        example: {"uid": "1a2b3c4d5e6f"}
+        description: Unique identifier derived from hardware serial and active game configuration as a hex string
+        example: {"machine_id": "1a2b3c4d5e6f"}
     @end
     """
-    from machine import unique_id
+    from origin import get_machine_id
 
-    return {"uid": hexlify(unique_id()).decode()}
+    return {"machine_id": get_machine_id()}
 
 
 @add_route("/api/fault")
