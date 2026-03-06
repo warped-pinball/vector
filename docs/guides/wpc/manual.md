@@ -53,7 +53,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 Throughout the installation pay attention to pin #1 alignment:
 
-![Pin one Photo](../../img/wpc/manual/pin_one.png){ width=220 }
+![Pin one Photo](../../img/wpc/manual/pin_one.png)
 
 2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
 
@@ -62,11 +62,11 @@ Throughout the installation pay attention to pin #1 alignment:
 3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
 
-![socket Photo](../../img/wpc/manual/socket.jpg){ width=180 }
+![socket Photo](../../img/wpc/manual/socket.jpg)
 
 4. (Optional) Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to a neighboring chip. <br>
 
-![Pin standoff Photo](../../img/wpc/manual/standoff.png){ width=180 }
+![Pin standoff Photo](../../img/wpc/manual/standoff.png)
 
 5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
@@ -88,12 +88,12 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED should blink fast.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_select_AP.png)
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
 
-![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png)
 
 4. On the configuration screen:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
@@ -102,7 +102,7 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png)
 
 5. Click **Save**. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
    - Slow blinking indicates the unit is locating the network.
@@ -116,7 +116,7 @@ After connection the game operates normally while the Vector board provides NVRA
 Each machine receives an IP address from your router (for example `192.168.1.79`). Access Vector by entering the IP in a browser and save it as a bookmark. Router DHCP assignments can change; the Vector board periodically displays the current IP on the machine display. To keep the same address, log into your router, locate the device, and mark the entry as **static**.
 
 
-![Pin DMD Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png){ width=420 style="display:block; margin: 0 auto;" }
+![Pin DMD Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png)
 
 Have a color Pin2DMD?   Use the buttons on the back of the display to set it to **Williams/Bally Mode**.
 
@@ -127,6 +127,6 @@ Have a color Pin2DMD?   Use the buttons on the back of the display to set it to 
 - Enter player full names under **Players**.
 
 
-![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
+![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png)
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).

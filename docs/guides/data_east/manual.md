@@ -114,7 +114,7 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED will start Yellow then flash Purple.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png)
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_select_AP.png)
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
