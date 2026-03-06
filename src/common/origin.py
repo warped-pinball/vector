@@ -17,7 +17,7 @@ def get_machine_id():
 def send_origin_message(message_type, data=None):
     global previous_packet
     try:
-        if data:
+        if data is not None:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type, "data": data})
         else:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type})
