@@ -11,7 +11,6 @@ import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
-import DataMapper
 from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
@@ -433,13 +432,6 @@ def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter
 
-
-
-
-    print("################################   game status : ",DataMapper.get_in_play_data())
-
-
-
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
         if DataStore.read_record("extras", 0)["show_ip_address"] is False or S.gdata["HighScores"]["Type"] in [1, 2, 3]:
@@ -452,7 +444,6 @@ def CheckForNewScores(nState=[0]):
             shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
             shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
             shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
-
 
     if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
         BallInPlayAdr = S.gdata["BallInPlay"]["Address"]

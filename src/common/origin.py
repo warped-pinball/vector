@@ -1,6 +1,6 @@
 from binascii import crc32
 
-from discovery import send_sock
+import discovery
 from machine import unique_id
 from SPI_DataStore import read_record as ds_read_record
 from ubinascii import hexlify
@@ -31,7 +31,7 @@ def send_origin_message(message_type, data=None):
             return  # Skip sending duplicate packet
 
         print(f"Sending origin message: {message_type} with data: {data}")
-        send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
+        discovery.send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
         previous_packet = packet
     except Exception as e:
         print("Error sending origin message:", e)
