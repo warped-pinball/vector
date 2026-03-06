@@ -62,7 +62,7 @@ Jump directly to a handler. Links open source on GitHub with accurate line numbe
 - [`/api/set_date`](#api-set_date)
 - [`/api/get_date`](#api-get_date)
 - [`/api/version`](#api-version)
-- [`/api/uid`](#api-uid)
+- [`/api/machine_id`](#api-machine_id)
 - [`/api/fault`](#api-fault)
 - [`/api/export/scores`](#api-export-scores)
 - [`/api/import/scores`](#api-import-scores)
@@ -1199,13 +1199,13 @@ No parameters inferred.
 {"version": "1.0.0"}
 ```
 
-<a id="api-uid"></a>
-## `/api/uid`
+<a id="api-machine_id"></a>
+## `/api/machine_id`
 
-- **Handler:** [`app_uid`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1594)
+- **Handler:** [`app_machine_id`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1594)
 
 
-Get the unique hardware identifier
+Get the unique identifier for this Vector installation (hardware + configuration)
 
 ### Request
 
@@ -1215,12 +1215,12 @@ No parameters inferred.
 
 #### Status codes
 
-- `200` - UID returned
+- `200` - Machine ID returned
 
-**Response body:** Unique hardware identifier as a hex string
+**Response body:** Unique identifier derived from hardware serial and active game configuration as a hex string
 
 ```
-{"uid": "1a2b3c4d5e6f"}
+{"machine_id": "1a2b3c4d5e6f"}
 ```
 
 <a id="api-fault"></a>
