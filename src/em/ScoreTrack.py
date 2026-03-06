@@ -217,16 +217,57 @@ def loadState():
             carryThresholds[p][d][0] = int(low)
             carryThresholds[p][d][1] = int(high)
 
-    # filtermasks 64 bytes: (scoreDepth, resetDepth) for channels 0..31
-    fm_blob = S.gdata["filtermasks"]
-    if not isinstance(fm_blob, (bytes, bytearray)) or len(fm_blob) != 64:
-        raise ValueError("S.gdata['filtermasks'] must be 64-byte bytes or bytearray")
-    fm = bytes(fm_blob)
+    # Build score/reset masks from timing arrays loaded from EMData.
+    # Timing arrays are the source of truth; filtermasks is runtime-derived.
+    def _coerce_timing_array(raw, fallback, value_min, value_max):
+        try:
+            vals = [int(v) for v in raw]
+        except Exception:
+            vals = list(fallback)
+        if len(vals) != 5:
+            vals = list(fallback)
+        out = []
+        for v in vals:
+            if v < value_min:
+                v = value_min
+            if v > value_max:
+                v = value_max
+            out.append(int(v))
+        return out
+
+    def _apply_player_timing(player_index, score_key, reset_key):
+        base = int(player_index) * 8
+
+        # UI order is [10000s, 1000s, 100s, 10s, 1s] while channel bits are
+        # [1s, 10s, 100s, 1000s, 10000s] at offsets [0..4].
+        def _ch_for_ui_idx(ui_idx):
+            return base + (4 - int(ui_idx))
+
+        default_score = [8, 8, 8, 8, 8]
+        default_reset = [8, 8, 8, 8, 8]
+        score_vals = _coerce_timing_array(S.gdata.get(score_key, default_score), default_score, 1, 10)
+        reset_vals = _coerce_timing_array(S.gdata.get(reset_key, default_reset), default_reset, 1, 15)
+
+        for d in range(5):
+            ch = _ch_for_ui_idx(d)
+            setScoreMask(ch, score_vals[d], reset_vals[d])
+
+        return score_vals, reset_vals
+
+    p1_score_vals, p1_reset_vals = _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
+    p2_score_vals, p2_reset_vals = _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+
+    S.gdata["timing_p1_score"] = p1_score_vals
+    S.gdata["timing_p1_reset"] = p1_reset_vals
+    S.gdata["timing_p2_score"] = p2_score_vals
+    S.gdata["timing_p2_reset"] = p2_reset_vals
+
+    # Keep runtime filtermasks for compatibility/inspection (not persisted).
+    fm = bytearray(64)
     for ch in range(32):
-        scoreDepth = int(fm[ch * 2])
-        resetDepth = int(fm[ch * 2 + 1])
-        # set per-channel masks
-        setScoreMask(ch, scoreDepth, resetDepth)
+        fm[ch * 2] = int(scoreDepths[ch]) & 0xFF
+        fm[ch * 2 + 1] = int(resetDepths[ch]) & 0xFF
+    S.gdata["filtermasks"] = bytes(fm)
 
     log.log(f"ScoreTrack initialized: players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X}")
     print("ScoreTrack pauses: startpause=%d endpause=%d" % (PROCESS_START_PAUSE, PROCESS_END_PAUSE))
@@ -282,7 +323,8 @@ def saveState():
     S.gdata["timing_p2_score"] = p2_score_vals
     S.gdata["timing_p2_reset"] = p2_reset_vals
 
-    # Build 64-byte filtermasks: for channel 0..31 store (scoreDepth, resetDepth)
+    # Build runtime 64-byte filtermasks for compatibility/inspection only.
+    # Persistence stores timing arrays; masks are regenerated on boot.
     fm = bytearray(64)
     for ch in range(32):
         s = int(scoreDepths[ch]) & 0xFF

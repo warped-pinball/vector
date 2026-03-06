@@ -133,13 +133,14 @@ def serialize(record, structure_name):
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
     
     elif structure_name == "EMData":
-        # Accept only bytes/bytearray for filtermasks and carrythresholds.
+        # filtermasks are runtime-generated from timing arrays and are not persisted.
+        # carrythresholds remain persisted.
         # EMData layout:
         #  40s: gamename
         #   B : players
         #   B : digits
         #   I : multiplier
-        # 64s : filtermasks (64 bytes)
+        # 64s : reserved/deprecated filtermasks field (stored as zeros)
         # 32s : carrythresholds (32 bytes)
         #   I : sensorlevels[0]
         #   I : sensorlevels[1]
@@ -159,11 +160,8 @@ def serialize(record, structure_name):
         players = int(record.get("players", 1)) & 0xFF
         digits = int(record.get("digits", 1)) & 0xFF
         multiplier = int(record.get("dummy_reels", 0)) & 0xFFFFFFFF
-        fm = record.get("filtermasks", None)
-        if isinstance(fm, (bytes, bytearray)):
-            fm_bytes = bytes(fm)[:64]
-        else:
-            fm_bytes = bytes(64)
+        # Reserved/deprecated: do not persist filtermasks; regenerate from timing arrays on load.
+        fm_bytes = bytes(64)
 
         ct = record.get("carrythresholds", None)
         if isinstance(ct, (bytes, bytearray)):
@@ -330,7 +328,7 @@ def deserialize(data, structure_name):
                 return out
 
             fmt_new = "<40sBBI64s32sIIIIB20s"
-            name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
+            name, players, digits, multiplier, _stored_fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
             timing_blob = bytes(timing_blob)
 
             p1_score_raw = list(timing_blob[0:5])
@@ -338,21 +336,39 @@ def deserialize(data, structure_name):
             p2_score_raw = list(timing_blob[10:15])
             p2_reset_raw = list(timing_blob[15:20])
 
+            p1_score = _coerce_loaded_timing(p1_score_raw, [8, 8, 8, 8, 8], 1, 10)
+            p1_reset = _coerce_loaded_timing(p1_reset_raw, [8, 8, 8, 8, 8], 1, 15)
+            p2_score = _coerce_loaded_timing(p2_score_raw, [8, 8, 8, 8, 8], 1, 10)
+            p2_reset = _coerce_loaded_timing(p2_reset_raw, [8, 8, 8, 8, 8], 1, 15)
+
+            # Rebuild runtime filtermasks from timing arrays.
+            fm = bytearray(64)
+
+            def _apply_player_timing(player_index, score_vals, reset_vals):
+                base = int(player_index) * 8
+                for d in range(5):
+                    ch = base + (4 - d)
+                    fm[ch * 2] = int(score_vals[d]) & 0xFF
+                    fm[ch * 2 + 1] = int(reset_vals[d]) & 0xFF
+
+            _apply_player_timing(0, p1_score, p1_reset)
+            _apply_player_timing(1, p2_score, p2_reset)
+
             return {
                 "gamename": name.decode().rstrip("\0"),
                 "players": int(players),
                 "digits": int(digits),
                 "dummy_reels": int(multiplier),
-                "filtermasks": bytes(fm_bytes),
+                "filtermasks": bytes(fm),
                 "carrythresholds": bytes(ct_bytes),
                 "sensorlevels": [int(s0), int(s1)],
                 "startpause": int(startpause),
                 "endpause": int(endpause),
                 "sensitivity": max(0, min(100, int(sensitivity))),
-                "timing_p1_score": _coerce_loaded_timing(p1_score_raw, [8, 8, 8, 8, 8], 1, 10),
-                "timing_p1_reset": _coerce_loaded_timing(p1_reset_raw, [8, 8, 8, 8, 8], 1, 15),
-                "timing_p2_score": _coerce_loaded_timing(p2_score_raw, [8, 8, 8, 8, 8], 1, 10),
-                "timing_p2_reset": _coerce_loaded_timing(p2_reset_raw, [8, 8, 8, 8, 8], 1, 15),
+                "timing_p1_score": p1_score,
+                "timing_p1_reset": p1_reset,
+                "timing_p2_score": p2_score,
+                "timing_p2_reset": p2_reset,
             }
         except Exception:
             Log.log("DATSTORE: fault EMData Load")
