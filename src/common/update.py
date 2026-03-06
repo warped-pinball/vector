@@ -76,7 +76,7 @@ def get_check_data(path="update.json"):
     hasher = sha256()
     with open(path, "rb") as f:
         to_read = end_of_content
-        chunk_size = 1024
+        chunk_size = 512
         while to_read > 0:
             read_now = min(chunk_size, to_read)
             chunk = f.read(read_now)
@@ -129,94 +129,122 @@ def download_update(url):
         },
     )
 
-    if response.status_code != 200:
-        raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
+    try:
+        if response.status_code != 200:
+            raise Exception(f"Failed to download update: {response.status_code} {response.reason}")
 
-    start_percent = 2
-    end_percent = 30
-    total_length = 400000
-    percent_per_chunk = 1024 * (end_percent - start_percent) / total_length
+        start_percent = 2
+        end_percent = 30
+        total_length = 500000
+        buffer_size = 512
+        percent_per_chunk = buffer_size * (end_percent - start_percent) / total_length
 
-    # TODO modify this to use a buffer so we aren't recreating a buffer every loop
-    # https://docs.micropython.org/en/latest/reference/constrained.html
-    # look for buffers
+        percent = start_percent
 
-    percent = start_percent
-    buff = bytearray(1024)
-    with open("update.json", "wb") as f:
-        while True:
-            buff[0:] = response.read(1024)
-            f.write(buff)
-            percent += percent_per_chunk * ((end_percent - percent) / percent)
-            if len(buff) < 1024:
-                break
-            yield {"percent": percent}
+        with open("update.json", "wb") as f:
+            while True:
+                chunk = response.read(buffer_size)
+                if not chunk:
+                    break
 
-    response.close()
+                f.write(chunk)
+
+                percent += percent_per_chunk * ((end_percent - percent) / percent)
+                yield {"percent": percent}
+    finally:
+        response.close()
+
+
+class LowMemoryMode:
+    def __enter__(self):
+        # halt the schedule so we aren't allocating ram for other tasks
+        import phew.server
+
+        phew.server._halt_schedule = True
+
+        # drop the state for discovery since we can recover it
+        try:
+            import discovery
+
+            discovery.send_sock.close()
+            discovery.recv_sock.close()
+
+            discovery.send_sock = None
+            discovery.recv_sock = None
+
+            discovery.known_devices = []
+        except Exception as e:
+            print("Unable to shut down discovery sockets:", e)
+
+        from gc import collect as gc_collect
+
+        gc_collect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # reintroduce ourselves and reinitialize the sockets
+        try:
+            from discovery import broadcast_hello, listen
+
+            broadcast_hello()
+            listen()
+        except Exception as e:
+            print("Unable to reinitialize discovery sockets:", e)
+
+        # resume the task schedule
+        try:
+            from phew.server import restart_schedule
+
+            restart_schedule()
+        except Exception as e:
+            print("Unable to restart task schedule:", e)
+
+        return False  # don't suppress exceptions
 
 
 def apply_update(url, skip_signature_check=False):
-    from gc import collect as gc_collect
-    from time import sleep
+    with LowMemoryMode():
+        from gc import collect as gc_collect
+        from time import sleep
 
-    yield {"log": f"Downloading update from {url}", "percent": 2}
-    # will yield percent updates as it downloads
-    yield from download_update(url)
-    gc_collect()
+        yield {"log": f"Downloading update from {url}", "percent": 2}
+        # will yield percent updates as it downloads
+        yield from download_update(url)
+        gc_collect()
 
-    yield {"log": "Validating signature", "percent": 30}
-    validate_signature(skip_signature_check=skip_signature_check)
-    gc_collect()
+        yield {"log": "Validating signature", "percent": 30}
+        validate_signature(skip_signature_check=skip_signature_check)
+        gc_collect()
 
-    yield {"log": "Writing files to board", "percent": 40}
-    try:
-        yield from write_files()
-    except Exception as e:
-        yield {"log": f"Failed to write files: {e}", "percent": 40}
-        yield {"log": "Trying to write files again", "percent": 40}
+        yield {"log": "Writing files to board", "percent": 40}
         try:
             yield from write_files()
         except Exception as e:
             yield {"log": f"Failed to write files: {e}", "percent": 40}
-            yield {
-                "log": "The update has failed at a critical point. If you are unable to recover, please contact us for help.",
-                "percent": 40,
-            }
-            return
-    gc_collect()
+            yield {"log": "Trying to write files again", "percent": 40}
+            try:
+                yield from write_files()
+            except Exception as e:
+                yield {"log": f"Failed to write files: {e}", "percent": 40}
+                yield {
+                    "log": "The update has failed at a critical point. If you are unable to recover, please contact us for help.",
+                    "percent": 40,
+                }
+                return
+        gc_collect()
 
-    yield {"log": "Update complete, Device will now reboot", "percent": 99}
-    yield {
-        "log": "This page should automatically reload in ~30 seconds, if not please do so manually",
-        "percent": 100,
-    }
+        yield {"log": "Update complete, Device will now reboot", "percent": 99}
+        yield {
+            "log": "This page should automatically reload in ~30 seconds, if not please do so manually",
+            "percent": 100,
+        }
 
-    from machine import reset as machine_reset
-    from reset_control import reset as reset_control
+        from machine import reset as machine_reset
+        from reset_control import reset as reset_control
 
-    reset_control()
-    sleep(2)  # make sure the game fully shuts down and allow last messages to be finish sending
-    machine_reset()
-
-
-def crc16_of_file(path: str) -> str:
-    def crc16_ccitt(data: bytes, crc: int = 0xFFFF) -> int:
-        for byte in data:
-            crc ^= byte << 8
-            for _ in range(8):
-                if crc & 0x8000:
-                    crc = (crc << 1) ^ 0x1021
-                else:
-                    crc <<= 1
-                crc &= 0xFFFF
-        return crc
-
-    crc = 0xFFFF
-    with open(path, "rb") as file:
-        while chunk := file.read(1024):
-            crc = crc16_ccitt(chunk, crc)
-
-    return f"{crc:04X}"
+        reset_control()
+        sleep(2)  # make sure the game fully shuts down and allow last messages to be finish sending
+        machine_reset()
 
 
 def write_files():
@@ -286,7 +314,7 @@ def write_files():
             with open(path, "wb") as out_f:
                 while True:
                     # I tried using a buufer here, but it's very tricky
-                    chunk = f.readline(1024)
+                    chunk = f.readline(200)
                     if not chunk:
                         break
                     if chunk.endswith("\n"):
