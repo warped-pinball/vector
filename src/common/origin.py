@@ -7,11 +7,16 @@ from ubinascii import hexlify
 from ujson import dumps
 
 previous_packet = None
+_cached_machine_id = None
 
 
 def get_machine_id():
+    global _cached_machine_id
+    if _cached_machine_id is not None:
+        return _cached_machine_id
     message = hexlify(unique_id()).decode() + ds_read_record("configuration", 0).get("gamename", "")
-    return (crc32(message.encode()) & 0xFFFFFFFF).to_bytes(4, "big").hex()
+    _cached_machine_id = (crc32(message.encode()) & 0xFFFFFFFF).to_bytes(4, "big").hex()
+    return _cached_machine_id
 
 
 def send_origin_message(message_type, data=None):
