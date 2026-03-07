@@ -6,7 +6,7 @@
 
 # Vector
 
-Vector is a modern hardware and software solution that brings advanced features to classic pinball machines while preserving their original gameplay. It allows your Williams/Bally System 9 and 11 games (with plans for WPC and Data East support in 2025) to take advantage of modern electronics and connectivity.
+Vector is a modern hardware and software solution that brings advanced features to classic pinball machines while preserving their original gameplay. It allows your Williams/Bally System 9 and 11 games, all variations of WPC and Data East games to take advantage of modern electronics and connectivity.
 
 Check out our [demo site](https://vector.doze.dev) which is hosted on a vector board
 
@@ -37,7 +37,7 @@ If you have any questions or trouble we recommend:
  - The bottom of the admin page has helpful documentation
  - [our FAQ video on YouTube](https://youtu.be/iD46myZ2hAI?si=HNcbDbbh4u5xqsF9)
  - [Open an issue](https://github.com/warped-pinball/vector/issues/new/choose)
- - Contact us at [inventingfun@gmail.com](mailto:inventingfun@gmail.com)
+ - Contact us at [paul@WarpedPinball.com](mailto:paul@warpedpinball.com)
 
 ## Contributing
 
