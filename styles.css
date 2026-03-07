@@ -1,0 +1,111 @@
+:root {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --panel: #111827;
+  --panel-border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #38bdf8;
+  --code-bg: #0b1221;
+  --code-text: #f8fafc;
+  --code-border: #1d2a3f;
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+  max-width: 1100px;
+  color: var(--text);
+  background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 25%),
+              var(--bg);
+  line-height: 1.5;
+}
+
+main { display: grid; gap: 1rem; }
+
+h1, h2, h3, h4 { color: var(--text); margin-top: 0; }
+
+p { margin: 0.25rem 0 0.75rem; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1.25rem;
+}
+
+.panel section { border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+.panel section:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+
+ul { padding-left: 1rem; }
+ul.plain { list-style: none; padding-left: 0; }
+ul.plain li { margin: 0.35rem 0; }
+
+.meta { color: var(--muted); font-size: 0.95rem; margin: 0.35rem 0; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(12px);
+  background: linear-gradient(90deg, rgba(13,17,23,0.95), rgba(13,17,23,0.85));
+  border-bottom: 1px solid var(--panel-border);
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+  z-index: 20;
+}
+
+.nav { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.05rem; }
+.brand span { padding: 0.3rem 0.75rem; border-radius: 10px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); box-shadow: var(--shadow); }
+
+.nav-links { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.nav-link, .pill { padding: 0.45rem 0.85rem; border-radius: 10px; border: 1px solid transparent; font-weight: 600; color: var(--text); }
+.nav-link:hover, .pill:hover { border-color: var(--panel-border); background: rgba(56,189,248,0.08); text-decoration: none; }
+
+.badge { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.hero { display: grid; gap: 0.8rem; }
+.card-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { padding: 1rem; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); height: 100%; }
+.card h3 { margin-top: 0; }
+.section-heading { margin: 0 0 0.35rem 0; }
+
+code { background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--code-border); }
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--code-border);
+  overflow-x: auto;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+pre code { display: block; font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; line-height: 1.5; }
+
+.tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--panel-border); background: rgba(56,189,248,0.1); color: var(--accent); }
+
+.toc-list { padding-left: 1rem; list-style: disc; color: var(--text); }
+.toc-list li { margin: 0.25rem 0; }
+
+.endpoint-list { column-width: 280px; }
+.endpoint-list ul { list-style: none; padding-left: 0; }
+.endpoint-list li { margin: 0.3rem 0; }
+.endpoint-list a { font-weight: 600; }
+
+.back-top { text-align: right; margin-top: 1rem; }
+
+.footer-link { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
+
+@media (max-width: 640px) {
+  body { padding: 0 1rem 2rem; }
+  .nav { gap: 0.5rem; }
+}
