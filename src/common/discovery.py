@@ -202,7 +202,7 @@ def _get_local_name_bytes():
     return str_name.encode("utf-8")
 
 
-def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", _DISCOVERY_PORT)) -> None:
+def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     # print(f"DISCOVERY: Sending message to {addr}: {msg}")
 
     global send_sock
