@@ -6,8 +6,8 @@ from SPI_DataStore import read_record as ds_read_record
 from ubinascii import hexlify
 from ujson import dumps
 
-previous_packet = None
 _cached_machine_id = None
+_previous_checksum = None
 
 
 def get_machine_id():
@@ -20,19 +20,21 @@ def get_machine_id():
 
 
 def send_origin_message(message_type, data=None):
-    global previous_packet
+    global _previous_checksum
     try:
+        # Compute a cheap checksum of the inputs before JSON serialization to avoid unnecessary allocations
+        checksum = crc32((message_type + str(data)).encode()) & 0xFFFFFFFF
+        if checksum == _previous_checksum:
+            return
+
         if data is not None:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type, "data": data})
         else:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type})
 
-        if packet == previous_packet:
-            return  # Skip sending duplicate packet
-
         print(f"Sending origin message: {message_type} with data: {data}")
         discovery.send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
-        previous_packet = packet
+        _previous_checksum = checksum
     except Exception as e:
         print("Error sending origin message:", e)
 
