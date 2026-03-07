@@ -43,10 +43,11 @@ def push_game_state(game_report):
     send_origin_message("game_state", game_report)
 
 
-def push_end_of_game(game):
-    # [0, ['', 0], ['', 0], ['', 0], ['', 0]]
+def push_end_of_game(game,try_count):
+    # game = [0, ['', 0], ['', 0], ['', 0], ['', 0]]
+    # try_count is 1 for first attempt and then increments for retransmits
 
-    print("Pushing end_of_game:", game)
+    print("Pushing end_of_game:", game, " try:",try_count)
 
     # ensure list of tuples with initial, and score
     plays = []
@@ -60,7 +61,7 @@ def push_end_of_game(game):
     if not plays:
         return
 
-    send_origin_message("end_of_game", {"plays": plays})
+    send_origin_message("end_of_game", {"plays": plays, "try": try_count })
 
 
 def push_reset():
