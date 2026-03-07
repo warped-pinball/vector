@@ -7,8 +7,7 @@ from ubinascii import hexlify
 from ujson import dumps
 
 _cached_machine_id = None
-_previous_message_type = None
-_previous_data = None
+_previous_checksum = None
 
 
 def get_machine_id():
@@ -21,10 +20,11 @@ def get_machine_id():
 
 
 def send_origin_message(message_type, data=None):
-    global _previous_message_type, _previous_data
+    global _previous_checksum
     try:
-        # Early duplicate check before JSON serialization to avoid unnecessary allocations
-        if message_type == _previous_message_type and data == _previous_data:
+        # Compute a cheap checksum of the inputs before JSON serialization to avoid unnecessary allocations
+        checksum = crc32((message_type + str(data)).encode()) & 0xFFFFFFFF
+        if checksum == _previous_checksum:
             return
 
         if data is not None:
@@ -34,8 +34,7 @@ def send_origin_message(message_type, data=None):
 
         print(f"Sending origin message: {message_type} with data: {data}")
         discovery.send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
-        _previous_message_type = message_type
-        _previous_data = data
+        _previous_checksum = checksum
     except Exception as e:
         print("Error sending origin message:", e)
 
