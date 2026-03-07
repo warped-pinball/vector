@@ -6,8 +6,9 @@ from SPI_DataStore import read_record as ds_read_record
 from ubinascii import hexlify
 from ujson import dumps
 
-previous_packet = None
 _cached_machine_id = None
+_previous_message_type = None
+_previous_data = None
 
 
 def get_machine_id():
@@ -20,19 +21,21 @@ def get_machine_id():
 
 
 def send_origin_message(message_type, data=None):
-    global previous_packet
+    global _previous_message_type, _previous_data
     try:
+        # Early duplicate check before JSON serialization to avoid unnecessary allocations
+        if message_type == _previous_message_type and data == _previous_data:
+            return
+
         if data is not None:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type, "data": data})
         else:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type})
 
-        if packet == previous_packet:
-            return  # Skip sending duplicate packet
-
         print(f"Sending origin message: {message_type} with data: {data}")
         discovery.send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
-        previous_packet = packet
+        _previous_message_type = message_type
+        _previous_data = data
     except Exception as e:
         print("Error sending origin message:", e)
 
