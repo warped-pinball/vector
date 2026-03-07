@@ -8,19 +8,20 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score availability
 """
+import DataMapper
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
-log = logger_instance
 from machine import RTC
-import DataMapper
+
+log = logger_instance
 
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 
 # hold the last four (plus two older records) games worth of scores.
-# first number is game counter (game ID), then 4 scores plus intiials
+# first number is game counter (game ID), then 4 scores plus initials
 recent_scores = [
     [0, ("", 0), ("", 0), ("", 0), ("", 0)],
     [1, ("", 0), ("", 0), ("", 0), ("", 0)],
@@ -33,16 +34,17 @@ recent_scores = [
 
 def reset_scores():
     """
-        reset high scores
+    reset high scores
     """
     print("RESET Leader scores")
     DataStore.blankStruct("leaders")
     machine_scores = [["", 1000], ["", 900], ["", 800], ["", 700], ["", 600], ["", 500]]
     DataMapper.write_high_scores(machine_scores)
 
+
 def get_claim_score_list():
     """
-        fetch the list of claimable scores
+    fetch the list of claimable scores
     """
     result = []
     if DataStore.read_record("extras", 0)["claim_scores"] is True:
@@ -56,7 +58,7 @@ def get_claim_score_list():
 
 def claim_score(initials, player_index, score):
     """
-        claim a score from the recent scores list - do not require a player index, search all
+    claim a score from the recent scores list - do not require a player index, search all
     """
     global recent_scores
 
@@ -92,6 +94,9 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_end_of_game(game)
 
 
 def find_player_by_initials(new_entry):
@@ -153,7 +158,7 @@ def update_leaderboard(new_entry):
 
     # Sanitize initials: 3 uppercase letters only
     initials = new_entry.get("initials", "")
-    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()) )[:3]
+    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()))[:3]
 
     if "date" not in new_entry:
         year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -172,7 +177,7 @@ def update_leaderboard(new_entry):
     for entry in top_scores:
         # print(f"SCORE: Check for initials match: {entry['initials']} == {new_entry['initials']}, score: {entry['score']} == {new_entry['score']}")
         if entry["initials"] == "" and entry["score"] == new_entry["score"]:
-            #print(" using claim - - - - - ")
+            # print(" using claim - - - - - ")
             entry["initials"] = new_entry["initials"]
             entry["full_name"] = new_entry["full_name"]
             DataStore.write_record("leaders", entry, top_scores.index(entry))
@@ -220,13 +225,7 @@ def initialize_leaderboard():
         rec = DataStore.read_record("leaders", i)
         if rec is None or not isinstance(rec, dict):
             # Create a blank/safe entry if the record is None or corrupt
-            rec = {
-                "initials": "   ",
-                "full_name": "",
-                "score": 100 + (count - i) * 100,  # Descending placeholder scores
-                "date": "01/01/2025",
-                "game_count": 0
-            }
+            rec = {"initials": "   ", "full_name": "", "score": 100 + (count - i) * 100, "date": "01/01/2025", "game_count": 0}  # Descending placeholder scores
             log.log(f"SCORE: leaders[{i}] was None/corrupt, using default")
         top_scores.append(rec)
 
@@ -283,9 +282,9 @@ def update_tournament(new_entry):
 GameEndCount = 0
 
 # State constants for CheckForNewScores
-STATE_INIT = 0           # Power up initialization
-STATE_WAITING = 1        # Waiting for game to start
-STATE_PLAYING = 2        # Game in progress
+STATE_INIT = 0  # Power up initialization
+STATE_WAITING = 1  # Waiting for game to start
+STATE_PLAYING = 2  # Game in progress
 _game_state = STATE_INIT
 
 
@@ -298,9 +297,9 @@ def CheckForNewScores():
     # power up init state - only runs once
     if _game_state == STATE_INIT:
         _game_state = STATE_WAITING
-        print("SCORE: State 0 - Power up initialization")        
-        scores=DataMapper.read_high_scores()        
-        print("Power up read machine scores - ",scores)
+        print("SCORE: State 0 - Power up initialization")
+        scores = DataMapper.read_high_scores()
+        print("Power up read machine scores - ", scores)
         for entry in scores:
             # Convert from [initials, score] list format to dict format for update leaderboard
             if isinstance(entry, list) and len(entry) >= 2:
@@ -308,25 +307,23 @@ def CheckForNewScores():
             elif isinstance(entry, dict):
                 update_leaderboard(entry)
 
-
         # Pull top 6 scores from leaderboard and write to machine
         machine_scores = []
         for i in range(min(6, len(top_scores))):
             initials = top_scores[i].get("initials", "")
             score = top_scores[i].get("score", 0)
-            machine_scores.append([initials, score])    
-        
+            machine_scores.append([initials, score])
+
         DataMapper.write_high_scores(machine_scores)
 
-
     # only run this if ball in play is enabled
-    if S.gdata["BallInPlay"]["Type"] == 20:       
+    if S.gdata["BallInPlay"]["Type"] == 20:
         print(f"SCORE: BallInPlay enabled, current state={_game_state}")
 
         # waiting for a game to start
-        if _game_state == STATE_WAITING:        
+        if _game_state == STATE_WAITING:
             print(f"SCORE: State WAITING - Waiting for game start, IdleCounter={nGameIdleCounter}")
-            
+
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -337,29 +334,29 @@ def CheckForNewScores():
             ballInPlay = DataMapper.get_ball_in_play()
             print(f"SCORE: Ball in play = {ballInPlay}")
 
-            if ballInPlay != 0:            
+            if ballInPlay != 0:
                 _game_state = STATE_PLAYING  # Game Started!
-                
+
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                     print("SCORE: Removing machine scores (enter_initials_on_game=True)")
                     highScores = [["aaa", 900], ["aaa", 800], ["aaa", 700], ["aaa", 600]]
                     DataMapper.write_high_scores(highScores)
-                    
+
                 S.gameCounter = (S.gameCounter + 1) % 100
                 print(f"SCORE: New game counter = {S.gameCounter}")
 
         # waiting for game to end
         elif _game_state == STATE_PLAYING:
-            print("SCORE: State PLAYING - Game in progress, waiting for end")         
+            print("SCORE: State PLAYING - Game in progress, waiting for end")
 
             ballInPlay = DataMapper.get_ball_in_play()
             print(f"SCORE: Ball in play = {ballInPlay}")
-            if ballInPlay == 0:       
-                _game_state = STATE_WAITING       
+            if ballInPlay == 0:
+                _game_state = STATE_WAITING
                 if S.gdata["HighScores"]["Type"] in range(20, 29):
-                    if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:                    
+                    if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                         high_scores = DataMapper.read_high_scores()
                         in_play_data = DataMapper.get_in_play_data()
                         in_play_scores = in_play_data["Scores"]
@@ -375,14 +372,14 @@ def CheckForNewScores():
                                     break
                             scores.append([initials, in_play_score])
 
-                        high_score_count = sum(1 for score in scores if score[1] > 10000)                   
-                        print(f"SCORE: High scores entered at game end: {high_score_count}",scores)
-                       
+                        high_score_count = sum(1 for score in scores if score[1] > 10000)
+                        print(f"SCORE: High scores entered at game end: {high_score_count}", scores)
+
                     else:
                         # read in play scores after game over to populate claim list ?  ?
                         log.log("SCORE: end, use in-play scores")
                         in_play_data = DataMapper.get_in_play_data()
-                        
+
                         # Extract scores list from the returned dictionary
                         if isinstance(in_play_data, dict) and "Scores" in in_play_data:
                             # Convert from [score1, score2, score3, score4] to [["", score1], ["", score2], ...]
@@ -391,11 +388,10 @@ def CheckForNewScores():
                             log.log(f"SCORE: get_in_play_data returned invalid type: {type(in_play_data)}")
                             scores = [["", 0], ["", 0], ["", 0], ["", 0]]
                         print(f"SCORE: In-play scores: {scores}")
-           
 
                     tournament_mode = DataStore.read_record("extras", 0)["tournament_mode"]
                     print(f"SCORE: tournament_mode = {tournament_mode}")
-            
+
                     if tournament_mode:
                         print("SCORE: Updating tournament scores")
                         for i in range(0, 4):
@@ -420,7 +416,7 @@ def CheckForNewScores():
                     _place_game_in_claim_list(game)
 
                     # put high scores back in machine memory
-                    if  DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:        
+                    if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                         print("SCORE: Placing high scores back in machine")
 
                         # Pull top 6 scores from leaderboard
@@ -429,14 +425,14 @@ def CheckForNewScores():
                             initials = top_scores[i].get("initials", "")
                             score = top_scores[i].get("score", 0)
                             machine_scores.append([initials, score])
-                        
+
                         # Pad to 6 entries if needed
                         while len(machine_scores) < 6:
                             machine_scores.append(["", 0])
-                        
+
                         # Write to machine
                         DataMapper.write_high_scores(machine_scores)
-                    
+
                     print("SCORE: Cleanup complete - returning to state 1")
 
     else:
