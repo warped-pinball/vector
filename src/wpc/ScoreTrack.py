@@ -115,9 +115,6 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-    from origin import push_end_of_game
-
-    push_end_of_game(game)
 
 
 def _read_machine_score(UseHighScores=True):
@@ -512,10 +509,21 @@ def update_tournament(new_entry):
 GameEndCount = 0
 initials_capture_this_game=False
 live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
+push_game_count = 0
+last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores
+    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game
+
+
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1        
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>3:
+            push_game_count =0
+        
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -643,6 +651,10 @@ def CheckForNewScores(nState=[0]):
             # Update claim list
             game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
 
+            from origin import push_end_of_game
+            push_game_count=1
+            last_pushed_game = game
+            push_end_of_game(last_pushed_game,push_game_count)
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory

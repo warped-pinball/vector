@@ -19,6 +19,8 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+push_game_count = 0
+last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus initials
@@ -94,10 +96,7 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-    from origin import push_end_of_game
-
-    push_end_of_game(game)
-
+   
 
 def find_player_by_initials(new_entry):
     """find players name from list of intials with names from storage"""
@@ -290,7 +289,14 @@ _game_state = STATE_INIT
 
 def CheckForNewScores():
     """Called by scheduler every 5 seconds. Tracks game state and updates scores."""
-    global nGameIdleCounter, GameEndCount, _game_state
+    global nGameIdleCounter, GameEndCount, _game_state, push_game_count, last_pushed_game
+
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>3:
+            push_game_count =0
 
     print(f"SCORE: CheckForNewScores - State={_game_state}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
 
@@ -414,6 +420,11 @@ def CheckForNewScores():
 
                     print(f"SCORE: Cleaned game scores: {game}")
                     _place_game_in_claim_list(game)
+
+                    from origin import push_end_of_game
+                    push_game_count = 1
+                    last_pushed_game = game
+                    push_end_of_game(last_pushed_game, push_game_count)
 
                     # put high scores back in machine memory
                     if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
