@@ -18,6 +18,8 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+push_game_count = 0
+last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -71,12 +73,15 @@ def claim_score(initials, player_index, score):
 
 def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""
+    global push_game_count, last_pushed_game
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
     from origin import push_end_of_game
 
-    push_end_of_game(game)
+    push_game_count = 1
+    last_pushed_game = game
+    push_end_of_game(last_pushed_game, push_game_count)
 
 
 def _read_machine_score(HighScores):
@@ -430,7 +435,14 @@ def update_tournament(new_entry):
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter
+    global nGameIdleCounter, push_game_count, last_pushed_game
+
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>3:
+            push_game_count =0
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
