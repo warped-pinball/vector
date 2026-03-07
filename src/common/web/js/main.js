@@ -94,24 +94,33 @@ async function loadPageResources(pageKey) {
     return;
   }
   clearPreviousResources(previousResourceIds);
-  const loadPromises = config.resources.map((resource) =>
-    fetchAndApply(resource.url, resource.targetId)
-      .then(() => {
-        console.log(
-          `Loaded resource: ${resource.url} into ${resource.targetId}`,
-        );
-        return resource.targetId;
-      })
-      .catch((error) => {
-        console.error(`Error loading resource: ${resource.url}`, error);
-        throw error;
-      }),
-  );
-  try {
-    previousResourceIds = await Promise.all(loadPromises);
-  } catch (error) {
-    console.error("Failed to load all resources:", error);
+
+  // Load HTML first, then JS — guarantees DOM is ready when scripts execute
+  // and avoids overwhelming the Pico server with concurrent requests.
+  const htmlResources = config.resources.filter((r) => !r.url.endsWith(".js"));
+  const jsResources = config.resources.filter((r) => r.url.endsWith(".js"));
+  const loadedIds = [];
+
+  for (const resource of htmlResources) {
+    try {
+      await fetchAndApply(resource.url, resource.targetId);
+      console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
+      loadedIds.push(resource.targetId);
+    } catch (error) {
+      console.error(`Error loading resource: ${resource.url}`, error);
+    }
   }
+  for (const resource of jsResources) {
+    try {
+      await fetchAndApply(resource.url, resource.targetId);
+      console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
+      loadedIds.push(resource.targetId);
+    } catch (error) {
+      console.error(`Error loading resource: ${resource.url}`, error);
+    }
+  }
+
+  previousResourceIds = loadedIds;
 }
 
 async function handleNavigation(

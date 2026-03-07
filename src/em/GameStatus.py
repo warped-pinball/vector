@@ -46,6 +46,21 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        configured_players = (
+            S.gdata.get("players")
+            if S.gdata.get("players") is not None
+            else S.gdata.get("total_players", S.gdata.get("number_of_players", 1))
+        )
+        try:
+            configured_players = int(configured_players)
+        except Exception:
+            configured_players = 1
+        configured_players = max(1, min(4, configured_players))
+
+        # Keep both field names for compatibility with existing frontends.
+        data["NumberOfPlayers"] = configured_players
+        data["number_of_players"] = configured_players
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
     return data

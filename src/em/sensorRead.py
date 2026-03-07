@@ -233,6 +233,9 @@ def initialize():
     hiPwm.duty_u16(int(65535 * 0.55))   # 80% duty cycle
     lowPwm.duty_u16(int(65535 * 0.45))  # 20% duty cycle
 
+    # Restore persisted calibration/sensitivity thresholds on boot and write PWM regs.
+    _restore_sensor_thresholds_from_store()
+
     # Set up state machine for the game active detection
     sma = rp2.StateMachine(
         1, sample_and_count, freq=100000,  
@@ -330,22 +333,57 @@ highCalThres=32000
 sensitivityBaseLow = 32000
 sensitivityBaseHigh = 32000
 
+
+def _persist_sensor_thresholds():
+    """Persist current sensor thresholds/sensitivity to EMData."""
+    try:
+        from ScoreTrack import saveState
+
+        saveState()
+    except Exception as e:
+        log.log(f"SENSOR: failed to persist thresholds: {e}")
+
+
+def _restore_sensor_thresholds_from_store():
+    """Restore persisted thresholds and immediately apply PWM outputs."""
+    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
+
+    sensor_levels = S.gdata.get("sensorlevels")
+    if not isinstance(sensor_levels, (list, tuple)) or len(sensor_levels) < 2:
+        return False
+
+    try:
+        cal_low = int(sensor_levels[0])
+        cal_high = int(sensor_levels[1])
+    except Exception:
+        return False
+
+    # Sanity checks: keep in valid register range and ensure a useful spread.
+    if cal_low < 0 or cal_low > 65535 or cal_high < 0 or cal_high > 65535:
+        return False
+    if cal_high <= cal_low:
+        return False
+    if cal_low < 20000 or cal_high > (65535 - 20000):
+        return False
+
+    lowCalThres = cal_low
+    highCalThres = cal_high
+    sensitivityBaseLow = cal_low
+    sensitivityBaseHigh = cal_high
+
+    lowPwm.duty_u16(lowCalThres)
+    hiPwm.duty_u16(highCalThres)
+    log.log(f"SENSOR: sensor calibration restored: cal_low={cal_low}, cal_high={cal_high}")
+    return True
+
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
     global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres,sensitivityBaseLow,sensitivityBaseHigh
 
     print("SENSOR: Calibrate sensor circuit start")
 
-    #check existing cal from spi datastore
-    cal_high = S.gdata.get("sensorlevels")[1]
-    cal_low = S.gdata.get("sensorlevels")[0]
-    if (cal_high>20000  and   cal_low<(65535-20000) ):
-        log.log(f"SENSOR: sensor calibration restored:  cal_low={cal_low}, cal_high={cal_high}")
-        lowPwm.duty_u16(cal_low)
-        lowCalThres=cal_low
-        hiPwm.duty_u16(cal_high)
-        highCalThres=cal_high
-        #return
+    # check existing cal from SPI datastore and apply as the starting point
+    _restore_sensor_thresholds_from_store()
 
     print("SENSOR: Calibrate sensor circuit - run CAL")
     lowPwm.duty_u16(20000)
@@ -399,8 +437,14 @@ def calibrate():
     hiPwm.duty_u16(highCalThres)
     sensitivityBaseLow = lowCalThres
     sensitivityBaseHigh = highCalThres
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][0] = lowCalThres
+        S.gdata["sensorlevels"][1] = highCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
     log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
+    _persist_sensor_thresholds()
 
 
 def setSensitivityPercent(percent):
@@ -447,9 +491,12 @@ def setSensitivityPercent(percent):
     if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
         S.gdata["sensorlevels"][0] = lowCalThres
         S.gdata["sensorlevels"][1] = highCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
 
     S.gdata["sensitivity"] = pct
     log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres} (sensitivity={pct}%)")
+    _persist_sensor_thresholds()
     return pct, lowCalThres, highCalThres
 
 
@@ -470,12 +517,12 @@ def sensitivityChange(dir):
     hiPwm.duty_u16(highCalThres)
     log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
 
-    #import SPI_DataStore as DataStore
-    S.gdata.get("sensorlevels")[1] = highCalThres
-    S.gdata.get("sensorlevels")[0] = lowCalThres
-    #DataStore.write_record("EMData", S.gdata)
-    from ScoreTrack import saveState
-    saveState()
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][1] = highCalThres
+        S.gdata["sensorlevels"][0] = lowCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
+    _persist_sensor_thresholds()
 
 #test
 if __name__ == "__main__":

@@ -1,4 +1,8 @@
-﻿// ------------------ Setup / Sensitivity Helpers ------------------
+﻿// Wrap in IIFE so const/let declarations don't collide when
+// the SPA reloads this script on repeated navigation.
+(function () {
+"use strict";
+// ------------------ Setup / Sensitivity Helpers ------------------
 
 // Helper: show modal by id
 async function showModal(id) {
@@ -39,11 +43,12 @@ async function initSetupUI() {
     // ignore if endpoint not available
   }
 
-  // add listeners to inputs to save locally
+  // add listeners to inputs to save locally (guarded for idempotent retry)
   const inputs = ["game-name", "total-players", "score-reels", "dummy-reels"];
   inputs.forEach((id) => {
     const el = document.getElementById(id);
-    if (!el) return;
+    if (!el || el.dataset.bound) return;
+    el.dataset.bound = "1";
     el.addEventListener("change", () => {
       const playersInput = document.getElementById("total-players");
       const clampedTotalPlayers = clampTotalPlayers(playersInput ? playersInput.value : 1);
@@ -313,7 +318,8 @@ async function initSensitivityUI() {
     }
   }
 
-  if (upBtn) {
+  if (upBtn && !upBtn.dataset.bound) {
+    upBtn.dataset.bound = "1";
     upBtn.addEventListener("click", async () => {
       if (value < SENSITIVITY_MAX) {
         value = Math.min(SENSITIVITY_MAX, value + SENSITIVITY_STEP);
@@ -323,7 +329,8 @@ async function initSensitivityUI() {
     });
   }
 
-  if (downBtn) {
+  if (downBtn && !downBtn.dataset.bound) {
+    downBtn.dataset.bound = "1";
     downBtn.addEventListener("click", async () => {
       if (value > SENSITIVITY_MIN) {
         value = Math.max(SENSITIVITY_MIN, value - SENSITIVITY_STEP);
@@ -333,7 +340,8 @@ async function initSensitivityUI() {
     });
   }
 
-  if (recalBtn) {
+  if (recalBtn && !recalBtn.dataset.bound) {
+    recalBtn.dataset.bound = "1";
     recalBtn.addEventListener("click", async () => {
       const prevText = recalBtn.textContent;
       recalBtn.disabled = true;
@@ -471,71 +479,131 @@ async function initTimingSensitivityUI() {
 
 // Tournament Mode
 async function tournamentModeToggle() {
-  const response = await window.smartFetch(
-    "/api/settings/get_tournament_mode",
-    null,
-    false,
-  );
-  const data = await response.json();
+  let data;
+  try {
+    const response = await window.smartFetch(
+      "/api/settings/get_tournament_mode",
+      null,
+      false,
+    );
+    data = await response.json();
+  } catch (e) {
+    console.warn("tournamentModeToggle: fetch failed", e);
+    return;
+  }
 
-  const tournamentModeToggle = await window.waitForElementById(
-    "tournament-mode-toggle",
-  );
+  const tmToggle = document.getElementById("tournament-mode-toggle");
+  if (!tmToggle) return;
 
-  tournamentModeToggle.checked = data["tournament_mode"];
-  tournamentModeToggle.disabled = false;
+  tmToggle.checked = data["tournament_mode"];
+  tmToggle.disabled = false;
 
   // add event listener to update the setting when the checkbox is changed
-  tournamentModeToggle.addEventListener("change", async () => {
-    const data = { tournament_mode: tournamentModeToggle.checked ? 1 : 0 };
-    await window.smartFetch("/api/settings/set_tournament_mode", data, true);
-  });
+  if (!tmToggle.dataset.bound) {
+    tmToggle.dataset.bound = "1";
+    tmToggle.addEventListener("change", async () => {
+      const data = { tournament_mode: tmToggle.checked ? 1 : 0 };
+      await window.smartFetch("/api/settings/set_tournament_mode", data, true);
+    });
+  }
 }
 
 // Score claim methods
 async function getScoreClaimMethods() {
-  const response = await window.smartFetch(
-    "/api/settings/get_claim_methods",
-    null,
-    false,
-  );
-  const data = await response.json();
+  let data;
+  try {
+    const response = await window.smartFetch(
+      "/api/settings/get_claim_methods",
+      null,
+      false,
+    );
+    data = await response.json();
+  } catch (e) {
+    console.warn("getScoreClaimMethods: fetch failed", e);
+    return;
+  }
 
-  const webUIToggle = await window.waitForElementById("web-ui-toggle");
+  const webUIToggle = document.getElementById("web-ui-toggle");
+  if (!webUIToggle) return;
 
   webUIToggle.checked = data["web-ui"];
   webUIToggle.disabled = false;
 
-  // Helper function to add event listener to claim method toggle
-  function addClaimMethodToggleListener(toggle) {
-    toggle.addEventListener("change", async () => {
+  if (!webUIToggle.dataset.bound) {
+    webUIToggle.dataset.bound = "1";
+    webUIToggle.addEventListener("change", async () => {
       const data = {
         "web-ui": webUIToggle.checked ? 1 : 0,
       };
       await window.smartFetch("/api/settings/set_claim_methods", data, true);
     });
   }
-
-  addClaimMethodToggleListener(webUIToggle);
 }
 
-tournamentModeToggle();
-getScoreClaimMethods();
-initSetupUI();
-initSensitivityUI();
-initTimingSensitivityUI();
-startSensorActivityPolling();
-startLivePlayerScorePolling();
-
-// wire save button
-const saveGameConfigBtn = document.getElementById("save-game-config");
-if (saveGameConfigBtn) {
-  saveGameConfigBtn.style.display = "none";
-  saveGameConfigBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    await saveGameConfig();
-  });
+// Run all admin API fetches sequentially and populate UI.
+// All init functions are idempotent (guarded listeners) so safe to re-run.
+async function _runAdminDataInit() {
+  try { await initSetupUI(); } catch (e) { console.warn("initSetupUI failed", e); }
+  try { await initSensitivityUI(); } catch (e) { console.warn("initSensitivityUI failed", e); }
+  try { await initTimingSensitivityUI(); } catch (e) { console.warn("initTimingSensitivityUI failed", e); }
+  try { await tournamentModeToggle(); } catch (e) { console.warn("tournamentModeToggle failed", e); }
+  try { await getScoreClaimMethods(); } catch (e) { console.warn("getScoreClaimMethods failed", e); }
 }
+
+// Check whether the timing controls actually rendered (proxy for "data loaded").
+function _adminInitOk() {
+  const p1 = document.getElementById("timing-adj-p1");
+  return p1 && p1.children.length > 0;
+}
+
+async function initializeAdminPage() {
+  window.adminPollingActive = true;
+  window.cleanup_admin = function () {
+    window.adminPollingActive = false;
+  };
+
+  // First attempt
+  await _runAdminDataInit();
+
+  // If data didn't load, schedule retries (server may have been busy with
+  // stale requests from the previous page).
+  var _retries = 0;
+  var _MAX_RETRIES = 2;
+  var _RETRY_MS = 2000;
+  function _scheduleRetry() {
+    if (_retries >= _MAX_RETRIES) return;
+    _retries++;
+    setTimeout(async () => {
+      if (!window.adminPollingActive) return; // navigated away
+      if (_adminInitOk()) return;             // already loaded
+      console.warn("ADMIN: data incomplete, retry " + _retries + "/" + _MAX_RETRIES);
+      await _runAdminDataInit();
+      _scheduleRetry();
+    }, _RETRY_MS);
+  }
+  if (!_adminInitOk()) {
+    _scheduleRetry();
+  }
+
+  startSensorActivityPolling();
+  startLivePlayerScorePolling();
+
+  // wire save button
+  const saveGameConfigBtn = document.getElementById("save-game-config");
+  if (saveGameConfigBtn && !saveGameConfigBtn.dataset.bound) {
+    saveGameConfigBtn.style.display = "none";
+    saveGameConfigBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await saveGameConfig();
+    });
+    saveGameConfigBtn.dataset.bound = "1";
+  }
+
+  checkForUpdates();
+  loadConfiguredSsidSignal();
+}
+
+initializeAdminPage();
 
 // Sensor activity indicator lamp — polls /api/em/sensor_activity at ~5 Hz
 function startSensorActivityPolling() {
@@ -545,6 +613,9 @@ function startSensorActivityPolling() {
   const POLL_MS = 200; // poll interval
 
   async function poll() {
+    if (!window.adminPollingActive) {
+      return;
+    }
     try {
       const resp = await window.smartFetch("/api/em/sensor_activity", null, false);
       if (resp && resp.ok) {
@@ -561,7 +632,9 @@ function startSensorActivityPolling() {
       // ignore — lamp just stays dark
       lamp.style.background = "#444";
     }
-    setTimeout(poll, POLL_MS);
+    if (window.adminPollingActive) {
+      setTimeout(poll, POLL_MS);
+    }
   }
 
   poll();
@@ -582,6 +655,9 @@ function startLivePlayerScorePolling() {
   }
 
   async function poll() {
+    if (!window.adminPollingActive) {
+      return;
+    }
     try {
       const resp = await window.smartFetch("/api/game/status", null, false);
       if (resp && resp.ok) {
@@ -593,7 +669,9 @@ function startLivePlayerScorePolling() {
     } catch (e) {
       // keep last displayed values on transient errors
     }
-    setTimeout(poll, POLL_MS);
+    if (window.adminPollingActive) {
+      setTimeout(poll, POLL_MS);
+    }
   }
 
   poll();
@@ -935,7 +1013,6 @@ async function applyUpdate(url, skip_signature_check = false) {
   }
 }
 
-checkForUpdates();
 window.applyUpdate = applyUpdate;
 
 // custom update function
@@ -955,4 +1032,5 @@ window.customUpdate = async function () {
   );
 };
 
-loadConfiguredSsidSignal();
+})(); // end IIFE
+
