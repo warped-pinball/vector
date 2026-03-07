@@ -8,7 +8,6 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score avilability
 """
-import displayMessage
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
@@ -116,6 +115,9 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_end_of_game(game)
 
 
 def _read_machine_score(UseHighScores=True):
@@ -215,7 +217,7 @@ def _int_to_bcd(number):
         ScoreBytes = 6  # 6 bcd digits for 12 digit score
 
     # pad with zeros to ensure it has ScoreBytes*2 digits
-    num_str = f"{number:0{ScoreBytes*2}d}"
+    num_str = f"{number:0{ScoreBytes * 2}d}"
     bcd_bytes = bytearray(ScoreBytes)
     # Fill byte array
     for i in range(ScoreBytes):
@@ -339,7 +341,7 @@ def find_player_by_initials(new_entry):
 
 def update_individual_score(new_entry):
     """upadate a players individual score board"""
-    initials = new_entry["initials"]
+    # initials = new_entry["initials"]
     playername, playernum = find_player_by_initials(new_entry)
 
     if not playername or playername in [" ", "@@@", "   ", ""]:
@@ -384,7 +386,7 @@ def update_leaderboard(new_entry):
 
     # Sanitize initials: 3 uppercase letters only
     initials = new_entry.get("initials", "")
-    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()) )[:3]
+    new_entry["initials"] = ("".join(c.upper() for c in initials if c.isalpha()))[:3]
 
     if "date" not in new_entry:
         year, month, day, _, _, _, _, _ = rtc.datetime()
@@ -456,10 +458,10 @@ def check_for_machine_high_scores(report=True):
     for idx in range(5):  # with WPC could be 5 scores - -
         if scores[idx][1] > 10000:  # ignore placed fake scores
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
-            
+
             if idx >= len(top_scores) or scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:
                 if report:
-                    print(f"SCORE: place game score into vector {new_score}")        
+                    print(f"SCORE: place game score into vector {new_score}")
                 claim_score(new_score["initials"], 0, new_score["score"])
 
 
@@ -562,6 +564,7 @@ def CheckForNewScores(nState=[0]):
                 #Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
+
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
                     #_remove_machine_scores()
                     DataMapper.prepare_initials_capture()
@@ -569,7 +572,6 @@ def CheckForNewScores(nState=[0]):
                 else:
                     initials_capture_this_game = False
                 S.gameCounter = (S.gameCounter + 1) % 100
-
 
         # waiting for game to end
         elif nState[0] == 2:
@@ -616,6 +618,7 @@ def CheckForNewScores(nState=[0]):
             nState[0] = 1
 
             if initials_capture_this_game == False:
+
                 # in play scores
                 log.log("SCORE: end, use in-play scores")
                 scores = live_scores
@@ -643,5 +646,5 @@ def CheckForNewScores(nState=[0]):
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory
-            if DataStore.read_record("extras", 0)["enter_initials_on_game"] == True:
+            if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 place_machine_scores()

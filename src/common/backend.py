@@ -4,13 +4,12 @@ from gc import threshold as gc_threshold
 from hashlib import sha256 as hashlib_sha256
 from time import sleep, time
 
-import faults
 import Pico_Led
 import SharedState as S
 import Switches
 import uctypes
 from ls import ls
-from machine import RTC
+from micropython import const
 from phew.server import add_route as phew_add_route
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
@@ -21,12 +20,11 @@ from ujson import dumps as json_dumps
 #
 # Constants
 #
-rtc = RTC()
-WIFI_MAX_ATTEMPTS = 2
-AP_NAME = "Warped Pinball"
+_WIFI_MAX_ATTEMPTS = const(2)
+_AP_NAME = const("Warped Pinball")
 # Authentication variables
 challenges = {}
-CHALLENGE_EXPIRATION_SECONDS = 60
+_CHALLENGE_EXPIRATION_SECONDS = const(60)
 
 
 #
@@ -297,7 +295,7 @@ def require_auth(handler):
             return deny_access("Invalid challenge")
 
         # confirm that the challenge has not expired
-        if (time() - challenges[client_challenge]) > CHALLENGE_EXPIRATION_SECONDS:
+        if (time() - challenges[client_challenge]) > _CHALLENGE_EXPIRATION_SECONDS:
             del challenges[client_challenge]
             return deny_access("Challenge expired")
 
@@ -350,7 +348,7 @@ def get_challenge(request):
 
     # remove expired challenges
     for challenge, timestamp in list(challenges.items()):
-        if (time() - timestamp) > CHALLENGE_EXPIRATION_SECONDS:
+        if (time() - timestamp) > _CHALLENGE_EXPIRATION_SECONDS:
             del challenges[challenge]
 
     # make sure there are no more than 10 challenges
@@ -1543,7 +1541,9 @@ def app_setDateTime(request):
     @end
     """
     date = [int(e) for e in request.json["date"]]
+    from machine import RTC
 
+    rtc = RTC()
     # rtc will calculate the day of the week for us
     rtc.datetime((date[0], date[1], date[2], 0, date[3], date[4], date[5], 0))
 
@@ -1562,6 +1562,9 @@ def app_getDateTime(request):
         example: {"date": [2024, 1, 1, 0, 12, 0, 0]}
     @end
     """
+    from machine import RTC
+
+    rtc = RTC()
     return {"date": list(rtc.datetime())}
 
 
@@ -1585,6 +1588,25 @@ def app_version(request):
     from systemConfig import SystemVersion
 
     return {"version": SystemVersion}
+
+
+@add_route("/api/machine_id")
+def app_machine_id(request):
+    """
+    @api
+    summary: Get the unique identifier for this Vector installation (hardware + configuration)
+    response:
+      status_codes:
+        - code: 200
+          description: Machine ID returned
+      body:
+        description: Unique identifier derived from hardware serial and active game configuration as a hex string
+        example: {"machine_id": "1a2b3c4d5e6f"}
+    @end
+    """
+    from origin import get_machine_id
+
+    return {"machine_id": get_machine_id()}
 
 
 @add_route("/api/fault")
@@ -1734,6 +1756,7 @@ def app_list_available_formats(request):
     @end
     """
     from Formats import get_available_formats
+
     return get_available_formats()
 
 
@@ -1746,42 +1769,38 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
-            identified by NAME STRING
-
             - name: format_id
-                type: int
-                required: true
-                description: Format identifier to activate
+              type: int
+              required: false
+              description: Format identifier to activate
+            - name: format_name
+              type: string
+              required: false
+              description: Format name to activate
             - name: options
-                type: dict
-                required: false
-                description: Configuration options for the selected format
+              type: dict
+              required: false
+              description: Configuration options for the selected format
     response:
       status_codes:
         - code: 200
           description: Format set successfully
+        - code: 400
+          description: Missing or invalid format identifier
     @end
     """
     from Formats import set_active_format
 
     data = request.data
-    if not isinstance(data, dict) or len(data) == 0:
-        return {"error": "Missing format data"}, 400
-
-    # Extract the format name from the top level key
-    format_name = list(data.keys())[0]
-    format_data = data[format_name]
 
     # Extract Options section if it exists
-    options = format_data.get("Options", {})
+    format_id = data.get("format_id", data.get("format_name", None))
+    if format_id is None:
+        return {"error": "Missing format_id"}, 400
 
     # Set the active format with validation
-    if not set_active_format(format_name, options):
-        return {"error": f"Invalid format: {format_name}"}, 400
-
-    S.game_status["format"] = {"name": format_name}
-    if options:
-        S.game_status["format"]["options"] = options
+    if not set_active_format(format_id, data.get("Options", {})):
+        return {"error": f"Invalid format: {format_id}"}, 400
 
     return
 
@@ -1822,8 +1841,8 @@ def app_get_active_formats(request):
     @end
     """
     from Formats import get_active_format
-    return get_active_format()
 
+    return get_active_format()
 
 
 # get switch diagnostics
@@ -2065,6 +2084,14 @@ def connect_to_wifi(initialize=False):
     Pico_Led.start_slow_blink()
 
     from displayMessage import init as init_display
+    from faults import (
+        ALL_WIFI,
+        WIFI01,
+        WIFI02,
+        clear_fault,
+        fault_is_raised,
+        raise_fault,
+    )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
 
@@ -2076,7 +2103,7 @@ def connect_to_wifi(initialize=False):
         return False
 
     # Try a few times before raising a fault
-    for i in range(WIFI_MAX_ATTEMPTS):
+    for i in range(_WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
         if phew_is_connected():
             # TODO remove ip address args and move to scheduler
@@ -2085,8 +2112,8 @@ def connect_to_wifi(initialize=False):
             print(f"Connected to wifi with IP address: {ip_address}")
 
             # clear any wifi related faults
-            if faults.fault_is_raised(faults.ALL_WIFI):
-                faults.clear_fault(faults.ALL_WIFI)
+            if fault_is_raised(ALL_WIFI):
+                clear_fault(ALL_WIFI)
 
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
             Pico_Led.on()
@@ -2098,10 +2125,10 @@ def connect_to_wifi(initialize=False):
     networks = scanwifi.scan_wifi2()
     for network in networks:
         if network["ssid"] == ssid:
-            faults.raise_fault(faults.WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+            raise_fault(WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
             return False
 
-    faults.raise_fault(faults.WIFI02, f"No wifi signal for ssid: {ssid}")
+    raise_fault(WIFI02, f"No wifi signal for ssid: {ssid}")
     return False
 
 
@@ -2138,7 +2165,7 @@ def go(ap_mode):
         add_ap_mode_routes()
         # send clients to the configure page
         set_callback(redirect)
-        ap = access_point(AP_NAME)
+        ap = access_point(_AP_NAME)
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
