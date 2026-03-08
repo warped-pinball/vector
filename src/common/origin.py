@@ -61,7 +61,7 @@ def push_end_of_game(game,try_count):
     if not plays:
         return
 
-    send_origin_message("end_of_game", {"plays": plays, "try": try_count })
+    send_origin_message("end_of_game", {"plays": plays, "try": try_count, "counter": game[0] })
 
 
 def push_reset():
