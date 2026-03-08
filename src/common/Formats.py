@@ -601,13 +601,7 @@ def formats_run():
         call rate CALL_TIMER milli-seconds
     """
     global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game
-
-    if push_game_count>0:
-        from origin import push_end_of_game
-        push_game_count+=1
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>3:
-            push_game_count =0
+   
 
     # Waiting to change format?
     active_id = S.active_format.get("Id", 0)
@@ -643,6 +637,13 @@ def formats_run():
                 handlers[HANDLER_INIT]()
             except Exception as e:
                 log.log(f"FORMAT: Error running init format {active_id}: {e}")
+        else:
+            if push_game_count>0:
+                from origin import push_end_of_game
+                push_game_count+=1
+                push_end_of_game(last_pushed_game,push_game_count)
+                if push_game_count>5:
+                    push_game_count =0
     
 
     # Call handler during game, wait for game end

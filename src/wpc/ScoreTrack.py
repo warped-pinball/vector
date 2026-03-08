@@ -514,16 +514,7 @@ last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game
-
-
-    if push_game_count>0:
-        from origin import push_end_of_game
-        push_game_count+=1        
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>3:
-            push_game_count =0
-        
+    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game  
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -580,6 +571,14 @@ def CheckForNewScores(nState=[0]):
                 else:
                     initials_capture_this_game = False
                 S.gameCounter = (S.gameCounter + 1) % 100
+            else:
+                if push_game_count>0:
+                    from origin import push_end_of_game
+                    push_game_count+=1        
+                    push_end_of_game(last_pushed_game,push_game_count)
+                    if push_game_count>5:
+                        push_game_count =0
+        
 
         # waiting for game to end
         elif nState[0] == 2:
