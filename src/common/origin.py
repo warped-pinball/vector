@@ -47,8 +47,6 @@ def push_end_of_game(game, try_count):
     # game = [0, ['', 0], ['', 0], ['', 0], ['', 0]]
     # try_count is 1 for first attempt and then increments for retransmits
 
-    print("Pushing end_of_game:", game, " try:", try_count)
-
     # ensure list of tuples with initial, and score
     plays = []
     for play in game[1:]:
