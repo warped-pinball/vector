@@ -441,7 +441,7 @@ def CheckForNewScores(nState=[0]):
         from origin import push_end_of_game
         push_game_count+=1
         push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>3:
+        if push_game_count>5:
             push_game_count =0
 
     if nState[0] == 0:  # power up init
