@@ -257,6 +257,10 @@ def build_update_file(
             make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
         )
     else:
+        # remove extra files
+        file_lines.append(build_remove_extra_files_code(build_dir))
+
+        # update files
         for root, _, files in os.walk(build_dir_path):
             for file_name in sorted(files):
                 file_path = Path(root) / file_name
