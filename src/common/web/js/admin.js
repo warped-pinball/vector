@@ -388,6 +388,22 @@ async function loadConfiguredSsidSignal() {
   }
 }
 
+async function initMemoryBroadcastToggle() {
+  const memoryBroadcastToggle = await window.waitForElementById(
+    "memory-broadcast-toggle",
+  );
+
+  memoryBroadcastToggle.addEventListener("change", async () => {
+    const payload = { enable: memoryBroadcastToggle.checked ? 1 : 0 };
+    try {
+      await window.smartFetch("/api/memory/toggle-broadcast", payload, true);
+    } catch (error) {
+      console.error("Failed to toggle memory broadcast", error);
+      memoryBroadcastToggle.checked = !memoryBroadcastToggle.checked;
+    }
+  });
+}
+
 // Midnight Madness settings
 async function getMidnightMadness() {
   const response = await window.smartFetch(
@@ -995,4 +1011,5 @@ if (typeof window !== "undefined") {
   };
 
   loadConfiguredSsidSignal();
+  initMemoryBroadcastToggle();
 }
