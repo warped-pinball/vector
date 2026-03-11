@@ -67,6 +67,7 @@ Jump directly to a handler. Links open source on GitHub with accurate line numbe
 - [`/api/export/scores`](#api-export-scores)
 - [`/api/import/scores`](#api-import-scores)
 - [`/api/memory-snapshot`](#api-memory-snapshot)
+- [`/api/memory/toggle-broadcast`](#api-memory-toggle-broadcast)
 - [`/api/logs`](#api-logs)
 - [`/api/formats/available`](#api-formats-available)
 - [`/api/formats/set`](#api-formats-set)
@@ -84,7 +85,7 @@ Jump directly to a handler. Links open source on GitHub with accurate line numbe
 <a id="api-auth-challenge"></a>
 ## `/api/auth/challenge`
 
-- **Handler:** [`get_challenge`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L328)
+- **Handler:** [`get_challenge`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L329)
 
 
 Request a new authentication challenge
@@ -111,7 +112,7 @@ No parameters inferred.
 <a id="api-auth-password_check"></a>
 ## `/api/auth/password_check`
 
-- **Handler:** [`check_password`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L370)
+- **Handler:** [`check_password`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L371)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Convenience method to verify credentials without side effects
@@ -136,7 +137,7 @@ No parameters inferred.
 <a id="api-game-reboot"></a>
 ## `/api/game/reboot`
 
-- **Handler:** [`app_reboot_game`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L406)
+- **Handler:** [`app_reboot_game`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L407)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Power-cycle the pinball machine and restart the scheduled tasks
@@ -160,7 +161,7 @@ No parameters inferred.
 <a id="api-game-name"></a>
 ## `/api/game/name`
 
-- **Handler:** [`app_game_name`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L430)
+- **Handler:** [`app_game_name`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L431)
 
 
 Get the human-friendly title of the active game configuration
@@ -184,7 +185,7 @@ No parameters inferred.
 <a id="api-game-active_config"></a>
 ## `/api/game/active_config`
 
-- **Handler:** [`app_game_config_filename`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L449)
+- **Handler:** [`app_game_config_filename`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L450)
 
 
 Get the filename of the active game configuration. Note that on EM systems this is the same as the game name.
@@ -210,7 +211,7 @@ No parameters inferred.
 <a id="api-game-configs_list"></a>
 ## `/api/game/configs_list`
 
-- **Handler:** [`app_game_configs_list`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L475)
+- **Handler:** [`app_game_configs_list`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L476)
 
 
 List all available game configuration files
@@ -244,7 +245,7 @@ No parameters inferred.
 <a id="api-game-status"></a>
 ## `/api/game/status`
 
-- **Handler:** [`app_game_status`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L504)
+- **Handler:** [`app_game_status`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L505)
 
 
 Retrieve the current game status such as ball in play, scores, and anything else the configured game supports
@@ -272,7 +273,7 @@ No parameters inferred.
 <a id="api-leaders"></a>
 ## `/api/leaders`
 
-- **Handler:** [`app_leaderBoardRead`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L557)
+- **Handler:** [`app_leaderBoardRead`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L558)
 
 
 Fetch the main leaderboard
@@ -303,7 +304,7 @@ No parameters inferred.
 <a id="api-score-delete"></a>
 ## `/api/score/delete`
 
-- **Handler:** [`app_scoreDelete`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L582)
+- **Handler:** [`app_scoreDelete`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L583)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Delete one or more score entries from a leaderboard
@@ -330,7 +331,7 @@ Delete one or more score entries from a leaderboard
 <a id="api-tournament"></a>
 ## `/api/tournament`
 
-- **Handler:** [`app_tournamentRead`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L630)
+- **Handler:** [`app_tournamentRead`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L631)
 
 
 Read the tournament leaderboard
@@ -360,7 +361,7 @@ No parameters inferred.
 <a id="api-leaders-reset"></a>
 ## `/api/leaders/reset`
 
-- **Handler:** [`app_resetScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L654)
+- **Handler:** [`app_resetScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L655)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Clear the main leaderboard
@@ -383,7 +384,7 @@ No parameters inferred.
 <a id="api-tournament-reset"></a>
 ## `/api/tournament/reset`
 
-- **Handler:** [`app_tournamentClear`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L673)
+- **Handler:** [`app_tournamentClear`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L674)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Clear tournament standings and resets the game counter
@@ -406,7 +407,7 @@ No parameters inferred.
 <a id="api-scores-claimable"></a>
 ## `/api/scores/claimable`
 
-- **Handler:** [`app_getClaimableScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L694)
+- **Handler:** [`app_getClaimableScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L695)
 
 
 List recent claimable plays
@@ -436,7 +437,7 @@ No parameters inferred.
 <a id="api-scores-claim"></a>
 ## `/api/scores/claim`
 
-- **Handler:** [`app_claimScore`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L720)
+- **Handler:** [`app_claimScore`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L721)
 
 
 Apply initials to an unclaimed score
@@ -463,7 +464,7 @@ Apply initials to an unclaimed score
 <a id="api-players"></a>
 ## `/api/players`
 
-- **Handler:** [`app_getPlayers`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L756)
+- **Handler:** [`app_getPlayers`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L757)
 
 
 List registered players
@@ -492,7 +493,7 @@ No parameters inferred.
 <a id="api-player-update"></a>
 ## `/api/player/update`
 
-- **Handler:** [`app_updatePlayer`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L788)
+- **Handler:** [`app_updatePlayer`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L789)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Update a stored player record
@@ -519,7 +520,7 @@ Update a stored player record
 <a id="api-player-scores"></a>
 ## `/api/player/scores`
 
-- **Handler:** [`app_getScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L843)
+- **Handler:** [`app_getScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L844)
 
 
 Fetch all scores for a specific player
@@ -553,7 +554,7 @@ Fetch all scores for a specific player
 <a id="api-mode-champs"></a>
 ## `/api/mode/champs`
 
-- **Handler:** [`app_getModeChamps`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L903)
+- **Handler:** [`app_getModeChamps`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L904)
 
 
 Fetch mode champions data from the game
@@ -586,7 +587,7 @@ No parameters inferred.
 <a id="api-personal-bests"></a>
 ## `/api/personal/bests`
 
-- **Handler:** [`app_personal_bests`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L933)
+- **Handler:** [`app_personal_bests`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L934)
 
 
 Return the best score for each registered player
@@ -617,7 +618,7 @@ No parameters inferred.
 <a id="api-player-scores-reset"></a>
 ## `/api/player/scores/reset`
 
-- **Handler:** [`app_resetIndScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L993)
+- **Handler:** [`app_resetIndScores`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L994)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Clear all scores for a single player
@@ -642,7 +643,7 @@ Clear all scores for a single player
 <a id="api-adjustments-status"></a>
 ## `/api/adjustments/status`
 
-- **Handler:** [`app_getAdjustmentStatus`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1022)
+- **Handler:** [`app_getAdjustmentStatus`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1023)
 
 
 Get the status of each adjustment bank
@@ -674,7 +675,7 @@ No parameters inferred.
 <a id="api-adjustments-name"></a>
 ## `/api/adjustments/name`
 
-- **Handler:** [`app_setAdjustmentName`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1050)
+- **Handler:** [`app_setAdjustmentName`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1051)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set the name of an adjustment profile
@@ -700,7 +701,7 @@ Set the name of an adjustment profile
 <a id="api-adjustments-capture"></a>
 ## `/api/adjustments/capture`
 
-- **Handler:** [`app_captureAdjustments`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1082)
+- **Handler:** [`app_captureAdjustments`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1083)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Capture current adjustments into a profile
@@ -725,7 +726,7 @@ Capture current adjustments into a profile
 <a id="api-adjustments-restore"></a>
 ## `/api/adjustments/restore`
 
-- **Handler:** [`app_restoreAdjustments`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1107)
+- **Handler:** [`app_restoreAdjustments`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1108)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 - Cooldown: 5s
 
@@ -751,7 +752,7 @@ Restore adjustments from a saved profile
 <a id="api-settings-get_claim_methods"></a>
 ## `/api/settings/get_claim_methods`
 
-- **Handler:** [`app_getScoreCap`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1135)
+- **Handler:** [`app_getScoreCap`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1136)
 
 
 Read score entry methods
@@ -778,7 +779,7 @@ No parameters inferred.
 <a id="api-settings-set_claim_methods"></a>
 ## `/api/settings/set_claim_methods`
 
-- **Handler:** [`app_setScoreCap`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1160)
+- **Handler:** [`app_setScoreCap`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1161)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Configure which score claim methods are enabled
@@ -804,7 +805,7 @@ Configure which score claim methods are enabled
 <a id="api-settings-get_tournament_mode"></a>
 ## `/api/settings/get_tournament_mode`
 
-- **Handler:** [`app_getTournamentMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1193)
+- **Handler:** [`app_getTournamentMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1194)
 
 
 Get whether tournament mode is enabled
@@ -828,7 +829,7 @@ No parameters inferred.
 <a id="api-settings-set_tournament_mode"></a>
 ## `/api/settings/set_tournament_mode`
 
-- **Handler:** [`app_setTournamentMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1211)
+- **Handler:** [`app_setTournamentMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1212)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Enable or disable tournament mode
@@ -853,7 +854,7 @@ Enable or disable tournament mode
 <a id="api-settings-get_show_ip"></a>
 ## `/api/settings/get_show_ip`
 
-- **Handler:** [`app_getShowIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1238)
+- **Handler:** [`app_getShowIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1239)
 
 
 Check whether the IP address is shown on the display
@@ -877,7 +878,7 @@ No parameters inferred.
 <a id="api-settings-set_show_ip"></a>
 ## `/api/settings/set_show_ip`
 
-- **Handler:** [`app_setShowIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1255)
+- **Handler:** [`app_setShowIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1256)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set whether the IP address should be shown on the display
@@ -902,7 +903,7 @@ Set whether the IP address should be shown on the display
 <a id="api-time-midnight_madness_available"></a>
 ## `/api/time/midnight_madness_available`
 
-- **Handler:** [`app_midnightMadnessAvailable`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1284)
+- **Handler:** [`app_midnightMadnessAvailable`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1285)
 
 
 Report if Midnight Madness mode is supported
@@ -926,7 +927,7 @@ No parameters inferred.
 <a id="api-time-get_midnight_madness"></a>
 ## `/api/time/get_midnight_madness`
 
-- **Handler:** [`app_getMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1304)
+- **Handler:** [`app_getMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1305)
 
 
 Read Midnight Madness configuration
@@ -953,7 +954,7 @@ No parameters inferred.
 <a id="api-time-set_midnight_madness"></a>
 ## `/api/time/set_midnight_madness`
 
-- **Handler:** [`app_setMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1329)
+- **Handler:** [`app_setMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1330)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set Midnight Madness configuration
@@ -979,7 +980,7 @@ Set Midnight Madness configuration
 <a id="api-time-trigger_midnight_madness"></a>
 ## `/api/time/trigger_midnight_madness`
 
-- **Handler:** [`app_triggerMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1360)
+- **Handler:** [`app_triggerMidnightMadness`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1361)
 
 
 Immediately trigger Midnight Madness
@@ -1002,7 +1003,7 @@ No parameters inferred.
 <a id="api-settings-factory_reset"></a>
 ## `/api/settings/factory_reset`
 
-- **Handler:** [`app_factoryReset`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1378)
+- **Handler:** [`app_factoryReset`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1379)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Perform a full factory reset of Vector and the pinball machine
@@ -1025,7 +1026,7 @@ No parameters inferred.
 <a id="api-settings-reboot"></a>
 ## `/api/settings/reboot`
 
-- **Handler:** [`app_reboot`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1417)
+- **Handler:** [`app_reboot`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1418)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Reboot the Pinball machine
@@ -1048,7 +1049,7 @@ No parameters inferred.
 <a id="api-last_ip"></a>
 ## `/api/last_ip`
 
-- **Handler:** [`app_getLastIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1442)
+- **Handler:** [`app_getLastIP`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1443)
 
 
 Get the last known IP address
@@ -1072,7 +1073,7 @@ No parameters inferred.
 <a id="api-wifi-status"></a>
 ## `/api/wifi/status`
 
-- **Handler:** [`app_getWifiStatus`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1460)
+- **Handler:** [`app_getWifiStatus`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1461)
 
 
 Get the configured Wi-Fi SSID and signal strength
@@ -1100,7 +1101,7 @@ No parameters inferred.
 <a id="api-network-peers"></a>
 ## `/api/network/peers`
 
-- **Handler:** [`app_getPeers`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1496)
+- **Handler:** [`app_getPeers`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1497)
 
 
 List other vector devices discovered on the local network
@@ -1129,7 +1130,7 @@ No parameters inferred.
 <a id="api-set_date"></a>
 ## `/api/set_date`
 
-- **Handler:** [`app_setDateTime`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1524)
+- **Handler:** [`app_setDateTime`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1525)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set Vector's date and time
@@ -1154,7 +1155,7 @@ Set Vector's date and time
 <a id="api-get_date"></a>
 ## `/api/get_date`
 
-- **Handler:** [`app_getDateTime`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1552)
+- **Handler:** [`app_getDateTime`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1553)
 
 
 Read the current time according to Vector
@@ -1178,7 +1179,7 @@ No parameters inferred.
 <a id="api-version"></a>
 ## `/api/version`
 
-- **Handler:** [`app_version`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1575)
+- **Handler:** [`app_version`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1576)
 
 
 Get the software version. Note: this is the version for the target hardware (what the user sees) and not the release version.
@@ -1202,7 +1203,7 @@ No parameters inferred.
 <a id="api-machine_id"></a>
 ## `/api/machine_id`
 
-- **Handler:** [`app_machine_id`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1594)
+- **Handler:** [`app_machine_id`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1595)
 
 
 Get the unique identifier for this Vector installation (hardware + configuration)
@@ -1226,7 +1227,7 @@ No parameters inferred.
 <a id="api-fault"></a>
 ## `/api/fault`
 
-- **Handler:** [`app_install_fault`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1613)
+- **Handler:** [`app_install_fault`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1614)
 
 
 Get the list of currently active faults
@@ -1250,7 +1251,7 @@ No parameters inferred.
 <a id="api-export-scores"></a>
 ## `/api/export/scores`
 
-- **Handler:** [`app_export_leaderboard`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1635)
+- **Handler:** [`app_export_leaderboard`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1636)
 
 
 Export all leaderboard data
@@ -1276,7 +1277,7 @@ No parameters inferred.
 <a id="api-import-scores"></a>
 ## `/api/import/scores`
 
-- **Handler:** [`app_import_leaderboard`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1657)
+- **Handler:** [`app_import_leaderboard`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1658)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Import leaderboard data from an uploaded file
@@ -1302,7 +1303,7 @@ Import leaderboard data from an uploaded file
 <a id="api-memory-snapshot"></a>
 ## `/api/memory-snapshot`
 
-- **Handler:** [`app_memory_snapshot`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1684)
+- **Handler:** [`app_memory_snapshot`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1685)
 
 
 Stream a snapshot of memory contents
@@ -1319,10 +1320,26 @@ No parameters inferred.
 
 **Response body:** Text stream of byte values
 
+<a id="api-memory-toggle-broadcast"></a>
+## `/api/memory/toggle-broadcast`
+
+- **Handler:** [`app_memory_broadcast`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1720)
+- Authentication: Required (see [Authentication guide](authentication.md)).
+
+No description provided.
+
+### Request
+
+No parameters inferred.
+
+### Response
+
+No structured response documented.
+
 <a id="api-logs"></a>
 ## `/api/logs`
 
-- **Handler:** [`app_getLogs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1702)
+- **Handler:** [`app_getLogs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1733)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 - Cooldown: 10s
 - Single instance: Yes
@@ -1344,7 +1361,7 @@ No parameters inferred.
 <a id="api-formats-available"></a>
 ## `/api/formats/available`
 
-- **Handler:** [`app_list_available_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1727)
+- **Handler:** [`app_list_available_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1758)
 
 
 Get the list of available game formats
@@ -1385,7 +1402,7 @@ No parameters inferred.
 <a id="api-formats-set"></a>
 ## `/api/formats/set`
 
-- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1765)
+- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1796)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set the active game format
@@ -1408,7 +1425,7 @@ Set the active game format
 <a id="api-formats-active"></a>
 ## `/api/formats/active`
 
-- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1810)
+- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1841)
 
 
 Get the currently active game format
@@ -1424,7 +1441,7 @@ No structured response documented.
 <a id="api-diagnostics-switches"></a>
 ## `/api/diagnostics/switches`
 
-- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1850)
+- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1881)
 
 
 Get diagnostic information for all switches
@@ -1440,7 +1457,7 @@ No structured response documented.
 <a id="api-update-check"></a>
 ## `/api/update/check`
 
-- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1876)
+- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1907)
 - Cooldown: 10s
 
 Get the metadata for the latest available software version. This does not download or apply the update.
@@ -1470,7 +1487,7 @@ No parameters inferred.
 <a id="api-update-apply"></a>
 ## `/api/update/apply`
 
-- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1911)
+- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1942)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Download and apply a software update from the provided URL.
@@ -1500,7 +1517,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1964)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1995)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1524,7 +1541,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1987)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2018)
 
 
 No description provided.
@@ -1540,7 +1557,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1992)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2023)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
@@ -1568,7 +1585,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2043)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2074)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks
