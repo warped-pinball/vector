@@ -173,9 +173,6 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
             relative_path = os.path.relpath(file_path, build_dir)
             known_files.append("/" + relative_path.replace("\\", "/"))
 
-    # add update.json to known files since it won't be in the build dir but we don't want to delete it(yet)
-    # known_files.append("/update.json")
-
     removal_code = "\n".join(
         [
             "import os",
