@@ -523,6 +523,18 @@
     </button>
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
     <fieldset style="margin-top: 1rem">
+      <label>
+        <input
+          id="memory-broadcast-toggle"
+          type="checkbox"
+          role="switch"
+          name="memory-broadcast"
+        />
+        <b>Broadcast Memory Snapshot:</b> stream RAM snapshots over UDP for
+        debugging.
+      </label>
+    </fieldset>
+    <fieldset style="margin-top: 1rem">
       <legend>WiFi Status</legend>
       <div>
         <b>Configured SSID:</b>

@@ -11,6 +11,7 @@ import uctypes
 from ls import ls
 from micropython import const
 from phew.server import add_route as phew_add_route
+from phew.server import schedule, unschedule
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -1696,6 +1697,36 @@ def app_memory_snapshot(request):
     ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
     for value in ram_access:
         yield f"{value}\n".encode("utf-8")
+
+
+def broadcast_memory_snapshot():
+    import discovery
+
+    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
+    chunk_size = 256
+    offset = 0
+
+    while offset < len(ram_access):
+        chunk = ram_access[offset : offset + chunk_size]
+        # Prepend 4-byte offset header to each chunk
+        message = offset.to_bytes(4, "big") + chunk
+        discovery.send_sock.sendto(message, ("255.255.255.255", 2040))
+        offset += chunk_size
+
+    return
+
+
+@add_route("/api/memory/toggle-broadcast", auth=True)
+def app_memory_broadcast(request):
+    data = request.data
+    if data.get("enable", False):
+        # add function call to scheduler
+        freq = data.get("frequency_ms", 100)
+        schedule(broadcast_memory_snapshot, phase_ms=0, frequency_ms=freq)  # broadcast every freq milliseconds
+    else:
+        # remove function call from scheduler
+        unschedule(broadcast_memory_snapshot)
+    return
 
 
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
