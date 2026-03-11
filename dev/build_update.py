@@ -204,6 +204,28 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
     )
 
 
+def build_remove_update_file_code() -> bytes:
+    """
+    Build a Micropython script that removes the update file itself. This is used at the end of the update process to clean up.
+    Return it as raw bytes ready for base64 encoding.
+    """
+    code = "\n".join(
+        [
+            "import os",
+            "try:",
+            "    os.remove('/update.json')",
+            "except OSError:",
+            "    pass",
+        ]
+    )
+    return make_file_line(
+        "remove_update_file.py",
+        code.encode("utf-8"),
+        custom_log="Cleaning up update file",
+        execute=True,
+    )
+
+
 def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
     """
     Compute the SHA256 over 'data'.
@@ -257,13 +279,20 @@ def build_update_file(
             make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
         )
     else:
+        # remove extra files
+        file_lines.append(build_remove_extra_files_code(build_dir))
+
+        # update files
         for root, _, files in os.walk(build_dir_path):
             for file_name in sorted(files):
                 file_path = Path(root) / file_name
                 relative_path = os.path.relpath(file_path, build_dir_path).replace("\\", "/")
                 file_lines.append(make_file_line(relative_path, get_file_contents(str(file_path))))
 
-    # 3) Sign everything except the signature line:
+    # remove update file at the end of the process
+    file_lines.append(build_remove_update_file_code())
+
+    # Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
     update_body = "\n".join(file_lines)
     sha256_hex, signature_b64 = sign_data(update_body.encode("utf-8"), private_key_path)
