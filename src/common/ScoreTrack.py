@@ -77,11 +77,11 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-    from origin import push_end_of_game
 
-    push_game_count = 1
-    last_pushed_game = game
-    push_end_of_game(last_pushed_game, push_game_count)
+    #from origin import push_end_of_game
+    #push_game_count = 1
+    #last_pushed_game = game
+    #push_end_of_game(last_pushed_game, push_game_count)
 
 
 def _read_machine_score(HighScores):
@@ -486,7 +486,7 @@ def CheckForNewScores(nState=[0]):
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 _remove_machine_scores()
-                S.gameCounter = (S.gameCounter + 1) % 100
+                #S.gameCounter = (S.gameCounter + 1) % 100
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
@@ -512,8 +512,16 @@ def CheckForNewScores(nState=[0]):
                 game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
                 _place_game_in_claim_list(game)
 
+                from origin import push_end_of_game
+                push_game_count = 1
+                last_pushed_game = game
+                push_end_of_game(last_pushed_game, push_game_count)
+
                 # put high scores back in machine memory
                 place_machine_scores()
 
                 # put ip address back up on system 9 displays
                 displayMessage.refresh_9()
+
+                S.gameCounter = (S.gameCounter + 1) % 100
+                

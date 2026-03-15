@@ -628,7 +628,7 @@ def formats_run():
     if game_state == 0:
         if DataMapper.get_game_active() is True:  #game started
             game_state=1
-            S.gameCounter = (S.gameCounter + 1) % 100
+            #S.gameCounter = (S.gameCounter + 1) % 100
             
             #remove machine high scores?
             get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
@@ -732,6 +732,7 @@ def formats_run():
             DataMapper.write_high_scores(saved_high_scores)
             saved_high_scores = None
 
+        S.gameCounter = (S.gameCounter + 1) % 100
         game_state=0
 
     else:
