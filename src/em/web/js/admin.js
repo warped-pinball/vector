@@ -24,6 +24,8 @@ async function initSetupUI() {
       const players = document.getElementById("total-players");
       const reels = document.getElementById("score-reels");
       const dummy = document.getElementById("dummy-reels");
+      const startPause = document.getElementById("start-pause");
+      const endPause = document.getElementById("end-pause");
       // support both server field names
       if (name && (cfg.name || cfg.game_name)) {
         name.value = cfg.name || cfg.game_name || "";
@@ -37,6 +39,10 @@ async function initSetupUI() {
       }
       if (dummy && cfg.dummy_reels != null)
         dummy.value = clampDummyReels(cfg.dummy_reels);
+      if (startPause && cfg.startpause != null)
+        startPause.value = clampPause(cfg.startpause);
+      if (endPause && cfg.endpause != null)
+        endPause.value = clampPause(cfg.endpause);
       serverCfgLoaded = true;
     }
   } catch (e) {
@@ -44,7 +50,7 @@ async function initSetupUI() {
   }
 
   // add listeners to inputs to save locally (guarded for idempotent retry)
-  const inputs = ["game-name", "total-players", "score-reels", "dummy-reels"];
+  const inputs = ["game-name", "total-players", "score-reels", "dummy-reels", "start-pause", "end-pause"];
   inputs.forEach((id) => {
     const el = document.getElementById(id);
     if (!el || el.dataset.bound) return;
@@ -68,11 +74,25 @@ async function initSetupUI() {
         dummyInput.value = String(clampedDummyReels);
       }
 
+      const startPauseInput = document.getElementById("start-pause");
+      const clampedStartPause = clampPause(startPauseInput ? startPauseInput.value : 9);
+      if (startPauseInput) {
+        startPauseInput.value = String(clampedStartPause);
+      }
+
+      const endPauseInput = document.getElementById("end-pause");
+      const clampedEndPause = clampPause(endPauseInput ? endPauseInput.value : 5);
+      if (endPauseInput) {
+        endPauseInput.value = String(clampedEndPause);
+      }
+
       const data = {
         name: document.getElementById("game-name").value,
         total_players: clampedTotalPlayers,
         score_reels: clampedScoreReels,
         dummy_reels: clampedDummyReels,
+        startpause: clampedStartPause,
+        endpause: clampedEndPause,
       };
       try {
         localStorage.setItem("game_config", JSON.stringify(data));
@@ -91,6 +111,10 @@ async function initSetupUI() {
       document.getElementById("total-players").value = clampTotalPlayers(stored.total_players || 1);
       document.getElementById("score-reels").value = clampScoreReels(stored.score_reels || 1);
       document.getElementById("dummy-reels").value = clampDummyReels(stored.dummy_reels || 0);
+      if (stored.startpause != null)
+        document.getElementById("start-pause").value = clampPause(stored.startpause);
+      if (stored.endpause != null)
+        document.getElementById("end-pause").value = clampPause(stored.endpause);
     }
   } catch (e) {}
 }
@@ -162,11 +186,25 @@ async function saveGameConfig() {
     dummyInput.value = String(dummyReels);
   }
 
+  const startPause = clampPause(document.getElementById("start-pause").value);
+  const startPauseInput = document.getElementById("start-pause");
+  if (startPauseInput) {
+    startPauseInput.value = String(startPause);
+  }
+
+  const endPause = clampPause(document.getElementById("end-pause").value);
+  const endPauseInput = document.getElementById("end-pause");
+  if (endPauseInput) {
+    endPauseInput.value = String(endPause);
+  }
+
   const data = {
     name: document.getElementById("game-name").value,
     players: totalPlayers,
     reels_per_player: scoreReels,
     dummy_reels: dummyReels,
+    startpause: startPause,
+    endpause: endPause,
   };
 
   try {
@@ -203,6 +241,9 @@ const SCORE_REELS_MIN = 1;
 const SCORE_REELS_MAX = 5;
 const DUMMY_REELS_MIN = 0;
 const DUMMY_REELS_MAX = 4;
+const PAUSE_MIN = 2;
+const PAUSE_MAX = 30;
+const PAUSE_DEFAULT = 9;
 
 function clampTotalPlayers(value) {
   const parsed = parseInt(value, 10);
@@ -220,6 +261,12 @@ function clampDummyReels(value) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed)) return DUMMY_REELS_MIN;
   return Math.min(DUMMY_REELS_MAX, Math.max(DUMMY_REELS_MIN, parsed));
+}
+
+function clampPause(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return PAUSE_DEFAULT;
+  return Math.min(PAUSE_MAX, Math.max(PAUSE_MIN, parsed));
 }
 
 function getConfiguredDummyReels() {

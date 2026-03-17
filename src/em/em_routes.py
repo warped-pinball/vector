@@ -58,8 +58,21 @@ def em_config(request):
     except Exception:        
         S.gdata["dummy_reels"] =  0
 
-    from ScoreTrack import saveState
+    try:
+        startpause = int(request.data.get("startpause") or 9)
+        S.gdata["startpause"] = max(2, min(30, startpause))
+    except Exception:
+        S.gdata["startpause"] = 9
+
+    try:
+        endpause = int(request.data.get("endpause") or 5)
+        S.gdata["endpause"] = max(2, min(30, endpause))
+    except Exception:
+        S.gdata["endpause"] = 5
+
+    from ScoreTrack import saveState, updatePauseGlobals
     saveState()   # store in fram
+    updatePauseGlobals()  # update the global variables immediately
     return
 
 
@@ -70,8 +83,42 @@ def get_em_config(request):
         "players": int(S.gdata["players"]),
         "reels_per_player": int(S.gdata["digits"]),
         "dummy_reels":  int(S.gdata["dummy_reels"]),
+        "startpause": int(S.gdata.get("startpause", 9)),
+        "endpause": int(S.gdata.get("endpause", 5)),
     }
     return config
+
+
+@add_route("/api/em/get_pauses")
+def get_pauses(request):
+    """Return start and end pause values."""
+    return {
+        "startpause": int(S.gdata.get("startpause", 9)),
+        "endpause": int(S.gdata.get("endpause", 5))
+    }
+
+
+@add_route("/api/em/set_pauses", auth=True)
+def set_pauses(request):
+    """Set start and end pause values and save to SPI flash."""
+    try:
+        startpause = int(request.data.get("startpause", 9))
+        endpause = int(request.data.get("endpause", 5))
+        
+        # Validate reasonable ranges (1-30 seconds should be plenty)
+        startpause = max(1, min(30, startpause))
+        endpause = max(1, min(30, endpause))
+        
+        S.gdata["startpause"] = startpause
+        S.gdata["endpause"] = endpause
+        
+        from ScoreTrack import saveState, updatePauseGlobals
+        saveState()  # Save to SPI flash
+        updatePauseGlobals()  # Update the global variables immediately
+        
+        return {"status": "ok", "startpause": startpause, "endpause": endpause}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}, 400
 
 
 @add_route("/api/em/get_sensitivity")

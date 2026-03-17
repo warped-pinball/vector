@@ -65,7 +65,7 @@ GAMEHIST_STATUS_OVERFLOW = 2
 gameHistoryStatus = GAMEHIST_STATUS_EMPTY
 
 # default pauses (can be overridden from EMData/S.gdata in _loadState)
-PROCESS_START_PAUSE = 20 #8
+PROCESS_START_PAUSE = 4
 PROCESS_END_PAUSE = 5
 
 gameover = False
@@ -205,7 +205,9 @@ def loadState():
 
     # load start/end pause values from configuration (EMData -> S.gdata)
     # keys are "startpause" and "endpause"; fall back to current defaults if missing
-    #PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
+    print(f"SCORE: Loading pauses from S.gdata: startpause={S.gdata.get('startpause', 'NOT SET')}, endpause={S.gdata.get('endpause', 'NOT SET')}")
+    
+    PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
     PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
     print("SCORE: pauses= ", PROCESS_START_PAUSE, PROCESS_END_PAUSE)
 
@@ -284,8 +286,27 @@ def loadState():
     print("LOAD", S.gdata)
 
 
+def updatePauseGlobals():
+    """
+    Update PROCESS_START_PAUSE and PROCESS_END_PAUSE from S.gdata.
+    Called when pause values are changed via API.
+    """
+    global PROCESS_START_PAUSE, PROCESS_END_PAUSE
+    
+    PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
+    PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
+    print(f"SCORE: Updated pause globals - startpause={PROCESS_START_PAUSE}, endpause={PROCESS_END_PAUSE}")
+
+
+
 def saveState():
     """store working config back to SPI_DataStore"""
+    # Ensure pause values exist in S.gdata (use globals if not set)
+    if "startpause" not in S.gdata:
+        S.gdata["startpause"] = int(PROCESS_START_PAUSE)
+    if "endpause" not in S.gdata:
+        S.gdata["endpause"] = int(PROCESS_END_PAUSE)
+    
     def _coerce_timing_array(raw, fallback):
         try:
             vals = [int(v) for v in raw]
@@ -354,8 +375,8 @@ def saveState():
             pos += 2
     S.gdata["carrythresholds"] = bytes(ct)
 
-    S.gdata["startpause"] = int(PROCESS_START_PAUSE)
-    S.gdata["endpause"] = int(PROCESS_END_PAUSE)
+    # Note: startpause and endpause should already be set in S.gdata by the caller
+    # Don't overwrite them here - just ensure they're written to SPI
     S.gdata["GameInfo"]["GameName"] = S.gdata["gamename"]
     buildSensorBitMask()
 
@@ -689,13 +710,14 @@ def processSensorData():
 
     elif stateVar == PROCESS_START:
         """game start delay - wait for score reset to happen
-        -make smarted in the future?  wait fro a few seconds and more if signal detected...."""
+        -make smarter in the future?  wait fro a few seconds and more if signal detected...."""
 
         if sensorRead.gameActive() == 1:
             processEmpty()
             lastValue = sensorBitMask  # init lastValue (alll ones) since scores are incremented on falling edges
 
             if stateCount > PROCESS_START_PAUSE:
+                print("PROCESS START PAUSE IS DONE NOW -@_@_@_@_@_@_@_@_@_@_@@_@_@_ ",stateCount)
                 # run or store for learning
                 if S.run_learning_game:
                     log.log("SCORE: Run learning game capture")
@@ -707,7 +729,7 @@ def processSensorData():
                     log.log("SCORE: Run game scoring")
                     processEmpty()
                     stateVar = PROCESS_RUN
-        else:
+        else:            
             stateVar = PROCESS_IDLE
             stateCount = 0
 

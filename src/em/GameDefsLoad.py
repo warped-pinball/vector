@@ -22,7 +22,7 @@ safe_defaults = {
     "dummy_reels": 0,
     "filtermasks": bytes(64),
     "carrythresholds": bytes(32),
-    "startpause": 5,
+    "startpause": 9,
     "endpause": 5,
     "sensorlevels": [0, 0],
     "sensitivity": 50,
