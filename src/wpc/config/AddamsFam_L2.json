@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 947,
+        "Address": 1037,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
@@ -35,9 +35,9 @@
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6917,
-        "ChecksumEndAdr": 7148,
-        "ChecksumResultAdr": 7149
+        "ChecksumStartAdr": 7326,
+        "ChecksumEndAdr": 7537,
+        "ChecksumResultAdr": 7538
     },
     "HighScores": {
         "Type": 10,
@@ -65,32 +65,32 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "CoinDrop": {
-        "Type": 0
-    },
     "InPlay": {
         "Type": 10,
         "GameActiveAdr": 148,
         "GameActiveValue": 0,
         "Players": 6052,
-        "PlayerUp": 947,
+        "PlayerUp": 1036,
         "ScoreAdr": 5936,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
     },
-    "Switches": {
-        "Type": 10,
-        "Address": 5975,
-        "Length": 64,
-        "List": {
-            "Center Swamp Million": 6005,
-            "Shooter Lane": 6007,
-            "Left Inlane2": 6028,
-            "Grave A": 6036
-        }
-    },
     "Flippers": {
         "Type": 10,
         "Address": 180
+    },
+    "Modes": {
+        "Mansion Rooms": {
+            "Address": "0x758",
+            "Length": 1,
+            "Format": "u8",
+            "OffValue": 0
+        },
+        "Seance": {
+            "Address": "0x6B7",
+            "Length": 1,
+            "Format": "u8",
+            "OffValue": 0
+        }
     }
 }

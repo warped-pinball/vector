@@ -1,15 +1,20 @@
-[![GitHub Release](https://img.shields.io/github/v/release/warped-pinball/vector?color=blue)](https://github.com/warped-pinball/vector/releases/latest)
+[![GitHub Release](https://badgen.net/github/release/warped-pinball/vector/stable)](https://github.com/warped-pinball/vector/releases)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC-blue)](https://github.com/warped-pinball/vector/tree/main?tab=License-1-ov-file)
 [![GitHub issues](https://img.shields.io/github/issues/warped-pinball/vector)](https://github.com/warped-pinball/vector/issues)
-![GitHub last commit](https://img.shields.io/github/last-commit/warped-pinball/vector)
+[![GitHub last commit](https://badgen.net/github/last-commit/warped-pinball/vector)](https://github.com/warped-pinball/vector/commits/main)
+[![Docs](https://img.shields.io/badge/docs-warpedpinball.com-blue)](https://docs.warpedpinball.com)
 
 # Vector
 
-Vector is a modern hardware and software solution that brings advanced features to classic pinball machines while preserving their original gameplay. It allows your Williams/Bally System 9 and 11 games (with plans for WPC and Data East support in 2025) to take advantage of modern electronics and connectivity.
+Vector is a modern hardware and software solution that brings advanced features to classic pinball machines while preserving their original gameplay. It allows your Williams/Bally System 9 and 11 games, all variations of WPC and Data East games to take advantage of modern electronics and connectivity.
 
 Check out our [demo site](https://vector.doze.dev) which is hosted on a vector board
 
+Read the docs: [docs.warpedpinball.com](https://docs.warpedpinball.com)
+
 Check us out: [Warped Pinball](https://warpedpinball.com)
+
+Get your Vector: [shop.warpedpinball.com](https://shop.warpedpinball.com)
 
 ## Features
 
@@ -23,6 +28,7 @@ Check us out: [Warped Pinball](https://warpedpinball.com)
 - **Tournament Board**: Do you have "the pinball crew" come over to play a tournament and take all the high scores? then enable tournament mode which records every game in chronological order and keeps the scores separate from the standard leaderboard.
 - **Initials for System 9**: Williams / Bally System 9 games don't natively support initials on high scores. Vector adds support by allowing users to enter their initials in the web interface after a game.
 - **Over-the-Air Updates**: Easily update your Vector with the latest features. Your board will never automatically install software without your permission.
+- **API over USB**: Connect directly over USB for API access without requiring network connectivity.
 - **Unaltered Gameplay**: Enjoy modern features without changing the classic feel.
 
 ## FAQ & Troubleshooting
@@ -31,7 +37,7 @@ If you have any questions or trouble we recommend:
  - The bottom of the admin page has helpful documentation
  - [our FAQ video on YouTube](https://youtu.be/iD46myZ2hAI?si=HNcbDbbh4u5xqsF9)
  - [Open an issue](https://github.com/warped-pinball/vector/issues/new/choose)
- - Contact us at [inventingfun@gmail.com](mailto:inventingfun@gmail.com)
+ - Contact us at [paul@WarpedPinball.com](mailto:paul@warpedpinball.com)
 
 ## Contributing
 

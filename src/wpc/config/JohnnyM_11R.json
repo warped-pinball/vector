@@ -66,9 +66,6 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "CoinDrop": {
-        "Type": 0
-    },
     "InPlay": {
         "Type": 10,
         "GameActiveAdr": 135,
@@ -78,16 +75,6 @@
         "ScoreAdr": 5792,
         "ScoreBytes": 6,
         "ScoreSpacing": 7
-    },
-    "Switches": {
-        "Type": 10,
-        "Address": 5835,
-        "Length": 64,
-        "List": {
-            "Left Out Lane": 5839,
-            "Crazy Bobs": 5865,
-            "Spinner": 5866
-        }
     },
     "Flippers": {
         "Type": 10,

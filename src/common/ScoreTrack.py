@@ -18,6 +18,8 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+push_game_count = 0
+last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -71,9 +73,15 @@ def claim_score(initials, player_index, score):
 
 def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""
+    global push_game_count, last_pushed_game
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_game_count = 1
+    last_pushed_game = game
+    push_end_of_game(last_pushed_game, push_game_count)
 
 
 def _read_machine_score(HighScores):
@@ -316,7 +324,7 @@ def update_leaderboard(new_entry):
     log.log(f"SCORE: Update Leader Board: {new_entry}")
     update_individual_score(new_entry)
 
-    # add player name to new_entry if there is an initials match 
+    # add player name to new_entry if there is an initials match
     if not new_entry.get("full_name"):  # could come in with name from score load on admin page
         new_entry["full_name"], _ = find_player_by_initials(new_entry)
         if new_entry["full_name"] is None:
@@ -427,7 +435,14 @@ def update_tournament(new_entry):
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter
+    global nGameIdleCounter, push_game_count, last_pushed_game
+
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>5:
+            push_game_count =0
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
@@ -451,6 +466,12 @@ def CheckForNewScores(nState=[0]):
         Ball5Value = S.gdata["BallInPlay"]["Ball5"]
 
         if nState[0] == 1:  # waiting for a game to start
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
+                return
+                
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]

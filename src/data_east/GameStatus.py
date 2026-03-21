@@ -9,56 +9,45 @@ Game Status
 """
 
 import time
+
 import DataMapper
 import SharedState as S
 from logger import logger_instance
+from origin import push_game_state
+
 log = logger_instance
 
 
 # Initialize the game status in SharedState
-#S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
+# S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
 S.game_status["game_active"] = False
 S.game_status["poll_state"] = 0
 
 
-END_HOLD_MS = 15_000
-end_hold_start = None
 gameActive = False
 
 
 def game_report():
     """Generate a report of the current game status, return dict"""
-    global end_hold_start, gameActive
+    global gameActive
 
     try:
-        # read ball once and use the value in the conditional
         data = DataMapper.get_in_play_data()
-        if data["GameActive"] != True:
-            # game is not active
-            if end_hold_start is None:
-                end_hold_start = time.ticks_ms()
-            else:
-                if time.ticks_diff(time.ticks_ms(), end_hold_start) >= END_HOLD_MS:
-                    gameActive = False
-        else:
-            # game is active
-            end_hold_start = None
-            gameActive = True
+        # gameActive = data["GameActive"]
 
-        data["GameActive"] = gameActive
-        
+        data["ActiveFormatName"] = "Standard"
+        data["ActiveFormatId"] = 0
+
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")
-        
+
     return data
-
-
 
 
 # this is called at 4 calls per second
 def poll_fast():
     """
-        Poll for game start and end time.
+    Poll for game start and end time.
     """
     ps = S.game_status["poll_state"]
     if ps == 0:
@@ -76,3 +65,5 @@ def poll_fast():
             S.game_status["poll_state"] = 2
     else:
         S.game_status["poll_state"] = 0
+
+    push_game_state(game_report())

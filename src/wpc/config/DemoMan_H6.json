@@ -65,15 +65,12 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "CoinDrop": {
-        "Type": 0
-    },
     "InPlay": {
         "Type": 10,
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
         "Players": 5913,
-        "Playerup": 952,
+        "PlayerUp": 952,
         "ScoreAdr": 5792,
         "ScoreBytes": 6,
         "ScoreSpacing": 7

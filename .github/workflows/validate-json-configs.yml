@@ -1,0 +1,25 @@
+name: Validate JSON configs
+
+on:
+  pull_request:
+    paths:
+      - "**/*.json"
+      - "dev/ci/validate_json_configs.py"
+      - "dev/ci/json_config_schema.py"
+      - ".github/workflows/validate-json-configs.yml"
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate JSON files and config requirements
+        run: python dev/ci/validate_json_configs.py

@@ -24,7 +24,7 @@ compatible_configurations = {
     "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0."]),
     "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "em": all_combos(["2w"], ["1.26.0.preview"]),
-    "data_east": all_combos(["2w"], ["1.25.0."]),
+    "data_east": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "whitestar": all_combos(["2w"], ["1.25.0."]),
 }
 
@@ -153,7 +153,6 @@ def build_confirm_compatibility_code(target_hardware: str) -> bytes:
         ]
     )
 
-    print(code)
     return make_file_line(
         "confirm_compatibility.py",
         code.encode("utf-8"),
@@ -205,6 +204,28 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
     )
 
 
+def build_remove_update_file_code() -> bytes:
+    """
+    Build a Micropython script that removes the update file itself. This is used at the end of the update process to clean up.
+    Return it as raw bytes ready for base64 encoding.
+    """
+    code = "\n".join(
+        [
+            "import os",
+            "try:",
+            "    os.remove('/update.json')",
+            "except OSError:",
+            "    pass",
+        ]
+    )
+    return make_file_line(
+        "remove_update_file.py",
+        code.encode("utf-8"),
+        custom_log="Cleaning up update file",
+        execute=True,
+    )
+
+
 def sign_data(data: bytes, private_key_path: Optional[str]) -> (str, str):
     """
     Compute the SHA256 over 'data'.
@@ -230,11 +251,14 @@ def build_update_file(
     version: str,
     private_key_path: Optional[str],
     target_hardware: str = "sys11",
+    tiny: bool = False,
 ):
     """
     1) Create one JSON line of metadata at the top.
     2) Then a line per file in 'build_dir' (plus remove_extra_files.py).
     3) Finally one line containing {"sha256": "...", "signature": "..."} at the bottom.
+
+    When ``tiny`` is True only ``update.mpy`` is included instead of all files.
     """
 
     build_dir_path = Path(build_dir)
@@ -244,19 +268,31 @@ def build_update_file(
     if any(name in compatible_configurations for name in subdirs):
         raise ValueError("build_dir must point to a hardware-specific subdirectory like 'build/sys11'")
 
-    file_lines = [build_update_metadata(target_hardware, version), build_confirm_compatibility_code(target_hardware), build_remove_extra_files_code(build_dir)]
+    file_lines = [
+        build_update_metadata(target_hardware, version),
+        build_confirm_compatibility_code(target_hardware),
+    ]
 
-    # 2b) everything else in build_dir
-    for root, _, files in os.walk(build_dir):
-        for file_name in files:
-            file_path = Path(root) / file_name
-            relative_path = os.path.relpath(file_path, build_dir).replace("\\", "/")
-            if relative_path == "remove_extra_files.py":
-                continue
-            contents = get_file_contents(file_path)
-            file_lines.append(make_file_line(relative_path, contents, custom_log=f"Uploading {relative_path}"))
+    if tiny:
+        update_file_path = build_dir_path / "update.mpy"
+        file_lines.append(
+            make_file_line("update.mpy", get_file_contents(update_file_path), custom_log=f"Uploading {update_file_path}"),
+        )
+    else:
+        # remove extra files
+        file_lines.append(build_remove_extra_files_code(build_dir))
 
-    # 3) Sign everything except the signature line:
+        # update files
+        for root, _, files in os.walk(build_dir_path):
+            for file_name in sorted(files):
+                file_path = Path(root) / file_name
+                relative_path = os.path.relpath(file_path, build_dir_path).replace("\\", "/")
+                file_lines.append(make_file_line(relative_path, get_file_contents(str(file_path))))
+
+    # remove update file at the end of the process
+    file_lines.append(build_remove_update_file_code())
+
+    # Sign everything except the signature line:
     # Concatenate metadata_line plus all file_lines with newlines in between.
     update_body = "\n".join(file_lines)
     sha256_hex, signature_b64 = sign_data(update_body.encode("utf-8"), private_key_path)
@@ -284,6 +320,7 @@ def main():
         help="Target system for the update (e.g., data_east, sys11, whitestar, wpc, em, etc.)",
     )
     parser.add_argument("--private-key", help="Path to a PEM-encoded private key for signing.")
+    parser.add_argument("--tiny", action="store_true", help="Build a tiny update containing only update.mpy.")
     args = parser.parse_args()
 
     build_dir = resolve_build_dir(args.build_dir, args.target_hardware)
@@ -293,6 +330,7 @@ def main():
         version=args.version,
         private_key_path=args.private_key,
         target_hardware=args.target_hardware,
+        tiny=args.tiny,
     )
 
 
