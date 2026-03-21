@@ -43,7 +43,7 @@ python dev/sync.py list
 ```
 Alteratively, you can list *all* serial ports on your machine, but won't label if it's a warped board:
 ```bash
-python dev/sync.py list
+python dev/sync.py ports
 ```
 
 Alternatively, To automatically detect and flash all connected boards, run:
