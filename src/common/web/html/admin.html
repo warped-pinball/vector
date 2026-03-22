@@ -107,28 +107,65 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 25px;
     font-weight: 600;
     border-radius: 8px;
     border: none;
+    overflow: hidden;
   }
 
   .switch-cell {
     cursor: pointer;
+    position: relative;
   }
+
+  .switch-cell .switch-label{
+    position: absolute;
+    mix-blend-mode: difference;
+    opacity: 0.5;
+  }
+
+  .switch-cell .fill{
+    width: 40px;
+    height: 40px;
+    position: absolute;
+  }
+
   .switch-cell.green {
+    background-color: #b4e1c4;
+    color: #00501d;
+  }
+
+  .switch-cell.green .fill {
     background-color: #16a34a;
+    border-top: solid 1px #00501d;
   }
 
   .switch-cell.yellow {
+    background-color: #efe7ce;
+    color: #eab308;
+  }
+
+  .switch-cell.yellow .fill {
     background-color: #eab308;
+    border-top: solid 1px #694f00;
   }
 
   .switch-cell.red {
+    background-color: #ebb5b5;
+    color: #dc2626;
+  }
+
+  .switch-cell.red .fill {
     background-color: #dc2626;
+    border-top: solid 1px #710000;
   }
 
   .switch-cell.missing {
+    background-color: #9ca3af;
+  }
+
+  .switch-cell.missing .fill {
     background-color: #9ca3af;
   }
 
