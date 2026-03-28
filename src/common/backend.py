@@ -617,16 +617,11 @@ def app_scoreDelete(request):
 
     # If this was the leaders list, set top_scores global var and update machine scores.
     if delete_from == "leaders":
-        from ScoreTrack import initialize_leaderboard
+        from ScoreTrack import initialize_leaderboard, place_machine_scores
 
         initialize_leaderboard()
         # Write the top 4 scores to machine memory again, so they don't re-sync to vector.
-        # Note: place_machine_scores() only exists on some platforms (WPC), so check if available
-        try:
-            from ScoreTrack import place_machine_scores
-            place_machine_scores()
-        except ImportError:
-            pass  # Not all platforms implement this function
+        place_machine_scores()
 
     return {"success": True}
 
