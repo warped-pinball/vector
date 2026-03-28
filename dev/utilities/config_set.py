@@ -8,10 +8,10 @@ Log = logger_instance
 
 
 CONFIG_VALUES = {
-    "ssid": "MoonShadow",
-    "gamename": "Pinbot_V2",
-    "password": "Pinbot43",
-    "Gpassword": "",
+    "ssid": "Warped Pinball Network",
+    "gamename": "FishTales_L5",
+    "password": "pinkid1671",
+    "Gpassword": "pinball",
 }
 
 EXTRAS_VALUES = {
