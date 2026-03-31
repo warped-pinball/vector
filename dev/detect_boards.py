@@ -67,4 +67,10 @@ def detect_boards() -> Dict[str, List[str]]:
 
 
 if __name__ == "__main__":
-    print(json.dumps(detect_boards()))
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "list":
+        for port in list_pico_ports():
+            print(port)
+    else:
+        print(json.dumps(detect_boards()))

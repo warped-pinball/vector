@@ -9,7 +9,7 @@ import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
-from detect_boards import detect_boards
+from detect_boards import detect_boards, list_pico_ports
 
 REPL_ATTEMPTS = 10
 REPL_DELAY = 1
@@ -61,9 +61,37 @@ def main(argv: list[str]) -> int:
         print("Boards detected:", json.dumps(mapping))
         return build_and_flash(mapping, write_config=args.write_config)
 
-    rc = flash_single(args.system, args.port, args.write_config)
+    port = args.port
+    if port is None:
+        ports = list_pico_ports()
+        if not ports:
+            print("No boards detected.")
+            return 1
+        if len(ports) == 1:
+            port = ports[0]
+            print(f"Using detected port: {port}")
+        else:
+            print("Available ports:")
+            for i, p in enumerate(ports, 1):
+                print(f"  {i}) {p}")
+            try:
+                choice = input("Select a port [1]: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nAborted.")
+                return 1
+            try:
+                idx = int(choice) - 1 if choice else 0
+            except ValueError:
+                print("Invalid selection.")
+                return 1
+            if idx < 0 or idx >= len(ports):
+                print("Invalid selection.")
+                return 1
+            port = ports[idx]
+
+    rc = flash_single(args.system, port, args.write_config)
     if rc == 0:
-        open_repl(args.port)
+        open_repl(port)
     return rc
 
 
