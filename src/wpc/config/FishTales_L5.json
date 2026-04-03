@@ -121,64 +121,6 @@
             "Multiplier": 100000
         }
     },
-    "Switches": {
-    "Type": 10,
-    "Address": 5975,
-    "Length": 46,
-    "Names": [
-      [],
-      [],
-      ["Start Button", 60],
-      ["Plumb Bob Tilt", 250],
-      ["Outhole", 60],
-      ["Trough 1", 60],
-      ["Trough 2", 60],
-      ["Trough 3", 60],
-
-      ["Slam Tilt", 0],
-      ["Coin Door Closed", 60],
-      ["Ticket Opto", 0],
-      ["Always Closed", 0],
-      ["Left Outlane", 60],
-      ["Left Return Lane", 60],
-      ["Lt Stand-up Tgt 1", 60],
-      ["Lt Stand-up Tgt 2", 60],
-
-      ["Cast", 60],
-      ["Left Boat Exit", 60],
-      ["Right Boat Exit", 60],
-      ["Spinner", 60],
-      ["Reel Entry", 60],
-      ["Catapult", 60],
-      ["Reel 1", 60],
-      ["Reel 2", 60],
-
-      ["Captive Ball", 60],
-      ["Right Boat Entry", 60],
-      ["Left Boat Entry", 60],
-      ["Lie (e)", 60],
-      ["Lie (i)", 60],
-      ["Lie (l)", 60],
-      ["Casters Club", 60],
-      ["Drop Target", 60],
-
-      ["Left Jet", 60],
-      ["Center Jet", 60],
-      ["Right Jet", 60],
-      ["Rt Stand-up Tgt 1", 60],
-      ["Rt Stand-up Tgt 2", 60],
-      ["Ball Shooter", 60],
-      ["Left Sling", 60],
-      ["Right Sling", 60],
-
-      ["Extra Ball", 60],
-      ["Top Right Loop", 60],
-      ["Top Eight Hole", 60],
-      ["Top Left Loop", 60],
-      ["Right Return", 60],
-      ["Right Outlane", 60]
-    ]
-    },
     "Formats": {
         "Standard": {
             "Id": 0

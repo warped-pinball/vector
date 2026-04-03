@@ -15,7 +15,7 @@
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 1037,
+        "Address": 947,
         "Ball1": 1,
         "Ball2": 2,
         "Ball3": 3,
