@@ -91,20 +91,25 @@ def iter_config_lines():
 def find_config_in_file(target_filename):
     """Read the JSONL file line by line until we find the requested config."""
     try:
-        for line in iter_config_lines():
-            filename, data = parse_config_line(line.strip())
-            gc_collect()
-            if filename == target_filename:
-                # Check for LinkTo field inside GameInfo - allows one config to alias another
-                if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
-                    linked_target = data["GameInfo"]["LinkTo"]
-                    Log.log(f"Config {target_filename} links to {linked_target}")
-                    return find_config_in_file(linked_target)
-                return data
+        # Handle LinkTo by iterating instead of recursion to save memory
+        while True:
+            for line in iter_config_lines():
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename == target_filename:
+                    # Check for LinkTo field inside GameInfo - allows one config to alias another
+                    if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
+                        linked_target = data["GameInfo"]["LinkTo"]
+                        Log.log(f"Config {target_filename} links to {linked_target}")
+                        target_filename = linked_target  # Follow the link
+                        break  # Restart search with new target
+                    return data
+            else:
+                # for loop completed without break - file not found
+                return None
     except Exception as e:
         Log.log(f"Error reading config file: {e}")
         return None
-    return None
 
 
 def list_game_configs():
