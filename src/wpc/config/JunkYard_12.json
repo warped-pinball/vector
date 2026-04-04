@@ -1,0 +1,152 @@
+{
+  "GameInfo": {
+      "GameName": "Junk Yard",
+      "System": "WPC",
+      "FileVer": 1,
+      "Clock": "MM"
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 947,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7678,
+      "AddressS2": 7743,
+      "AddressS3": 7808,
+      "Length": 32,
+      "ChecksumStartAdr": 7678,
+      "ChecksumEndAdr": 7870,
+      "ChecksumResultAdr": 7871
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7102,
+      "ChecksumStartAdr": 7061,
+      "ChecksumEndAdr": 7280,
+      "ChecksumResultAdr": 7281
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7388,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7385,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7427,
+      "GrandChampInitAdr": 7423,
+      "ChecksumStartAdr": 7385,
+      "ChecksumEndAdr": 7420,
+      "ChecksumResultAdr": 7421,
+      "GCChecksumStartAdr": 7423,
+      "GCChecksumEndAdr": 7431,
+      "GCChecksumResultAdr": 7432
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 135,
+      "GameActiveValue": 0,
+      "Players": 5905,
+      "PlayerUp": 946,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5835,
+    "Length": 56,
+    "Names": [
+      ["Toaster Gun", 60],
+      ["Rebound Switch", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Top Left Crane", 60],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["Shooter Lane", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      [],
+      ["Always Closed", 0],
+      [],
+      ["Right Return Lane", 60],
+      ["Right Outlane", 60],
+      ["Crane Down", 60],
+
+      ["Trough Eject", 60],
+      ["Trough Ball 1", 60],
+      ["Trough Ball 2", 60],
+      ["Trough Ball 3", 60],
+      ["Trough Ball 4", 60],
+      ["Lock Up 2", 60],
+      ["Lock Up 1", 60],
+      ["Top Right Crane", 60],
+
+      ["Past Spinner", 60],
+      ["In The Sewer", 60],
+      ["Lock Jam", 60],
+      ["Past Crane", 60],
+      ["Ramp Exit", 60],
+      ["Car Target 1 Left", 60],
+      ["Car Target 2", 60],
+      ["Car Target 3", 60],
+
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Car Target 4", 60],
+      ["Car Target 5 Right", 60],
+      [],
+      ["Lower Left 3 Bank Bottom", 60],
+      ["Lower Left 3 Bank Middle", 60],
+      ["Lower Left 3 Bank Top", 60],
+
+      ["Upper Right 3 Bank Bottom", 60],
+      ["Upper Right 3 Bank Middle", 60],
+      ["Upper Right 3 Bank Top", 60],
+      ["Upper Left 3 Bank Bottom", 60],
+      ["Upper Left 3 Bank Middle", 60],
+      ["Upper Left 3 Bank Top", 60],
+      ["Bowl Entry", 60],
+      ["Bowl Exit", 60],
+
+      ["Ramp Entry", 60],
+      ["Scoop Down", 60],
+      ["Scoop Made", 60],
+      ["Dog Entry", 60],
+      [],
+      ["Right 3 Bank Bottom", 60],
+      ["Right 3 Bank Middle", 60],
+      ["Right 3 Bank Top", 60]
+    ]
+  },
+  "Flippers": {
+      "Type": 10,
+      "Address": 170
+  }
+}

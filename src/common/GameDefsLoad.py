@@ -95,6 +95,11 @@ def find_config_in_file(target_filename):
             filename, data = parse_config_line(line.strip())
             gc_collect()
             if filename == target_filename:
+                # Check for LinkTo field inside GameInfo - allows one config to alias another
+                if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
+                    linked_target = data["GameInfo"]["LinkTo"]
+                    Log.log(f"Config {target_filename} links to {linked_target}")
+                    return find_config_in_file(linked_target)
                 return data
     except Exception as e:
         Log.log(f"Error reading config file: {e}")
@@ -143,6 +148,9 @@ def go(safe_mode=False):
             else:
                 config_data = find_config_in_file(config_filename)
                 if config_data:
+                    print(f"DEBUG: Successfully loaded config for {config_filename}")  # TEMPORARY DEBUG
+                    if "GameInfo" in config_data and "GameName" in config_data["GameInfo"]:
+                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")  # TEMPORARY DEBUG
                     data = config_data
                 else:
                     faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
