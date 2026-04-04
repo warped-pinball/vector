@@ -1,78 +1,159 @@
 {
-    "GameInfo": {
-        "GameName": "Addams Family",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 950,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7572,
-        "AddressS2": 7637,
-        "AddressS3": 7702,
-        "Length": 32,
-        "ChecksumStartAdr": 7572,
-        "ChecksumEndAdr": 7764,
-        "ChecksumResultAdr": 7765
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6941,
-        "ChecksumEndAdr": 7180,
-        "ChecksumResultAdr": 7181
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7288,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7285,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7322,
-        "GrandChampInitAdr": 7319,
-        "ChecksumStartAdr": 7285,
-        "ChecksumEndAdr": 7316,
-        "ChecksumResultAdr": 7317,
-        "GCChecksumStartAdr": 7319,
-        "GCChecksumEndAdr": 7326,
-        "GCChecksumResultAdr": 7327
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 6053,
-        "PlayerUp": 1039,
-        "ScoreAdr": 5936,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Addams Family",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 950,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7572,
+      "AddressS2": 7637,
+      "AddressS3": 7702,
+      "Length": 32,
+      "ChecksumStartAdr": 7572,
+      "ChecksumEndAdr": 7764,
+      "ChecksumResultAdr": 7765
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7180,
+      "ChecksumResultAdr": 7181
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7288,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7285,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7322,
+      "GrandChampInitAdr": 7319,
+      "ChecksumStartAdr": 7285,
+      "ChecksumEndAdr": 7316,
+      "ChecksumResultAdr": 7317,
+      "GCChecksumStartAdr": 7319,
+      "GCChecksumEndAdr": 7326,
+      "GCChecksumResultAdr": 7327
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6053,
+      "PlayerUp": 1039,
+      "ScoreAdr": 5936,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 63,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Trough", 60],
+      ["Center Trough", 60],
+      ["Right Trough", 60],
+      ["Outhole", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
+      ["Right Flipper Lane", 60],
+      ["Right Outlane", 60],
+      ["Ball Shooter", 60],
+      [],
+
+      ["Upper Left Jet", 60],
+      ["Upper Right Jet", 60],
+      ["Center Left Jet", 60],
+      ["Center Left Jet", 60],
+      ["Lower Jet", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+      ["Upper Left Loop", 60],
+
+      ["Grave G", 60],
+      ["Grave R", 60],
+      ["Chair Kickout", 60],
+      ["Cousin It", 60],
+      ["Lower Swamp Million", 60],
+      [],
+      ["Center Swamp Million", 60],
+      ["Upper Swamp Million", 60],
+
+      ["Shooter Lane", 60],
+      [],
+      ["Bookcase Opto 1", 60],
+      ["Bookcase Opto 2", 60],
+      ["Bookcase Opto 3", 60],
+      ["Bookcase Opto 4", 60],
+      ["Bumper Lane Opto", 60],
+      ["Right Ramp Exit", 60],
+
+      ["Left Ramp Enter", 60],
+      ["Train Wreck", 60],
+      ["Thing Eject Lane", 60],
+      ["Right Ramp Enter", 60],
+      ["Right Ramp Top", 60],
+      ["Left Ramp Top", 60],
+      ["Upper Right Loop", 60],
+      ["Vault", 60],
+
+      ["Swamp Lock Upper", 60],
+      ["Swamp Lock Center", 60],
+      ["Swamp Lock Lower", 60],
+      ["Lockup Kickout", 60],
+      ["Left Outlane", 60],
+      ["Left Flipper Lane 2", 60],
+      ["Thing Kickout", 60],
+      ["Left Flipper Lane 1", 60],
+
+      ["Bookcase Open", 60],
+      ["Bookcase Closed", 60],
+      [],
+      ["Thing Down Opto", 60],
+      ["Thing Up Opto", 60],
+      ["Grave A", 60],
+      ["Thing Eject Hole", 60]
+    ]
+  },
+  "Flippers": {
+      "Type": 10,
+      "Address": 172
+  }
 }

@@ -1,78 +1,156 @@
 {
-    "GameInfo": {
-        "GameName": "Doctor Who",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 944,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7734,
-        "AddressS2": 7799,
-        "AddressS3": 7864,
-        "Length": 32,
-        "ChecksumStartAdr": 7734,
-        "ChecksumEndAdr": 7926,
-        "ChecksumResultAdr": 7927
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 7084,
-        "ChecksumStartAdr": 7043,
-        "ChecksumEndAdr": 7342,
-        "ChecksumResultAdr": 7343
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7450,
-        "BytesInScore": 5,
-        "ScoreSpacing": 8,
-        "InitialAdr": 7447,
-        "InitialSpacing": 8,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7484,
-        "GrandChampInitAdr": 7481,
-        "ChecksumStartAdr": 7447,
-        "ChecksumEndAdr": 7478,
-        "ChecksumResultAdr": 7479,
-        "GCChecksumStartAdr": 7481,
-        "GCChecksumEndAdr": 7488,
-        "GCChecksumResultAdr": 7489
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 143,
-        "GameActiveValue": 0,
-        "Players": 5814,
-        "PlayerUp": 726,
-        "ScoreAdr": 5760,
-        "ScoreBytes": 5,
-        "ScoreSpacing": 6
-    }
+  "GameInfo": {
+      "GameName": "Doctor Who",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "Definition": {
+      "version": 1
+  },
+  "Memory": {
+      "Start": 1,
+      "Length": 8192,
+      "NvStart": 2048,
+      "NvLength": 2048
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 944,
+      "Ball1": 1,
+      "Ball2": 2,
+      "Ball3": 3,
+      "Ball4": 4,
+      "Ball5": 5
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7734,
+      "AddressS2": 7799,
+      "AddressS3": 7864,
+      "Length": 32,
+      "ChecksumStartAdr": 7734,
+      "ChecksumEndAdr": 7926,
+      "ChecksumResultAdr": 7927
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7084,
+      "ChecksumStartAdr": 7043,
+      "ChecksumEndAdr": 7342,
+      "ChecksumResultAdr": 7343
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7450,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7447,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7484,
+      "GrandChampInitAdr": 7481,
+      "ChecksumStartAdr": 7447,
+      "ChecksumEndAdr": 7478,
+      "ChecksumResultAdr": 7479,
+      "GCChecksumStartAdr": 7481,
+      "GCChecksumEndAdr": 7488,
+      "GCChecksumResultAdr": 7489
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 143,
+      "GameActiveValue": 0,
+      "Players": 5877,
+      "PlayerUp": 943,
+      "ScoreAdr": 5760,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5799,
+    "Length": 64,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Shooter Lane", 60],
+      ["Exit Jets", 60],
+
+      ["Slam Tilt", 60],
+      ["Coin Door Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
+      ["Trough 1 Ball", 60],
+      ["Trough 2 Balls", 60],
+      ["Trough 3 Balls", 60],
+      ["Outhole", 60],
+
+      ["Opto Popper", 60],
+      ["Mini Ply Home Opto", 60],
+      ["Enter Top Ramp Opto", 60],
+      ["Launch Ball", 60],
+      ["Score Top Ramp", 60],
+      ["Enter Bottom Ramp", 60],
+      ["Score Bottom Ramp", 60],
+      ["Mini Ply Door Middle", 60],
+
+      ["E1 Of Escape", 60],
+      ["S Of Escape", 60],
+      ["C Of Escape", 60],
+      ["A Of Escape", 60],
+      ["P Of Escape", 60],
+      ["E2 Of Escape", 60],
+      ["Hang On Score", 60],
+      ["Select Doctor", 60],
+
+      ["R1 Of Repair", 60],
+      ["E Of Repair", 60],
+      ["P Ofrepair", 60],
+      ["A Of Repair", 60],
+      ["I Of Repair", 60],
+      ["R2 Of Repair", 60],
+      ["Trap Door Down", 60],
+      ["Transmat Award", 60],
+
+      ["Left Jet", 60],
+      ["Right Jet", 60],
+      ["Bottom Jet", 60],
+      ["Left Drain", 60],
+      ["Left Return", 60],
+      ["Right Return", 60],
+      ["Right Drain", 60],
+      ["Mini Ply Lites Lock", 60],
+
+      ["Mini Opto 5 Bank Right 1", 60],
+      ["Mini Opto 5 Bank Right 2", 60],
+      ["Mini Opto 5 Bank Middle", 60],
+      ["Mini Opto 5 Bank Left 2", 60],
+      ["Mini Opto 5 Bank Left 1", 60],
+      ["Mini-play Left Opto Eject", 60],
+      ["Mini-play Right Opto Eject", 60],
+      ["Mini-play Lites Lock", 60],
+
+      [],
+      ["Playfield Glass", 60],
+      [],
+      [],
+      [],
+      [],
+      [],
+      ["Mini Ply Door Right", 60]
+    ]
+  }
 }
