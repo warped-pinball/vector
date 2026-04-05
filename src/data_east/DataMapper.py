@@ -442,8 +442,8 @@ def write_live_scores(scores):
             # Type 20: Data East all in a row with multiplier
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                score_bcd = _int_to_bcd(scores[idx], S.gdata["InPlay"]["ScoreBytes"])
-                shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]] = score_bcd
+                score_bcd = _int_to_bcd(scores[idx], S.gdata["InPlay"]["BytesInScore"])
+                shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]] = score_bcd
                 
         elif in_play_type == 24:
             # Type 24: Data East break after fourth byte, assume 5 bytes total
@@ -514,8 +514,8 @@ def read_in_play_scores():
             # Type 20: Data East all in a row with multiplier
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
-                in_play_scores[idx][1] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get(["ScoreMultiplier"],1)
+                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]]
+                in_play_scores[idx][1] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
         
         elif in_play_type == 24:
             # Type 24: Data East break after fourth byte, assume 5 bytes total
@@ -611,8 +611,8 @@ def get_live_scores(use_format=True):
             # Type 20: Data East all in a row with multiplier
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
-                scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get(["ScoreMultiplier"],1)
+                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]]
+                scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
         
         elif S.gdata["InPlay"]["Type"] == 24:
             # Type 21: Data East break after fourth byte, assume 5 bytes total
