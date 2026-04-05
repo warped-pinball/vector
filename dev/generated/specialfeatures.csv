@@ -1,32 +1,32 @@
 game_name,mpu,live_scores,switch_diagnostics,special_formats,formats
-Back to the Future,DATA_EAST,yes,no,no,
-Batman,DATA_EAST,yes,no,no,
-Batman Forever,DATA_EAST,yes,no,no,
-Baywatch,DATA_EAST,yes,no,no,
-Checkpoint,DATA_EAST,yes,no,no,
+Back to the Future,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Batman,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Batman Forever,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Baywatch,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Checkpoint,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Generic Data East,DATA_EAST,no,no,no,
-Guns N Roses,DATA_EAST,yes,no,no,
-Hook,DATA_EAST,yes,no,no,
-Jurassic Park,DATA_EAST,yes,no,no,
-Laser War,DATA_EAST,yes,no,no,
-Last Action Hero,DATA_EAST,yes,no,no,
-Leathal Weapon III,DATA_EAST,yes,no,no,
-Mary Shelly's Frankenstein,DATA_EAST,yes,no,no,
-Maverick,DATA_EAST,yes,no,no,
-Monday Night Football,DATA_EAST,yes,no,no,
-Phantom of the Opera,DATA_EAST,yes,no,no,
-Playboy,DATA_EAST,yes,no,no,
-RoboCop,DATA_EAST,yes,no,no,
-Rocky and Bulwinkle,DATA_EAST,yes,no,no,
-Secret Service,DATA_EAST,yes,no,no,
-Star Trek,DATA_EAST,yes,no,no,
+Guns N Roses,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Hook,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Jurassic Park,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Laser War,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Last Action Hero,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Leathal Weapon III,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Mary Shelly's Frankenstein,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Maverick,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Monday Night Football,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Phantom of the Opera,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Playboy,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+RoboCop,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Rocky and Bulwinkle,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Secret Service,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Star Trek,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Star Wars,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Tales from the Crypt,DATA_EAST,yes,no,no,
-Teenage Mutant Ninja Turtles,DATA_EAST,yes,no,no,
-The Simpsons,DATA_EAST,yes,no,no,
-Time Machine,DATA_EAST,yes,no,no,
-Tomy,DATA_EAST,yes,no,no,
-Torpedo Alley,DATA_EAST,yes,no,no,
+Tales from the Crypt,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Teenage Mutant Ninja Turtles,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+The Simpsons,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Time Machine,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Tomy,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Torpedo Alley,DATA_EAST,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 EM machine,EM,yes,no,no,
 Bad Cats,SYS11,no,no,no,
 Banzai Run,SYS11,yes,yes,no,
