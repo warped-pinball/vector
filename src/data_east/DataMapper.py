@@ -343,52 +343,270 @@ def get_ball_in_play():
     return 0
 
 
-
-def get_in_play_data():
+def get_game_active():
     """
-    Return dict with whatever we can gather up:
-        players in game
-        player up
-        live scores
-        game active (boolean)
-    If game not active - fill with mostly zeroes    
+    Check if a game is currently active.
+    
+    For Data East, uses ball in play to determine if game is active.
+    A game is active if ball_in_play is non-zero.
+    
+    Returns:
+        bool: True if game is active, False otherwise
     """
-    data = {
-        "GameActive": False,
-        "BallInPlay": 0,
-        "PlayerUp": 0,
-        "PlayersInGame": 0,
-        "Scores": [0, 0, 0, 0]
-    }
-    
-    # Check if InPlay configuration exists and is valid
-    if "InPlay" not in S.gdata or S.gdata["InPlay"].get("Type", 0) not in range(20, 30):
-        return data
+    return get_ball_in_play() != 0
 
-    data["BallInPlay"] = get_ball_in_play()        
-    if data["BallInPlay"] != 0:
-        data["GameActive"] = True
+
+def write_ball_in_play(ball_number):
+    """
+    Write the ball in play number to shadow RAM.
     
-    # Get player up
+    Data East Type 20 ball tracking:
+    - Direct byte value at configured address
+    - 1-5 for balls in play, 0 for game over
+    
+    Args:
+        ball_number: int - Ball number to write (0-5)
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        if S.gdata.get("BallInPlay", {}).get("Type") == 20:
+            ball_adr = S.gdata["BallInPlay"]["Address"]
+            shadowRam[ball_adr] = ball_number
+            return True
+    except Exception as e:
+        log.log(f"DATAMAPPER: error in write_ball_in_play: {e}")
+    
+    return False
+
+
+def get_player_up():
+    """
+    Get the current player number (whose turn it is).
+    
+    Data East stores player-up at configured address.
+    
+    Returns:
+        int: Player number (1-4) or 0 if not available
+    """
     try:
         if S.gdata.get("InPlay", {}).get("PlayerUp", 0) != 0:
             adr = S.gdata["InPlay"]["PlayerUp"]
-            data["PlayerUp"] = shadowRam[adr]
-    except Exception:
-        pass
-    
-    # Get players in game count
-    try:
-        if S.gdata.get("InPlay", {}).get("PlayersInGame", 0) != 0:
-            adr = S.gdata["InPlay"]["PlayersInGame"]
-            data["PlayersInGame"] = shadowRam[adr]
+            return shadowRam[adr]
     except Exception as e:
-        log.log(f"DATAMAP: error getting players in game: {e}")
+        log.log(f"DATAMAPPER: error in get_player_up: {e}")
     
-    # Get live scores for all 4 players
-    try:       
-        scores = [0, 0, 0, 0]
+    return 0
+
+
+def get_players_in_game():
+    """
+    Get the number of players in the current game.
     
+    Data East stores player count at configured address.
+    
+    Returns:
+        int: Number of players (1-4) or 0 if not available
+    """
+    try:
+        if "Players" in S.gdata.get("InPlay", {}):
+            adr = S.gdata["InPlay"]["Players"]
+            return shadowRam[adr]
+    except Exception as e:
+        log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
+    
+    return 0
+
+
+def write_live_scores(scores):
+    """
+    Write live scores to shadow RAM.
+    
+    Supports Data East Type 20, 24, 25, and 27 score formats.
+    
+    Args:
+        scores: List of 4 integer scores [p1_score, p2_score, p3_score, p4_score]
+        
+    Returns:
+        bool: True if write was successful, False otherwise
+    """
+    try:
+        if not isinstance(scores, (list, tuple)) or len(scores) != 4:
+            log.log(f"DATAMAPPER: invalid scores format, expected list of 4 integers")
+            return False
+        
+        in_play_type = S.gdata["InPlay"]["Type"]
+        
+        if in_play_type == 20:
+            # Type 20: Data East all in a row with multiplier
+            for idx in range(4):
+                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                score_bcd = _int_to_bcd(scores[idx], S.gdata["InPlay"]["ScoreBytes"])
+                shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]] = score_bcd
+                
+        elif in_play_type == 24:
+            # Type 24: Data East break after fourth byte, assume 5 bytes total
+            for idx in range(4):
+                score_bcd = _int_to_bcd(scores[idx], 5)
+                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
+                score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
+                
+                shadowRam[score_fifth_byte_adr] = score_bcd[0]
+                shadowRam[score_start : score_start + 4] = score_bcd[1:5]
+                
+        elif in_play_type == 25:
+            # Type 25: 5-byte BCD scores
+            for idx in range(4):
+                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                score_bcd = _int_to_bcd(scores[idx], 5)
+                shadowRam[scoreAddress : scoreAddress + 5] = score_bcd
+                
+        elif in_play_type == 27:
+            # Type 27: Each byte contains only one digit in lower nibble
+            for idx in range(4):
+                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                score_str = f"{scores[idx]:07d}"  # 7 digits
+                for digit_idx in range(7):
+                    shadowRam[scoreAddress + digit_idx] = int(score_str[digit_idx])
+        else:
+            log.log(f"DATAMAPPER: unsupported InPlay Type {in_play_type} for write_live_scores")
+            return False
+            
+        return True
+    except Exception as e:
+        log.log(f"DATAMAPPER: error writing in-play scores: {e}")
+        return False
+
+
+def get_flipper_state():
+    """
+    Get the flipper state (stub for Data East).
+    
+    Data East does not currently support flipper state detection,
+    so this always returns both flippers as down/inactive.
+    
+    Returns:
+        tuple: (left, right) - Both False indicating flippers are down
+    """
+    return False, False
+
+
+def read_in_play_scores():
+    """
+    Read the current in-play scores for all 4 players.
+    
+    Data East Type 20+ in-play scores:
+    - Reads directly from shadow RAM (not through formats)
+    - Supports Types 20, 24, 25, 27
+    
+    Returns:
+        list: List of [initials, score] pairs for 4 players
+            [[initials, score], [initials, score], ...]
+            Initials will be empty strings (not available in in-play data)
+    """
+    in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
+    
+    try:
+        in_play_type = S.gdata.get("InPlay", {}).get("Type", 0)
+        
+        if in_play_type == 20:
+            # Type 20: Data East all in a row with multiplier
+            for idx in range(4):
+                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["ScoreBytes"]]
+                in_play_scores[idx][1] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get(["ScoreMultiplier"],1)
+        
+        elif in_play_type == 24:
+            # Type 24: Data East break after fourth byte, assume 5 bytes total
+            for idx in range(4):
+                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
+                score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
+                
+                score_bytes = [shadowRam[score_fifth_byte_adr]]
+                score_bytes.extend(shadowRam[score_start : score_start + 4])
+                in_play_scores[idx][1] = _bcd_to_int(score_bytes)
+
+        elif in_play_type == 25:
+            # Type 25: 5-byte BCD scores
+            for idx in range(4):
+                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                scoreBytes = shadowRam[scoreAddress : scoreAddress + 5]
+                in_play_scores[idx][1] = _bcd_to_int(scoreBytes)
+
+        elif in_play_type == 27:
+            # Type 27: Each byte contains only one digit (0-9) in lower nibble
+            for idx in range(4):
+                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                rawBytes = shadowRam[scoreAddress : scoreAddress + 7]
+                packedBytes = bytearray()
+                for i in range(0, len(rawBytes), 2):
+                    high_digit = rawBytes[i] & 0x0F
+                    low_digit = rawBytes[i + 1] & 0x0F if (i + 1) < len(rawBytes) else 0
+                    packedBytes.append((high_digit << 4) | low_digit)
+                
+                in_play_scores[idx][1] = _bcd_to_int(packedBytes)
+                
+    except Exception as e:
+        log.log(f"In-play scores read error: {e}")
+    
+    return in_play_scores
+
+
+def match_in_play_with_high_score_initials(in_play_scores, high_scores):
+    """
+    Match in-play scores with high score initials.
+    
+    When a player achieves a high score, their in-play score will match
+    one of the high scores. This function copies the initials from the
+    high score list to the in-play score list for matching scores.
+    
+    Each high score initial is used only once to prevent duplicate assignments
+    when players have identical scores.
+    
+    Args:
+        in_play_scores: List of [initials, score] pairs from in-play data
+        high_scores: List of [initials, score] pairs from high score data
+    
+    Returns:
+        list: Updated in_play_scores with initials filled in where matches found
+    """
+    used_high_score_indices = []
+
+    for in_play_score in in_play_scores:
+        for high_score_idx, high_score in enumerate(high_scores):
+            if high_score_idx not in used_high_score_indices and in_play_score[1] == high_score[1] and in_play_score[1] != 0:
+                in_play_score[0] = high_score[0]
+                used_high_score_indices.append(high_score_idx)
+                break
+
+    return in_play_scores
+
+
+def get_live_scores(use_format=True):
+    """
+    Get live scores for all 4 players.
+    
+    If a Format is active (active_format != 0), pulls scores from Formats.player_scores.
+    Otherwise reads from Data East shadow RAM.
+    
+    Returns:
+        list: List of 4 integer scores [score1, score2, score3, score4]
+    """
+    scores = [0, 0, 0, 0]
+    
+    # Check if a Format is active
+    try:
+        if use_format is True and S.active_format.get("Id", 0) != 0:
+            # Format is active - use player_scores from Formats module
+            import Formats
+            scores = list(Formats.player_scores)
+            return scores
+    except Exception as e:
+        log.log(f"DATAMAPPER: error getting format scores: {e}")
+    
+    # No active format - read from shadow RAM
+    try:
         if S.gdata["InPlay"]["Type"] == 20:
             # Type 20: Data East all in a row with multiplier
             for idx in range(4):
@@ -426,11 +644,57 @@ def get_in_play_data():
                     packedBytes.append((high_digit << 4) | low_digit)
                 
                 scores[idx] = _bcd_to_int(packedBytes)
-
-        data["Scores"] = scores
-            
     except Exception as e:
-        log.log(f"DATAMAP: error getting in-play scores: {e}")
+        log.log(f"DATAMAPPER: error getting in-play scores: {e}")
+
+    return scores
+
+
+def get_in_play_data():
+    """
+    Return dict with whatever we can gather up:
+        players in game
+        player up
+        live scores
+        game active (boolean)
+    If game not active - fill with mostly zeroes    
+    """
+    data = {
+        "GameActive": False,
+        "BallInPlay": 0,
+        "PlayerUp": 0,
+        "PlayersInGame": 0,
+        "Scores": [0, 0, 0, 0]
+    }
+    
+    # Check if InPlay configuration exists and is valid
+    if "InPlay" not in S.gdata or S.gdata["InPlay"].get("Type", 0) not in range(20, 30):
+        return data
+
+    data["BallInPlay"] = get_ball_in_play()        
+    if data["BallInPlay"] != 0:
+        data["GameActive"] = True
+    
+    # Get player up
+    try:
+        if S.gdata.get("InPlay", {}).get("PlayerUp", 0) != 0:
+            adr = S.gdata["InPlay"]["PlayerUp"]
+            data["PlayerUp"] = shadowRam[adr]
+    except Exception:
+        pass
+    
+    # Get players in game count
+    try:
+        if "Players" in S.gdata.get("InPlay", {}):
+            adr = S.gdata["InPlay"]["Players"]
+            data["PlayersInGame"] = shadowRam[adr]
+    except Exception as e:
+        log.log(f"DATAMAP: error getting players in game: {e}")
+    
+
+    # Get live scores for all 4 players    
+    data["Scores"] = get_live_scores()
+          
     
     return data
 

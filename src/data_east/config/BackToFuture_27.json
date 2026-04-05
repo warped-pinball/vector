@@ -23,7 +23,9 @@
         "CustomMessageOn": 7742,
         "ChecksumStartAdr": 7678,
         "ChecksumEndAdr": 7746,
-        "ChecksumResultAdr": 7902
+        "ChecksumResultAdr": 7902,
+        "ExtraStartAdr": 7780,
+        "ExtraEndAdr": 7787
     },
     "HighScores": {
         "Type": 20,

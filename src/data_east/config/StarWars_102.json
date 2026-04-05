@@ -46,5 +46,37 @@
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1
-    }
+    },
+    "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4,
+          "Options": {
+              "MaxScore": {
+                  "Name": "Score Cap",
+                  "Type": "NumberRange",
+                  "Range": {
+                      "Low": 10000,
+                      "High": 400000
+                  },
+                  "Value": 30000
+              }
+          }
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
+  }
+
 }
