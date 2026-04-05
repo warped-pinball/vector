@@ -153,9 +153,8 @@ def go(safe_mode=False):
             else:
                 config_data = find_config_in_file(config_filename)
                 if config_data:
-                    print(f"DEBUG: Successfully loaded config for {config_filename}")  # TEMPORARY DEBUG
                     if "GameInfo" in config_data and "GameName" in config_data["GameInfo"]:
-                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")  # TEMPORARY DEBUG
+                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")  
                     data = config_data
                 else:
                     faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
