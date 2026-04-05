@@ -45,5 +45,25 @@
         "BytesInScore": 4,
         "ScoreSpacing": 4,
         "Multiplier": 1
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "LongestBall": {
+            "Id": 6
+        },
+        "OneBall": {
+            "Id": 7
+        }
     }
 }
