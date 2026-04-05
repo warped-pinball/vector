@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dev.ci.validate_json_configs import rule_for_path, validate_required_fields
+from dev.ci.validate_json_configs import is_linkto_config, rule_for_path, validate_linkto_config, validate_required_fields
 
 
 class TestRuleForPath:
@@ -233,3 +233,152 @@ class TestEndToEnd:
 
         exit_code = main()
         assert exit_code == 0
+
+
+class TestIsLinkToConfig:
+    """Test LinkTo detection logic."""
+
+    def test_detects_linkto_config(self):
+        """Config with LinkTo in GameInfo is detected."""
+        payload = {"GameInfo": {"GameName": "Test", "LinkTo": "OtherConfig"}}
+        assert is_linkto_config(payload) is True
+
+    def test_regular_config_not_linkto(self):
+        """Regular config without LinkTo is not detected."""
+        payload = {"GameInfo": {"GameName": "Test", "System": "WPC"}}
+        assert is_linkto_config(payload) is False
+
+    def test_missing_game_info_not_linkto(self):
+        """Config without GameInfo is not detected as LinkTo."""
+        payload = {"Memory": {"Start": 0}}
+        assert is_linkto_config(payload) is False
+
+    def test_non_dict_game_info_not_linkto(self):
+        """Config with non-dict GameInfo is not detected as LinkTo."""
+        payload = {"GameInfo": "not a dict"}
+        assert is_linkto_config(payload) is False
+
+
+class TestValidateLinkToConfig:
+    """Test LinkTo config validation logic."""
+
+    def test_valid_linkto_with_existing_target(self, tmp_path, monkeypatch):
+        """Valid LinkTo config with existing target passes."""
+        import dev.ci.validate_json_configs as validator
+
+        repo_dir = tmp_path / "repo"
+        config_dir = repo_dir / "src" / "wpc" / "config"
+        config_dir.mkdir(parents=True)
+        target_file = config_dir / "TargetConfig.json"
+        target_file.write_text("{}", encoding="utf-8")
+
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+
+        payload = {"GameInfo": {"GameName": "Test", "LinkTo": "TargetConfig"}}
+        errors = validate_linkto_config("src/wpc/config/Alias.json", payload)
+        assert errors == []
+
+    def test_linkto_missing_target(self, tmp_path, monkeypatch):
+        """LinkTo config pointing to non-existent target fails."""
+        import dev.ci.validate_json_configs as validator
+
+        repo_dir = tmp_path / "repo"
+        config_dir = repo_dir / "src" / "wpc" / "config"
+        config_dir.mkdir(parents=True)
+
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+
+        payload = {"GameInfo": {"GameName": "Test", "LinkTo": "NonExistent"}}
+        errors = validate_linkto_config("src/wpc/config/Alias.json", payload)
+        assert len(errors) == 1
+        assert "NonExistent" in errors[0]
+
+    def test_linkto_missing_game_name(self, tmp_path, monkeypatch):
+        """LinkTo config without GameName fails."""
+        import dev.ci.validate_json_configs as validator
+
+        repo_dir = tmp_path / "repo"
+        config_dir = repo_dir / "src" / "wpc" / "config"
+        config_dir.mkdir(parents=True)
+        target_file = config_dir / "TargetConfig.json"
+        target_file.write_text("{}", encoding="utf-8")
+
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+
+        payload = {"GameInfo": {"LinkTo": "TargetConfig"}}
+        errors = validate_linkto_config("src/wpc/config/Alias.json", payload)
+        assert len(errors) == 1
+        assert "GameName" in errors[0]
+
+    def test_linkto_empty_target(self):
+        """LinkTo config with empty target string fails."""
+        payload = {"GameInfo": {"GameName": "Test", "LinkTo": ""}}
+        errors = validate_linkto_config("src/wpc/config/Alias.json", payload)
+        assert len(errors) == 1
+        assert "empty" in errors[0]
+
+
+class TestEndToEndLinkTo:
+    """Integration tests for LinkTo configs in the full validation flow."""
+
+    def test_linkto_config_passes_with_valid_target(self, tmp_path, monkeypatch):
+        """LinkTo config passes when linked target exists."""
+        from dev.ci.validate_json_configs import main
+
+        repo_dir = tmp_path / "repo"
+        config_dir = repo_dir / "src" / "wpc" / "config"
+        config_dir.mkdir(parents=True)
+
+        # Create the target config
+        target = config_dir / "Target_L1.json"
+        target_config = {
+            "GameInfo": {"GameName": "Target", "System": "WPC"},
+            "Memory": {"Start": 0, "Length": 100, "NvStart": 0, "NvLength": 50},
+            "BallInPlay": {"Type": "address"},
+            "DisplayMessage": {"Type": "address"},
+            "Adjustments": {"Type": "address"},
+            "HighScores": {"Type": "address"},
+        }
+        target.write_text(json.dumps(target_config), encoding="utf-8")
+
+        # Create the LinkTo alias config
+        alias = config_dir / "Alias_L2.json"
+        alias_config = {"GameInfo": {"GameName": "Alias", "LinkTo": "Target_L1"}}
+        alias.write_text(json.dumps(alias_config), encoding="utf-8")
+
+        import dev.ci.validate_json_configs as validator
+
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(
+            validator,
+            "tracked_json_files",
+            lambda: [Path("src/wpc/config/Target_L1.json"), Path("src/wpc/config/Alias_L2.json")],
+        )
+
+        exit_code = main()
+        assert exit_code == 0
+
+    def test_linkto_config_fails_with_missing_target(self, tmp_path, monkeypatch):
+        """LinkTo config fails when linked target does not exist."""
+        from dev.ci.validate_json_configs import main
+
+        repo_dir = tmp_path / "repo"
+        config_dir = repo_dir / "src" / "wpc" / "config"
+        config_dir.mkdir(parents=True)
+
+        # Create only the LinkTo alias config (no target)
+        alias = config_dir / "Alias_L2.json"
+        alias_config = {"GameInfo": {"GameName": "Alias", "LinkTo": "Missing_L1"}}
+        alias.write_text(json.dumps(alias_config), encoding="utf-8")
+
+        import dev.ci.validate_json_configs as validator
+
+        monkeypatch.setattr(validator, "REPO_ROOT", repo_dir)
+        monkeypatch.setattr(
+            validator,
+            "tracked_json_files",
+            lambda: [Path("src/wpc/config/Alias_L2.json")],
+        )
+
+        exit_code = main()
+        assert exit_code == 1
