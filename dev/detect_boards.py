@@ -19,7 +19,7 @@ def list_pico_ports(timeout: float = 5.0) -> List[str]:
             check=True,
             timeout=timeout,
         )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         return []
     ports: List[str] = []
     for line in result.stdout.strip().splitlines():
