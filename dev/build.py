@@ -61,6 +61,70 @@ def step_report(func):
     return wrapper
 
 
+def remove_readonly(func, path, exc_info):
+    """Error handler for shutil.rmtree to handle read-only files on Windows."""
+    import stat
+    if not os.access(path, os.W_OK):
+        # If the file is read-only, change permissions and retry
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    else:
+        raise
+
+
+def safe_rmtree(path, max_retries=3, delay=0.5):
+    """
+    Safely remove a directory tree with retry logic for Windows.
+    
+    On Windows, files can be locked by antivirus, indexing, or other processes.
+    This function retries the removal with delays and handles read-only files.
+    If standard removal fails, tries PowerShell's Remove-Item -Force as a last resort.
+    """
+    import platform
+    
+    for attempt in range(max_retries):
+        try:
+            if os.path.exists(path):
+                shutil.rmtree(path, onerror=remove_readonly)
+            return True
+        except PermissionError as e:
+            if attempt < max_retries - 1:
+                print(f"Permission denied, retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+                delay *= 2  # Exponential backoff
+            else:
+                # Last attempt - try PowerShell on Windows
+                if platform.system() == "Windows":
+                    try:
+                        print(f"Trying PowerShell force removal...")
+                        result = subprocess.run(
+                            ["powershell", "-Command", f"Remove-Item -Path '{path}' -Recurse -Force -ErrorAction Stop"],
+                            check=False,
+                            capture_output=True,
+                            text=True
+                        )
+                        if result.returncode == 0:
+                            print(f"Successfully removed directory using PowerShell: {path}")
+                            return True
+                        else:
+                            print(f"PowerShell removal failed: {result.stderr}")
+                            print(f"Try manually deleting: {path}")
+                            return False
+                    except Exception as ps_error:
+                        print(f"PowerShell removal encountered error: {ps_error}")
+                        print(f"Try manually deleting: {path}")
+                        return False
+                else:
+                    print(f"ERROR: Could not remove {path} after {max_retries} attempts.")
+                    print(f"Try closing any programs that might have files open in that directory.")
+                    print(f"Error: {e}")
+                    return False
+        except Exception as e:
+            print(f"ERROR: Unexpected error removing {path}: {e}")
+            return False
+    return False
+
+
 class Builder:
     def __init__(self, build_dir, source_dir, target_hardware="sys11"):
         self.build_dir = build_dir
@@ -72,7 +136,11 @@ class Builder:
         """Copy all files from source_dir to build_dir."""
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
-            shutil.rmtree(self.build_dir)
+            if not safe_rmtree(self.build_dir):
+                raise RuntimeError(
+                    f"Failed to remove existing build directory: {self.build_dir}\n"
+                    f"Please manually delete this directory and try again."
+                )
 
         common_src = os.path.join(self.source_dir, "common")
         shutil.copytree(common_src, self.build_dir)

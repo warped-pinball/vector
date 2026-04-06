@@ -25,7 +25,10 @@ def list_pico_ports(timeout: float = 5.0) -> List[str]:
     for line in result.stdout.strip().splitlines():
         line = line.strip()
         if line:
-            ports.append(line.split()[0])
+            fields = line.split()
+            # Skip ports where the serial number (second field) is "None"
+            if len(fields) >= 2 and fields[1] != "None":
+                ports.append(fields[0])
     return ports
 
 
