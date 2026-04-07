@@ -54,7 +54,7 @@
     },
     "Switches": {
         "Type": 10,
-        "Address": 1552,
+        "Address": 1551,
         "Length": 64,
         "Sensitivity": [
                     120, -1, 120, 250, 250, 250, 120, 120,
