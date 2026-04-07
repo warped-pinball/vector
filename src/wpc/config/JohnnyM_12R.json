@@ -16,12 +16,7 @@
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 947,
-      "Ball1": 1,
-      "Ball2": 2,
-      "Ball3": 3,
-      "Ball4": 4,
-      "Ball5": 5
+      "Address": 947
   },
   "DisplayMessage": {
       "Type": 10,
