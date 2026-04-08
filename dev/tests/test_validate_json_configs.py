@@ -66,8 +66,7 @@ class TestValidateRequiredFields:
         rule = {
             "name": "standard-game-config",
             "required": {
-                "GameInfo": ["GameName", "System"],
-                "Memory": ["Start", "Length", "NvStart", "NvLength"],
+                "GameInfo": ["GameName", "System"],               
                 "BallInPlay": ["Type"],
                 "DisplayMessage": ["Type"],
                 "Adjustments": ["Type"],
@@ -76,7 +75,6 @@ class TestValidateRequiredFields:
         }
         payload = {
             "GameInfo": {"GameName": "Test", "System": "Sys11"},
-            "Memory": {"Start": 0, "Length": 100, "NvStart": 0, "NvLength": 50},
             "BallInPlay": {"Type": "address"},
             "DisplayMessage": {"Type": "address"},
             "Adjustments": {"Type": "address"},
@@ -130,17 +128,17 @@ class TestValidateRequiredFields:
             "name": "test-rule",
             "required": {
                 "GameInfo": ["GameName", "System"],
-                "Memory": ["Start", "Length"],
+                "BallInPlay": ["Type"],
             },
         }
         payload = {
             "GameInfo": {"GameName": "Test"},
-            "Memory": {"Start": 0},
+            "BallInPlay": {},
         }
         errors = validate_required_fields("test.json", payload, rule)
         assert len(errors) == 2
         assert any("GameInfo.System" in e for e in errors)
-        assert any("Memory.Length" in e for e in errors)
+        assert any("BallInPlay.Type" in e for e in errors)
 
     def test_empty_required_nested_list(self):
         """Top-level object with no required nested fields is valid."""
@@ -250,7 +248,7 @@ class TestIsLinkToConfig:
 
     def test_missing_game_info_not_linkto(self):
         """Config without GameInfo is not detected as LinkTo."""
-        payload = {"Memory": {"Start": 0}}
+        payload = {"BallInPlay": {"Type": 0}}
         assert is_linkto_config(payload) is False
 
     def test_non_dict_game_info_not_linkto(self):
@@ -333,7 +331,6 @@ class TestEndToEndLinkTo:
         target = config_dir / "Target_L1.json"
         target_config = {
             "GameInfo": {"GameName": "Target", "System": "WPC"},
-            "Memory": {"Start": 0, "Length": 100, "NvStart": 0, "NvLength": 50},
             "BallInPlay": {"Type": "address"},
             "DisplayMessage": {"Type": "address"},
             "Adjustments": {"Type": "address"},
