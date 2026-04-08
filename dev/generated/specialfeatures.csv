@@ -61,19 +61,20 @@ Taxi,SYS11,yes,no,no,
 Transporter the Rescue,SYS11,no,no,no,
 Whirl Wind,SYS11,yes,no,no,
 Addams Family,UNKNOWN,no,no,no,
+Attack from Mars,UNKNOWN,no,no,no,
 Dirty Harry,UNKNOWN,no,no,no,
 Johnny Mnemonic,UNKNOWN,no,no,no,
 Junk Yard,UNKNOWN,no,no,no,
 Star Trek: TNG,UNKNOWN,no,no,no,
 Terminator 2,UNKNOWN,no,no,no,
-Addams Family,WPC,yes,yes,no,
+Addams Family,WPC,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Attack from Mars,WPC,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Black Rose,WPC,yes,yes,no,
+Black Rose,WPC,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Bram Stokers Dracula,WPC,yes,yes,no,
-Cactus Canyon,WPC,yes,yes,no,
+Cactus Canyon,WPC,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Champion Pub,WPC,yes,yes,no,
 Cirqus Voltaire,WPC,yes,yes,no,
-Congo,WPC,yes,yes,no,
+Congo,WPC,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Corvette,WPC,yes,yes,no,
 Creature from the Black Lagoon,WPC,yes,yes,no,
 Demolition Man,WPC,yes,yes,no,
