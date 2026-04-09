@@ -266,7 +266,7 @@ def write_consolidated_csv(path: Path, records: list[ConfigRecord], rom_versions
 
         sorted_rows = sorted(rows.values(), key=lambda r: (str(r["mpu"]).casefold(), str(r["game_name"]).casefold()))
         for row in sorted_rows:
-            game_roms = rom_versions.get(row["game_name"], set()) if rom_versions else set()
+            game_roms = rom_versions.get(row["game_name"], set()) if rom_versions is not None else set()
             writer.writerow(
                 [
                     row["game_name"],
