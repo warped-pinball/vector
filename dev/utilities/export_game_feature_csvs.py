@@ -163,12 +163,21 @@ def build_feature_rules() -> dict[str, FeatureRule]:
 FEATURE_RULES = build_feature_rules()
 
 
+def is_linkto_config(data: dict[str, Any]) -> bool:
+    """Check if a config uses LinkTo to alias another config."""
+    game_info = data.get("GameInfo")
+    return isinstance(game_info, dict) and "LinkTo" in game_info
+
+
 def load_records(config_glob: str) -> list[ConfigRecord]:
     records: list[ConfigRecord] = []
     for raw_path in sorted(glob.glob(config_glob)):
         path = Path(raw_path)
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
+
+        if is_linkto_config(data):
+            continue
 
         game_name = get_path(data, "GameInfo.GameName", path.stem)
         system_raw = get_path(data, "GameInfo.System", "")
