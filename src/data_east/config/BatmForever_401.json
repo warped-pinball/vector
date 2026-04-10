@@ -23,7 +23,9 @@
         "CustomMessageOn": 7009,
         "ChecksumStartAdr": 7678,
         "ChecksumEndAdr": 7807,
-        "ChecksumResultAdr": 8125
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7815
     },
     "HighScores": {
         "Type": 25,
@@ -44,5 +46,25 @@
         "BytesInScore": 5,
         "ScoreSpacing": 5,
         "Multiplier": 1
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "LongestBall": {
+            "Id": 6
+        },
+        "OneBall": {
+            "Id": 7
+        }
     }
 }
