@@ -560,10 +560,13 @@ def one_ball_run():
     """
     global player_scores
     ball_in_play = DataMapper.get_ball_in_play()
-    if ball_in_play<5:
+    current_scores = DataMapper.get_live_scores(use_format=False)
+    
+    # Only end game if ball 1 is in play and player 1 has scored
+    if ball_in_play < 5 and current_scores[0] > 0:
         DataMapper.write_ball_in_play(5)
 
-    player_scores = DataMapper.get_live_scores(use_format=False)
+    player_scores = current_scores
     return DataMapper.get_game_active()
 
 
