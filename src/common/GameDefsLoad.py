@@ -37,8 +37,6 @@ def convert_hex_to_int(data):
 
 safe_defaults = {
     "GameInfo": {"GameName": "Generic System", "System": "X"},
-    "Definition": {"version": 1},
-    "Memory": {"Start": 0, "Length": 2048, "NvStart": 0, "NvLength": 2048},
     "BallInPlay": {"Type": 0},
     "InPlay": {"Type": 0},
     "DisplayMessage": {"Type": 0},
@@ -48,11 +46,6 @@ safe_defaults = {
     "Switches": {"Type": 0},
     "CoinDrop": {"Type": 0},
 }
-
-safe_defaults_wpc = {"Memory" : {"Start": 1,"Length": 8192,"NvStart": 2048,"NvLength": 2048} }
-
-
-
 
 
 def parse_config_line(line):
@@ -91,15 +84,25 @@ def iter_config_lines():
 def find_config_in_file(target_filename):
     """Read the JSONL file line by line until we find the requested config."""
     try:
-        for line in iter_config_lines():
-            filename, data = parse_config_line(line.strip())
-            gc_collect()
-            if filename == target_filename:
-                return data
+        # Handle LinkTo by iterating instead of recursion to save memory
+        while True:
+            for line in iter_config_lines():
+                filename, data = parse_config_line(line.strip())
+                gc_collect()
+                if filename == target_filename:
+                    # Check for LinkTo field inside GameInfo - allows one config to alias another
+                    if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
+                        linked_target = data["GameInfo"]["LinkTo"]
+                        Log.log(f"Config {target_filename} links to {linked_target}")
+                        target_filename = linked_target  # Follow the link
+                        break  # Restart search with new target
+                    return data
+            else:
+                # for loop completed without break - file not found
+                return None
     except Exception as e:
         Log.log(f"Error reading config file: {e}")
         return None
-    return None
 
 
 def list_game_configs():
@@ -124,12 +127,6 @@ def go(safe_mode=False):
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
 
     data = safe_defaults.copy()
-    try:
-        from systemConfig import vectorSystem
-        if vectorSystem == "wpc":            
-            data["Memory"] = safe_defaults_wpc["Memory"].copy()
-    except Exception as e:
-        Log.log(f"DEFLOAD: Error importing vectorSystem: {e}")
 
     if not safe_mode:
         try:
@@ -143,6 +140,8 @@ def go(safe_mode=False):
             else:
                 config_data = find_config_in_file(config_filename)
                 if config_data:
+                    if "GameInfo" in config_data and "GameName" in config_data["GameInfo"]:
+                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")  
                     data = config_data
                 else:
                     faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")

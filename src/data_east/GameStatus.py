@@ -35,8 +35,10 @@ def game_report():
         data = DataMapper.get_in_play_data()
         # gameActive = data["GameActive"]
 
-        data["ActiveFormatName"] = "Standard"
-        data["ActiveFormatId"] = 0
+        # Add active format name
+        active_format = getattr(S, "active_format", {})
+        data["ActiveFormatName"] = active_format.get("Name", "Standard")
+        data["ActiveFormatId"] = active_format.get("Id", 0)
         data["game_num"] = S.gameCounter
 
     except Exception as e:

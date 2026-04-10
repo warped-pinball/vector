@@ -1,0 +1,130 @@
+{
+  "GameInfo": {
+      "GameName": "Harley Davidson",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 1033
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7552,
+      "AddressS2": 7617,
+      "AddressS3": 7682,
+      "Length": 32,
+      "ChecksumStartAdr": 7552,
+      "ChecksumEndAdr": 7744,
+      "ChecksumResultAdr": 7745
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 7338,
+      "ChecksumEndAdr": 7549,
+      "ChecksumResultAdr": 7550
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7247,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7244,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7281,
+      "GrandChampInitAdr": 7278,
+      "ChecksumStartAdr": 7244,
+      "ChecksumEndAdr": 7275,
+      "ChecksumResultAdr": 7276,
+      "GCChecksumStartAdr": 7278,
+      "GCChecksumEndAdr": 7309,
+      "GCChecksumResultAdr": 7310
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6059,
+      "PlayerUp": 1032,
+      "ScoreAdr": 5952,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5991,
+    "Length": 53,
+    "Names": [
+      ["Right Flipper", 60],
+      ["Left Flipper", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Outhole", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+
+      ["Slam Tilt", 0],
+      ["Front Door", 60],
+      ["Token Dispenser", 0],
+      [],
+      ["Left Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Lower Jet Bumper", 60],
+      ["Lower Right Eject", 60],
+
+      ["B In Bike", 60],
+      ["I In Bike", 60],
+      ["K In Bike", 60],
+      ["E In Bike", 60],
+      ["Top Right Eject", 60],
+      ["Top Left Eject", 60],
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+
+      ["U Top Lane", 60],
+      ["S Top Lane", 60],
+      ["A Top Lane", 60],
+      [],
+      [],
+      [],
+      [],
+      [],
+
+      ["H In Harley", 60],
+      ["A In Harley", 60],
+      ["R In Harley", 60],
+      ["L In Harley", 60],
+      ["E In Harley", 60],
+      ["Y In Harley", 60],
+      ["1st D In Davidson", 60],
+      ["A In Davidson", 60],
+
+      ["V In Davidson", 60],
+      ["I In Davidson", 60],
+      ["2nd D In Davidson", 60],
+      ["S In Davidson", 60],
+      ["O In Davidson", 60],
+      ["N In Davidson", 60],
+      ["Right Spinner", 60],
+      ["Left Spinner", 60],
+
+      ["Left Loop", 60],
+      ["Right Loop", 60],
+      ["Left Drain", 60],
+      ["Right Drain", 60],
+      ["Shooter Lane", 60]
+    ]
+  }
+}

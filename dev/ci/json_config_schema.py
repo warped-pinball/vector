@@ -20,7 +20,6 @@ SCHEMA_RULES = [
         ],
         "required": {
             "GameInfo": ["GameName", "System"],
-            "Memory": ["Start", "Length", "NvStart", "NvLength"],
             "BallInPlay": ["Type"],
             "DisplayMessage": ["Type"],
             "Adjustments": ["Type"],

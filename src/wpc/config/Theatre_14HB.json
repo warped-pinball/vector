@@ -1,36 +1,22 @@
 {
     "GameInfo": {
-        "GameName": "Terminator 2",
+        "GameName": "Theatre of Magic",
         "System": "WPC",
         "FileVer": 1
     },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
     "BallInPlay": {
         "Type": 1,
-        "Address": 950,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
+        "Address": 944
     },
     "DisplayMessage": {
         "Type": 10,
-        "AddressS1": 7552,
-        "AddressS2": 7617,
-        "AddressS3": 7682,
+        "AddressS1": 7553,
+        "AddressS2": 7618,
+        "AddressS3": 7683,
         "Length": 32,
-        "ChecksumStartAdr": 7552,
-        "ChecksumEndAdr": 7744,
-        "ChecksumResultAdr": 7745
+        "ChecksumStartAdr": 7553,
+        "ChecksumEndAdr": 7745,
+        "ChecksumResultAdr": 7746
     },
     "Adjustments": {
         "Type": 10,
@@ -65,16 +51,13 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "CoinDrop": {
-        "Type": 0
-    },
     "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 135,
+        "GameActiveAdr": 141,
         "GameActiveValue": 0,
-        "Players": 6036,
-        "PlayerUp": 1039,
-        "ScoreAdr": 5936,
+        "Players": 5909,
+        "PlayerUp": 943,
+        "ScoreAdr": 5792,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
     }
