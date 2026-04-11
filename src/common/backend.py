@@ -1874,7 +1874,10 @@ def broadcast_address_listeners():
         parts.append(offset.to_bytes(2, "big"))
         parts.append(bytes([val]))
     message = b"".join(parts)
-    discovery.send_sock.sendto(message, ("255.255.255.255", _ADDRESS_BROADCAST_PORT))
+    try:
+        discovery.send_sock.sendto(message, ("255.255.255.255", _ADDRESS_BROADCAST_PORT))
+    except Exception:
+        pass
 
 
 @add_route("/api/address/toggle-broadcast", auth=True)
@@ -1899,6 +1902,7 @@ def app_address_toggle_broadcast(request):
     """
     data = request.data
     if data.get("enable", False):
+        unschedule(broadcast_address_listeners)
         schedule(broadcast_address_listeners, phase_ms=0, frequency_ms=100)
     else:
         unschedule(broadcast_address_listeners)
