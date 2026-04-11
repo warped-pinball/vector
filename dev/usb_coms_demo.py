@@ -140,6 +140,43 @@ def main():
                 print("\tGame is not active.")
             time.sleep(0.5)
 
+            # --- Address Read/Write/Listener API examples (admin-only routes) ---
+
+            # Read 4 bytes starting at SRAM offset 0
+            resp = client.send_and_receive(route="/api/address/read", payload={"offset": 0, "count": 4})
+            print("Address Read:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Write two bytes at SRAM offset 0
+            resp = client.send_and_receive(route="/api/address/write", payload={"offset": 0, "values": [0xAA, 0xBB]})
+            print("Address Write:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Set up address listeners on offsets 0, 1, and 2
+            resp = client.send_and_receive(route="/api/address/listeners", payload={"offsets": [0, 1, 2]})
+            print("Set Listeners:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Query current listener list (omit offsets)
+            resp = client.send_and_receive(route="/api/address/listeners", payload={})
+            print("Current Listeners:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Enable the address listener broadcast (UDP on port 2041, 10 Hz)
+            resp = client.send_and_receive(route="/api/address/toggle-broadcast", payload={"enable": True})
+            print("Broadcast Enabled:" + json.dumps(resp["body"]))
+            time.sleep(2)  # let a few broadcast cycles run
+
+            # Disable the address listener broadcast
+            resp = client.send_and_receive(route="/api/address/toggle-broadcast", payload={"enable": False})
+            print("Broadcast Disabled:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Clear all listeners
+            resp = client.send_and_receive(route="/api/address/listeners", payload={"offsets": []})
+            print("Cleared Listeners:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
     except KeyboardInterrupt:
         print("Stopped listening.")
     finally:
