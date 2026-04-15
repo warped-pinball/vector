@@ -5,20 +5,53 @@ Maybe should be alpha and be descriptive - but they are just numbers.
 Here is what they mean- -
 
 
-0:
-	OFF, not implemented feature
+0: OFF, not implemented feature
 
-1-8:  system 11
-	1: normal-ish ASCII, space=0x40
-	3: strange character table starts at 0 with numbers
+1-8: Display Message - System 11
+	Type 1
+		Layout: 7 characters × 6 lines
+		Encoding:
+		Spaces and decimals: 0x20 (standard space)
+		Letters/numbers: Normal ASCII (ord(char))
+		Example: 'A' = 0x41, '0' = 0x30
+	Type 2
+		Layout: 16 characters × 3 lines
+		Encoding:
+		Spaces and decimals: 0x20 (standard space)
+		Letters/numbers: Normal ASCII (ord(char))
+		Same as Type 1, just different display dimensions
+	Type 3
+		Layout: 16 characters × 3 lines (split across 2 displays, 8 char each)
+		Encoding:
+		Spaces and decimals: 0x00 (null)
+		Numbers: ASCII - 0x2F
+			'0' (0x30) → 0x01
+			'1' (0x31) → 0x02
+			'9' (0x39) → 0x0A
+		Letters: ASCII - 0x36
+			'A' (0x41) → 0x0B
+			'B' (0x42) → 0x0C
+			'Z' (0x5A) → 0x24
+		Decimal point: Add 0x55
+	 
+9: Display Message - System 9
+	Type 9 (System 9)
+		Purpose: Display IP addresses on System 9 pinball machines (which use numeric-only displays)
+		Layout: 4 separate numeric displays (one for each octet of the IP address)
+		Encoding: BCD (Binary Coded Decimal)
+		IP address split into 4 numbers: e.g., "192.168.1.100" → [192, 168, 1, 100]
 
-	
-9:    System 9
-	
 
 10-19: WPC
     can use type 1 for ball in play (same as sys11)
 	
+
+
+BallInPlay:
+	Type 1:   numeric, normal 0-x
+	Type 2:
+	Type 3:
+
 
 20-29: DataEast
 
