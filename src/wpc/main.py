@@ -22,6 +22,8 @@ from machine import Pin
 
 import Switches
 import Formats
+import SharedState
+from Shadow_Ram_Definitions import shadowRam
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -129,6 +131,11 @@ else:
 
 if not bus_activity_fault:
     MemoryMain.go()
+
+# Test code: Check for Machine Bride of Pinbot and set shadow RAM location 8138
+if SharedState.gdata.get("GameInfo", {}).get("GameName") == "Machine Bride of Pinbot":
+    shadowRam[8138] = 0xFF
+    print("DEBUG: Set shadowRam[8138] to 0xFF for Machine Bride of Pinbot")
 
 
 import Time
