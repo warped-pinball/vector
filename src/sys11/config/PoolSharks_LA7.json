@@ -1,33 +1,33 @@
 {
     "GameInfo": {
-        "GameName": "Grand Lizard",
-        "System": "11"
+        "GameName": "Pool Sharks",
+        "System": "11c"
     },
     "BallInPlay": {
-        "Type": 3,
+        "Type": 2,
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 1,
+        "Type": 3,
         "Address": 1972,
-        "Length": 7,
-        "Number": 6,
+        "Length": 16,
+        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2013,
-        "ChecksumResultAdr": 2021
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2022
     },
     "HighScores": {
-        "Type": 1,
-        "ScoreAdr": 1831,
-        "InitialAdr": 1847,
+        "Type": 3,
+        "ScoreAdr": 1806,
+        "InitialAdr": 1822,
         "BytesInScore": 4
     },
     "InPlay": {
-        "GameActive": 169
+        "GameActive": 166
     },
     "Switches": {
         "Type": 0,

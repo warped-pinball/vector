@@ -1,29 +1,30 @@
 {
     "GameInfo": {
-        "GameName": "Mousin' Around",
-        "System": "11B"
+        "GameName": "Space Station",
+        "System": "11B",
+        "FileVer": 1
     },
     "BallInPlay": {
         "Type": 2,
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 2,
+        "Type": 1,
         "Address": 1972,
-        "Length": 16,
-        "Number": 3,
+        "Length": 7,
+        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2019,
-        "ChecksumResultAdr": 2022
+        "ChecksumEndAdr": 2013,
+        "ChecksumResultAdr": 2021
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": 1807,
-        "InitialAdr": 1823,
+        "ScoreAdr": 1835,
+        "InitialAdr": 1851,
         "BytesInScore": 4
     },
     "InPlay": {
@@ -35,23 +36,17 @@
     },
     "Switches": {
         "Type": 10,
-        "Address": 1536,
+        "Address": 1584,
         "Length": 64,
         "Sensitivity": [
+                    240, -1, 60, 60, 60, 60, -1, 60,
+                    -1, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, -1, 60,
+                    60, 60, 60, 60, -1, -1, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
+                    -1, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60
                 ]
-    },
-    "GameInPlay": {
-        "Type": 1,
-        "Players": 0,
-        "PlayerUp": 0,
-        "PlayerScores": 513
     }
 }
