@@ -132,11 +132,14 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
-# Test code: Check for Machine Bride of Pinbot and set shadow RAM location 8138
-if SharedState.gdata.get("GameInfo", {}).get("GameName") == "Machine Bride of Pinbot":
-    shadowRam[8138] = 0xFF
-    print("DEBUG: Set shadowRam[8138] to 0xFF for Machine Bride of Pinbot")
-
+ram_fill = SharedState.gdata.get("RamFill")
+if ram_fill:
+    fill_start = ram_fill["Start"]
+    fill_end = ram_fill["End"]
+    fill_value = ram_fill["Value"]
+    for addr in range(fill_start, fill_end + 1):
+        shadowRam[addr] = fill_value
+    Log.log(f"Main: RamFill {fill_start}-{fill_end} = {fill_value}")
 
 import Time
 Time.initialize()
