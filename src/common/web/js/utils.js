@@ -89,26 +89,36 @@ async function verifyStaticIntegrity() {
     }
 
     // Firmware was updated since last visit.  Force-refresh all same-origin
-    // scripts so the browser cache contains the new files before we reload.
-    var scripts = document.querySelectorAll("script[src]");
+    // scripts AND stylesheets so the browser cache contains the new files
+    // before we reload.  CSS uses max-age=immutable so must be explicitly
+    // refreshed here — it won't revalidate on its own until max-age expires.
+    var assetSelectors = [
+      ["script[src]", "src"],
+      ["link[rel='stylesheet'][href]", "href"],
+    ];
     var refreshPromises = [];
-    for (var i = 0; i < scripts.length; i++) {
-      var src = scripts[i].getAttribute("src");
-      try {
-        var parsed = new URL(src, window.location.origin);
-        if (parsed.origin === window.location.origin) {
-          // cache:'reload' fetches from the network AND updates the cache.
-          // Individual errors are caught so one failure does not abort the rest.
-          refreshPromises.push(
-            fetch(parsed.pathname, { cache: "reload" }).catch(function (err) {
-              console.warn(
-                "verifyStaticIntegrity: failed to refresh " + parsed.pathname,
-                err,
-              );
-            }),
-          );
-        }
-      } catch (_) {}
+    for (var s = 0; s < assetSelectors.length; s++) {
+      var nodes = document.querySelectorAll(assetSelectors[s][0]);
+      var attr = assetSelectors[s][1];
+      for (var i = 0; i < nodes.length; i++) {
+        var assetSrc = nodes[i].getAttribute(attr);
+        try {
+          var parsed = new URL(assetSrc, window.location.origin);
+          if (parsed.origin === window.location.origin) {
+            // cache:'reload' fetches from the network AND updates the cache,
+            // bypassing even immutable entries.
+            // Individual errors are caught so one failure does not abort the rest.
+            refreshPromises.push(
+              fetch(parsed.pathname, { cache: "reload" }).catch(function (err) {
+                console.warn(
+                  "verifyStaticIntegrity: failed to refresh " + parsed.pathname,
+                  err,
+                );
+              }),
+            );
+          }
+        } catch (_) {}
+      }
     }
 
     if (refreshPromises.length > 0) {

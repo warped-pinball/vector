@@ -159,10 +159,21 @@ def create_file_handler(file_path):
         if request.headers.get("if-none-match") == etag:
             return "", 304, {"ETag": etag}
 
+        # HTML pages use no-cache so every navigation validates freshness cheaply
+        # via ETag (304 if unchanged).  CSS/JS are tied to the firmware version
+        # and are immutable within their max-age window; verifyStaticIntegrity()
+        # handles invalidation on firmware update via cache:'reload'.
+        if served_path.endswith(".html"):
+            cache_control = "no-cache"
+        elif served_path.endswith((".css", ".js", ".mjs")):
+            cache_control = "max-age=86400, immutable"
+        else:
+            cache_control = "max-age=86400"
+
         headers = {
             "Content-Type": get_content_type(served_path),
             "Connection": "close",
-            "Cache-Control": "max-age=86400",
+            "Cache-Control": cache_control,
             "ETag": etag,
         }
         if is_gz:
