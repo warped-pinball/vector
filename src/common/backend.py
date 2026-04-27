@@ -65,9 +65,8 @@ def route_wrapper(func):
 
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
-                        # (use update() for MicroPython compatibility instead of |)
-                        merged = {}
-                        merged.update(default_headers)
+                        # (use copy/update for MicroPython compatibility instead of |)
+                        merged = default_headers.copy()
                         merged.update(headers)
                         headers = merged
                     if status not in [200, 304]:
