@@ -65,7 +65,11 @@ def route_wrapper(func):
 
                     if isinstance(headers, dict):
                         # Merge the default headers with the custom headers
-                        headers = default_headers | headers
+                        # (use update() for MicroPython compatibility instead of |)
+                        merged = {}
+                        merged.update(default_headers)
+                        merged.update(headers)
+                        headers = merged
                     if status not in [200, 304]:
                         print(f"Status: {status}, Body: {body}")
                     return body, status, headers
@@ -112,6 +116,7 @@ def get_content_type(file_path):
     content_type_mapping = {
         ".css": "text/css",
         ".js": "application/javascript",
+        ".json": "application/json",
         ".html": "text/html",
         ".png": "image/png",
         ".jpg": "image/jpeg",
@@ -147,32 +152,40 @@ def create_file_handler(file_path):
     def file_stream_generator():
         gc_collect()
         with open(file_path, "rb") as f:
-            buff = bytearray(1024)
             while True:
-                buff[0:] = f.read(1024)
-                if not buff:
+                chunk = f.read(1024)
+                if not chunk:
                     break
-                yield buff
+                yield chunk
         gc_collect()
 
     def file_handler(request):
-        if request.headers.get("if-none-match") == etag:
-            return "", 304, {"ETag": etag}
+        gc_collect()
+        try:
+            if request.headers.get("if-none-match") == etag:
+                return "", 304, {"ETag": etag}
 
-        headers = {
-            "Content-Type": get_content_type(served_path),
-            "Connection": "close",
-            "Cache-Control": "public, max-age=31536000, immutable",
-            "ETag": etag,
-        }
-        if is_gz:
-            if served_path.endswith(".svg"):
-                headers["Content-Type"] = "application/gzip"
-            else:
-                headers["Content-Encoding"] = "gzip"
-        return file_stream_generator(), 200, headers
+            headers = {
+                "Content-Type": get_content_type(served_path),
+                "Connection": "close",
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "ETag": etag,
+            }
+            if is_gz:
+                if served_path.endswith(".svg"):
+                    headers["Content-Type"] = "application/gzip"
+                else:
+                    headers["Content-Encoding"] = "gzip"
+            return file_stream_generator(), 200, headers
+        except Exception as e:
+            msg = f"Error in file_handler: {e}"
+            print(msg)
+            print(request)
+            return msg, 500
+        finally:
+            gc_collect()
 
-    return route_wrapper(file_handler)
+    return file_handler
 
 
 def cool_down(cool_down_seconds=0, single_instance=False):

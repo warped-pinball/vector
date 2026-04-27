@@ -1,5 +1,5 @@
 # Common firmware version shared by all builds
-VectorVersion = "1.10.0"
+VectorVersion = "1.10.1"
 # TODO this should not be duplicated from common/origin.py if we forget to update both places EMs will always think they are out of date
 
 
