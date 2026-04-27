@@ -1,0 +1,779 @@
+<!doctype html>
+<html data-theme="dark" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scores</title>
+    <link rel="stylesheet" href="/css/pico.min.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <style>
+      svg {
+        width: 20%;
+        height: auto;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      nav button {
+        padding: 0;
+        width: 45px !important;
+        height: 45px !important;
+      }
+
+      nav button svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      header nav ul {
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 1024px) {
+        header .grid {
+          grid-template-columns: 1fr;
+          row-gap: 0.5rem;
+          justify-items: stretch;
+        }
+
+        header nav {
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        header nav ul {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          column-gap: 0.75rem;
+          row-gap: 0.25rem;
+        }
+      }
+
+      @media (max-width: 600px) {
+        nav button {
+          width: 38px !important;
+          height: 38px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.5rem;
+        }
+
+        header nav a {
+          padding-inline: 0.35rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      @media (max-width: 500px) {
+        header nav ul {
+          column-gap: 0;
+        }
+      }
+
+      @media (max-width: 440px) {
+        nav button {
+          width: 34px !important;
+          height: 34px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.25rem;
+        }
+
+        header nav a {
+          padding-inline: 0.25rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      details.dropdown summary::after {
+        width: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body class="container-fluid">
+    <header class="container">
+      <div class="grid">
+        <div style="align-self: center; justify-self: center">
+          <strong id="game_name"></strong>
+        </div>
+        <nav style="justify-self: end">
+          <ul>
+            <li><a href="/scores.html" aria-current="page">Scores</a></li>
+            <li><a href="/players.html">Players</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/admin.html">Admin</a></li>
+            <li>
+              <button
+                id="dark-mode-button"
+                onclick="window.toggleTheme()"
+                data-tooltip="Dark Mode Toggle"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>brightness-6</title>
+                  <path
+                    d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button
+                class="hide"
+                id="logout-button"
+                onclick="window.logout()"
+                data-tooltip="Logout"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>logout</title>
+                  <path
+                    d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" style="text-align: center; text-wrap: auto">
+      <!-- MODALS -->
+      <dialog id="configure_modal">
+        <article>
+          <header>
+            <h2>Configure Your Vector</h2>
+          </header>
+          <h3>WiFi Settings</h3>
+          <details id="ssid_select_placeholder" class="dropdown">
+            <summary>Scanning for WiFi networks</summary>
+          </details>
+          <input
+            type="password"
+            name="wifi_password"
+            placeholder="WiFi password"
+            aria-label="WiFi Password"
+          />
+          <h3>Game Settings</h3>
+          <details id="game_config_select_placeholder" class="dropdown">
+            <summary>Building list of games</summary>
+          </details>
+          <input
+            type="password"
+            name="vector_password"
+            placeholder="Admin Password"
+            aria-label="Pinball Admin Password"
+          />
+          <p>
+            Please <mark>double check your game and ROM version</mark>. If you
+            are unsure, do not guess. If you have a ROM that is not listed we
+            may be able to add it for you.
+          </p>
+          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+          <p>
+            Once you have saved, please power cycle your pinball machine and
+            connect to your selected WiFi network.
+          </p>
+          <footer style="position: relative">
+            <div style="text-align: center" id="config-reply"></div>
+            <div>
+              <small
+                style="
+                  position: absolute;
+                  display: block;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  bottom: auto;
+                  text-align: left;
+                  max-width: 65%;
+                "
+                >Previous IP: <a id="previous-ip" href="#"></a><br />
+              </small>
+              <button
+                id="config-save-btn"
+                onclick="window.save_configuration()"
+              >
+                💾 Save
+              </button>
+            </div>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="install_warning_modal">
+        <article>
+          <h2>Warning: Issues Detected</h2>
+          <p>
+            Warped Pinball features may not work correctly until the issue(s)
+            below are resolved. For guidance on how to resolve these issues,
+            please read our guide:
+          </p>
+          <a href="https://warpedpinball.com/warped-pinball-user-support/"
+            >https://warpedpinball.com/warped-pinball-user-support/</a
+          >
+          <p>
+            We take every preventive measure we can, but some types of issues
+            when left unresolved can cause your machine to malfunction.
+          </p>
+          <code id="fault_list"></code>
+          <footer>
+            <button
+              onclick="document.getElementById('install_warning_modal').removeAttribute('open')"
+            >
+              OK I want to continue anyway
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="password_modal">
+        <article>
+          <h3>Enter Admin Password</h3>
+          <input
+            type="password"
+            id="admin_password_input"
+            placeholder="Admin Password"
+            aria-label="Admin Password"
+          />
+          <fieldset>
+            <label>
+              <input
+                id="stay-logged-in"
+                type="checkbox"
+                role="switch"
+                id="stay_logged_in"
+                aria-label="Stay Logged In"
+              />
+              Stay Logged In
+            </label>
+          </fieldset>
+          <footer>
+            <button class="secondary" id="password_cancel_button">
+              Cancel
+            </button>
+            <button id="password_save_button">Login</button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="confirm-modal">
+        <article>
+          <header>
+            <h2>Confirm Action</h2>
+          </header>
+          <p id="modal-message"></p>
+          <footer>
+            <button id="modal-cancel-button" class="secondary">Cancel</button>
+            <button id="modal-confirm-button">Confirm</button>
+          </footer>
+        </article>
+      </dialog>
+
+      <!-- PAGE CONTENT -->
+      <style>
+        .tab-content {
+          display: none;
+        }
+
+        .tab-content.active {
+          display: block;
+        }
+
+        .score-board-list article.five-col {
+          display: grid;
+          grid-template-columns: 0.25fr 3fr 7fr 1fr 3fr;
+          gap: 0.25rem;
+          padding: 0.25rem;
+        }
+
+        .score-board-list article.four-col-personal {
+          display: grid;
+          grid-template-columns: 0.6fr 2fr 1fr 2fr;
+          gap: 0.25rem;
+          padding: 0.25rem;
+        }
+
+        .score-board-list article.four-col-tournament {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: 0.25rem;
+          padding: 0.25rem;
+        }
+
+        .score-board-list article.three-col {
+          display: grid;
+          grid-template-columns: 1fr 2fr 2fr;
+          gap: 0.25rem;
+          padding: 0.25rem;
+        }
+
+        .score-board-list article div {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .score-board-list article div.rank,
+        .score-board-list article div.score,
+        .score-board-list article div.game {
+          text-align: right;
+        }
+
+        .score-board-list article {
+          margin-bottom: 0.25rem;
+        }
+
+        .score-board-list .rank {
+          min-width: 25px;
+        }
+
+        .score-board-list .score {
+          min-width: 120px;
+        }
+
+        .score-board-list .age {
+          min-width: 25px;
+        }
+
+        button.danger {
+          background-color: #e73434;
+          color: white;
+          border: none;
+        }
+
+        button.danger:hover {
+          background-color: #c53d3d;
+        }
+
+        #score-board-nav button {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+
+        .game {
+          padding: 4px;
+          display: grid;
+          grid-template-columns: 25% 25% 25% 25%;
+          margin-bottom: 0.25rem;
+        }
+
+        .play {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          column-gap: 5px;
+        }
+
+        .claim-button {
+          padding: 4px 9px;
+        }
+
+        @media (max-width: 770px) {
+          .game {
+            grid-template-columns: 1fr;
+          }
+
+          .play {
+            margin: 0.25rem;
+          }
+
+          .claim-header-row {
+            display: none;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .score-board-list article.five-col div.date {
+            display: none;
+          }
+
+          .score-board-list article.five-col {
+            grid-template-columns: 0.25fr 3fr 7fr 1fr;
+          }
+        }
+      </style>
+
+      <style>
+        @property --num {
+          syntax: "<integer>";
+          initial-value: 0;
+          inherits: false;
+        }
+
+        @property --jumpScale {
+          syntax: "<number>";
+          initial-value: 1;
+          inherits: false;
+        }
+
+        .css-score-anim {
+          transition: --num 2s cubic-bezier(0.1, 0.7, 0.1, 1);
+          counter-reset: animatedValue var(--num);
+          font-size: 1.25rem;
+          font-weight: bold;
+          color: var(--pico-color);
+          display: inline-block;
+          position: relative;
+          transform-origin: center;
+          will-change: transform;
+        }
+
+        .css-score-anim::after {
+          content: attr(data-score);
+        }
+
+        .firework-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+          overflow: hidden;
+        }
+
+        .particle {
+          position: absolute;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          opacity: 1;
+          pointer-events: none;
+          box-shadow: 0 0 4px 1px currentColor;
+        }
+
+        .small-jump {
+          animation-name: smallJumpScale;
+          animation-duration: var(--animDuration, 800ms);
+          animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+          animation-fill-mode: forwards;
+          color: #e8b85a !important;
+        }
+
+        @keyframes smallJumpScale {
+          0% {
+            transform: scale(1);
+          }
+          30% {
+            transform: scale(var(--jumpScale, 1.5));
+          }
+          70% {
+            transform: scale(var(--jumpScale, 1.5));
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        .medium-jump {
+          animation-name: mediumJumpScale;
+          animation-duration: var(--animDuration, 1000ms);
+          animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+          animation-fill-mode: forwards;
+          color: #e8b85a !important;
+        }
+
+        @keyframes mediumJumpScale {
+          0% {
+            transform: scale(1) rotate(0deg);
+          }
+          10% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(-3deg);
+          }
+          20% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(3deg);
+          }
+          30% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(-2deg);
+          }
+          40% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(2deg);
+          }
+          50% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(0deg);
+          }
+          70% {
+            transform: scale(var(--jumpScale, 1.8)) rotate(0deg);
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+          }
+        }
+
+        .big-jump {
+          animation-name: bigJumpScale;
+          animation-duration: var(--animDuration, 1500ms);
+          animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+          animation-fill-mode: forwards;
+        }
+
+        @keyframes bigJumpScale {
+          0% {
+            transform: scale(1) rotate(0deg);
+            color: white;
+          }
+          10% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(-5deg);
+            color: #ffcc00;
+          }
+          20% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(5deg);
+            color: #ffdd44;
+          }
+          30% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(-3deg);
+            color: #ffcc00;
+          }
+          40% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(3deg);
+            color: #ffdd44;
+          }
+          50% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(0deg);
+            color: #ffcc00;
+          }
+          70% {
+            transform: scale(var(--jumpScale, 2.5)) rotate(0deg);
+            color: #e8b85a;
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            color: white;
+          }
+        }
+
+        .epic-jump {
+          animation-name: epicJumpScale;
+          animation-duration: var(--animDuration, 2500ms);
+          animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+          animation-fill-mode: forwards;
+          position: relative;
+          z-index: 2;
+        }
+
+        @keyframes epicJumpScale {
+          0% {
+            transform: scale(1) rotate(0deg);
+            color: white;
+            text-shadow: none;
+          }
+          10% {
+            transform: scale(var(--jumpScale, 3)) rotate(-5deg);
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+          }
+          20% {
+            transform: scale(var(--jumpScale, 3)) rotate(5deg);
+            color: #ffdd44;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+          }
+          30% {
+            transform: scale(var(--jumpScale, 3)) rotate(-3deg);
+            color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+          }
+          40% {
+            transform: scale(var(--jumpScale, 3)) rotate(3deg);
+            color: #ffdd44;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+          }
+          50% {
+            transform: scale(var(--jumpScale, 3)) rotate(0deg);
+            color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+          }
+          70% {
+            transform: scale(var(--jumpScale, 3)) rotate(0deg);
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+          }
+          85% {
+            transform: scale(1.3) rotate(0deg);
+            color: #e8b85a;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            color: white;
+            text-shadow: none;
+          }
+        }
+
+        #live-players {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          overflow: hidden;
+          margin-bottom: 2rem;
+          padding: 1rem;
+        }
+
+        .live-player {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          margin-bottom: 0px;
+          align-items: center;
+        }
+
+        @media (max-width: 800px) {
+          .live-player {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 500px) {
+          #live-players {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>
+
+      <div id="game-status" class="hide">
+        <h5 id="live-ball-in-play" class="hide"></h5>
+        <div id="live-players">
+          <article id="live-player-1" class="live-player hide">
+            <div>Player 1</div>
+            <div id="live-player-1-score"></div>
+          </article>
+          <article id="live-player-2" class="live-player hide">
+            <div>Player 2</div>
+            <div id="live-player-2-score"></div>
+          </article>
+          <article id="live-player-3" class="live-player hide">
+            <div>Player 3</div>
+            <div id="live-player-3-score"></div>
+          </article>
+          <article id="live-player-4" class="live-player hide">
+            <div>Player 4</div>
+            <div id="live-player-4-score"></div>
+          </article>
+        </div>
+      </div>
+      <div class="firework-container" id="firework-container"></div>
+
+      <div class="score-board">
+        <div id="score-board-nav" role="group">
+          <button
+            onclick="window.showTab('leader-board')"
+            class="secondary contrast"
+            id="leader-board-btn"
+          >
+            Leader
+          </button>
+          <button
+            onclick="window.showTab('tournament-board')"
+            class="secondary"
+            id="tournament-board-btn"
+          >
+            Tournament
+          </button>
+          <button
+            onclick="window.showTab('personal-board')"
+            class="secondary"
+            id="personal-board-btn"
+          >
+            Personal
+          </button>
+        </div>
+
+        <section id="leader-board" class="tab-content active">
+          <div id="leaderboardArticles" class="score-board-list"></div>
+        </section>
+
+        <section id="tournament-board" class="tab-content">
+          <div id="tournamentArticles" class="score-board-list"></div>
+        </section>
+
+        <section id="personal-board" class="tab-content">
+          <div class="grid">
+            <h2>Now showing:</h2>
+            <div id="playerDropdownContainer"></div>
+          </div>
+
+          <h2 class="hide">Personal Score Board</h2>
+          <div id="personalArticles" class="score-board-list"></div>
+        </section>
+      </div>
+
+      <article class="hide" id="edit-btns">
+        <button id="edit-scores-btn" onclick="window.enterScoreEdit()">
+          Edit Scores
+        </button>
+        <button
+          id="delete-scores-btn"
+          class="danger hide"
+          onclick="window.deleteSelectedScores()"
+        >
+          Delete Selected
+        </button>
+        <button
+          id="edit-scores-cancel-btn"
+          class="hide"
+          onclick="window.exitScoreEdit()"
+        >
+          Cancel
+        </button>
+      </article>
+
+      <div id="claimable-scores" class="hide score-claim"></div>
+      <dialog id="score-claim-modal">
+        <article>
+          <h2>Claim Your Score</h2>
+          <div>
+            <p>
+              Player <b>#<span id="player-number"></span></b>
+            </p>
+            <p>
+              Score: <b><span id="score-to-claim"></span></b>
+            </p>
+            <div class="grid">
+              <label for="initials-input">Initials:</label>
+              <input
+                type="text"
+                id="initials-input"
+                pattern="[A-Za-z]{3}"
+                maxlength="3"
+                required
+                title="Enter exactly 3 letters"
+              />
+            </div>
+            <footer>
+              <button
+                class="secondary"
+                onclick="document.getElementById('score-claim-modal').close()"
+              >
+                Cancel
+              </button>
+              <button id="submit-claim-btn">Submit</button>
+            </footer>
+          </div>
+        </article>
+      </dialog>
+    </main>
+
+    <footer class="container" style="text-align: center; text-wrap: auto">
+      <div class="grid">
+        <section>
+          <img id="logo" width="175px" alt="logo" />
+          <div>
+            <a href="https://warpedpinball.com">Warped Pinball</a>
+          </div>
+          <p><i>OWN YOUR GAME</i></p>
+          <p><code id="version">Vector 0.0.0</code></p>
+        </section>
+      </div>
+    </footer>
+
+    <script src="/js/js-sha256.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/install_warning.js"></script>
+    <script src="/js/configure.js"></script>
+    <script src="/js/scores.js"></script>
+  </body>
+</html>
