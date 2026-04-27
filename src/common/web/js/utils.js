@@ -40,69 +40,73 @@ async function fetchWithRetry(url, opts, maxRetries) {
 window.fetchWithRetry = fetchWithRetry;
 
 /**
- * Verify that the ETags of critical JS files match the server manifest.
- * If any mismatch is detected the page is hard-reloaded (cache-busted).
- * Call this once on page load BEFORE running any page-specific logic.
+ * Verify that cached static files are up-to-date by comparing the server's
+ * current firmware version against the version stored in localStorage.
+ *
+ * Strategy:
+ *   - Static files are cached for 24 hours (Cache-Control: max-age=86400).
+ *   - On every page load this function fetches /api/version with no-store so
+ *     the server always answers (the version response itself is tiny).
+ *   - If the version matches what we last recorded the 24-hour cache is safe
+ *     and we return immediately — no further network traffic.
+ *   - If the version differs (or has never been recorded) we force-refresh every
+ *     same-origin script on the page via fetch(..., {cache:'reload'}) which
+ *     bypasses the cache, downloads the fresh file AND updates the browser cache.
+ *     We then record the new version and reload the page so the freshly cached
+ *     scripts are executed.
  * @returns {Promise<void>}
  */
 async function verifyStaticIntegrity() {
   try {
-    var manifestResponse = await fetchWithRetry(
-      "/api/static/manifest",
-      undefined,
-      1,
-    );
-    if (!manifestResponse.ok) {
+    // Always ask the server for the current version (bypass cache)
+    var versionResponse = await fetch("/api/version", { cache: "no-store" });
+    if (!versionResponse.ok) {
       console.warn(
-        "verifyStaticIntegrity: manifest fetch failed",
-        manifestResponse.status,
+        "verifyStaticIntegrity: version fetch failed",
+        versionResponse.status,
       );
       return;
     }
-    var manifest = await manifestResponse.json();
+    var versionData = await versionResponse.json();
+    var serverVersion = versionData.version;
+    var cachedVersion = localStorage.getItem("vv_version");
 
-    // Collect scripts currently loaded on this page that appear in the manifest
+    if (cachedVersion === serverVersion) {
+      // Version unchanged — 24-hour browser cache is still valid
+      return;
+    }
+
+    // Version changed (or first-ever visit) — need to refresh static assets.
+    // Record the new version before reloading to avoid an infinite loop.
+    localStorage.setItem("vv_version", serverVersion);
+
+    if (cachedVersion === null) {
+      // First visit: files were just downloaded fresh as part of this page load.
+      // No reload needed; cache is already populated with current content.
+      return;
+    }
+
+    // Firmware was updated since last visit.  Force-refresh all same-origin
+    // scripts so the browser cache contains the new files before we reload.
     var scripts = document.querySelectorAll("script[src]");
-    var checksToRun = [];
+    var refreshPromises = [];
     for (var i = 0; i < scripts.length; i++) {
       var src = scripts[i].getAttribute("src");
-      // Normalise to a path without origin
       try {
         var parsed = new URL(src, window.location.origin);
-        src = parsed.pathname;
-      } catch (_) {}
-      if (manifest[src] !== undefined) {
-        checksToRun.push({ path: src, expectedEtag: manifest[src] });
-      }
-    }
-
-    if (checksToRun.length === 0) return;
-
-    for (var j = 0; j < checksToRun.length; j++) {
-      var check = checksToRun[j];
-      try {
-        var headResponse = await fetch(check.path, {
-          method: "HEAD",
-          cache: "no-cache",
-        });
-        var serverEtag =
-          headResponse.headers.get("ETag") || headResponse.headers.get("etag");
-        if (serverEtag && serverEtag !== check.expectedEtag) {
-          console.warn(
-            "verifyStaticIntegrity: ETag mismatch for " +
-              check.path +
-              " — reloading",
-          );
-          window.location.reload();
-          return;
+        if (parsed.origin === window.location.origin) {
+          // cache:'reload' fetches from the network AND updates the cache
+          refreshPromises.push(fetch(parsed.pathname, { cache: "reload" }));
         }
-      } catch (headErr) {
-        console.warn(
-          "verifyStaticIntegrity: HEAD failed for " + check.path,
-          headErr,
-        );
-      }
+      } catch (_) {}
     }
+
+    if (refreshPromises.length > 0) {
+      await Promise.all(refreshPromises);
+    }
+
+    // Reload the page so the freshly cached scripts are executed
+    window.location.reload();
   } catch (err) {
     console.warn("verifyStaticIntegrity: error", err);
   }

@@ -162,7 +162,7 @@ def create_file_handler(file_path):
         headers = {
             "Content-Type": get_content_type(served_path),
             "Connection": "close",
-            "Cache-Control": "no-cache",
+            "Cache-Control": "max-age=86400",
             "ETag": etag,
         }
         if is_gz:
