@@ -58,8 +58,10 @@ window.fetchWithRetry = fetchWithRetry;
  */
 async function verifyStaticIntegrity() {
   try {
-    // Always ask the server for the current version (bypass cache)
-    var versionResponse = await fetch("/api/version", { cache: "no-store" });
+    // Always ask the server for the current version (bypass cache, with retry)
+    var versionResponse = await fetchWithRetry("/api/version", {
+      cache: "no-store",
+    });
     if (!versionResponse.ok) {
       console.warn(
         "verifyStaticIntegrity: version fetch failed",
@@ -95,8 +97,16 @@ async function verifyStaticIntegrity() {
       try {
         var parsed = new URL(src, window.location.origin);
         if (parsed.origin === window.location.origin) {
-          // cache:'reload' fetches from the network AND updates the cache
-          refreshPromises.push(fetch(parsed.pathname, { cache: "reload" }));
+          // cache:'reload' fetches from the network AND updates the cache.
+          // Individual errors are caught so one failure does not abort the rest.
+          refreshPromises.push(
+            fetch(parsed.pathname, { cache: "reload" }).catch(function (err) {
+              console.warn(
+                "verifyStaticIntegrity: failed to refresh " + parsed.pathname,
+                err,
+              );
+            }),
+          );
         }
       } catch (_) {}
     }
