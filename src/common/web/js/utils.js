@@ -93,7 +93,7 @@ async function verifyStaticIntegrity() {
               check.path +
               " — reloading",
           );
-          window.location.reload(true);
+          window.location.reload();
           return;
         }
       } catch (headErr) {
