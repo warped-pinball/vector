@@ -1,11 +1,6 @@
-// Register the service worker for PWA offline/cache support.
-// The SW pre-caches all static assets and uses a version-stamped cache name
-// so the entire cache is replaced automatically on each firmware update.
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function (err) {
-    console.warn("SW registration failed:", err);
-  });
-}
+// This file is part of the Warped Pinball Vector Project.
+// https://creativecommons.org/licenses/by-nc/4.0/
+// This work is licensed under CC BY-NC 4.0
 
 //
 // DOM Helpers
@@ -241,57 +236,13 @@ function toggleTheme() {
 window.toggleTheme = toggleTheme;
 
 //
-// Logo & Favicon
-//
-async function setFaviconFromSVGString(svgString) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-  const ctx = canvas.getContext("2d");
-
-  const svgBlob = new Blob([svgString], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(svgBlob);
-  const img = new Image();
-
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    URL.revokeObjectURL(url);
-
-    const pngDataURL = canvas.toDataURL("image/png");
-    const favicon =
-      document.querySelector("link[rel='icon']") ||
-      document.createElement("link");
-    favicon.rel = "icon";
-    favicon.href = pngDataURL;
-    document.head.appendChild(favicon);
-  };
-
-  img.onerror = (error) => {
-    URL.revokeObjectURL(url);
-    console.error("Failed to load SVG for favicon:", error);
-  };
-
-  img.src = url;
-}
-
-async function loadLogo() {
-  try {
-    const svgText = await fetchGzip("/svg/logo.svg");
-    const blob = new Blob([svgText], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const logo = document.getElementById("logo");
-    if (logo) {
-      logo.src = url;
-    }
-    await setFaviconFromSVGString(svgText);
-  } catch (error) {
-    console.error("Failed to load logo:", error);
-  }
-}
-
-//
 // Version display
 //
+// Capture the base page title (e.g. "Scores") before set_game_name() prepends
+// the game name.  The title is prepended on every call to set_game_name(), so
+// without saving the base first it would duplicate on every 60-second refresh.
+const _baseTitle = document.title;
+
 async function set_version() {
   const response = await window.smartFetch(
     "/api/version",
@@ -330,9 +281,9 @@ async function set_game_name() {
     }
   }
 
-  // Set page title
+  // Set page title using the saved base title so repeated calls don't duplicate
   if (own_name) {
-    document.title = `${own_name} | ${document.title}`;
+    document.title = `${own_name} | ${_baseTitle}`;
   }
 
   if (Object.keys(raw_peers).length <= 1) {
@@ -376,7 +327,6 @@ window.set_game_name = set_game_name;
 async function initSharedLayout() {
   set_version();
   await set_game_name();
-  await loadLogo();
 }
 
 if (document.readyState === "loading") {
