@@ -28,10 +28,5 @@
     },
     "InPlay": {
         "GameActive": 169
-    },
-    "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
     }
 }
