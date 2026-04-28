@@ -286,10 +286,10 @@ def get_ball_in_play():
     """
     try:
         ball_in_play = S.gdata["BallInPlay"]
-        if ball_in_play["Type"] == 1:
-            token = shadowRam[ball_in_play["Address"]]
-            mapping = {ball_in_play["Ball1"]: 1, ball_in_play["Ball2"]: 2, ball_in_play["Ball3"]: 3, ball_in_play["Ball4"]: 4, ball_in_play["Ball5"]: 5}
-            return mapping.get(token, 0)
+
+        if ball_in_play["Type"] in (2, 3):
+            return shadowRam[ball_in_play["Address"]] & 0x0F
+        
     except Exception as e:
         log.log(f"GSTAT: error in get_ball_in_play: {e}")
     return 0
@@ -311,22 +311,13 @@ def write_ball_in_play(ball_number):
         bool: True if successful, False otherwise
     """
     try:
-        if S.gdata.get("BallInPlay", {}).get("Type") == 1:
-            ball_config = S.gdata["BallInPlay"]
-            ball_adr = ball_config["Address"]
-            
-            # Map ball number to token value
-            reverse_mapping = {
-                0: 0,
-                1: ball_config["Ball1"],
-                2: ball_config["Ball2"],
-                3: ball_config["Ball3"],
-                4: ball_config["Ball4"],
-                5: ball_config["Ball5"]
-            }
-            
-            token = reverse_mapping.get(ball_number, 0)
-            shadowRam[ball_adr] = token
+        ball_config = S.gdata.get("BallInPlay", {})
+        bip_type = ball_config.get("Type")
+        if bip_type == 2:
+            shadowRam[ball_config["Address"]] = ball_number
+            return True
+        elif bip_type == 3:
+            shadowRam[ball_config["Address"]] = ball_number | 0xF0
             return True
     except Exception as e:
         log.log(f"DATAMAPPER: error in write_ball_in_play: {e}")
@@ -372,6 +363,8 @@ def get_players_in_game():
     return 0
 
 
+#for system 11 we must track the state and detect changes!
+game_active_state = False
 def get_game_active():
     """
     Check if a game is currently active.
@@ -382,13 +375,21 @@ def get_game_active():
     Returns:
         bool: True if game is active, False otherwise
     """
+    global game_active_state
     try:
         if "InPlay" in S.gdata and "GameActive" in S.gdata["InPlay"]:
-            # Use dedicated GameActive address if configured
-            game_active_adr = S.gdata["InPlay"]["GameActive"]
-            return shadowRam[game_active_adr] == 0
+            game_active_flag = shadowRam[S.gdata["InPlay"]["GameActive"]]
+            ball_in_play = shadowRam[S.gdata["BallInPlay"]["Address"]]
+            if game_active_state == False:
+                if game_active_flag == 0:
+                    game_active_state=True
+            else:
+                if game_active_flag == 1 and ball_in_play != 0xFF:
+                    game_active_state=False
+            return game_active_state
+        
     except Exception as e:
-        log.log(f"DATAMAPPER: error reading GameActive address: {e}")
+        log.log(f"DATAMAPPER: error get_game_active {e}")
     
     # Fallback to ball in play check
     return 0 != get_ball_in_play()
