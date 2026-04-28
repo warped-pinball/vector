@@ -280,9 +280,9 @@ def get_live_scores(use_format=True):
 def get_ball_in_play():
     """
     Get the current ball number in play
-    SYS11 Type 1 ball tracking
     Returns:
-        int: Ball number (1-5) or 0 if no game active
+        Ball number (1-5) or 0 for game over
+        Can return 15 (0x0F) on some titles as game is ending (player entering intials)
     """
     try:
         ball_in_play = S.gdata["BallInPlay"]
@@ -299,10 +299,6 @@ def write_ball_in_play(ball_number):
 
     """
     Write the current ball number in play to shadow RAM.
-    
-    SYS11 Type 1 ball tracking:
-    - Maps ball number (1-5) to configured token value (Ball1-Ball5)
-    - 0 for game over/not started
     
     Args:
         ball_number: int - Ball number to write (0-5)

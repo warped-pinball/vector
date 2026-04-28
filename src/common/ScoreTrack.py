@@ -8,6 +8,7 @@ Score Track
 """
 import displayMessage
 import SharedState as S
+import DataMapper
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
@@ -36,7 +37,6 @@ recent_scores = [
 def reset_scores():
     # reset leader board scores
     from SPI_DataStore import blankStruct
-
     blankStruct("leaders")
 
 
@@ -77,11 +77,6 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-
-    #from origin import push_end_of_game
-    #push_game_count = 1
-    #last_pushed_game = game
-    #push_end_of_game(last_pushed_game, push_game_count)
 
 
 def _read_machine_score(HighScores):
@@ -450,20 +445,7 @@ def CheckForNewScores(nState=[0]):
             place_machine_scores()
         nState[0] = 1
 
-        # if enter initials on game set high score rewards to zero
-        if S.gdata["HSRewards"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
-            shadowRam[S.gdata["HSRewards"]["HS1"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
-
-    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
-        BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
-        Ball1Value = S.gdata["BallInPlay"]["Ball1"]
-        Ball2Value = S.gdata["BallInPlay"]["Ball2"]
-        Ball3Value = S.gdata["BallInPlay"]["Ball3"]
-        Ball4Value = S.gdata["BallInPlay"]["Ball4"]
-        Ball5Value = S.gdata["BallInPlay"]["Ball5"]
+    if S.gdata["BallInPlay"]["Type"] in [2,3]: 
 
         if nState[0] == 1:  # waiting for a game to start
 
@@ -473,24 +455,23 @@ def CheckForNewScores(nState=[0]):
                 return
                 
             nGameIdleCounter += 1  # claim score list expiration timer
-            if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
+            if nGameIdleCounter > (3 * 60 // 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
                 _place_game_in_claim_list(game)
                 nGameIdleCounter = 0
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
-            if shadowRam[BallInPlayAdr] in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
+            if  DataMapper.get_game_active() == True:
                 nState[0] = 2
                 # Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 _remove_machine_scores()
-                #S.gameCounter = (S.gameCounter + 1) % 100
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
-            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
+            if  DataMapper.get_game_active() == False:
                 # game over, get new scores
                 nState[0] = 1
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
