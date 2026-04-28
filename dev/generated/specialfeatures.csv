@@ -34,12 +34,11 @@ Banzai Run,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Stan
 Big Guns,SYS11,L8;LA,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Black Knight 2000,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,no,
-Comet,SYS11,,yes,no,no,
+Comet,SYS11,,no,no,no,
 Cyclone,SYS11,L5,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Diner,SYS11,L4,yes,yes,no,
 Dr Dude,SYS11,L1,yes,yes,no,
 Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Earthshaker,SYS11,LA1,no,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Elvira,SYS11,LA2,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 F-14 Tomcat,SYS11,L1,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Fire!,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
@@ -57,7 +56,7 @@ Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Pr
 Road Kings,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Roller Games,SYS11,,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Scorcerer,SYS11,L2,yes,no,no,
-Space Shuttle,SYS11,L7,yes,no,no,
+Space Shuttle,SYS11,L7,no,no,no,
 Space Station,SYS11,L5,yes,yes,no,
 Swords of Fury,SYS11,L2,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Taxi,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
