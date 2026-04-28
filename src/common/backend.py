@@ -160,11 +160,13 @@ def create_file_handler(file_path):
             return "", 304, {"ETag": etag}
 
         # HTML pages use no-cache so every navigation validates freshness cheaply
-        # via ETag (304 if unchanged).  All other static assets are versioned at
-        # build time (?v=VERSION query param) so they can be cached immutably —
-        # the browser treats the versioned URL as a new resource when the firmware
-        # updates, so no conditional GET is ever needed within the max-age window.
-        if served_path.endswith(".html"):
+        # via ETag (304 if unchanged).  sw.js also uses no-cache — browsers
+        # already bypass the HTTP cache when checking for SW updates, but
+        # serving it with no-cache is correct HTTP semantics.
+        # All other static assets are versioned at build time (?v=VERSION query
+        # param) so they can be cached immutably — the browser treats the
+        # versioned URL as a new resource when the firmware updates.
+        if served_path.endswith(".html") or served_path.endswith("/sw.js"):
             cache_control = "no-cache"
         else:
             cache_control = "max-age=86400, immutable"

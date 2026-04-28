@@ -40,25 +40,21 @@ async function fetchWithRetry(url, opts, maxRetries) {
 window.fetchWithRetry = fetchWithRetry;
 
 /**
- * Verify that cached static files are up-to-date by comparing the server's
- * current firmware version against the version stored in localStorage.
+ * Detect firmware version changes and reload the page when they occur.
  *
- * Strategy:
- *   - Static files are cached for 24 hours (Cache-Control: max-age=86400).
- *   - On every page load this function fetches /api/version with no-store so
- *     the server always answers (the version response itself is tiny).
- *   - If the version matches what we last recorded the 24-hour cache is safe
- *     and we return immediately — no further network traffic.
- *   - If the version differs (or has never been recorded) we force-refresh every
- *     same-origin script on the page via fetch(..., {cache:'reload'}) which
- *     bypasses the cache, downloads the fresh file AND updates the browser cache.
- *     We then record the new version and reload the page so the freshly cached
- *     scripts are executed.
+ * On every page load this function fetches /api/version with no-store so the
+ * server always answers (the response is tiny — just a JSON version string).
+ * If the version matches what was last recorded in localStorage the cache is
+ * considered fresh and we return immediately — no further network traffic.
+ * If the version changed the service worker has already replaced the cache
+ * with new assets during its install/activate cycle; all we need to do is
+ * reload the page so the updated HTML (and its versioned asset URLs) are used.
+ * For browsers without service-worker support the build-time ?v=VERSION query
+ * params in the HTML act as cache-busters for the HTTP cache.
  * @returns {Promise<void>}
  */
 async function verifyStaticIntegrity() {
   try {
-    // Always ask the server for the current version (bypass cache, with retry)
     var versionResponse = await fetchWithRetry("/api/version", {
       cache: "no-store",
     });
@@ -74,58 +70,18 @@ async function verifyStaticIntegrity() {
     var cachedVersion = localStorage.getItem("vv_version");
 
     if (cachedVersion === serverVersion) {
-      // Version unchanged — 24-hour browser cache is still valid
       return;
     }
 
-    // Version changed (or first-ever visit) — need to refresh static assets.
-    // Record the new version before reloading to avoid an infinite loop.
+    // Record the new version before reloading to avoid an infinite reload loop.
     localStorage.setItem("vv_version", serverVersion);
 
     if (cachedVersion === null) {
-      // First visit: files were just downloaded fresh as part of this page load.
-      // No reload needed; cache is already populated with current content.
+      // First ever visit — assets were just downloaded fresh; no reload needed.
       return;
     }
 
-    // Firmware was updated since last visit.  Force-refresh all same-origin
-    // scripts AND stylesheets so the browser cache contains the new files
-    // before we reload.  CSS uses max-age=immutable so must be explicitly
-    // refreshed here — it won't revalidate on its own until max-age expires.
-    var assetSelectors = [
-      ["script[src]", "src"],
-      ["link[rel='stylesheet'][href]", "href"],
-    ];
-    var refreshPromises = [];
-    for (var s = 0; s < assetSelectors.length; s++) {
-      var nodes = document.querySelectorAll(assetSelectors[s][0]);
-      var attr = assetSelectors[s][1];
-      for (var i = 0; i < nodes.length; i++) {
-        var assetSrc = nodes[i].getAttribute(attr);
-        try {
-          var parsed = new URL(assetSrc, window.location.origin);
-          if (parsed.origin === window.location.origin) {
-            // cache:'reload' fetches from the network AND updates the cache,
-            // bypassing even immutable entries.
-            // Individual errors are caught so one failure does not abort the rest.
-            refreshPromises.push(
-              fetch(parsed.pathname, { cache: "reload" }).catch(function (err) {
-                console.warn(
-                  "verifyStaticIntegrity: failed to refresh " + parsed.pathname,
-                  err,
-                );
-              }),
-            );
-          }
-        } catch (_) {}
-      }
-    }
-
-    if (refreshPromises.length > 0) {
-      await Promise.all(refreshPromises);
-    }
-
-    // Reload the page so the freshly cached scripts are executed
+    // Firmware updated — reload so the page uses the new SW cache / versioned URLs.
     window.location.reload();
   } catch (err) {
     console.warn("verifyStaticIntegrity: error", err);

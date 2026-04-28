@@ -211,6 +211,30 @@ class Builder:
                     minified_js = jsmin(content)
                     self.write_file(file_path, minified_js)
 
+        # Inject the firmware version and asset list into the service worker.
+        # This must happen AFTER the walk loop so that all files have been
+        # minified and the complete asset list is known.
+        if version:
+            sw_path = os.path.join(web_dir, "sw.js")
+            if os.path.exists(sw_path):
+                precache_urls = []
+                for root2, _, files2 in os.walk(web_dir):
+                    for f2 in sorted(files2):
+                        if f2 == "sw.js":
+                            continue
+                        fp = os.path.join(root2, f2)
+                        rel = os.path.relpath(fp, web_dir)
+                        precache_urls.append("/" + rel.replace(os.sep, "/"))
+                precache_urls.sort()
+                cache_name = "vector-v" + version
+                sw_content = self.read_file(sw_path)
+                sw_content = sw_content.replace('"PLACEHOLDER_CACHE_NAME"', json.dumps(cache_name))
+                sw_content = sw_content.replace('"PLACEHOLDER_PRECACHE_URLS"', json.dumps(precache_urls, separators=(",", ":")))
+                if '"PLACEHOLDER_CACHE_NAME"' in sw_content or '"PLACEHOLDER_PRECACHE_URLS"' in sw_content:
+                    raise RuntimeError("Failed to inject placeholders into sw.js — check that the source file contains the expected placeholder strings")
+                self.write_file(sw_path, sw_content)
+                print(f"Service worker: cache={cache_name!r}, {len(precache_urls)} assets pre-cached")
+
     @step_report
     def scour_svg_files(self):
         """Run scour on all svg files in build/web/svg directory."""

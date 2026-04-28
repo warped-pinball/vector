@@ -1,3 +1,12 @@
+// Register the service worker for PWA offline/cache support.
+// The SW pre-caches all static assets and uses a version-stamped cache name
+// so the entire cache is replaced automatically on each firmware update.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function (err) {
+    console.warn("SW registration failed:", err);
+  });
+}
+
 //
 // DOM Helpers
 //
