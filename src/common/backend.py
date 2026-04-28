@@ -160,15 +160,14 @@ def create_file_handler(file_path):
             return "", 304, {"ETag": etag}
 
         # HTML pages use no-cache so every navigation validates freshness cheaply
-        # via ETag (304 if unchanged).  CSS/JS are tied to the firmware version
-        # and are immutable within their max-age window; verifyStaticIntegrity()
-        # handles invalidation on firmware update via cache:'reload'.
+        # via ETag (304 if unchanged).  All other static assets are versioned at
+        # build time (?v=VERSION query param) so they can be cached immutably —
+        # the browser treats the versioned URL as a new resource when the firmware
+        # updates, so no conditional GET is ever needed within the max-age window.
         if served_path.endswith(".html"):
             cache_control = "no-cache"
-        elif served_path.endswith(".css") or served_path.endswith(".js") or served_path.endswith(".mjs"):
-            cache_control = "max-age=86400, immutable"
         else:
-            cache_control = "max-age=86400"
+            cache_control = "max-age=86400, immutable"
 
         headers = {
             "Content-Type": get_content_type(served_path),
