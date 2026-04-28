@@ -3,61 +3,43 @@
         "GameName": "Elvira",
         "System": "11B"
     },
-    "Memory": {
-        "Start": 0,
-        "Length": 2048,
-        "NvStart": 0,
-        "NvLength": 2048
-    },
     "BallInPlay": {
-        "Type": 1,
-        "Address": "0x38",
-        "Ball1": "0xF1",
-        "Ball2": "0xF2",
-        "Ball3": "0xF3",
-        "Ball4": "0xF4",
-        "Ball5": "0xF5"
+        "Type": 3,
+        "Address": 56
     },
     "DisplayMessage": {
         "Type": 2,
-        "Address": "0x7B4",
+        "Address": 1972,
         "Length": 16,
         "Number": 3,
-        "EnableByteAddress": "0x7B0"
+        "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7ED"
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2029
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": "0x6FB",
-        "InitialAdr": "0x70B",
+        "ScoreAdr": 1787,
+        "InitialAdr": 1803,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
-        "ScoreAdr": "0x200",
-        "PlayerUp": 179,
+        "ScoreAdr": 512,
         "Players": 178,
-        "GameActive": 175
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0
+        "PlayerUp": 179,
+        "GameActive": 175,
+        "EnterInitials": 175
     },
     "Switches": {
         "Type": 10,
         "Address": 1536,
         "Length": 64,
         "Sensitivity": [
-                    250, 60, 60, 60, 60, 60, 60, 60,
+                    240, 60, 60, 60, 60, 60, 60, 60,
                     60, -1, 60, 60, 60, -1, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, -1,
                     60, 60, 60, 60, 60, 60, 60, 60,
@@ -72,42 +54,39 @@
         "Address": 69
     },
     "Formats": {
-      "Standard": {
-          "Id": 0
-      },
-      "Limbo": {
-          "Id": 1
-      },
-      "LowBall": {
-          "Id": 2
-      },
-      "Golf": {
-          "Id": 3,
-          "Options": {
-              "Target": {
-                  "Name": "Target Switch Number",
-                  "Type": "Fixed",
-                  "Value": 30,
-                  "Text": "Monster Slide"
-              }
-          }
-      },
-      "Practice": {
-          "Id": 4
-      },
-      "HalfLife": {
-          "Id": 5,
-          "Options": {
-              "ScoreDecay": {
-                  "Value": 8
-              }
-          }
-      },
-      "LongestBall": {
-          "Id": 6
-      },
-      "OneBall": {
-          "Id": 7
-      }
-  }
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Golf": {
+            "Id": 3,
+            "Options": {
+                "Target": {
+                    "Name": "Target Switch Number",
+                    "Type": "Fixed",
+                    "Value": 30,
+                    "Text": "Monster Slide"
+                }
+            }
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
+    }
 }

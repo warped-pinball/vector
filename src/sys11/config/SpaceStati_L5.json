@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Jokerz!",
+        "GameName": "Space Station",
         "System": "11B",
         "FileVer": 1
     },
@@ -9,22 +9,22 @@
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 2,
+        "Type": 1,
         "Address": 1972,
-        "Length": 16,
-        "Number": 3,
+        "Length": 7,
+        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2019,
-        "ChecksumResultAdr": 2028
+        "ChecksumEndAdr": 2013,
+        "ChecksumResultAdr": 2021
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": 1796,
-        "InitialAdr": 1812,
+        "ScoreAdr": 1835,
+        "InitialAdr": 1851,
         "BytesInScore": 4
     },
     "InPlay": {
@@ -36,16 +36,16 @@
     },
     "Switches": {
         "Type": 10,
-        "Address": 1536,
+        "Address": 1584,
         "Length": 64,
         "Sensitivity": [
-                    0, 60, 60, 60, 60, 60, 0, 60,
+                    240, -1, 60, 60, 60, 60, -1, 60,
+                    -1, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, -1, 60,
+                    60, 60, 60, 60, -1, -1, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    0, 0, 0, 60, 60, 60, 0, 0,
-                    60, 60, 60, 60, 60, 60, 60, 60,
-                    60, 60, 0, 60, 60, 0, 0, 60,
+                    -1, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60
                 ]
     }

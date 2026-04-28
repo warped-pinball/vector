@@ -1,65 +1,76 @@
 {
     "GameInfo": {
-        "GameName": "Fire",
+        "GameName": "Fire!",
         "System": "11"
     },
-
-    "Memory" : {
-        "Start": 0,
-        "Length": 2048,
-        "NvStart": 0,
-        "NvLength": 2048
-    },
-
     "BallInPlay": {
-        "Type": 1,
-        "Address": 56,
-        "Ball1": "0x01",
-        "Ball2": "0x02",
-        "Ball3": "0x03",
-        "Ball4": "0x04",
-        "Ball5": "0x05"
+        "Type": 2,
+        "Address": 56
     },
-
     "DisplayMessage": {
         "Type": 1,
-        "Address": "0x7B4",
+        "Address": 1972,
         "Length": 7,
         "Number": 6,
-        "EnableByteAddress": "0x7B0"
+        "EnableByteAddress": 1968
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 1,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7DD",
-        "ChecksumResultAdr": "0x7E5"
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2013,
+        "ChecksumResultAdr": 2021
     },
-
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": "0x727",
-        "InitialAdr": "0x737",
+        "ScoreAdr": 1831,
+        "InitialAdr": 1847,
         "BytesInScore": 4
     },
-
     "InPlay": {
         "Type": 1,
-        "ScoreAdr": "0x200"
+        "ScoreAdr": 512,
+        "Players": 168,
+        "PlayerUp": 169,
+        "GameActive": 165
     },
-    
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0
-    },
-
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Type": 10,
+        "Address": 1600,
+        "Length": 64,
+        "Sensitivity": [
+                    240, -1, 60, 60, 60, 60, 60, 60,
+                    -1, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, -1, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, -1, 60, 60, 60, 60,
+                    60, 60, 60, -1, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, -1
+                ]
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
     }
 }

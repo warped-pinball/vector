@@ -10,7 +10,7 @@ Hook,DATA_EAST,501,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Jurassic Park,DATA_EAST,513,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Laser War,DATA_EAST,a83,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Last Action Hero,DATA_EAST,113,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Leathal Weapon III,DATA_EAST,208,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Lethal Weapon III,DATA_EAST,208,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Mary Shelly's Frankenstein,DATA_EAST,103,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Maverick,DATA_EAST,402,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Monday Night Football,DATA_EAST,a27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -25,41 +25,43 @@ Tales from the Crypt,DATA_EAST,500,yes,no,yes,Limbo;LongestBall;LowBall;Practice
 Teenage Mutant Ninja Turtles,DATA_EAST,104,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 The Simpsons,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Time Machine,DATA_EAST,a24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Tomy,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Tommy Pinball Wizard,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Torpedo Alley,DATA_EAST,21,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 EM machine,EM,,yes,no,no,
-Bad Cats,SYS11,LA5,no,no,no,
-Banzai Run,SYS11,L3,yes,yes,no,
-Big Guns,SYS11,L8;LA,no,no,no,
-Black Knight 2000,SYS11,L4,yes,no,no,
-Bugs Bunny Birthday,SYS11,L1,no,no,no,
-Comet,SYS11,,yes,no,no,
+Bad Cats,SYS11,LA5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Banzai Run,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Big Guns,SYS11,L8;LA,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Black Knight 2000,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,no,
+Comet,SYS11,,no,no,no,
 Cyclone,SYS11,L5,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Diner,SYS11,L4,yes,yes,no,
 Dr Dude,SYS11,L1,yes,yes,no,
-Earthshaker,SYS11,LA1,no,no,no,
+Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Elvira,SYS11,LA2,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-F14 Tomcat,SYS11,L1,yes,no,no,
-Fire,SYS11,L3,yes,no,no,
-Game Show,SYS11,LU4,yes,no,no,
+F-14 Tomcat,SYS11,L1,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Fire!,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System 11,SYS11,,no,no,no,
 Grand Lizard,SYS11,L4,no,no,no,
-High Speed,SYS11,L3;L4,yes,no,no,
+High Speed,SYS11,L3;L4,yes,yes,no,
 Jokerz!,SYS11,L6,yes,yes,no,
-Millionaire,SYS11,L3,no,no,no,
-Mousin' Around,SYS11,L4,no,no,no,
-Pinbot,SYS11,V2,yes,no,no,
+Millionaire,SYS11,L3,yes,yes,no,
+Mousin' Around,SYS11,L4,yes,yes,no,
+Pinbot,SYS11,V2,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Police Force,SYS11,,yes,yes,no,
-Radical!,SYS11,L1,no,no,no,
-Riverboat Gambler,SYS11,L1;LA3,yes,no,no,
+Pool Sharks,SYS11,LA7,no,no,no,
+Radical!,SYS11,L1,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Road Kings,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Roller Games,SYS11,,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Scorcerer,SYS11,L2,yes,no,no,
-Space Shuttle,SYS11,L7,yes,no,no,
-Space Station,SYS11,L5,yes,no,no,
-Swords of Fury,SYS11,L2,yes,no,no,
-Taxi,SYS11,L4,yes,no,no,
-Transporter the Rescue,SYS11,L3,no,no,no,
-Whirl Wind,SYS11,L3,yes,no,no,
+Space Shuttle,SYS11,L7,no,no,no,
+Space Station,SYS11,L5,yes,yes,no,
+Swords of Fury,SYS11,L2,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Taxi,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Transproter the Rescue,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Whirl Wind,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Addams Family,WPC,H2;H4;L2;L5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Attack from Mars,WPC,10;11,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Black Rose,WPC,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard

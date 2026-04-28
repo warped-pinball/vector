@@ -1,7 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Banzai Run",
-        "System": "11B"
+        "GameName": "Road Kings",
+        "System": "11"
     },
     "BallInPlay": {
         "Type": 3,
@@ -18,24 +18,24 @@
         "Type": 1,
         "ChecksumStartAdr": 1920,
         "ChecksumEndAdr": 2013,
-        "ChecksumResultAdr": 2021
+        "ChecksumResultAdr": 2022
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": 1795,
-        "InitialAdr": 1811,
+        "ScoreAdr": 1831,
+        "InitialAdr": 1847,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
         "ScoreAdr": 512,
-        "Players": 178,
-        "PlayerUp": 179,
-        "GameActive": 175
+        "Players": 172,
+        "PlayerUp": 173,
+        "GameActive": 169
     },
     "Switches": {
         "Type": 10,
-        "Address": 1568,
+        "Address": 1632,
         "Length": 64,
         "Sensitivity": [
                     240, 60, 60, 60, 60, 60, -1, -1,
@@ -44,8 +44,8 @@
                     60, 60, 60, 60, 60, 60, -1, -1,
                     60, 60, 60, 60, 60, 60, -1, -1,
                     60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1
+                    -1, 60, 60, 60, 60, 60, -1, -1,
+                    -1, 60, 60, 60, 60, 60, -1, -1
                 ]
     },
     "Formats": {

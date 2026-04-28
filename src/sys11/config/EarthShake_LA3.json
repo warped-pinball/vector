@@ -1,29 +1,30 @@
 {
     "GameInfo": {
-        "GameName": "Banzai Run",
-        "System": "11B"
+        "GameName": "Earth Shaker",
+        "System": "11B",
+        "FileVer": 1
     },
     "BallInPlay": {
         "Type": 3,
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 1,
+        "Type": 2,
         "Address": 1972,
-        "Length": 7,
-        "Number": 6,
+        "Length": 16,
+        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2013,
-        "ChecksumResultAdr": 2021
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2028
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": 1795,
-        "InitialAdr": 1811,
+        "ScoreAdr": 1787,
+        "InitialAdr": 1803,
         "BytesInScore": 4
     },
     "InPlay": {
@@ -35,17 +36,17 @@
     },
     "Switches": {
         "Type": 10,
-        "Address": 1568,
+        "Address": 1536,
         "Length": 64,
         "Sensitivity": [
-                    240, 60, 60, 60, 60, 60, -1, -1,
+                    240, -1, 60, -1, 60, 60, -1, 60,
+                    60, 60, 60, -1, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1,
-                    60, 60, 60, 60, 60, 60, -1, -1
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    -1, 60, 60, 60, 60, -1, 60, -1,
+                    60, 60, 60, 60, 60, -1, 60, -1
                 ]
     },
     "Formats": {

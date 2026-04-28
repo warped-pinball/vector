@@ -1,82 +1,51 @@
 {
     "GameInfo": {
         "GameName": "Mousin' Around",
-        "System": "11B",
-        "FileVer": 1
+        "System": "11B"
     },
-
-    "Definition": {
-        "version": 1
-    },
-
-    "Memory" : {
-        "Start": 0,
-        "Length": 2048,
-        "NvStart": 0,
-        "NvLength": 2048
-    },
-
     "BallInPlay": {
-        "Type": 1,
-        "Address": "0x38",
-        "Ball1": "0x01",
-        "Ball2": "0x02",
-        "Ball3": "0x03",
-        "Ball4": "0x04",
-        "Ball5": "0x05"
+        "Type": 2,
+        "Address": 56
     },
-
     "DisplayMessage": {
         "Type": 2,
-        "Address": "0x7B4",
+        "Address": 1972,
         "Length": 16,
         "Number": 3,
-        "EnableByteAddress": "0x7B0"
+        "EnableByteAddress": 1968
     },
-
-    "Adjustments" :{
+    "Adjustments": {
         "Type": 1,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7E3",
-        "ChecksumResultAdr": "0x7E6"
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2022
     },
-
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": "0x70F",
-        "InitialAdr": "0x71F",
+        "ScoreAdr": 1807,
+        "InitialAdr": 1823,
         "BytesInScore": 4
     },
-
-    "InPlayScores": {
+    "InPlay": {
         "Type": 1,
-        "ScoreAdr": "0x200",
-        "ZeroNibble": 0,
-        "BytesInScore": 4
+        "ScoreAdr": 512,
+        "Players": 168,
+        "PlayerUp": 169,
+        "GameActive": 165
     },
-
-    "InPlayInfo": {
-        "Type": 1,
-        "PlayersInGame": "0xA8",
-        "PlayerUP": "0xA9"
-    },
-
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0
-    },
-
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
-    },
-
-    "CoinDrop": {
-        "Type": 0
+        "Type": 10,
+        "Address": 1536,
+        "Length": 64,
+        "Sensitivity": [
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, 60, 60
+                ]
     }
 }

@@ -3,58 +3,39 @@
         "GameName": "Cyclone",
         "System": "11B"
     },
-    "Memory": {
-        "Start": 0,
-        "Length": 2048,
-        "NvStart": 0,
-        "NvLength": 2048
-    },
     "BallInPlay": {
-        "Type": 1,
-        "Address": 56,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
+        "Type": 2,
+        "Address": 56
     },
     "DisplayMessage": {
         "Type": 1,
-        "Address": "0x7B4",
+        "Address": 1972,
         "Length": 7,
         "Number": 6,
-        "EnableByteAddress": "0x7B0"
+        "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
-        "ChecksumStartAdr": "0x780",
-        "ChecksumEndAdr": "0x7DD",
-        "ChecksumResultAdr": "0x7E5"
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2013,
+        "ChecksumResultAdr": 2021
     },
     "HighScores": {
         "Type": 1,
-        "ScoreAdr": "0x70F",
-        "InitialAdr": "0x71F",
+        "ScoreAdr": 1807,
+        "InitialAdr": 1823,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
-        "ScoreAdr": "0x200",
-        "PlayerUp": 169,
+        "ScoreAdr": 512,
         "Players": 168,
+        "PlayerUp": 169,
         "GameActive": 165
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 1937,
-        "HS2": 1938,
-        "HS3": 1939,
-        "HS4": 1940,
-        "DisableByte": 0
     },
     "Switches": {
         "Type": 10,
-        "Address": 1551,
+        "Address": 1552,
         "Length": 64,
         "Sensitivity": [
                     120, -1, 120, 250, 250, 250, 120, 120,
@@ -105,9 +86,6 @@
         },
         "LongestBall": {
             "Id": 6
-        },
-        "OneBall": {
-            "Id": 7
         }
     }
 }

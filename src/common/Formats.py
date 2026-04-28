@@ -605,6 +605,7 @@ def formats_run():
     """
     global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game
        
+    #push multiple copies of game end for reliability   
     if push_game_count>0:
         from origin import push_end_of_game
         push_game_count+=1
@@ -614,8 +615,7 @@ def formats_run():
 
     # Waiting to change format?
     active_id = S.active_format.get("Id", 0)
-    next_id = next_format.get("Id", 0)
-    
+    next_id = next_format.get("Id", 0) 
     if active_id != next_id:        
         if DataMapper.get_game_active() is False and game_state==0:                   
             S.active_format = next_format.copy()
@@ -624,8 +624,6 @@ def formats_run():
             
     if active_id == MODE_ID_STANDARD:
         return
-
-    #print("FORMATS: state=",game_state)
  
     #waiting for game to start
     if game_state == 0:
