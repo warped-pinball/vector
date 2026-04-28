@@ -3,6 +3,7 @@
 import argparse
 import gzip
 import json
+import re
 import zlib
 import math
 import os
@@ -127,6 +128,28 @@ class Builder:
             with open(os.path.join(self.build_dir, "main.py"), "w") as f:
                 f.write("import mmain\n")
 
+    def _get_vector_version(self):
+        """Read VectorVersion from SharedState.py for the target hardware.
+
+        Looks in the target-specific source first (e.g. src/em/SharedState.py
+        overrides src/common/SharedState.py for the 'em' target), then falls
+        back to the common source file.  The source files are used rather than
+        the build-dir copies because compile_py_files() deletes the .py files
+        before minify_web_files() runs.
+        """
+        candidates = [
+            os.path.join(self.source_dir, self.target_hardware, "SharedState.py"),
+            os.path.join(self.source_dir, "common", "SharedState.py"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                with open(path, "r") as f:
+                    for line in f:
+                        m = re.match(r'VectorVersion\s*=\s*["\']([^"\']+)["\']', line)
+                        if m:
+                            return m.group(1)
+        return None
+
     @step_report
     def minify_web_files(self):
         """Minify HTML, CSS, and JS files in build/web."""
@@ -135,6 +158,16 @@ class Builder:
         if not os.path.isdir(web_dir):
             print("No 'web' directory found in build_dir; skipping.")
             return
+
+        # Read firmware version once so we can embed it in static asset URLs.
+        # This turns /js/utils.js into /js/utils.js?v=1.2.3 which the browser
+        # treats as a new resource whenever the version changes, automatically
+        # busting any immutable cached copies without JS-based invalidation.
+        version = self._get_vector_version()
+        if version:
+            print(f"Injecting ?v={version} into HTML static asset URLs...")
+        else:
+            print("Warning: could not determine VectorVersion; skipping URL versioning.")
 
         for root, dirs, files in os.walk(web_dir):
             for file in files:
@@ -150,6 +183,20 @@ class Builder:
                     for style_tag in soup.find_all("style"):
                         if style_tag.string:
                             style_tag.string.replace_with(compress(style_tag.string))
+                    # Inject version query param into local static asset URLs so
+                    # Cache-Control: immutable entries are automatically replaced
+                    # when the firmware version changes.  Only same-origin paths
+                    # (starting with /) are touched; external URLs and .html
+                    # navigation links are left unchanged.
+                    if version:
+                        for tag in soup.find_all("script", src=True):
+                            src = tag.get("src", "")
+                            if src.startswith("/") and "?" not in src:
+                                tag["src"] = src + "?v=" + version
+                        for tag in soup.find_all("link", href=True):
+                            href = tag.get("href", "")
+                            if href.startswith("/") and not href.endswith(".html") and "?" not in href:
+                                tag["href"] = href + "?v=" + version
                     # Convert soup back to HTML and minify
                     final_html = minify_html(str(soup))
                     self.write_file(file_path, final_html)

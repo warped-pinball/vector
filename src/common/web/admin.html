@@ -1,0 +1,998 @@
+<!doctype html>
+<html data-theme="dark" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin</title>
+    <link rel="icon" href="/svg/logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/pico.min.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <style>
+      svg {
+        width: 20%;
+        height: auto;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      nav button {
+        padding: 0;
+        width: 45px !important;
+        height: 45px !important;
+      }
+
+      nav button svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      header nav ul {
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 1024px) {
+        header .grid {
+          grid-template-columns: 1fr;
+          row-gap: 0.5rem;
+          justify-items: stretch;
+        }
+
+        header nav {
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        header nav ul {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          column-gap: 0.75rem;
+          row-gap: 0.25rem;
+        }
+      }
+
+      @media (max-width: 600px) {
+        nav button {
+          width: 38px !important;
+          height: 38px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.5rem;
+        }
+
+        header nav a {
+          padding-inline: 0.35rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      @media (max-width: 500px) {
+        header nav ul {
+          column-gap: 0;
+        }
+      }
+
+      @media (max-width: 440px) {
+        nav button {
+          width: 34px !important;
+          height: 34px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.25rem;
+        }
+
+        header nav a {
+          padding-inline: 0.25rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      details.dropdown summary::after {
+        width: 0;
+        margin: 0;
+      }
+
+      /* Admin-specific styles */
+      input[type="date"] {
+        width: auto;
+      }
+
+      button.danger {
+        background-color: #e73434;
+        color: white;
+        border: none;
+      }
+
+      button.danger:hover {
+        background-color: #c53d3d;
+      }
+
+      .golden-button {
+        background-color: #e8b85a;
+        border-color: #e8b85a;
+        box-shadow: 0 0 20px rgba(232, 185, 90, 0.51);
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+
+      @keyframes pulse {
+        from {
+          box-shadow:
+            0 0 20px rgba(232, 185, 90, 0.51),
+            0 0 40px rgba(232, 185, 90, 0.3);
+        }
+        to {
+          box-shadow:
+            0 0 40px rgba(232, 185, 90, 0.8),
+            0 0 80px rgba(232, 185, 90, 0.4);
+        }
+      }
+
+      .profile-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .profile-row input {
+        margin: 0;
+      }
+
+      .profile-row input[type="radio"] {
+        flex-shrink: 0;
+      }
+
+      .profile-row input[type="text"] {
+        flex-grow: 1;
+        max-width: 200px;
+      }
+
+      .profile-row button {
+        flex-shrink: 0;
+      }
+
+      #update-progress-log::-webkit-scrollbar {
+        display: none;
+      }
+
+      input[type="radio"]:disabled {
+        opacity: 0;
+      }
+
+      .switch-diagnostics {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .switch-grid-container {
+        display: inline-block;
+        padding: 0.5rem;
+        background: transparent;
+      }
+
+      .switch-grid {
+        display: grid;
+        gap: 0.35rem;
+        align-items: center;
+        justify-items: center;
+      }
+
+      .switch-header {
+        font-weight: 600;
+      }
+
+      .switch-cell,
+      .switch-header {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border-radius: 8px;
+        border: none;
+      }
+
+      .switch-cell {
+        cursor: pointer;
+      }
+
+      .switch-cell.green {
+        background-color: #16a34a;
+      }
+
+      .switch-cell.yellow {
+        background-color: #eab308;
+      }
+
+      .switch-cell.red {
+        background-color: #dc2626;
+      }
+
+      .switch-cell.missing {
+        background-color: #9ca3af;
+      }
+
+      .switch-cell.selected {
+        box-shadow:
+          0 0 0 2px #60a5fa,
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .switch-info-panel {
+        min-width: 220px;
+        padding: 0.75rem;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        background: transparent;
+      }
+
+      .switch-info-panel h4 {
+        margin: 0 0 0.5rem 0;
+      }
+
+      .switch-info-line {
+        margin: 0.25rem 0;
+        font-weight: 600;
+      }
+
+      .switch-tooltip {
+        position: fixed;
+        z-index: 1000;
+        background: rgba(31, 41, 55, 0.9);
+        padding: 0.35rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        line-height: 1.25rem;
+        pointer-events: none;
+        box-shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        display: none;
+      }
+    </style>
+  </head>
+  <body class="container-fluid">
+    <header class="container">
+      <div class="grid">
+        <div style="align-self: center; justify-self: center">
+          <strong id="game_name"></strong>
+        </div>
+        <nav style="justify-self: end">
+          <ul>
+            <li><a href="/scores.html">Scores</a></li>
+            <li><a href="/players.html">Players</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/admin.html" aria-current="page">Admin</a></li>
+            <li>
+              <button
+                id="dark-mode-button"
+                onclick="window.toggleTheme()"
+                data-tooltip="Dark Mode Toggle"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>brightness-6</title>
+                  <path
+                    d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button
+                class="hide"
+                id="logout-button"
+                onclick="window.logout()"
+                data-tooltip="Logout"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>logout</title>
+                  <path
+                    d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" style="text-align: center; text-wrap: auto">
+      <!-- MODALS -->
+      <dialog id="configure_modal">
+        <article>
+          <header>
+            <h2>Configure Your Vector</h2>
+          </header>
+          <h3>WiFi Settings</h3>
+          <details id="ssid_select_placeholder" class="dropdown">
+            <summary>Scanning for WiFi networks</summary>
+          </details>
+          <input
+            type="password"
+            name="wifi_password"
+            placeholder="WiFi password"
+            aria-label="WiFi Password"
+          />
+          <h3>Game Settings</h3>
+          <details id="game_config_select_placeholder" class="dropdown">
+            <summary>Building list of games</summary>
+          </details>
+          <input
+            type="password"
+            name="vector_password"
+            placeholder="Admin Password"
+            aria-label="Pinball Admin Password"
+          />
+          <p>
+            Please <mark>double check your game and ROM version</mark>. If you
+            are unsure, do not guess. If you have a ROM that is not listed we
+            may be able to add it for you.
+          </p>
+          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+          <p>
+            Once you have saved, please power cycle your pinball machine and
+            connect to your selected WiFi network.
+          </p>
+          <footer style="position: relative">
+            <div style="text-align: center" id="config-reply"></div>
+            <div>
+              <small
+                style="
+                  position: absolute;
+                  display: block;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  bottom: auto;
+                  text-align: left;
+                  max-width: 65%;
+                "
+                >Previous IP: <a id="previous-ip" href="#"></a><br />
+              </small>
+              <button
+                id="config-save-btn"
+                onclick="window.save_configuration()"
+              >
+                💾 Save
+              </button>
+            </div>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="install_warning_modal">
+        <article>
+          <h2>Warning: Issues Detected</h2>
+          <p>
+            Warped Pinball features may not work correctly until the issue(s)
+            below are resolved. For guidance on how to resolve these issues,
+            please read our guide:
+          </p>
+          <a href="https://warpedpinball.com/warped-pinball-user-support/"
+            >https://warpedpinball.com/warped-pinball-user-support/</a
+          >
+          <p>
+            We take every preventive measure we can, but some types of issues
+            when left unresolved can cause your machine to malfunction.
+          </p>
+          <code id="fault_list"></code>
+          <footer>
+            <button
+              onclick="document.getElementById('install_warning_modal').removeAttribute('open')"
+            >
+              OK I want to continue anyway
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="password_modal">
+        <article>
+          <h3>Enter Admin Password</h3>
+          <form id="password_form" onsubmit="return false;">
+            <input
+              type="password"
+              id="admin_password_input"
+              placeholder="Admin Password"
+              aria-label="Admin Password"
+              autocomplete="current-password"
+            />
+            <fieldset>
+              <label>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  id="stay_logged_in"
+                  aria-label="Stay Logged In"
+                />
+                Stay Logged In
+              </label>
+            </fieldset>
+            <footer>
+              <button class="secondary" id="password_cancel_button">
+                Cancel
+              </button>
+              <button id="password_save_button">Login</button>
+            </footer>
+          </form>
+        </article>
+      </dialog>
+      <dialog id="confirm-modal">
+        <article>
+          <header>
+            <h2>Confirm Action</h2>
+          </header>
+          <p id="modal-message"></p>
+          <footer>
+            <button id="modal-cancel-button" class="secondary">Cancel</button>
+            <button id="modal-confirm-button">Confirm</button>
+          </footer>
+        </article>
+      </dialog>
+
+      <!-- PAGE CONTENT -->
+      <div style="text-align: left">
+        <h2>Settings</h2>
+        <hr />
+        <section>
+          <h3>Tournament Mode</h3>
+          <fieldset id="score-boards">
+            <label>
+              <input
+                id="tournament-mode-toggle"
+                type="checkbox"
+                role="switch"
+                name="tournament-mode"
+                checked
+                disabled
+              />
+              <b>Tournament Mode:</b> save scores to tournament board instead of
+              standard leaderboard
+            </label>
+          </fieldset>
+        </section>
+        <section>
+          <h3>Score Claim Methods</h3>
+          <fieldset id="score-claim-methods">
+            <label>
+              <input
+                id="on-machine-toggle"
+                type="checkbox"
+                role="switch"
+                name="on-machine"
+                disabled
+              />
+              <b>On-Machine:</b> triggers high score every game to collect
+              players initials (Only for machines where players can enter
+              initials)
+            </label>
+            <label>
+              <input
+                id="web-ui-toggle"
+                type="checkbox"
+                role="switch"
+                name="web"
+                disabled
+              />
+              <b>Web Interface:</b> for a short time after playing; players may
+              claim scores via web interface
+            </label>
+          </fieldset>
+        </section>
+        <section id="midnight-madness-section" class="hide">
+          <h3>Midnight Madness</h3>
+          <fieldset id="midnight-madness-controls">
+            <label>
+              <input
+                id="midnight-madness-enable-toggle"
+                type="checkbox"
+                role="switch"
+                name="midnight-madness-enable"
+                disabled
+              />
+              <b>Enable Midnight Madness:</b> allow midnight madness features
+            </label>
+            <label>
+              <input
+                id="midnight-madness-always-toggle"
+                type="checkbox"
+                role="switch"
+                name="midnight-madness-always"
+                disabled
+              />
+              <b>Always Trigger:</b> start midnight madness every game
+            </label>
+            <button id="midnight-madness-now-button" disabled>
+              Trigger Midnight Madness Now
+            </button>
+          </fieldset>
+        </section>
+        <section>
+          <h3>Adjustments Profiles</h3>
+          <div id="adjustments-not-supported" class="hide">
+            Adjustment profiles are not yet supported for this game or rom. If
+            you would like, you can
+            <a href="https://github.com/warped-pinball/vector/issues/new/choose"
+              >open an issue on our github</a
+            >
+            and we will prioritize adding it.
+          </div>
+          <div class="grid">
+            <div>
+              <fieldset>
+                <div class="profile-row">
+                  <input
+                    id="restore-profile-0"
+                    name="profile"
+                    type="radio"
+                    disabled
+                  />
+                  <input
+                    id="name-profile-0"
+                    type="text"
+                    placeholder="Name profile 1"
+                    disabled
+                  />
+                  <button id="capture-profile-0" disabled>
+                    Capture Profile
+                  </button>
+                </div>
+                <div class="profile-row">
+                  <input
+                    id="restore-profile-1"
+                    name="profile"
+                    type="radio"
+                    disabled
+                  />
+                  <input
+                    id="name-profile-1"
+                    type="text"
+                    placeholder="Name profile 2"
+                    disabled
+                  />
+                  <button id="capture-profile-1" disabled>
+                    Capture Profile
+                  </button>
+                </div>
+                <div class="profile-row">
+                  <input
+                    id="restore-profile-2"
+                    name="profile"
+                    type="radio"
+                    disabled
+                  />
+                  <input
+                    id="name-profile-2"
+                    type="text"
+                    placeholder="Name profile 3"
+                    disabled
+                  />
+                  <button id="capture-profile-2" disabled>
+                    Capture Profile
+                  </button>
+                </div>
+                <div class="profile-row">
+                  <input
+                    id="restore-profile-3"
+                    name="profile"
+                    type="radio"
+                    disabled
+                  />
+                  <input
+                    id="name-profile-3"
+                    type="text"
+                    placeholder="Name profile 4"
+                    disabled
+                  />
+                  <button id="capture-profile-3" disabled>
+                    Capture Profile
+                  </button>
+                </div>
+              </fieldset>
+            </div>
+            <div>
+              <p>
+                Save your games adjustments in a profile to easily switch
+                between setups. For example "Free to play" and "Tournament"
+              </p>
+              <p>
+                Configure profiles by setting adjustments on the machine
+                normally. Then click the "Capture Profile" button.
+              </p>
+              <p>
+                To restore your game to the adjustments saved in a profile;
+                select the corresponding radio button and confirm your
+                selection. Your game will reboot with the adjustments applied
+              </p>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Miscellaneous</h3>
+          <fieldset>
+            <label>
+              <input
+                id="show-ip-toggle"
+                type="checkbox"
+                role="switch"
+                name="show-ip"
+                disabled
+              />
+              <b>Show IP on machine</b> When enabled, vector will display its IP
+              address on the game display occasionally.
+              <i
+                >If your IP address changes, you can view it in AP mode by
+                rebooting while holding the small button <u>not</u> labeled
+                BOOTSEL</i
+              >
+            </label>
+          </fieldset>
+        </section>
+
+        <h2>Actions</h2>
+        <hr />
+        <section>
+          <h3>Updates</h3>
+          <div class="grid">
+            <div>
+              <button id="update-button" disabled>Checking for Updates</button>
+            </div>
+            <div>
+              <p style="margin: 0">Apply the latest update to your Vector</p>
+              <a
+                id="release-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              ></a>
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="grid">
+            <div>
+              <details name="release-notes">
+                <summary
+                  disabled
+                  id="release-notes-btn"
+                  class="secondary"
+                  role="button"
+                  style="width: max-content"
+                >
+                  View Latest Changelog
+                </summary>
+                <article id="release-notes"></article>
+              </details>
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="grid">
+            <div>
+              <button
+                id="update-developer-button"
+                onclick="window.customUpdate()"
+              >
+                Upload Developer Build
+              </button>
+            </div>
+            <div>
+              <p>
+                This feature is intended for developers, and advanced users. Use
+                at your own risk.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Export / Import Data</h3>
+          <div class="grid">
+            <div>
+              <button onclick="window.downloadScores()">Export Scores</button>
+            </div>
+            <div>
+              <p>
+                Export all scores from the Leaderboard and Tournament Board as
+                an update file
+              </p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <input class="hide" type="file" id="input_scores" />
+              <button
+                id="input_scores_btn"
+                onclick="window.clickedImportScores()"
+              >
+                Import Scores
+              </button>
+            </div>
+            <div>
+              <p>
+                Import scores to the Leaderboard from file generated above.
+                Doesn't import Tournament scores. Will also add to individual
+                player board list if a user account is registered.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Reset</h3>
+          <div class="grid">
+            <div>
+              <button
+                class="danger"
+                onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')"
+              >
+                Reset Leaderboard
+              </button>
+            </div>
+            <div>
+              <p>
+                Reset all scores on the Leaderboard, Tournament scores will not
+                be affected
+              </p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <button
+                class="danger"
+                onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')"
+              >
+                Reset Tournament Board
+              </button>
+            </div>
+            <div>
+              <p>
+                Reset all scores on the Tournament Board, Leaderboard scores
+                will not be affected
+              </p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <button
+                class="danger"
+                onclick="confirm_auth_get('/api/game/reboot','Reboot your Pinball Machine')"
+              >
+                Reboot Pinball Machine
+              </button>
+            </div>
+            <div>
+              <p>
+                Power Cycle the Pinball Machine. This does not check for and
+                will erase currently running games
+              </p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <button onclick="localStorage.clear(); window.location.reload();">
+                Clear Browser Storage
+              </button>
+            </div>
+            <div>
+              <p>
+                Clears stored data from browser, use this if you are getting
+                weird behaviour that refreshing does not clear. This will log
+                you out.
+              </p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <button
+                class="danger"
+                onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')"
+              >
+                Factory Reset Vector
+              </button>
+            </div>
+            <div>
+              <p>
+                Resets all settings and scores to factory defaults. Machine will
+                reboot immediately and Vector will return to setup.
+                <b
+                  >Required before installing vector in a new Pinball Machine</b
+                >
+              </p>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Debug</h3>
+          <button class="secondary" onclick="downloadMemorySnapshot()">
+            Download Memory Snapshot
+          </button>
+          <button class="secondary" onclick="downloadLogs()">
+            Download Logs
+          </button>
+          <fieldset style="margin-top: 1rem">
+            <legend>WiFi Status</legend>
+            <div>
+              <b>Configured SSID:</b>
+              <span id="configured-ssid-name">Loading...</span>
+            </div>
+            <div>
+              <b>Signal Strength:</b>
+              <span id="configured-ssid-rssi">Loading...</span>
+            </div>
+            <div>
+              <b>Signal Quality:</b>
+              <span id="configured-ssid-quality">Loading...</span>
+            </div>
+          </fieldset>
+        </section>
+        <section>
+          <h3 id="switch-diagnostics-heading">Switch Diagnostics</h3>
+          <p>
+            Check the health of your switch matrix. Each switch is marked
+            green/yellow/red based on how many balls have been played since the
+            last time it was closed.
+          </p>
+          <button id="switch-diagnostics-refresh" class="secondary">
+            Refresh
+          </button>
+          <div class="switch-diagnostics">
+            <div
+              class="switch-grid-container"
+              role="region"
+              aria-labelledby="switch-diagnostics-heading"
+            >
+              <div
+                id="switch-diagnostics-grid"
+                class="switch-grid"
+                aria-label="Switch matrix grid showing switch health status"
+              ></div>
+            </div>
+            <div
+              id="switch-info-panel"
+              class="switch-info-panel"
+              role="complementary"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <h4>Switch Info</h4>
+              <div id="switch-info-content" class="switch-info-content">
+                Click a switch to see its details.
+              </div>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2>Help</h2>
+          <hr />
+          <h5>Accessing AP / Configure Mode</h5>
+          <ul>
+            <li>Power off your pinball machine</li>
+            <li>
+              Wait until the LEDs on your Vector board completely turn off
+            </li>
+            <li>
+              Locate and hold the small button that is <u>not</u> labeled
+              "BOOTSEL"
+            </li>
+            <li>
+              While continuing to hold the button, power on your pinball machine
+            </li>
+            <li>Release the button once the LED next to it begins flashing</li>
+            <li>
+              On your device, look for and connect to the WiFi network named
+              "Warped Pinball" (it may take a moment to appear)
+            </li>
+            <li>
+              Your browser should automatically open the configuration page
+            </li>
+          </ul>
+
+          <h5>Connecting to Your Vector</h5>
+          Use the following methods to connect to your Vector (They are listed
+          roughly in order of convenience):
+          <ol>
+            <li>
+              <b>Network Discovery</b> If you're currently viewing a Vector
+              interface, you can easily connect to other units on the same
+              network. Click the game name at the top of the page to view all
+              available Vector devices. The current Vector's IP address is
+              visible in your browser's URL bar. If the game is not visible, try
+              refreshing the page after ~30 seconds.
+            </li>
+            <li>
+              <b>Display Identification</b> With "Show IP on machine" enabled,
+              your Vector displays its IP address on the game screen
+              approximately every 30 seconds during idle time. On System 9
+              machines, watch for the player scores to temporarily display the
+              IP address. Simply enter this IP in your browser to connect.
+            </li>
+            <li>
+              <b>AP Mode Reference</b> You can boot into AP mode (using the
+              instructions above) to view the last known IP address of your
+              Vector. This address typically remains valid when you restart in
+              normal mode.
+            </li>
+            <li>
+              <b>Router Management</b> For the most consistent connection, check
+              your WiFi router's connected devices list to identify your
+              Vector's IP address. Consider assigning a static IP address in
+              your router settings to maintain the same address between
+              restarts.
+            </li>
+          </ol>
+
+          <h5>Resetting Your Admin Password</h5>
+          <p>
+            To reset your admin password, boot into AP mode using the
+            instructions above and enter your new password in the configuration
+            page.
+          </p>
+
+          <h5>Report a bug or request a feature</h5>
+          <p>
+            <a
+              href="https://github.com/warped-pinball/vector/issues/new/choose"
+            >
+              github.com/warped-pinball/vector/issues/new/choose
+            </a>
+          </p>
+        </section>
+      </div>
+
+      <dialog id="update-progress-modal">
+        <article>
+          <header>
+            <h2>Updating - Please wait</h2>
+          </header>
+          <p>
+            <b
+              >Do not close this window or disconnect from network while update
+              is in progress.</b
+            >
+            Updates typically take less than 2 minutes to complete.
+          </p>
+          <code
+            id="update-progress-log"
+            style="
+              width: 100%;
+              height: 250px;
+              overflow: auto;
+              scrollbar-width: none;
+              -ms-overflow-style: none;
+              text-align: left;
+              padding-bottom: 1em;
+              white-space: pre-wrap;
+            "
+          ></code>
+          <progress id="update-progress-bar" value="0" max="100" />
+        </article>
+      </dialog>
+    </main>
+
+    <footer class="container" style="text-align: center; text-wrap: auto">
+      <div class="grid">
+        <section>
+          <img id="logo" src="/svg/logo.svg" width="175px" alt="logo" loading="lazy" />
+          <div>
+            <a href="https://warpedpinball.com">Warped Pinball</a>
+          </div>
+          <p><i>OWN YOUR GAME</i></p>
+          <p><code id="version">Vector 0.0.0</code></p>
+        </section>
+      </div>
+    </footer>
+
+    <script src="/js/js-sha256.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/install_warning.js"></script>
+    <script src="/js/configure.js"></script>
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

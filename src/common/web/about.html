@@ -1,0 +1,775 @@
+<!doctype html>
+<html data-theme="dark" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About</title>
+    <link rel="icon" href="/svg/logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/pico.min.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <style>
+      svg {
+        width: 20%;
+        height: auto;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      nav button {
+        padding: 0;
+        width: 45px !important;
+        height: 45px !important;
+      }
+
+      nav button svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      header nav ul {
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 1024px) {
+        header .grid {
+          grid-template-columns: 1fr;
+          row-gap: 0.5rem;
+          justify-items: stretch;
+        }
+
+        header nav {
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        header nav ul {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          column-gap: 0.75rem;
+          row-gap: 0.25rem;
+        }
+      }
+
+      @media (max-width: 600px) {
+        nav button {
+          width: 38px !important;
+          height: 38px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.5rem;
+        }
+
+        header nav a {
+          padding-inline: 0.35rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      @media (max-width: 500px) {
+        header nav ul {
+          column-gap: 0;
+        }
+      }
+
+      @media (max-width: 440px) {
+        nav button {
+          width: 34px !important;
+          height: 34px !important;
+        }
+
+        header nav ul {
+          column-gap: 0.25rem;
+        }
+
+        header nav a {
+          padding-inline: 0.25rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      details.dropdown summary::after {
+        width: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body class="container-fluid">
+    <header class="container">
+      <div class="grid">
+        <div style="align-self: center; justify-self: center">
+          <strong id="game_name"></strong>
+        </div>
+        <nav style="justify-self: end">
+          <ul>
+            <li><a href="/scores.html">Scores</a></li>
+            <li><a href="/players.html">Players</a></li>
+            <li><a href="/about.html" aria-current="page">About</a></li>
+            <li><a href="/admin.html">Admin</a></li>
+            <li>
+              <button
+                id="dark-mode-button"
+                onclick="window.toggleTheme()"
+                data-tooltip="Dark Mode Toggle"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>brightness-6</title>
+                  <path
+                    d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button
+                class="hide"
+                id="logout-button"
+                onclick="window.logout()"
+                data-tooltip="Logout"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>logout</title>
+                  <path
+                    d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" style="text-align: center; text-wrap: auto">
+      <!-- MODALS -->
+      <dialog id="configure_modal">
+        <article>
+          <header>
+            <h2>Configure Your Vector</h2>
+          </header>
+          <h3>WiFi Settings</h3>
+          <details id="ssid_select_placeholder" class="dropdown">
+            <summary>Scanning for WiFi networks</summary>
+          </details>
+          <input
+            type="password"
+            name="wifi_password"
+            placeholder="WiFi password"
+            aria-label="WiFi Password"
+          />
+          <h3>Game Settings</h3>
+          <details id="game_config_select_placeholder" class="dropdown">
+            <summary>Building list of games</summary>
+          </details>
+          <input
+            type="password"
+            name="vector_password"
+            placeholder="Admin Password"
+            aria-label="Pinball Admin Password"
+          />
+          <p>
+            Please <mark>double check your game and ROM version</mark>. If you
+            are unsure, do not guess. If you have a ROM that is not listed we
+            may be able to add it for you.
+          </p>
+          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+          <p>
+            Once you have saved, please power cycle your pinball machine and
+            connect to your selected WiFi network.
+          </p>
+          <footer style="position: relative">
+            <div style="text-align: center" id="config-reply"></div>
+            <div>
+              <small
+                style="
+                  position: absolute;
+                  display: block;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  bottom: auto;
+                  text-align: left;
+                  max-width: 65%;
+                "
+                >Previous IP: <a id="previous-ip" href="#"></a><br />
+              </small>
+              <button
+                id="config-save-btn"
+                onclick="window.save_configuration()"
+              >
+                💾 Save
+              </button>
+            </div>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="install_warning_modal">
+        <article>
+          <h2>Warning: Issues Detected</h2>
+          <p>
+            Warped Pinball features may not work correctly until the issue(s)
+            below are resolved. For guidance on how to resolve these issues,
+            please read our guide:
+          </p>
+          <a href="https://warpedpinball.com/warped-pinball-user-support/"
+            >https://warpedpinball.com/warped-pinball-user-support/</a
+          >
+          <p>
+            We take every preventive measure we can, but some types of issues
+            when left unresolved can cause your machine to malfunction.
+          </p>
+          <code id="fault_list"></code>
+          <footer>
+            <button
+              onclick="document.getElementById('install_warning_modal').removeAttribute('open')"
+            >
+              OK I want to continue anyway
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="password_modal">
+        <article>
+          <h3>Enter Admin Password</h3>
+          <form id="password_form" onsubmit="return false;">
+            <input
+              type="password"
+              id="admin_password_input"
+              placeholder="Admin Password"
+              aria-label="Admin Password"
+              autocomplete="current-password"
+            />
+            <fieldset>
+              <label>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  id="stay_logged_in"
+                  aria-label="Stay Logged In"
+                />
+                Stay Logged In
+              </label>
+            </fieldset>
+            <footer>
+              <button class="secondary" id="password_cancel_button">
+                Cancel
+              </button>
+              <button id="password_save_button">Login</button>
+            </footer>
+          </form>
+        </article>
+      </dialog>
+      <dialog id="confirm-modal">
+        <article>
+          <header>
+            <h2>Confirm Action</h2>
+          </header>
+          <p id="modal-message"></p>
+          <footer>
+            <button id="modal-cancel-button" class="secondary">Cancel</button>
+            <button id="modal-confirm-button">Confirm</button>
+          </footer>
+        </article>
+      </dialog>
+
+      <!-- PAGE CONTENT -->
+      <section>
+        <h1>Warped Pinball</h1>
+        <h3><i>OWN YOUR GAME</i></h3>
+      </section>
+      <br />
+      <section>
+        <h3>Our Mission</h3>
+        <h4>Generate excitement for pinball games</h4>
+        <h4>Bring modern features to classic games</h4>
+        <h4>Build products that will outlast the games</h4>
+        <h4>No Subscriptions</h4>
+      </section>
+      <br />
+      <section>
+        <h3>Our Team</h3>
+        <p>
+          Warped Pinball was built after hours; the result of countless late
+          nights and weekend projects. We are lifelong pinball enthusiasts
+          bringing modern features to the games we love.
+        </p>
+        <div class="grid">
+          <div>
+            <h6>
+              <b style="color: #e8b85a">Paul</b> (<a
+                href="https://pinside.com/pinball/community/pinsiders/supersonicpin"
+                >@supersonicpin</a
+              >)
+            </h6>
+            <p>Hardware &amp; Firmware Design, Hopeless Pinball Addict</p>
+            <h6><b style="color: #e8b85a">Maxwell</b></h6>
+            <p>Software &amp; Application Developer</p>
+          </div>
+          <div>
+            <h6><b style="color: #e8b85a">Caroline</b></h6>
+            <p>Webmaster, Social Media, Logistics</p>
+            <h6>
+              <b style="color: #e8b85a">Anna</b> (<a href="https://annaem.com"
+                >annaem.com</a
+              >)
+            </h6>
+            <p>Graphic Design</p>
+          </div>
+        </div>
+      </section>
+      <br />
+      <section>
+        <h3>Get in Touch</h3>
+        <p>
+          Have an idea, bug, or story to share? We would love to hear it. Your
+          feedback helps shape the next evolution of Warped Pinball. We reply as
+          quickly as we can. Remember, this is a passion project built after
+          hours.
+        </p>
+        <div class="grid">
+          <p>
+            Visit our website:
+            <a href="https://warpedpinball.com">www.warpedpinball.com</a>
+          </p>
+          <p>
+            Follow us on Pinside:
+            <a
+              href="https://pinside.com/pinball/community/pinsiders/supersonicpin"
+            >
+              @supersonicpin
+            </a>
+          </p>
+          <p>
+            See the code on GitHub:
+            <a href="https://github.com/warped-pinball/vector/"
+              >github.com/warped-pinball</a
+            >
+          </p>
+          <p>
+            Follow us on Facebook:
+            <a href="https://www.facebook.com/profile.php?id=61582953387700"
+              >Warped Pinball</a
+            >
+          </p>
+          <p>
+            Subscribe on YouTube:
+            <a href="https://www.youtube.com/@warpedpinball">Warped Pinball</a>
+          </p>
+        </div>
+      </section>
+      <br />
+      <section>
+        <h3>Supported Titles</h3>
+      </section>
+      <br />
+      <div class="grid">
+        <div>
+          <div>
+            <h4>EM Titles</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Special Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">1-Player titles</th>
+                  <td>Coming Very Soon!</td>
+                </tr>
+                <tr>
+                  <th scope="row">2-Player titles</th>
+                  <td>Coming Very Soon!</td>
+                </tr>
+                <tr>
+                  <th scope="row">4-Player titles</th>
+                  <td>Coming Soon!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h4>Williams - System 9</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Special Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Space Shuttle</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Sorcerer</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Comet</th>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h4>Williams / Bally - System 11</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Special Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Bad Cats</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Banzai Run</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Big Guns</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Black Knight 2000</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Bugs Bunny Birthday</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Cyclone</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Diner</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Dr Dude</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Earthshaker</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Elvira</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">F14 Tomcat</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Fire</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Game Show</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Grand Lizard</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">High Speed</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Jokerz!</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Millionaire</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Mousin' Around</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Pinbot</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Police Force</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Radical!</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Riverboat Gambler</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Roller Games</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Sorcerer</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Space Station</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Swords of Fury</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Taxi</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Transporter the Rescue</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Whirl Wind</th>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div>
+            <h4>Data East</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Special Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Coming Soon!</th>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h4>Williams / Bally - WPC</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Special Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Addams Family</th>
+                  <td>
+                    <a
+                      href="https://videoaprons.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Video Aprons Support</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Attack from Mars</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Black Rose</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Bram Stokers Dracula</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Cirqus Voltaire</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Congo</th>
+                  <td>Midnight Madness!</td>
+                </tr>
+                <tr>
+                  <th scope="row">Corvette</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Creature from the Black Lagoon</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Demolition Man</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Dirty Harry</th>
+                  <td>Midnight Madness!</td>
+                </tr>
+                <tr>
+                  <th scope="row">Doctor Who</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Fish Tales</th>
+                  <td>
+                    <a
+                      href="https://videoaprons.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Video Aprons Support</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Fun House</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Gilligan's Island</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Harley Davidson</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Hurricane</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Indiana Jones</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Indianapolis 500</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Jack Bot</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Johnny Mnemonic</th>
+                  <td>Midnight Madness!</td>
+                </tr>
+                <tr>
+                  <th scope="row">Judge Dredd</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Junk Yard</th>
+                  <td>Midnight Madness!</td>
+                </tr>
+                <tr>
+                  <th scope="row">Machine Bride of Pinbot</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Medieval Madness</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">No Good Gofers</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Red and Ted Road Show</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Safe Cracker</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Scared Stiff</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Star Trek: TNG</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Tales of the Arabian Nights</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Terminator 2</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Theatre of Magic</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">The Flintstones</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Twilight Zone</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">White Water</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">Who Dunnit</th>
+                  <td>Midnight Madness!</td>
+                </tr>
+                <tr>
+                  <th scope="row">World Cup Soccer</th>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <section>
+        <h3>Missing your game?</h3>
+        <p>
+          Reach out! We are always adding support for new titles and love
+          hearing what you want next.
+        </p>
+      </section>
+    </main>
+
+    <footer class="container" style="text-align: center; text-wrap: auto">
+      <div class="grid">
+        <section>
+          <img id="logo" src="/svg/logo.svg" width="175px" alt="logo" loading="lazy" />
+          <div>
+            <a href="https://warpedpinball.com">Warped Pinball</a>
+          </div>
+          <p><i>OWN YOUR GAME</i></p>
+          <p><code id="version">Vector 0.0.0</code></p>
+        </section>
+      </div>
+    </footer>
+
+    <script src="/js/js-sha256.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/install_warning.js"></script>
+    <script src="/js/configure.js"></script>
+  </body>
+</html>

@@ -159,20 +159,27 @@ def create_file_handler(file_path):
         if request.headers.get("if-none-match") == etag:
             return "", 304, {"ETag": etag}
 
+        # HTML pages use no-cache so every navigation validates freshness cheaply
+        # via ETag (304 if unchanged).
+        # All other static assets are versioned at build time (?v=VERSION query
+        # param) so they can be cached immutably — the browser treats the
+        # versioned URL as a new resource when the firmware updates.
+        if served_path.endswith(".html"):
+            cache_control = "no-cache"
+        else:
+            cache_control = "max-age=86400, immutable"
+
         headers = {
             "Content-Type": get_content_type(served_path),
             "Connection": "close",
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": cache_control,
             "ETag": etag,
         }
         if is_gz:
-            if served_path.endswith(".svg"):
-                headers["Content-Type"] = "application/gzip"
-            else:
-                headers["Content-Encoding"] = "gzip"
+            headers["Content-Encoding"] = "gzip"
         return file_stream_generator(), 200, headers
 
-    return route_wrapper(file_handler)
+    return route_wrapper(file_handler), etag
 
 
 def cool_down(cool_down_seconds=0, single_instance=False):
@@ -389,14 +396,41 @@ def check_password(request):
 #
 # Static File Server
 #
+_static_etags = {}
+
 for file_path in ls("web"):
     route = file_path[3:]
     if file_path.endswith(".gz"):
         route = route[:-3]
-    handler = create_file_handler(file_path)
+    handler, etag = create_file_handler(file_path)
+    _static_etags[route] = etag
     phew_add_route(route, handler)
     if route == "/index.html":
         phew_add_route("/", handler)
+    elif route in ("/scores.html", "/players.html", "/admin.html", "/about.html"):
+        # Also serve bare paths without .html extension for convenience
+        phew_add_route(route[:-5], handler)
+
+
+@add_route("/api/static/manifest")
+def app_static_manifest(request):
+    """
+    @api
+    summary: Return ETag checksums for all static web files
+    response:
+      status_codes:
+        - code: 200
+          description: Manifest returned
+      body:
+        description: Mapping of URL path to ETag hex string
+        example:
+            {
+                "/js/utils.js": "abc123ef",
+                "/js/main.js": "deadbeef"
+            }
+    @end
+    """
+    return _static_etags
 
 
 #
