@@ -129,11 +129,7 @@
       ["Right Ramp Enter", 60]
     ]
   },
-  "RamFill": {
-      "Start": 8129,
-      "End": 8138,
-      "Value": 0
-  },
+  "RamFill": [8129, 8138, 0],
   "Formats": {
       "Standard": {
           "Id": 0

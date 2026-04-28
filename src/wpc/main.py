@@ -134,9 +134,7 @@ if not bus_activity_fault:
 
 ram_fill = SharedState.gdata.get("RamFill")
 if ram_fill:
-    fill_start = ram_fill["Start"]
-    fill_end = ram_fill["End"]
-    fill_value = ram_fill["Value"]
+    fill_start, fill_end, fill_value = ram_fill
     for addr in range(fill_start, fill_end + 1):
         shadowRam[addr] = fill_value
     Log.log(f"Main: RamFill {fill_start}-{fill_end} = {fill_value}")
