@@ -165,7 +165,7 @@ def create_file_handler(file_path):
         # handles invalidation on firmware update via cache:'reload'.
         if served_path.endswith(".html"):
             cache_control = "no-cache"
-        elif served_path.endswith((".css", ".js", ".mjs")):
+        elif served_path.endswith(".css") or served_path.endswith(".js") or served_path.endswith(".mjs"):
             cache_control = "max-age=86400, immutable"
         else:
             cache_control = "max-age=86400"
