@@ -10,7 +10,7 @@ Hook,DATA_EAST,501,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Jurassic Park,DATA_EAST,513,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Laser War,DATA_EAST,a83,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Last Action Hero,DATA_EAST,113,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Leathal Weapon III,DATA_EAST,208,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Lethal Weapon III,DATA_EAST,208,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Mary Shelly's Frankenstein,DATA_EAST,103,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Maverick,DATA_EAST,402,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Monday Night Football,DATA_EAST,a27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -25,7 +25,7 @@ Tales from the Crypt,DATA_EAST,500,yes,no,yes,Limbo;LongestBall;LowBall;Practice
 Teenage Mutant Ninja Turtles,DATA_EAST,104,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 The Simpsons,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Time Machine,DATA_EAST,a24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Tomy,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Tommy Pinball Wizard,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Torpedo Alley,DATA_EAST,21,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 EM machine,EM,,yes,no,no,
 Bad Cats,SYS11,LA5,no,no,no,
@@ -86,7 +86,7 @@ Johnny Mnemonic,WPC,11R;12R,yes,yes,no,
 Judge Dredd,WPC,L7,yes,yes,no,
 Junk Yard,WPC,10;12,yes,yes,no,
 Machine Bride of Pinbot,WPC,L7;L8,yes,yes,no,
-Medeival Madness,WPC,L4,yes,yes,no,
+Medieval Madness,WPC,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Monster Bash,WPC,10,yes,yes,no,
 No Fear Dangerous Sports,WPC,23x,yes,yes,no,
 No Good Gofers,WPC,13,yes,yes,no,
@@ -98,7 +98,7 @@ Scared Stiff,WPC,15,yes,yes,no,
 Star Trek: TNG,WPC,LX7;LX8,yes,yes,no,
 Tales of the Arabian Nights,WPC,14,yes,yes,no,
 Terminator 2,WPC,L8;L84,yes,yes,no,
-The Flinstones,WPC,LX5,yes,yes,no,
+The Flintstones,WPC,LX5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 The Getaway: High Speed II,WPC,L2,yes,no,no,
 The Shadow,WPC,LX5,yes,yes,no,
 Theatre of Magic,WPC,13;14HB;20,yes,yes,no,
