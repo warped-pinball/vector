@@ -1,4 +1,4 @@
-VectorVersion = "1.11.16"
+VectorVersion = "1.11.17"
 
 
 
