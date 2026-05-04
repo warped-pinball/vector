@@ -1,6 +1,6 @@
 {
   "GameInfo": {
-      "GameName": "Medeival Madness",
+      "GameName": "Medieval Madness",
       "System": "WPC",
       "FileVer": 1
   },
@@ -126,5 +126,28 @@
       ["Left Troll Up", 60],
       ["Right Troll Up", 60]
     ]
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
   }
 }
