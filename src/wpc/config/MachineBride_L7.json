@@ -128,5 +128,29 @@
       ["Left Ramp Enter", 60],
       ["Right Ramp Enter", 60]
     ]
+  },
+  "RamFill": [8129, 8138, 0],
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
   }
 }

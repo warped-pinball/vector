@@ -22,6 +22,8 @@ from machine import Pin
 
 import Switches
 import Formats
+import SharedState
+from Shadow_Ram_Definitions import shadowRam
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -130,6 +132,12 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
+ram_fill = SharedState.gdata.get("RamFill")
+if ram_fill:
+    fill_start, fill_end, fill_value = ram_fill
+    for addr in range(fill_start, fill_end + 1):
+        shadowRam[addr] = fill_value
+    Log.log(f"Main: RamFill {fill_start}-{fill_end} = {fill_value}")
 
 import Time
 Time.initialize()
