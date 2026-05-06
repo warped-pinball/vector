@@ -30,8 +30,7 @@
         "Type": 1,
         "ScoreAdr": 512,
         "Players": 169,
-        "PlayerUp": 170,
-        "PlayerUP": 170
+        "PlayerUp": 170
     },
     "Switches": {
         "Type": 10,
