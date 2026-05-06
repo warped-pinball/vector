@@ -471,7 +471,8 @@ def CheckForNewScores(nState=[0]):
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
-            if  DataMapper.get_game_active() == False:
+            #if  DataMapper.get_game_active() == False:
+            if DataMapper.get_ball_in_play() == 0:
                 # game over, get new scores
                 nState[0] = 1
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
