@@ -37,7 +37,7 @@
         "Warnings": 179
     },
     "Switches": {
-        "Type": 10,
+        "Type": 1,
         "Address": 1600,
         "Length": 64,
         "Sensitivity": [

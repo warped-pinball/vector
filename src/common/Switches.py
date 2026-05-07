@@ -45,7 +45,7 @@ def initialize():
     """
     global switch_counts, last_ball_in_play, last_player_up, switch_system_on
     
-    if S.gdata.get("Switches", {}).get("Type") != 10:
+    if S.gdata.get("Switches", {}).get("Type") not in (1, 10):
         log.log("SWITCHES: Invalid or missing 'Switches'")
         switch_system_on = False
         return False
@@ -291,12 +291,22 @@ def get_diagnostics():
         use_names = "Names" in switches_data
         diagnostics = []
         
-        for idx, entry in enumerate(switch_defs[:len(switch_counts)]):
-            # Skip -1 entries (marked as unused in config)
+        n = min(len(switch_defs), len(switch_counts))
+        is_type1 = switches_data.get("Type") == 1
+
+        for idx in range(n):
+            col, row = divmod(idx, 8)
+
+            # Type 1 (Sys11): Sensitivity array is row-major in the JSON but
+            # switch_counts follows hardware column-major order, so transpose
+            # the index when reading sensitivity.
+            sens_idx = (row * 8 + col) if is_type1 else idx
+
+            entry = switch_defs[sens_idx]
+
             if entry == -1 or entry is None:
                 continue
-            
-            # Extract label and sensitivity
+
             if use_names and isinstance(entry, list) and entry:
                 label = entry[0] or ""
                 sensitivity = entry[1] if len(entry) > 1 else 0
@@ -306,15 +316,11 @@ def get_diagnostics():
             else:
                 label = ""
                 sensitivity = 0
-            
+
             if not label:
                 continue
-            
-            # Calculate health: 0% at sensitivity, 100% at count=0
+
             health = 100 if sensitivity == 0 else max(0, 100 - (switch_counts[idx] * 100 // sensitivity))
-            
-            # Calculate grid position (8 rows per column)
-            col, row = divmod(idx, 8)
             diagnostics.append({"row": row + 1, "col": col + 1, "val": health, "label": label})
     
     except Exception as e:

@@ -668,7 +668,7 @@ def get_switches_tripped():
               or empty list if not configured or unsupported type.
     """
     switches_cfg = S.gdata.get("Switches")
-    if not switches_cfg or switches_cfg.get("Type") != 10:
+    if not switches_cfg or switches_cfg.get("Type") not in (1, 10):
         return []
 
     address = switches_cfg.get("Address", 0)
@@ -694,9 +694,9 @@ def write_switches_nominal():
         bool: True if successful, False if not configured or unsupported type
     """
     switches_cfg = S.gdata.get("Switches")
-    if not switches_cfg or switches_cfg.get("Type") != 10:
+    if not switches_cfg or switches_cfg.get("Type") not in (1, 10):
         return False
-    
+
     value=20  # for SYS11 switches
     address = switches_cfg.get("Address", 0)
     length = switches_cfg.get("Length", 0)
