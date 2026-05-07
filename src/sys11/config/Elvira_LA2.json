@@ -31,8 +31,7 @@
         "ScoreAdr": 512,
         "Players": 178,
         "PlayerUp": 179,
-        "GameActive": 175,
-        "EnterInitials": 175
+        "GameActive": 175
     },
     "Switches": {
         "Type": 1,

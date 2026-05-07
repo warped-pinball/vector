@@ -26,9 +26,6 @@
         "InitialAdr": 1847,
         "BytesInScore": 4
     },
-    "InPlay": {
-        "GameActive": 169
-    },
     "Switches": {
         "Type": 0,
         "Address": 56,
