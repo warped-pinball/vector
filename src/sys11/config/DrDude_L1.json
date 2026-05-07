@@ -34,7 +34,7 @@
         "GameActive": 166
     },
     "Switches": {
-        "Type": 10,
+        "Type": 1,
         "Address": 1535,
         "Length": 64,
         "Sensitivity": [
