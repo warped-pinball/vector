@@ -48,5 +48,30 @@
                     -1, 60, 60, 60, 60, 60, 60, 60,
                     60, 60, 60, 60, 60, 60, 60, 60
                 ]
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
     }
 }

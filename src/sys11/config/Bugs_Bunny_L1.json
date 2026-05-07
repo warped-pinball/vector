@@ -47,5 +47,41 @@
                     60, 60, 60, 60, 60, 60, -1, -1,
                     60, 60, 60, 60, 60, 60, -1, -1
                 ]
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Golf": {
+            "Id": 3,
+            "Options": {
+                "Target": {
+                    "Name": "Target Switch Number",
+                    "Type": "Fixed",
+                    "Value": 32,
+                    "Text": "Comet Ramp"
+                }
+            }
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
     }
 }
