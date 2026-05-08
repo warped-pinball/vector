@@ -251,9 +251,11 @@ def set_active_format(format_name, options=None):
 def practice_run():
     """Run practice mode (keep at ball 1 in play)"""
     global next_format
-    if next_format.get("Id", 0) != MODE_ID_PRACTICE:  # end on next ball drain
-        DataMapper.write_ball_in_play(5)
-        DataMapper.write_live_scores([1, 1, 1, 1])
+
+    if next_format.get("Id", 0) != MODE_ID_PRACTICE :  # end on next ball drain
+        if DataMapper.get_game_active() == True:
+            DataMapper.write_ball_in_play(5)
+            DataMapper.write_live_scores([1, 1, 1, 1])
     elif DataMapper.get_ball_in_play() > 1:
         DataMapper.write_ball_in_play(1)
 
@@ -561,13 +563,14 @@ def one_ball_run():
     global player_scores
     ball_in_play = DataMapper.get_ball_in_play()
     current_scores = DataMapper.get_live_scores(use_format=False)
+    game_active = DataMapper.get_game_active()
     
     # Only end game if ball 1 is in play and player 1 has scored
-    if ball_in_play < 5 and current_scores[0] > 0:
+    if ball_in_play < 5 and current_scores[0] > 0 and game_active==True:
         DataMapper.write_ball_in_play(5)
 
     player_scores = current_scores
-    return DataMapper.get_game_active()
+    return game_active
 
 
 
