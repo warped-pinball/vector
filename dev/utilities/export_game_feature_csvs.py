@@ -123,7 +123,10 @@ def supports_live_scores(rec: ConfigRecord) -> bool:
 
 
 def supports_switch_diagnostics(rec: ConfigRecord) -> bool:
-    return get_path(rec.data, "Switches.Type") == 10 and has_labeled_switch_defs(rec)
+    switch_type = get_path(rec.data, "Switches.Type")
+    if rec.system_family == "SYS11":
+        return switch_type == 1 and has_labeled_switch_defs(rec)
+    return switch_type == 10 and has_labeled_switch_defs(rec)
 
 
 def supports_special_formats(rec: ConfigRecord) -> bool:
