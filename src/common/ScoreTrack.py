@@ -447,6 +447,9 @@ def CheckForNewScores(nState=[0]):
 
     if S.gdata["BallInPlay"]["Type"] in [2,3]: 
 
+
+        print(" BALL IN PLAY:",DataMapper.get_ball_in_play())
+
         if nState[0] == 1:  # waiting for a game to start
 
             # Check if active_format is non-zero; if so, return early
