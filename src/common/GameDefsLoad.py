@@ -42,7 +42,6 @@ safe_defaults = {
     "DisplayMessage": {"Type": 0},
     "Adjustments": {"Type": 0},
     "HighScores": {"Type": 0},
-    "HSRewards": {"Type": 0},
     "Switches": {"Type": 0},
     "CoinDrop": {"Type": 0},
 }
