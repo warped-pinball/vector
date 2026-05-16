@@ -234,6 +234,26 @@ def check_for_machine_high_scores(report=True):
     pass
 
 
+def place_machine_scores():
+    """Write top scores from storage back to machine memory"""
+    global top_scores
+    
+    print("SCORE: Place DataEast machine scores")
+    
+    # Convert top_scores format to the format expected by write_high_scores
+    # write_high_scores expects [[initials, score], [initials, score], ...]
+    # Only take top 6 scores
+    machine_scores = []
+    for index, entry in enumerate(top_scores[:6]):
+        initials = entry.get("initials", "   ")
+        score = entry.get("score", 0)
+       
+        machine_scores.append([initials, score])
+        # print(f"  [{index}] {initials}: {score}")
+    
+    DataMapper.write_high_scores(machine_scores)
+
+
 def update_tournament(new_entry):
     """place a single new score in the tournament board fram"""
 
@@ -328,6 +348,12 @@ def CheckForNewScores():
 
         # waiting for a game to start
         if _game_state == STATE_WAITING:
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
+                return
+            
             print(f"SCORE: State WAITING - Waiting for game start, IdleCounter={nGameIdleCounter}")
 
             nGameIdleCounter += 1  # claim score list expiration timer
@@ -349,9 +375,7 @@ def CheckForNewScores():
                     print("SCORE: Removing machine scores (enter_initials_on_game=True)")
                     highScores = [["aaa", 900], ["aaa", 800], ["aaa", 700], ["aaa", 600]]
                     DataMapper.write_high_scores(highScores)
-
-                S.gameCounter = (S.gameCounter + 1) % 100
-                print(f"SCORE: New game counter = {S.gameCounter}")
+         
 
         # waiting for game to end
         elif _game_state == STATE_PLAYING:
@@ -425,6 +449,8 @@ def CheckForNewScores():
                     push_game_count = 1
                     last_pushed_game = game
                     push_end_of_game(last_pushed_game, push_game_count)
+
+                    S.gameCounter = (S.gameCounter + 1) % 100
 
                     # put high scores back in machine memory
                     if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:

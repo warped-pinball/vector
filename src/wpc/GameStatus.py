@@ -35,6 +35,7 @@ def game_report():
         # Add active format name
         data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
         data["ActiveFormatId"] = S.active_format.get("Id", 0)
+        data["game_num"] = S.gameCounter
 
     except Exception as e:
         log.log(f"GSTAT: Error in report generation: {e}")

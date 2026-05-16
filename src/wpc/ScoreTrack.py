@@ -577,7 +577,7 @@ def CheckForNewScores(nState=[0]):
                     initials_capture_this_game = True
                 else:
                     initials_capture_this_game = False
-                S.gameCounter = (S.gameCounter + 1) % 100       
+                #S.gameCounter = (S.gameCounter + 1) % 100       
         
 
         # waiting for game to end
@@ -659,3 +659,6 @@ def CheckForNewScores(nState=[0]):
             # put high scores back in machine memory
             if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 place_machine_scores()
+
+            S.gameCounter = (S.gameCounter + 1) % 100  
+            

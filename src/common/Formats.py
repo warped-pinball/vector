@@ -251,9 +251,11 @@ def set_active_format(format_name, options=None):
 def practice_run():
     """Run practice mode (keep at ball 1 in play)"""
     global next_format
-    if next_format.get("Id", 0) != MODE_ID_PRACTICE:  # end on next ball drain
-        DataMapper.write_ball_in_play(5)
-        DataMapper.write_live_scores([1, 1, 1, 1])
+
+    if next_format.get("Id", 0) != MODE_ID_PRACTICE :  # end on next ball drain
+        if DataMapper.get_game_active() == True:
+            DataMapper.write_ball_in_play(5)
+            DataMapper.write_live_scores([1, 1, 1, 1])
     elif DataMapper.get_ball_in_play() > 1:
         DataMapper.write_ball_in_play(1)
 
@@ -560,11 +562,15 @@ def one_ball_run():
     """
     global player_scores
     ball_in_play = DataMapper.get_ball_in_play()
-    if ball_in_play<5:
+    current_scores = DataMapper.get_live_scores(use_format=False)
+    game_active = DataMapper.get_game_active()
+    
+    # Only end game if ball 1 is in play and player 1 has scored
+    if ball_in_play < 5 and current_scores[0] > 0 and game_active==True:
         DataMapper.write_ball_in_play(5)
 
-    player_scores = DataMapper.get_live_scores(use_format=False)
-    return DataMapper.get_game_active()
+    player_scores = current_scores
+    return game_active
 
 
 
@@ -602,6 +608,7 @@ def formats_run():
     """
     global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game
        
+    #push multiple copies of game end for reliability   
     if push_game_count>0:
         from origin import push_end_of_game
         push_game_count+=1
@@ -611,8 +618,7 @@ def formats_run():
 
     # Waiting to change format?
     active_id = S.active_format.get("Id", 0)
-    next_id = next_format.get("Id", 0)
-    
+    next_id = next_format.get("Id", 0) 
     if active_id != next_id:        
         if DataMapper.get_game_active() is False and game_state==0:                   
             S.active_format = next_format.copy()
@@ -621,14 +627,12 @@ def formats_run():
             
     if active_id == MODE_ID_STANDARD:
         return
-
-    #print("FORMATS: state=",game_state)
  
     #waiting for game to start
     if game_state == 0:
         if DataMapper.get_game_active() is True:  #game started
             game_state=1
-            S.gameCounter = (S.gameCounter + 1) % 100
+            #S.gameCounter = (S.gameCounter + 1) % 100
             
             #remove machine high scores?
             get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
@@ -732,6 +736,7 @@ def formats_run():
             DataMapper.write_high_scores(saved_high_scores)
             saved_high_scores = None
 
+        S.gameCounter = (S.gameCounter + 1) % 100
         game_state=0
 
     else:

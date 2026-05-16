@@ -36,6 +36,36 @@ def rule_for_path(path: str) -> dict | None:
     return None
 
 
+def is_linkto_config(payload: dict) -> bool:
+    """Check if a config uses LinkTo to alias another config."""
+    game_info = payload.get("GameInfo")
+    return isinstance(game_info, dict) and "LinkTo" in game_info
+
+
+def validate_linkto_config(relative_path: str, payload: dict) -> list[str]:
+    """Validate a LinkTo config: ensure required fields and linked target exists."""
+    errors: list[str] = []
+    game_info = payload.get("GameInfo", {})
+
+    if "GameName" not in game_info:
+        errors.append(f"missing required field 'GameInfo.GameName'")
+
+    link_target = game_info.get("LinkTo", "")
+    if not link_target:
+        errors.append(f"'GameInfo.LinkTo' is empty")
+        return errors
+
+    # Find the linked target config file in the same directory
+    config_dir = Path(relative_path).parent
+    target_path = config_dir / f"{link_target}.json"
+    target_file = REPO_ROOT / target_path
+
+    if not target_file.exists():
+        errors.append(f"LinkTo target '{link_target}' not found (expected {target_path.as_posix()})")
+
+    return errors
+
+
 def validate_required_fields(path: str, payload: dict, rule: dict) -> list[str]:
     errors: list[str] = []
     for top_level, required_nested in rule["required"].items():
@@ -69,6 +99,13 @@ def main() -> int:
 
         if not isinstance(payload, dict):
             errors.append(f"{relative_path.as_posix()}: expected top-level JSON object")
+            continue
+
+        # LinkTo configs are lightweight aliases; validate them separately
+        if is_linkto_config(payload):
+            linkto_errors = validate_linkto_config(relative_path.as_posix(), payload)
+            for linkto_error in linkto_errors:
+                errors.append(f"{relative_path.as_posix()} [linkto]: {linkto_error}")
             continue
 
         field_errors = validate_required_fields(relative_path.as_posix(), payload, rule)

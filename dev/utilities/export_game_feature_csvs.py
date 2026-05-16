@@ -78,23 +78,28 @@ def get_path(data: dict[str, Any], dotted_path: str, default: Any = None) -> Any
     return cur
 
 
-def has_labeled_switch_defs(rec: ConfigRecord) -> bool:
-    switches = get_path(rec.data, "Switches", {}) or {}
-    defs = switches.get("Names") or switches.get("Sensitivity")
-    if not isinstance(defs, list):
+def has_named_switch_defs(rec: ConfigRecord) -> bool:
+    names = get_path(rec.data, "Switches.Names", []) or []
+    if not isinstance(names, list):
         return False
 
-    for entry in defs:
-        if entry in (-1, None, []):
+    for entry in names:
+        if entry in (None, []):
             continue
         if isinstance(entry, list):
             if entry and entry[0]:
                 return True
-        elif isinstance(entry, int):
-            return True
         elif isinstance(entry, str) and entry:
             return True
     return False
+
+
+def has_sys11_switch_sensitivity_defs(rec: ConfigRecord) -> bool:
+    sensitivity = get_path(rec.data, "Switches.Sensitivity", []) or []
+    if not isinstance(sensitivity, list):
+        return False
+
+    return any(entry not in (-1, None, []) for entry in sensitivity)
 
 
 # =============================================================================
@@ -123,7 +128,10 @@ def supports_live_scores(rec: ConfigRecord) -> bool:
 
 
 def supports_switch_diagnostics(rec: ConfigRecord) -> bool:
-    return get_path(rec.data, "Switches.Type") == 10 and has_labeled_switch_defs(rec)
+    switch_type = get_path(rec.data, "Switches.Type")
+    if rec.system_family == "SYS11":
+        return switch_type == 1 and has_sys11_switch_sensitivity_defs(rec)
+    return switch_type == 10 and has_named_switch_defs(rec)
 
 
 def supports_special_formats(rec: ConfigRecord) -> bool:
@@ -163,12 +171,46 @@ def build_feature_rules() -> dict[str, FeatureRule]:
 FEATURE_RULES = build_feature_rules()
 
 
+def is_linkto_config(data: dict[str, Any]) -> bool:
+    """Check if a config uses LinkTo to alias another config."""
+    game_info = data.get("GameInfo")
+    return isinstance(game_info, dict) and "LinkTo" in game_info
+
+
+def rom_version_from_path(path: Path) -> str:
+    """Extract ROM version from a config filename.
+
+    E.g. 'BanzaiRun_L3.json' -> 'L3', 'GenericDE_.json' -> ''
+    """
+    parts = path.stem.rsplit("_", 1)
+    if len(parts) == 2 and parts[1]:
+        return parts[1]
+    return ""
+
+
+def collect_rom_versions(config_glob: str) -> dict[str, set[str]]:
+    """Scan all config files (including LinkTo) and collect ROM versions by game name."""
+    versions: dict[str, set[str]] = {}
+    for raw_path in sorted(glob.glob(config_glob)):
+        path = Path(raw_path)
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        game_name = get_path(data, "GameInfo.GameName", path.stem)
+        rom_ver = rom_version_from_path(path)
+        if rom_ver:
+            versions.setdefault(game_name, set()).add(rom_ver)
+    return versions
+
+
 def load_records(config_glob: str) -> list[ConfigRecord]:
     records: list[ConfigRecord] = []
     for raw_path in sorted(glob.glob(config_glob)):
         path = Path(raw_path)
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
+
+        if is_linkto_config(data):
+            continue
 
         game_name = get_path(data, "GameInfo.GameName", path.stem)
         system_raw = get_path(data, "GameInfo.System", "")
@@ -189,7 +231,7 @@ def load_records(config_glob: str) -> list[ConfigRecord]:
 # =============================================================================
 
 
-def write_consolidated_csv(path: Path, records: list[ConfigRecord]) -> None:
+def write_consolidated_csv(path: Path, records: list[ConfigRecord], rom_versions: dict[str, set[str]] | None = None) -> None:
     """Write one large CSV with each title + MPU and all features as columns.
 
     Dedupe key is (game_name, system_family), so multiple ROM revisions collapse
@@ -223,6 +265,7 @@ def write_consolidated_csv(path: Path, records: list[ConfigRecord]) -> None:
         writer.writerow([
             "game_name",
             "mpu",
+            "rom_versions",
             "live_scores",
             "switch_diagnostics",
             "special_formats",
@@ -231,10 +274,12 @@ def write_consolidated_csv(path: Path, records: list[ConfigRecord]) -> None:
 
         sorted_rows = sorted(rows.values(), key=lambda r: (str(r["mpu"]).casefold(), str(r["game_name"]).casefold()))
         for row in sorted_rows:
+            game_roms = rom_versions.get(row["game_name"], set()) if rom_versions is not None else set()
             writer.writerow(
                 [
                     row["game_name"],
                     row["mpu"],
+                    ";".join(sorted(game_roms, key=str.casefold)),
                     "yes" if row["live_scores"] else "no",
                     "yes" if row["switch_diagnostics"] else "no",
                     "yes" if row["special_formats"] else "no",
@@ -288,6 +333,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     records = load_records(args.config_glob)
+    rom_versions = collect_rom_versions(args.config_glob)
 
     if args.systems:
         wanted = {s.upper() for s in args.systems}
@@ -297,7 +343,7 @@ def main() -> None:
         records = apply_json_query(records, args.query_path, args.query_op, args.query_value)
 
     out_path = Path(args.out_dir) / args.out_file
-    write_consolidated_csv(out_path, records)
+    write_consolidated_csv(out_path, records, rom_versions)
     print(f"wrote {out_path} ({len(records)} config rows scanned)")
 
 

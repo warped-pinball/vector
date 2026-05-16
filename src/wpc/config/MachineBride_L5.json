@@ -1,0 +1,156 @@
+{
+  "GameInfo": {
+      "GameName": "Machine Bride of Pinbot",
+      "System": "WPC",
+      "FileVer": 1
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 944
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7552,
+      "AddressS2": 7617,
+      "AddressS3": 7682,
+      "Length": 32,
+      "ChecksumStartAdr": 7552,
+      "ChecksumEndAdr": 7744,
+      "ChecksumResultAdr": 7745
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6982,
+      "ChecksumStartAdr": 7338,
+      "ChecksumEndAdr": 7549,
+      "ChecksumResultAdr": 7550
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7247,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7244,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7281,
+      "GrandChampInitAdr": 7278,
+      "ChecksumStartAdr": 7244,
+      "ChecksumEndAdr": 7275,
+      "ChecksumResultAdr": 7276,
+      "GCChecksumStartAdr": 7278,
+      "GCChecksumEndAdr": 7309,
+      "GCChecksumResultAdr": 7310
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 6059,
+      "PlayerUp": 1032,
+      "ScoreAdr": 5952,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5991,
+    "Length": 55,
+    "Names": [
+      ["Right Flipper", 60],
+      ["Left Flipper", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Outlane", 60],
+      ["Left Flipper Lane", 60],
+      ["Right Flipper Lane", 60],
+      ["Right Outlane", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
+      ["Right Trough", 60],
+      ["Center Trough", 60],
+      ["Left Trough", 60],
+      ["Left Standup", 60],
+
+      ["Skill Shot 50k", 60],
+      ["Skill Shot 75k", 60],
+      ["Skill Shot 100k", 60],
+      ["Skill Shot 200k", 60],
+      ["Skill Shot 25k", 60],
+      ["Right Top Standup", 60],
+      ["Right Bottom Standup", 60],
+      ["Outhole", 60],
+
+      ["Right Ramp Made", 60],
+      [],
+      ["Left Loop", 60],
+      ["Right Loop Top", 60],
+      ["Right Loop Bottom", 60],
+      ["Under Playfield Kickback", 60],
+      ["Enter Head", 60],
+      [],
+
+      ["Spinner", 60],
+      ["Shooter", 60],
+      ["Upper Right Jet Bumper", 60],
+      ["Upper Left Jet Bumper", 60],
+      ["Lower Jet Bumper", 60],
+      ["Jet Bumper Sling", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+
+      [],
+      [],
+      ["Head Left Eye", 60],
+      ["Head Right Eye", 60],
+      ["Head Mouth", 60],
+      [],
+      ["Face Position", 60],
+      [],
+
+      ["Wireform Top", 60],
+      ["Wireform Bottom", 60],
+      ["Enter Mini Playfield", 60],
+      ["Mini Exit Left", 60],
+      ["Mini Exit Right", 60],
+      ["Left Ramp Enter", 60],
+      ["Right Ramp Enter", 60]
+    ]
+  },
+  "RamFill": [8039, 8058, 0],
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
+  }
+}

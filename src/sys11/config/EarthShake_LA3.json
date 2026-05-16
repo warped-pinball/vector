@@ -1,0 +1,77 @@
+{
+    "GameInfo": {
+        "GameName": "Earth Shaker",
+        "System": "11B",
+        "FileVer": 1
+    },
+    "BallInPlay": {
+        "Type": 3,
+        "Address": 56
+    },
+    "DisplayMessage": {
+        "Type": 2,
+        "Address": 1972,
+        "Length": 16,
+        "Number": 3,
+        "EnableByteAddress": 1968
+    },
+    "Adjustments": {
+        "Type": 1,
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2028
+    },
+    "HighScores": {
+        "Type": 1,
+        "ScoreAdr": 1787,
+        "InitialAdr": 1803,
+        "BytesInScore": 4
+    },
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": 512,
+        "Players": 178,
+        "PlayerUp": 179,
+        "GameActive": 175
+    },
+    "Switches": {
+        "Type": 1,
+        "Address": 1536,
+        "Length": 64,
+        "Sensitivity": [
+                    240, -1, 60, -1, 60, 60, -1, 60,
+                    60, 60, 60, -1, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    -1, 60, 60, 60, 60, -1, 60, -1,
+                    60, 60, 60, 60, 60, -1, 60, -1
+                ]
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
+    }
+}
