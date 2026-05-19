@@ -1729,6 +1729,186 @@ def app_memory_broadcast(request):
     return
 
 
+#
+# Address Read / Write / Listener API
+#
+# A lightweight way to read, write, and watch arbitrary SRAM addresses.
+# Listeners share a single scheduled timer (100 ms / 10 Hz) and broadcast
+# all watched values every cycle via UDP so no per-address timers are needed
+# and no previous-value bookkeeping is required.
+#
+
+# list of address offsets (relative to SRAM_DATA_BASE) currently being watched
+_address_listeners = []
+_ADDRESS_LISTENERS_MAX = const(64)
+_ADDRESS_BROADCAST_PORT = const(2041)
+
+
+@add_route("/api/address/read", auth=True)
+def app_address_read(request):
+    """
+    @api
+    summary: Read one or more bytes from SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: count
+          type: integer
+          required: false
+          description: Number of bytes to read (default 1, max 256)
+    response:
+      status_codes:
+        - code: 200
+          description: Values returned
+      body:
+        example: {"offset": 100, "values": [0, 255, 128]}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    if offset is None:
+        return '{"error":"offset required"}', 400
+    count = data.get("count", 1)
+    if count < 1:
+        count = 1
+    if count > 256:
+        count = 256
+    if offset < 0 or (offset + count) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, count)
+    return {"offset": offset, "values": list(ram)}
+
+
+@add_route("/api/address/write", auth=True)
+def app_address_write(request):
+    """
+    @api
+    summary: Write one or more bytes to SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: values
+          type: array
+          required: true
+          description: List of byte values (0-255) to write
+    response:
+      status_codes:
+        - code: 200
+          description: Write completed
+      body:
+        example: {"offset": 100, "count": 3}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    values = data.get("values")
+    if offset is None or values is None:
+        return '{"error":"offset and values required"}', 400
+    if not isinstance(values, list) or len(values) == 0:
+        return '{"error":"values must be a non-empty list"}', 400
+    if len(values) > 256:
+        return '{"error":"max 256 bytes per write"}', 400
+    if offset < 0 or (offset + len(values)) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, len(values))
+    for i, v in enumerate(values):
+        ram[i] = v & 0xFF
+    return {"offset": offset, "count": len(values)}
+
+
+@add_route("/api/address/listeners", auth=True)
+def app_address_listeners(request):
+    """
+    @api
+    summary: Get or set the list of SRAM offsets being watched by the address listener broadcast
+    auth: true
+    request:
+      body:
+        - name: offsets
+          type: array
+          required: false
+          description: List of integer offsets to watch. Omit to query current list.
+    response:
+      status_codes:
+        - code: 200
+          description: Current listener list returned
+      body:
+        example: {"offsets": [100, 200, 300]}
+    @end
+    """
+    global _address_listeners
+    data = request.data
+    offsets = data.get("offsets")
+    if offsets is not None:
+        if not isinstance(offsets, list):
+            return '{"error":"offsets must be a list"}', 400
+        if len(offsets) > _ADDRESS_LISTENERS_MAX:
+            return json_dumps({"error": f"max {_ADDRESS_LISTENERS_MAX} listeners"}), 400
+        validated = []
+        for o in offsets:
+            if not isinstance(o, int) or o < 0 or o >= SRAM_DATA_LENGTH:
+                return json_dumps({"error": f"invalid offset: {o}"}), 400
+            validated.append(o)
+        _address_listeners = validated
+    return {"offsets": _address_listeners}
+
+
+def broadcast_address_listeners():
+    """Read all watched addresses and broadcast their values via UDP."""
+    if not _address_listeners:
+        return
+    import discovery
+
+    # Build a compact message: for each listener, 2-byte offset (big-endian) + 1-byte value
+    parts = []
+    for offset in _address_listeners:
+        val = uctypes.bytearray_at(SRAM_DATA_BASE + offset, 1)[0]
+        parts.append(offset.to_bytes(2, "big"))
+        parts.append(bytes([val]))
+    message = b"".join(parts)
+    try:
+        discovery.send_sock.sendto(message, ("255.255.255.255", _ADDRESS_BROADCAST_PORT))
+    except Exception:
+        pass
+
+
+@add_route("/api/address/toggle-broadcast", auth=True)
+def app_address_toggle_broadcast(request):
+    """
+    @api
+    summary: Enable or disable the periodic address listener broadcast
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: true
+          description: True to start broadcasting, false to stop
+    response:
+      status_codes:
+        - code: 200
+          description: Broadcast state updated
+      body:
+        example: {"broadcasting": true}
+    @end
+    """
+    data = request.data
+    if data.get("enable", False):
+        unschedule(broadcast_address_listeners)
+        schedule(broadcast_address_listeners, phase_ms=0, frequency_ms=100)
+    else:
+        unschedule(broadcast_address_listeners)
+    return {"broadcasting": bool(data.get("enable", False))}
+
+
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
     """
