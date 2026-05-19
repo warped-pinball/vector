@@ -17,6 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
@@ -29,7 +30,8 @@ jobs:
         run: |
           python tools/gen_api_docs.py
 
-      - name: Commit docs
+      - name: Commit docs (non-fork only)
+        if: github.event.pull_request.head.repo.full_name == github.repository
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ github.head_ref }}
@@ -40,6 +42,16 @@ jobs:
             git add docs
             git commit -m "chore: regenerate API docs [skip ci]" || echo "No changes to commit"
             git push origin HEAD:$BRANCH_NAME
+          else
+            echo "No documentation changes detected"
+          fi
+
+      - name: Check for uncommitted docs (fork PRs — cannot auto-commit)
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          if git status --porcelain docs | grep -q .; then
+            echo "::error::API documentation needs to be regenerated. Because this is a fork PR, the bot cannot commit automatically. Please run 'python tools/gen_api_docs.py' locally, commit the updated docs, and push to your branch."
+            exit 1
           else
             echo "No documentation changes detected"
           fi

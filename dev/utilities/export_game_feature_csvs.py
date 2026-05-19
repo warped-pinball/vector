@@ -78,23 +78,28 @@ def get_path(data: dict[str, Any], dotted_path: str, default: Any = None) -> Any
     return cur
 
 
-def has_labeled_switch_defs(rec: ConfigRecord) -> bool:
-    switches = get_path(rec.data, "Switches", {}) or {}
-    defs = switches.get("Names") or switches.get("Sensitivity")
-    if not isinstance(defs, list):
+def has_named_switch_defs(rec: ConfigRecord) -> bool:
+    names = get_path(rec.data, "Switches.Names", []) or []
+    if not isinstance(names, list):
         return False
 
-    for entry in defs:
-        if entry in (-1, None, []):
+    for entry in names:
+        if entry in (None, []):
             continue
         if isinstance(entry, list):
             if entry and entry[0]:
                 return True
-        elif isinstance(entry, int):
-            return True
         elif isinstance(entry, str) and entry:
             return True
     return False
+
+
+def has_sys11_switch_sensitivity_defs(rec: ConfigRecord) -> bool:
+    sensitivity = get_path(rec.data, "Switches.Sensitivity", []) or []
+    if not isinstance(sensitivity, list):
+        return False
+
+    return any(entry not in (-1, None, []) for entry in sensitivity)
 
 
 # =============================================================================
@@ -123,7 +128,10 @@ def supports_live_scores(rec: ConfigRecord) -> bool:
 
 
 def supports_switch_diagnostics(rec: ConfigRecord) -> bool:
-    return get_path(rec.data, "Switches.Type") == 10 and has_labeled_switch_defs(rec)
+    switch_type = get_path(rec.data, "Switches.Type")
+    if rec.system_family == "SYS11":
+        return switch_type == 1 and has_sys11_switch_sensitivity_defs(rec)
+    return switch_type == 10 and has_named_switch_defs(rec)
 
 
 def supports_special_formats(rec: ConfigRecord) -> bool:
