@@ -1,0 +1,86 @@
+{
+    "GameInfo": {
+        "GameName": "Creature from the Black Lagoon",
+        "System": "WPC",
+        "FileVer": 1
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 1040,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+    "DisplayMessage": {
+        "Type": 10,
+        "AddressS1": 7624,
+        "AddressS2": 7689,
+        "AddressS3": 7754,
+        "Length": 32,
+        "ChecksumStartAdr": 7624,
+        "ChecksumEndAdr": 7816,
+        "ChecksumResultAdr": 7817
+    },
+    "Adjustments": {
+        "Type": 10,
+        "CustomMessageOn": 7054,
+        "ChecksumStartAdr": 7013,
+        "ChecksumEndAdr": 7232,
+        "ChecksumResultAdr": 7233
+    },
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7340,
+        "BytesInScore": 5,
+        "ScoreSpacing": 8,
+        "InitialAdr": 7337,
+        "InitialSpacing": 8,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7374,
+        "GrandChampInitAdr": 7371,
+        "ChecksumStartAdr": 7337,
+        "ChecksumEndAdr": 7368,
+        "ChecksumResultAdr": 7369,
+        "GCChecksumStartAdr": 7371,
+        "GCChecksumEndAdr": 7378,
+        "GCChecksumResultAdr": 7379
+    },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
+        "DisableByte": 0
+    },
+    "Switches": {
+        "Type": 0,
+        "Address": 0,
+        "Length": 0
+    },
+    "CoinDrop": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 129,
+        "GameActiveValue": 0,
+        "Players": 6037,
+        "Playerup": 801,
+        "ScoreAdr": 5935,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    }
+}
