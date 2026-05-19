@@ -9,7 +9,7 @@ import time
 from typing import Optional
 
 from auto_flash import build_and_flash, build_for_hardware
-from detect_boards import detect_boards, list_pico_ports
+from detect_boards import detect_boards
 
 REPL_ATTEMPTS = 10
 REPL_DELAY = 1
@@ -47,26 +47,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--write-config",
         nargs="?",
-        default="__DEFAULT__",
+        const="__DEFAULT__",
         metavar="PATH",
         help=("Pass through to flash.py: wipe config on Pico and write configuration from PATH. " "If provided with no PATH, uses the default config for the selected build_dir."),
     )
-    parser.add_argument(
-        "--no-config",
-        action="store_true",
-        help="Skip writing configuration to the Pico; leave existing config untouched.",
-    )
     args = parser.parse_args(argv[1:])
-    if args.no_config:
-        args.write_config = None
-
-    if args.system == "list":
-        print("\n".join(detect_boards()))
-        return
-
-    if args.system == "ports":
-        print("\n".join(list_pico_ports()))
-        return
 
     if args.system == "auto":
         mapping = detect_boards()

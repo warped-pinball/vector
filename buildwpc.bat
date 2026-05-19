@@ -9,7 +9,7 @@ IF EXIST build (
 )
 
 REM Run the Python sync script
-python dev/sync.py wpc %*
+python dev/sync.py wpc %1
 
 REM Check for errors
 IF %ERRORLEVEL% NEQ 0 (

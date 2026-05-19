@@ -9,7 +9,7 @@ IF EXIST build (
 )
 
 REM Run the Python sync script
-python dev/sync.py sys11 %*
+python dev/sync.py sys11 %1
 
 REM Check for errors
 IF %ERRORLEVEL% NEQ 0 (

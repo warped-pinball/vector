@@ -9,7 +9,7 @@ IF EXIST build (
 )
 
 REM Run the Python sync script for DataEast
-python dev/sync.py data_east %*
+python dev/sync.py data_east %1
 
 REM Check for errors
 IF %ERRORLEVEL% NEQ 0 (
