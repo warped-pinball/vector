@@ -1,51 +1,51 @@
 {
     "GameInfo": {
-        "GameName": "Radical!",
-        "System": "11c"
+        "GameName": "Road Kings",
+        "System": "11"
     },
     "BallInPlay": {
-        "Type": 2,
+        "Type": 3,
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 3,
+        "Type": 1,
         "Address": 1972,
-        "Length": 16,
-        "Number": 3,
+        "Length": 7,
+        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2019,
+        "ChecksumEndAdr": 2013,
         "ChecksumResultAdr": 2022
     },
     "HighScores": {
-        "Type": 3,
-        "ScoreAdr": 1806,
-        "InitialAdr": 1822,
+        "Type": 1,
+        "ScoreAdr": 1831,
+        "InitialAdr": 1847,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
         "ScoreAdr": 512,
-        "Players": 169,
-        "PlayerUp": 170,
-        "GameActive": 166
+        "Players": 172,
+        "PlayerUp": 173,
+        "GameActive": 169
     },
     "Switches": {
         "Type": 1,
-        "Address": 1535,
+        "Address": 1632,
         "Length": 64,
         "Sensitivity": [
-                    240, -1, 60, -1, -1, -1, 60, 60,
-                    -1, 60, 60, -1, -1, -1, 60, 60,
-                    60, 60, 60, 60, -1, 60, 60, -1,
-                    60, 60, 60, 60, -1, 60, 60, -1,
-                    60, -1, -1, 60, 60, -1, 60, -1,
-                    60, 60, 60, 60, 60, 60, 60, -1,
-                    -1, 60, 60, 60, 60, 60, 60, -1,
-                    -1, 60, 60, 60, 60, 60, 60, -1
+                    240, 60, 60, 60, 60, 60, -1, -1,
+                    -1, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    -1, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1
                 ]
     },
     "Formats": {

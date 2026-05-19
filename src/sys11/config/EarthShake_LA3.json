@@ -1,14 +1,15 @@
 {
     "GameInfo": {
-        "GameName": "Radical!",
-        "System": "11c"
+        "GameName": "Earth Shaker",
+        "System": "11B",
+        "FileVer": 1
     },
     "BallInPlay": {
-        "Type": 2,
+        "Type": 3,
         "Address": 56
     },
     "DisplayMessage": {
-        "Type": 3,
+        "Type": 2,
         "Address": 1972,
         "Length": 16,
         "Number": 3,
@@ -18,34 +19,34 @@
         "Type": 1,
         "ChecksumStartAdr": 1920,
         "ChecksumEndAdr": 2019,
-        "ChecksumResultAdr": 2022
+        "ChecksumResultAdr": 2028
     },
     "HighScores": {
-        "Type": 3,
-        "ScoreAdr": 1806,
-        "InitialAdr": 1822,
+        "Type": 1,
+        "ScoreAdr": 1787,
+        "InitialAdr": 1803,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
         "ScoreAdr": 512,
-        "Players": 169,
-        "PlayerUp": 170,
-        "GameActive": 166
+        "Players": 178,
+        "PlayerUp": 179,
+        "GameActive": 175
     },
     "Switches": {
         "Type": 1,
-        "Address": 1535,
+        "Address": 1536,
         "Length": 64,
         "Sensitivity": [
-                    240, -1, 60, -1, -1, -1, 60, 60,
-                    -1, 60, 60, -1, -1, -1, 60, 60,
-                    60, 60, 60, 60, -1, 60, 60, -1,
-                    60, 60, 60, 60, -1, 60, 60, -1,
-                    60, -1, -1, 60, 60, -1, 60, -1,
+                    240, -1, 60, -1, 60, 60, -1, 60,
+                    60, 60, 60, -1, 60, 60, 60, 60,
+                    60, 60, 60, 60, 60, 60, -1, -1,
                     60, 60, 60, 60, 60, 60, 60, -1,
-                    -1, 60, 60, 60, 60, 60, 60, -1,
-                    -1, 60, 60, 60, 60, 60, 60, -1
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    60, 60, 60, 60, 60, 60, 60, -1,
+                    -1, 60, 60, 60, 60, -1, 60, -1,
+                    60, 60, 60, 60, 60, -1, 60, -1
                 ]
     },
     "Formats": {

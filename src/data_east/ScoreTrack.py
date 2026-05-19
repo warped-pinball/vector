@@ -348,6 +348,12 @@ def CheckForNewScores():
 
         # waiting for a game to start
         if _game_state == STATE_WAITING:
+
+            # Check if active_format is non-zero; if so, return early
+            # Allows game in progress to finish in normal mode when format is activated
+            if S.active_format.get("Id", 0) != 0:
+                return
+            
             print(f"SCORE: State WAITING - Waiting for game start, IdleCounter={nGameIdleCounter}")
 
             nGameIdleCounter += 1  # claim score list expiration timer
@@ -369,9 +375,7 @@ def CheckForNewScores():
                     print("SCORE: Removing machine scores (enter_initials_on_game=True)")
                     highScores = [["aaa", 900], ["aaa", 800], ["aaa", 700], ["aaa", 600]]
                     DataMapper.write_high_scores(highScores)
-
-                #S.gameCounter = (S.gameCounter + 1) % 100
-                #print(f"SCORE: New game counter = {S.gameCounter}")
+         
 
         # waiting for game to end
         elif _game_state == STATE_PLAYING:
