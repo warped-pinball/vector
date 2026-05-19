@@ -234,9 +234,9 @@ async function loadSwitchDiagnostics() {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
         cell.setAttribute("role", "gridcell");
-
+      
         const key = `${row}-${col}`;
-        const switchData = switchMap.get(key);
+        var switchData = switchMap.get(key);
         const hasValue =
           switchData && switchData.val !== undefined && switchData.val !== null;
 
@@ -258,8 +258,10 @@ async function loadSwitchDiagnostics() {
           cell.setAttribute("tabindex", "-1");
         } else {
           cell.setAttribute("tabindex", "0");
-          cell.textContent = `${col}${row}`;
           const value = Number(switchData.val);
+          //If we're at zero, just fill the whole box red.
+          const topPercent = value == 0?0:(100-value);
+          cell.innerHTML = '<div class="fill" style="top: '+topPercent+'%;"></div><span class="switch-label">'+`${col}${row}`+'</span>';
           let statusClass = "green";
           let statusText = "good";
 

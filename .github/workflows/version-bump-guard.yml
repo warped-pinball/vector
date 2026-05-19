@@ -18,6 +18,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
@@ -26,7 +27,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Apply required patch version bumps
+      - name: Apply required patch version bumps (non-fork only)
+        if: github.event.pull_request.head.repo.full_name == github.repository
         run: |
           python dev/ci/version_bump_guard.py \
             --base "${{ github.event.pull_request.base.sha }}" \
@@ -34,7 +36,19 @@ jobs:
             --apply \
             --summary-file "$GITHUB_STEP_SUMMARY"
 
+      - name: Check required patch version bumps (fork PRs — cannot auto-commit)
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          if ! python dev/ci/version_bump_guard.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --summary-file "$GITHUB_STEP_SUMMARY"; then
+            echo "::error::Version bump required. This PR modifies source files but is missing a patch version bump. Because this is a fork PR the bot cannot apply it automatically — please bump the patch version in the affected systemConfig.py file(s) and push the change to your branch."
+            exit 1
+          fi
+
       - name: Commit and push version bumps
+        if: github.event.pull_request.head.repo.full_name == github.repository
         run: |
           if git diff --quiet; then
             echo "No version changes to commit."
