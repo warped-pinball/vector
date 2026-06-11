@@ -26,6 +26,7 @@ compatible_configurations = {
     "em": all_combos(["2w"], ["1.26.0.preview"]),
     "data_east": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "whitestar": all_combos(["2w"], ["1.25.0."]),
+    "classic": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
 }
 
 

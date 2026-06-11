@@ -48,5 +48,13 @@
     "output": "update_data_east.json",
     "artifact": "data-east-update.json",
     "raw_filename": "data-east-update.json"
+  },
+  {
+    "id": "classic",
+    "label": "Classic",
+    "config_path": "src/classic/systemConfig.py",
+    "output": "update_classic.json",
+    "artifact": "classic-update.json",
+    "raw_filename": "classic-update.json"
   }
 ]
