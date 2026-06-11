@@ -396,12 +396,24 @@ async function initMemoryBroadcastToggle() {
   );
 
   memoryBroadcastToggle.addEventListener("change", async () => {
+    const previousChecked = !memoryBroadcastToggle.checked;
     const payload = { enable: memoryBroadcastToggle.checked ? 1 : 0 };
     try {
-      await window.smartFetch("/api/memory/toggle-broadcast", payload, true);
+      const response = await window.smartFetch(
+        "/api/memory/toggle-broadcast",
+        payload,
+        true,
+      );
+      if (!response.ok) {
+        console.error(
+          "Failed to toggle memory broadcast, server returned status",
+          response.status,
+        );
+        memoryBroadcastToggle.checked = previousChecked;
+      }
     } catch (error) {
       console.error("Failed to toggle memory broadcast", error);
-      memoryBroadcastToggle.checked = !memoryBroadcastToggle.checked;
+      memoryBroadcastToggle.checked = previousChecked;
     }
   });
 }
