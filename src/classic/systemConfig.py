@@ -7,6 +7,7 @@ SystemVersion = "0.1.0"
 
 # System specific scheduled tasks
 def schedule_system_tasks():
+    # Note: this function is duplicated in src/sys11/systemConfig.py
     import faults
     from GameStatus import poll_fast
     from phew.server import copy_to_fram, schedule
