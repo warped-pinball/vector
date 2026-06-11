@@ -3,6 +3,15 @@ import pytest
 from dev.ci import version_bump_guard as vbg
 
 
+def test_rules_include_classic_system_config_version() -> None:
+    assert any(
+        rule.name == "Classic system config version"
+        and rule.scope_prefixes == ("src/classic/",)
+        and rule.version_file == "src/classic/systemConfig.py"
+        for rule in vbg.RULES
+    )
+
+
 def test_touches_scope_detects_prefix() -> None:
     changed = ["src/em/GameStatus.py", "docs/README.md"]
 
