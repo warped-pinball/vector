@@ -1721,7 +1721,20 @@ def app_memory_broadcast(request):
     data = request.data
     if data.get("enable", False):
         # add function call to scheduler
-        freq = data.get("frequency_ms", 100)
+        raw_freq = data.get("frequency_ms", 100)
+        try:
+            freq = int(raw_freq)
+        except (TypeError, ValueError):
+            freq = 100
+
+        # Clamp frequency to sane bounds to avoid overload or absurd delays
+        if freq < 10:
+            freq = 10
+        elif freq > 60000:
+            freq = 60000
+
+        # Ensure we don't accumulate multiple scheduled entries for the same function
+        unschedule(broadcast_memory_snapshot)
         schedule(broadcast_memory_snapshot, phase_ms=0, frequency_ms=freq)  # broadcast every freq milliseconds
     else:
         # remove function call from scheduler
