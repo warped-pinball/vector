@@ -42,6 +42,11 @@ To automatically detect and flash all connected boards, run:
 ```bash
 python dev/sync.py auto
 ```
+Additional Parameters:
+
+| Option | Description |
+|--------|-------------|
+| `--test-data` | Syncs test_data.json to the board (overwrites data) |
 
 Each board is identified, firmware for each hardware platform is built once,
 and all boards are flashed in parallel. Build artifacts are always written to

@@ -2098,6 +2098,7 @@ def connect_to_wifi(initialize=False):
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
     password = wifi_credentials["password"]
+    print("Connecting to SSID: {ssid}")
 
     if not ssid:
         return False
