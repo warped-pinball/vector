@@ -91,6 +91,12 @@ RULES: tuple[VersionRule, ...] = (
         version_file="src/whitestar/systemConfig.py",
         version_pattern=SYSTEM_VERSION_PATTERN,
     ),
+    VersionRule(
+        name="Classic system config version",
+        scope_prefixes=("src/classic/",),
+        version_file="src/classic/systemConfig.py",
+        version_pattern=SYSTEM_VERSION_PATTERN,
+    ),
 )
 
 
