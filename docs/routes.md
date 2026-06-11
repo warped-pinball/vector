@@ -70,8 +70,6 @@ Jump directly to a handler. Links open source on GitHub with accurate line numbe
 - [`/api/memory/toggle-broadcast`](#api-memory-toggle-broadcast)
 - [`/api/address/read`](#api-address-read)
 - [`/api/address/write`](#api-address-write)
-- [`/api/address/listeners`](#api-address-listeners)
-- [`/api/address/toggle-broadcast`](#api-address-toggle-broadcast)
 - [`/api/logs`](#api-logs)
 - [`/api/formats/available`](#api-formats-available)
 - [`/api/formats/set`](#api-formats-set)
@@ -1390,56 +1388,6 @@ Write one or more bytes to SRAM at the given offset
 
 ```
 {"offset": 100, "count": 3}
-```
-
-<a id="api-address-listeners"></a>
-## `/api/address/listeners`
-
-- **Handler:** [`app_address_listeners`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1841)
-- Authentication: Required (see [Authentication guide](authentication.md)).
-
-Get or set the list of SRAM offsets being watched by the address listener broadcast
-
-### Request
-
-#### Body parameters
-
-- `offsets` array optional - List of integer offsets to watch. Omit to query current list.
-
-### Response
-
-#### Status codes
-
-- `200` - Current listener list returned
-
-
-```
-{"offsets": [100, 200, 300]}
-```
-
-<a id="api-address-toggle-broadcast"></a>
-## `/api/address/toggle-broadcast`
-
-- **Handler:** [`app_address_toggle_broadcast`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1897)
-- Authentication: Required (see [Authentication guide](authentication.md)).
-
-Enable or disable the periodic address listener broadcast
-
-### Request
-
-#### Body parameters
-
-- `enable` boolean required - True to start broadcasting, false to stop
-
-### Response
-
-#### Status codes
-
-- `200` - Broadcast state updated
-
-
-```
-{"broadcasting": true}
 ```
 
 <a id="api-logs"></a>
