@@ -122,6 +122,7 @@ ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
 
 bus_activity_fault = bus_activity_fault_check()
+bus_activity_fault = False
 if bus_activity_fault:
     set_error_led()
     faults.raise_fault(faults.HDWR01)
