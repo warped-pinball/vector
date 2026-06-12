@@ -45,7 +45,7 @@ def reconnect_to_wifi():
     try:
         wlan = network.WLAN(network.STA_IF)
         wlan.active(True)
-        wlan.config(pm=0xA11140) 
+        wlan.config(pm=0xA11140)  # disable power save; dozing radio drops packets
         wlan.connect()
     except Exception as e:
         logging.error(f"Failed to reconnect to wifi: {e}")
@@ -68,7 +68,7 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
 
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    wlan.config(pm=0xA11140) 
+    wlan.config(pm=0xA11140)  # disable power save; dozing radio drops packets
     wlan.connect(ssid, password)
     start = time.ticks_ms()
     status = wlan.status()
