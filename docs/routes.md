@@ -68,6 +68,8 @@ Jump directly to a handler. Links open source on GitHub with accurate line numbe
 - [`/api/import/scores`](#api-import-scores)
 - [`/api/memory-snapshot`](#api-memory-snapshot)
 - [`/api/memory/toggle-broadcast`](#api-memory-toggle-broadcast)
+- [`/api/address/read`](#api-address-read)
+- [`/api/address/write`](#api-address-write)
 - [`/api/logs`](#api-logs)
 - [`/api/formats/available`](#api-formats-available)
 - [`/api/formats/set`](#api-formats-set)
@@ -1336,10 +1338,62 @@ No parameters inferred.
 
 No structured response documented.
 
+<a id="api-address-read"></a>
+## `/api/address/read`
+
+- **Handler:** [`app_address_read`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1753)
+- Authentication: Required (see [Authentication guide](authentication.md)).
+
+Read one or more bytes from SRAM at the given offset
+
+### Request
+
+#### Body parameters
+
+- `offset` integer required - Byte offset relative to SRAM_DATA_BASE
+- `count` integer optional - Number of bytes to read (default 1, max 256)
+
+### Response
+
+#### Status codes
+
+- `200` - Values returned
+
+
+```
+{"offset": 100, "values": [0, 255, 128]}
+```
+
+<a id="api-address-write"></a>
+## `/api/address/write`
+
+- **Handler:** [`app_address_write`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1792)
+- Authentication: Required (see [Authentication guide](authentication.md)).
+
+Write one or more bytes to SRAM at the given offset
+
+### Request
+
+#### Body parameters
+
+- `offset` integer required - Byte offset relative to SRAM_DATA_BASE
+- `values` array required - List of byte values (0-255) to write
+
+### Response
+
+#### Status codes
+
+- `200` - Write completed
+
+
+```
+{"offset": 100, "count": 3}
+```
+
 <a id="api-logs"></a>
 ## `/api/logs`
 
-- **Handler:** [`app_getLogs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1746)
+- **Handler:** [`app_getLogs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1833)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 - Cooldown: 10s
 - Single instance: Yes
@@ -1361,7 +1415,7 @@ No parameters inferred.
 <a id="api-formats-available"></a>
 ## `/api/formats/available`
 
-- **Handler:** [`app_list_available_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1771)
+- **Handler:** [`app_list_available_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1858)
 
 
 Get the list of available game formats
@@ -1402,7 +1456,7 @@ No parameters inferred.
 <a id="api-formats-set"></a>
 ## `/api/formats/set`
 
-- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1809)
+- **Handler:** [`app_set_current_format`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1896)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set the active game format
@@ -1425,7 +1479,7 @@ Set the active game format
 <a id="api-formats-active"></a>
 ## `/api/formats/active`
 
-- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1854)
+- **Handler:** [`app_get_active_formats`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1941)
 
 
 Get the currently active game format
@@ -1441,7 +1495,7 @@ No structured response documented.
 <a id="api-diagnostics-switches"></a>
 ## `/api/diagnostics/switches`
 
-- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1894)
+- **Handler:** [`app_get_switch_diagnostics`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1981)
 
 
 Get diagnostic information for all switches
@@ -1457,7 +1511,7 @@ No structured response documented.
 <a id="api-update-check"></a>
 ## `/api/update/check`
 
-- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1920)
+- **Handler:** [`app_updates_available`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2007)
 - Cooldown: 10s
 
 Get the metadata for the latest available software version. This does not download or apply the update.
@@ -1487,7 +1541,7 @@ No parameters inferred.
 <a id="api-update-apply"></a>
 ## `/api/update/apply`
 
-- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1955)
+- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2042)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Download and apply a software update from the provided URL.
@@ -1517,7 +1571,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2008)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2095)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1541,7 +1595,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2031)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2118)
 
 
 No description provided.
@@ -1557,7 +1611,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2036)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2123)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
@@ -1585,7 +1639,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2087)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2174)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks
