@@ -127,8 +127,19 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
+    import os
+
     is_gz = file_path.endswith(".gz")
     served_path = file_path[:-3] if is_gz else file_path
+
+    # On-the-wire byte count for this file. When gzipped this is the
+    # compressed size, which is exactly what goes over the socket (we send
+    # Content-Encoding: gzip), so it is the correct Content-Length value.
+    try:
+        content_length = os.stat(file_path)[6]
+    except Exception as e:
+        print(f"Failed to stat {file_path}: {e}")
+        content_length = None
 
     try:
         hasher = hashlib_sha256()
@@ -165,6 +176,14 @@ def create_file_handler(file_path):
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        # Always advertise the body length for static assets. Without it the
+        # response is delimited only by the socket closing, so a transfer cut
+        # short by a WiFi/power blip looks "complete" to the browser and can be
+        # cached permanently (Cache-Control: immutable) in a truncated state -
+        # which is why an asset like the CSS could stay broken until a reboot.
+        # With Content-Length the browser detects the short read and refuses it.
+        if content_length is not None:
+            headers["Content-Length"] = content_length
         if is_gz:
             if served_path.endswith(".svg"):
                 headers["Content-Type"] = "application/gzip"
@@ -2080,6 +2099,19 @@ def connect_to_wifi(initialize=False):
     if phew_is_connected() and not initialize:
         schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
         return True
+
+    # Periodic check (not startup): the link has dropped. Kick off a
+    # non-blocking reconnect and return immediately. The blocking full-connect
+    # path below busy-waits up to _WIFI_MAX_ATTEMPTS * timeout seconds, and it
+    # runs synchronously inside the asyncio scheduler - so taking it here would
+    # freeze the web server for ~20s every time WiFi flaps after a blip,
+    # stalling the browser's parallel asset requests. The next 120s cycle
+    # confirms the link came back.
+    if not initialize:
+        from phew import reconnect_to_wifi
+
+        reconnect_to_wifi()
+        return False
 
     Pico_Led.start_slow_blink()
 

@@ -150,9 +150,16 @@ async def _handle_request(reader, writer):
 
         if type(response.body).__name__ == "generator":
             # generator
-            for chunk in response.body:
-                writer.write(chunk)
-                await writer.drain()
+            try:
+                for chunk in response.body:
+                    writer.write(chunk)
+                    await writer.drain()
+            except Exception as e:
+                # Connection dropped mid-stream (e.g. WiFi/power blip). Log the
+                # path so truncated asset transfers are identifiable, then
+                # re-raise to the outer handler which closes the socket.
+                logging.error(f"Truncated streamed response for {request.path}: {e}")
+                raise
         else:
             # string/bytes
             writer.write(response.body)
