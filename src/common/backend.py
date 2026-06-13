@@ -132,15 +132,6 @@ def create_file_handler(file_path):
     is_gz = file_path.endswith(".gz")
     served_path = file_path[:-3] if is_gz else file_path
 
-    # On-the-wire byte count for this file. When gzipped this is the
-    # compressed size, which is exactly what goes over the socket (we send
-    # Content-Encoding: gzip), so it is the correct Content-Length value.
-    try:
-        content_length = os.stat(file_path)[6]
-    except Exception as e:
-        print(f"Failed to stat {file_path}: {e}")
-        content_length = None
-
     try:
         hasher = hashlib_sha256()
         with open(file_path, "rb") as f:
@@ -176,14 +167,15 @@ def create_file_handler(file_path):
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
-        # Always advertise the body length for static assets. Without it the
-        # response is delimited only by the socket closing, so a transfer cut
-        # short by a WiFi/power blip looks "complete" to the browser and can be
-        # cached permanently (Cache-Control: immutable) in a truncated state -
-        # which is why an asset like the CSS could stay broken until a reboot.
-        # With Content-Length the browser detects the short read and refuses it.
-        if content_length is not None:
-            headers["Content-Length"] = content_length
+        # Always advertise Content-Length for static assets to prevent truncated
+        # transfers from being cached as complete when using Cache-Control: immutable.
+        # For gzipped files, this is the compressed size sent over the socket.
+        try:
+            headers["Content-Length"] = os.stat(file_path)[6]
+        except Exception as e:
+            print(f"Failed to stat {file_path}: {e}")
+            headers["Content-Length"] = None
+
         if is_gz:
             if served_path.endswith(".svg"):
                 headers["Content-Type"] = "application/gzip"
