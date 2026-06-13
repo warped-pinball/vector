@@ -175,7 +175,6 @@ def create_file_handler(file_path):
             headers["Content-Length"] = os.stat(file_path)[6]
         except Exception as e:
             print(f"Failed to stat {file_path}: {e}")
-            headers["Content-Length"] = None
 
         if is_gz:
             if served_path.endswith(".svg"):
