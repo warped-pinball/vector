@@ -2092,7 +2092,7 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def connect_to_wifi(initialize=False):
+def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 
@@ -2187,7 +2187,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        connect_to_wifi(True)
+        connect_to_wifi()
         add_app_mode_routes()
         from phew.server import set_callback
 

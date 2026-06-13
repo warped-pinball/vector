@@ -221,7 +221,7 @@ def initialize_timedate():
     update_time(1)
     year, month, day, _, _, _, _, _ = rtc.datetime()
     print("   Current UTC Date (Y/M/D): ", year, month, day)
-    unschedule(initialize_timedate)
+    unschedule(initialize_timedate)  # once we successfully update the time, we can stop trying to update it again until we next connect to wifi
 
 
 MemIndex = 0
