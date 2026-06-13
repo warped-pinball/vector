@@ -214,10 +214,6 @@ def update_time(retry=1):
     print("   Failed to update date after several attempts.")
 
 
-_NTP_RETRY_MS = 10_000  # retry interval if NTP sync fails (ms)
-_NTP_VALID_YEAR = 2021  # any year >= this is considered a successful sync
-
-
 def initialize_timedate():
     from machine import RTC
 
@@ -226,24 +222,16 @@ def initialize_timedate():
     # Set the year to a known-invalid sentinel so we can reliably detect whether
     # the NTP update succeeded, even if the clock was only slightly off beforehand.
     _, month, day, weekday, hour, minute, second, subsecond = rtc.datetime()
-    rtc.datetime((2000, month, day, weekday, hour, minute, second, subsecond))
+    rtc.datetime((2020, month, day, weekday, hour, minute, second, subsecond))
 
     update_time(1)
 
     year, month, day, _, _, _, _, _ = rtc.datetime()
     print("   Current UTC Date (Y/M/D): ", year, month, day)
 
-    if year >= _NTP_VALID_YEAR:
-        print("   NTP sync successful.")
-        # Task was scheduled as one-shot; scheduler removes it automatically.
-    else:
+    if year == 2020:
         print("   NTP sync failed, will retry.")
-        # Re-schedule as another one-shot so we retry without holding a stale
-        # recurring entry.  Calling unschedule() from inside a scheduled task is
-        # unsafe because run_scheduled() still holds the original list index, so
-        # we rely on the one-shot removal path in run_scheduled() and simply
-        # re-queue ourselves here.
-        schedule(initialize_timedate, _NTP_RETRY_MS)
+        schedule(initialize_timedate, 5000)
 
 
 MemIndex = 0
