@@ -2255,7 +2255,7 @@ def connect_to_wifi():
             if fault_is_raised(ALL_WIFI):
                 clear_fault(ALL_WIFI)
 
-            schedule(initialize_timedate, 5000, 10000, log="Server: Initialize time & date")
+            schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
             Pico_Led.on()
             return True
 
