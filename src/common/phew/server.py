@@ -225,8 +225,8 @@ def initialize_timedate():
 
     # Set the year to a known-invalid sentinel so we can reliably detect whether
     # the NTP update succeeded, even if the clock was only slightly off beforehand.
-    _, mo, d, wd, h, mi, s, ss = rtc.datetime()
-    rtc.datetime((2000, mo, d, wd, h, mi, s, ss))
+    _, month, day, weekday, hour, minute, second, subsecond = rtc.datetime()
+    rtc.datetime((2000, month, day, weekday, hour, minute, second, subsecond))
 
     update_time(1)
 
