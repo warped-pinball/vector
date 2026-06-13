@@ -231,7 +231,7 @@ def initialize_timedate():
 
     if year == 2020:
         print("   NTP sync failed, will retry.")
-        schedule(initialize_timedate, 5000)
+        schedule(initialize_timedate, 25000)
 
 
 MemIndex = 0

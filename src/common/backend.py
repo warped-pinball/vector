@@ -2219,6 +2219,11 @@ def connect_to_wifi():
     from phew.server import initialize_timedate, schedule
 
     if phew_is_connected():
+        # Already associated (e.g. after a soft reboot, where the wifi chip
+        # keeps its connection). Still report the IP so it shows on the terminal.
+        from phew import get_ip_address
+
+        print(f"Connected to wifi with IP address: {get_ip_address()}")
         return True
 
     Pico_Led.start_slow_blink()
