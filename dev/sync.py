@@ -115,7 +115,11 @@ def main(argv: list[str]) -> int:
 
     port = args.port
     if port is None:
-        ports = list_pico_ports()
+        try:
+            ports = list_pico_ports()
+        except OSError as exc:
+            print(f"Unable to detect Pico ports. Ensure mpremote is installed and available on PATH. ({exc})")
+            return 1
         if len(ports) == 1:
             port = ports[0]
             print(f"Using detected port: {port}")
