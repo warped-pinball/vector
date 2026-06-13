@@ -2096,22 +2096,8 @@ def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 
-    if phew_is_connected() and not initialize:
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+    if phew_is_connected():
         return True
-
-    # Periodic check (not startup): the link has dropped. Kick off a
-    # non-blocking reconnect and return immediately. The blocking full-connect
-    # path below busy-waits up to _WIFI_MAX_ATTEMPTS * timeout seconds, and it
-    # runs synchronously inside the asyncio scheduler - so taking it here would
-    # freeze the web server for ~20s every time WiFi flaps after a blip,
-    # stalling the browser's parallel asset requests. The next 120s cycle
-    # confirms the link came back.
-    if not initialize:
-        from phew import reconnect_to_wifi
-
-        reconnect_to_wifi()
-        return False
 
     Pico_Led.start_slow_blink()
 
@@ -2147,7 +2133,7 @@ def connect_to_wifi(initialize=False):
             if fault_is_raised(ALL_WIFI):
                 clear_fault(ALL_WIFI)
 
-            schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
+            schedule(initialize_timedate, 5000, 10000, log="Server: Initialize time & date")
             Pico_Led.on()
             return True
 

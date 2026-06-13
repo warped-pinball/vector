@@ -221,6 +221,7 @@ def initialize_timedate():
     update_time(1)
     year, month, day, _, _, _, _, _ = rtc.datetime()
     print("   Current UTC Date (Y/M/D): ", year, month, day)
+    unschedule(initialize_timedate)
 
 
 MemIndex = 0
@@ -252,6 +253,11 @@ def restart_schedule():
 def schedule(func, phase_ms, frequency_ms=None, log=None):
     # Tuple order: (func, freq, next_run, phase, log)
     _scheduled_tasks.append((func, frequency_ms, time.ticks_add(time.ticks_ms(), phase_ms), phase_ms, log))
+
+
+def unschedule(func):
+    global _scheduled_tasks
+    _scheduled_tasks = [t for t in _scheduled_tasks if t[0] != func]
 
 
 async def run_scheduled():
