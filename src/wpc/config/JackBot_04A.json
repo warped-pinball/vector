@@ -1,0 +1,86 @@
+{
+    "GameInfo": {
+        "GameName": "Jack Bot",
+        "System": "WPC",
+        "FileVer": 1
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 947,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+    "DisplayMessage": {
+        "Type": 10,
+        "AddressS1": 7812,
+        "AddressS2": 7877,
+        "AddressS3": 7942,
+        "Length": 32,
+        "ChecksumStartAdr": 7812,
+        "ChecksumEndAdr": 8004,
+        "ChecksumResultAdr": 8005
+    },
+    "Adjustments": {
+        "Type": 10,
+        "CustomMessageOn": 7198,
+        "ChecksumStartAdr": 7157,
+        "ChecksumEndAdr": 7414,
+        "ChecksumResultAdr": 7415
+    },
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7522,
+        "BytesInScore": 6,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7519,
+        "InitialSpacing": 9,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7560,
+        "GrandChampInitAdr": 7557,
+        "ChecksumStartAdr": 7519,
+        "ChecksumEndAdr": 7554,
+        "ChecksumResultAdr": 7555,
+        "GCChecksumStartAdr": 7557,
+        "GCChecksumEndAdr": 7565,
+        "GCChecksumResultAdr": 7566
+    },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
+        "DisableByte": 0
+    },
+    "Switches": {
+        "Type": 0,
+        "Address": 0,
+        "Length": 0
+    },
+    "CoinDrop": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 129,
+        "GameActiveValue": 0,
+        "Players": 5897,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
+    }
+}
