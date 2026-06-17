@@ -128,6 +128,8 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
+    import os
+
     is_gz = file_path.endswith(".gz")
     served_path = file_path[:-3] if is_gz else file_path
 
@@ -166,6 +168,14 @@ def create_file_handler(file_path):
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        # Always advertise Content-Length for static assets to prevent truncated
+        # transfers from being cached as complete when using Cache-Control: immutable.
+        # For gzipped files, this is the compressed size sent over the socket.
+        try:
+            headers["Content-Length"] = os.stat(file_path)[6]
+        except Exception as e:
+            print(f"Failed to stat {file_path}: {e}")
+
         if is_gz:
             if served_path.endswith(".svg"):
                 headers["Content-Type"] = "application/gzip"
@@ -2204,12 +2214,16 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def connect_to_wifi(initialize=False):
+def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 
-    if phew_is_connected() and not initialize:
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+    if phew_is_connected():
+        # Already associated (e.g. after a soft reboot, where the wifi chip
+        # keeps its connection). Still report the IP so it shows on the terminal.
+        from phew import get_ip_address
+
+        print(f"Connected to wifi with IP address: {get_ip_address()}")
         return True
 
     Pico_Led.start_slow_blink()
@@ -2300,7 +2314,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        connect_to_wifi(True)
+        connect_to_wifi()
         add_app_mode_routes()
         from phew.server import set_callback
 
