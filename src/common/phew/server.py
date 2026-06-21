@@ -138,28 +138,41 @@ async def _handle_request(reader, writer):
             if hasattr(body, "__len__"):
                 response.add_header("Content-Length", len(body))
 
-        # write status line
-        writer.write(f"HTTP/1.1 {response.status} {response.status}\r\n".encode("ascii"))
+        try:
+            # write status line
+            writer.write(f"HTTP/1.1 {response.status} {response.status}\r\n".encode("ascii"))
 
-        # write headers
-        for key, value in response.headers.items():
-            writer.write(f"{key}: {value}\r\n".encode("ascii"))
+            # write headers
+            for key, value in response.headers.items():
+                writer.write(f"{key}: {value}\r\n".encode("ascii"))
 
-        # blank line to denote end of headers
-        writer.write("\r\n".encode("ascii"))
+            # blank line to denote end of headers
+            writer.write("\r\n".encode("ascii"))
 
-        if type(response.body).__name__ == "generator":
-            # generator
-            for chunk in response.body:
-                writer.write(chunk)
+            if type(response.body).__name__ == "generator":
+                # generator
+                try:
+                    for chunk in response.body:
+                        writer.write(chunk)
+                        await writer.drain()
+                except Exception as e:
+                    # Connection dropped mid-stream (e.g. WiFi/power blip). Log
+                    # the path so truncated asset transfers are identifiable,
+                    # then re-raise; the finally below still closes the socket.
+                    logging.error(f"Truncated streamed response for {request.path}: {e}")
+                    raise
+            else:
+                # string/bytes
+                writer.write(response.body)
                 await writer.drain()
-        else:
-            # string/bytes
-            writer.write(response.body)
-            await writer.drain()
-
-        writer.close()
-        await writer.wait_closed()
+        finally:
+            # Always close the writer, even on a mid-stream exception, so we
+            # don't leak the client socket/PCB after a truncated response.
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
 
         processing_time = time.ticks_ms() - request_start_time
         logging.info(f"> {request.method} {request.path} ({response.status}) [{processing_time}ms]")
@@ -205,9 +218,20 @@ def initialize_timedate():
     from machine import RTC
 
     rtc = RTC()
+
+    # Set the year to a known-invalid sentinel so we can reliably detect whether
+    # the NTP update succeeded, even if the clock was only slightly off beforehand.
+    _, month, day, weekday, hour, minute, second, subsecond = rtc.datetime()
+    rtc.datetime((2020, month, day, weekday, hour, minute, second, subsecond))
+
     update_time(1)
+
     year, month, day, _, _, _, _, _ = rtc.datetime()
     print("   Current UTC Date (Y/M/D): ", year, month, day)
+
+    if year == 2020:
+        print("   NTP sync failed, will retry.")
+        schedule(initialize_timedate, 25000)
 
 
 MemIndex = 0
@@ -239,6 +263,11 @@ def restart_schedule():
 def schedule(func, phase_ms, frequency_ms=None, log=None):
     # Tuple order: (func, freq, next_run, phase, log)
     _scheduled_tasks.append((func, frequency_ms, time.ticks_add(time.ticks_ms(), phase_ms), phase_ms, log))
+
+
+def unschedule(func):
+    global _scheduled_tasks
+    _scheduled_tasks = [t for t in _scheduled_tasks if t[0] != func]
 
 
 async def run_scheduled():

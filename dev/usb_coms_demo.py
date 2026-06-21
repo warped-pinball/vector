@@ -140,6 +140,18 @@ def main():
                 print("\tGame is not active.")
             time.sleep(0.5)
 
+            # --- Address Read/Write/Listener API examples (admin-only routes) ---
+
+            # Read 4 bytes starting at SRAM offset 0
+            resp = client.send_and_receive(route="/api/address/read", payload={"offset": 0, "count": 4})
+            print("Address Read:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
+            # Write two bytes at SRAM offset 0
+            resp = client.send_and_receive(route="/api/address/write", payload={"offset": 0, "values": [0xAA, 0xBB]})
+            print("Address Write:" + json.dumps(resp["body"]))
+            time.sleep(0.5)
+
     except KeyboardInterrupt:
         print("Stopped listening.")
     finally:

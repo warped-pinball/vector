@@ -11,6 +11,7 @@ import uctypes
 from ls import ls
 from micropython import const
 from phew.server import add_route as phew_add_route
+from phew.server import schedule, unschedule
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -127,6 +128,8 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
+    import os
+
     is_gz = file_path.endswith(".gz")
     served_path = file_path[:-3] if is_gz else file_path
 
@@ -165,6 +168,14 @@ def create_file_handler(file_path):
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        # Always advertise Content-Length for static assets to prevent truncated
+        # transfers from being cached as complete when using Cache-Control: immutable.
+        # For gzipped files, this is the compressed size sent over the socket.
+        try:
+            headers["Content-Length"] = os.stat(file_path)[6]
+        except Exception as e:
+            print(f"Failed to stat {file_path}: {e}")
+
         if is_gz:
             if served_path.endswith(".svg"):
                 headers["Content-Type"] = "application/gzip"
@@ -1698,6 +1709,136 @@ def app_memory_snapshot(request):
         yield f"{value}\n".encode("utf-8")
 
 
+def broadcast_memory_snapshot():
+    import discovery
+
+    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
+    chunk_size = 256
+    offset = 0
+
+    while offset < len(ram_access):
+        chunk = ram_access[offset : offset + chunk_size]
+        # Prepend 4-byte offset header to each chunk
+        message = offset.to_bytes(4, "big") + chunk
+        discovery.send_sock.sendto(message, ("255.255.255.255", 2040))
+        offset += chunk_size
+
+    return
+
+
+@add_route("/api/memory/toggle-broadcast", auth=True)
+def app_memory_broadcast(request):
+    data = request.data
+    if data.get("enable", False):
+        # add function call to scheduler
+        raw_freq = data.get("frequency_ms", 100)
+        try:
+            freq = int(raw_freq)
+        except (TypeError, ValueError):
+            freq = 100
+
+        # Clamp frequency to sane bounds to avoid overload or absurd delays
+        if freq < 10:
+            freq = 10
+        elif freq > 60000:
+            freq = 60000
+
+        # Ensure we don't accumulate multiple scheduled entries for the same function
+        unschedule(broadcast_memory_snapshot)
+        schedule(broadcast_memory_snapshot, phase_ms=0, frequency_ms=freq)  # broadcast every freq milliseconds
+    else:
+        # remove function call from scheduler
+        unschedule(broadcast_memory_snapshot)
+    return
+
+
+#
+# Address Read / Write API
+#
+# A lightweight way to read and write arbitrary SRAM addresses.
+#
+
+
+@add_route("/api/address/read", auth=True)
+def app_address_read(request):
+    """
+    @api
+    summary: Read one or more bytes from SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: count
+          type: integer
+          required: false
+          description: Number of bytes to read (default 1, max 256)
+    response:
+      status_codes:
+        - code: 200
+          description: Values returned
+      body:
+        example: {"offset": 100, "values": [0, 255, 128]}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    if offset is None:
+        return '{"error":"offset required"}', 400
+    count = data.get("count", 1)
+    if count < 1:
+        count = 1
+    if count > 256:
+        count = 256
+    if offset < 0 or (offset + count) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, count)
+    return {"offset": offset, "values": list(ram)}
+
+
+@add_route("/api/address/write", auth=True)
+def app_address_write(request):
+    """
+    @api
+    summary: Write one or more bytes to SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: values
+          type: array
+          required: true
+          description: List of byte values (0-255) to write
+    response:
+      status_codes:
+        - code: 200
+          description: Write completed
+      body:
+        example: {"offset": 100, "count": 3}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    values = data.get("values")
+    if offset is None or values is None:
+        return '{"error":"offset and values required"}', 400
+    if not isinstance(values, list) or len(values) == 0:
+        return '{"error":"values must be a non-empty list"}', 400
+    if len(values) > 256:
+        return '{"error":"max 256 bytes per write"}', 400
+    if offset < 0 or (offset + len(values)) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, len(values))
+    for i, v in enumerate(values):
+        ram[i] = v & 0xFF
+    return {"offset": offset, "count": len(values)}
+
+
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
     """
@@ -2073,12 +2214,16 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def connect_to_wifi(initialize=False):
+def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 
-    if phew_is_connected() and not initialize:
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+    if phew_is_connected():
+        # Already associated (e.g. after a soft reboot, where the wifi chip
+        # keeps its connection). Still report the IP so it shows on the terminal.
+        from phew import get_ip_address
+
+        print(f"Connected to wifi with IP address: {get_ip_address()}")
         return True
 
     Pico_Led.start_slow_blink()
@@ -2170,7 +2315,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        connect_to_wifi(True)
+        connect_to_wifi()
         add_app_mode_routes()
         from phew.server import set_callback
 
