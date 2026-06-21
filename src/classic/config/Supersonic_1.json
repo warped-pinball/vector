@@ -1,0 +1,23 @@
+{
+    "GameInfo": {
+        "GameName": "Supersonic",
+        "System": "ClassicBally"
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 56
+    },   
+    "HighScores": {
+        "Type": 3,
+        "ScoreAdr": 1806,
+        "InitialAdr": 1822,
+        "BytesInScore": 4
+    },
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": 512,
+        "Players": 169,
+        "PlayerUp": 170,
+        "GameActive": 166
+    }   
+}

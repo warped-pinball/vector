@@ -171,3 +171,7 @@ update.json
 
 # Mac
 .DS_Store
+
+# Classics generated files
+ram_intercept_*
+shadow_ram_definitions*.*
