@@ -17,6 +17,3 @@ gdata = {"numberOfPlayers": 2, "digitsPerPlayer": 4, "dummy_reels": 0}
 
 # game status
 game_status = {}
-
-
-run_learning_game = False
