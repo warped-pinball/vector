@@ -18,9 +18,6 @@ gdata = {"numberOfPlayers": 2, "digitsPerPlayer": 4, "dummy_reels": 0}
 # game status
 game_status = {}
 
-
-run_learning_game = False
-
 # Timestamp (ticks_ms) of the most recent sensor channel activation.
 # Written by ScoreTrack.processAndRun(); read by the sensor-activity poll endpoint.
 sensor_last_hit_ms = 0

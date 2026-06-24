@@ -309,7 +309,7 @@ function buildAdjGroup(label, value, colorClass, onUp, onDown) {
   lbl.className = "adj-group-label";
   lbl.textContent = label;
 
-  const btnClass = "secondary adj-btn" + (colorClass ? " adj-btn-" + colorClass : "");
+  const btnClass = "secondary outline adj-btn" + (colorClass ? " adj-btn-" + colorClass : "");
   const valClass = "adj-value" + (colorClass ? " adj-val-" + colorClass : "");
 
   const upBtn = document.createElement("button");
@@ -672,12 +672,12 @@ function startSensorActivityPolling() {
         } else if (data.state === "red") {
           lamp.style.background = "#e74c3c";
         } else {
-          lamp.style.background = "#444";
+          lamp.style.background = "var(--pico-muted-border-color)";
         }
       }
     } catch (e) {
       // ignore — lamp just stays dark
-      lamp.style.background = "#444";
+      lamp.style.background = "var(--pico-muted-border-color)";
     }
     if (window.adminPollingActive) {
       setTimeout(poll, POLL_MS);

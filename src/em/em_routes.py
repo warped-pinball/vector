@@ -1,12 +1,6 @@
 from backend import add_route
 import SharedState as S
 import os
-
-try:
-    import ujson as json
-except Exception:
-    import json
-
 import time
 
 from logger import logger_instance
@@ -87,38 +81,6 @@ def get_em_config(request):
         "endpause": int(S.gdata.get("endpause", 5)),
     }
     return config
-
-
-@add_route("/api/em/get_pauses")
-def get_pauses(request):
-    """Return start and end pause values."""
-    return {
-        "startpause": int(S.gdata.get("startpause", 9)),
-        "endpause": int(S.gdata.get("endpause", 5))
-    }
-
-
-@add_route("/api/em/set_pauses", auth=True)
-def set_pauses(request):
-    """Set start and end pause values and save to SPI flash."""
-    try:
-        startpause = int(request.data.get("startpause", 9))
-        endpause = int(request.data.get("endpause", 5))
-        
-        # Validate reasonable ranges (1-30 seconds should be plenty)
-        startpause = max(1, min(30, startpause))
-        endpause = max(1, min(30, endpause))
-        
-        S.gdata["startpause"] = startpause
-        S.gdata["endpause"] = endpause
-        
-        from ScoreTrack import saveState, updatePauseGlobals
-        saveState()  # Save to SPI flash
-        updatePauseGlobals()  # Update the global variables immediately
-        
-        return {"status": "ok", "startpause": startpause, "endpause": endpause}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}, 400
 
 
 @add_route("/api/em/get_sensitivity")
@@ -248,103 +210,8 @@ def set_timing_sensitivity(request):
     return {"status": "ok", "p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
 
 
-@add_route("/api/em/record_calibration_game", auth=True)
-def record_calibration_game(request):
-    """
-    Find the first game_history<N>.dat (1..4) file that does NOT exist.
-    Set ScoreTrack.fileNumber = N (1..4). If all exist, return an error.
-    No placeholder file is created here.
-    """
-    import ScoreTrack
-    ScoreTrack.storeCalibrationGameProgress=0
-
-    try:
-        # use check_files() to see which slots exist
-        info = check_files()
-        exists = info.get("exists", [False, False, False, False])
-
-        for idx, present in enumerate(exists, start=1):
-            if not present:
-                ScoreTrack.fileNumber = idx
-                break
-
-        log.log(f"EMCAL: store file num: {idx}")
-        S.run_learning_game = True
-
-        while (S.run_learning_game == True):
-            print("&", end="")
-            yield json.dumps({"progress": ScoreTrack.storeCalibrationGameProgress})
-            time.sleep(0.5)
-       
-        return {"status": "ok"}
-
-    except Exception as e:
-        S.run_learning_game = False
-        return {"status": "error", "error": str(e)}, 500
-
-
-@add_route("/api/em/set_calibration_scores", auth=True)
-def final_calibration_game_scores(request):
-    scores_in = (request.data or {}).get("scores", [])
-    log.log(f"EMCAL: raw score entry {scores_in}")
-
-    def to_int(v):
-        try:
-            return int(v)
-        except Exception:
-            return 0
-
-    # compose each inner list of digits into an integer
-    composed = []
-    for series in scores_in:
-        n = 0
-        if isinstance(series, (list, tuple)):
-            for d in series:
-                n = n * 10 + to_int(d)
-        else:
-            n = to_int(series)
-        composed.append(n)
-        if len(composed) == 4:
-            break
-
-    # pad to 4 scores
-    while len(composed) < 4:
-        composed.append(0)
-
-    log.log(f"EMCAL: score save {composed}")
-    from ScoreTrack import add_actual_score_to_file
-    add_actual_score_to_file(filename=None, actualScores=tuple(composed))
-
-    return {"status": "ok", "scores": composed}
-   
-
-
-
-@add_route("/api/em/start_learning_process", auth=True)
-def start_learning_process(request):
-    # TODO actually start the learning process and report progress
-    #target = 20
-
-    from ScoreTrack import learnModeProcessNow
-    learnModeProcessNow()
-
-    #for i in range(target):
-    #    yield json.dumps({"progress": int((i + 1) / target * 100)})
-    #    time.sleep(1)
-    return json.dumps({"status": "done"})
-
-
-
-
-
-@add_route("/api/em/recorded_games_count")
-def recorded_games_count(request):
-    return check_files()
-
-def check_files():   
-    """
-    Check for game_history1.dat .. game_history4.dat return boolean array of their existence.
-    """ 
+def check_files():
+    """Check for game_history1.dat .. game_history4.dat; return existence flags and count."""
     try:
         try:
             names = set(os.listdir("/"))
@@ -356,46 +223,17 @@ def check_files():
             fname = f"game_history{idx}.dat"
             exists.append(fname in names)
 
-        #print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: ",exists,sum(1 for x in exists if x) )
         return {"exists": exists, "count": sum(1 for x in exists if x)}
-    
+
     except Exception as e:
-        log.log(f"EMCAL: recorded_games_count error: {e}")
+        log.log(f"EMCAL: check_files error: {e}")
         return {"exists": [False, False, False, False], "count": 0, "error": str(e)}
-
-
-@add_route("/api/em/delete_calibration_games", auth=True)
-def delete_calibration_games(request):
-    print("CAL GAMes DEL ----------------------------")
-    """Delete all stored calibration games. Deletes files starting with 'game_history' in root directory."""
-    deleted_files = []
-    roots = ["/"]
-    for root in roots:
-        try:
-            for name in os.listdir(root):
-                if name.startswith("game_history"):
-                    filepath = (root.rstrip("/") + "/" + name)
-                    try:
-                        os.remove(filepath)
-                        deleted_files.append(filepath)
-                    except Exception:
-                        pass
-        except Exception:
-            pass    
-    log.log("EMCAL: delete calibration files")
-    return json.dumps({"status": "deleted"})
-
-
 
 
 @add_route("/api/em/diagnostics")
 def diagnostics(request):
-    """
-    Stream diagnostic data - game history files.   
-    """
-    import os
-
-    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]       
+    """Stream diagnostic data - game history files."""
+    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]
     info = check_files()
     exists = info.get("exists", [False, False, False, False])
     existing = ["/" + name for name, present in zip(candidate_files, exists) if present]
@@ -417,11 +255,7 @@ def diagnostics(request):
                         chunk = f.read(256)
                         if not chunk:
                             break
-                        # convert to str safely
-                        #try:
-                        #    yield chunk.decode("utf-8", "ignore")
-                        #except Exception:
-                        # fallback hex representation if undecodable
+                        # hex representation (binary data is not safely decodable)
                         yield chunk.hex() + "\n"
             except Exception as e:
                 yield f"[ERROR reading {path}: {e}]\n"

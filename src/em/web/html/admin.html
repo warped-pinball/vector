@@ -5,6 +5,14 @@
         text-align: center; */
   }
 
+  /* Keep all the Game Configuration inputs aligned on one line even when a
+     longer label (e.g. "Score Reels per Player:") wraps to two lines on
+     narrow screens. Bottom-aligning the grid cells anchors every input to the
+     same baseline instead of letting tall labels push their input down. */
+  #game-configuration .grid {
+    align-items: end;
+  }
+
   button.danger {
     background-color: #e73434;
     color: white;
@@ -35,7 +43,8 @@
     }
   }
 
-  /* Adjustments Profiles Styling */
+  /* Adjustments Profiles Styling */y
+  
   .profile-row {
     display: flex;
     align-items: center;
@@ -88,7 +97,7 @@
   .adj-group-label {
     font-size: 0.75rem;
     font-weight: bold;
-    color: var(--muted-color, #888);
+    color: var(--pico-muted-color);
     text-align: center;
   }
 
@@ -137,13 +146,20 @@
     text-align: center;
   }
 
-  /* Red = score/detection depth */
-  .adj-val-score { color: #c0392b; }
-  .adj-btn-score { color: #c0392b !important; border-color: #c0392b !important; }
+  /* Red = score/detection depth (uses Pico's "del" red, theme-aware).
+     !important needed to win over Pico's .outline.secondary variable rule. */
+  .adj-val-score { color: var(--pico-del-color); }
+  .adj-btn-score {
+    --pico-color: var(--pico-del-color) !important;
+    --pico-border-color: var(--pico-del-color) !important;
+  }
 
-  /* Blue = reset/hold-off depth */
-  .adj-val-reset { color: #2471a3; }
-  .adj-btn-reset { color: #2471a3 !important; border-color: #2471a3 !important; }
+  /* Blue = reset/hold-off depth (uses Pico's primary accent, theme-aware) */
+  .adj-val-reset { color: var(--pico-primary); }
+  .adj-btn-reset {
+    --pico-color: var(--pico-primary) !important;
+    --pico-border-color: var(--pico-primary) !important;
+  }
 
   .timing-legend {
     display: flex;
@@ -153,8 +169,8 @@
     margin-bottom: 0.25rem;
   }
 
-  .timing-legend-score { color: #c0392b; font-weight: bold; }
-  .timing-legend-reset { color: #2471a3; font-weight: bold; }
+  .timing-legend-score { color: var(--pico-del-color); font-weight: bold; }
+  .timing-legend-reset { color: var(--pico-primary); font-weight: bold; }
 
   .timing-section {
     display: flex;
@@ -181,13 +197,13 @@
 
   .live-player-score-label {
     font-size: 0.8rem;
-    color: var(--muted-color, #888);
+    color: var(--pico-muted-color);
   }
 
   .live-player-score-value {
     font-size: 1.1rem;
     font-weight: bold;
-    color: var(--color, inherit);
+    color: var(--pico-color);
     line-height: 1.2;
   }
 </style>
@@ -239,7 +255,7 @@
         <button class="secondary outline" id="sensitivity-recalibrate" style="margin-left: 0.75rem; width: auto; padding: 0.3rem 0.8rem">Recalibrate</button>
         <span id="sensor-activity-lamp"
           style="display:inline-block; width:1.1rem; height:1.1rem; border-radius:50%;
-                 background:#444; margin-left:0.75rem; vertical-align:middle;
+                 background:var(--pico-muted-border-color); margin-left:0.75rem; vertical-align:middle;
                  transition: background 0.1s;" title="Sensor activity"></span>
       </div>
     </div>
