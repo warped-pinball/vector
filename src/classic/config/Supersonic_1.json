@@ -9,15 +9,15 @@
     },   
     "HighScores": {
         "Type": 3,
-        "ScoreAdr": 1806,
-        "InitialAdr": 1822,
+        "ScoreAdr": 18,
+        "InitialAdr": 12,
         "BytesInScore": 4
     },
     "InPlay": {
         "Type": 1,
-        "ScoreAdr": 512,
-        "Players": 169,
-        "PlayerUp": 170,
-        "GameActive": 166
+        "ScoreAdr": 1,
+        "Players": 16,
+        "PlayerUp": 17,
+        "GameActive": 16
     }   
 }

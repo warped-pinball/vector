@@ -102,11 +102,16 @@ class Builder:
         for root, dirs, files in os.walk(self.build_dir):
             for file in files:
                 # skip Python files whose base name ends with "viper"
+                # or that start with "Ram_Intercept" (copied as .py, not compiled)
                 if file.endswith(".py"):
                     name_noext = os.path.splitext(file)[0]
                     if name_noext.lower().endswith("viper"):
                         # leave the .py file in place and skip compiling
                         print(f"Skipping viper file: {os.path.join(root, file)}")
+                        continue
+                    if name_noext.startswith("Ram_Intercept"):
+                        # leave the .py file in place and skip compiling
+                        print(f"Skipping Ram_Intercept file: {os.path.join(root, file)}")
                         continue
                     py_file = os.path.join(root, file)
                     cmd = f"{MPY_CROSS} -O3 {py_file}"

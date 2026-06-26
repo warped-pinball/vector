@@ -8,7 +8,7 @@
 """
 import json
 import machine
-import Ram_Intercept as RamInt
+import Ram_Intercept_classics as RamInt
 import uctypes
 import SPI_Store as fram
 from displayMessage import fixAdjustmentChecksum
