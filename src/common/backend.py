@@ -2204,6 +2204,7 @@ def add_ap_mode_routes():
 
 
 def connect_to_wifi(initialize=False):
+    print("\n>>> TEST: connect_to_wifi tick (initialize={}) <<<\n".format(initialize))
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 

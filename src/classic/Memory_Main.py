@@ -37,7 +37,7 @@ def go():
 
     # Boot up PIO/DMA Ram Intercept system
     r=RamInt.configure()
-    if r is "fault":
+    if r == "fault":
         Log.log("MEM: Ram Intercept Fault - cycle power")
         while True:
             pass
