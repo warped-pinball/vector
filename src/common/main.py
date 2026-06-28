@@ -6,6 +6,7 @@
     fault check updated for early sys11 game compatability
 """
 
+import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
 import resource
 import time
 
