@@ -530,10 +530,9 @@ def app_game_status(request):
             }
     @end
     """
-    # TODO cache me
-    from GameStatus import game_report
+    from GameStatus import cached_report
 
-    return game_report()
+    return cached_report()
 
 
 #
