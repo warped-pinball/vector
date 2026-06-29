@@ -2,6 +2,7 @@ import json
 import sys
 
 import uselect
+from nonblocking_print import reliable_print
 from phew.server import Request, Response, _routes, catchall_handler
 
 incoming_data = []  # complete lines only
@@ -167,8 +168,11 @@ def usb_request_handler():
 
         try:
             response_text = handle_usb_api_request(route_url, headers, data)
-            # This is how the response is sent back to the device
-            print(f"USB API RESPONSE-->{response_text}")
+            # This is how the response is sent back to the device.
+            # Use reliable_print (blocking, bounded by the firmware CDC TX
+            # timeout) so the response is never dropped/truncated while the
+            # host is awake -- unlike the non-blocking print() used elsewhere.
+            reliable_print(f"USB API RESPONSE-->{response_text}")
         except Exception as e:
             print(f"USB REQ: error processing request: {e}")
             # Continue processing other requests even if one fails
