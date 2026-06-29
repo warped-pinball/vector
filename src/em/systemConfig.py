@@ -2,5 +2,5 @@ vectorSystem = "em"
 updatesURL = "http://software.warpedpinball.com/vector/em/latest.json"
 
 # Firmware version for the EM build
-SystemVersion = "1.6.4"
+SystemVersion = "1.6.5"
 
