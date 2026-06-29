@@ -650,6 +650,16 @@ def get_live_scores(use_format=True):
     return scores
 
 
+def get_modes():
+    """Mode reporting is not supported on Data East.
+
+    Stub so the shared GameStatus.game_report() can call get_modes()
+    uniformly across systems. Returns an empty dict (no active modes),
+    matching the "no modes configured" return of systems that do support it.
+    """
+    return {}
+
+
 def get_in_play_data():
     """
     Return dict with whatever we can gather up:

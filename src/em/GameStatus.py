@@ -21,6 +21,23 @@ log = logger_instance
 S.game_status = {"game_active": False, "number_of_players": 0, "time_game_start": None, "time_game_end": None, "poll_state": 0}
 
 
+# Most recent report computed by poll_fast (4Hz). The HTTP route returns this
+# cached copy instead of recomputing per request, decoupling poll frequency
+# from web request rate and avoiding per-request allocations (GC pressure).
+_last_report = None
+
+
+def cached_report():
+    """Return the most recent game report from poll_fast.
+
+    Falls back to computing one on demand if the poller has not run yet
+    (e.g. a request arrives during boot before the first poll tick).
+    """
+    if _last_report is None:
+        return game_report()
+    return _last_report
+
+
 def _get_machine_score(player):
     """get score  from scoretrack module"""
     return ScoreTrack.getPlayerScore(player)
@@ -74,4 +91,6 @@ def poll_fast():
     else:
         S.game_status["poll_state"] = 0
 
-    push_game_state(game_report())
+    global _last_report
+    _last_report = game_report()
+    push_game_state(_last_report)

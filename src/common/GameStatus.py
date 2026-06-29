@@ -43,8 +43,9 @@ def game_report():
             data["Modes"] = modes
 
         # Add active format name
-        data["ActiveFormatName"] = S.active_format.get("Name", "Standard")
-        data["ActiveFormatId"] = S.active_format.get("Id", 0)
+        active_format = getattr(S, "active_format", {})
+        data["ActiveFormatName"] = active_format.get("Name", "Standard")
+        data["ActiveFormatId"] = active_format.get("Id", 0)
         data["game_num"] = S.gameCounter
 
 
