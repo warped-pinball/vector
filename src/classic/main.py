@@ -5,6 +5,7 @@
     Warped Pinball - Vector :: Classic
 """
 
+import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
 import resource
 import time
 
@@ -28,7 +29,28 @@ DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 
 led_board = None
 
+# Set True to boot in TRANSPARENT mode: Vector stays off the memory bus
+# (no RAM intercept) and simply releases the main board to run on its own.
+# Useful for diagnostics / confirming the game runs with Vector bypassed.
+TRANSPARENT_MODE = False
+
 faults.initialize_board_LED()
+
+
+def transparent_mode():
+    """Bypass mode: release the board and stay transparent (no RAM intercept)."""
+    print("Main: TRANSPARENT MODE - Vector bypassed, board runs untouched")
+    # Keep the bus pins passive so the Pico doesn't drive the data bus.
+    AS_output.value(0)
+    DD_output.value(0)
+    reset_control.init()  # hold main board in reset
+    time.sleep(5)
+    reset_control.release(True)  # release main board to run on its own
+    # Idle, blinking the board LED to show we're alive but passive.
+    while True:
+        faults.toggle_board_LED()
+        print("T mode")
+        time.sleep(2)
 
 
 
@@ -69,6 +91,9 @@ This work is licensed under CC BY-NC 4.0
 )
 
 
+if TRANSPARENT_MODE:
+    transparent_mode()  # does not return
+
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
 
@@ -80,7 +105,7 @@ else:
 
 MemoryMain.go()
 
-time.sleep(0.5)
+time.sleep(5)
 reset_control.release(True)
 time.sleep(4)
 
