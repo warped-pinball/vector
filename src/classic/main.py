@@ -54,6 +54,47 @@ def transparent_mode():
 
 
 
+def init_shadow_ram():
+    """Init unused shadow RAM areas
+
+    - 0x080-0x100: write zeroes to the unused area
+    - 0x100-0x200: set the lower nibble of each byte to 1's (0x0F),
+    (this will ned to change for STern System 3 - they have full byte in the 0x100-0x200 range)
+    """
+    for i in range(0x080, 0x100):
+        shadowRam[i] = 0x00
+    for i in range(0x100, 0x200):
+        shadowRam[i] = (shadowRam[i] & 0xF0) | 0x0F
+
+
+def bus_activity_fault_check():
+    # Looking for bus activity via transitions - reset hold is not working?
+    # Classics: only watch the address lines A0-A8. These are the address-bus
+    # GPIO (FIRST_ADR_PIN..FIRST_DATA_PIN, i.e. 6..13), muxed via A_Select.
+    # Data lines (GPIO 14+) are intentionally ignored.
+    pins = [machine.Pin(i, machine.Pin.IN) for i in range(6, 14)]  # A0-A8, classics hardware
+    transitions = 0
+    total_reads = 0
+    start_time = time.ticks_us()
+    previous_states = [pin.value() for pin in pins]
+
+    while time.ticks_diff(time.ticks_us(), start_time) < 800000:
+        for i, pin in enumerate(pins):
+            current_state = pin.value()
+            if current_state != previous_states[i]:
+                transitions += 1
+                previous_states[i] = current_state
+        total_reads += 1
+
+    Log.log(f"Total reads: {total_reads}")
+    Log.log(f"Total transitions: {transitions}")
+
+    if transitions > 250:
+        return True  # Fault
+    else:
+        return False  # All ok
+
+
 def check_ap_button():
     # holding down AP setup button?
     zero_count = 0
@@ -97,13 +138,23 @@ if TRANSPARENT_MODE:
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
 
+# check for early bus activity (reset hold not working) on address lines A0-A8
+bus_activity_fault = bus_activity_fault_check()
+if bus_activity_fault:
+    faults.raise_fault(faults.HDWR01)
+    print("Main: Bus Activity fault detected !!")
+    Log.log("Main: Early bus activity - reset hold fault")
+
 # load up Game Definitions
-if not ap_mode:
+if not bus_activity_fault and not ap_mode:
     GameDefsLoad.go()
 else:
     GameDefsLoad.go(safe_mode=True)
 
-MemoryMain.go()
+if not bus_activity_fault:
+    MemoryMain.go()
+
+init_shadow_ram()
 
 time.sleep(5)
 reset_control.release(True)
