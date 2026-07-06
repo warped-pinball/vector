@@ -173,5 +173,6 @@ update.json
 .DS_Store
 
 # Classics generated files
-#ram_intercept_*
+ram_intercept_*
+Ram_Intercept_*
 shadow_ram_definitions*.*

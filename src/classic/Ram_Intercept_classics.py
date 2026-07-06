@@ -3,7 +3,7 @@
 # This work is licensed under CC BY-NC 4.0 
 
 """
-Ram intercept module for Classics - REVISION 1
+Ram intercept module for Classics - REVISION 3
 
     Adapted from WPC (because WPC uses two CE inputs)
 
@@ -133,16 +133,14 @@ def ReadAddress():
 
     #READ Process, Get Address  
     in_(pins,1)            .side(0)     #read A8 into EMPTY isr (A_Select=0) -> isr = A8 (clean)
-    mov(x,isr)             .side(1)     #X = clean A8 (0/1) for the 0x100+ low-nibble branch
+    mov(x,isr)             .side(1)     #X = clean A8 only (0/1) for the 0x100+ low-nibble branch
 
     mov(isr,y)       [3]   .side(1)     #now load 23-bit shadow base into isr
     in_(x,1)         [3]   .side(1)     #re-insert A8 from X; A_Select=1; [7]=mux settle (restores 8 cyc)
     in_(pins,8)            .side(1)     #read A0-7 (A_Select returns to 0 on the push below)
     push(noblock)          .side(0)     #send out address result for DMA
    
-
     #READ Process, send data out to pins
-    #mov(osr,x)      [3]     .side(0)     #load all ones to osr from x
     mov(osr, invert(null))
     out(pindirs,8)   [3]    .side(2)     #pins to outputs (1=output), side set is data_dir output
 
@@ -153,24 +151,17 @@ def ReadAddress():
     out(pins,8)            .side(2)     #OSR -> Pins - all 8 bits
 
 
-
-    #now overwrite the lower 4 with 1111 if we are in address space 0x100+
-    #output 4 bit read value first
-    jmp(not_x, "skip_low") 
-    mov(osr,invert(null))   #<< replace with IRQ to new function
-    out(pins,4)
+    #for 0x100+ (5101 nibble RAM) force low data nibble to 1111 via SM3 (set_lsn_data)
+    #  X currently = A8 (0/1); skip the trigger for 0x000-0x0FF (full-byte 6810 region)
+    jmp(not_x, "skip_low")
+    irq(7)                              #signal SM3 to drive D0-D3 = 1111 (its OUT group = 4 pins only)
     label("skip_low")
 
 
-    #READ Process, wrap up      
-    wait(0, gpio, 1)   [3]  .side(2)    #wait for eclock to go LOW   
-    mov(osr,null)      [3]  .side(2)    #load zeros
-
-    out(pindirs,8)          .side(0)     #pins to inputs, and return data_dir to normal    OSR->pindirs    
-    #mov(pindirs,null)  [1]  .side(0)   #new for rp2350
+    #READ Process, wrap up
+    wait(0, gpio, 1)   [2]  .side(2)    #wait eclock LOW then hold data ~10ns (data_dir still out)
+    mov(pindirs, null)     .side(0)     #pins to inputs (dir=0), data_dir back to normal
     jmp("start_adr")       .side(0)     #read done, back to the top
-
-
 
     #WRITE process
     label("do_write")    
@@ -222,9 +213,8 @@ def GetWriteAddress():
 @rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT  ) 
 #@rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT , sideset_init=rp2.PIO.OUT_LOW )   #DIAG
 def WriteRam():
-    
     wrap_target()    
-    wait(1,irq,6)      #[31]  # [8]         #wait for IRQ6 and reset it    
+    wait(1,irq,6)       #wait for IRQ6 and reset it    
      
     wait(0,gpio,1)      #wait for clock going-low edge    
     in_(pins,8)         #read all 8 data in one go
@@ -235,6 +225,27 @@ def WriteRam():
  
 
  
+# PIO_PRG : Set Low-nibble data pins to 1s
+#
+# SM#3, PIO0
+#
+#   Triggered by ReadAddress via IRQ7, but ONLY on 0x100+ reads (5101 nibble RAM).
+#   Drives just the 4 low data pins (D0-D3 = GPIO14-17) to 1111.
+#
+#   Direction stays under ReadAddress's control (out_init = IN_* here, so this SM never
+#   drives pindirs); the value written only appears while ReadAddress has D0-D3 as outputs.
+#
+#   PRELOAD: X = 0x0F  (the value written to the 4 pins)
+#   OUT: D0-D3 only
+#
+@rp2.asm_pio(out_init=(rp2.PIO.IN_HIGH,)*4)
+def set_lsn_data():
+    wrap_target()
+    wait(1, irq, 7)          #wait for trigger from ReadAddress (polarity 1 auto-clears IRQ7)
+    mov(pins, x)             #drive D0-D3 from X (=0x0F) -> low data nibble = 1111
+    wrap()
+
+
 def pio_start():
 
     gpio_1 = machine.Pin(1, machine.Pin.IN)
@@ -266,6 +277,10 @@ def pio_start():
 
     sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
 
+    #   PIO0_SM3 - force low data nibble (D0-D3) to 1 for 0x100+ reads (5101 nibble RAM)
+    #   OUT group is ONLY 4 pins (out_base=GPIO14, count=4 from set_lsn_data's out_init)
+    sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14))
+
     #VMA Catch for U8
     # JMP pin is VMA U8 GPIO#13
     sm_CatchVMA_U8 = rp2.StateMachine(9, CatchVMA_U8, freq=150000000, jmp_pin=machine.Pin(13) )  
@@ -274,7 +289,7 @@ def pio_start():
     # JMP pin is VMA U7 GPIO#11
     sm_CatchVMA_U7 = rp2.StateMachine(10, CatchVMA_U7, freq=150000000, jmp_pin=machine.Pin(11) ) 
 
-    # passes catch VMAU7 or U8 to next PIO
+    # passes catch VMA U7 or U8 to next PIO
     # receive IRQ5
     # JMP pin is 2ph clock
     # diag-> 
@@ -320,7 +335,12 @@ def pio_start():
     #clear IRQs for clean start up
     sm_WriteRam.exec("irq(clear,4)")
     sm_WriteRam.exec("irq(clear,5)")
-    sm_WriteRam.exec("irq(clear,6)")  
+    sm_WriteRam.exec("irq(clear,6)")
+
+    #PIO0_SM3 - low-nibble forcer for 0x100+
+    sm_set_lsn_data.active(1)
+    sm_set_lsn_data.exec("set(x, 0x0F)")   #preload X = 0x0F, the value driven onto D0-D3
+    sm_set_lsn_data.exec("irq(clear,7)")   #clean start
   
 
 
