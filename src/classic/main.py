@@ -54,6 +54,12 @@ def transparent_mode():
 
 
 
+def blank_all_shadowram():
+    """Zero the entire shadow RAM block (all 0x200 bytes) before anything uses it."""
+    for i in range(len(shadowRam)):
+        shadowRam[i] = 0x00
+
+
 def init_shadow_ram():
     """Init unused shadow RAM areas
 
@@ -64,7 +70,7 @@ def init_shadow_ram():
     for i in range(0x080, 0x100):
         shadowRam[i] = 0x00
     for i in range(0x100, 0x200):
-        shadowRam[i] = (shadowRam[i] & 0xF0) | 0x0F
+        shadowRam[i] = shadowRam[i] | 0x0F
 
 
 def bus_activity_fault_check():
@@ -119,6 +125,8 @@ def check_ap_button():
 
 reset_control.init()
 
+#blank_all_shadowram()  # clear all shadow RAM up front, before any use
+
 print("\n\n")
 print("  Warped Pinball :: Vector Classic")
 Log.log(f"          Version {SystemVersion}")
@@ -163,6 +171,14 @@ time.sleep(4)
 resource.go(True)
 Switches.initialize()
 Formats.initialize()
+
+
+#while(True):
+#    for i in range(0x100, 0x200):
+#        shadowRam[i] = shadowRam[i] | 0x0F
+#    time.sleep_ms(20)
+
+
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa
