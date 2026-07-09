@@ -83,8 +83,8 @@ def CatchVMA_U7():
 #
 #   this needs to happen in one place to lock out U7 when U8 is in process and vice versa
 #
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
-#@rp2.asm_pio()  
+#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
+@rp2.asm_pio()  
 def Pass_VMA():
     wrap_target()
     label("Pass_VMA_start")
@@ -98,10 +98,10 @@ def Pass_VMA():
     label("Pass_VMA_goahead")
 
     #trigger next pio after 2ph clock is already HIGH
-    word(0xC41C)    [7]  .side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    word(0xC41C)    [7]  #.side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
     
     wait(0,gpio,1)  [7]        #wait for 2ph Clock LOW, +after delay  7*6.6nS=47nS      
-    irq(clear, 5)         .side(0)     #clear IRQ5 before looping back, will have been spammed
+    irq(clear, 5)        # .side(0)     #clear IRQ5 before looping back, will have been spammed
     wrap()
 
    
@@ -154,13 +154,13 @@ def ReadAddress():
     #for 0x100+ (5101 nibble RAM) force low data nibble to 1111 via SM3 (set_lsn_data)
     #  X currently = A8 (0/1); skip the trigger for 0x000-0x0FF (full-byte 6810 region)
     jmp(not_x, "skip_low")
-    irq(7)                              #signal SM3 to drive D0-D3 = 1111 (its OUT group = 4 pins only)
+    irq(7)                 .side(2)             #signal SM3 to drive D0-D3 = 1111 (its OUT group = 4 pins only)
     label("skip_low")
 
 
     #READ Process, wrap up
     wait(0, gpio, 1)   [2]  .side(2)    #wait eclock LOW then hold data ~10ns (data_dir still out)
-    mov(pindirs, null)     .side(0)     #pins to inputs (dir=0), data_dir back to normal
+    word(0xA063)          #  101 00000 011 00 011  0xA063   mov(pindirs, null)     .side(0)     #pins to inputs (dir=0), data_dir back to normal
     jmp("start_adr")       .side(0)     #read done, back to the top
 
     #WRITE process
@@ -238,12 +238,15 @@ def WriteRam():
 #   PRELOAD: X = 0x0F  (the value written to the 4 pins)
 #   OUT: D0-D3 only
 #
+# diag    @rp2.asm_pio(out_init=(rp2.PIO.IN_HIGH,)*4 , sideset_init=rp2.PIO.OUT_LOW)
 @rp2.asm_pio(out_init=(rp2.PIO.IN_HIGH,)*4)
 def set_lsn_data():
     wrap_target()
     wait(1, irq, 7)          #wait for trigger from ReadAddress (polarity 1 auto-clears IRQ7)
-    mov(pins, x)             #drive D0-D3 from X (=0x0F) -> low data nibble = 1111
+    mov(pins, x)   [7]           #drive D0-D3 from X (=0x0F) -> low data nibble = 1111
     wrap()
+
+
 
 
 def pio_start():
@@ -279,6 +282,8 @@ def pio_start():
 
     #   PIO0_SM3 - force low data nibble (D0-D3) to 1 for 0x100+ reads (5101 nibble RAM)
     #   OUT group is ONLY 4 pins (out_base=GPIO14, count=4 from set_lsn_data's out_init)
+    #diag ->
+    #sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14),sideset_base=machine.Pin(22))
     sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14))
 
     #VMA Catch for U8
@@ -293,8 +298,8 @@ def pio_start():
     # receive IRQ5
     # JMP pin is 2ph clock
     # diag-> 
-    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
-    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
+    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
+    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
     
     
 
