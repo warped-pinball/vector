@@ -1792,7 +1792,7 @@ def app_memory_broadcast(request):
         # (Over USB there is no client IP, so "ip" must be supplied.)
         ip = data.get("ip") or request.client_ip
         if not ip or not _valid_ipv4(str(ip)):
-            return '{"error":"a target ip is required"}', 400
+            return '{"error":"a valid IPv4 target ip is required"}', 400
 
         # Never accumulate senders: one stream target at a time.
         unschedule_by_name("send_memory_snapshot")
