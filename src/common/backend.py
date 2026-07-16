@@ -1721,9 +1721,10 @@ def _valid_ipv4(ip):
 def _make_memory_snapshot_sender(ip):
     """Build the scheduled task that streams memory to one client.
 
-    The target IP is baked into the closure so nothing outside the
-    scheduler's task list has to remember it — once the task is
-    unscheduled, no memory is held at all.
+    The target IP is captured only by this closure, whose sole reference
+    lives in the scheduler's task list — no module-level state remembers
+    the target, so unscheduling the task releases the IP and the closure
+    entirely.
     """
     import discovery
 
