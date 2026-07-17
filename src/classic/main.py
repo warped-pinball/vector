@@ -168,6 +168,13 @@ time.sleep(5)
 reset_control.release(True)
 time.sleep(4)
 
+#while(1):
+#    time.sleep(5)
+#    print("pause")
+
+
+
+
 resource.go(True)
 Switches.initialize()
 Formats.initialize()

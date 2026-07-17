@@ -412,7 +412,7 @@ def write_live_scores(scores):
         for idx in range(4):
             score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
             score_bcd = _int_to_bcd(scores[idx])
-            shadowRam[score_start : score_start + 4] = score_bcd
+            #shadowRam[score_start : score_start + 4] = score_bcd
             
         return True
     except Exception as e:
