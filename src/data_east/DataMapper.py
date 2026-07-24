@@ -181,6 +181,23 @@ def read_high_scores():
     return highScores
 
 
+def remove_machine_scores():
+    """
+    Remove/reset machine high scores to prepare for forced initial entry.
+
+    Writes descending placeholder scores with blank initials (via
+    write_high_scores) so any score a player earns during the game
+    will beat a placeholder and trigger initials entry on the machine.
+    """
+    if "HighScores" not in S.gdata:
+        return
+
+    log.log(f"DATAMAPPER: Remove machine scores type {S.gdata['HighScores'].get('Type')}")
+
+    number_of_scores = S.gdata["HighScores"].get("NumberOfScores", 4)
+    placeholder_scores = [["", 600 - idx * 100] for idx in range(number_of_scores)]
+    write_high_scores(placeholder_scores)
+
 
 
 def write_high_scores(highScores):
