@@ -52,7 +52,7 @@ def CatchVMA_U8():
     wrap_target()
     label("start_u8")
     
-    wait(0, gpio, 13)  [5] #wait for VMA+ADR to go low
+    wait(0, gpio, 13)  [5]  #[5] PSM  #wait for VMA+ADR to go low
     jmp (pin,"start_u8")  #small amount of debounce here - count on clock being high during noisy adr transistions
     irq(5) #this will keep sending irq5 while gpio is low, but thats ok
     wrap()
@@ -69,7 +69,7 @@ def CatchVMA_U7():
     wrap_target()
     label("start_u7")
     
-    wait(0, gpio, 11) [5] 
+    wait(0, gpio, 11)   [5]     #[5] PSM
     jmp (pin,"start_u7")                   
     irq(5)   
     wrap()
@@ -83,13 +83,13 @@ def CatchVMA_U7():
 #
 #   this needs to happen in one place to lock out U7 when U8 is in process and vice versa
 #
-#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
-@rp2.asm_pio()  
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
+#@rp2.asm_pio()  
 def Pass_VMA():
     wrap_target()
     label("Pass_VMA_start")
     
-    wait(1, irq, 5)            #wait for signal from U7/U8 (both use irq5), this also clears IRQ   
+    wait(1, irq, 5)           #wait for signal from U7/U8 (both use irq5), this also clears IRQ   
 
     #if 2ph clock is low - go back to waiting - 
     jmp (pin,"Pass_VMA_goahead")    
@@ -98,10 +98,10 @@ def Pass_VMA():
     label("Pass_VMA_goahead")
 
     #trigger next pio after 2ph clock is already HIGH
-    word(0xC41C)    [7]  #.side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    word(0xC41C)    [7]  .side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
     
-    wait(0,gpio,1)  [7]        #wait for 2ph Clock LOW, +after delay  7*6.6nS=47nS      
-    irq(clear, 5)        # .side(0)     #clear IRQ5 before looping back, will have been spammed
+    wait(0,gpio,1)  [7]   #wait for 2ph Clock LOW, +after delay  7*6.6nS=47nS      
+    irq(clear, 5)         .side(0)     #clear IRQ5 before looping back, will have been spammed
     wrap()
 
    
@@ -132,24 +132,24 @@ def ReadAddress():
     jmp(pin,"do_write")                 #pin is W/R (not R/W, has been inverted) 
 
     #READ Process, Get Address  
-    in_(pins,1)            .side(0)     #read A8 into EMPTY isr (A_Select=0) -> isr = A8 (clean)
-    mov(x,isr)             .side(1)     #X = clean A8 only (0/1) for the 0x100+ low-nibble branch
+    in_(pins,1)           .side(0)     #read A8 into EMPTY isr (A_Select=0) -> isr = A8 (clean)
+    mov(x,isr)            .side(1)     #X = clean A8 only (0/1) for the 0x100+ low-nibble branch
 
-    mov(isr,y)       [3]   .side(1)     #now load 23-bit shadow base into isr
-    in_(x,1)         [3]   .side(1)     #re-insert A8 from X; A_Select=1; [7]=mux settle (restores 8 cyc)
+    mov(isr,y)       [3]   .side(1)  #[3] PSM   #now load 23-bit shadow base into isr
+    in_(x,1)         [3]   .side(1)  #[3] PSM   #re-insert A8 from X; A_Select=1; [7]=mux settle (restores 8 cyc)
     in_(pins,8)            .side(1)     #read A0-7 (A_Select returns to 0 on the push below)
-    push(noblock)          .side(0)     #send out address result for DMA
+    push(noblock)    [3]      .side(0)     #send out address result for DMA
    
     #READ Process, send data out to pins
-    mov(osr, invert(null))
-    out(pindirs,8)   [3]    .side(2)     #pins to outputs (1=output), side set is data_dir output
+    word(0xB36B)          #  101 10011 011 01 011   mov(pindirs, invert(null)) [3] .side(2)   #pins to outputs (1=output), side set is data_dir output
 
    
     #psm chgange to blocking - remove delays before this...
-    pull(block)            .side(2)     #TX fifo -> OSR, getting 8 bits data from DMA transfer
-                                         #change to block to give DMA thime it need dynamically instead of wait states in previous lines...
+    pull(block)            .side(2)   #TX fifo -> OSR, getting 8 bits data from DMA transfer
+                                        #change to block to give DMA thime it need dynamically instead of wait states in previous lines...
     out(pins,8)            .side(2)     #OSR -> Pins - all 8 bits
 
+  
 
     #for 0x100+ (5101 nibble RAM) force low data nibble to 1111 via SM3 (set_lsn_data)
     #  X currently = A8 (0/1); skip the trigger for 0x000-0x0FF (full-byte 6810 region)
@@ -159,14 +159,17 @@ def ReadAddress():
 
 
     #READ Process, wrap up
-    wait(0, gpio, 1)   [2]  .side(2)    #wait eclock LOW then hold data ~10ns (data_dir still out)
+    wait(0, gpio, 1)  [3] .side(2)  #[3]  #wait eclock LOW then hold data ~10ns (data_dir still out)
+
+    nop() [3]   #psm  26nS at full speed
+
     word(0xA063)          #  101 00000 011 00 011  0xA063   mov(pindirs, null)     .side(0)     #pins to inputs (dir=0), data_dir back to normal
     jmp("start_adr")       .side(0)     #read done, back to the top
 
     #WRITE process
     label("do_write")    
     irq(5)          [3]             
-    wait(0,gpio,1)  [3]             #wait for eClock to go low
+    wait(0,gpio,1)  [3]    #wait for eClock to go low
 
     wrap() 
     
@@ -193,7 +196,7 @@ def GetWriteAddress():
     #WRITE Process, Get Address  
     mov(isr,y)             .side(0)     #copy 23 bit address msb to isr,ready to shift in 11 lsb from pins    
     in_(pins,1)            .side(0)     #read A8, set A_Select to 1  
-    nop()            [7]   .side(1)  #    7 * 6.67nS=47nS 
+    nop()            [7]   .side(1)  #   7 * 6.67nS=47nS 
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)          .side(0)     #send out address result for DMA
     irq(6)                         #start write ram pio
@@ -216,8 +219,12 @@ def WriteRam():
     wrap_target()    
     wait(1,irq,6)       #wait for IRQ6 and reset it    
      
-    wait(0,gpio,1)      #wait for clock going-low edge    
-    in_(pins,8)         #read all 8 data in one go
+    # wait(0,gpio,1)    #wait for clock going-low edge    
+
+    label("loopread")
+    in_(pins,8)    [9]     #read all 8 data in one go
+    jmp(pin, "loopread")
+
     push(noblock)       #push out data byte, picked up by DMA
    
     wrap()
@@ -242,8 +249,8 @@ def WriteRam():
 @rp2.asm_pio(out_init=(rp2.PIO.IN_HIGH,)*4)
 def set_lsn_data():
     wrap_target()
-    wait(1, irq, 7)          #wait for trigger from ReadAddress (polarity 1 auto-clears IRQ7)
-    mov(pins, x)   [7]           #drive D0-D3 from X (=0x0F) -> low data nibble = 1111
+    wait(1, irq, 7)      #wait for trigger from ReadAddress (polarity 1 auto-clears IRQ7)
+    mov(pins, x)         #drive D0-D3 from X (=0x0F) -> low data nibble = 1111
     wrap()
 
 
@@ -277,8 +284,9 @@ def pio_start():
     #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), sideset_base=machine.Pin(22))
 
     #sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq= 75000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
+    #   sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
+    sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1))
 
-    sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
 
     #   PIO0_SM3 - force low data nibble (D0-D3) to 1 for 0x100+ reads (5101 nibble RAM)
     #   OUT group is ONLY 4 pins (out_base=GPIO14, count=4 from set_lsn_data's out_init)
@@ -298,8 +306,8 @@ def pio_start():
     # receive IRQ5
     # JMP pin is 2ph clock
     # diag-> 
-    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
-    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
+    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
+    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
     
     
 
@@ -424,7 +432,7 @@ def dma_start():
     #----------------------
     # DMA 5 for write data
     #----------------------    
-    dma_write_data.READ_ADDR_REG =  0x50200000 + 0x028    # data out of PIO0-SM2  RX (data pio) 
+    dma_write_data.READ_ADDR_REG =  0x50200000 + 0x028  # data out of PIO0-SM2  RX (data pio) 
     dma_write_data.WRITE_ADDR_REG = 0x20040000  #uctypes.addressof(shadowRam)    # written by other dmas to point into sram
     dma_write_data.TRANS_COUNT_REG = 1 
     dma_write_data.CTRL_REG.CHAIN_TO = DMA_ADDRESS_COPY 
