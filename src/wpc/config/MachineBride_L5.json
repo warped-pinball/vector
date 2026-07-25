@@ -6,7 +6,7 @@
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 944
+      "Address": 1033
   },
   "DisplayMessage": {
       "Type": 10,
@@ -53,7 +53,7 @@
   },
   "InPlay": {
       "Type": 10,
-      "GameActiveAdr": 141,
+      "GameActiveAdr": 128,
       "GameActiveValue": 0,
       "Players": 6059,
       "PlayerUp": 1032,
