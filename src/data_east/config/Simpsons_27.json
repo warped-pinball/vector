@@ -21,8 +21,8 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 7742,
-        "ChecksumStartAdr": 7713,
-        "ChecksumEndAdr": 7754,
+        "ChecksumStartAdr": 7678,
+        "ChecksumEndAdr": 7748,
         "ChecksumResultAdr": 7902
     },
     "HighScores": {

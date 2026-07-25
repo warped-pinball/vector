@@ -802,11 +802,11 @@ def enable_message(enable):
     """
         turn on/off display of the custom message
         fix checksum after messng with adjustment data
-    """ 
-    if enable:
-        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=1
-    else:
-        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=0
+    """
+    adr = S.gdata["Adjustments"].get("CustomMessageOn")
+    if not adr:
+        return
+    shadowRam[adr] = 1 if enable else 0
     _set_adjustment_checksum()
 
 
