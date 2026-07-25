@@ -632,7 +632,7 @@ def get_live_scores(use_format=True):
                 scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
         
         elif S.gdata["InPlay"]["Type"] == 24:
-            # Type 21: Data East break after fourth byte, assume 5 bytes total
+            # Type 24: Data East break after fourth byte, assume 5 bytes total
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
                 score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
@@ -744,7 +744,7 @@ def turn_off_high_score_rewards():
     """
        turn_off_high_score_reward so it is not awarded on initials entry
     """
-    if S.gdata["Adjsutments"]["Type"] == 20:
+    if S.gdata["Adjustments"]["Type"] == 20:
         #DataStore.read_record("extras", 0)["enter_initials_on_game"]:
         print("SCORE: Disabling HS rewards")
         for key, value in S.gdata["HSRewards"].items():
