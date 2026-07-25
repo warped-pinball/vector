@@ -737,7 +737,7 @@ def _set_adjustment_checksum():
         checksum=0
         for i in range(startAdr,endAdr+1):
             checksum = checksum + shadowRam[i]
-        shadowRam[resultAdr]=checksum
+        shadowRam[resultAdr]=checksum & 0xFF
 
 
 def turn_off_high_score_rewards():
