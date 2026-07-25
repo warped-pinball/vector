@@ -181,6 +181,23 @@ def read_high_scores():
     return highScores
 
 
+def remove_machine_scores():
+    """
+    Remove/reset machine high scores to prepare for forced initial entry.
+
+    Writes descending placeholder scores with blank initials (via
+    write_high_scores) so any score a player earns during the game
+    will beat a placeholder and trigger initials entry on the machine.
+    """
+    if "HighScores" not in S.gdata:
+        return
+
+    log.log(f"DATAMAPPER: Remove machine scores type {S.gdata['HighScores'].get('Type')}")
+
+    number_of_scores = S.gdata["HighScores"].get("NumberOfScores", 4)
+    placeholder_scores = [["", 600 - idx * 100] for idx in range(number_of_scores)]
+    write_high_scores(placeholder_scores)
+
 
 
 def write_high_scores(highScores):
@@ -615,7 +632,7 @@ def get_live_scores(use_format=True):
                 scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
         
         elif S.gdata["InPlay"]["Type"] == 24:
-            # Type 21: Data East break after fourth byte, assume 5 bytes total
+            # Type 24: Data East break after fourth byte, assume 5 bytes total
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
                 score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
@@ -720,14 +737,14 @@ def _set_adjustment_checksum():
         checksum=0
         for i in range(startAdr,endAdr+1):
             checksum = checksum + shadowRam[i]
-        shadowRam[resultAdr]=checksum
+        shadowRam[resultAdr]=checksum & 0xFF
 
 
 def turn_off_high_score_rewards():
     """
        turn_off_high_score_reward so it is not awarded on initials entry
     """
-    if S.gdata["Adjsutments"]["Type"] == 20:
+    if S.gdata["Adjustments"]["Type"] == 20:
         #DataStore.read_record("extras", 0)["enter_initials_on_game"]:
         print("SCORE: Disabling HS rewards")
         for key, value in S.gdata["HSRewards"].items():
@@ -785,11 +802,11 @@ def enable_message(enable):
     """
         turn on/off display of the custom message
         fix checksum after messng with adjustment data
-    """ 
-    if enable:
-        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=1
-    else:
-        shadowRam[S.gdata["Adjustments"]["CustomMessageOn"]]=0
+    """
+    adr = S.gdata["Adjustments"].get("CustomMessageOn")
+    if not adr:
+        return
+    shadowRam[adr] = 1 if enable else 0
     _set_adjustment_checksum()
 
 

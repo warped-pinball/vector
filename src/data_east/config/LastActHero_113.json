@@ -16,7 +16,7 @@
     },
     "DisplayMessage": {
         "Type": 20,
-        "Address": 1458
+        "Address": 8001
     },
     "Adjustments": {
         "Type": 20,
@@ -38,7 +38,7 @@
     },
     "InPlay": {
         "Type": 24,
-        "Players": 342,
+        "Players": 431,
         "PlayerUp": 428,
         "ScoreAdr": 5846,
         "BytesInScore": 5,
