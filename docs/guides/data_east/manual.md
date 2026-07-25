@@ -26,7 +26,7 @@ Vector sits between the processor chip and the game's main board so it can act l
 
 <!-- Two-column layout using a Markdown table -->
 
-| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg) | Status LED:<br>Yellow-Yellow  Trying to join WiFi<br>Green-Green   WiFi joined, all OK<br>Purple-Purple  AP mode - join with your phone<br><br>Red-Yellow  Hardware installation issue<br>Blue-Yellow  WiFi password incorrect<br>Blue-Purple  WiFi network not found |
+| ![Data East install photo](../../img/data_east/Data_East_Board_Only.jpg) | Status LED:<br>Yellow-Yellow  Trying to join WiFi<br>Green-Green   WiFi joined, all OK<br>Purple-Purple  AP mode - join with your phone<br><br>Red-Yellow  Hardware installation issue<br>Blue-Yellow  WiFi password incorrect<br>Blue-Purple  WiFi network not found<br><br>WiFi Configure Button: Hold during power up and release when LED flashes for AP mode |
 | --- | --- |
 
 ## LED codes
