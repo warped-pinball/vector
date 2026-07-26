@@ -18,7 +18,7 @@ How the Vector board installs, what the LEDs mean, and how to bring a classic Da
 - [Hardware installation](#hardware-installation)
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
-- [Operation](#operation)
+- [Web interface](#web-interface)
 
 ## How it works
 
@@ -143,13 +143,47 @@ Each machine receives an IP address from your router (for example `192.168.1.79`
 
 Most Data East games display the IP address in attract mode with spaces separating the four numbers (for example: `192 . 168 . 1 . 189`).
 
-## Operation
+## Web interface
 
-- Navigation buttons are in the upper-right corner.
-- Tournament and personal best scoreboards are accessible via the banner.
-- Enter player full names under **Players**.
-- Check out the Admin panel for configuration save/restore and software updates
+- **Game name** is shown in the upper left. If it is not correct, check your AP mode configuration.
+- **Navigation** is in the upper right.
+- Note the 20 position leaderboard — it will fill up as you play new games.
 
-![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png)
+![Data East main web page](../../img/data_east/DE_main.png)
+
+- A game in play is shown on the same screen (see below).
+- Note the ball in play and scores update as you play.
+- Something not looking correct? Check your ROM version. On game bootup the ROM version is generally displayed on the screen — make sure you pick that ROM version when configuring your Warped Pinball board in AP mode. If you have a ROM that isn't supported, please contact us, we add ROMs regularly.
+
+![Data East game in play web page](../../img/data_east/DE_inplay.png)
+
+- Click on **Players** to see and edit the active players list.
+- All players get individual best boards.
+- Initials are entered on the left and full name on the right.
+
+![Data East players web page](../../img/data_east/DE_players.png)
+
+- The top of the admin page shows several setup options.
+- **Tournament mode** just saves all scores to the tournament list (and not your normal leaderboard).
+- **Score claim: on machine** will cause all players to enter initials to claim their scores after playing (this also records to the individual best boards). Note: not all Data East titles support entering initials on the machine.
+- If you don't want to enter initials every play, you can try **Score claim: web interface** — here you claim your score on a web browser after you play.
+- Then a section of **adjustment profiles** — use the normal coin door buttons to set up a profile, then enter a name and click capture here to save those settings. You can save and restore up to four.
+- Normally the display will show the IP address in attract mode; you can turn this off here.
+
+![Data East admin top web page](../../img/data_east/DE_admin_top.png)
+
+- **Software update process:** just check the update button — it will let you know when there is a software update available.
+- The button will also show if the update server was unreachable — if so, just look again later.
+- **Upload Developer Build** is used for test versions when directed by Warped Pinball staff.
+- The remaining button controls are self-explanatory.
+
+![Data East admin bottom web page](../../img/data_east/DE_admin_bottom.png)
+
+- Use the WiFi status to determine if you have a strong connection.
+- **Data East does not currently support switch diagnostics** — the admin page will show "Switch diagnostics are not yet supported for this title" instead of the switch grid seen on other platforms.
+
+![Data East admin end web page](../../img/data_east/DE_admin_end.png)
+
+**A note about the software update process:** The update button is the preferred method and takes about 2 minutes to complete. The game will automatically reboot at the end of the process. Check the bottom of any page for the currently installed software version (note that each type of game — WPC, System 11, Data East, EM, etc. — has its own version numbers). In case of trouble (unusual), there is an available program to reload the software via USB cable from a computer. See the [instructions here](https://github.com/warped-pinball/trench-coat/blob/main/Trench-Coat-Install-Guide.md).
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).

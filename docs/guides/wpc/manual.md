@@ -166,7 +166,7 @@ Each machine receives an IP address from your router (for example `192.168.1.79`
 
 Have a color Pin2DMD?   Use the buttons on the back of the display to set it to **Williams/Bally Mode**.
 
-## Web interface and spotting trouble
+## Web interface
 
 - **Game name** is shown in the upper left. If it is not correct, check your AP mode configuration.
 - **Navigation** is in the upper right.
