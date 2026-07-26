@@ -165,7 +165,7 @@ Most Data East games display the IP address in attract mode with spaces separati
 
 - The top of the admin page shows several setup options.
 - **Tournament mode** just saves all scores to the tournament list (and not your normal leaderboard).
-- **Score claim: on machine** will cause all players to enter initials to claim their scores after playing (this also records to the individual best boards). Note: not all Data East titles support entering initials on the machine.
+- **Score claim: on machine** will cause all players to enter initials to claim their scores after playing (this also records to the individual best boards).
 - If you don't want to enter initials every play, you can try **Score claim: web interface** — here you claim your score on a web browser after you play.
 - Then a section of **adjustment profiles** — use the normal coin door buttons to set up a profile, then enter a name and click capture here to save those settings. You can save and restore up to four.
 - Normally the display will show the IP address in attract mode; you can turn this off here.
