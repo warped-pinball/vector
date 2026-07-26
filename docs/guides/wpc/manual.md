@@ -207,6 +207,7 @@ Have a color Pin2DMD?   Use the buttons on the back of the display to set it to 
 
 ![Pin admin bottom web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_admin_bottom.png)
 
+- Use the WiFi status to determine if you have a strong connection.
 - Switch diagnostics are shown in the grid of colors at the end of the admin page.
 
 ![Pin admin end web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_admin_end.png)
