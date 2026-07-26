@@ -125,7 +125,7 @@ Example display: IP address `188.168.1.115` shown on a Comet machine.
 - Access the interface only from devices on the same network via the assigned IP.
 - System 9 games display the IP address in place of high scores during attract mode.
 
-## Web interface and spotting trouble
+## Web interface
 
 - **Game name** is shown in the upper left. If it is not correct, check your AP mode configuration.
 - **Navigation** is in the upper right.

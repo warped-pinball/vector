@@ -100,7 +100,7 @@ Example: IP address `192.168.1.189` displayed on a Pinbot machine.
 
 ![AP Mode Join](../../img/sys11/ip_on_display.png)
 
-## Web interface and spotting trouble
+## Web interface
 
 
 - **Game name** is shown in the upper left. If it is not correct, check your AP mode configuration.
