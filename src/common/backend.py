@@ -11,7 +11,7 @@ import uctypes
 from ls import ls
 from micropython import const
 from phew.server import add_route as phew_add_route
-from phew.server import schedule, unschedule
+from phew.server import schedule, unschedule_by_name
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -1708,28 +1708,75 @@ def app_memory_snapshot(request):
         yield f"{value}\n".encode("utf-8")
 
 
-def broadcast_memory_snapshot():
+def _valid_ipv4(ip):
+    parts = ip.split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit() or not (0 <= int(part) <= 255):
+            return False
+    return True
+
+
+def _make_memory_snapshot_sender(ip):
+    """Build the scheduled task that streams memory to one client.
+
+    The target IP is captured only by this closure, whose sole reference
+    lives in the scheduler's task list — no module-level state remembers
+    the target, so unscheduling the task releases the IP and the closure
+    entirely.
+    """
     import discovery
 
-    ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
-    chunk_size = 256
-    offset = 0
+    def send_memory_snapshot():
+        ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
+        chunk_size = 256
+        offset = 0
 
-    while offset < len(ram_access):
-        chunk = ram_access[offset : offset + chunk_size]
-        # Prepend 4-byte offset header to each chunk
-        message = offset.to_bytes(4, "big") + chunk
-        discovery.send_sock.sendto(message, ("255.255.255.255", 2040))
-        offset += chunk_size
+        while offset < len(ram_access):
+            chunk = ram_access[offset : offset + chunk_size]
+            # Prepend 4-byte offset header to each chunk
+            message = offset.to_bytes(4, "big") + chunk
+            discovery.send_sock.sendto(message, (ip, 2040))
+            offset += chunk_size
 
-    return
+    return send_memory_snapshot
 
 
 @add_route("/api/memory/toggle-broadcast", auth=True)
 def app_memory_broadcast(request):
+    """
+    @api
+    summary: Start or stop streaming memory snapshots to one client
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: true
+          description: True to start streaming, false to stop
+        - name: frequency_ms
+          type: integer
+          required: false
+          description: Milliseconds between snapshots (default 100, clamped 10-60000)
+        - name: ip
+          type: string
+          required: false
+          description: IPv4 address to stream to; defaults to the requesting client's IP
+    response:
+      status_codes:
+        - code: 200
+          description: Streaming state updated
+        - code: 400
+          description: No valid target IP available
+    @end
+
+    Snapshots are sent as UDP packets to port 2040 on the target IP only
+    (a 4-byte big-endian offset header followed by up to 256 data bytes per
+    packet) -- never broadcast to the whole network.
+    """
     data = request.data
     if data.get("enable", False):
-        # add function call to scheduler
         raw_freq = data.get("frequency_ms", 100)
         try:
             freq = int(raw_freq)
@@ -1742,12 +1789,18 @@ def app_memory_broadcast(request):
         elif freq > 60000:
             freq = 60000
 
-        # Ensure we don't accumulate multiple scheduled entries for the same function
-        unschedule(broadcast_memory_snapshot)
-        schedule(broadcast_memory_snapshot, phase_ms=0, frequency_ms=freq)  # broadcast every freq milliseconds
+        # Stream to the explicitly requested IP, or back to whoever asked.
+        # (Over USB there is no client IP, so "ip" must be supplied.)
+        ip = data.get("ip") or request.client_ip
+        if not ip or not _valid_ipv4(str(ip)):
+            return '{"error":"a valid IPv4 target ip is required"}', 400
+
+        # Never accumulate senders: one stream target at a time.
+        unschedule_by_name("send_memory_snapshot")
+        schedule(_make_memory_snapshot_sender(str(ip)), phase_ms=0, frequency_ms=freq)
     else:
-        # remove function call from scheduler
-        unschedule(broadcast_memory_snapshot)
+        # Remove the sender from the scheduler (drops its baked-in IP too)
+        unschedule_by_name("send_memory_snapshot")
     return
 
 
