@@ -70,7 +70,7 @@ Newer board revisions replace the single-color patterns above with a two-color b
 ### Other
 | LED Pattern | Code | Description |
 | --- | --- | --- |
-| White | DUNO00 | Unknown Error |
+| White-White | DUNO00 | Unknown Error |
 
 **Note:** Multiple faults will be displayed in sequence with a pause (black) between each fault code.
 
