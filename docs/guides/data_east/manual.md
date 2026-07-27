@@ -177,7 +177,7 @@ Most Data East games display the IP address in attract mode with spaces separati
 - **Upload Developer Build** is used for test versions when directed by Warped Pinball staff.
 - The remaining button controls are self-explanatory.
 
-![Data East admin bottom web page](../../img/data_east/DE_admin_bottom.png)
+![Data East admin bottom web page](../../img/data_east/EL_admin_bottom.png)
 
 - Use the WiFi status to determine if you have a strong connection.
 - **Data East does not currently support switch diagnostics** — the admin page will show "Switch diagnostics are not yet supported for this title" instead of the switch grid seen on other platforms.
