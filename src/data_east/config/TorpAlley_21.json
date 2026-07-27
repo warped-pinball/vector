@@ -21,9 +21,9 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 8114,
-        "ChecksumStartAdr": 8074,
-        "ChecksumEndAdr": 8088,
-        "ChecksumResultAdr": 8150
+        "ChecksumStartAdr": 8060,
+        "ChecksumEndAdr": 8185,
+        "ChecksumResultAdr": 8190
     },
     "HighScores": {
         "Type": 20,
@@ -38,7 +38,7 @@
     "InPlay": {
         "Type": 20,
         "Players": 1610,
-        "PlayerUp": 1556,
+        "PlayerUp": 1609,
         "ScoreAdr": 1408,
         "BytesInScore": 4,
         "ScoreSpacing": 32,
