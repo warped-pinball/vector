@@ -65,7 +65,7 @@ Newer board revisions replace the single-color patterns above with a two-color b
 | --- | --- | --- |
 | Yellow-Red | SFTW01 | Drop Through |
 | Yellow-White | SFTW02 | Async loop interrupted |
-| Yellow-Purple | SFWR00 | Unknown Software Error |
+| Yellow-Purple | SFTW00 | Unknown Software Error |
 
 ### Other
 | LED Pattern | Code | Description |
