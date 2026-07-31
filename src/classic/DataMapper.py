@@ -12,6 +12,8 @@ This module provides functions to read and write data from/to shadow RAM,
 converting between machine formats and usable Python data structures.
 """
 
+import time
+
 from logger import logger_instance
 log = logger_instance
 import SharedState as S
@@ -47,197 +49,115 @@ def _bcd_to_int(score_bytes):
     return score
 
 
-def _int_to_bcd(number, num_bytes=None):
+
+def _reversed_digit_score(base_adr, num_digits):
     """
-    Convert integer to BCD (Binary Coded Decimal) bytes for SYS11 machine format.
-    
+    Decode a score stored as one decimal digit per byte (upper nibble),
+    least-significant digit first (byte at base_adr is the ones digit,
+    base_adr+1 is the tens digit, etc). Invalid digits, including the
+    0xF blanking code used to suppress a leading zero, are treated as 0
+    (which is a no-op on the leading digit).
+
     Args:
-        number: Integer value to convert
-        num_bytes: Number of bytes to generate (if None, uses default of 4)
-        
+        base_adr: Address of the least-significant digit byte
+        num_digits: Number of digit bytes to read
+
     Returns:
-        bytearray: BCD-encoded bytes, zero-padded to num_bytes length
+        int: Decoded integer value
     """
-    if num_bytes is None:
-        num_bytes = 4  # Default: 4 BCD bytes for 8 digit score (SYS11 standard)
-    
-    # Pad with zeros to ensure it has num_bytes*2 digits
-    num_str = f"{number:0{num_bytes*2}d}"
-    bcd_bytes = bytearray(num_bytes)
-    
-    # Fill byte array
-    for i in range(num_bytes):
-        bcd_bytes[i] = (int(num_str[2 * i]) << 4) + int(num_str[2 * i + 1])
-    
-    return bcd_bytes
-
-
-def _ascii_to_type3(c):
-    """Convert ASCII character to machine type 3 display character."""
-    return 0 if c == 0x20 or c < 0x0B or c > 0x90 else c - 0x36
+    score = 0
+    for i in range(num_digits - 1, -1, -1):
+        digit = shadowRam[base_adr + i] >> 4
+        if digit > 9:
+            digit = 0
+        score = score * 10 + digit
+    return score
 
 
 def read_high_scores():
     """
-    Read and decode the high scores from SYS11 shadow RAM.
-    
-    SYS11 Type 1,2,3,9 high scores:
-    - 4 high scores (no Grand Champion)
-    - Standard BCD encoding (4 bytes per score)
-    - ASCII or custom encoding for initials (3 characters per score)
-    - Type 1: 0x40=space, A-Z normal ASCII
-    - Type 2: Similar to Type 1
-    - Type 3: 0=space, 1='0', 10='9', 11='A'
-    - Type 9: No initials, scores only
-    
+    Read and decode the high score from SYS11 shadow RAM.
+
+    SYS11 Type 30 high score:
+    - Only 1 high score available, no initials
+    - 5 decimal digits, each BCD coded in the upper nibble of one byte
+    - Most significant digit at ScoreAdr, each next digit at ScoreAdr-1, -2, ...
+    - Result is multiplied by 10
+
     Returns:
         list: List of [initials, score] pairs
-            Index 0-3: High scores 1-4
+            Index 0-3: High scores 1-4 (only index 0 is populated)
             [[initials, score], ...] where initials is string, score is int
     """
     high_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-    
+
     # Validate HighScores configuration exists
     if "HighScores" not in S.gdata:
         log.log("HighScores configuration missing")
         return high_scores
-    
+
     try:
-        if S.gdata["HighScores"]["Type"] not in [1, 2, 3, 9]:
+        if S.gdata["HighScores"]["Type"] != 30:
             log.log(f"DataMapper: Unsupported HighScores Type {S.gdata['HighScores']['Type']}")
             return high_scores
-        
-        # Read 4 high scores (index 0-3)
-        for idx in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + idx * 4
-            score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
-            high_scores[idx][1] = _bcd_to_int(score_bytes)
-            
-            # Filter out very low scores (likely placeholders)
-            #if high_scores[idx][1] < 100:
-            #    high_scores[idx][1] = 0
-        
-        # Read initials for high scores (Type 1, 2, 3 only - Type 9 has no initials)
-        if "InitialAdr" in S.gdata["HighScores"]:
-            for idx in range(4):
-                initial_start = S.gdata["HighScores"]["InitialAdr"] + idx * 3
-                initials_bytes = shadowRam[initial_start : initial_start + 3]
-                
-                if S.gdata["HighScores"]["Type"] in [1, 2]:  # 0x40=space, A-Z normal ASCII
-                    initials_bytes = [0x20 if b == 0x40 else (b & 0x7F) for b in initials_bytes]
-                    try:
-                        high_scores[idx][0] = bytes(initials_bytes).decode("ascii")
-                    except Exception:
-                        high_scores[idx][0] = ""
-                elif S.gdata["HighScores"]["Type"] == 3:  # 0=space, 1='0', 10='9', 11='A'
-                    try:
-                        processed_initials = bytearray([0x20 if byte == 0 else byte + 0x36 for byte in initials_bytes])
-                        high_scores[idx][0] = processed_initials.decode("ascii")
-                    except Exception:
-                        high_scores[idx][0] = ""
-                
-                # Clear placeholder/invalid initials
-                if high_scores[idx][0] in ["???", "", None, "   "]:
-                    high_scores[idx][0] = ""
-    
+
+        # Score is 5 decimal digits, each BCD coded in the upper nibble of
+        # one byte, most significant digit at ScoreAdr and each following
+        # digit at the next lower address.
+        score_adr = S.gdata["HighScores"]["ScoreAdr"]
+        score = 0
+        for i in range(5):
+            digit = (shadowRam[score_adr - i] >> 4) & 0x0F
+            if digit > 9:
+                digit = 0
+            score = score * 10 + digit
+        high_scores[0][1] = score * 10
+
     except (IndexError, KeyError) as e:
         log.log(f"High score read error: {e}")
-    
+
     return high_scores
 
 
 def write_high_scores(high_scores):
     """
-    Write high scores and initials to SYS11 shadow RAM.
-    
+    No-op: SYS11 classics do not support writing high scores back to shadow RAM.
+
     Args:
-        high_scores: List of [initials, score] pairs
-            Index 0-3: High scores 1-4
-            Format: [[initials, score], ...] where initials is string, score is int
-    
+        high_scores: List of [initials, score] pairs (unused)
+
     Returns:
-        bool: True if successful, False otherwise
+        bool: True, as if the write succeeded
     """
-    # Validate HighScores configuration exists
-    if "HighScores" not in S.gdata:
-        log.log("HighScores configuration missing")
-        return False
-    
-    try:
-        if S.gdata["HighScores"]["Type"] not in [1, 2, 3, 9]:
-            log.log(f"DataMapper: Unsupported HighScores Type for write: {S.gdata['HighScores']['Type']}")
-            return False
-        
-        # Ensure all initials are properly formatted (empty initials cause issues)
-        for index in range(4):
-            if index < len(high_scores):
-                if len(high_scores[index][0]) != 3:
-                    high_scores[index][0] = "   "
-        
-        # Write 4 high scores
-        for index in range(4):
-            score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-            
-            try:
-                score_bcd = _int_to_bcd(high_scores[index][1])
-            except Exception:
-                log.log(f"DATAMAPPER: Score {index} convert problem")
-                score_bcd = _int_to_bcd(100)
-            
-            shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]] = score_bcd
-            
-            # Write initials (Type 1, 2, 3 only - Type 9 has no initials)
-            if "InitialAdr" in S.gdata["HighScores"]:
-                try:
-                    initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-                    initials = high_scores[index][0]
-                    
-                    if S.gdata["HighScores"]["Type"] == 1:
-                        for i in range(3):
-                            shadowRam[initial_start + i] = ord(initials[i])
-                    elif S.gdata["HighScores"]["Type"] == 3:
-                        for i in range(3):
-                            shadowRam[initial_start + i] = _ascii_to_type3(ord(initials[i]))
-                    elif S.gdata["HighScores"]["Type"] == 2:
-                        for i in range(3):
-                            shadowRam[initial_start + i] = ord(initials[i])
-                except Exception:
-                    log.log(f"DATAMAPPER: Score {index} initials write problem")
-                    shadowRam[initial_start : initial_start + 3] = bytearray([64, 64, 64])
-        
-        log.log("Successfully wrote high scores to shadow RAM")
-        return True
-       
-    except (IndexError, KeyError, ValueError) as e:
-        log.log(f"High score write error: {e}")
-        return False
+    return True
 
 
 def read_in_play_scores():
     """
-    Read the current in-play scores for all 4 players.
-    
-    SYS11 Type 1 in-play scores:
-    - 4 player scores stored sequentially
-    - Standard BCD encoding (4 bytes per score)
-    - Fixed spacing between player scores
-    
+    Read the current in-play scores for all 4 players (SYS11 classics).
+
+    InPlay.Type 30: one decimal digit per byte, upper nibble,
+    least-significant digit first, ScoreSpacing bytes between each
+    player's block.
+
     Returns:
         list: List of [initials, score] pairs for 4 players
             [[initials, score], [initials, score], ...  ]
-            Initials will be empty strings (not available in in-play data)
+            Initials are always empty strings (not available in in-play data)
     """
     in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-    
+
     try:
-        if S.gdata.get("InPlay", {}).get("Type") == 1:  # Type 1 for SYS11
-            for idx in range(4):
-                score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
-                in_play_score_bytes = shadowRam[score_start : score_start + 4]
-                in_play_scores[idx][1] = _bcd_to_int(in_play_score_bytes)
+        in_play = S.gdata["InPlay"]
+        if in_play["Type"] != 30:
+            return in_play_scores
+
+        for idx in range(4):
+            base_adr = in_play["ScoreAdr"] + idx * in_play["ScoreSpacing"]
+            in_play_scores[idx][1] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
     except Exception as e:
         log.log(f"In-play scores read error: {e}")
-    
+
     return in_play_scores
 
 
@@ -245,15 +165,17 @@ def read_in_play_scores():
 def get_live_scores(use_format=True):
     """
     Get live scores for all 4 players.
-    
+
     If a Format is active (active_format != 0), pulls scores from Formats.player_scores.
-    Otherwise reads from SYS11 shadow RAM.
-    
+    Otherwise reads from SYS11 shadow RAM (InPlay.Type 30: one decimal digit
+    per byte, upper nibble, least-significant digit first, ScoreSpacing bytes
+    between each player's block).
+
     Returns:
         list: List of 4 integer scores [score1, score2, score3, score4]
     """
     scores = [0, 0, 0, 0]
-    
+
     # Check if a Format is active
     try:
         if use_format is True and S.active_format.get("Id", 0) != 0:
@@ -263,13 +185,16 @@ def get_live_scores(use_format=True):
             return scores
     except Exception as e:
         log.log(f"DATAMAPPER: error getting format scores: {e}")
-    
+
     # No active format - read from shadow RAM
     try:
+        in_play = S.gdata["InPlay"]
+        if in_play["Type"] != 30:
+            return scores
+
         for idx in range(4):
-            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
-            score_bytes = shadowRam[score_start : score_start + 4]
-            scores[idx] = _bcd_to_int(score_bytes)
+            base_adr = in_play["ScoreAdr"] + idx * in_play["ScoreSpacing"]
+            scores[idx] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
 
@@ -279,20 +204,20 @@ def get_live_scores(use_format=True):
 
 def get_ball_in_play():
     """
-    Get the current ball number in play
+    Get the current ball number in play (SYS11 classics).
+
+    Reads the raw ball number from shadow RAM at BallInPlay.Address.
+
     Returns:
-        Ball number (1-5) or 0 for game over
-        Can return 15 (0x0F) on some titles as game is ending (player entering intials)
+        int: Ball number in play, or 0 if unavailable
     """
     try:
-        ball_in_play = S.gdata["BallInPlay"]
-
-        if ball_in_play["Type"] in (2, 3):
-            return shadowRam[ball_in_play["Address"]] & 0x0F
-        
+        if S.gdata["BallInPlay"]["Type"] != 30:
+            return 0
+        return shadowRam[S.gdata["BallInPlay"]["Address"]]
     except Exception as e:
-        log.log(f"GSTAT: error in get_ball_in_play: {e}")
-    return 0
+        log.log(f"DATAMAPPER: error in get_ball_in_play: {e}")
+        return 0
 
 
 def write_ball_in_play(ball_number):
@@ -308,35 +233,34 @@ def write_ball_in_play(ball_number):
     """
     try:
         ball_config = S.gdata.get("BallInPlay", {})
-        bip_type = ball_config.get("Type")
-        if bip_type == 2:
-            shadowRam[ball_config["Address"]] = ball_number
-            return True
-        elif bip_type == 3:
-            shadowRam[ball_config["Address"]] = ball_number | 0xF0
-            return True
+        if ball_config.get("Type") != 30:
+            return False
+
+        shadowRam[ball_config["Address"]] = ball_number
+        return True
     except Exception as e:
         log.log(f"DATAMAPPER: error in write_ball_in_play: {e}")
-    
+
     return False
 
 
 def get_player_up():
     """
     Get the current player number (whose turn it is).
-    
-    SYS11 stores player-up as 0-3 at configured address.
-    
+
+    SYS11 classics store player-up as the 1-4 player number directly at the
+    configured address (not 0-based).
+
     Returns:
         int: Player number (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and "PlayerUp" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") == 30 and "PlayerUp" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["PlayerUp"]
-            return shadowRam[adr]+1
+            return shadowRam[adr]
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_player_up: {e}")
-    
+
     return 0
 
 
@@ -350,45 +274,35 @@ def get_players_in_game():
         int: Number of players (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and "Players" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") == 30 and "Players" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["Players"]
-            return shadowRam[adr]+1
+            return shadowRam[adr]
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
-    
+
     return 0
 
 
-#for system 11 we must track the state and detect changes!
-game_active_state = False
 def get_game_active():
     """
-    Check if a game is currently active.
-    
-    If GameActive configuration exists in InPlay, uses that address.
-    Otherwise falls back to checking if ball_in_play is non-zero.
-    
+    Check if a game is currently active (SYS11 classics).
+
+    Reads InPlay.GameActiveAdr from shadow RAM. 0 = inactive, non-zero = active.
+
     Returns:
         bool: True if game is active, False otherwise
     """
-    global game_active_state
     try:
-        if "InPlay" in S.gdata and "GameActive" in S.gdata["InPlay"]:
-            game_active_flag = shadowRam[S.gdata["InPlay"]["GameActive"]]
-            ball_in_play = shadowRam[S.gdata["BallInPlay"]["Address"]]
-            if game_active_state == False:
-                if game_active_flag == 0:
-                    game_active_state=True
-            else:
-                if game_active_flag == 1 and ball_in_play != 0xFF:
-                    game_active_state=False
-            return game_active_state
-        
+        in_play = S.gdata["InPlay"]
+        if in_play["Type"] != 30:
+            return False
+
+        return shadowRam[in_play["GameActiveAdr"]] != 0
+
     except Exception as e:
         log.log(f"DATAMAPPER: error get_game_active {e}")
-    
-    # Fallback to ball in play check
-    return 0 != get_ball_in_play()
+
+    return False
 
 
 
@@ -396,46 +310,46 @@ def get_game_active():
 
 def write_live_scores(scores):
     """
-    Write live scores to shadow RAM.
-    
+    No-op: SYS11 classics do not support writing live scores back to shadow RAM.
+
     Args:
-        scores: List of 4 integer scores [p1_score, p2_score, p3_score, p4_score]
-        
+        scores: List of 4 integer scores (unused)
+
     Returns:
-        bool: True if write was successful, False otherwise
+        bool: True, as if the write succeeded
     """
-    try:
-        if not isinstance(scores, (list, tuple)) or len(scores) != 4:
-            log.log(f"DATAMAPPER: invalid scores format, expected list of 4 integers")
-            return False
-            
-        for idx in range(4):
-            score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
-            score_bcd = _int_to_bcd(scores[idx])
-            #shadowRam[score_start : score_start + 4] = score_bcd
-            
-        return True
-    except Exception as e:
-        log.log(f"DATAMAPPER: error writing in-play scores: {e}")
-        return False
+    return True
+
+
+# The web UI polls /api/game/status every 1500ms (scores.js) and only
+# latches a "final" score snapshot from a poll where GameActive is still
+# True. The hardware active flag can drop in the same instant the final
+# score digit lands, so report GameActive True for a bit longer than one
+# client poll interval after it actually goes false - this guarantees at
+# least one poll sees the final score while still "active", regardless of
+# how the two poll cycles happen to line up in time.
+_GAME_ACTIVE_HOLD_MS = 3000
+_game_inactive_since = None
 
 
 def get_in_play_data():
     """
     Get comprehensive in-play game data.
-    
+
     Returns a dictionary with:
         - GameActive: bool - Is a game currently running
         - BallInPlay: int - Current ball number (1-5, or 0)
         - PlayerUp: int - Current player (1-4, or 0)
         - PlayersInGame: int - Total players (1-4, or 0)
         - Scores: list - Current scores for all 4 players [int, int, int, int]
-    
+
     If game is not active, most values will be 0/False.
-    
+
     Returns:
         dict: Game state data
     """
+    global _game_inactive_since
+
     data = {
         "GameActive": False,
         "BallInPlay": 0,
@@ -443,68 +357,39 @@ def get_in_play_data():
         "PlayersInGame": 0,
         "Scores": [0, 0, 0, 0],
     }
-    
-    # Check if InPlay configuration exists and is valid
-    if "InPlay" not in S.gdata or S.gdata["InPlay"].get("Type") != 1:
-        return data
-    
-    # Get game active status
-    data["GameActive"] = get_game_active()
-    
+
+    raw_active = get_game_active()
+    if raw_active:
+        _game_inactive_since = None
+        reported_active = True
+    else:
+        if _game_inactive_since is None:
+            _game_inactive_since = time.ticks_ms()
+        reported_active = time.ticks_diff(time.ticks_ms(), _game_inactive_since) < _GAME_ACTIVE_HOLD_MS
+
+    data["GameActive"] = reported_active
+
     # Get ball in play
     data["BallInPlay"] = get_ball_in_play()
-    
+
     # Get player up
     data["PlayerUp"] = get_player_up()
-    
+
     # Get players in game
     data["PlayersInGame"] = get_players_in_game()
-    
-    # Get live scores for all 4 players    
+
+    # Get live scores for all 4 players
     data["Scores"] = get_live_scores()
-   
+
+    print("DATAMAPPER: get_in_play_data:", data)
     return data
 
 
 def remove_machine_scores():
     """
-    Remove/reset machine high scores to prepare for forced initial entry.
-    
-    Sets scores to low placeholder values and initials to '???' or spaces.
-    For Type 1/2: initials set to 0x3F ('?')
-    For Type 3: initials set to 0x00 (space)
-    For Type 9: no initials, just reset scores
-    
-    SYS11 Types 1, 2, 3, 9.
+    No-op: SYS11 classics do not support resetting machine high scores.
     """
-    if S.gdata.get("HighScores", {}).get("Type") not in [1, 2, 3, 9]:
-        return
-    
-    log.log(f"DATAMAPPER: Remove machine scores type {S.gdata['HighScores']['Type']}")
-   
-    # Reset 4 high scores
-    for index in range(4):
-        score_start = S.gdata["HighScores"]["ScoreAdr"] + index * 4
-        
-        # Clear score to 0
-        for i in range(4):
-            shadowRam[score_start + i] = 0
-        
-        # Set placeholder score (50, 40, 30, 20)
-        shadowRam[score_start + 3] = (5 - index)*0x10
-        
-        # Set initials based on type
-        if "InitialAdr" in S.gdata["HighScores"]:
-            initial_start = S.gdata["HighScores"]["InitialAdr"] + index * 3
-            
-            if S.gdata["HighScores"]["Type"] in [1, 2]:
-                # Type 1/2: Set to 0x3F ('?')
-                for i in range(3):
-                    shadowRam[initial_start + i] = 0x3F
-            elif S.gdata["HighScores"]["Type"] == 3:
-                # Type 3: Set to 0x00 (space)
-                for i in range(3):
-                    shadowRam[initial_start + i] = 0x00
+    return
 
 
 
@@ -526,14 +411,6 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
     Returns:
         list: Updated in_play_scores with initials filled in where matches found
     """
-    used_high_score_indices = []
-    
-    for in_play_score in in_play_scores:
-        for high_score_idx, high_score in enumerate(high_scores):
-            if high_score_idx not in used_high_score_indices and in_play_score[1] == high_score[1] and in_play_score[1] != 0:
-                in_play_score[0] = high_score[0]
-                used_high_score_indices.append(high_score_idx)
-                break
     
     return in_play_scores
 
@@ -550,21 +427,7 @@ def get_flipper_state():
     Returns:
         tuple: (left, right) boolean values, or (0, 0) if not configured
     """
-    try:
-        if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in [1, 2]:
-            flipper_address = S.gdata["Flippers"]["Address"]
-            v=shadowRam[flipper_address]
-            left = (v & 0x02) != 0
-            right = (v & 0x01) != 0
-            
-            # Type 2: Reverse left and right
-            if S.gdata["Flippers"]["Type"] == 2:
-                return right, left
-            
-            return left, right
-
-    except Exception as e:
-        log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
+   
     
     return 0, 0
 
@@ -667,17 +530,9 @@ def get_switches_tripped():
         list: List of boolean values (True if switch value > 20, False otherwise), 
               or empty list if not configured or unsupported type.
     """
-    switches_cfg = S.gdata.get("Switches")
-    if not switches_cfg or switches_cfg.get("Type") not in (1, 10):
-        return []
+   
 
-    address = switches_cfg.get("Address", 0)
-    length = switches_cfg.get("Length", 0)
-    try:
-        return [shadowRam[address + i] > 20 for i in range(length)]
-    except Exception as e:
-        log.log(f"DATAMAPPER: Error reading switches: {e}")
-        return []
+    return []
 
 
 
@@ -693,24 +548,9 @@ def write_switches_nominal():
     Returns:
         bool: True if successful, False if not configured or unsupported type
     """
-    switches_cfg = S.gdata.get("Switches")
-    if not switches_cfg or switches_cfg.get("Type") not in (1, 10):
-        return False
-
-    value=20  # for SYS11 switches
-    address = switches_cfg.get("Address", 0)
-    length = switches_cfg.get("Length", 0)
-    if address == 0 or length == 0:
-        return False
-    
-    try:
-        for i in range(length):
-            shadowRam[address + i] = value
-        return True
-    except Exception as e:
-        log.log(f"DATAMAPPER: Error writing switches: {e}")
-        return False
-
+  
+    return True
+ 
 
 def print_switches():
     """
@@ -718,17 +558,7 @@ def print_switches():
     Uses the list from get_switches_tripped() and the 'Names' list from S.gdata['Switches'].
     If a name is empty, display 'NotUsed' instead.
     """
-    switch_values = get_switches_tripped()
-    names = []
-    if "Switches" in S.gdata and "Names" in S.gdata["Switches"]:
-        names = S.gdata["Switches"]["Names"]
-    else:
-        names = ["NotUsed"] * len(switch_values)
+    return
 
-    for idx, value in enumerate(switch_values):
-        # Support list of lists: [name, number]
-        if idx < len(names) and isinstance(names[idx], list) and len(names[idx]) > 0:
-            name = names[idx][0] if names[idx][0] else "NotUsed"
-        else:
-            name = "NotUsed"
-        print(f"{name:<24} {value}")
+
+    

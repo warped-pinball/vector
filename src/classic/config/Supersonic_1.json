@@ -4,14 +4,21 @@
         "System": "ClassicBally"
     },
     "BallInPlay": {
-        "Type": 0,
-        "Address": 56
+        "Type": 30,
+        "Address": 18
     },   
+    "InPlay": {
+      "Type": 30,
+      "GameActiveAdr": 19,
+      "Players": 19,
+      "PlayerUp": 20,
+      "ScoreAdr": 286,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 6
+  },
     "HighScores": {
-        "Type": 0,
-        "ScoreAdr": 18,
-        "InitialAdr": 12,
-        "BytesInScore": 4
+        "Type": 30,
+        "ScoreAdr": 321
     },
     "DisplayMessage": {
         "Type": 0
