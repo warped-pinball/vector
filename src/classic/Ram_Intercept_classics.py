@@ -83,8 +83,8 @@ def CatchVMA_U7():
 #
 #   this needs to happen in one place to lock out U7 when U8 is in process and vice versa
 #
-@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
-#@rp2.asm_pio()  
+#@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))    #Diagnostic side set
+@rp2.asm_pio()  
 def Pass_VMA():
     wrap_target()
     label("Pass_VMA_start")
@@ -98,10 +98,10 @@ def Pass_VMA():
     label("Pass_VMA_goahead")
 
     #trigger next pio after 2ph clock is already HIGH
-    word(0xC41C)    [7]  .side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    word(0xC41C)    [7]  #.side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
     
     wait(0,gpio,1)  [7]   #wait for 2ph Clock LOW, +after delay  7*6.6nS=47nS      
-    irq(clear, 5)         .side(0)     #clear IRQ5 before looping back, will have been spammed
+    irq(clear, 5)         #.side(0)     #clear IRQ5 before looping back, will have been spammed
     wrap()
 
    
@@ -213,19 +213,19 @@ def GetWriteAddress():
 #   OUT: Data Pins
 #
 #  ->5
-@rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT  ) 
-#@rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT , sideset_init=rp2.PIO.OUT_LOW )   #DIAG
+#@rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT  ) 
+@rp2.asm_pio (out_init= (rp2.PIO.IN_HIGH,)*8,  out_shiftdir=rp2.PIO.SHIFT_RIGHT , sideset_init=rp2.PIO.OUT_LOW )   #DIAG
 def WriteRam():
     wrap_target()    
-    wait(1,irq,6)       #wait for IRQ6 and reset it    
+    wait(1,irq,6)      #wait for IRQ6 and reset it    
      
     # wait(0,gpio,1)    #wait for clock going-low edge    
 
     label("loopread")
-    in_(pins,8)    [9]     #read all 8 data in one go
+    in_(pins,8)    [7]    .side(1) #read all 8 data in one go
     jmp(pin, "loopread")
 
-    push(noblock)       #push out data byte, picked up by DMA
+    push(noblock)  .side(0)     #push out data byte, picked up by DMA
    
     wrap()
     
@@ -285,7 +285,8 @@ def pio_start():
 
     #sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq= 75000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
     #   sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
-    sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1))
+    #sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1))
+    sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1), sideset_base=machine.Pin(22))
 
 
     #   PIO0_SM3 - force low data nibble (D0-D3) to 1 for 0x100+ reads (5101 nibble RAM)
@@ -306,8 +307,8 @@ def pio_start():
     # receive IRQ5
     # JMP pin is 2ph clock
     # diag-> 
-    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
-    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
+    #sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, sideset_base=machine.Pin(22), jmp_pin=machine.Pin(1))
+    sm_Pass_VMA = rp2.StateMachine(11, Pass_VMA, freq=150000000, jmp_pin=machine.Pin(1))
     
     
 
