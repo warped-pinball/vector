@@ -2247,6 +2247,12 @@ def connect_to_wifi():
     if not ssid:
         return False
 
+    # Reassert the custom hostname before every (re)connect attempt - the
+    # wifi driver only honors it for the DHCP request made at connect time,
+    # so a later reconnect (e.g. from the periodic "Check Wifi" watchdog
+    # after a real disconnect) would otherwise fall back to the default.
+    _set_network_hostname()
+
     # Try a few times before raising a fault
     for i in range(_WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
