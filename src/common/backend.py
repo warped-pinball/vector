@@ -2293,8 +2293,10 @@ def _set_network_hostname():
 
     game_info = S.gdata.get("GameInfo", {})
     raw_name = f"{game_info.get('GameName', 'WP')}"
-    # DNS/DHCP hostnames only allow letters, digits and hyphens
-    hostname = "".join(c if c.isalnum() else "-" for c in raw_name).strip("-")
+    # DNS/DHCP hostnames only allow letters, digits and hyphens.
+    # str.isalnum() isn't available on this MicroPython build, so check
+    # ASCII ranges directly instead.
+    hostname = "".join(c if ("a" <= c <= "z" or "A" <= c <= "Z" or "0" <= c <= "9") else "-" for c in raw_name).strip("-")
 
     try:
         network.hostname(hostname)
