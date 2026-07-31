@@ -2285,12 +2285,31 @@ except Exception:
     # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
+def _set_network_hostname():
+    """Report a per-machine hostname to routers/switches via DHCP (e.g.
+    'ClassicBally-Supersonic'), instead of the generic 'Pico2W' default.
+    Must be called before the wifi interface is activated (AP or STA)."""
+    import network
+
+    game_info = S.gdata.get("GameInfo", {})
+    raw_name = f"{game_info.get('GameName', 'WP')}"
+    # DNS/DHCP hostnames only allow letters, digits and hyphens
+    hostname = "".join(c if c.isalnum() else "-" for c in raw_name).strip("-")
+
+    try:
+        network.hostname(hostname)
+        print(f"Server: network hostname set to '{hostname}'")
+    except Exception as e:
+        print(f"Server: error setting network hostname: {e}")
+
+
 def go(ap_mode):
     """Start the server and run the main loop"""
     # Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
     # wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)
     Pico_Led.off()
     gc_threshold(2048 * 6)
+    _set_network_hostname()
 
     # check if configuration is valid
     wifi_credentials = ds_read_record("configuration", 0)
