@@ -2311,6 +2311,19 @@ def _set_network_hostname():
         print(f"Server: error setting network hostname: {e}")
 
 
+def _log_network_hostname():
+    """Diagnostic only: read back (not re-set) the driver's current hostname,
+    to determine whether the CYW43/lwIP stack is resetting it internally on
+    its own vs. only failing to transmit it on some DHCP transactions."""
+    import network
+
+    try:
+        current = network.hostname()
+        print(f"Server: [diag] current network hostname = '{current}'")
+    except Exception as e:
+        print(f"Server: [diag] error reading network hostname: {e}")
+
+
 def go(ap_mode):
     """Start the server and run the main loop"""
     # Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
