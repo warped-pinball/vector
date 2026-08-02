@@ -19,11 +19,13 @@
       "Players": 19,
       "PlayerUp": 20,
       "ScoreAdr": 286,
+      "LastScoreAdr": 316,
       "ScoreBytes": 6,
       "ScoreSpacing": 6
   },
     "HighScores": {
         "Type": 30,
-        "ScoreAdr": 321
+        "ScoreAdr": 359,
+        "ScoreAdr2": 463
     }
 }
