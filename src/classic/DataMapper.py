@@ -145,20 +145,8 @@ def read_in_play_scores():
             [[initials, score], [initials, score], ...  ]
             Initials are always empty strings (not available in in-play data)
     """
-    in_play_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-
-    try:
-        in_play = S.gdata["InPlay"]
-        if in_play["Type"] != 30:
-            return in_play_scores
-
-        for idx in range(4):
-            base_adr = in_play["ScoreAdr"] + idx * in_play["ScoreSpacing"]
-            in_play_scores[idx][1] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
-    except Exception as e:
-        log.log(f"In-play scores read error: {e}")
-
-    return in_play_scores
+    scores = get_live_scores(False)
+    return [["", scores[0]], ["", scores[1]], ["", scores[2]], ["", scores[3]]]
 
 
 
