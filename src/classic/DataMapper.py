@@ -2,7 +2,7 @@
 # https://creativecommons.org/licenses/by-nc/4.0/
 # This work is licensed under CC BY-NC 4.0
 """
-SYS11 DataMapper
+Classics DataMapper
 
 Translation layer between SYS11 machine data formats (shadow RAM, JSON configs)
 and the MicroPython application. Handles all data format conversions including
@@ -76,7 +76,7 @@ def _reversed_digit_score(base_adr, num_digits):
 
 def read_high_scores():
     """
-    Read and decode the high score from SYS11 shadow RAM.
+    Read and decode the high score from shadow RAM.
 
     SYS11 Type 30 high score:
     - Only 1 high score available, no initials
@@ -150,18 +150,45 @@ def read_in_play_scores():
 
 
 
+_last_live_scores = [0, 0, 0, 0]
+
+
 def get_live_scores(use_format=True):
     """
     Get live scores for all 4 players.
 
-    If a Format is active (active_format != 0), pulls scores from Formats.player_scores.
-    Otherwise reads from SYS11 shadow RAM (InPlay.Type 30: one decimal digit
-    per byte, upper nibble, least-significant digit first, ScoreSpacing bytes
-    between each player's block).
+    If a game is active (get_game_active()), reads the current scores - from
+    Formats.player_scores if a Format is active, otherwise from SYS11 shadow
+    RAM (InPlay.Type 30: one decimal digit per byte, upper nibble,
+    least-significant digit first, ScoreSpacing bytes between each player's
+    block) - and caches the result. If no game is active, shadow RAM is no
+    longer reliable, so the last cached reading is returned instead - unless
+    a read from InPlay.LastScoreAdr (the display digits, which still hold
+    the final score after the game ends) agrees with the cache on at least
+    3 of 4 players, in which case that reading is accepted as the new cache.
 
     Returns:
         list: List of 4 integer scores [score1, score2, score3, score4]
     """
+    global _last_live_scores
+
+    if not get_game_active():
+        try:
+            in_play = S.gdata["InPlay"]
+            if in_play["Type"] == 30 and "LastScoreAdr" in in_play:
+                last_scores = [0, 0, 0, 0]
+                for idx in range(4):
+                    base_adr = in_play["LastScoreAdr"] + idx * in_play["ScoreSpacing"]
+                    last_scores[idx] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+
+                matches = sum(1 for i in range(4) if last_scores[i] == _last_live_scores[i])
+                if matches >= 3:
+                    _last_live_scores = last_scores
+        except Exception as e:
+            log.log(f"DATAMAPPER: error getting LastScoreAdr scores: {e}")
+
+        return list(_last_live_scores)
+
     scores = [0, 0, 0, 0]
 
     # Check if a Format is active
@@ -170,6 +197,7 @@ def get_live_scores(use_format=True):
             # Format is active - use player_scores from Formats module
             import Formats
             scores = list(Formats.player_scores)
+            _last_live_scores = scores
             return scores
     except Exception as e:
         log.log(f"DATAMAPPER: error getting format scores: {e}")
@@ -186,6 +214,7 @@ def get_live_scores(use_format=True):
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
 
+    _last_live_scores = scores
     return scores
 
 
@@ -273,7 +302,7 @@ def get_players_in_game():
 
 def get_game_active():
     """
-    Check if a game is currently active (SYS11 classics).
+    Check if a game is currently active 
 
     Reads InPlay.GameActiveAdr from shadow RAM. 0 = inactive, non-zero = active.
 
@@ -369,7 +398,7 @@ def get_in_play_data():
     # Get live scores for all 4 players
     data["Scores"] = get_live_scores()
 
-    print("DATAMAPPER: get_in_play_data:", data)
+    #print("DATAMAPPER: get_in_play_data:", data)
     return data
 
 
