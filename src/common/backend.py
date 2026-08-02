@@ -2247,6 +2247,12 @@ def connect_to_wifi():
     if not ssid:
         return False
 
+    # Reassert the custom hostname before every (re)connect attempt - the
+    # wifi driver only honors it for the DHCP request made at connect time,
+    # so a later reconnect (e.g. from the periodic "Check Wifi" watchdog
+    # after a real disconnect) would otherwise fall back to the default.
+    _set_network_hostname()
+
     # Try a few times before raising a fault
     for i in range(_WIFI_MAX_ATTEMPTS):
         ip_address = phew_connect(ssid, password, timeout_seconds=10)
@@ -2285,12 +2291,46 @@ except Exception:
     # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
 
 
+def _set_network_hostname():
+    """Report a per-machine hostname to routers/switches via DHCP (e.g.
+    'ClassicBally-Supersonic'), instead of the generic 'Pico2W' default.
+    Must be called before the wifi interface is activated (AP or STA)."""
+    import network
+
+    game_info = S.gdata.get("GameInfo", {})
+    raw_name = f"{game_info.get('GameName', 'WP')}"
+    # DNS/DHCP hostnames only allow letters, digits and hyphens.
+    # str.isalnum() isn't available on this MicroPython build, so check
+    # ASCII ranges directly instead.
+    hostname = "".join(c if ("a" <= c <= "z" or "A" <= c <= "Z" or "0" <= c <= "9") else "-" for c in raw_name).strip("-")
+
+    try:
+        network.hostname(hostname)
+        print(f"Server: network hostname set to '{hostname}'")
+    except Exception as e:
+        print(f"Server: error setting network hostname: {e}")
+
+
+def _log_network_hostname():
+    """Diagnostic only: read back (not re-set) the driver's current hostname,
+    to determine whether the CYW43/lwIP stack is resetting it internally on
+    its own vs. only failing to transmit it on some DHCP transactions."""
+    import network
+
+    try:
+        current = network.hostname()
+        print(f"Server: [diag] current network hostname = '{current}'")
+    except Exception as e:
+        print(f"Server: [diag] error reading network hostname: {e}")
+
+
 def go(ap_mode):
     """Start the server and run the main loop"""
     # Allocate PICO led early - this grabs DMA0&1 and PIO1_SM0 before memory interfaces setup
     # wifi uses PICO LED to indicate status (since it is on wifi chip via spi also)
     Pico_Led.off()
     gc_threshold(2048 * 6)
+    _set_network_hostname()
 
     # check if configuration is valid
     wifi_credentials = ds_read_record("configuration", 0)
