@@ -1,0 +1,492 @@
+<style>
+  input[type="date"] {
+    width: auto;
+    /* max-width: 10rem;
+        text-align: center; */
+  }
+
+  button.danger {
+    background-color: #e73434;
+    color: white;
+    border: none;
+  }
+
+  button.danger:hover {
+    background-color: #c53d3d;
+  }
+
+  .golden-button {
+    background-color: #e8b85a;
+    border-color: #e8b85a;
+    box-shadow: 0 0 20px rgba(232, 185, 90, 0.51);
+    animation: pulse 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    from {
+      box-shadow:
+        0 0 20px rgba(232, 185, 90, 0.51),
+        0 0 40px rgba(232, 185, 90, 0.3);
+    }
+    to {
+      box-shadow:
+        0 0 40px rgba(232, 185, 90, 0.8),
+        0 0 80px rgba(232, 185, 90, 0.4);
+    }
+  }
+
+  /* Adjustments Profiles Styling */
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Space between elements */
+    margin-bottom: 0.5rem;
+    /* Space between rows */
+  }
+
+  .profile-row input {
+    margin: 0;
+    /* Remove any default margin */
+  }
+
+  .profile-row input[type="radio"] {
+    flex-shrink: 0;
+    /* Prevents shrinking of the radio button */
+  }
+
+  .profile-row input[type="text"] {
+    flex-grow: 1;
+    /* Allows the text field to expand and take available space */
+    max-width: 200px;
+    /* Optional: Limit the width of the text field */
+  }
+
+  .profile-row button {
+    flex-shrink: 0;
+    /* Keeps the button size consistent */
+  }
+
+  #update-progress-log::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* make disabled radio button inputs opacity 0 */
+  input[type="radio"]:disabled {
+    opacity: 0;
+  }
+</style>
+
+<div style="text-align: left">
+  <h2>Setup</h2>
+  <hr />
+  <section>
+    <h3>Game Configuration</h3>
+    <fieldset id="game-configuration">
+      <div class="grid">
+        <div>
+          <label for="game-name"><b>Game Name:</b></label>
+          <input id="game-name" type="text" placeholder="Game name" />
+        </div>
+        <div>
+          <label for="total-players"><b>Total Players:</b></label>
+          <input id="total-players" type="number" min="1" value="4" />
+        </div>
+        <div>
+          <label for="score-reels"><b>Score Reels per Player:</b></label>
+          <input id="score-reels" type="number" min="1" value="1" />
+        </div>
+        <div>
+          <label for="dummy-reels"><b>Dummy Reels:</b></label>
+          <input id="dummy-reels" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <button id="save-game-config" style="margin-left: 1rem; display: none">
+        Save Game Config
+      </button>
+    </fieldset>
+    <h3>Calibration</h3>
+    <div style="margin-top: 1rem">
+      <button
+        id="record-calibration"
+        onclick="window.startRecordingCalibration()"
+      >
+        Record Calibration Game
+      </button>
+      <span
+        id="recorded-games-status"
+        style="margin-left: 1rem; font-weight: bold"
+      >
+        Recorded: 0/4
+      </span>
+    </div>
+
+    <div style="margin-top: 0.5rem">
+      <button
+        id="start-learning"
+        onclick="window.startLearningProcess()"
+        disabled
+      >
+        Start Learning Process
+      </button>
+      <button
+        id="delete-calibration-games"
+        class="danger"
+        style="margin-left: 1rem"
+        onclick="window.deleteCalibrationGames()"
+      >
+        Delete Calibration Games
+      </button>
+    </div>
+  </section>
+
+  <!-- Calibration modal (shows streaming progress, then score input form) -->
+  <dialog id="calibration-modal">
+    <article>
+      <header>
+        <h2>Recording Calibration - Please play the game</h2>
+      </header>
+      <p>
+        <b
+          >Do not close this window or disconnect while recording is in
+          progress.</b
+        >
+      </p>
+
+      <!-- Hidden raw log (kept for debug) -->
+      <code
+        id="calibration-log"
+        style="
+          display: none;
+          width: 100%;
+          height: 160px;
+          overflow: auto;
+          white-space: pre-wrap;
+          padding-bottom: 1em;
+        "
+      ></code>
+
+      <!-- User-facing static message that changes with progress -->
+      <div
+        id="calibration-message"
+        style="
+          width: 100%;
+          height: 160px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+        "
+      >
+        Keep going
+      </div>
+
+      <progress
+        id="calibration-progress"
+        value="0"
+        max="100"
+        style="width: 100%"
+      ></progress>
+
+      <div style="margin-top: 0.5rem">
+        <button id="end-calibration-game">
+          End Calibration & Record Scores
+        </button>
+      </div>
+
+      <div id="calibration-results" style="display: none; margin-top: 1rem">
+        <h3>Enter Scores for Calibration Game</h3>
+        <div
+          id="calibration-instructions"
+          style="margin-top: 0.5rem; font-style: italic; display: none"
+        ></div>
+        <form id="calibration-scores-form">
+          <!-- dynamically filled -->
+        </form>
+        <div style="margin-top: 0.5rem">
+          <button id="save-calibration-scores">Save Calibration Scores</button>
+          <button
+            onclick="document.getElementById('calibration-modal').close();"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </article>
+  </dialog>
+
+  <h2>Settings</h2>
+  <hr />
+  <section>
+    <h3>Tournament Mode</h3>
+    <fieldset id="score-boards">
+      <label>
+        <input
+          id="tournament-mode-toggle"
+          type="checkbox"
+          role="switch"
+          name="tournament-mode"
+          checked
+          disabled
+        />
+        <b>Tournament Mode:</b> save scores to tournament board instead of
+        standard leaderboard
+      </label>
+    </fieldset>
+  </section>
+  <section>
+    <h3>Score Claim Methods</h3>
+    <fieldset id="score-claim-methods">
+      <label>
+        <input id="web-ui-toggle" type="checkbox" role="switch" name="web" />
+        <b>Web Interface:</b> for a short time after playing; players may claim
+        scores via web interface
+      </label>
+    </fieldset>
+  </section>
+  <h2>Actions</h2>
+  <hr />
+  <section>
+    <h3>Updates</h3>
+    <div class="grid">
+      <div>
+        <button id="update-button" disabled>Checking for Updates</button>
+      </div>
+      <div>
+        <p>Apply the latest update to your Vector</p>
+        <p id="release-notes"></p>
+        <a id="release-link" target="_blank" rel="noopener noreferrer"></a>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="grid">
+      <div>
+        <button id="upload-dev-build-button" onclick="window.customUpdate()">
+          Upload Developer Build
+        </button>
+      </div>
+      <div>
+        <p>
+          This feature is intended for developers, and advanced users. Use at
+          your own risk.
+        </p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h3>Export Data</h3>
+    <div class="grid">
+      <div>
+        <button onclick="window.downloadScores()">Export Scores</button>
+      </div>
+      <div>
+        <p>
+          Export all scores from the Leaderboard and Tournament Board as an
+          update file
+        </p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h3>Reset</h3>
+    <div class="grid">
+      <div>
+        <button
+          class="danger"
+          onclick="confirm_auth_get('api/leaders/reset', 'Reset Leaderboard Scores')"
+        >
+          Reset Leaderboard
+        </button>
+      </div>
+      <div>
+        <p>
+          Reset all scores on the Leaderboard, Tournament scores will not be
+          effected
+        </p>
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <button
+          class="danger"
+          onclick="confirm_auth_get('/api/tournament/reset', 'Reset Tournament Scores')"
+        >
+          Reset Tournament Board
+        </button>
+      </div>
+      <div>
+        <p>
+          Reset all scores on the Tournament Board, Leaderboard scores will not
+          be effected
+        </p>
+      </div>
+    </div>
+    <!-- Reboot button removed for EM builds -->
+    <div class="grid">
+      <div>
+        <button onclick="localStorage.clear(); window.location.reload();">
+          Clear Browser Storage
+        </button>
+      </div>
+      <div>
+        <p>
+          Clears stored data from browser, use this if you are getting weird
+          behaviour that refreshing does not clear. This will log you out.
+        </p>
+      </div>
+    </div>
+    <div class="grid">
+      <div>
+        <button
+          class="danger"
+          onclick="confirm_auth_get('api/settings/factory_reset', 'Factory Reset Vector')"
+        >
+          Factory Reset Vector
+        </button>
+      </div>
+      <div>
+        <p>
+          Resets all settings and scores to factory defaults. Machine will
+          reboot immediately and Vector will return to setup.
+          <b>Required before installing vector in a new Pinball Machine</b>
+        </p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h3>Debug</h3>
+    <!-- Memory snapshot download removed for EM builds -->
+    <button class="secondary" onclick="downloadLogs()">Download Logs</button>
+    <button
+      class="secondary"
+      style="margin-left: 0.5rem"
+      onclick="downloadDiagnostics()"
+    >
+      Download Diagnostic Data
+    </button>
+  </section>
+  <section>
+    <h2>Help</h2>
+    <hr />
+    <h5>Accessing AP / Configure Mode</h5>
+    <ul>
+      <li>Power off your pinball machine</li>
+      <li>Wait until the LEDs on your Vector board completely turn off</li>
+      <li>
+        Locate and hold the small button that is <u>not</u> labeled "BOOTSEL"
+      </li>
+      <li>
+        While continuing to hold the button, power on your pinball machine
+      </li>
+      <li>Release the button once the LED next to it begins flashing</li>
+      <li>
+        On your device, look for and connect to the WiFi network named "Warped
+        Pinball" (it may take a moment to appear)
+      </li>
+      <li>Your browser should automatically open the configuration page</li>
+    </ul>
+
+    <h5>Connecting to Your Vector</h5>
+    Use the following methods to connect to your Vector (They are listed roughly
+    in order of convenience):
+    <ol>
+      <li>
+        <b>Network Discovery</b> If you're currently viewing a Vector interface,
+        you can easily connect to other units on the same network. Click the
+        game name at the top of the page to view all available Vector devices.
+        The current Vector's IP address is visible in your browser's URL bar. If
+        the game is not visible, try refreshing the page after ~30 seconds.
+      </li>
+      <li>
+        <b>Display Identification</b> With "Show IP on machine" enabled, your
+        Vector displays its IP address on the game screen approximately every 30
+        seconds during idle time. On System 9 machines, watch for the player
+        scores to temporarily display the IP address. Simply enter this IP in
+        your browser to connect.
+      </li>
+      <li>
+        <b>AP Mode Reference</b> You can boot into AP mode (using the
+        instructions above) to view the last known IP address of your Vector.
+        This address typically remains valid when you restart in normal mode.
+      </li>
+      <li>
+        <b>Router Management</b> For the most consistent connection, check your
+        WiFi router's connected devices list to identify your Vector's IP
+        address. Consider assigning a static IP address in your router settings
+        to maintain the same address between restarts.
+      </li>
+    </ol>
+
+    <h5>Resetting Your Admin Password</h5>
+    <p>
+      To reset your admin password, boot into AP mode using the instructions
+      above and enter your new password in the configuration page.
+    </p>
+
+    <h5>Report a bug or request a feature</h5>
+    <p>
+      <a href="https://github.com/warped-pinball/vector/issues/new/choose">
+        github.com/warped-pinball/vector/issues/new/choose
+      </a>
+    </p>
+  </section>
+</div>
+<dialog id="update-progress-modal">
+  <article>
+    <header>
+      <h2>Updating - Please wait</h2>
+    </header>
+
+    <p>
+      <b
+        >Do not close this window or disconnect from network while update is in
+        progress.</b
+      >
+      Updates typically take less than 2 minutes to complete.
+    </p>
+    <code
+      id="update-progress-log"
+      style="
+        width: 100%;
+        height: 250px;
+        overflow: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        text-align: left;
+        padding-bottom: 1em;
+        white-space: pre-wrap;
+      "
+    ></code>
+    <progress id="update-progress-bar" value="0" max="100" />
+  </article>
+</dialog>
+
+<!-- Learning modal (shows progress while processing calibration games) -->
+<dialog id="learning-modal">
+  <article>
+    <header>
+      <h2>Processing Calibration Games</h2>
+    </header>
+    <p>
+      <b>Please wait while your calibration games are processed.</b>
+    </p>
+    <code
+      id="learning-log"
+      style="
+        display: none;
+        width: 100%;
+        height: 120px;
+        overflow: auto;
+        white-space: pre-wrap;
+        padding-bottom: 1em;
+      "
+    ></code>
+    <progress
+      id="learning-progress"
+      value="0"
+      max="100"
+      style="width: 100%"
+    ></progress>
+  </article>
+</dialog>
