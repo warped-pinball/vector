@@ -7,6 +7,12 @@
         "Type": 30,
         "Address": 18
     },   
+    "DisplayMessage": {
+      "Type": 30,
+      "Address": 316,
+      "Length": 3,
+      "Spacing": 6
+  },
     "InPlay": {
       "Type": 30,
       "GameActiveAdr": 19,
