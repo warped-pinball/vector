@@ -10,7 +10,7 @@
     "DisplayMessage": {
       "Type": 30,
       "Address": 316,
-      "Length": 3,
+      "Length": 6,
       "Spacing": 6
   },
     "InPlay": {
@@ -25,8 +25,5 @@
     "HighScores": {
         "Type": 30,
         "ScoreAdr": 321
-    },
-    "DisplayMessage": {
-        "Type": 0
     }
 }
