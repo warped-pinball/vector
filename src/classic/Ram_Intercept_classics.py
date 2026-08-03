@@ -352,9 +352,9 @@ def pio_start():
     sm_WriteRam.exec("irq(clear,6)")
 
     #PIO0_SM3 - low-nibble forcer for 0x100+
-    sm_set_lsn_data.active(1)
-    sm_set_lsn_data.exec("set(x, 0x0F)")   #preload X = 0x0F, the value driven onto D0-D3
-    sm_set_lsn_data.exec("irq(clear,7)")   #clean start
+    #sm_set_lsn_data.active(1)
+    #sm_set_lsn_data.exec("set(x, 0x0F)")   #preload X = 0x0F, the value driven onto D0-D3
+    #sm_set_lsn_data.exec("irq(clear,7)")   #clean start
   
 
 

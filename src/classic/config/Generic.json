@@ -1,0 +1,19 @@
+{
+    "GameInfo": {
+        "GameName": "Generic",
+        "System": "ClassicBally"
+    },
+    "BallInPlay": {
+        "Type": 0,
+        "Address": 0
+    },   
+    "DisplayMessage": {
+      "Type": 0
+    },
+    "InPlay": {
+      "Type": 0
+    },
+    "HighScores": {
+       "Type": 0
+    }
+}
