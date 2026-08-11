@@ -162,7 +162,7 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
-init_shadow_ram()
+#init_shadow_ram()
 
 time.sleep(5)
 reset_control.release(True)
