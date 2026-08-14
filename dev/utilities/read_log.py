@@ -1,10 +1,15 @@
-# Standalone WPC FRAM log reader.
+# Standalone FRAM log reader - works for any target platform (wpc, data_east,
+# sys11, em, classic).
 #
 # No project imports (not even SPI_Store/FramMap/logger) - copy this single
 # file to the Pico and run it directly, e.g.:
 
 # run like this from command line:::
 #   mpremote connect <PORT> run dev/utilities/read_wpc_log.py
+#
+# To read logs for a platform other than the default below, pre-set PLATFORM
+# before running (no file edit needed):
+#   mpremote connect <PORT> exec "PLATFORM='sys11'" run dev/utilities/read_wpc_log.py
 
 
 # or copy it onto the board and `import read_wpc_log` / run it from the REPL.
@@ -16,7 +21,28 @@
 import machine
 from machine import SPI
 
-# --- FRAM SPI wiring (fixed hardware, same pins SPI_Store.py uses) ---
+# --- Target platform: "wpc", "data_east", "sys11", "em", "classic" ---
+# Edit this default, or pre-set PLATFORM via `mpremote exec` before `run` (see above).
+try:
+    PLATFORM
+except NameError:
+    PLATFORM = "wpc"
+
+# FRAM logger region start/length per platform. wpc and data_east define this in
+# their own FramMap.py (LOGGER_CONFIG); sys11/em/classic have no FramMap.py, so
+# they use logger.py's legacy fallback region - see src/common/logger.py.
+LOGGER_REGIONS = {
+    "wpc": (0x2600, 0x1FFF),
+    "data_east": (0x2600, 0x1FFF),
+    "sys11": (0x2400, 0x1FFF),
+    "em": (0x2400, 0x1FFF),
+    "classic": (0x2400, 0x1FFF),
+}
+
+if PLATFORM not in LOGGER_REGIONS:
+    raise ValueError("Unknown PLATFORM %r; choose one of %s" % (PLATFORM, sorted(LOGGER_REGIONS)))
+
+# --- FRAM SPI wiring (fixed hardware, same pins SPI_Store.py uses on every platform) ---
 cs = machine.Pin(5, machine.Pin.OUT)
 cs.value(1)
 
@@ -52,9 +78,7 @@ def fram_read(address, nbytes):
     return data
 
 
-# --- WPC logger region (values from src/wpc/FramMap.py: LOGGER_CONFIG) ---
-AddressStart = 0x2600
-LoggerLength = 0x1FFF
+AddressStart, LoggerLength = LOGGER_REGIONS[PLATFORM]
 AddressEnd = AddressStart + LoggerLength - 16
 AddressPointer = AddressStart + LoggerLength - 6
 
