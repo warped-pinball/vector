@@ -5,14 +5,14 @@
 # file to the Pico and run it directly, e.g.:
 
 # run like this from command line:::
-#   mpremote connect <PORT> run dev/utilities/read_wpc_log.py
+#   mpremote connect <PORT> run dev/utilities/read_log.py
 #
 # To read logs for a platform other than the default below, pre-set PLATFORM
 # before running (no file edit needed):
-#   mpremote connect <PORT> exec "PLATFORM='sys11'" run dev/utilities/read_wpc_log.py
+#   mpremote connect <PORT> exec "PLATFORM='sys11'" run dev/utilities/read_log.py
 
 
-# or copy it onto the board and `import read_wpc_log` / run it from the REPL.
+# or copy it onto the board and `import read_log` / run it from the REPL.
 #
 # Reads the FRAM log region the same way logger.py's get_logs_stream() does:
 # starts at the next-write pointer (oldest byte) and reads forward, wrapping
