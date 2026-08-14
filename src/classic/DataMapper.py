@@ -4,9 +4,9 @@
 """
 Classics DataMapper
 
-Translation layer between SYS11 machine data formats (shadow RAM, JSON configs)
+Translation layer between Classics machine data formats (shadow RAM, JSON configs)
 and the MicroPython application. Handles all data format conversions including
-BCD scores, ASCII/Type3 initials, and other SYS11-specific encodings.
+BCD scores, ASCII/Type3 initials, and other Classics-specific encodings.
 
 This module provides functions to read and write data from/to shadow RAM,
 converting between machine formats and usable Python data structures.
@@ -22,9 +22,9 @@ from Shadow_Ram_Definitions import shadowRam
 
 def _bcd_to_int(score_bytes):
     """
-    Convert BCD (Binary Coded Decimal) bytes from SYS11 machine format to integer.
-    
-    SYS11 uses standard BCD encoding where each byte contains two decimal digits
+    Convert BCD (Binary Coded Decimal) bytes from Classics machine format to integer.
+
+    Classics uses standard BCD encoding where each byte contains two decimal digits
     (high nibble and low nibble). Invalid digits (>9) are treated as 0.
     Typically handles 4 BCD bytes for 8-digit scores.
     
@@ -74,15 +74,36 @@ def _reversed_digit_score(base_adr, num_digits):
     return score
 
 
+def _read_score(base_adr, in_play):
+    """
+    Decode a score at base_adr according to InPlay.Type:
+    - Type 30: one decimal digit per byte, upper nibble, least-significant
+      digit first (see _reversed_digit_score).
+    - Type 31 or 32: packed BCD, 7 decimal digits across 4 bytes (upper and
+      lower nibbles of each byte), most-significant byte first (see
+      _bcd_to_int).
+    """
+    if in_play["Type"] in (31, 32):
+        return _bcd_to_int(shadowRam[base_adr : base_adr + 4])
+    return _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+
+
 def read_high_scores():
     """
     Read and decode the high score from shadow RAM.
 
-    SYS11 Type 30 high score:
+    Classics Type 30 high score:
     - Only 1 high score available, no initials
     - 5 decimal digits, each BCD coded in the upper nibble of one byte
     - Most significant digit at ScoreAdr, each next digit at ScoreAdr-1, -2, ...
     - Result is multiplied by 10
+
+    Classics Type 32 high score:
+    - Only 1 high score available, no initials
+    - 7 decimal digits, packed BCD (both nibbles of each byte used), same
+      4-byte big-endian format as InPlay Type 31 player scores (see
+      _bcd_to_int)
+    - Bytes read from ScoreAdr through ScoreAdr+3
 
     Returns:
         list: List of [initials, score] pairs
@@ -97,21 +118,28 @@ def read_high_scores():
         return high_scores
 
     try:
-        if S.gdata["HighScores"]["Type"] != 30:
-            log.log(f"DataMapper: Unsupported HighScores Type {S.gdata['HighScores']['Type']}")
-            return high_scores
-
-        # Score is 5 decimal digits, each BCD coded in the upper nibble of
-        # one byte, most significant digit at ScoreAdr and each following
-        # digit at the next lower address.
+        high_score_type = S.gdata["HighScores"]["Type"]
         score_adr = S.gdata["HighScores"]["ScoreAdr"]
-        score = 0
-        for i in range(5):
-            digit = (shadowRam[score_adr - i] >> 4) & 0x0F
-            if digit > 9:
-                digit = 0
-            score = score * 10 + digit
-        high_scores[0][1] = score * 10
+
+        if high_score_type == 30:
+            # Score is 5 decimal digits, each BCD coded in the upper nibble
+            # of one byte, most significant digit at ScoreAdr and each
+            # following digit at the next lower address.
+            score = 0
+            for i in range(5):
+                digit = (shadowRam[score_adr - i] >> 4) & 0x0F
+                if digit > 9:
+                    digit = 0
+                score = score * 10 + digit
+            high_scores[0][1] = score * 10
+
+        elif high_score_type == 32:
+            # 7 decimal digits, packed BCD across 4 bytes, most-significant
+            # byte first.
+            high_scores[0][1] = _bcd_to_int(shadowRam[score_adr : score_adr + 4])
+
+        else:
+            log.log(f"DataMapper: Unsupported HighScores Type {high_score_type}")
 
     except (IndexError, KeyError) as e:
         log.log(f"High score read error: {e}")
@@ -121,7 +149,7 @@ def read_high_scores():
 
 def write_high_scores(high_scores):
     """
-    No-op: SYS11 classics do not support writing high scores back to shadow RAM.
+    No-op: Classics do not support writing high scores back to shadow RAM.
 
     Args:
         high_scores: List of [initials, score] pairs (unused)
@@ -134,7 +162,7 @@ def write_high_scores(high_scores):
 
 def read_in_play_scores():
     """
-    Read the current in-play scores for all 4 players (SYS11 classics).
+    Read the current in-play scores for all 4 players (Classics).
 
     InPlay.Type 30: one decimal digit per byte, upper nibble,
     least-significant digit first, ScoreSpacing bytes between each
@@ -158,10 +186,11 @@ def get_live_scores(use_format=True):
     Get live scores for all 4 players.
 
     If a game is active (get_game_active()), reads the current scores - from
-    Formats.player_scores if a Format is active, otherwise from SYS11 shadow
+    Formats.player_scores if a Format is active, otherwise from Classics shadow
     RAM (InPlay.Type 30: one decimal digit per byte, upper nibble,
-    least-significant digit first, ScoreSpacing bytes between each player's
-    block) - and caches the result. If no game is active, shadow RAM is no
+    least-significant digit first; or InPlay.Type 31/32: packed BCD, 7
+    decimal digits across 4 bytes, upper and lower nibbles; ScoreSpacing
+    bytes between each player's block) - and caches the result. If no game is active, shadow RAM is no
     longer reliable, so the last cached reading is returned instead - unless
     a read from InPlay.LastScoreAdr (the display digits, which still hold
     the final score after the game ends) agrees with the cache on at least
@@ -175,11 +204,11 @@ def get_live_scores(use_format=True):
     if not get_game_active():
         try:
             in_play = S.gdata["InPlay"]
-            if in_play["Type"] == 30 and "LastScoreAdr" in in_play:
+            if in_play["Type"] in (30, 31, 32) and "LastScoreAdr" in in_play:
                 last_scores = [0, 0, 0, 0]
                 for idx in range(4):
                     base_adr = in_play["LastScoreAdr"] + idx * in_play["ScoreSpacing"]
-                    last_scores[idx] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+                    last_scores[idx] = _read_score(base_adr, in_play)
 
                 matches = sum(1 for i in range(4) if last_scores[i] == _last_live_scores[i])
                 if matches >= 3:
@@ -205,12 +234,12 @@ def get_live_scores(use_format=True):
     # No active format - read from shadow RAM
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] != 30:
+        if in_play["Type"] not in (30, 31, 32):
             return scores
 
         for idx in range(4):
             base_adr = in_play["ScoreAdr"] + idx * in_play["ScoreSpacing"]
-            scores[idx] = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+            scores[idx] = _read_score(base_adr, in_play)
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
 
@@ -221,7 +250,7 @@ def get_live_scores(use_format=True):
 
 def get_ball_in_play():
     """
-    Get the current ball number in play (SYS11 classics).
+    Get the current ball number in play (Classics).
 
     Reads the raw ball number from shadow RAM at BallInPlay.Address.
 
@@ -231,7 +260,7 @@ def get_ball_in_play():
     try:
         if S.gdata["BallInPlay"]["Type"] != 30:
             return 0
-        return shadowRam[S.gdata["BallInPlay"]["Address"]]
+        return shadowRam[S.gdata["BallInPlay"]["Address"]] & 0x0F
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_ball_in_play: {e}")
         return 0
@@ -265,7 +294,7 @@ def get_player_up():
     """
     Get the current player number (whose turn it is).
 
-    SYS11 classics store player-up as the 1-4 player number directly at the
+    Classics store player-up as the 1-4 player number directly at the
     configured address (not 0-based).
 
     Returns:
@@ -285,7 +314,7 @@ def get_players_in_game():
     """
     Get the number of players in the current game.
     
-    SYS11 stores player count (0-3) at configured address.
+    Classics stores player count (0-3) at configured address.
     
     Returns:
         int: Number of players (1-4) or 0 if not available
@@ -305,6 +334,8 @@ def get_game_active():
     Check if a game is currently active 
 
     Reads InPlay.GameActiveAdr from shadow RAM. 0 = inactive, non-zero = active.
+    If GameActiveAdr isn't configured, falls back to BallInPlay and treats
+    a ball number of 1-5 as an active game.
 
     Returns:
         bool: True if game is active, False otherwise
@@ -313,6 +344,9 @@ def get_game_active():
         in_play = S.gdata["InPlay"]
         if in_play["Type"] != 30:
             return False
+
+        if "GameActiveAdr" not in in_play:
+            return 1 <= get_ball_in_play() <= 5
 
         return shadowRam[in_play["GameActiveAdr"]] != 0
 
@@ -327,7 +361,7 @@ def get_game_active():
 
 def write_live_scores(scores):
     """
-    No-op: SYS11 classics do not support writing live scores back to shadow RAM.
+    No-op: Classics do not support writing live scores back to shadow RAM.
 
     Args:
         scores: List of 4 integer scores (unused)
@@ -404,7 +438,7 @@ def get_in_play_data():
 
 def remove_machine_scores():
     """
-    No-op: SYS11 classics do not support resetting machine high scores.
+    No-op: Classics do not support resetting machine high scores.
     """
     return
 
@@ -435,7 +469,7 @@ def match_in_play_with_high_score_initials(in_play_scores, high_scores):
 
 def get_flipper_state():
     """
-    Read the flipper state from SYS11 shadow RAM.
+    Read the flipper state from Classics shadow RAM.
     
     Returns the flipper state (left, right) at the configured flipper address.
     Type 1: Normal (left=bit1, right=bit0)
