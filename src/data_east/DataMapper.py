@@ -744,7 +744,7 @@ def turn_off_high_score_rewards():
     """
        turn_off_high_score_reward so it is not awarded on initials entry
     """
-    if S.gdata["Adjustments"]["Type"] == 20:
+    if S.gdata["Adjustments"]["Type"] == 20 and S.gdata.get("HSRewards"):
         #DataStore.read_record("extras", 0)["enter_initials_on_game"]:
         print("SCORE: Disabling HS rewards")
         for key, value in S.gdata["HSRewards"].items():
