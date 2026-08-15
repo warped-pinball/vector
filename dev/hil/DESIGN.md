@@ -14,7 +14,9 @@ The first four things we want covered:
 | G1 | The code boots and the boards run normally | every PR |
 | G2 | We can connect to the boards and hit the API | every PR |
 | G3 | Every available config can be parsed and boot | every PR |
-| G4 | Updating from the last 5 versions to the proposed version works | nightly + release tags + on-demand |
+| G4 | Updating from the last 5 versions to the proposed version works | every PR |
+
+G4 runs on every PR by decision: the update path is critical infrastructure, it is where we most suspect latent problems, and we would rather pay the wall-clock cost than find out at release time. §8 quantifies the cost and §11 lists the levers to dial it back if it becomes painful.
 
 Non-goals for v1: gameplay/bus-level correctness (bare boards, no machine attached), AP-mode setup flow (needs a wire to GPIO22), long-duration soak testing.
 
@@ -29,6 +31,7 @@ Non-goals for v1: gameplay/bus-level correctness (bare boards, no machine attach
 | Board recovery | Software reset only (`machine.reset()` over `mpremote`). |
 | Update signing | `skip_signature_check: true` for the upgrade path, plus negative tests that the signature gate still rejects bad packages. |
 | Initial inventory | `sys11`, `wpc`, `data_east`. More systems added later. |
+| Update matrix cadence | Every PR. Updates are the priority; dial back later only if wall clock becomes a problem. |
 
 ---
 
@@ -129,13 +132,15 @@ Belt and braces, but the label alone is not enough — label state and head SHA 
 
 ### Runner host
 
-**Check the Pi model before buying.** The GitHub Actions runner ships for Linux x64, ARM64, and ARM32 (ARMv7). The original Pi Zero / Zero W is ARMv6 (`ARM1176`) and is **not supported** — the runner will not start. Pi Zero 2 W (Cortex-A53) works under a 32-bit ARMv7 userland. Verify against GitHub's current supported-architecture list before ordering.
+The existing Pi already runs the Actions runner with a USB hub attached, so the hardware question is largely settled. Worth noting for the record: **that Pi is a Zero 2 W, not a Zero 1 W.** The GitHub Actions runner ships only for Linux x64, ARM64, and ARM32 (ARMv7); the original Zero/Zero W is ARMv6 (`ARM1176`) and the runner will not start on it at all. A runner that runs is a Zero 2 W (Cortex-A53). No need to verify further — it's proven by the fact that it works.
 
-Even on a Zero 2 W, be aware of:
+Constraints to design around on that hardware:
 
-- **512 MB RAM** shared between the runner, Python, and 3+ concurrent `mpremote` sessions. Tight but workable; swap on the SD card will hurt.
-- **One micro-USB OTG data port.** Three boards means a powered hub, and it must be self-powered.
-- Wall-clock matters here — the config matrix is minutes of `mpremote` round-trips, and a Zero 2 W is slow at everything. A Pi 4 costs a little more and removes the whole category of problem. Worth it if the bench is going to be load-bearing.
+- **512 MB RAM** shared between the runner, Python, and three concurrent `mpremote` sessions. Workable, but keep per-board test processes lean and avoid loading whole build trees into memory. Swapping to the SD card will hurt badly and will show up as timing flake.
+- **Single-core-ish throughput.** Board work is I/O-bound on serial round-trips rather than CPU-bound, which is what makes 3-way parallelism viable at all — but orchestration overhead is not free at this scale.
+- **USB hub already present.** Confirm it is self-powered; three Picos plus enumeration churn on a Zero 2 W's OTG port is more than the bus-powered case wants to supply.
+
+If the combined per-PR matrix (§8) turns out too slow, the first thing to try is more boards rather than a bigger Pi — the work is serial-I/O-bound, not compute-bound, so a faster host buys much less than a second WPC board does.
 
 ### Board network
 
@@ -347,9 +352,49 @@ The update path is the most security-sensitive code we ship, and these are cheap
 
 The negative tests are what buy back the coverage lost by using `skip_signature_check` for the happy path.
 
-**Runtime:** 5 versions × 3 boards, ~3–5 min each (two OTA cycles plus verification), parallel across boards → ~20–25 min. That is *on top of* the config matrix.
+#### Additional cases worth having, given updates are the suspected problem area
 
-**Recommendation:** run G4 nightly on `main`, on release tags, and on-demand via label — not on every PR. The risk that an upgrade from 1.11.24 breaks is a property of *the release*, not of each individual commit, and stacking 25 minutes onto an already 25-minute per-PR run will make people start skipping HIL. If a PR touches `src/common/update.py`, a path filter can opt it into the full matrix.
+- **Repeated updates in one power cycle.** Apply an update, then apply another without a power cycle in between. `apply_update()` runs inside `LowMemoryMode`, which halts the phew scheduler and closes the discovery sockets on entry and rebuilds them on exit (`update.py:157-196`). If `__exit__` doesn't fully restore that state, the second update is where it shows. Field users do sometimes update twice in a row.
+- **Chained vs. direct upgrades.** The common case is a direct jump from an old version to the newest, and that's what the main matrix covers. A chained walk (V-5 → V-4 → … → proposed) additionally catches migration-ordering bugs, where each individual hop works but the sequence doesn't. Worth running on release tags even if it's too slow for every PR.
+- **Bytecode compatibility (see the toolchain note below).** After an update, assert every `.mpy` on the board actually imports. A bytecode-version mismatch produces a board that updates "successfully" and then fails to boot — which looks exactly like a mysterious update bug.
+
+#### ⚠️ Toolchain finding: `mpy-cross` was unpinned
+
+Worth surfacing here because it lands squarely in the "we suspect there might be issues with updates" category.
+
+`dev/requirements.txt` pinned `mpremote==1.23.0` but left **`mpy-cross` unpinned**, so CI resolved whatever was newest — currently `1.28.0.post2`. Meanwhile the MicroPython in the shipped UF2s is not uniform:
+
+| Firmware | MicroPython |
+|---|---|
+| `Vector_WPC_v5.uf2` | v1.26.0-preview.255 |
+| `Vector_DataEast_v1.uf2` | v1.26.0-preview.255 |
+| `vector_system_11_and_9_v4.uf2` | v1.24.1 |
+
+`.mpy` files carry a bytecode version in their header, and a board's MicroPython refuses to import a `.mpy` whose version it doesn't know. So the build was compiling bytecode with a 1.28 toolchain and shipping it to firmware three to four minor versions behind, with nothing asserting the pairing is valid.
+
+It happens to work today — verified empirically that `mpy-cross` 1.23.0 and 1.28.0.post2 both emit `mpy_version=6, flags=0x00`, and a full `sys11` build produces 41 `.mpy` files all at version 6. So this is not a live bug. But it is unpinned, undocumented, and load-bearing: the day `mpy-cross` bumps to bytecode version 7, every build silently produces modules that no deployed board can import, and every OTA update bricks on the next boot. That failure would be very hard to diagnose from the symptom.
+
+`mpy-cross` is now pinned to `1.28.0.post2` — deliberately the version CI was already resolving, so the pin freezes current behavior rather than changing it. **The open question is what it *should* be pinned to**, which is a hardware question we can't answer from the repo: it should match the MicroPython in each target's UF2, and today those differ per target while the build uses one toolchain for all of them. See §12.
+
+This is also the single best argument for the update matrix running on every PR: it's exactly the class of problem where the build is green, the unit tests pass, and only real hardware tells you.
+
+**Runtime:** 5 versions × 3 boards, ~3–5 min each (two OTA cycles plus verification), parallel across board types → ~20–25 min for the upgrade matrix alone.
+
+**Combined per-PR cost.** G3 and G4 contend for the same physical boards, so they serialize per board rather than overlapping. The WPC board is the critical path both times:
+
+| | wpc board | sys11 board | data_east board |
+|---|---|---|---|
+| Config matrix (G3) | ~16–26 min | ~10–16 min | ~7–12 min |
+| Upgrade matrix (G4) | ~15–25 min | ~15–25 min | ~15–25 min |
+| **Serial total** | **~31–51 min** | ~25–41 min | ~22–37 min |
+
+So expect **roughly 30–50 minutes of bench occupancy per PR**, on a singleton bench, with PRs queueing behind each other. That is the accepted cost of treating updates as critical infrastructure. Levers, in the order worth reaching for:
+
+1. **Run G4 first.** The most valuable signal arrives earliest, and a broken update fails the run before spending 26 minutes on configs.
+2. **A second WPC board.** Config matrix on board A, upgrade matrix on board B, genuinely in parallel — cuts the critical path from ~51 to ~26 min. This is the highest-leverage purchase on the whole bench and the manifest already supports pools.
+3. **Path filters.** Docs-only and workflow-only PRs skip HIL entirely.
+4. **Poll readiness over USB, not HTTP** — saves seconds on every one of ~180 boot cycles per run.
+5. If it still hurts: move the *chained* upgrade walk to release tags and keep only direct jumps per PR.
 
 ---
 
@@ -362,7 +407,7 @@ The negative tests are what buy back the coverage lost by using `skip_signature_
 - Repo setting: Actions → *Require approval for all outside collaborators* at minimum
 - Minimal `permissions:` per job — HIL needs `checks: write`, `actions: read`, `contents: read`, nothing more
 - Egress firewall on the Pi: github.com / api.github.com / objects.githubusercontent.com plus package mirrors; deny lateral movement into the LAN
-- **Pin actions by SHA.** `build_release.yml` already does this correctly; `deploy_docs.yml`, `docs-on-pr.yml`, `specialfeatures-on-pr.yml`, and `validate-json-configs.yml` use floating `@v4` tags. Tighten those as part of this work — a compromised tag on any of them is a path to the same runner.
+- ~~**Pin actions by SHA.**~~ **Done in this PR.** All six workflows now pin every action to a commit SHA with the version in a trailing comment, and `dev/requirements.txt` pins every Python dependency. Previously `deploy_docs.yml`, `docs-on-pr.yml`, `specialfeatures-on-pr.yml`, `validate-json-configs.yml`, and `version-bump-guard.yml` used floating `@v4`/`@v5` tags — a compromised or repointed tag on any of them is a path to the same runner the bench will be attached to. Keep this invariant: **no floating tags, ever**, and consider a CI check that greps for `uses:.*@v[0-9]` to enforce it.
 - `timeout-minutes` on every job, sized just above the measured worst case
 
 ## 10. Risk register
@@ -388,6 +433,9 @@ Note that `machine.reset()` is a full MCU reset, so `boot.py` and `main.py` do r
 | Fork PR approved clean, then pushes dirty | Label auto-removed on `synchronize`; environment gate is per-run |
 | Harness rots as API changes | Contract tests generated from `@api` docstrings fail when routes drift |
 | Flaky HIL erodes trust in CI | Keep it non-blocking until measured flake rate is under ~1% over a week |
+| `mpy-cross` bytecode version drifts away from shipped firmware | Now pinned; add a post-update HIL assertion that every `.mpy` imports (§8, G4) |
+| ~30–50 min per-PR bench occupancy on a singleton bench | Run G4 first, path filters, second WPC board when it bites (§8) |
+| 512 MB RAM on the Zero 2 W under 3-way parallelism | Keep test processes lean; watch for swap-induced timing flake |
 
 ## 11. Rollout
 
@@ -396,16 +444,19 @@ Note that `machine.reset()` is a full MCU reset, so `boot.py` and `main.py` do r
 | 0 | Pi, VLAN, udev rules, 3 boards. Characterize bare-board fault behavior. Measure reset→ready. | 50 consecutive boots produce an identical fault set |
 | 1 | `dev/hil` package, boot smoke test, `workflow_dispatch` only | Green run driven by hand |
 | 2 | API contract tests over both transports. `workflow_run` trigger on, auto for maintainer branches, fork gate live. Non-blocking check. | Contract tests catch a deliberately broken route |
-| 3 | Full config matrix | Under 30 min wall clock; flake rate under 1% over a week → make it a required check |
-| 4 | Upgrade matrix, nightly + release tags + label | Full 5-version matrix green on `main` |
-| 5 | Expand manifest to `em`, `whitestar`, `classic`; second WPC board if needed | — |
+| 3 | **Upgrade matrix, every PR.** Promoted ahead of the config matrix — it's the highest-value signal and the suspected problem area. | Full 5-version matrix green across all three boards |
+| 4 | Full config matrix | Combined run under ~50 min; flake rate under 1% over a week → make it a required check |
+| 5 | Expand manifest to `em`, `whitestar`, `classic`; second WPC board to parallelize G3 against G4 | — |
 
 Phases 0 and 1 are where the real uncertainty lives. Everything after that is mostly typing.
 
+Note that phases 3 and 4 are deliberately ordered opposite to the goal numbering. The update path is the reason this bench exists, so it should be the first thing running on every PR — the config matrix is more coverage but less risk per unit of wall clock.
+
 ## 12. Open questions
 
-1. **Which Pi?** Confirm ARMv7/ARM64 support before ordering. A Pi 4 removes several constraints for not much money.
+1. **What should `mpy-cross` be pinned to?** It's now frozen at `1.28.0.post2` (what CI already resolved), but the shipped UF2s carry MicroPython v1.24.1 for System 11/9 and v1.26.0-preview for WPC and Data East. Ideally the build toolchain matches the target's firmware, which today would mean a per-target `mpy-cross` rather than one for all of them. Needs a hardware decision: standardize the firmware across targets, or make the build toolchain per-target. See §8.
 2. **Bench WiFi credentials** — does the VLAN get its own SSID, or do boards join the existing one with VLAN assignment by MAC?
-3. **Should HIL ever be a required check?** Recommendation: yes for G1–G3 once flake rate is measured, never for G4 (too slow, and it's a release-time concern).
+3. **Should HIL be a required check?** Recommendation: yes for G1–G4 once the flake rate is measured over a week. With G4 running per-PR by design, making it advisory-only would waste most of its value.
 4. **How many versions back do we actually support?** The design says 5 stable releases; if the real support window is different, that's a one-line change to the matrix.
 5. **Do we want a `latest.json` fixture served from the Pi** to make `/api/update/check` testable, or leave that endpoint untested?
+6. **Is the existing USB hub self-powered?** Three Picos on a Zero 2 W's OTG port wants a powered hub.

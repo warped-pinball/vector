@@ -1,9 +1,14 @@
 mpremote==1.23.0
-mpy-cross
-csscompressor
-jsmin
-scour
-htmlmin2
-beautifulsoup4
-cryptography
-pre-commit
+# mpy-cross emits .mpy bytecode that the board's MicroPython must be able to
+# import. Leaving it unpinned means a future release can silently bump the
+# bytecode version and produce builds no deployed board can load. Pinned to the
+# version CI was already resolving; see dev/hil/DESIGN.md for the open question
+# about aligning this with the MicroPython in each target's UF2.
+mpy-cross==1.28.0.post2
+csscompressor==0.9.5
+jsmin==3.0.1
+scour==0.38.2
+htmlmin2==0.1.13
+beautifulsoup4==4.15.0
+cryptography==50.0.0
+pre-commit==4.6.2
