@@ -57,6 +57,18 @@ https://raw.githubusercontent.com/warped-pinball/vector/main/dev/hil/ota/vector-
 Paste the checksum from `vector-hil-runner-setup.tar.zst.sha256` when Connect asks. Connect
 passes it to the device, which verifies the download before running anything.
 
+> **Testing before this merges?** The `main` URL above doesn't exist until then. Use the
+> branch instead — `raw.githubusercontent.com` serves any ref:
+>
+> ```
+> https://raw.githubusercontent.com/warped-pinball/vector/claude/hil-testing-design-s564ln/dev/hil/ota/vector-hil-runner-setup.tar.zst
+> ```
+>
+> Switch to the `main` URL after merging; branch URLs stop resolving once the branch is
+> deleted. Note that GitHub's "Files changed" view doesn't render binary blobs, so the
+> artefact won't appear as a readable diff in the PR even though it is committed — confirm it
+> with `git cat-file blob <ref>:dev/hil/ota/vector-hil-runner-setup.tar.zst | sha256sum`.
+
 Any HTTP, HTTPS, FTP, SFTP or `file://` URL the Pi can reach works — the location doesn't need
 to be reachable by Connect's servers, only by the Pi.
 
