@@ -190,7 +190,11 @@ def get_live_scores(use_format=True):
     RAM (InPlay.Type 30: one decimal digit per byte, upper nibble,
     least-significant digit first; or InPlay.Type 31/32: packed BCD, 7
     decimal digits across 4 bytes, upper and lower nibbles; ScoreSpacing
-    bytes between each player's block) - and caches the result. If no game is active, shadow RAM is no
+    bytes between each player's block) - and caches the result. For InPlay.Type
+    32 with ActiveScoreAdr configured, the currently up player's score (per
+    PlayerUp) is instead read from ActiveScoreAdr, since that machine keeps a
+    live copy of the up player's score there separate from the ScoreAdr block.
+    If no game is active, shadow RAM is no
     longer reliable, so the last cached reading is returned instead - unless
     a read from InPlay.LastScoreAdr (the display digits, which still hold
     the final score after the game ends) agrees with the cache on at least
@@ -240,6 +244,12 @@ def get_live_scores(use_format=True):
         for idx in range(4):
             base_adr = in_play["ScoreAdr"] + idx * in_play["ScoreSpacing"]
             scores[idx] = _read_score(base_adr, in_play)
+
+        if in_play["Type"] == 32:
+            player_up = get_player_up()
+            if "ActiveScoreAdr" in in_play and 1 <= player_up <= 4:
+                scores[player_up - 1] = _read_score(in_play["ActiveScoreAdr"], in_play)
+            print(f"DATAMAPPER: Type32 live scores={scores} player_up={player_up}")
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
 
@@ -301,7 +311,7 @@ def get_player_up():
         int: Player number (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") == 30 and "PlayerUp" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30,32) and "PlayerUp" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["PlayerUp"]
             return shadowRam[adr]
     except Exception as e:
@@ -320,7 +330,7 @@ def get_players_in_game():
         int: Number of players (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") == 30 and "Players" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30,32) and "Players" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["Players"]
             return shadowRam[adr]
     except Exception as e:
@@ -342,13 +352,13 @@ def get_game_active():
     """
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] != 30:
-            return False
+        if in_play["Type"] in [30,32]:
+        
 
-        if "GameActiveAdr" not in in_play:
-            return 1 <= get_ball_in_play() <= 5
+            if "GameActiveAdr" not in in_play:
+                return 1 <= get_ball_in_play() <= 5
 
-        return shadowRam[in_play["GameActiveAdr"]] != 0
+            return shadowRam[in_play["GameActiveAdr"]] != 0
 
     except Exception as e:
         log.log(f"DATAMAPPER: error get_game_active {e}")

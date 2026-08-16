@@ -5,7 +5,7 @@
     },
     "BallInPlay": {
         "Type": 30,
-        "Address": 55
+        "Address": 19  
     },   
     "DisplayMessage": {
       "Type": 0
@@ -15,7 +15,8 @@
       "ScoreAdr": 384,
       "ScoreSpacing": 17,
       "PlayerUp": 56,
-      "Players": 491
+      "Players": 491,
+      "ActiveScoreAdr": 21
     },
     "HighScores": {
       "Type": 32,
