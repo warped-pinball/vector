@@ -1,0 +1,8 @@
+artefact:
+  name: vector-hil-runner-setup
+  version: 1.0
+  device_type: rpi
+
+payloads:
+  - name: hil-runner-setup.sh
+    type: script
