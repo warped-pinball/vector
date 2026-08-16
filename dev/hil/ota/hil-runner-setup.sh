@@ -5,6 +5,13 @@
 # Deployed as a Raspberry Pi Connect script artefact. Runs as root on the
 # target Pi; everything that should not be root is run via runuser.
 #
+# This script contains NO credentials, so the built artefact is safe to commit
+# and redeploy unchanged. Secrets are read from a config file on the device:
+#
+#     /etc/vector-hil.conf     (root-owned, chmod 600)
+#
+# See vector-hil.conf.example. Create it once per Pi before the first deploy.
+#
 # Exit codes are the Connect contract:
 #   0  success
 #   1  failure
@@ -17,22 +24,19 @@
 
 set -eu
 
-# --------------------------------------------------------------------------
-# Configuration — fill these in before running otamaker.
-#
-# REGISTRATION_TOKEN comes from the repo's
-#   Settings -> Actions -> Runners -> New self-hosted runner
-# and is single-use and valid for one hour, so build and deploy promptly.
-# --------------------------------------------------------------------------
+CONFIG_FILE="/etc/vector-hil.conf"
+
+# Defaults. Anything here can be overridden in the config file.
 RUNNER_USER="pi"
 REPO_URL="https://github.com/warped-pinball/vector"
-REGISTRATION_TOKEN="PASTE_REGISTRATION_TOKEN"
 RUNNER_LABELS="vector-hil"
 RUNNER_VERSION="2.336.0"
 RUNNER_ARCH="arm64"
-WIFI_SSID="PASTE_BENCH_SSID"
-WIFI_PASSWORD="PASTE_BENCH_PASSWORD"
-# --------------------------------------------------------------------------
+
+# Supplied by the config file.
+REGISTRATION_TOKEN=""
+WIFI_SSID=""
+WIFI_PASSWORD=""
 
 EXIT_FAILURE=1
 
@@ -45,11 +49,21 @@ as_user() { runuser -u "$RUNNER_USER" -- "$@"; }
 
 [ "$(id -u)" -eq 0 ] || fail "must run as root"
 
-for placeholder in "$REGISTRATION_TOKEN" "$WIFI_SSID" "$WIFI_PASSWORD"; do
-    case "$placeholder" in
-        PASTE_*) fail "configuration placeholders not filled in before packaging" ;;
-    esac
-done
+[ -f "$CONFIG_FILE" ] || fail "$CONFIG_FILE not found - create it before deploying (see vector-hil.conf.example)"
+
+# We are about to source this as root, so refuse it if anyone but root can
+# write to it.
+config_perms=$(stat -c '%a %U' "$CONFIG_FILE")
+case "$config_perms" in
+    *[2367]" "*|*[2367][0-7]" "*) fail "$CONFIG_FILE is group- or world-writable ($config_perms) - chmod 600 it" ;;
+esac
+case "$config_perms" in
+    *" root") : ;;
+    *) fail "$CONFIG_FILE must be owned by root (currently ${config_perms#* })" ;;
+esac
+
+# shellcheck source=/dev/null
+. "$CONFIG_FILE"
 
 id "$RUNNER_USER" >/dev/null 2>&1 || fail "user '$RUNNER_USER' does not exist"
 
@@ -59,6 +73,16 @@ USER_HOME=$(getent passwd "$RUNNER_USER" | cut -d: -f6)
 REPO_DIR="$USER_HOME/vector"
 RUNNER_DIR="$USER_HOME/actions-runner"
 VENV_DIR="$REPO_DIR/.venv"
+
+[ -n "$WIFI_SSID" ] || fail "WIFI_SSID not set in $CONFIG_FILE"
+[ -n "$WIFI_PASSWORD" ] || fail "WIFI_PASSWORD not set in $CONFIG_FILE"
+
+# The registration token is only needed the first time. Once the runner is
+# registered it can be removed from the config file - it is single-use and
+# expires an hour after you generate it anyway.
+if [ ! -f "$RUNNER_DIR/.runner" ] && [ -z "$REGISTRATION_TOKEN" ]; then
+    fail "runner is not registered and REGISTRATION_TOKEN is not set in $CONFIG_FILE"
+fi
 
 log "installing for user '$RUNNER_USER' (home: $USER_HOME)"
 
