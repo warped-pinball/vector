@@ -63,6 +63,11 @@ jobs:
           test -x "$VECTOR_HIL_VENV/bin/python" || { echo "venv python missing at $VECTOR_HIL_VENV"; exit 1; }
           test -d "$VECTOR_HIL_REPO/.git" || { echo "no clone at $VECTOR_HIL_REPO"; exit 1; }
 
+          # dev/detect_boards.py shells out to a bare `mpremote` from PATH and
+          # silently returns {} when it is missing, so the venv must be ON PATH
+          # for later steps - invoking its python by absolute path is not enough.
+          echo "$VECTOR_HIL_VENV/bin" >> "$GITHUB_PATH"
+
       - name: Serial access
         run: |
           if ! ls /dev/ttyACM* >/dev/null 2>&1; then
@@ -75,18 +80,34 @@ jobs:
             exit 1
           }
 
+      - name: mpremote sees the boards
+        run: |
+          # Checked separately because detect_boards.py collapses "mpremote is
+          # missing", "mpremote failed", and "no boards attached" into the same
+          # empty result, which makes a real failure indistinguishable from an
+          # empty bench.
+          command -v mpremote || { echo "mpremote not on PATH"; exit 1; }
+          mpremote version
+
+          echo "--- mpremote devs ---"
+          mpremote devs | tee /tmp/devs.txt
+          test -s /tmp/devs.txt || {
+            echo "mpremote sees no devices, though /dev/ttyACM* exist."
+            echo "Boards may be busy or in an odd state; power-cycle the hub and retry."
+            exit 1
+          }
+
       - name: Detect and query boards
         run: |
           # detect_boards.py prints progress text before the JSON, so the
           # machine-readable part is the last line only.
-          raw=$("$VECTOR_HIL_VENV/bin/python" "$VECTOR_HIL_REPO/dev/detect_boards.py")
+          raw=$(python "$VECTOR_HIL_REPO/dev/detect_boards.py")
           echo "$raw"
           json=$(printf '%s\n' "$raw" | tail -1)
 
-          "$VECTOR_HIL_VENV/bin/python" - "$json" <<'PY'
-          import json, os, subprocess, sys
+          python - "$json" <<'PY'
+          import json, subprocess, sys
 
-          venv = os.environ["VECTOR_HIL_VENV"]
           boards = json.loads(sys.argv[1])
 
           if not boards:
@@ -96,7 +117,7 @@ jobs:
           for kind, ports in sorted(boards.items()):
               for port in ports:
                   probe = subprocess.run(
-                      [f"{venv}/bin/mpremote", "connect", port, "exec",
+                      ["mpremote", "connect", port, "exec",
                        "import systemConfig; print(systemConfig.vectorSystem, systemConfig.SystemVersion)"],
                       capture_output=True, text=True, timeout=60)
                   if probe.returncode:
