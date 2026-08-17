@@ -313,7 +313,24 @@ Full matrix on every PR, per the decision above. Per board, loop over that hardw
 
 That last assertion is the one that earns its keep. `sys11_tiny` exists because RAM is tight; a config that parses fine but leaves too little heap is the failure that actually reaches customers.
 
-**Throughput.** Boot cycle is roughly 15–25s (`main.py` alone has an 0.8s bus check plus ~4.5s of sleeps before WiFi comes up), times config count:
+**Throughput.** Measured on the bench, per board, from the flash/health-check harness:
+
+| Stage | sys11 | wpc | data_east |
+|---|---|---|---|
+| build | 13.7s | 21.7s | 19.8s |
+| flash (wipe + copy + config + reset) | 26.4s | 28.0s | 22.5s |
+| boot → API answering + full health check | 11.7s | 14.8s | 10.7s |
+
+So a full flash-and-verify of all three boards is **~3.5 min end to end**, and build cost is
+not a concern on the Zero 2 W — the caching this design worried about is unnecessary.
+
+The number that drives the config matrix is the last row: a board answers its API within
+roughly 10s of reset, and the health check itself accounts for most of that 10–15s. The
+15–25s per-config estimate below therefore still holds, but is an estimate — a per-config
+reboot loop has not been measured yet.
+
+Boot cycle is roughly 15–25s (`main.py` alone has an 0.8s bus check plus ~4.5s of sleeps
+before WiFi comes up), times config count:
 
 | Board | Configs | Serial estimate |
 |---|---|---|
