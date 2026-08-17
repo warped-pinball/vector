@@ -74,11 +74,24 @@ def log(msg):
     print(msg, flush=True)
 
 
+_TIMINGS = []
+_group = None
+
+
 def group(title):
+    global _group
+    _group = (title, time.monotonic())
     print(f"::group::{title}", flush=True)
 
 
 def endgroup():
+    global _group
+    if _group:
+        title, started = _group
+        elapsed = time.monotonic() - started
+        _TIMINGS.append((title, elapsed))
+        print(f"  [{elapsed:.1f}s]", flush=True)
+        _group = None
     print("::endgroup::", flush=True)
 
 
@@ -596,6 +609,11 @@ def main():
                 except Exception:
                     pass
             endgroup()
+
+    log("")
+    log("stage timings (build cost on the Zero 2 W is the number to watch):")
+    for title, elapsed in _TIMINGS:
+        log(f"  {elapsed:7.1f}s  {title}")
 
     log("")
     log("=" * 60)
