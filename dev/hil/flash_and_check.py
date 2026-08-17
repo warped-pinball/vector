@@ -135,6 +135,52 @@ def inventory():
     return boards
 
 
+IDENTIFY_SNIPPET = """
+import machine, time
+try:
+    import BoardLED as L
+    L.startUp()
+except Exception:
+    L = None
+led = machine.Pin("LED", machine.Pin.OUT)
+for i in range({blinks}):
+    led.on()
+    if L:
+        L.ledColor(L.BLUE)
+    time.sleep(0.25)
+    led.off()
+    if L:
+        L.ledColor(L.BLACK)
+    time.sleep(0.25)
+"""
+
+
+def identify(boards, seconds=8):
+    """Blink each board in turn so a human can tell which is which.
+
+    Uses the Pico W onboard LED, which works from the REPL no matter what
+    firmware is loaded, plus the Vector board's WS2812 in blue when the
+    flashed firmware happens to provide the driver.
+    """
+    log(f"Blinking each board for ~{seconds}s. Watch the bench and note the order.")
+    log("")
+    for index, board in enumerate(boards, 1):
+        log(f"  [{index}/{len(boards)}] BLINKING NOW: {board['port']}  chip {board['chip_id']}")
+        result = mpremote(
+            "connect", board["port"], "exec",
+            IDENTIFY_SNIPPET.format(blinks=int(seconds / 0.5)),
+            timeout=seconds + 30,
+        )
+        if result.returncode != 0:
+            log(f"        could not blink this board: {result.stderr.strip()}")
+        else:
+            log("        done")
+    log("")
+    log("Now map what you saw to the chip ids, and put this in the runner's .env:")
+    log("")
+    log("  VECTOR_HIL_BOARD_MAP=" + ",".join(f"{b['chip_id']}=<target>" for b in boards))
+
+
 # --------------------------------------------------------------------------
 # 2. resolve
 # --------------------------------------------------------------------------
@@ -419,7 +465,18 @@ def main():
     parser.add_argument("--skip-flash", action="store_true", help="health-check what is already on the boards")
     parser.add_argument("--inventory-only", action="store_true",
                         help="print each board's chip id and stop - use this to build VECTOR_HIL_BOARD_MAP")
+    parser.add_argument("--identify", action="store_true",
+                        help="blink each board in turn so you can tell which physical board is which")
     args = parser.parse_args()
+
+    if args.identify:
+        group("Inventory")
+        boards = inventory()
+        endgroup()
+        group("Identify")
+        identify(boards)
+        endgroup()
+        return 0
 
     if args.inventory_only:
         group("Inventory")
