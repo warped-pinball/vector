@@ -1,9 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Prebuilt Raspberry Pi Connect update artefacts. Never normalize these -
-# any rewriting invalidates the committed SHA-256 the device verifies against.
-*.tar.zst binary
-
-# The artefact script runs as POSIX sh on the Pi; CRLF would break the shebang.
-dev/hil/ota/*.sh text eol=lf
+# Bench setup scripts run as POSIX sh on the Pi; CRLF would break the shebang.
+dev/hil/*.sh text eol=lf
