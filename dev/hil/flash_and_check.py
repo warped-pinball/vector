@@ -28,6 +28,7 @@ resolve_targets() for how that is handled.
 """
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -450,8 +451,7 @@ def health_check_usb(board):
         log("    skipping active-config check (board is in safe mode)")
     else:
         active = get(client, "/api/game/active_config")
-        active_name = active.get("name") if isinstance(active, dict) else active
-        log(f"    active config: {active_name}")
+        log(f"    active config: {active}")
         if expected_config not in json.dumps(active):
             raise CheckFailure(f"active config {active!r} is not the {expected_config!r} we flashed")
 
@@ -474,10 +474,29 @@ def health_check_usb(board):
     return ip, wifi
 
 
-def http_get(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "vector-hil"})
-    with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
-        return response.status, response.read()
+def http_get(url, attempts=3):
+    """GET a URL, decompressing gzip and retrying transient failures.
+
+    The board serves its web assets pre-gzipped with Content-Encoding: gzip
+    (backend.py:183) and urllib does not decompress automatically. Retries
+    exist because phew is a single-threaded server on a microcontroller that
+    is also fielding discovery broadcasts - an occasional dropped body is not
+    a regression worth failing a bench run over.
+    """
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": "vector-hil"})
+            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+                body = response.read()
+                if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                    body = gzip.decompress(body)
+                return response.status, body
+        except Exception as exc:
+            last_error = exc
+            if attempt + 1 < attempts:
+                time.sleep(2)
+    raise CheckFailure(f"GET {url} failed after {attempts} attempts: {last_error!r}")
 
 
 def health_check_http(board):
@@ -498,8 +517,9 @@ def health_check_http(board):
     status, body = http_get(f"http://{ip}/")
     if status != 200:
         raise CheckFailure(f"http / returned {status}")
-    if b"<html" not in body[:2000].lower():
-        raise CheckFailure("http / did not return an HTML page")
+    head = body[:2000].lower()
+    if b"<html" not in head and b"<!doctype" not in head:
+        raise CheckFailure(f"http / did not return an HTML page (first bytes: {body[:80]!r})")
     log(f"    http {ip} / -> 200, {len(body)} bytes")
 
     status, _ = http_get(f"http://{ip}/api/fault")
