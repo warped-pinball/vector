@@ -109,9 +109,11 @@ Since the bench boards are dedicated, pin them by chip id once and the question 
 Blink each board in turn and watch the bench:
 
 ```bash
-cd ~/vector
-PATH="$VECTOR_HIL_VENV/bin:$PATH" python dev/hil/flash_and_check.py --identify
+cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/flash_and_check.py --identify
 ```
+
+(`$VECTOR_HIL_VENV` is exported by the runner *service*, so it is not set in a login shell —
+hence the explicit `.venv` path here.)
 
 Then record what you saw:
 

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Flash every attached Vector board and health-check its API after boot.
 
-Run from the repo root on the bench Pi, with the dev venv on PATH:
+Run from the repo root on the bench Pi:
 
-    python dev/hil/flash_and_check.py
+    cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/flash_and_check.py
+
+Inside an Actions job the runner's .env already provides VECTOR_HIL_VENV, so
+plain `python dev/hil/flash_and_check.py` is enough there. In a login shell it
+is not - .env is read by the runner service, not by your shell.
 
 Stages, in order:
 
@@ -27,6 +31,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -80,6 +85,39 @@ def endgroup():
 # --------------------------------------------------------------------------
 # 1. inventory
 # --------------------------------------------------------------------------
+
+
+def ensure_tools_on_path():
+    """Put the bench venv's bin dir on PATH and pick the interpreter to use.
+
+    The harness gets run three ways - from an Actions job, from a login shell,
+    and by hand - and only the first has the runner's .env applied. dev/build.py
+    shells out to a bare `mpy-cross` and dev/flash.py to a bare `mpremote`, so
+    PATH has to be right for subprocesses too, not just for our own calls.
+    """
+    candidates = []
+    if os.environ.get("VECTOR_HIL_VENV"):
+        candidates.append(Path(os.environ["VECTOR_HIL_VENV"]) / "bin")
+    candidates.append(Path(sys.executable).parent)
+    candidates.append(REPO_ROOT / ".venv" / "bin")
+
+    for bindir in candidates:
+        if (bindir / "mpremote").exists():
+            os.environ["PATH"] = f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}"
+            python = bindir / "python"
+            return str(python) if python.exists() else sys.executable
+
+    if shutil.which("mpremote"):
+        return sys.executable
+
+    raise CheckFailure(
+        "mpremote not found. Run with the bench venv, e.g.\n"
+        f"  cd {REPO_ROOT} && PATH=\"$PWD/.venv/bin:$PATH\" .venv/bin/python dev/hil/flash_and_check.py ...\n"
+        "(VECTOR_HIL_VENV is exported by the runner service, so it is not set in a login shell.)"
+    )
+
+
+VENV_PYTHON = sys.executable
 
 
 def mpremote(*args, timeout=60):
@@ -265,7 +303,7 @@ def source_version(target):
 def build(target):
     build_dir = REPO_ROOT / "build" / target
     result = subprocess.run(
-        [sys.executable, "dev/build.py", "--target_hardware", target, "--build-dir", str(build_dir)],
+        [VENV_PYTHON, "dev/build.py", "--target_hardware", target, "--build-dir", str(build_dir)],
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=900,
     )
     if result.returncode != 0:
@@ -308,7 +346,7 @@ def write_bench_config(target, workdir):
 
 def flash(target, port, build_dir, config_path):
     result = subprocess.run(
-        [sys.executable, "dev/flash.py", str(build_dir), "--port", port, "--write-config", str(config_path)],
+        [VENV_PYTHON, "dev/flash.py", str(build_dir), "--port", port, "--write-config", str(config_path)],
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=900,
     )
     if result.returncode != 0:
@@ -468,6 +506,9 @@ def main():
     parser.add_argument("--identify", action="store_true",
                         help="blink each board in turn so you can tell which physical board is which")
     args = parser.parse_args()
+
+    global VENV_PYTHON
+    VENV_PYTHON = ensure_tools_on_path()
 
     if args.identify:
         group("Inventory")
