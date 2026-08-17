@@ -23,6 +23,7 @@
 set -eu
 
 REPO_URL="${REPO_URL:-https://github.com/warped-pinball/vector}"
+REPO_BRANCH="${REPO_BRANCH:-main}"
 RUNNER_LABELS="${RUNNER_LABELS:-vector-hil}"
 RUNNER_VERSION="${RUNNER_VERSION:-2.336.0}"
 RUNNER_ARCH="${RUNNER_ARCH:-arm64}"
@@ -40,6 +41,18 @@ fail() { echo "ERROR: $*" >&2; exit 1; }
 
 [ -n "${VECTOR_HIL_WIFI_SSID:-}" ] || fail "VECTOR_HIL_WIFI_SSID is not set"
 [ -n "${VECTOR_HIL_WIFI_PASSWORD:-}" ] || fail "VECTOR_HIL_WIFI_PASSWORD is not set"
+
+# The runner parses .env line by line, splitting on the first '=' and taking
+# the rest of the line verbatim (Runner.Listener/Program.cs). Spaces, quotes
+# and backslashes are therefore safe and must NOT be escaped - quoting would
+# put literal quote characters into the value. A newline is the one thing that
+# cannot be represented, so reject it rather than write a corrupt file.
+for cred in VECTOR_HIL_WIFI_SSID VECTOR_HIL_WIFI_PASSWORD; do
+    eval "cred_value=\$$cred"
+    if [ "$(printf '%s' "$cred_value" | wc -l)" -ne 0 ]; then
+        fail "$cred contains a newline, which cannot be stored in the runner's .env"
+    fi
+done
 
 if [ ! -f "$RUNNER_DIR/.runner" ] && [ -z "${RUNNER_TOKEN:-}" ]; then
     fail "RUNNER_TOKEN is not set and the runner is not registered yet"
@@ -66,11 +79,23 @@ fi
 
 if [ -d "$REPO_DIR/.git" ]; then
     log "updating existing clone at $REPO_DIR"
-    git -C "$REPO_DIR" fetch --quiet origin || echo "WARNING: git fetch failed, using existing checkout"
+    git -C "$REPO_DIR" fetch --quiet origin \
+        || echo "WARNING: git fetch failed, falling back to the last fetched state"
 else
     log "cloning $REPO_URL"
     git clone --quiet "$REPO_URL" "$REPO_DIR" || fail "git clone failed"
 fi
+
+# Fetching alone leaves the working tree wherever it was, so the bench could
+# keep running stale or hand-modified harness code. Check out an explicit ref
+# instead, detached, to make it obvious this is a pinned trusted checkout and
+# not a branch anyone should be committing on.
+if ! git -C "$REPO_DIR" diff --quiet HEAD 2>/dev/null; then
+    fail "$REPO_DIR has uncommitted changes - commit, stash, or delete the clone and re-run"
+fi
+git -C "$REPO_DIR" checkout --quiet --detach "origin/$REPO_BRANCH" \
+    || fail "could not check out origin/$REPO_BRANCH"
+log "harness at $(git -C "$REPO_DIR" rev-parse --short HEAD) (origin/$REPO_BRANCH)"
 
 if [ ! -x "$VENV_DIR/bin/python" ]; then
     log "creating virtualenv"

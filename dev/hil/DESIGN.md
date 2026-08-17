@@ -400,7 +400,11 @@ So expect **roughly 30–50 minutes of bench occupancy per PR**, on a singleton 
 
 ## 9. Runner hardening checklist
 
-- **Ephemeral runner** (`--ephemeral`), registered at repo scope, label `vector-hil`
+- **Ephemeral runner** (`--ephemeral`), registered at repo scope, label `vector-hil` — *not yet
+  done; the bench currently runs a persistent runner. Ephemeral registration needs a PAT with
+  `administration: write` stored on the Pi to mint a token per job, which is a worse secret to
+  hold than the runner's own credentials. Acceptable only because `workflow_run` means the Pi
+  never executes PR-authored code; see RUNNER_SETUP.md for the full reasoning.*
 - Unprivileged user, no sudo, no docker socket
 - `ACTIONS_RUNNER_HOOK_JOB_STARTED` / `_COMPLETED`: wipe `_work/`, run a bench-health precheck (all boards enumerate and answer), fail the job immediately if the bench is unhealthy rather than producing a confusing test failure
 - **No secrets on any self-hosted job.** In particular `WARPED_PINBALL_PRIVATE_KEY` must never be referenced by a job with a `self-hosted` label. Move signing into a dedicated environment restricted to `main` and tags so it is structurally unreachable from HIL.

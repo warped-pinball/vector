@@ -59,8 +59,36 @@ download and registration are left alone, and `.env` is rewritten touching only 
 a newer harness — and after the first time you don't need `RUNNER_TOKEN`, since registration is
 skipped once the runner exists.
 
-Overridable via environment if you need them: `REPO_URL`, `RUNNER_LABELS`, `RUNNER_VERSION`,
-`RUNNER_ARCH`.
+**The clone is pinned, not floating.** After fetching, the script checks out `origin/$REPO_BRANCH`
+(default `main`) as a detached HEAD, so the bench always runs a known ref rather than whatever
+was last left checked out. It refuses to run if the clone has uncommitted changes rather than
+discarding them — if you've been debugging by hand there, commit, stash, or delete the clone.
+
+Overridable via environment if you need them: `REPO_URL`, `REPO_BRANCH`, `RUNNER_LABELS`,
+`RUNNER_VERSION`, `RUNNER_ARCH`.
+
+### On WiFi credentials with unusual characters
+
+The runner reads `.env` line by line, splits on the first `=`, and takes the rest of the line
+verbatim ([`Runner.Listener/Program.cs`](https://github.com/actions/runner/blob/v2.336.0/src/Runner.Listener/Program.cs#L179-L197)) —
+there is no `EnvironmentFile=` in the generated systemd unit and `runsvc.sh` doesn't source it
+either. So spaces, quotes and backslashes in an SSID or password are safe and must **not** be
+escaped; quoting would store literal quote characters. A newline is the one value that cannot
+be represented, and the script rejects it up front.
+
+### Why not an ephemeral runner
+
+DESIGN.md §9 calls for `--ephemeral`. This script registers a persistent runner instead, which
+is a deliberate deviation with a reason: ephemeral runners deregister after every job, so
+something has to mint a fresh registration token each time — which means storing a PAT with
+`administration: write` on the Pi, readable by the same user that runs job code. That PAT is a
+much more valuable secret than the runner's own credentials, which only let you receive jobs.
+
+The trade works because of the trust model: under `workflow_run`, the Pi only ever executes
+harness code from a trusted ref (DESIGN.md §4), so the "poison the workspace for the next job"
+attack that ephemeral runners defend against has no foothold. Revisit this if the Pi ever
+starts executing PR-authored code — at that point ephemeral runners via JIT config stop being
+optional.
 
 To re-register against a different repo or token, remove the registration first — the script
 deliberately won't do this behind your back:
