@@ -13,7 +13,9 @@ import faults
 import GameDefsLoad
 import machine
 import Memory_Main as MemoryMain
+import Ram_Intercept_classics as RamInt
 import reset_control
+import SharedState
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
@@ -162,30 +164,19 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
-#init_shadow_ram()
+    # MPU-200 boards have full-byte RAM at 0x100-0x200
+    # so the low-nibble forcer state machine needs to be disabled for them.
+    is_mpu200 = SharedState.gdata.get("GameInfo", {}).get("System") == "MPU200"
+    RamInt.enableMPU200Mode(is_mpu200)
 
-time.sleep(5)
+
+time.sleep(1)
 reset_control.release(True)
-time.sleep(4)
-
-#while(1):
-#    time.sleep(5)
-#    print("pause")
-
-
-
+time.sleep(1)
 
 resource.go(True)
 Switches.initialize()
 Formats.initialize()
-
-
-#while(True):
-#    for i in range(0x100, 0x200):
-#        shadowRam[i] = shadowRam[i] | 0x0F
-#    time.sleep_ms(20)
-
-
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa

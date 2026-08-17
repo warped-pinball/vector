@@ -1,7 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Split Second",
-        "System": "MPU-200"
+        "System": "MPU200"
     },
     "BallInPlay": {
         "Type": 30,

@@ -1,7 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Supersonic",
-        "System": "ClassicBally"
+        "System": "Bally35"
     },
     "BallInPlay": {
         "Type": 30,

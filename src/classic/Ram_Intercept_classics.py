@@ -37,6 +37,18 @@ FIRST_ADR_PIN = const(6)
 FIRST_DATA_PIN = const(14)
 
 
+sm_set_lsn_data = None
+
+#use after init - enter/exit MPU200 data bus mode
+def enableMPU200Mode(flag):
+    global sm_set_lsn_data
+    if flag is True:
+        sm_set_lsn_data.active(0)
+    else:
+        sm_set_lsn_data.active(1)
+    return
+
+
 #Catch Address+VMA signal
 #   SM#9, PIO2
 #   JMP Pin is VMA_ADR_U8_PIN (GPIO#13) 
@@ -257,6 +269,7 @@ def set_lsn_data():
 
 
 def pio_start():
+    global sm_set_lsn_data
 
     gpio_1 = machine.Pin(1, machine.Pin.IN)
     gpio_13 = machine.Pin(13, machine.Pin.IN)
@@ -352,9 +365,9 @@ def pio_start():
     sm_WriteRam.exec("irq(clear,6)")
 
     #PIO0_SM3 - low-nibble forcer for 0x100+
-    #sm_set_lsn_data.active(1)
-    #sm_set_lsn_data.exec("set(x, 0x0F)")   #preload X = 0x0F, the value driven onto D0-D3
-    #sm_set_lsn_data.exec("irq(clear,7)")   #clean start
+    sm_set_lsn_data.active(1)
+    sm_set_lsn_data.exec("set(x, 0x0F)")   #preload X = 0x0F, the value driven onto D0-D3
+    sm_set_lsn_data.exec("irq(clear,7)")   #clean start
   
 
 
