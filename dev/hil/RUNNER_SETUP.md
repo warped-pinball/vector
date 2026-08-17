@@ -72,23 +72,33 @@ cd ~/actions-runner && sudo ./svc.sh uninstall && ./config.sh remove --token <RE
 ## Verify
 
 The runner should show **Idle** under Settings → Actions → Runners with the `vector-hil` label.
-Confirm end to end with a workflow on a branch:
 
-```yaml
-name: HIL smoke
-on: workflow_dispatch
-
-jobs:
-  smoke:
-    runs-on: [self-hosted, vector-hil]
-    timeout-minutes: 10
-    steps:
-      - run: $VECTOR_HIL_VENV/bin/python $VECTOR_HIL_REPO/dev/detect_boards.py
-      - run: test -n "$VECTOR_HIL_WIFI_SSID" && echo "wifi env present"
-```
+End to end, [`.github/workflows/hil-smoke.yml`](../../.github/workflows/hil-smoke.yml) checks
+that the runner picks up jobs, the bench environment reaches them, the serial devices are
+present and accessible, and every detected board answers over `mpremote`. It fails if no
+boards are found or if any detected board doesn't respond.
 
 `VECTOR_HIL_VENV` and `VECTOR_HIL_REPO` are exported into every job from `.env`, so workflows
-don't hardcode paths.
+don't hardcode paths. The smoke job deliberately does no `actions/checkout` — under the design's
+trust model the bench runs harness code from the clone it already has, not from a PR.
+
+### Running it before this PR merges
+
+A `workflow_dispatch` workflow isn't dispatchable until it exists on the **default branch**, so
+the "Run workflow" button won't appear while this is still a PR. The workflow therefore also
+triggers on pushes to this branch — push anything to it and the job runs on the bench:
+
+```bash
+git commit --allow-empty -m "trigger hil smoke" && git push
+```
+
+Watch it under the repo's Actions tab, or on the Pi itself:
+
+```bash
+journalctl -u "$(cat ~/actions-runner/.service)" -f
+```
+
+Once this is on `main`, drop the `push:` trigger and use the Run workflow button.
 
 ## If something breaks
 

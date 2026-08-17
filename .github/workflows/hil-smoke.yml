@@ -1,0 +1,114 @@
+name: HIL smoke
+
+# Proves the bench runner is wired up correctly: the runner picks up jobs, the
+# bench environment reaches them, the boards enumerate, and each one answers
+# over serial. It does not test firmware — see dev/hil/DESIGN.md for that.
+#
+# Deliberately no `pull_request` trigger. This targets a self-hosted runner on
+# a private network, and a pull_request trigger would let any fork PR run code
+# against it. Fork gating is designed in DESIGN.md §4 and is not built yet.
+#
+# The `push` trigger exists so this can be validated before merging, since a
+# workflow_dispatch workflow is not dispatchable until it reaches the default
+# branch. Drop the push trigger once this is on main.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/hil-testing-design-s564ln
+
+permissions: {}
+
+# The bench is a single set of physical boards. Queue, never interleave.
+concurrency:
+  group: hil-bench
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, vector-hil]
+    timeout-minutes: 15
+
+    # No actions/checkout on purpose: under the design's trust model the bench
+    # runs harness code from a trusted checkout the runner already has, not
+    # from the PR. $VECTOR_HIL_REPO points at it.
+
+    steps:
+      - name: Runner host
+        run: |
+          echo "user:   $(whoami)"
+          echo "kernel: $(uname -srm)"
+          echo "arch:   $(dpkg --print-architecture)"
+          free -h | awk '/Mem:/ {print "memory: " $2 " total, " $7 " available"}'
+          echo "uptime:$(uptime -p | sed 's/^up//')"
+
+      - name: Bench environment
+        run: |
+          fail=0
+          for var in VECTOR_HIL_REPO VECTOR_HIL_VENV VECTOR_HIL_WIFI_SSID VECTOR_HIL_WIFI_PASSWORD; do
+            eval "val=\${$var:-}"
+            if [ -z "$val" ]; then
+              echo "MISSING: $var"
+              fail=1
+            else
+              echo "set: $var"
+            fi
+          done
+          [ "$fail" -eq 0 ] || {
+            echo "The runner's .env is incomplete. It is read at service start:"
+            echo "  cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start"
+            exit 1
+          }
+          test -x "$VECTOR_HIL_VENV/bin/python" || { echo "venv python missing at $VECTOR_HIL_VENV"; exit 1; }
+          test -d "$VECTOR_HIL_REPO/.git" || { echo "no clone at $VECTOR_HIL_REPO"; exit 1; }
+
+      - name: Serial access
+        run: |
+          if ! ls /dev/ttyACM* >/dev/null 2>&1; then
+            echo "no /dev/ttyACM* devices - check the USB hub and power"
+            exit 1
+          fi
+          ls -l /dev/ttyACM*
+          id -nG | grep -qw dialout || {
+            echo "runner user is not in the dialout group; reboot or restart the service"
+            exit 1
+          }
+
+      - name: Detect and query boards
+        run: |
+          # detect_boards.py prints progress text before the JSON, so the
+          # machine-readable part is the last line only.
+          raw=$("$VECTOR_HIL_VENV/bin/python" "$VECTOR_HIL_REPO/dev/detect_boards.py")
+          echo "$raw"
+          json=$(printf '%s\n' "$raw" | tail -1)
+
+          "$VECTOR_HIL_VENV/bin/python" - "$json" <<'PY'
+          import json, os, subprocess, sys
+
+          venv = os.environ["VECTOR_HIL_VENV"]
+          boards = json.loads(sys.argv[1])
+
+          if not boards:
+              sys.exit("no boards detected")
+
+          rc = 0
+          for kind, ports in sorted(boards.items()):
+              for port in ports:
+                  probe = subprocess.run(
+                      [f"{venv}/bin/mpremote", "connect", port, "exec",
+                       "import systemConfig; print(systemConfig.vectorSystem, systemConfig.SystemVersion)"],
+                      capture_output=True, text=True, timeout=60)
+                  if probe.returncode:
+                      print(f"FAIL  {kind:12} {port:16} {probe.stderr.strip()}")
+                      rc = 1
+                  else:
+                      print(f"ok    {kind:12} {port:16} {probe.stdout.strip()}")
+
+          print(f"\n{sum(len(p) for p in boards.values())} board(s) responding")
+          sys.exit(rc)
+          PY
+
+      - name: Summary
+        if: always()
+        run: echo "Bench smoke ${{ job.status }}"
