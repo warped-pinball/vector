@@ -1,6 +1,6 @@
 # Hardware-in-the-Loop (HIL) Testing — Design
 
-**Status:** proposal, not yet implemented
+**Status:** design proposal; bench bring-up and the flash/health-check harness are implemented and running
 **Scope:** a self-hosted GitHub Actions runner driving real Vector boards, safely, from a public repository.
 
 ---
@@ -261,10 +261,22 @@ This is the most likely source of a flaky suite, and it needs measuring during b
 
 Separately, `adr_activity_ok()` raises **`HDWR02: No Bus Activity`** when shadow RAM lamp columns don't change, which on a bare board is the correct and permanent state.
 
-So:
+**Measured on the bench (2026-08-17), and both predictions were wrong:**
 
-- `HDWR02` is **expected** on the bench and belongs in the allowlist.
-- `HDWR01` must be **deterministic**. If it appears intermittently, the fix is a resistor pack tying those eight lines to a known level on the test bench — a bench fixture, not a firmware change. Do not paper over it with a retry; a test suite that retries its way past nondeterministic boot paths will hide real regressions.
+- `HDWR01` did **not** fire. Three boards, freshly flashed for their real targets, all booted
+  with `faults: none`. The floating-pin worry did not materialise — no resistor pack needed,
+  and the config assertions are not silently vacuous.
+- `HDWR02` did not fire either, and cannot: **`adr_activity_ok()` is defined but never called**
+  (`src/common/main.py:69`, `src/data_east/main.py:82`). The fault is unreachable code.
+
+That second point is a finding about the firmware rather than the bench. `HDWR02: No Bus
+Activity` is exactly the diagnostic a customer with a dead bus needs, and today nothing can
+raise it. Worth a separate issue: either wire the check into the boot path or drop the fault
+code, but leaving a dead diagnostic in `faults.py` is the worst of both.
+
+The allowlist keeps tolerating `HDWR02` for now — harmless, and it costs nothing if the check
+is ever reconnected. `HDWR01` stays a warning that suppresses the active-config assertion,
+since if it ever does fire the board is in safe mode and the config genuinely was not loaded.
 
 Bring-up task: boot each bare board 50 times, record the fault set each time, and confirm it is identical every time. Until that holds, nothing else is worth automating.
 
