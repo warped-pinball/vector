@@ -43,6 +43,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "dev"))
 
+import serial  # noqa: E402  (ships with mpremote)
 from usb_coms_demo import UsbApiClient  # noqa: E402
 
 # A bare bench board has nothing driving the game bus, so this one is correct
@@ -63,8 +64,41 @@ DEFAULT_GAMENAME = {
     "em": "EM_machine_",
 }
 
-BOOT_TIMEOUT = 90
+# Boot is slow and variable, so we watch the console for the firmware saying
+# it is ready rather than guessing at a delay.
+#
+# "Server: Loop Forever" is the correct marker and the only one: phew prints
+# it immediately before loop.run_forever() (phew/server.py:381). The earlier
+# "> starting web server on port 80" line is NOT a ready signal - it is
+# printed before start_server is even scheduled, let alone bound, so matching
+# it returns while the socket is still closed. backend.go() has already run
+# connect_to_wifi() by this point, so the marker covers both transports.
+READY_MARKER = "Server: Loop Forever"
+
+# The marker is printed just *before* run_forever(), so give the event loop a
+# moment to actually accept the listening socket. http_get's retries cover any
+# remainder.
+SERVER_SETTLE_SECONDS = 2
+
+BOOT_TIMEOUT = 150
 HTTP_TIMEOUT = 10
+
+# Read-only routes exercised over HTTP. Kept side-effect free so the check can
+# run against a board repeatedly without changing its state.
+HTTP_ROUTES = (
+    "/api/version",
+    "/api/fault",
+    "/api/game/name",
+    "/api/game/status",
+    "/api/game/active_config",
+    "/api/game/configs_list",
+    "/api/leaders",
+    "/api/players",
+    "/api/machine_id",
+    "/api/wifi/status",
+    "/api/settings/get_tournament_mode",
+    "/api/auth/challenge",
+)
 
 
 class CheckFailure(Exception):
@@ -374,26 +408,63 @@ def flash(target, port, build_dir, config_path):
 # --------------------------------------------------------------------------
 
 
-def wait_for_api(port, timeout=BOOT_TIMEOUT):
-    """Poll the USB API until the board answers, or give up."""
+def wait_for_server(port, timeout=BOOT_TIMEOUT):
+    """Watch the boot console until the firmware reports its web server is up.
+
+    Polling an API that is not listening yet tells you nothing about why, and
+    burns the whole timeout when a board fails to boot. Reading the console
+    instead gives an exact ready signal and, on failure, the boot log that
+    explains it.
+
+    Returns the open serial connection so the USB API can reuse it - the
+    Pico exposes one CDC endpoint, so a second connection would fight this one.
+    """
     deadline = time.monotonic() + timeout
-    last_error = None
+    transcript = []
+    connection = None
+
     while time.monotonic() < deadline:
-        client = None
-        try:
-            client = UsbApiClient.from_device(port=port, timeout=5)
-            response = client.send_and_receive(route="/api/version", payload=None, timeout=5)
-            if response.get("status") == 200:
-                return client
-        except Exception as exc:  # serial not ready, board mid-boot, no response yet
-            last_error = exc
-        if client:
+        if connection is None:
             try:
-                client.close()
+                # The port disappears and re-enumerates across the reset, so a
+                # failure to open here is expected for the first second or two.
+                connection = serial.Serial(port=port, baudrate=115200, timeout=1)
+            except Exception:
+                time.sleep(1)
+                continue
+        try:
+            raw = connection.readline()
+        except Exception:
+            try:
+                connection.close()
             except Exception:
                 pass
-        time.sleep(3)
-    raise CheckFailure(f"{port} did not answer the USB API within {timeout}s (last error: {last_error})")
+            connection = None
+            continue
+
+        if not raw:
+            continue
+        text = raw.decode(errors="replace").rstrip("\r\n")
+        if not text:
+            continue
+        transcript.append(text)
+
+        if READY_MARKER in text:
+            elapsed = timeout - (deadline - time.monotonic())
+            log(f"    server up after {elapsed:.1f}s ({text.strip()!r})")
+            time.sleep(SERVER_SETTLE_SECONDS)
+            return connection, transcript
+
+    if connection is not None:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+    tail = "\n      ".join(transcript[-20:]) or "(nothing on the console)"
+    raise CheckFailure(
+        f"{port} never reported its web server within {timeout}s. Last console output:\n      {tail}"
+    )
 
 
 def get(client, route, expect=200):
@@ -445,6 +516,7 @@ def health_check_usb(board):
     if not isinstance(configs, dict) or not configs:
         raise CheckFailure("/api/game/configs_list is empty - config bundle missing from the build")
     log(f"    configs available: {len(configs)}")
+    board["usb_config_count"] = len(configs)
 
     expected_config = DEFAULT_GAMENAME[target]
     if safe_mode:
@@ -499,35 +571,98 @@ def http_get(url, attempts=3):
     raise CheckFailure(f"GET {url} failed after {attempts} attempts: {last_error!r}")
 
 
+def http_status(url):
+    """Return the status code, including for responses urllib treats as errors."""
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "vector-hil"})
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+            return response.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+
+
 def health_check_http(board):
     ip = board.get("ip")
     if not ip:
         raise CheckFailure("board reported no IP address - it did not join the bench wifi")
+    base = f"http://{ip}"
 
-    status, body = http_get(f"http://{ip}/api/version")
-    if status != 200:
-        raise CheckFailure(f"http /api/version returned {status}")
-    payload = json.loads(body)
-    log(f"    http {ip} /api/version -> {payload}")
-
-    usb_version = board["usb_version"]
-    if str(payload.get("version")) != str(usb_version):
-        raise CheckFailure(f"http version {payload.get('version')} disagrees with USB {usb_version}")
-
-    status, body = http_get(f"http://{ip}/")
+    # The index page is served pre-gzipped; http_get transparently inflates it.
+    status, body = http_get(f"{base}/")
     if status != 200:
         raise CheckFailure(f"http / returned {status}")
     head = body[:2000].lower()
     if b"<html" not in head and b"<!doctype" not in head:
         raise CheckFailure(f"http / did not return an HTML page (first bytes: {body[:80]!r})")
-    log(f"    http {ip} / -> 200, {len(body)} bytes")
+    log(f"    GET {'/':34} 200  {len(body)} bytes (html)")
 
-    status, _ = http_get(f"http://{ip}/api/fault")
-    if status != 200:
-        raise CheckFailure(f"http /api/fault returned {status}")
+    payloads = {}
+    for route in HTTP_ROUTES:
+        status, body = http_get(f"{base}{route}")
+        if status != 200:
+            raise CheckFailure(f"http {route} returned {status}")
+        try:
+            payloads[route] = json.loads(body)
+        except json.JSONDecodeError:
+            raise CheckFailure(f"http {route} did not return JSON: {body[:120]!r}")
+        log(f"    GET {route:34} 200  {_summarise(payloads[route])}")
+
+    # Both transports must agree. They share the route table but not the
+    # plumbing, so a mismatch means one of the two bridges is misbehaving.
+    http_version = str(payloads["/api/version"].get("version"))
+    if http_version != str(board["usb_version"]):
+        raise CheckFailure(f"http version {http_version} disagrees with USB {board['usb_version']}")
+
+    http_configs = payloads["/api/game/configs_list"]
+    if len(http_configs) != board["usb_config_count"]:
+        raise CheckFailure(
+            f"http lists {len(http_configs)} configs, USB lists {board['usb_config_count']}"
+        )
+
+    # Authentication is enforced over HTTP and deliberately bypassed over USB
+    # (backend.py:280), so this is the only transport that can prove the gate
+    # works. password_check is the one auth route with no side effects.
+    status = http_status(f"{base}/api/auth/password_check")
+    if status != 401:
+        raise CheckFailure(
+            f"/api/auth/password_check returned {status} without credentials, expected 401 - "
+            "HTTP authentication is not being enforced"
+        )
+    log(f"    GET {'/api/auth/password_check':34} 401  (auth enforced, as expected)")
+
+    # A challenge must not be reusable: the handler deletes it on use.
+    first = http_get(f"{base}/api/auth/challenge")[1]
+    second = http_get(f"{base}/api/auth/challenge")[1]
+    if json.loads(first).get("challenge") == json.loads(second).get("challenge"):
+        raise CheckFailure("/api/auth/challenge issued the same nonce twice")
+
+    log(f"    {len(HTTP_ROUTES)} routes + index + auth checks OK over HTTP")
+
+
+def _summarise(payload):
+    """One-line rendering of a response body for the log."""
+    if isinstance(payload, dict):
+        if len(payload) == 1:
+            key, value = next(iter(payload.items()))
+            return f"{key}={value!r}"
+        return f"{len(payload)} keys"
+    if isinstance(payload, list):
+        return f"{len(payload)} items"
+    return repr(payload)[:60]
 
 
 # --------------------------------------------------------------------------
+
+
+def _dump_boot_log(board, lines=25):
+    """Show what the board actually said. A failed health check is usually
+    explained by the boot output, and by this point we already have it."""
+    transcript = board.get("boot_log")
+    if not transcript:
+        return
+    log(f"    last {min(lines, len(transcript))} lines of {board['port']} boot console:")
+    for line in transcript[-lines:]:
+        log(f"      {line}")
 
 
 def main():
@@ -604,7 +739,9 @@ def main():
             continue
         group(f"Health check {b['target']} on {b['port']}")
         try:
-            b["client"] = wait_for_api(b["port"])
+            connection, boot_log = wait_for_server(b["port"])
+            b["boot_log"] = boot_log
+            b["client"] = UsbApiClient(connection)
             ip, _wifi = health_check_usb(b)
             b["ip"] = ip
             b["usb_version"] = source_version(b["target"])
@@ -617,9 +754,11 @@ def main():
                 log("    HTTP API OK")
         except CheckFailure as exc:
             log(f"::error::{exc}")
+            _dump_boot_log(b)
             failures.append(f"{b['port']} ({b['target']}): {exc}")
         except Exception as exc:
             log(f"::error::unexpected error: {exc}")
+            _dump_boot_log(b)
             failures.append(f"{b['port']} ({b['target']}): {exc}")
         finally:
             client = b.get("client")
