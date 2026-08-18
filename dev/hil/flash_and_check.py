@@ -85,19 +85,22 @@ HTTP_TIMEOUT = 10
 
 # Read-only routes exercised over HTTP. Kept side-effect free so the check can
 # run against a board repeatedly without changing its state.
+# Route -> expected body kind. Not everything is JSON: /api/game/name is
+# documented as "Plain-text game name" (backend.py:451) and returns a bare
+# string, even though route_wrapper still labels it application/json.
 HTTP_ROUTES = (
-    "/api/version",
-    "/api/fault",
-    "/api/game/name",
-    "/api/game/status",
-    "/api/game/active_config",
-    "/api/game/configs_list",
-    "/api/leaders",
-    "/api/players",
-    "/api/machine_id",
-    "/api/wifi/status",
-    "/api/settings/get_tournament_mode",
-    "/api/auth/challenge",
+    ("/api/version", "json"),
+    ("/api/fault", "json"),
+    ("/api/game/name", "text"),
+    ("/api/game/status", "json"),
+    ("/api/game/active_config", "json"),
+    ("/api/game/configs_list", "json"),
+    ("/api/leaders", "json"),
+    ("/api/players", "json"),
+    ("/api/machine_id", "json"),
+    ("/api/wifi/status", "json"),
+    ("/api/settings/get_tournament_mode", "json"),
+    ("/api/auth/challenge", "json"),
 )
 
 
@@ -484,12 +487,60 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
     )
 
 
+def prime_usb(connection):
+    """Clear both ends of the serial line before the first API request.
+
+    usb_comms accumulates stdin characters into a module-level `buffer` until
+    it sees a newline (usb_comms.py:132). Anything left there without a
+    terminator - a partial line, stray bytes from the raw-REPL session that
+    issued the reset - silently prefixes the next request, so the board parses
+    a route like "\x02/api/version", fails the `_routes` lookup and answers
+    404. A lone newline flushes whatever is pending into a discarded request.
+    """
+    try:
+        connection.reset_input_buffer()
+        connection.reset_output_buffer()
+        connection.write(b"\n")
+        connection.flush()
+    except Exception as exc:
+        log(f"    warning: could not prime the USB link: {exc}")
+        return
+    # usb_request_handler is scheduled every 1000ms (phew/server.py:342), so
+    # give it a turn to consume the flush before the first real request.
+    time.sleep(1.5)
+    try:
+        connection.reset_input_buffer()
+    except Exception:
+        pass
+
+
 def get(client, route, expect=200):
     response = client.send_and_receive(route=route, payload=None, timeout=15)
     status = response.get("status")
     if status != expect:
-        raise CheckFailure(f"{route} returned {status}, expected {expect}")
+        # The board narrates its own routing failures ("USB REQ: route not
+        # found: ..."), but the client discards every line that is not a
+        # response. Drain whatever is pending so the reason is visible.
+        raise CheckFailure(
+            f"{route} returned {status}, expected {expect}"
+            f"{_drain_serial(client.ser)}"
+        )
     return response.get("body")
+
+
+def _drain_serial(connection, limit=12):
+    """Return any pending board chatter, formatted for an error message."""
+    try:
+        time.sleep(0.5)
+        pending = connection.read(connection.in_waiting or 0)
+    except Exception:
+        return ""
+    if not pending:
+        return ""
+    lines = [line for line in pending.decode(errors="replace").splitlines() if line.strip()]
+    if not lines:
+        return ""
+    return "\n      board said: " + "\n      board said: ".join(lines[:limit])
 
 
 def check_faults(board):
@@ -614,15 +665,22 @@ def health_check_http(board):
     log(f"    GET {'/':34} 200  {len(body)} bytes (html)")
 
     payloads = {}
-    for route in HTTP_ROUTES:
+    for route, kind in HTTP_ROUTES:
         status, body = http_get(f"{base}{route}")
         if status != 200:
             raise CheckFailure(f"http {route} returned {status}")
-        try:
-            payloads[route] = json.loads(body)
-        except json.JSONDecodeError:
-            raise CheckFailure(f"http {route} did not return JSON: {body[:120]!r}")
-        log(f"    GET {route:34} 200  {_summarise(payloads[route])}")
+        if kind == "json":
+            try:
+                payloads[route] = json.loads(body)
+            except json.JSONDecodeError:
+                raise CheckFailure(f"http {route} did not return JSON: {body[:120]!r}")
+            rendered = _summarise(payloads[route])
+        else:
+            if not body.strip():
+                raise CheckFailure(f"http {route} returned an empty body")
+            payloads[route] = body.decode(errors="replace").strip()
+            rendered = repr(payloads[route])[:60]
+        log(f"    GET {route:34} 200  {rendered}")
 
     # Both transports must agree. They share the route table but not the
     # plumbing, so a mismatch means one of the two bridges is misbehaving.
@@ -759,6 +817,7 @@ def main():
             reset_board(b["port"])
             connection, boot_log = wait_for_server(b["port"])
             b["boot_log"] = boot_log
+            prime_usb(connection)
             b["client"] = UsbApiClient(connection)
             ip, _wifi = health_check_usb(b)
             b["ip"] = ip
