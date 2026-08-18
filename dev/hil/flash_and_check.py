@@ -408,6 +408,23 @@ def flash(target, port, build_dir, config_path):
 # --------------------------------------------------------------------------
 
 
+def reset_board(port):
+    """Reset the board so we own the boot we are about to watch.
+
+    The ready marker is printed exactly once per boot. dev/flash.py already
+    resets at the end of flashing, but flashing runs over every board before
+    any health check starts, so by the time we open a console the board booted
+    a minute ago and the marker is long gone. Resetting here makes the wait
+    deterministic and the reported boot time meaningful.
+    """
+    result = mpremote(
+        "connect", port, "exec", "--no-follow", "import machine; machine.reset()",
+        timeout=30,
+    )
+    if result.returncode != 0:
+        raise CheckFailure(f"could not reset {port} before the health check: {result.stderr.strip()}")
+
+
 def wait_for_server(port, timeout=BOOT_TIMEOUT):
     """Watch the boot console until the firmware reports its web server is up.
 
@@ -739,6 +756,7 @@ def main():
             continue
         group(f"Health check {b['target']} on {b['port']}")
         try:
+            reset_board(b["port"])
             connection, boot_log = wait_for_server(b["port"])
             b["boot_log"] = boot_log
             b["client"] = UsbApiClient(connection)
