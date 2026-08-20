@@ -138,11 +138,11 @@ def read_high_scores():
                 if highScores[idx][1] < 1000:
                     highScores[idx][1] = 0      
 
-        elif S.gdata["HighScores"]["Type"] == 25:  
+        elif S.gdata["HighScores"]["Type"] == 25:
             for idx in range(NumberOfScores):
                 scoreAddress = S.gdata["HighScores"]["ScoreAdr"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
-                scoreBytes = ( shadowRam[scoreAddress : scoreAddress + 5] ) 
-                highScores[idx][1] = _bcd_to_int(scoreBytes)
+                scoreBytes = ( shadowRam[scoreAddress : scoreAddress + 5] )
+                highScores[idx][1] = _bcd_to_int(scoreBytes) * S.gdata["HighScores"].get("Multiplier", 1)
                 
         elif S.gdata["HighScores"]["Type"] == 27:  
             for idx in range(NumberOfScores):
@@ -280,12 +280,17 @@ def write_high_scores(highScores):
 
 
         elif S.gdata["HighScores"]["Type"] == 25:
-            # Type 25: 5-byte BCD scores
+            # Type 25: 5-byte BCD scores with multiplier
             for idx in range(entries_to_write):
                 scoreAddress = S.gdata["HighScores"]["ScoreAdr"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
-                
+
                 score = highScores[idx][1]
-                
+
+                # Apply reverse multiplier if present
+                multiplier = S.gdata["HighScores"].get("Multiplier", 1)
+                if multiplier > 1:
+                    score = score // multiplier
+
                 # Convert to 5-byte BCD
                 scoreBytes = _int_to_bcd(score, 5)
                 shadowRam[scoreAddress : scoreAddress + 5] = scoreBytes
@@ -457,26 +462,30 @@ def write_live_scores(scores):
         
         if in_play_type == 20:
             # Type 20: Data East all in a row with multiplier
+            multiplier = S.gdata["InPlay"].get("Multiplier", 1)
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                score_bcd = _int_to_bcd(scores[idx], S.gdata["InPlay"]["BytesInScore"])
+                score = scores[idx] // multiplier if multiplier > 1 else scores[idx]
+                score_bcd = _int_to_bcd(score, S.gdata["InPlay"]["BytesInScore"])
                 shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]] = score_bcd
-                
+
         elif in_play_type == 24:
             # Type 24: Data East break after fourth byte, assume 5 bytes total
             for idx in range(4):
                 score_bcd = _int_to_bcd(scores[idx], 5)
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
                 score_fifth_byte_adr = S.gdata["InPlay"]["ScoreAdr"] + 16 + idx
-                
+
                 shadowRam[score_fifth_byte_adr] = score_bcd[0]
                 shadowRam[score_start : score_start + 4] = score_bcd[1:5]
-                
+
         elif in_play_type == 25:
-            # Type 25: 5-byte BCD scores
+            # Type 25: 5-byte BCD scores with multiplier
+            multiplier = S.gdata["InPlay"].get("Multiplier", 1)
             for idx in range(4):
                 scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                score_bcd = _int_to_bcd(scores[idx], 5)
+                score = scores[idx] // multiplier if multiplier > 1 else scores[idx]
+                score_bcd = _int_to_bcd(score, 5)
                 shadowRam[scoreAddress : scoreAddress + 5] = score_bcd
                 
         elif in_play_type == 27:
@@ -532,7 +541,7 @@ def read_in_play_scores():
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
                 score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]]
-                in_play_scores[idx][1] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
+                in_play_scores[idx][1] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("Multiplier", 1)
         
         elif in_play_type == 24:
             # Type 24: Data East break after fourth byte, assume 5 bytes total
@@ -545,11 +554,11 @@ def read_in_play_scores():
                 in_play_scores[idx][1] = _bcd_to_int(score_bytes)
 
         elif in_play_type == 25:
-            # Type 25: 5-byte BCD scores
+            # Type 25: 5-byte BCD scores with multiplier
             for idx in range(4):
                 scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
                 scoreBytes = shadowRam[scoreAddress : scoreAddress + 5]
-                in_play_scores[idx][1] = _bcd_to_int(scoreBytes)
+                in_play_scores[idx][1] = _bcd_to_int(scoreBytes) * S.gdata["InPlay"].get("Multiplier", 1)
 
         elif in_play_type == 27:
             # Type 27: Each byte contains only one digit (0-9) in lower nibble
@@ -629,7 +638,7 @@ def get_live_scores(use_format=True):
             for idx in range(4):
                 score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
                 score_bytes = shadowRam[score_start : score_start + S.gdata["InPlay"]["BytesInScore"]]
-                scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("ScoreMultiplier", 1)
+                scores[idx] = _bcd_to_int(score_bytes) * S.gdata["InPlay"].get("Multiplier", 1)
         
         elif S.gdata["InPlay"]["Type"] == 24:
             # Type 24: Data East break after fourth byte, assume 5 bytes total
@@ -642,11 +651,11 @@ def get_live_scores(use_format=True):
                 scores[idx] = _bcd_to_int(score_bytes)
 
         elif S.gdata["InPlay"]["Type"] == 25:
-            # Type 25: 5-byte BCD scores
+            # Type 25: 5-byte BCD scores with multiplier
             for idx in range(4):
-                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]                
-                scoreBytes = ( shadowRam[scoreAddress : scoreAddress + 5] ) 
-                scores[idx] = _bcd_to_int(scoreBytes)
+                scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
+                scoreBytes = ( shadowRam[scoreAddress : scoreAddress + 5] )
+                scores[idx] = _bcd_to_int(scoreBytes) * S.gdata["InPlay"].get("Multiplier", 1)
 
         elif S.gdata["InPlay"]["Type"] == 27:
             for idx in range(4):
@@ -738,20 +747,6 @@ def _set_adjustment_checksum():
         for i in range(startAdr,endAdr+1):
             checksum = checksum + shadowRam[i]
         shadowRam[resultAdr]=checksum & 0xFF
-
-
-def turn_off_high_score_rewards():
-    """
-       turn_off_high_score_reward so it is not awarded on initials entry
-    """
-    if S.gdata["Adjustments"]["Type"] == 20 and S.gdata.get("HSRewards"):
-        #DataStore.read_record("extras", 0)["enter_initials_on_game"]:
-        print("SCORE: Disabling HS rewards")
-        for key, value in S.gdata["HSRewards"].items():
-            if key.startswith("HS"):  # Check if the key starts with 'HS'
-                shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
-
-        _set_adjustment_checksum()
 
 
 def set_message(message):
