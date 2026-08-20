@@ -127,8 +127,6 @@ def check_ap_button():
 
 reset_control.init()
 
-#blank_all_shadowram()  # clear all shadow RAM up front, before any use
-
 print("\n\n")
 print("  Warped Pinball :: Vector Classic")
 Log.log(f"          Version {SystemVersion}")
