@@ -201,7 +201,7 @@ def subscribe(switch_name, callback):
     # Determine if switch_name is an index or name
     if isinstance(switch_name, int):
         switch_index = switch_name
-        max_switch_index=S.gdata["Switches"]["Length"]
+        max_switch_index=S.gdata.get("Switches", {}).get("Length", -1)
         if switch_index < 0 or switch_index > max_switch_index:
             log.log(f"SWITCHES: subscribe() - invalid switch index {switch_index}")
             return False
