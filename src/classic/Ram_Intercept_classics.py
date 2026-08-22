@@ -42,6 +42,8 @@ sm_set_lsn_data = None
 #use after init - enter/exit MPU200 data bus mode
 def enableMPU200Mode(flag):
     global sm_set_lsn_data
+    if sm_set_lsn_data is None:
+        return
     if flag is True:
         sm_set_lsn_data.active(0)
     else:
@@ -51,7 +53,7 @@ def enableMPU200Mode(flag):
 
 #Catch Address+VMA signal
 #   SM#9, PIO2
-#   JMP Pin is VMA_ADR_U8_PIN (GPIO#13) 
+#   JMP Pin is VMA_ADR_U8_PIN ORed with U7_CE (GPIO#13) 
 #   
 #   Diagnostic purposes:
 #   @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
@@ -64,28 +66,10 @@ def CatchVMA_U8():
     wrap_target()
     label("start_u8")
     
-    wait(0, gpio, 13)  [5]  #[5] PSM  #wait for VMA+ADR to go low
-    jmp (pin,"start_u8")  #small amount of debounce here - count on clock being high during noisy adr transistions
-    irq(5) #this will keep sending irq5 while gpio is low, but thats ok
+    wait(0, gpio, 13)  [5]  #wait for VMA+ADR to go low
+    jmp (pin,"start_u8")    #small amount of debounce here - count on clock being high during noisy adr transistions
+    irq(5)                  #this will keep sending irq5 while gpio is low, but thats ok
     wrap()
-
-#Catch Address+VMA signal for U7
-#   SM#10,  PIO2
-#   JMP Pin is VMA_ADR_U7 (GPIO#11)
-#
-#   Diagnostic purposes:
-#   @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_LOW))  
-#
-@rp2.asm_pio()  
-def CatchVMA_U7():
-    wrap_target()
-    label("start_u7")
-    
-    wait(0, gpio, 11)   [5]     #[5] PSM
-    jmp (pin,"start_u7")                   
-    irq(5)   
-    wrap()
-
 
 #
 #Pass VMA U7 or U8 on to next pio module
@@ -101,7 +85,7 @@ def Pass_VMA():
     wrap_target()
     label("Pass_VMA_start")
     
-    wait(1, irq, 5)           #wait for signal from U7/U8 (both use irq5), this also clears IRQ   
+    wait(1, irq, 5)           #wait for signal from U7|U8, this also clears IRQ   
 
     #if 2ph clock is low - go back to waiting - 
     jmp (pin,"Pass_VMA_goahead")    
@@ -110,10 +94,10 @@ def Pass_VMA():
     label("Pass_VMA_goahead")
 
     #trigger next pio after 2ph clock is already HIGH
-    word(0xC41C)    [7]  #.side(1)      #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
+    word(0xC41C)    [7]   #(1100 0100 0001 1100 ) = ( 0xC41C)   IRQ4 to PIO plus one (we are in PIO2 so up one goes to PIO0)   
     
     wait(0,gpio,1)  [7]   #wait for 2ph Clock LOW, +after delay  7*6.6nS=47nS      
-    irq(clear, 5)         #.side(0)     #clear IRQ5 before looping back, will have been spammed
+    irq(clear, 5)         #clear IRQ5 before looping back, will have been spammed
     wrap()
 
    
@@ -144,13 +128,13 @@ def ReadAddress():
     jmp(pin,"do_write")                 #pin is W/R (not R/W, has been inverted) 
 
     #READ Process, Get Address  
-    in_(pins,1)           .side(0)     #read A8 into EMPTY isr (A_Select=0) -> isr = A8 (clean)
-    mov(x,isr)            .side(1)     #X = clean A8 only (0/1) for the 0x100+ low-nibble branch
+    in_(pins,2)           .side(0)     #read A9&A8 into EMPTY isr (A_Select=0) -> isr = A9&A8
+    mov(x,isr)            .side(1)     #X = A9&A8 (value is 0x02 or 0x00) for the 0x200+ low-nibble branch
 
-    mov(isr,y)       [3]   .side(1)  #[3] PSM   #now load 23-bit shadow base into isr
-    in_(x,1)         [3]   .side(1)  #[3] PSM   #re-insert A8 from X; A_Select=1; [7]=mux settle (restores 8 cyc)
-    in_(pins,8)            .side(1)     #read A0-7 (A_Select returns to 0 on the push below)
-    push(noblock)    [3]      .side(0)     #send out address result for DMA
+    mov(isr,y)       [3]   .side(1)    #now load 22-bit shadow base into isr
+    in_(x,2)         [3]   .side(1)    #re-insert A9 and A8 from X; A_Select=1 
+    in_(pins,8)            .side(1)    #read A0-7 (A_Select returns to 0 on the push below)
+    push(noblock)    [3]   .side(0)    #send out address result for DMA
    
     #READ Process, send data out to pins
     word(0xB36B)          #  101 10011 011 01 011   mov(pindirs, invert(null)) [3] .side(2)   #pins to outputs (1=output), side set is data_dir output
@@ -171,7 +155,7 @@ def ReadAddress():
 
 
     #READ Process, wrap up
-    wait(0, gpio, 1)  [3] .side(2)  #[3]  #wait eclock LOW then hold data ~10ns (data_dir still out)
+    wait(0, gpio, 1)  [3] .side(2)  #wait eclock LOW then hold data ~10ns (data_dir still out)
 
     nop() [3]   #psm  26nS at full speed
 
@@ -294,28 +278,17 @@ def pio_start():
     sm_GetWriteAddress = rp2.StateMachine(1, GetWriteAddress, freq=75000000, sideset_base=machine.Pin(27) ,in_base=machine.Pin(6))
     
     #   IN: Data Pins
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam, freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), sideset_base=machine.Pin(22))
-
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq= 75000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
-    #   sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14))
-    #sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1))
     sm_WriteRam = rp2.StateMachine(2, WriteRam,  freq=150000000, in_base=machine.Pin(14), out_base=machine.Pin(14), jmp_pin=machine.Pin(1), sideset_base=machine.Pin(22))
-
 
     #   PIO0_SM3 - force low data nibble (D0-D3) to 1 for 0x100+ reads (5101 nibble RAM)
     #   OUT group is ONLY 4 pins (out_base=GPIO14, count=4 from set_lsn_data's out_init)
-    #diag ->
-    #sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14),sideset_base=machine.Pin(22))
+    #diag ->  sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14),sideset_base=machine.Pin(22))
     sm_set_lsn_data = rp2.StateMachine(3, set_lsn_data, freq=150000000, out_base=machine.Pin(14))
 
     #VMA Catch for U8
     # JMP pin is VMA U8 GPIO#13
     sm_CatchVMA_U8 = rp2.StateMachine(9, CatchVMA_U8, freq=150000000, jmp_pin=machine.Pin(13) )  
   
-    # VMA catch for U7
-    # JMP pin is VMA U7 GPIO#11
-    sm_CatchVMA_U7 = rp2.StateMachine(10, CatchVMA_U7, freq=150000000, jmp_pin=machine.Pin(11) ) 
-
     # passes catch VMA U7 or U8 to next PIO
     # receive IRQ5
     # JMP pin is 2ph clock
@@ -332,7 +305,6 @@ def pio_start():
     #Trigger and Detection PIO (#2)
     #
     #PIO2 - three state machine in use (fourth used by system for wifi)
-    sm_CatchVMA_U7.active(1)
     sm_CatchVMA_U8.active(1)
     sm_Pass_VMA.active(1)
     sm_Pass_VMA.exec("irq(clear,5)")
@@ -343,7 +315,7 @@ def pio_start():
     #PIO0_SM0
     sm_ReadAddress.active(1)
     #preloads    
-    sm_ReadAddress.put(RamDef.SRAM_DATA_BASE_23)   
+    sm_ReadAddress.put(RamDef.SRAM_DATA_BASE_22)   
     sm_ReadAddress.exec("pull()")
     sm_ReadAddress.exec("out(y,32)")
     #sm_ReadAddress.put(0x0FF)
@@ -353,7 +325,7 @@ def pio_start():
     #PIO0_SM1
     sm_GetWriteAddress.active(1)   
     #preloads
-    sm_GetWriteAddress.put(RamDef.SRAM_DATA_BASE_23)  
+    sm_GetWriteAddress.put(RamDef.SRAM_DATA_BASE_22)  
     sm_GetWriteAddress.exec("pull()")
     sm_GetWriteAddress.exec("out(y,32)")
     
@@ -409,7 +381,7 @@ def dma_start():
     dma_address.CTRL_REG.TREQ_SEL =  4                    #dma_d.DREQ_PIO0_RX0  
     dma_address.CTRL_REG.DATA_SIZE = 2                    #32 bit move (address)
     dma_address.CTRL_REG.EN = 1
-    dma_address.CTRL_REG.HIGH_PRIORITY = 1
+    #dma_address.CTRL_REG.HIGH_PRIORITY = 1
     dma_address.TRANS_COUNT_REG_TRIG = 1                  #pre-trigger this DMA (will wait on DREQ)
 
     #-------------------------
@@ -424,7 +396,7 @@ def dma_start():
     dma_read_data.CTRL_REG.IRQ_QUIET = 1
     dma_read_data.CTRL_REG.TREQ_SEL =  0x3F    #none
     dma_read_data.CTRL_REG.DATA_SIZE = 0       #byte
-    dma_read_data.CTRL_REG.HIGH_PRIORITY = 1
+    #dma_read_data.CTRL_REG.HIGH_PRIORITY = 1
     dma_read_data.CTRL_REG.EN = 1
 
     #-------------------------
@@ -439,7 +411,7 @@ def dma_start():
     dma_address_copy.CTRL_REG.IRQ_QUIET = 1
     dma_address_copy.CTRL_REG.TREQ_SEL = 5       #PIO0_SM1 Rx 
     dma_address_copy.CTRL_REG.DATA_SIZE = 2      #32 bit address
-    dma_address_copy.CTRL_REG.HIGH_PRIORITY = 1
+    #dma_address_copy.CTRL_REG.HIGH_PRIORITY = 1
     dma_address_copy.CTRL_REG.EN = 1
     dma_address_copy.TRANS_COUNT_REG_TRIG = 1    #pre trigger at start
 
@@ -455,7 +427,7 @@ def dma_start():
     dma_write_data.CTRL_REG.IRQ_QUIET = 1
     dma_write_data.CTRL_REG.TREQ_SEL = 6  #DREQ_PIO0_RX2  
     dma_write_data.CTRL_REG.DATA_SIZE = 0
-    dma_write_data.CTRL_REG.HIGH_PRIORITY = 1
+    #dma_write_data.CTRL_REG.HIGH_PRIORITY = 1
     dma_write_data.CTRL_REG.EN = 1
    
     return "ok"
