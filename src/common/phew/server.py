@@ -272,7 +272,12 @@ def unschedule(func):
 
 async def run_scheduled():
     global _halt_schedule
+    import watchdog
+
     while True:
+        # prove mainline is alive to the execution watchdog
+        watchdog.beat()
+
         # default to 1 second in the future
         next_wake = time.ticks_add(time.ticks_ms(), 1000)
         for i, t in enumerate(_scheduled_tasks):  # Use index to update tuple
@@ -282,10 +287,14 @@ async def run_scheduled():
 
                 # run the task
                 try:
-                    # Uncomment the two lines below to print the time taken to run each task
-                    # start_time = time.ticks_ms()
+                    # DIAG: flag any scheduled task that blocks long enough to risk
+                    # starving the cyw43 wifi poll (its bus-credit timeout is 1000ms)
+                    start_time = time.ticks_ms()
                     t[0]()  # t[0] is func
-                    # print(f"Task {t[0].__name__} took {time.ticks_diff(time.ticks_ms(), start_time)}ms")
+                    task_ms = time.ticks_diff(time.ticks_ms(), start_time)
+                    if task_ms >= 50:
+                        name = getattr(t[0], "__name__", str(t[0]))
+                        print(f"DIAG: scheduled task {name} took {task_ms}ms")
                 except Exception as e:
                     logging.error(f"Error running scheduled task: {str(t[0])} {e}")
 
@@ -305,6 +314,7 @@ async def run_scheduled():
             await uasyncio.sleep_ms(delay)
 
         while _halt_schedule:
+            watchdog.beat()
             await uasyncio.sleep_ms(1000)
 
 
@@ -354,6 +364,11 @@ def create_schedule(ap_mode: bool = False):
 
     # non AP mode only tasks
     if not ap_mode:
+        from backend import wifi_watchdog
+
+        # watch for a dead/wedged wifi chip and power-cycle it to recover
+        schedule(wifi_watchdog, 90000, 60000)
+
         # announce our presence once after boot
         schedule(broadcast_hello, 10000)
 
@@ -377,6 +392,11 @@ def run(ap_mode: bool, host="0.0.0.0", port=80):
     loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)
     loop.create_task(run_scheduled())
+
+    # arm the execution watchdog (no-op unless watchdog.ENABLE is True)
+    import watchdog
+
+    watchdog.start()
 
     print("Server: Loop Forever")
     loop.run_forever()

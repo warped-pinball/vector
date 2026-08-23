@@ -32,9 +32,11 @@ def send_origin_message(message_type, data=None):
         else:
             packet = dumps({"machine_id": get_machine_id(), "type": message_type})
 
-        print(f"Sending origin message: {message_type} with data: {data}")
-        discovery.send_sock.sendto(packet.encode(), ("255.255.255.255", 6809))
-        _previous_checksum = checksum
+        # Throttled: only mark the checksum as sent if the packet actually went
+        # out - a rate-limited drop gets retried on the next poll cycle.
+        if discovery.throttled_sendto(packet.encode(), ("255.255.255.255", 6809)):
+            print(f"Sending origin message: {message_type} with data: {data}")
+            _previous_checksum = checksum
     except Exception as e:
         print("Error sending origin message:", e)
 

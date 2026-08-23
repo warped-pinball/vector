@@ -2213,6 +2213,101 @@ def add_ap_mode_routes():
         return available_networks
 
 
+_wifi_down_checks = 0
+
+
+def wifi_watchdog():
+    """Detect a dead or wedged wifi chip and power-cycle it (STA mode only).
+
+    Runs as a scheduled task. Healthy means: associated AND the chip still
+    answers a status ioctl. Three consecutive unhealthy checks (~3 minutes)
+    means either the link is persistently down or the CYW43 is wedged - the
+    credit-stall state it never recovers from on its own - so reset just the
+    chip via reset_wifi_chip(). Complements the connect_to_wifi retry task,
+    which can only help while the chip itself is still alive.
+    """
+    global _wifi_down_checks
+    import network
+
+    healthy = False
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        if wlan.isconnected():
+            wlan.status("rssi")  # ioctl to the chip; fails if chip comms are dead
+            healthy = True
+    except Exception as e:
+        print("WIFI WATCHDOG: status check failed:", e)
+
+    if healthy:
+        _wifi_down_checks = 0
+        return
+
+    _wifi_down_checks += 1
+    if _wifi_down_checks >= 3:
+        _wifi_down_checks = 0
+        from logger import logger_instance
+
+        logger_instance.log("WIFI WATCHDOG: link dead 3 checks - resetting chip")
+        reset_wifi_chip()
+
+
+def reset_wifi_chip(rejoin=True):
+    """Un-wedge a stalled CYW43 by power-cycling the chip itself, board power on.
+
+    The CYW43 keeps no state through power-off (firmware + NVRAM are re-uploaded
+    over SPI on every init), so cutting its WL_REG_ON supply-enable and
+    re-initializing is equivalent to a cold power cycle for the wifi chip alone -
+    the one known cure for the "[CYW43] STALL / send_ethernet -110" credit wedge,
+    which the chip never recovers from on its own.
+
+    Takes ~0.5s plus reconnect time. In AP mode the caller must re-run the AP
+    setup (access_point/dns) afterwards - rejoin here only handles STA mode.
+    """
+    import time as _time
+
+    import machine
+    import network
+
+    S.wifi_connected = False
+    wlan = network.WLAN(network.STA_IF)
+
+    # Stop the driver using the interface before pulling power out from under it
+    try:
+        wlan.active(False)
+    except Exception as e:
+        print("WIFI RESET: active(False) failed:", e)
+
+    # Power the chip fully off. Preferred: driver deinit (drives WL_REG_ON low
+    # and marks driver state down so the next active(True) re-runs the full
+    # firmware upload). Fallback for builds without WLAN.deinit(): bounce
+    # WL_REG_ON (GPIO23 on Pico W / Pico 2 W) directly; the driver reclaims
+    # and reconfigures the pin during its next init.
+    if hasattr(wlan, "deinit"):
+        try:
+            wlan.deinit()
+        except Exception as e:
+            print("WIFI RESET: deinit failed:", e)
+    else:
+        machine.Pin(23, machine.Pin.OUT, value=0)
+
+    # Hold the chip dark long enough that all internal state is truly gone
+    _time.sleep_ms(100)
+
+    # Bring it back: active(True) triggers the driver's ensure-up path, which
+    # re-uploads firmware + NVRAM into the now-blank chip over SPI.
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.config(pm=0xA11140)  # keep power save off (see PR #363)
+
+    from logger import logger_instance
+
+    logger_instance.log("WIFI: chip power-cycled for recovery")
+
+    if rejoin and not S.ap_mode:
+        return connect_to_wifi()
+    return True
+
+
 def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
@@ -2223,6 +2318,7 @@ def connect_to_wifi(initialize=False):
         from phew import get_ip_address
 
         print(f"Connected to wifi with IP address: {get_ip_address()}")
+        S.wifi_connected = True
         return True
 
     Pico_Led.start_slow_blink()
@@ -2261,10 +2357,13 @@ def connect_to_wifi(initialize=False):
 
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
             Pico_Led.on()
+            S.wifi_connected = True
             return True
 
     # If there's signal that means the credentials are wrong
     import scanwifi
+
+    S.wifi_connected = False
 
     networks = scanwifi.scan_wifi2()
     for network in networks:
@@ -2296,6 +2395,8 @@ def go(ap_mode):
     if not wifi_credentials["ssid"]:
         print("No wifi credentials configured")
         ap_mode = True
+
+    S.ap_mode = ap_mode
 
     if ap_mode:
         from phew import access_point, dns

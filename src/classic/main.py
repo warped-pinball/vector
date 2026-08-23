@@ -4,7 +4,7 @@
 """
     Warped Pinball - Vector :: Classic
 """
-import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
+#import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
 
 #allocate DMA - wifi chip channel now
 import Pico_Led

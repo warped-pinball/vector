@@ -6,6 +6,7 @@
 # new devices arrive or when peers are marked offline.
 
 import socket
+import time
 from random import choice
 
 from micropython import const
@@ -48,9 +49,51 @@ def _setup_sockets():
     if not send_sock:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         send_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        # These are best-effort UDP broadcasts - the discovery protocol already
+        # tolerates loss via periodic retries, so on backpressure drop instead
+        # of waiting. listen() can trigger several of these per call (one per
+        # incoming packet in a burst), and even a short per-send timeout can
+        # stack up past the cyw43 1s credit window across that many sends.
+        send_sock.settimeout(0)
 
 
 _setup_sockets()
+
+# Global rate limit for outgoing best-effort UDP (discovery + origin traffic,
+# which both send through send_sock). The cyw43 chip grants a limited number
+# of TX credits; a burst of broadcasts can exhaust them and stall the driver
+# for its full 1s timeout ("[CYW43] STALL"). Excess sends are dropped, not
+# queued - every sender here is periodic and self-healing, so the next cycle
+# retries naturally.
+_MIN_SEND_INTERVAL_MS = const(200)
+_last_send_ms = 0
+
+
+def throttled_sendto(payload, addr):
+    """Rate-limited best-effort UDP send. Returns True if sent, False if dropped."""
+    global _last_send_ms, send_sock
+
+    now = time.ticks_ms()
+    if time.ticks_diff(now, _last_send_ms) < _MIN_SEND_INTERVAL_MS:
+        return False
+
+    _setup_sockets()
+    try:
+        send_sock.sendto(payload, addr)
+        _last_send_ms = now
+        return True
+    except OSError as e:
+        # A stuck/timed-out send may leave the socket in a bad state - drop it
+        # and let _setup_sockets() build a fresh one on the next call, rather
+        # than keep retrying against a socket that might stay wedged.
+        print(f"DISCOVERY: send failed ({e}), recreating socket")
+        try:
+            send_sock.close()
+        except Exception:
+            pass
+        send_sock = None
+        return False
+
 
 # Track a single peer we're awaiting a pong from
 pending_ping = None
@@ -204,10 +247,7 @@ def _get_local_name_bytes():
 
 def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     # print(f"DISCOVERY: Sending message to {addr}: {msg}")
-
-    global send_sock
-    _setup_sockets()
-    send_sock.sendto(msg.encode(), addr)
+    throttled_sendto(msg.encode(), addr)
 
 
 def broadcast_hello():

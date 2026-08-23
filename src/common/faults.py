@@ -4,13 +4,14 @@
 # This work is licensed under CC BY-NC 4.0
 
 import os
+import time
 
 import BoardLED as L
 import machine
+import micropython
 import rp2
 import SharedState as S
 from micropython import const
-from phew import is_connected_to_wifi
 
 # Hardware Faults
 HDWR00 = const("HDWR00: Unknown Hardware Error")
@@ -106,6 +107,16 @@ update_sequence_continuous = 75  # about 1 minute at timer period of 790ms
 LED_Out = None
 
 
+def _deferred_update_led_sequence(_):
+    """Runs outside the hard IRQ (via micropython.schedule) - safe to call into
+    phew's route table here (in_ap_mode()), unlike from inside the Timer callback."""
+    _start = time.ticks_ms()
+    update_led_sequence()
+    _ms = time.ticks_diff(time.ticks_ms(), _start)
+    if _ms >= 10:
+        print("DIAG: deferred LED sequence update took", _ms, "ms")
+
+
 def initialize_board_LED():
     global LED_Out, enableWS2812led
     enableWS2812led = bool("RP2350" in os.uname().machine and rp2 is not None)
@@ -117,7 +128,11 @@ def initialize_board_LED():
 
         def _timerCallBack(_):
             """
-            Timer callback to update LED color based on fault sequence
+            Timer callback to update LED color based on fault sequence.
+            Kept minimal - only the PIO push happens here. update_led_sequence()
+            can call into phew's route table (in_ap_mode()), which is not safe
+            to run from a hard IRQ, so it's deferred via micropython.schedule()
+            instead of called directly.
             """
             global index, sequence, update_sequence_continuous
 
@@ -127,8 +142,9 @@ def initialize_board_LED():
             index = index + 1
 
             if update_sequence_continuous > 0:
-                update_led_sequence()
                 update_sequence_continuous -= 1
+                if update_sequence_continuous % 3 == 0:
+                    micropython.schedule(_deferred_update_led_sequence, 0)
 
         L.startUp()
         L.ledOff()
@@ -176,20 +192,9 @@ def update_led_sequence():
         return
 
     # no faults - get and report normal status
-    def in_ap_mode():
-        """A lightly cursed way to determine if we are in AP mode without using global memory"""
-        from json import loads
-
-        from phew.server import _routes
-
-        route = _routes.get("/api/in_ap_mode", None)
-        if route is None:
-            return False
-        return loads(route(0)[0])["in_ap_mode"]
-
-    if in_ap_mode():
+    if S.ap_mode:
         combined_sequence = [L.PURPLE, L.PURPLE_DIM]  # AP mode
-    elif is_connected_to_wifi():
+    elif S.wifi_connected:
         combined_sequence = [L.GREEN, L.GREEN_DIM]  # All OK
     else:
         combined_sequence = [L.YELLOW, L.YELLOW_DIM, L.YELLOW_DIM]  # trying to connect (at powerup)
