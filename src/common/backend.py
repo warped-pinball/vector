@@ -1804,6 +1804,62 @@ def app_memory_broadcast(request):
     return
 
 
+@add_route("/api/origin/target", auth=True)
+def app_origin_target(request):
+    """
+    @api
+    summary: Register where this board sends its Origin game events
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: false
+          description: True to register a listener (default), false to stop sending
+        - name: secret
+          type: string
+          required: false
+          description: Shared secret every datagram is signed with; required when enabling
+        - name: ip
+          type: string
+          required: false
+          description: IPv4 address to send to; defaults to the requesting client's IP
+    response:
+      status_codes:
+        - code: 200
+          description: Target updated
+        - code: 400
+          description: No valid target IP, or a missing/oversized secret
+    @end
+
+    Game events (game state, end of game, reset) are sent as UDP datagrams to
+    port 6809 on the registered IP only -- never broadcast to the whole
+    network -- and each one is prefixed with 16 hex characters of
+    HMAC-SHA256(secret, body). With nobody registered the board sends nothing.
+    """
+    import origin
+
+    data = request.data
+    if not data.get("enable", True):
+        origin.clear_target()
+        return
+
+    # Send to the explicitly requested IP, or back to whoever asked.  A
+    # listener behind NAT cannot name its own translated address, so letting
+    # the board fill it in is the case that matters.
+    # (Over USB there is no client IP, so "ip" must be supplied.)
+    ip = data.get("ip") or request.client_ip
+    if not ip or not _valid_ipv4(str(ip)):
+        return '{"error":"a valid IPv4 target ip is required"}', 400
+
+    secret = data.get("secret")
+    if not secret or not isinstance(secret, str) or len(secret) > origin.MAX_SECRET_LENGTH:
+        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+
+    origin.set_target(str(ip), secret)
+    return
+
+
 #
 # Address Read / Write API
 #
