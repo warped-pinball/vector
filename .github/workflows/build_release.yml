@@ -90,6 +90,9 @@ jobs:
         id: publish_raw_updates
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
+          # GitHub's git-data API intermittently returns 5xx; retry instead
+          # of failing the whole build on a transient server error.
+          retries: 3
           script: |
             const fs = require('fs/promises');
 
@@ -228,6 +231,7 @@ jobs:
         env:
           RAW_LINKS_JSON: ${{ steps.publish_raw_updates.outputs.links }}
         with:
+          retries: 3
           script: |
             let rawLinks = [];
             try {
