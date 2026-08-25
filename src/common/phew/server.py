@@ -31,6 +31,7 @@ class Request:
         self.method = method
         self.protocol = protocol
         self.is_usb_transport = False
+        self.client_ip = None  # dotted-quad of the requesting client (None over USB)
         self.data = {}
         self.raw_data = None  # Will hold the raw JSON body if present
         query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
@@ -94,6 +95,12 @@ async def _handle_request(reader, writer):
             return
 
         request = Request(method, uri, protocol)
+        try:
+            peername = writer.get_extra_info("peername")
+            if peername:
+                request.client_ip = peername[0]
+        except Exception:
+            pass  # no peer info available; leave client_ip as None
 
         handler = catchall_handler
         try:
@@ -268,6 +275,18 @@ def schedule(func, phase_ms, frequency_ms=None, log=None):
 def unschedule(func):
     global _scheduled_tasks
     _scheduled_tasks = [t for t in _scheduled_tasks if t[0] != func]
+
+
+def unschedule_by_name(name):
+    """Remove scheduled tasks whose function __name__ matches *name*.
+
+    Lets callers unschedule closures (which are new objects on every
+    creation) without keeping a reference to them anywhere.
+    """
+    global _scheduled_tasks
+    _scheduled_tasks = [
+        t for t in _scheduled_tasks if getattr(t[0], "__name__", None) != name
+    ]
 
 
 async def run_scheduled():
