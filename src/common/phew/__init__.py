@@ -66,28 +66,36 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
         network.STAT_GOT_IP: "got ip address",
     }
 
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.config(pm=0xA11140)  # disable power save; dozing radio drops packets
-    wlan.connect(ssid, password)
-    start = time.ticks_ms()
-    status = wlan.status()
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+        wlan.config(pm=0xA11140)  # disable power save; dozing radio drops packets
+        wlan.connect(ssid, password)
+        start = time.ticks_ms()
+        status = wlan.status()
 
-    logging.debug(f"  - {statuses.get(status, 'unknown status')}")  # got '2' as status sometimes
-    while not wlan.isconnected() and (time.ticks_ms() - start) < (timeout_seconds * 1000):
-        new_status = wlan.status()
-        if status != new_status:
-            logging.debug(f"  - {statuses.get(new_status, 'unknown status')}")
-            status = new_status
-        time.sleep(0.25)
+        logging.debug(f"  - {statuses.get(status, 'unknown status')}")  # got '2' as status sometimes
+        while not wlan.isconnected() and (time.ticks_ms() - start) < (timeout_seconds * 1000):
+            new_status = wlan.status()
+            if status != new_status:
+                logging.debug(f"  - {statuses.get(new_status, 'unknown status')}")
+                status = new_status
+            time.sleep(0.25)
 
-    mac = wlan.config("mac")
-    mac_address = ":".join("{:02x}".format(b) for b in mac)
-    print("Server:  MAC Address ", mac_address)
+        mac = wlan.config("mac")
+        mac_address = ":".join("{:02x}".format(b) for b in mac)
+        print("Server:  MAC Address ", mac_address)
 
-    if wlan.status() == network.STAT_GOT_IP:
-        return wlan.ifconfig()[0]
-    return None
+        if wlan.status() == network.STAT_GOT_IP:
+            return wlan.ifconfig()[0]
+        return None
+    except Exception as e:
+        # A wedged/stalled cyw43 chip can raise here (e.g. OSError from
+        # wlan.connect()/status()/isconnected() while the driver is stuck) -
+        # log it to persistent (FRAM) storage rather than letting it propagate
+        # as an unlogged traceback, since that's otherwise lost on reboot.
+        logging.error(f"CYW43 fault during wifi connect: {e}")
+        return None
 
 
 # helper method to put the pico into access point mode
