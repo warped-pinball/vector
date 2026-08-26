@@ -1,0 +1,101 @@
+name: HIL recover a wedged board
+
+# Gets a bench board that has stopped answering back into a usable state,
+# without anyone walking over to it.
+#
+# A Vector board can deadlock with the USB device still enumerated and the
+# firmware gone - the port is there, mpremote opens it, nothing ever answers.
+# TrenchCoat names the mechanism in its own source: if nothing drains the
+# board's output, the CDC buffers fill, MicroPython blocks writing to stdout,
+# and the board deadlocks. That is what took the WPC board out mid-matrix.
+#
+# dev/hil/recover.py escalates cheapest-first (drain, USB reset, hub power
+# cycle, then a UF2 reflash over the ROM bootloader) and stops as soon as the
+# board answers. Run it before anything else when a HIL job reports a board
+# that never responded.
+#
+# Deliberately no `pull_request` trigger - self-hosted runner, real hardware.
+# The `push` trigger exists so this can be used before it reaches the default
+# branch; drop it once this is on main.
+
+on:
+  workflow_dispatch:
+    inputs:
+      port:
+        description: "Recover only this port, e.g. /dev/ttyACM1 (blank = every board that is not answering)"
+        type: string
+        default: ""
+      target:
+        description: "Target for the dead board, e.g. wpc (blank = deduce it from the boards that still answer)"
+        type: string
+        default: ""
+      no_reflash:
+        description: "Stop before replacing the firmware"
+        type: boolean
+        default: false
+      force_bootsel:
+        description: "Touch the board into BOOTSEL even if nothing here can mount the drive to flash it"
+        type: boolean
+        default: false
+  push:
+    branches:
+      - claude/wpc-hil-config-validation-rc62dn
+    paths:
+      - dev/hil/recover.py
+      - .github/workflows/hil-recover.yml
+
+permissions:
+  contents: read
+
+# Shares the bench with the other HIL workflows. Recovery must never run
+# alongside a job that is driving the boards.
+concurrency:
+  group: hil-bench
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: [self-hosted, vector-hil]
+    timeout-minutes: 30
+
+    steps:
+      # Safe here only because every trigger above is repo-internal; see the
+      # note in hil-config-matrix.yml.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Prepare environment
+        run: |
+          test -x "$VECTOR_HIL_VENV/bin/python" || { echo "bench venv missing"; exit 1; }
+          echo "$VECTOR_HIL_VENV/bin" >> "$GITHUB_PATH"
+
+      - name: Recover
+        env:
+          HIL_PORT: ${{ inputs.port }}
+          HIL_TARGET: ${{ inputs.target }}
+          HIL_NO_REFLASH: ${{ inputs.no_reflash }}
+          HIL_FORCE_BOOTSEL: ${{ inputs.force_bootsel }}
+        run: |
+          args=""
+          if [ -n "${HIL_PORT:-}" ]; then args="$args --port $HIL_PORT"; fi
+          if [ -n "${HIL_TARGET:-}" ]; then args="$args --target $HIL_TARGET"; fi
+          if [ "${HIL_NO_REFLASH:-}" = "true" ]; then args="$args --no-reflash"; fi
+          if [ "${HIL_FORCE_BOOTSEL:-}" = "true" ]; then args="$args --force-bootsel"; fi
+
+          # shellcheck disable=SC2086  # args is a deliberately word-split list
+          python dev/hil/recover.py $args
+
+      - name: Board state afterwards
+        if: always()
+        run: |
+          # stty raw -echo first: a tty reverts to ECHO-on once every handle is
+          # closed, so a bare `cat` feeds the board its own output back.
+          echo "--- serial ports"
+          ls -l /dev/ttyACM* 2>/dev/null || echo "(none)"
+          echo "--- bootloader drives"
+          ls -l /dev/disk/by-label/ 2>/dev/null | grep -i rpi || echo "(none)"
+          for dev in /dev/ttyACM*; do
+            [ -e "$dev" ] || continue
+            echo "--- $dev"
+            stty -F "$dev" raw -echo 115200 || true
+            timeout 5 cat "$dev" || true
+          done
