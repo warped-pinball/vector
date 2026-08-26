@@ -1,6 +1,6 @@
 # Hardware-in-the-Loop (HIL) Testing — Design
 
-**Status:** design proposal; bench bring-up and the flash/health-check harness are implemented and running
+**Status:** design proposal; bench bring-up, the flash/health-check harness (G1/G2) and the config matrix (G3) are implemented and running
 **Scope:** a self-hosted GitHub Actions runner driving real Vector boards, safely, from a public repository.
 
 ---
@@ -206,6 +206,31 @@ Tests parameterize over `manifest ∩ dev/ci/targets.json`. Adding `whitestar` l
 
 ## 7. Harness structure
 
+What exists today:
+
+```
+dev/hil/
+  bench.py               # shared plumbing: inventory, resolve, build, flash,
+                         #   reset, wait-for-boot, USB request, config select
+  flash_and_check.py     # G1/G2: one flash per board, then the API health
+                         #   check over both USB and HTTP
+  config_matrix.py       # G3: one flash per board, then every game config for
+                         #   that target in turn
+  setup-runner.sh        # bench Pi provisioning
+  DESIGN.md, RUNNER_SETUP.md
+```
+
+`bench.py` deliberately asserts nothing about firmware behaviour — it only gets
+a board into a known state and talks to it. Assertions live in the harness that
+imports it, so adding a check never means touching the plumbing. The
+hardware-free parts (config discovery, selection and ordering, and each
+assertion with the board faked out) are covered by
+`dev/tests/test_hil_config_matrix.py`.
+
+The originally proposed structure, for reference — pytest-driven, with a
+manifest and a board pool. Worth revisiting when a second board of the same
+target arrives and sharding starts to matter:
+
 ```
 dev/hil/
   bench.py               # manifest load + validation
@@ -300,18 +325,59 @@ That last one is the valuable one. It turns the API docs into a load-bearing art
 
 ### G3 — every config parses and boots
 
-Full matrix on every PR, per the decision above. Per board, loop over that hardware's configs:
+**Implemented** in `dev/hil/config_matrix.py`, run by `.github/workflows/hil-config-matrix.yml`.
 
-1. Interrupt to REPL, write `gamename` into `SPI_DataStore` `configuration` record, `machine.reset()`
-2. Wait for boot
+Per board: build and flash that board's target once, so the config bundle under
+test is the one this checkout produces, then loop over every config in
+`src/<target>/config/`:
+
+1. Write `gamename` into the `SPI_DataStore` `configuration` record over the REPL, and **read it back** — see the fixed-width field note below
+2. `machine.reset()`, then wait for the ready marker on the console
 3. Assert:
-   - no `CONF00` / `CONF01` fault
+   - no `CONF00` / `CONF01` fault, and no `HDWR01` either — `HDWR01` puts `main.py` down the `safe_mode` path where the config is never read at all, so it is fatal here even though `flash_and_check.py` only warns about it
    - `/api/game/active_config` is the config we set
    - `/api/game/name` matches `GameInfo.GameName` **from the source JSON in the repo** — this cross-checks the on-board `config/all.jsonl.z` against the source and catches build-time config-packing bugs, not just parse errors
    - `/api/leaders` and `/api/adjustments/status` both return 200 — proves the parsed definition is *usable*, not merely loadable
-   - free memory after load is above a floor
 
-That last assertion is the one that earns its keep. `sys11_tiny` exists because RAM is tight; a config that parses fine but leaves too little heap is the failure that actually reaches customers.
+Each board's bundle is also compared against the source directory once, before
+the loop: same set of config names, same game names. That localises a packing
+bug to one boot instead of one boot per affected config.
+
+**Why the game name is the load-bearing assertion.** A config that fails to
+apply does not fault or crash from the outside: `GameDefsLoad.go` falls back to
+`safe_defaults` and the board serves a generic definition for its hardware,
+healthy in every other respect. `/api/game/active_config` does not catch this —
+it reads the `gamename` field back out of FRAM, not what actually loaded. The
+game name is what separates "loaded my config" from "silently fell back".
+
+#### Findings and limits
+
+- **Two WPC configs cannot be selected at all.** `configuration.gamename` is a
+  16-byte fixed-width field (`SPI_DataStore.py`), and `struct.pack` truncates
+  silently. `HarleyDavidson_L3` and `GilliganIsland_L9` are 17 characters, so
+  the web UI offers them, the write is accepted, the name is truncated on the
+  way into FRAM, and the next boot matches nothing and comes up on safe
+  defaults with `CONF01`. The harness catches this before spending a boot
+  cycle, and `dev/tests/test_hil_config_matrix.py` catches a *new* offender in
+  ordinary CI. Fixing the two that exist means shortening the filenames or
+  widening the field (which is a `MapVersion` change — the 96-byte record is
+  fully used).
+- **`/api/adjustments/status` 500s for configs with no `Adjustments` section.**
+  `GameDefsLoad` assigns the parsed config straight to `SharedState.gdata`
+  without merging `safe_defaults` into it, so the key is simply absent and
+  `Adjustments._get_range_from_gamedef` raises `KeyError`. 14 shipped configs
+  are affected. Warned about rather than failed, so that a firmware gap the
+  harness cannot fix does not bury the signal it exists for.
+- **Configs that share a `GameName` are not distinguished from each other.**
+  The four `AddamsFam_*` variants all report "Addams Family", and no route
+  exposes anything else from `gdata`. For those, a pass means "this config
+  parsed and loaded without faulting", not "this exact ROM revision's
+  definition is in memory".
+- **The free-memory floor is not implemented.** No route reports heap, and
+  reading `gc.mem_free()` over the REPL means interrupting the running
+  firmware, which ends the boot being measured. `sys11_tiny` exists because RAM
+  is tight, so this assertion is still worth having — it needs a small
+  firmware-side route first.
 
 **Throughput.** Measured on the bench, per board, from the flash/health-check harness:
 

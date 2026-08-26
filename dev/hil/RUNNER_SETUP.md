@@ -176,4 +176,30 @@ Once this is on `main`, drop the `push:` trigger and use the Run workflow button
   by querying `systemConfig.vectorSystem`, so port order doesn't matter for distinct board
   types. Only add udev rules if you have two of the same type.
 
+## Running the harnesses by hand
+
+Both take the bench venv on `PATH` — the runner's `.env` provides it inside a job, but a
+login shell does not read it:
+
+```bash
+cd ~/vector && export PATH="$PWD/.venv/bin:$PATH"
+
+# flash every board and health-check its API (G1/G2)
+.venv/bin/python dev/hil/flash_and_check.py
+
+# boot every board against every config it can be flashed with (G3)
+.venv/bin/python dev/hil/config_matrix.py
+
+# ...or just the WPC board, first five configs, no reflash
+.venv/bin/python dev/hil/config_matrix.py --target wpc --limit 5 --skip-flash
+```
+
+A full config matrix is roughly 15–25s per config per board and WPC alone has 63, so budget
+well over half an hour for an unfiltered run. `--configs`, `--limit` and `--target` are there
+to keep an iteration loop short; `--changed-since REF` runs the configs a branch touched
+first, which is what the workflow does on a push.
+
+The matrix leaves each board on its generic config when it finishes, including after a
+failure, so a run never strands a board on a game config you did not ask for.
+
 See [DESIGN.md](DESIGN.md) for the test architecture and the security model for fork PRs.
