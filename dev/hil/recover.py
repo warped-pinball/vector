@@ -54,7 +54,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import serial  # noqa: E402
 from bench import (  # noqa: E402
     CTRL_C,
     REPO_ROOT,
@@ -65,7 +64,10 @@ from bench import (  # noqa: E402
     list_ports,
     log,
     mpremote,
+    open_serial,
     parse_board_map,
+    serial_write,
+    time_limit,
 )
 
 # warped-pinball/trench-coat, pinned by commit. The checksums are what this
@@ -85,6 +87,11 @@ USBDEVFS_RESET = ord("U") << 8 | 20
 
 PROBE_TIMEOUT = 20
 SETTLE_SECONDS = 5
+
+# No single step may hang the job. Generous enough for the slowest one (fetch a
+# 1.7MB UF2, wait for a drive, copy it) and still far short of the workflow's
+# own timeout, so the run always gets to print its summary.
+STEP_TIMEOUT = 180
 
 
 def responsive(port, timeout=PROBE_TIMEOUT):
@@ -152,7 +159,7 @@ def survey(board_map):
 def drain(port, seconds=5):
     """Read whatever is queued and interrupt the board."""
     try:
-        connection = serial.Serial(port=port, baudrate=115200, timeout=1)
+        connection = open_serial(port)
     except Exception as exc:
         log(f"    could not open {port}: {exc}")
         return False
@@ -162,8 +169,12 @@ def drain(port, seconds=5):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
             drained += len(connection.read(connection.in_waiting or 1))
-        connection.write(CTRL_C + CTRL_C)
-        connection.flush()
+        serial_write(connection, CTRL_C + CTRL_C, port)
+    except CheckFailure as exc:
+        # Expected against a truly wedged board, and worth saying out loud:
+        # a board that will not accept a Ctrl-C is not going to be talked
+        # back to life, so the next step up the ladder is the real hope.
+        log(f"    {exc}")
     except Exception as exc:
         log(f"    error draining {port}: {exc}")
     finally:
@@ -298,7 +309,7 @@ def bootsel_touch(port):
     on the REPL instead, which a wedged board will never run.
     """
     try:
-        connection = serial.Serial(port=port, baudrate=1200)
+        connection = open_serial(port, baudrate=1200)
         connection.dtr = False
         time.sleep(0.5)
         connection.close()
@@ -443,7 +454,8 @@ def recover(port, target, args):
     for name, step in steps:
         group(f"{port}: {name}")
         try:
-            attempted = step()
+            with time_limit(args.step_timeout, name):
+                attempted = step()
         except CheckFailure as exc:
             log(f"::error::{exc}")
             attempted = False
@@ -502,6 +514,7 @@ def main():
     parser.add_argument("--no-reflash", dest="reflash", action="store_false", help="stop before replacing the firmware; the board is left as found if the cheaper steps fail")
     parser.add_argument("--no-power-cycle", action="store_true", help="skip the uhubctl step")
     parser.add_argument("--force-bootsel", action="store_true", help="touch the board into BOOTSEL even when nothing here can mount the drive to flash it")
+    parser.add_argument("--step-timeout", type=int, default=STEP_TIMEOUT, help=f"hard ceiling on any one recovery step, in seconds (default {STEP_TIMEOUT})")
     parser.add_argument("--cache-dir", type=Path, default=REPO_ROOT / "build" / "uf2", help="where to keep downloaded UF2s")
     args = parser.parse_args()
 

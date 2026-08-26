@@ -73,6 +73,7 @@ from bench import (  # noqa: E402
     repl_reset,
     resolve_targets,
     set_game_config,
+    time_limit,
     wait_for_server,
 )
 
@@ -84,6 +85,12 @@ CONFIG_FAULTS = {"CONF00", "CONF01"}
 # Measured on the bench: 12.5s (wpc), 15.3s (sys11), and the flash harness's
 # 150s default only buys a wedged board more time to waste.
 MATRIX_BOOT_TIMEOUT = 90
+
+# Hard ceiling on one config, as a backstop to the individual timeouts inside
+# it. A healthy config takes ~21s; anything past this is a board that has
+# stopped behaving, and it must not be allowed to hang the job. See
+# bench.time_limit.
+CONFIG_TIMEOUT = 240
 
 
 def source_configs(target):
@@ -380,15 +387,16 @@ def run_matrix(board, args):
             started = time.monotonic()
             group(f"[{index}/{len(names)}] {target} {config}")
             try:
-                # Set the config on the board we are already talking to, then
-                # reboot into it. The connection dies with the reset; the next
-                # wait_for_boot opens a fresh one.
-                session.set_config(config)
-                session.reboot()
-                client = session.wait_for_boot()
-                consecutive_setup_failures = 0
+                with time_limit(args.config_timeout, f"{target} {config}"):
+                    # Set the config on the board we are already talking to,
+                    # then reboot into it. The connection dies with the reset;
+                    # the next wait_for_boot opens a fresh one.
+                    session.set_config(config)
+                    session.reboot()
+                    client = session.wait_for_boot()
+                    consecutive_setup_failures = 0
 
-                name = check_booted_config(client, target, config, configs[config])
+                    name = check_booted_config(client, target, config, configs[config])
                 log(f"    ok  {config:20} -> {name!r}  [{time.monotonic() - started:.1f}s]")
                 passed.append(config)
             except CheckFailure as exc:
@@ -461,6 +469,7 @@ def main():
     # A healthy boot answers in 12-16s on the bench, so the flash harness's
     # 150s is generous here and only makes a dead board expensive.
     parser.add_argument("--boot-timeout", type=int, default=MATRIX_BOOT_TIMEOUT, help=f"seconds to wait for a board's web server after a reset (default {MATRIX_BOOT_TIMEOUT})")
+    parser.add_argument("--config-timeout", type=int, default=CONFIG_TIMEOUT, help=f"hard ceiling on one config, in seconds (default {CONFIG_TIMEOUT})")
     args = parser.parse_args()
 
     bench.ensure_tools_on_path()

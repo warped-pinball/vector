@@ -19,6 +19,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -418,7 +419,7 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
             try:
                 # The port disappears and re-enumerates across the reset, so a
                 # failure to open here is expected for the first second or two.
-                connection = serial.Serial(port=port, baudrate=115200, timeout=1)
+                connection = open_serial(port)
             except Exception:
                 time.sleep(1)
                 continue
@@ -471,7 +472,6 @@ def prime_usb(connection):
         connection.reset_input_buffer()
         connection.reset_output_buffer()
         connection.write(b"\n")
-        connection.flush()
     except Exception as exc:
         log(f"    warning: could not prime the USB link: {exc}")
         return
@@ -527,6 +527,71 @@ def _dump_boot_log(board, lines=25):
     log(f"    last {min(lines, len(transcript))} lines of {board['port']} boot console:")
     for line in transcript[-lines:]:
         log(f"      {line}")
+
+
+# --------------------------------------------------------------------------
+# talking to a board that might be wedged
+# --------------------------------------------------------------------------
+#
+# Two traps, both of which cost a bench run before they were understood, and
+# both the same shape as the board's own failure: blocking on a buffer that
+# nothing is draining.
+#
+#   * `serial.Serial(timeout=...)` sets the READ timeout only. With no
+#     `write_timeout` a write to a board that has stopped reading its OUT
+#     endpoint blocks forever - which is exactly the state a wedged board is
+#     in, and exactly when the recovery tool needs to write to it.
+#   * `flush()` is termios tcdrain. It waits for the kernel's output buffer to
+#     reach the device and takes no timeout at all, so it hangs on the same
+#     board even when the write did not. We never call it: handing the bytes
+#     to the kernel is enough, and every exchange here is synchronised by a
+#     read with a deadline rather than by tcdrain.
+
+SERIAL_READ_TIMEOUT = 1
+SERIAL_WRITE_TIMEOUT = 5
+
+
+def open_serial(port, baudrate=115200, read_timeout=SERIAL_READ_TIMEOUT, write_timeout=SERIAL_WRITE_TIMEOUT):
+    """Open a board's port with BOTH timeouts set. Always use this."""
+    return serial.Serial(port=port, baudrate=baudrate, timeout=read_timeout, write_timeout=write_timeout)
+
+
+def serial_write(connection, data, what="the board"):
+    """Write to a board, refusing to wait forever if it has stopped listening."""
+    try:
+        connection.write(data)
+    except serial.SerialTimeoutException:
+        raise CheckFailure(f"timed out writing to {what} after {SERIAL_WRITE_TIMEOUT}s - it has stopped draining its USB endpoint")
+
+
+class time_limit:
+    """Hard ceiling on a block of work, however deep it blocks.
+
+    A backstop rather than a design: every call in here is supposed to be
+    bounded, but a board in a bad enough state can block a syscall that no
+    library timeout covers, and one board must never be able to hang a bench
+    job. SIGALRM interrupts the syscall, so this catches cases the individual
+    timeouts miss.
+
+    Main thread and POSIX only, which is what the bench is.
+    """
+
+    def __init__(self, seconds, what):
+        self.seconds = int(seconds)
+        self.what = what
+
+    def _expired(self, _signum, _frame):
+        raise CheckFailure(f"{self.what} did not finish within {self.seconds}s and was interrupted")
+
+    def __enter__(self):
+        self.previous = signal.signal(signal.SIGALRM, self._expired)
+        signal.alarm(self.seconds)
+        return self
+
+    def __exit__(self, *_exc):
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, self.previous)
+        return False
 
 
 # --------------------------------------------------------------------------
@@ -602,12 +667,10 @@ class Repl:
         """
         self._pending.clear()
         self.connection.reset_input_buffer()
-        self.connection.write(CTRL_C + CTRL_C)
-        self.connection.flush()
+        serial_write(self.connection, CTRL_C + CTRL_C, "the board's REPL")
         time.sleep(0.2)
 
-        self.connection.write(CTRL_A)
-        self.connection.flush()
+        serial_write(self.connection, CTRL_A, "the board's REPL")
         self.read_until(RAW_REPL_BANNER, timeout, "the raw REPL prompt")
         self.read_until(b">", timeout, "the raw REPL prompt")
         return self
@@ -619,8 +682,7 @@ class Repl:
         `OK`, then stdout, then \x04, then the traceback (empty on success),
         then \x04.
         """
-        self.connection.write(code.encode() + CTRL_D)
-        self.connection.flush()
+        serial_write(self.connection, code.encode() + CTRL_D, "the board's REPL")
 
         self.read_until(b"OK", timeout, "the board to accept the snippet")
         output = self.read_until(CTRL_D, timeout, "the snippet to finish")
@@ -639,8 +701,7 @@ class Repl:
         wait_for_server().
         """
         try:
-            self.connection.write(b"import machine; machine.reset()" + CTRL_D)
-            self.connection.flush()
+            serial_write(self.connection, b"import machine; machine.reset()" + CTRL_D, "the board's REPL")
         except Exception as exc:
             raise CheckFailure(f"could not issue a reset over the REPL: {exc}")
         # Let the write reach the board before the port disappears.
@@ -663,7 +724,7 @@ def drain_port(port, seconds=3):
     board that yields a backlog are different problems.
     """
     try:
-        connection = serial.Serial(port=port, baudrate=115200, timeout=1)
+        connection = open_serial(port)
     except Exception as exc:
         log(f"    could not reopen {port} to unstick it: {exc}")
         return 0
@@ -673,8 +734,7 @@ def drain_port(port, seconds=3):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
             drained += len(connection.read(connection.in_waiting or 1))
-        connection.write(CTRL_C)
-        connection.flush()
+        serial_write(connection, CTRL_C, port)
     except Exception as exc:
         log(f"    error while draining {port}: {exc}")
     finally:

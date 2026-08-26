@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import types
 from argparse import Namespace
 from pathlib import Path
@@ -348,7 +349,7 @@ def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
     monkeypatch.setattr(cm, "check_booted_config", check)
     monkeypatch.setattr(cm, "restore_default", lambda s, _target: setattr(s, "restored", True))
 
-    defaults = {"configs": None, "limit": None, "changed_since": None, "keep_going": True, "boot_timeout": 90}
+    defaults = {"configs": None, "limit": None, "changed_since": None, "keep_going": True, "boot_timeout": 90, "config_timeout": 60}
     defaults.update(arg_overrides)
     return cm.run_matrix({"port": session.port, "target": "wpc"}, Namespace(**defaults))
 
@@ -568,3 +569,74 @@ def test_write_step_summary_is_a_no_op_outside_actions(monkeypatch):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
 
     cm.write_step_summary([({"port": "/dev/ttyACM0", "target": "wpc"}, [], [])])
+
+
+# --------------------------------------------------------------------------
+# not hanging on a board that has stopped listening
+# --------------------------------------------------------------------------
+
+
+def test_open_serial_always_sets_a_write_timeout(monkeypatch):
+    """The bug that hung a bench job for 30 minutes.
+
+    `serial.Serial(timeout=...)` sets the READ timeout only. Without a
+    write_timeout, writing to a board that has stopped draining its USB
+    endpoint blocks forever - which is precisely the board the recovery tool
+    exists to write to.
+    """
+    opened = {}
+
+    def fake_serial(**kwargs):
+        opened.update(kwargs)
+        return FakeSerial()
+
+    monkeypatch.setattr(bench.serial, "Serial", fake_serial, raising=False)
+    bench.open_serial("/dev/ttyFAKE")
+
+    assert opened["timeout"] == bench.SERIAL_READ_TIMEOUT
+    assert opened["write_timeout"] == bench.SERIAL_WRITE_TIMEOUT
+
+
+def test_serial_write_turns_a_stuck_board_into_an_error(monkeypatch):
+    monkeypatch.setattr(bench.serial, "SerialTimeoutException", RuntimeError, raising=False)
+
+    class Deaf:
+        def write(self, _data):
+            raise RuntimeError("write timed out")
+
+    with pytest.raises(bench.CheckFailure, match="stopped draining its USB endpoint"):
+        bench.serial_write(Deaf(), b"\x03", "the board")
+
+
+def test_repl_never_calls_flush():
+    """flush() is tcdrain, which takes no timeout and hangs on the same board.
+
+    Handing the bytes to the kernel is enough; every exchange here is
+    synchronised by a read with a deadline instead.
+    """
+    source = (REPO_ROOT / "dev" / "hil" / "bench.py").read_text()
+
+    assert ".flush()" not in source
+
+
+def test_time_limit_interrupts_work_that_overruns():
+    with pytest.raises(bench.CheckFailure, match="did not finish within"):
+        with bench.time_limit(1, "a step that hangs"):
+            time.sleep(5)
+
+
+def test_time_limit_is_invisible_when_work_finishes_in_time():
+    with bench.time_limit(5, "quick work"):
+        result = 1 + 1
+
+    assert result == 2
+
+
+def test_time_limit_restores_the_previous_handler():
+    import signal
+
+    before = signal.getsignal(signal.SIGALRM)
+    with bench.time_limit(5, "quick work"):
+        pass
+
+    assert signal.getsignal(signal.SIGALRM) is before

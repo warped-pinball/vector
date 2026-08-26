@@ -30,7 +30,7 @@ import recover  # noqa: E402
 
 
 def args(**overrides):
-    defaults = {"reflash": True, "no_power_cycle": False, "force_bootsel": False, "cache_dir": Path("/nonexistent")}
+    defaults = {"reflash": True, "no_power_cycle": False, "force_bootsel": False, "step_timeout": 30, "cache_dir": Path("/nonexistent")}
     defaults.update(overrides)
     return Namespace(**defaults)
 
