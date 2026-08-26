@@ -176,13 +176,8 @@ class FakeClient:
         pass
 
 
-def fake_board(monkeypatch, responses, stored=None):
-    """Patch out everything that needs hardware; return the recorded writes.
-
-    `responses` maps a route to the body the fake board answers with, or to an
-    exception to raise.
-    """
-    written = []
+def responder(responses):
+    """A stand-in for bench.get over a fake board."""
 
     def fake_get(_client, route, expect=200):
         body = responses[route]
@@ -190,18 +185,7 @@ def fake_board(monkeypatch, responses, stored=None):
             raise body
         return body
 
-    def fake_set_game_config(_port, gamename):
-        if stored is not None and gamename != stored:
-            raise bench.CheckFailure(f"wrote gamename={gamename!r} but the board stored {stored!r}")
-        written.append(gamename)
-
-    monkeypatch.setattr(cm, "get", fake_get)
-    monkeypatch.setattr(cm, "set_game_config", fake_set_game_config)
-    monkeypatch.setattr(cm, "reset_board", lambda _port: None)
-    monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
-    monkeypatch.setattr(cm, "UsbApiClient", FakeClient)
-    monkeypatch.setattr(cm, "wait_for_server", lambda _port, timeout=None: (types.SimpleNamespace(close=lambda: None), ["boot"]))
-    return written
+    return fake_get
 
 
 def healthy(config="AttackMars_11", name="Attack from Mars"):
@@ -215,16 +199,15 @@ def healthy(config="AttackMars_11", name="Attack from Mars"):
     }
 
 
-def test_check_config_passes_when_the_board_reports_the_configured_game(monkeypatch):
-    written = fake_board(monkeypatch, healthy())
+def test_check_booted_config_passes_when_the_board_reports_the_configured_game(monkeypatch):
+    monkeypatch.setattr(cm, "get", responder(healthy()))
 
-    name, _boot_log = cm.check_config("/dev/ttyFAKE", "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
+    name = cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
 
     assert name == "Attack from Mars"
-    assert written == ["AttackMars_11"]
 
 
-def test_check_config_catches_a_silent_fallback_to_the_generic_config(monkeypatch):
+def test_check_booted_config_catches_a_silent_fallback_to_the_generic_config(monkeypatch):
     """The failure this harness exists for.
 
     A config that fails to apply raises nothing an outside observer can see:
@@ -232,33 +215,26 @@ def test_check_config_catches_a_silent_fallback_to_the_generic_config(monkeypatc
     definition, healthy in every other respect. Only the game name gives it
     away.
     """
-    fake_board(monkeypatch, healthy(name="Generic System"))
+    monkeypatch.setattr(cm, "get", responder(healthy(name="Generic System")))
 
     with pytest.raises(bench.CheckFailure, match="fell back to a generic definition"):
-        cm.check_config("/dev/ttyFAKE", "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
+        cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
 
 
-def test_check_config_catches_a_board_running_a_different_config(monkeypatch):
-    fake_board(monkeypatch, healthy(config="Taxi_L4"))
+def test_check_booted_config_catches_a_board_running_a_different_config(monkeypatch):
+    monkeypatch.setattr(cm, "get", responder(healthy(config="Taxi_L4")))
 
     with pytest.raises(bench.CheckFailure, match="active config is 'Taxi_L4'"):
-        cm.check_config("/dev/ttyFAKE", "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
+        cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
 
 
-def test_check_config_accepts_the_game_name_as_the_active_config_on_em(monkeypatch):
+def test_check_booted_config_accepts_the_game_name_as_the_active_config_on_em(monkeypatch):
     # EM answers /api/game/active_config with the game name (backend.py:481).
-    fake_board(monkeypatch, healthy(config="EM Machine", name="EM Machine"))
+    monkeypatch.setattr(cm, "get", responder(healthy(config="EM Machine", name="EM Machine")))
 
-    name, _ = cm.check_config("/dev/ttyFAKE", "em", "EM_machine_", {"name": "EM Machine", "adjustments": False})
+    name = cm.check_booted_config(FakeClient(), "em", "EM_machine_", {"name": "EM Machine", "adjustments": False})
 
     assert name == "EM Machine"
-
-
-def test_check_config_reports_a_name_that_cannot_be_stored(monkeypatch):
-    fake_board(monkeypatch, healthy(), stored="HarleyDavidson_L")
-
-    with pytest.raises(bench.CheckFailure, match="but the board stored"):
-        cm.check_config("/dev/ttyFAKE", "wpc", "HarleyDavidson_L3", {"name": "Harley Davidson", "adjustments": True})
 
 
 @pytest.mark.parametrize(
@@ -271,20 +247,20 @@ def test_check_config_reports_a_name_that_cannot_be_stored(monkeypatch):
     ],
 )
 def test_check_faults_rejects_anything_that_invalidates_the_result(monkeypatch, faults, expected):
-    fake_board(monkeypatch, {"/api/fault": faults})
+    monkeypatch.setattr(cm, "get", responder({"/api/fault": faults}))
 
     with pytest.raises(bench.CheckFailure, match=expected):
         cm.check_faults(FakeClient(), "AttackMars_11")
 
 
 def test_check_faults_allows_the_bare_bench_fault(monkeypatch):
-    fake_board(monkeypatch, {"/api/fault": ["HDWR02: No Bus Activity"]})
+    monkeypatch.setattr(cm, "get", responder({"/api/fault": ["HDWR02: No Bus Activity"]}))
 
     cm.check_faults(FakeClient(), "AttackMars_11")
 
 
 def test_check_adjustments_fails_when_the_config_declares_the_section(monkeypatch):
-    fake_board(monkeypatch, {"/api/adjustments/status": bench.CheckFailure("returned 500")})
+    monkeypatch.setattr(cm, "get", responder({"/api/adjustments/status": bench.CheckFailure("returned 500")}))
 
     with pytest.raises(bench.CheckFailure, match="500"):
         cm.check_adjustments(FakeClient(), "AttackMars_11", declares_adjustments=True)
@@ -292,11 +268,288 @@ def test_check_adjustments_fails_when_the_config_declares_the_section(monkeypatc
 
 def test_check_adjustments_only_warns_for_a_config_with_no_adjustments(monkeypatch, capsys):
     # A known firmware gap rather than a config problem - see check_adjustments().
-    fake_board(monkeypatch, {"/api/adjustments/status": bench.CheckFailure("returned 500")})
+    monkeypatch.setattr(cm, "get", responder({"/api/adjustments/status": bench.CheckFailure("returned 500")}))
 
     cm.check_adjustments(FakeClient(), "Taxi_L4", declares_adjustments=False)
 
     assert "::warning::Taxi_L4" in capsys.readouterr().out
+
+
+def test_check_bundle_reports_a_config_missing_from_the_build(monkeypatch):
+    monkeypatch.setattr(cm, "get", responder({"/api/game/configs_list": {"Taxi_L4": {"name": "Taxi"}}}))
+
+    with pytest.raises(bench.CheckFailure, match="AttackMars_11"):
+        cm.check_bundle(FakeClient(), "wpc", {"Taxi_L4": {"name": "Taxi"}, "AttackMars_11": {"name": "Attack from Mars"}})
+
+
+def test_check_bundle_reports_a_game_name_that_drifted_from_the_source(monkeypatch):
+    monkeypatch.setattr(cm, "get", responder({"/api/game/configs_list": {"Taxi_L4": {"name": "Taksi"}}}))
+
+    with pytest.raises(bench.CheckFailure, match="bundle says 'Taksi'"):
+        cm.check_bundle(FakeClient(), "wpc", {"Taxi_L4": {"name": "Taxi"}})
+
+
+# --------------------------------------------------------------------------
+# the matrix loop, and what it does when a board stops answering
+# --------------------------------------------------------------------------
+
+
+class FakeSession:
+    """Stands in for a board. `dies_after` makes it stop answering mid-run."""
+
+    def __init__(self, port, boot_timeout=None, dies_after=None):
+        self.port = port
+        self.boot_timeout = boot_timeout
+        self.dies_after = dies_after
+        self.connection = object()
+        self.client = FakeClient()
+        self.boot_log = []
+        self.configs_set = []
+        self.boots = 0
+        self.nudges = 0
+        self.restored = False
+
+    def wait_for_boot(self):
+        self.boots += 1
+        if self.dies_after is not None and self.boots > self.dies_after:
+            self.client = None
+            self.connection = None
+            raise bench.CheckFailure(f"{self.port} never reported its web server within 90s")
+        self.client = FakeClient()
+        self.connection = object()
+        return self.client
+
+    def set_config(self, gamename):
+        if self.client is None:
+            raise bench.CheckFailure(f"could not reach the REPL on {self.port}")
+        self.configs_set.append(gamename)
+
+    def reboot(self):
+        self.connection = None
+
+    def nudge(self):
+        self.nudges += 1
+        self.close()
+
+    def close(self):
+        self.connection = None
+        self.client = None
+
+
+def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
+    """Drive run_matrix against a fake board. `check` replaces the assertions."""
+    if check is None:
+
+        def check(_client, _target, _config, expected):
+            return expected["name"]
+
+    monkeypatch.setattr(cm, "Session", lambda port, boot_timeout=None: session)
+    monkeypatch.setattr(cm, "check_bundle", lambda *a, **k: None)
+    monkeypatch.setattr(cm, "check_booted_config", check)
+    monkeypatch.setattr(cm, "restore_default", lambda s, _target: setattr(s, "restored", True))
+
+    defaults = {"configs": None, "limit": None, "changed_since": None, "keep_going": True, "boot_timeout": 90}
+    defaults.update(arg_overrides)
+    return cm.run_matrix({"port": session.port, "target": "wpc"}, Namespace(**defaults))
+
+
+def test_run_matrix_walks_every_config_on_a_healthy_board(monkeypatch, fake_repo):
+    session = FakeSession("/dev/ttyFAKE")
+
+    passed, failures = run_board(monkeypatch, fake_repo, session)
+
+    assert failures == []
+    assert passed == ["AttackMars_11", "Generic_WPC", "Taxi_L4"]
+    assert session.configs_set == passed
+    assert session.restored is True
+
+
+def test_run_matrix_abandons_a_board_that_stops_answering(monkeypatch, fake_repo):
+    """The 63-minute failure, in one test.
+
+    The first bench run wrote the same timeout 63 times against a WPC board
+    that had wedged one config in. Two consecutive setup failures is enough to
+    know the board is gone.
+    """
+    # Enough configs that abandoning the board leaves some unrun - the point
+    # being that we stop rather than time out against every one of them.
+    config_dir = fake_repo / "src" / "wpc" / "config"
+    for index in range(6):
+        write_config(config_dir, f"Filler_L{index}", f"Filler {index}", Adjustments={"Type": 0})
+
+    # Boot 1 is the bundle check and boot 2 is the first config, so the board
+    # survives exactly one config before going quiet.
+    session = FakeSession("/dev/ttyFAKE", dies_after=2)
+
+    passed, failures = run_board(monkeypatch, fake_repo, session)
+
+    assert len(passed) == 1
+    assert session.boots <= 1 + cm.MAX_CONSECUTIVE_SETUP_FAILURES
+    assert any("skipped after" in reason for _config, reason in failures)
+    # Every setup failure gets one cheap recovery attempt before we give up.
+    assert session.nudges == cm.MAX_CONSECUTIVE_SETUP_FAILURES
+    # Teardown still runs, so the next job does not inherit a stranded board.
+    assert session.restored is True
+
+
+def test_run_matrix_keeps_going_after_a_failing_config(monkeypatch, fake_repo):
+    """An assertion failure is a result about the config, not about the board."""
+
+    def one_bad_config(_client, _target, config, expected):
+        if config == "Generic_WPC":
+            raise bench.CheckFailure("board reports game name 'Generic System' - fell back to a generic definition")
+        return expected["name"]
+
+    session = FakeSession("/dev/ttyFAKE")
+    passed, failures = run_board(monkeypatch, fake_repo, session, check=one_bad_config)
+
+    assert passed == ["AttackMars_11", "Taxi_L4"]
+    assert [config for config, _reason in failures] == ["Generic_WPC"]
+
+
+def test_run_matrix_stops_at_the_first_failure_when_asked(monkeypatch, fake_repo):
+    def always_fails(*_args, **_kwargs):
+        raise bench.CheckFailure("board reports game name 'Generic System'")
+
+    session = FakeSession("/dev/ttyFAKE")
+    passed, failures = run_board(monkeypatch, fake_repo, session, check=always_fails, keep_going=False)
+
+    assert passed == []
+    assert len(failures) == 1
+
+
+def test_restore_default_never_raises_when_the_board_is_gone(capsys):
+    """Teardown must not throw away results the matrix already produced.
+
+    The first bench run died exactly here: a TimeoutExpired escaped teardown,
+    took out the run summary, and skipped the board that had not been touched
+    yet.
+    """
+
+    class DeadSession:
+        port = "/dev/ttyFAKE"
+        connection = None
+
+        def wait_for_boot(self):
+            raise TimeoutError("board is not coming back")
+
+        def close(self):
+            pass
+
+    cm.restore_default(DeadSession(), "wpc")
+
+    assert "::warning::could not restore Generic_WPC" in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------
+# raw REPL framing
+# --------------------------------------------------------------------------
+
+
+class FakeSerial:
+    """Replays a scripted board response and records what was written."""
+
+    def __init__(self, script=b""):
+        self.script = bytearray(script)
+        self.written = bytearray()
+
+    def read(self, size=1):
+        chunk = bytes(self.script[:size])
+        del self.script[: len(chunk)]
+        return chunk
+
+    @property
+    def in_waiting(self):
+        return len(self.script)
+
+    def write(self, data):
+        self.written.extend(data)
+        return len(data)
+
+    def flush(self):
+        pass
+
+    def reset_input_buffer(self):
+        pass
+
+    def reset_output_buffer(self):
+        pass
+
+    def close(self):
+        pass
+
+
+def test_repl_enter_syncs_past_application_output():
+    # The board is mid-sentence when we interrupt it, so the banner arrives
+    # after whatever it was printing.
+    serial = FakeSerial(b"RESOURCE: RAM=69%\r\nTraceback\r\nraw REPL; CTRL-B to exit\r\n>")
+
+    bench.Repl(serial).enter(timeout=1)
+
+    assert bench.CTRL_C in serial.written
+    assert bench.CTRL_A in serial.written
+
+
+def test_repl_enter_reports_the_console_when_the_board_does_not_answer():
+    serial = FakeSerial(b"RESOURCE: RAM=69%\r\n")
+
+    with pytest.raises(bench.CheckFailure, match="raw REPL prompt"):
+        bench.Repl(serial).enter(timeout=0.2)
+
+
+def test_repl_keeps_bytes_that_arrive_past_a_marker():
+    """The bug that made the first version of this desynchronise.
+
+    A read that syncs on `OK` almost always pulls in the output that follows
+    it; discarding that made every later marker arrive at an empty stream.
+    """
+    repl = bench.Repl(FakeSerial(b"OKGAMENAME=Taxi_L4\x04\x04>"))
+
+    assert repl.read_until(b"OK", 1, "ok") == b""
+    assert repl.read_until(bench.CTRL_D, 1, "output") == b"GAMENAME=Taxi_L4"
+
+
+def test_repl_exec_returns_what_the_snippet_printed():
+    serial = FakeSerial(b"OKGAMENAME=Taxi_L4\r\n\x04\x04>")
+
+    output = bench.Repl(serial).exec("print('x')", timeout=1)
+
+    assert "GAMENAME=Taxi_L4" in output
+    assert serial.written.endswith(bench.CTRL_D)
+
+
+def test_repl_exec_surfaces_a_traceback_from_the_board():
+    serial = FakeSerial(b"OK\x04Traceback (most recent call last):\r\n  KeyError: nope\x04>")
+
+    with pytest.raises(bench.CheckFailure, match="KeyError: nope"):
+        bench.Repl(serial).exec("boom", timeout=1)
+
+
+def fake_repl(monkeypatch, output):
+    class StubRepl:
+        def __init__(self, _connection):
+            pass
+
+        def enter(self, timeout=None):
+            return self
+
+        def exec(self, _code, timeout=None):
+            return output
+
+    monkeypatch.setattr(bench, "Repl", StubRepl)
+
+
+def test_set_game_config_rejects_a_name_the_board_truncated(monkeypatch):
+    fake_repl(monkeypatch, "GAMENAME=HarleyDavidson_L\r\n")
+
+    with pytest.raises(bench.CheckFailure, match="16 bytes and this filename is 17"):
+        bench.set_game_config(FakeSerial(), "HarleyDavidson_L3")
+
+
+def test_set_game_config_accepts_a_clean_round_trip(monkeypatch):
+    fake_repl(monkeypatch, "GAMENAME=Taxi_L4\r\n")
+
+    bench.set_game_config(FakeSerial(), "Taxi_L4")
 
 
 def test_write_step_summary_renders_a_table_and_the_failures(tmp_path, monkeypatch):

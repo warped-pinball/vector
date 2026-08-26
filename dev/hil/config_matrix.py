@@ -55,11 +55,14 @@ import bench  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
+    BOOT_TIMEOUT,
     DEFAULT_GAMENAME,
     EXPECTED_FAULTS,
     REPO_ROOT,
     CheckFailure,
     UsbApiClient,
+    _dump_boot_log,
+    drain_port,
     endgroup,
     get,
     group,
@@ -67,7 +70,7 @@ from bench import (  # noqa: E402
     log,
     parse_board_map,
     prime_usb,
-    reset_board,
+    repl_reset,
     resolve_targets,
     set_game_config,
     wait_for_server,
@@ -77,6 +80,10 @@ from bench import (  # noqa: E402
 # blew up on the way (CONF00). Either one means the board is running
 # safe_defaults, which is exactly the failure this harness exists to catch.
 CONFIG_FAULTS = {"CONF00", "CONF01"}
+
+# Measured on the bench: 12.5s (wpc), 15.3s (sys11), and the flash harness's
+# 150s default only buys a wedged board more time to waste.
+MATRIX_BOOT_TIMEOUT = 90
 
 
 def source_configs(target):
@@ -201,144 +208,224 @@ def check_adjustments(client, config, declares_adjustments):
         raise CheckFailure(f"/api/adjustments/status returned {type(adjustments).__name__}, expected an object")
 
 
-def check_config(port, target, config, expected):
-    """Boot one board on one config and prove it is the config that loaded."""
-    expected_name = expected["name"]
+class Session:
+    """One board's serial connection, carried across the whole matrix.
 
-    set_game_config(port, config)
-    reset_board(port)
+    The connection is the point. The Pico has a single CDC endpoint, so every
+    close is an invitation for something else to grab the port and for the
+    board to be left printing into an endpoint nothing is draining. The first
+    bench run wedged the WPC board on exactly that, one config in, and then
+    spent 63 minutes timing out against a board that was never coming back.
 
-    connection, boot_log = wait_for_server(port)
-    client = None
-    try:
-        prime_usb(connection)
-        client = UsbApiClient(connection)
+    So: open once per boot, hold it through the assertions AND through setting
+    the next config, and close it only in `reboot()` - by which point the board
+    is already resetting and has stopped printing.
+    """
 
-        check_faults(client, config)
+    def __init__(self, port, boot_timeout=BOOT_TIMEOUT):
+        self.port = port
+        self.boot_timeout = boot_timeout
+        self.connection = None
+        self.client = None
+        self.boot_log = []
 
-        active = get(client, "/api/game/active_config")
-        active = active.get("active_config") if isinstance(active, dict) else active
+    def wait_for_boot(self):
+        self.connection, self.boot_log = wait_for_server(self.port, timeout=self.boot_timeout)
+        prime_usb(self.connection)
+        self.client = UsbApiClient(self.connection)
+        return self.client
 
-        # EM boards answer this route with the game name rather than the
-        # filename (backend.py:481), so accept either for that target.
-        expected_active = {config, expected_name} if target == "em" else {config}
-        if active not in expected_active:
-            raise CheckFailure(f"active config is {active!r}, expected {config!r}")
+    def _require_connection(self, what):
+        if self.connection is None:
+            raise CheckFailure(f"cannot {what} on {self.port}: the board is not connected (its last boot did not complete)")
+        return self.connection
 
-        name = get(client, "/api/game/name")
-        if isinstance(name, dict):
-            name = name.get("name")
-        name = str(name).strip()
-        if name != expected_name:
-            raise CheckFailure(f"board reports game name {name!r}, but {config}.json says {expected_name!r} - the config did not apply and the board fell back to a generic definition")
+    def set_config(self, gamename):
+        """Point the board at a config over the REPL we already have open."""
+        set_game_config(self._require_connection("set a config"), gamename)
 
-        # A config that parses but is not usable still fails a customer. Both
-        # of these read the loaded definition rather than just its presence.
-        if get(client, "/api/leaders") is None:
-            raise CheckFailure("/api/leaders returned no body")
-        check_adjustments(client, config, expected["adjustments"])
+    def reboot(self):
+        """Reset from the REPL, then drop the port while the board is down."""
+        self._require_connection("reset the board")
+        try:
+            repl_reset(self.connection)
+        finally:
+            self.close()
 
-        return name, boot_log
-    finally:
-        if client is not None:
-            try:
-                client.close()
-            except Exception:
-                pass
-        else:
+    def nudge(self):
+        """Try to unstick a board that stopped answering, before giving up."""
+        self.close()
+        drain_port(self.port)
+
+    def close(self):
+        connection, self.connection, self.client = self.connection, None, None
+        if connection is not None:
             try:
                 connection.close()
             except Exception:
                 pass
 
 
-def check_bundle(port, target, configs):
+def check_bundle(client, target, configs):
     """Compare the board's config list against the repo, once per board.
 
     Cheap, and it localises a whole class of failure before the matrix starts:
     if the build dropped or mangled a config, this says so in one boot instead
     of once per affected iteration.
     """
-    reset_board(port)
-    connection, _ = wait_for_server(port)
-    try:
-        prime_usb(connection)
-        client = UsbApiClient(connection)
-        on_board = get(client, "/api/game/configs_list")
-        if not isinstance(on_board, dict) or not on_board:
-            raise CheckFailure("/api/game/configs_list is empty - the config bundle is missing from the build")
+    on_board = get(client, "/api/game/configs_list")
+    if not isinstance(on_board, dict) or not on_board:
+        raise CheckFailure("/api/game/configs_list is empty - the config bundle is missing from the build")
 
-        missing = sorted(set(configs) - set(on_board))
-        extra = sorted(set(on_board) - set(configs))
-        if missing:
-            raise CheckFailure(f"{len(missing)} config(s) in src/{target}/config are not in the build's bundle: {', '.join(missing)}")
-        if extra:
-            raise CheckFailure(f"the build's bundle carries {len(extra)} config(s) with no source JSON: {', '.join(extra)}")
+    missing = sorted(set(configs) - set(on_board))
+    extra = sorted(set(on_board) - set(configs))
+    if missing:
+        raise CheckFailure(f"{len(missing)} config(s) in src/{target}/config are not in the build's bundle: {', '.join(missing)}")
+    if extra:
+        raise CheckFailure(f"the build's bundle carries {len(extra)} config(s) with no source JSON: {', '.join(extra)}")
 
-        mismatched = [f"{name}: bundle says {on_board[name].get('name')!r}, source says {configs[name]['name']!r}" for name in sorted(configs) if on_board[name].get("name") != configs[name]["name"]]
-        if mismatched:
-            raise CheckFailure("game name mismatch between the bundle and the source JSON:\n      " + "\n      ".join(mismatched))
+    mismatched = [f"{name}: bundle says {on_board[name].get('name')!r}, source says {configs[name]['name']!r}" for name in sorted(configs) if on_board[name].get("name") != configs[name]["name"]]
+    if mismatched:
+        raise CheckFailure("game name mismatch between the bundle and the source JSON:\n      " + "\n      ".join(mismatched))
 
-        log(f"    bundle matches source: {len(configs)} configs, names identical")
-    finally:
-        try:
-            connection.close()
-        except Exception:
-            pass
+    log(f"    bundle matches source: {len(configs)} configs, names identical")
 
 
-def restore_default(port, target):
-    """Leave the board on its generic config, as flash_and_check.py expects."""
+def check_booted_config(client, target, config, expected):
+    """Assert that the board in front of us booted on `config`."""
+    expected_name = expected["name"]
+
+    check_faults(client, config)
+
+    active = get(client, "/api/game/active_config")
+    active = active.get("active_config") if isinstance(active, dict) else active
+
+    # EM boards answer this route with the game name rather than the filename
+    # (backend.py:481), so accept either for that target.
+    expected_active = {config, expected_name} if target == "em" else {config}
+    if active not in expected_active:
+        raise CheckFailure(f"active config is {active!r}, expected {config!r}")
+
+    name = get(client, "/api/game/name")
+    if isinstance(name, dict):
+        name = name.get("name")
+    name = str(name).strip()
+    if name != expected_name:
+        raise CheckFailure(f"board reports game name {name!r}, but {config}.json says {expected_name!r} - the config did not apply and the board fell back to a generic definition")
+
+    # A config that parses but is not usable still fails a customer. Both of
+    # these read the loaded definition rather than just its presence.
+    if get(client, "/api/leaders") is None:
+        raise CheckFailure("/api/leaders returned no body")
+    check_adjustments(client, config, expected["adjustments"])
+
+    return name
+
+
+def restore_default(session, target):
+    """Leave the board on its generic config, as flash_and_check.py expects.
+
+    Best effort by design: this runs in teardown, including after the board has
+    stopped answering, and a failure here must not lose the results the matrix
+    already produced.
+    """
     default = DEFAULT_GAMENAME[target]
     try:
-        set_game_config(port, default)
-        reset_board(port)
+        if session.connection is None:
+            session.wait_for_boot()
+        session.set_config(default)
+        session.reboot()
         log(f"    restored {default}")
-    except CheckFailure as exc:
-        log(f"::warning::could not restore {default} on {port}: {exc}")
+    except Exception as exc:  # noqa: BLE001 - teardown never fails the run
+        log(f"::warning::could not restore {default} on {session.port}: {exc}")
+        session.close()
+
+
+# A board that stops answering does not start again on its own, and the bench
+# is a shared singleton. Two setup failures in a row is the signal to stop
+# spending an hour proving it: the first bench run burned 63 minutes writing
+# the same 60s timeout 63 times, which is 62 wasted minutes and one lost
+# data_east matrix.
+MAX_CONSECUTIVE_SETUP_FAILURES = 2
 
 
 def run_matrix(board, args):
-    """Walk one board through its configs. Returns (passed, failures)."""
+    """Walk one board through its configs. Returns (passed, failures).
+
+    One connection per boot, held across the assertions and across setting the
+    next config, closed only while the board is resetting. See Session.
+    """
     port = board["port"]
     target = board["target"]
     names, configs = select_configs(target, args)
 
-    group(f"Config bundle {target} on {port}")
-    check_bundle(port, target, configs)
-    endgroup()
-
-    log("")
-    log(f"{len(names)} config(s) to check on {port} ({target})")
-    log("")
-
+    session = Session(port, boot_timeout=args.boot_timeout)
     passed = []
     failures = []
-    for index, config in enumerate(names, 1):
-        started = time.monotonic()
-        group(f"[{index}/{len(names)}] {target} {config}")
-        try:
-            name, _boot_log = check_config(port, target, config, configs[config])
-            elapsed = time.monotonic() - started
-            log(f"    ok  {config:20} -> {name!r}  [{elapsed:.1f}s]")
-            passed.append(config)
-        except CheckFailure as exc:
-            log(f"::error::{target} {config}: {exc}")
-            failures.append((config, str(exc)))
-            if not args.keep_going:
-                endgroup()
-                break
-        except Exception as exc:  # noqa: BLE001 - one bad config must not end the run
-            log(f"::error::{target} {config}: unexpected error: {exc}")
-            failures.append((config, str(exc)))
-            if not args.keep_going:
-                endgroup()
-                break
-        endgroup()
+    consecutive_setup_failures = 0
 
-    group(f"Restore {target} on {port}")
-    restore_default(port, target)
-    endgroup()
+    try:
+        group(f"Config bundle {target} on {port}")
+        try:
+            client = session.wait_for_boot()
+            check_bundle(client, target, configs)
+        finally:
+            endgroup()
+
+        log("")
+        log(f"{len(names)} config(s) to check on {port} ({target})")
+        log("")
+
+        for index, config in enumerate(names, 1):
+            started = time.monotonic()
+            group(f"[{index}/{len(names)}] {target} {config}")
+            try:
+                # Set the config on the board we are already talking to, then
+                # reboot into it. The connection dies with the reset; the next
+                # wait_for_boot opens a fresh one.
+                session.set_config(config)
+                session.reboot()
+                client = session.wait_for_boot()
+                consecutive_setup_failures = 0
+
+                name = check_booted_config(client, target, config, configs[config])
+                log(f"    ok  {config:20} -> {name!r}  [{time.monotonic() - started:.1f}s]")
+                passed.append(config)
+            except CheckFailure as exc:
+                log(f"::error::{target} {config}: {exc}")
+                _dump_boot_log({"port": port, "boot_log": session.boot_log})
+                failures.append((config, str(exc)))
+                # An assertion that ran is a result about the config. Anything
+                # that stopped us reaching the assertions is about the board.
+                if session.client is None:
+                    consecutive_setup_failures += 1
+            except Exception as exc:  # noqa: BLE001 - one bad config must not end the run
+                log(f"::error::{target} {config}: unexpected error: {exc}")
+                failures.append((config, str(exc)))
+                consecutive_setup_failures += 1
+            finally:
+                endgroup()
+
+            if consecutive_setup_failures:
+                # One cheap attempt at recovery before spending another cycle,
+                # and it doubles as diagnosis: whether the board has anything
+                # queued on its console says a lot about how it is stuck.
+                session.nudge()
+
+            if consecutive_setup_failures >= MAX_CONSECUTIVE_SETUP_FAILURES:
+                remaining = names[index:]
+                log(f"::error::{port} stopped responding - abandoning this board after {consecutive_setup_failures} consecutive setup failures")
+                if remaining:
+                    log(f"    {len(remaining)} config(s) not run: {', '.join(remaining[:8])}{' ...' if len(remaining) > 8 else ''}")
+                    failures.append(("(not run)", f"{len(remaining)} config(s) skipped after {port} stopped responding"))
+                break
+
+            if not args.keep_going and failures:
+                break
+    finally:
+        group(f"Restore {target} on {port}")
+        restore_default(session, target)
+        endgroup()
 
     return passed, failures
 
@@ -371,6 +458,9 @@ def main():
     parser.add_argument("--changed-since", metavar="REF", help="run configs changed since REF first, so a config-touching PR fails fast")
     parser.add_argument("--skip-flash", action="store_true", help="matrix what is already on the boards instead of building and flashing first")
     parser.add_argument("--stop-on-first-failure", dest="keep_going", action="store_false", help="stop a board's matrix at its first failing config (default: run them all)")
+    # A healthy boot answers in 12-16s on the bench, so the flash harness's
+    # 150s is generous here and only makes a dead board expensive.
+    parser.add_argument("--boot-timeout", type=int, default=MATRIX_BOOT_TIMEOUT, help=f"seconds to wait for a board's web server after a reset (default {MATRIX_BOOT_TIMEOUT})")
     args = parser.parse_args()
 
     bench.ensure_tools_on_path()
@@ -415,10 +505,12 @@ def main():
     for b in boards:
         try:
             passed, failures = run_matrix(b, args)
-        except CheckFailure as exc:
+        except Exception as exc:  # noqa: BLE001
             # A board that cannot even be set up is one board's problem. The
             # bench is a singleton and a run is expensive, so the other boards
-            # still get their matrix.
+            # still get their matrix. Deliberately broad: the first bench run
+            # died on a TimeoutExpired escaping teardown, which threw away the
+            # results already in hand and skipped the untouched board entirely.
             log(f"::error::{b['target']} on {b['port']}: {exc}")
             passed, failures = [], [("(board setup)", str(exc))]
         results.append((b, passed, failures))

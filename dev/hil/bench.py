@@ -530,6 +530,164 @@ def _dump_boot_log(board, lines=25):
 
 
 # --------------------------------------------------------------------------
+# raw REPL, over a connection we already hold
+# --------------------------------------------------------------------------
+#
+# Everything below drives the REPL over an open pyserial connection instead of
+# shelling out to `mpremote`. That is not a stylistic preference - it is the
+# fix for a board that wedged on the bench.
+#
+# The Pico exposes one CDC endpoint, so using mpremote mid-run means closing
+# our connection, letting a second process open the port, and reopening
+# afterwards - for every config. On the first such handoff the WPC board
+# (MicroPython 1.26.0-preview) stopped responding entirely: silent console, no
+# reply to Ctrl-C, for the following 63 attempts. sys11 (1.24.1) survived the
+# same treatment 39 times. A running board printing to a CDC endpoint that
+# nothing is draining is the difference between them, so the harness now never
+# leaves the port unread while the board is running, and never lets a second
+# process contend for it. The port is closed only while the board is mid-reset.
+
+CTRL_A = b"\x01"  # enter raw REPL
+CTRL_B = b"\x02"  # back to the friendly REPL
+CTRL_C = b"\x03"  # interrupt whatever is running
+CTRL_D = b"\x04"  # execute what was pasted / end-of-output marker
+
+RAW_REPL_BANNER = b"raw REPL; CTRL-B to exit"
+REPL_TIMEOUT = 15
+
+
+class Repl:
+    """A raw-REPL session over a connection somebody else owns.
+
+    Owns a pending buffer, which is the whole reason this is a class rather
+    than a few functions: raw REPL is a sequence of markers (`OK`, \x04, \x04,
+    `>`) and a read that syncs on one marker almost always pulls in bytes
+    belonging to the next. Dropping them desynchronises everything that
+    follows.
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
+        self._pending = bytearray()
+
+    def read_until(self, marker, timeout, what):
+        """Return everything up to `marker`, keeping what came after it.
+
+        The board is mid-sentence when we interrupt it, so the stream still
+        holds application output. Syncing on a marker rather than on a line
+        count is what makes that harmless.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            index = self._pending.find(marker)
+            if index >= 0:
+                before = bytes(self._pending[:index])
+                del self._pending[: index + len(marker)]
+                return before
+            if time.monotonic() >= deadline:
+                break
+            chunk = self.connection.read(self.connection.in_waiting or 1)
+            if chunk:
+                self._pending.extend(chunk)
+
+        tail = bytes(self._pending[-400:]).decode(errors="replace")
+        raise CheckFailure(f"timed out after {timeout}s waiting for {what}. Last output:\n      {tail or '(nothing on the console)'}")
+
+    def enter(self, timeout=REPL_TIMEOUT):
+        """Interrupt the running firmware and take the raw REPL.
+
+        Ctrl-C raises KeyboardInterrupt in `main.py`, which ends the
+        application and drops to the REPL - the same thing `mpremote` does, and
+        the reason this is safe to do to a board we are about to reset anyway.
+        """
+        self._pending.clear()
+        self.connection.reset_input_buffer()
+        self.connection.write(CTRL_C + CTRL_C)
+        self.connection.flush()
+        time.sleep(0.2)
+
+        self.connection.write(CTRL_A)
+        self.connection.flush()
+        self.read_until(RAW_REPL_BANNER, timeout, "the raw REPL prompt")
+        self.read_until(b">", timeout, "the raw REPL prompt")
+        return self
+
+    def exec(self, code, timeout=REPL_TIMEOUT):
+        """Run one snippet and return what it printed.
+
+        Raw REPL framing: paste the code, Ctrl-D to run, the board answers
+        `OK`, then stdout, then \x04, then the traceback (empty on success),
+        then \x04.
+        """
+        self.connection.write(code.encode() + CTRL_D)
+        self.connection.flush()
+
+        self.read_until(b"OK", timeout, "the board to accept the snippet")
+        output = self.read_until(CTRL_D, timeout, "the snippet to finish")
+        error = self.read_until(CTRL_D, timeout, "the snippet's exit status")
+
+        if error.strip():
+            detail = error.decode(errors="replace").strip().replace("\n", "\n      ")
+            raise CheckFailure(f"the board raised an error running the snippet:\n      {detail}")
+        return output.decode(errors="replace")
+
+    def reset(self):
+        """Reset the board, without waiting for a reply.
+
+        There is no reply to wait for - the board reboots mid-command and the
+        port re-enumerates underneath us. The caller reopens it in
+        wait_for_server().
+        """
+        try:
+            self.connection.write(b"import machine; machine.reset()" + CTRL_D)
+            self.connection.flush()
+        except Exception as exc:
+            raise CheckFailure(f"could not issue a reset over the REPL: {exc}")
+        # Let the write reach the board before the port disappears.
+        time.sleep(0.5)
+
+
+def repl_reset(connection):
+    """Interrupt whatever the board is doing and reset it, over `connection`."""
+    Repl(connection).enter().reset()
+
+
+def drain_port(port, seconds=3):
+    """Open a port and read whatever the board has queued, then interrupt it.
+
+    A cheap attempt at unsticking a board that has gone quiet, and it costs one
+    open and three seconds. The wedge worth recovering from is a board blocked
+    writing into a CDC endpoint that nothing is draining: reading is the whole
+    remedy, and the Ctrl-C afterwards gets it back to a REPL if the read freed
+    it. Reports what it saw either way - a board that yields zero bytes and a
+    board that yields a backlog are different problems.
+    """
+    try:
+        connection = serial.Serial(port=port, baudrate=115200, timeout=1)
+    except Exception as exc:
+        log(f"    could not reopen {port} to unstick it: {exc}")
+        return 0
+
+    drained = 0
+    try:
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            drained += len(connection.read(connection.in_waiting or 1))
+        connection.write(CTRL_C)
+        connection.flush()
+    except Exception as exc:
+        log(f"    error while draining {port}: {exc}")
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+    log(f"    drained {drained} byte(s) from {port} and sent Ctrl-C")
+    return drained
+
+
+# --------------------------------------------------------------------------
 # game configuration
 # --------------------------------------------------------------------------
 
@@ -561,14 +719,13 @@ SET_CONFIG_SNIPPET = ";".join(
 )
 
 
-def set_game_config(port, gamename):
+def set_game_config(connection, gamename):
     """Point a board at one game config and prove the value survived the write.
 
     The board picks its config up from the FRAM `configuration` record at boot
     (GameDefsLoad.go), so setting it is a REPL write plus a reset - no
-    authentication, no HTTP, and no reflash. mpremote interrupts whatever the
-    board is running to get the REPL, which is fine here because the caller
-    resets immediately afterwards.
+    authentication, no HTTP, and no reflash. Takes the caller's open connection
+    rather than a port: see the note above raw REPL for why that matters.
 
     The read-back is the load-bearing part. `gamename` is a fixed-width field
     and struct.pack truncates silently, so a name that is too long is written,
@@ -579,20 +736,18 @@ def set_game_config(port, gamename):
     if "'" in gamename or "\\" in gamename:
         raise CheckFailure(f"config name {gamename!r} contains a quote or backslash")
 
-    result = mpremote("connect", port, "exec", SET_CONFIG_SNIPPET.format(gamename=gamename), timeout=60)
-    if result.returncode != 0:
-        raise CheckFailure(f"could not write gamename={gamename!r} to {port}: {result.stderr.strip()}")
+    output = Repl(connection).enter().exec(SET_CONFIG_SNIPPET.format(gamename=gamename))
 
     stored = None
-    for line in result.stdout.splitlines():
+    for line in output.splitlines():
         if line.startswith("GAMENAME="):
             stored = line.split("=", 1)[1].strip()
     if stored is None:
-        raise CheckFailure(f"board did not read back a gamename after the write (said {result.stdout.strip()!r})")
+        raise CheckFailure(f"board did not read back a gamename after the write (said {output.strip()!r})")
 
     if stored != gamename:
         limit = gamename_field_bytes()
         detail = ""
         if len(gamename) > limit:
-            detail = f" - the FRAM `gamename` field is {limit} bytes and this filename is {len(gamename)}," " so no board can ever store it and the config is unreachable in the field"
+            detail = f" - the FRAM `gamename` field is {limit} bytes and this filename is {len(gamename)}, so no board can ever store it and the config is unreachable in the field"
         raise CheckFailure(f"wrote gamename={gamename!r} but the board stored {stored!r}{detail}")

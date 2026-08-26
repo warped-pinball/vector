@@ -194,12 +194,19 @@ cd ~/vector && export PATH="$PWD/.venv/bin:$PATH"
 .venv/bin/python dev/hil/config_matrix.py --target wpc --limit 5 --skip-flash
 ```
 
-A full config matrix is roughly 15–25s per config per board and WPC alone has 63, so budget
-well over half an hour for an unfiltered run. `--configs`, `--limit` and `--target` are there
+A full config matrix is roughly 20–22s per config per board (measured on the bench) and WPC
+alone has 63, so budget well over half an hour for an unfiltered run. `--configs`, `--limit` and `--target` are there
 to keep an iteration loop short; `--changed-since REF` runs the configs a branch touched
 first, which is what the workflow does on a push.
 
 The matrix leaves each board on its generic config when it finishes, including after a
-failure, so a run never strands a board on a game config you did not ask for.
+failure, so a run never strands a board on a game config you did not ask for. If a board
+stops answering it is abandoned after two consecutive setup failures and the run moves on to
+the next board, rather than timing out against a board that is not coming back.
+
+**Never `cat /dev/ttyACM*` to watch a board.** A tty reverts to ECHO-on once every handle is
+closed, so a bare `cat` makes the kernel echo the board's own output back into it, and the
+board then tries to parse its log lines as USB API requests. Use `stty -F /dev/ttyACM0 raw
+-echo 115200` first, or `mpremote connect /dev/ttyACM0 repl`.
 
 See [DESIGN.md](DESIGN.md) for the test architecture and the security model for fork PRs.

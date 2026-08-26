@@ -221,7 +221,9 @@ dev/hil/
 ```
 
 `bench.py` deliberately asserts nothing about firmware behaviour — it only gets
-a board into a known state and talks to it. Assertions live in the harness that
+a board into a known state and talks to it, including driving the raw REPL over
+a connection the caller owns (`bench.Repl`) rather than shelling out to
+`mpremote`. Assertions live in the harness that
 imports it, so adding a check never means touching the plumbing. The
 hardware-free parts (config discovery, selection and ordering, and each
 assertion with the board faked out) are covered by
@@ -349,6 +351,39 @@ apply does not fault or crash from the outside: `GameDefsLoad.go` falls back to
 healthy in every other respect. `/api/game/active_config` does not catch this —
 it reads the `gamename` field back out of FRAM, not what actually loaded. The
 game name is what separates "loaded my config" from "silently fell back".
+
+#### Bench results, first full run
+
+sys11 passed all 39 of its configs, at 20–22s each (~14 min). That is the
+harness working end to end: set the config, reboot, and confirm the board comes
+up reporting that game.
+
+WPC did not, and the reason is worth recording because it shaped the design.
+The board wedged — silent console, no reply to Ctrl-C — on the first handoff
+from our serial connection to `mpremote`, and stayed wedged for the remaining
+62 configs. The Pico has a single CDC endpoint, so using `mpremote` mid-run
+meant closing our connection, letting a second process open the port, and
+reopening afterwards, once per config. sys11 (MicroPython v1.24.1) survived
+that 39 times; WPC (v1.26.0-preview) did not survive it once. A running board
+printing into a CDC endpoint that nothing is draining is the difference between
+them.
+
+So the harness now **never hands the port to another process and never leaves
+it unread while the board is running.** The REPL is driven directly over the
+connection the harness already holds (`bench.Repl`), and the port is closed
+only while the board is mid-reset. Three further changes came out of the same
+run:
+
+- **Two consecutive setup failures abandon the board.** The first run spent 63
+  minutes writing the same 60s timeout 63 times. A board that stops answering
+  does not start again on its own.
+- **Teardown cannot fail the run.** A `TimeoutExpired` escaped `restore_default`
+  and took the whole process down with a traceback — losing the summary and
+  skipping data_east, which had never been touched.
+- **`stty raw -echo` before dumping a console.** A tty reverts to ECHO-on once
+  every handle closes, so the `cat /dev/ttyACM*` diagnostic step was echoing
+  each board's output back into it; the logs show all three boards parsing
+  their own log lines as USB API requests. Fixed in both HIL workflows.
 
 #### Findings and limits
 

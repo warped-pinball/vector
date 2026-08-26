@@ -81,7 +81,13 @@ jobs:
         run: |
           # A board that failed its health check may still be printing something
           # useful; grab a few seconds of console from each.
+          #
+          # `stty raw -echo` first, and it is not optional. A tty reverts to the
+          # driver default - ECHO on - once every handle is closed, so a bare
+          # `cat` makes the kernel echo the board's own output straight back at
+          # it, and the board then parses its own log lines as USB API requests.
           for dev in /dev/ttyACM*; do
             echo "--- $dev"
+            stty -F "$dev" raw -echo 115200 || true
             timeout 8 cat "$dev" || true
           done
