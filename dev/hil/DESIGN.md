@@ -385,6 +385,29 @@ run:
   each board's output back into it; the logs show all three boards parsing
   their own log lines as USB API requests. Fixed in both HIL workflows.
 
+#### How a boot is watched
+
+The ready marker (`Server: Loop Forever`) is printed exactly once per boot, which
+makes watching for it precise but brittle in two directions. Both are handled:
+
+- **The board crashes instead of coming up.** MicroPython prints a traceback and
+  drops to the REPL; nothing will ever print the marker. The watcher recognises
+  the REPL banner and fails immediately *with the traceback*, rather than burning
+  the timeout and reporting "never reported its web server" — which is what
+  happened on the first full bench run and buried the real cause. A crash is
+  retried once, because it can be intermittent and losing a whole board's matrix
+  to one flaky boot buys nothing; every crash is counted and reported in the run
+  summary either way, so a board that only sometimes boots never reads as clean.
+- **The marker goes past before we are watching.** Any boot we did not trigger
+  ourselves looks identical to a board that never came up. On timeout the watcher
+  asks the board over the USB API before failing: a board that answers is up,
+  whatever we did or did not see, and says so as a warning.
+
+Timeouts are set from measurement, not guesswork. Across 70 boots on the bench:
+**11.8s minimum, 15.5s mean, 25.6s maximum.** The matrix allows 90s and the flash
+harness 150s, so neither is close to marginal — a boot that exceeds them has
+stopped, not slowed.
+
 #### Findings and limits
 
 - **Two WPC configs cannot be selected at all.** `configuration.gamename` is a

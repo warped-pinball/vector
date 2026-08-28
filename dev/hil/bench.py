@@ -60,17 +60,47 @@ DEFAULT_GAMENAME = {
 # connect_to_wifi() by this point, so the marker covers both transports.
 READY_MARKER = "Server: Loop Forever"
 
+# The other way a boot can end. If the application raises, MicroPython prints a
+# traceback and drops to the REPL - and then nothing is ever going to print the
+# ready marker, so waiting out the timeout only delays a failure we can already
+# describe. These lines appear when, and only when, the program has exited:
+# main.py never returns on a healthy board.
+#
+# Watching for this is what turns "never reported its web server within 90s"
+# into the traceback that actually explains the boot.
+CRASH_MARKERS = ('Type "help()" for more information.', ">>>")
+
+# Ignore a crash marker in the first moments after opening the port: it can be
+# residue from whatever REPL session issued the reset, rather than this boot.
+CRASH_MARKER_GRACE = 3
+
 # The marker is printed just *before* run_forever(), so give the event loop a
 # moment to actually accept the listening socket. http_get's retries cover any
 # remainder.
 SERVER_SETTLE_SECONDS = 2
 
+# Measured across 70 boots on the bench: 11.8s min, 15.5s mean, 25.6s max. The
+# flash harness keeps 150s; the matrix runs a tighter one (see
+# config_matrix.MATRIX_BOOT_TIMEOUT) because it pays the timeout per config.
 BOOT_TIMEOUT = 150
 HTTP_TIMEOUT = 10
 
 
 class CheckFailure(Exception):
     pass
+
+
+class BootCrash(CheckFailure):
+    """The firmware raised on the way up and dropped to the REPL.
+
+    Distinct from a timeout because it is actionable in a way a timeout is
+    not: the console holds the traceback, and a retry is worth one attempt
+    where waiting longer is worth nothing.
+    """
+
+    def __init__(self, message, transcript=None):
+        super().__init__(message)
+        self.transcript = transcript or []
 
 
 def log(msg):
@@ -407,10 +437,17 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
     instead gives an exact ready signal and, on failure, the boot log that
     explains it.
 
+    Two ways this ends other than success: the board never gets there
+    (timeout), or the firmware raises and drops to the REPL (BootCrash). They
+    are worth distinguishing - a crash is described by the traceback sitting in
+    the console right now, and there is no point waiting out the rest of the
+    budget for a marker a dead program will never print.
+
     Returns the open serial connection so the USB API can reuse it - the
     Pico exposes one CDC endpoint, so a second connection would fight this one.
     """
-    deadline = time.monotonic() + timeout
+    started = time.monotonic()
+    deadline = started + timeout
     transcript = []
     connection = None
 
@@ -441,10 +478,30 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
         transcript.append(text)
 
         if READY_MARKER in text:
-            elapsed = timeout - (deadline - time.monotonic())
+            elapsed = time.monotonic() - started
             log(f"    server up after {elapsed:.1f}s ({text.strip()!r})")
             time.sleep(SERVER_SETTLE_SECONDS)
             return connection, transcript
+
+        elapsed = time.monotonic() - started
+        if elapsed > CRASH_MARKER_GRACE and any(marker in text for marker in CRASH_MARKERS):
+            try:
+                connection.close()
+            except Exception:
+                pass
+            raise BootCrash(
+                f"{port} dropped to the REPL {elapsed:.1f}s into boot - the firmware raised on the way up:\n      " + _explain_crash(transcript),
+                transcript,
+            )
+
+    # Before calling it a failure: ask the board directly. The ready marker is
+    # printed exactly once, so anything that costs us the moment it goes past -
+    # a reset we did not trigger, a board that booted while we were still
+    # flashing the next one - looks identical to a board that never came up.
+    # A board that answers its API is up, whatever we did or did not see.
+    if connection is not None and _server_is_answering(connection):
+        log(f"::warning::{port} is answering its API but its ready marker was never seen - " "the marker was probably printed before the console was open")
+        return connection, transcript
 
     if connection is not None:
         try:
@@ -456,6 +513,28 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
     raise CheckFailure(
         f"{port} never reported its web server within {timeout}s. Last console output:\n      {tail}"
     )
+
+
+def _server_is_answering(connection):
+    """One cheap USB request, to tell 'missed the marker' from 'never booted'."""
+    try:
+        prime_usb(connection)
+        response = UsbApiClient(connection).send_and_receive(route="/api/version", payload=None, timeout=10)
+        return response.get("status") == 200
+    except Exception:
+        return False
+
+
+def _explain_crash(transcript, lines=14):
+    """Pull the traceback out of a boot transcript, for the error message.
+
+    The traceback is the whole value of catching this, so it leads; without one
+    the tail of the console is the next best thing.
+    """
+    for index, line in enumerate(transcript):
+        if "Traceback (most recent call last)" in line:
+            return "\n      ".join(transcript[index : index + lines])
+    return "\n      ".join(transcript[-lines:]) or "(nothing on the console)"
 
 
 def prime_usb(connection):

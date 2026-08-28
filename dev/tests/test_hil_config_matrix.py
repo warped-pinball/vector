@@ -309,6 +309,7 @@ class FakeSession:
         self.boots = 0
         self.starts = 0
         self.nudges = 0
+        self.crashes = []
         self.restored = False
 
     def start(self):
@@ -362,7 +363,7 @@ def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
 def test_run_matrix_walks_every_config_on_a_healthy_board(monkeypatch, fake_repo):
     session = FakeSession("/dev/ttyFAKE")
 
-    passed, failures = run_board(monkeypatch, fake_repo, session)
+    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session)
 
     assert failures == []
     assert passed == ["AttackMars_11", "Generic_WPC", "Taxi_L4"]
@@ -387,7 +388,7 @@ def test_run_matrix_abandons_a_board_that_stops_answering(monkeypatch, fake_repo
     # survives exactly one config before going quiet.
     session = FakeSession("/dev/ttyFAKE", dies_after=2)
 
-    passed, failures = run_board(monkeypatch, fake_repo, session)
+    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session)
 
     assert len(passed) == 1
     assert session.boots <= 1 + cm.MAX_CONSECUTIVE_SETUP_FAILURES
@@ -407,7 +408,7 @@ def test_run_matrix_keeps_going_after_a_failing_config(monkeypatch, fake_repo):
         return expected["name"]
 
     session = FakeSession("/dev/ttyFAKE")
-    passed, failures = run_board(monkeypatch, fake_repo, session, check=one_bad_config)
+    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session, check=one_bad_config)
 
     assert passed == ["AttackMars_11", "Taxi_L4"]
     assert [config for config, _reason in failures] == ["Generic_WPC"]
@@ -418,7 +419,7 @@ def test_run_matrix_stops_at_the_first_failure_when_asked(monkeypatch, fake_repo
         raise bench.CheckFailure("board reports game name 'Generic System'")
 
     session = FakeSession("/dev/ttyFAKE")
-    passed, failures = run_board(monkeypatch, fake_repo, session, check=always_fails, keep_going=False)
+    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session, check=always_fails, keep_going=False)
 
     assert passed == []
     assert len(failures) == 1
@@ -674,3 +675,195 @@ def test_session_start_resets_then_waits(monkeypatch):
     cm.Session("/dev/ttyFAKE").start()
 
     assert order == ["reset /dev/ttyFAKE", "wait"]
+
+
+# --------------------------------------------------------------------------
+# a boot that crashes rather than one that is slow
+# --------------------------------------------------------------------------
+
+# The real WPC console from the bench run that prompted this, trimmed.
+CRASHED_BOOT = [
+    "Connected to wifi with IP address: 192.168.2.175",
+    "----------",
+    "Starting server",
+    "----------",
+    "2021-01-01 00:00:13 [info    ] > starting web server on port 80",
+    "Traceback (most recent call last):",
+    '  File "main.py", line 1, in <module>',
+    '  File "build/wpc/backend.py", line 1, in go',
+    '  File "build/wpc/GameStatus.py", line 1, in <module>',
+    "ImportError: no module named 'origin'",
+    "MicroPython v1.26.0-preview.255.g214d6413d.dirty on 2025-07-19; Raspberry Pi Pico 2 W with RP2350",
+    'Type "help()" for more information.',
+    ">>> ",
+]
+
+HEALTHY_BOOT = [
+    "Connected to wifi with IP address: 192.168.2.175",
+    "2021-01-01 00:00:13 [info    ] > starting web server on port 80",
+    "Server: Loop Forever",
+]
+
+
+class ScriptedConsole:
+    """A serial port replaying a boot transcript, one line per readline()."""
+
+    def __init__(self, lines):
+        self.lines = list(lines)
+        self.closed = False
+
+    def readline(self):
+        if not self.lines:
+            return b""
+        return (self.lines.pop(0) + "\r\n").encode()
+
+    def close(self):
+        self.closed = True
+
+
+def watch_boot(monkeypatch, lines, elapsed=10.0):
+    """Run wait_for_server against a scripted console."""
+    console = ScriptedConsole(lines)
+    monkeypatch.setattr(bench, "open_serial", lambda *a, **k: console)
+    monkeypatch.setattr(bench, "SERVER_SETTLE_SECONDS", 0)
+    monkeypatch.setattr(bench, "CRASH_MARKER_GRACE", -1)
+    return console
+
+
+def test_a_crashed_boot_fails_immediately_with_the_traceback(monkeypatch):
+    """The failure that cost 90s and reported the wrong thing.
+
+    A board that raised on the way up will never print the ready marker, so
+    waiting out the budget only delays a failure the console already explains.
+    """
+    watch_boot(monkeypatch, CRASHED_BOOT)
+
+    with pytest.raises(bench.BootCrash) as caught:
+        bench.wait_for_server("/dev/ttyFAKE", timeout=90)
+
+    message = str(caught.value)
+    assert "dropped to the REPL" in message
+    # The traceback leads, because it is the whole reason to catch this.
+    assert "ImportError: no module named 'origin'" in message
+    assert "Traceback (most recent call last)" in message
+    assert "never reported its web server" not in message
+
+
+def test_a_healthy_boot_is_unaffected(monkeypatch):
+    console = watch_boot(monkeypatch, HEALTHY_BOOT)
+
+    connection, transcript = bench.wait_for_server("/dev/ttyFAKE", timeout=90)
+
+    assert connection is console
+    assert "Server: Loop Forever" in transcript[-1]
+
+
+def test_a_repl_prompt_in_the_first_moments_is_not_a_crash(monkeypatch):
+    """Residue from the REPL session that issued the reset is not this boot."""
+    watch_boot(monkeypatch, [">>> "] + HEALTHY_BOOT)
+    monkeypatch.setattr(bench, "CRASH_MARKER_GRACE", 3600)
+
+    connection, _transcript = bench.wait_for_server("/dev/ttyFAKE", timeout=90)
+
+    assert connection is not None
+
+
+def test_a_boot_that_is_merely_slow_still_times_out(monkeypatch):
+    """Slow is not the same as crashed, and still reports as a timeout."""
+    watch_boot(monkeypatch, ["still booting..."])
+
+    with pytest.raises(bench.CheckFailure, match="never reported its web server") as caught:
+        bench.wait_for_server("/dev/ttyFAKE", timeout=0.5)
+
+    assert not isinstance(caught.value, bench.BootCrash)
+
+
+def test_wait_for_boot_retries_once_past_a_crash(monkeypatch):
+    """An intermittent crash must not cost a whole board's matrix."""
+    attempts = []
+
+    def flaky(_port, timeout=None):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise bench.BootCrash("crashed on the way up", CRASHED_BOOT)
+        return types.SimpleNamespace(close=lambda: None), HEALTHY_BOOT
+
+    monkeypatch.setattr(cm, "wait_for_server", flaky)
+    monkeypatch.setattr(cm, "reset_board", lambda _port: None)
+    monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
+
+    session = cm.Session("/dev/ttyFAKE")
+    session.wait_for_boot()
+
+    assert len(attempts) == 2
+    # Recovered, but recorded: a board that only sometimes boots is a fault.
+    assert len(session.crashes) == 1
+
+
+def test_wait_for_boot_gives_up_after_a_second_crash(monkeypatch):
+    def always_crashes(_port, timeout=None):
+        raise bench.BootCrash("crashed on the way up", CRASHED_BOOT)
+
+    monkeypatch.setattr(cm, "wait_for_server", always_crashes)
+    monkeypatch.setattr(cm, "reset_board", lambda _port: None)
+
+    session = cm.Session("/dev/ttyFAKE")
+    with pytest.raises(bench.BootCrash):
+        session.wait_for_boot()
+
+    assert len(session.crashes) == 2
+
+
+def test_recovered_crashes_are_reported_not_buried(tmp_path, monkeypatch):
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+
+    board = {"port": "/dev/ttyACM1", "target": "wpc", "crashes": ["dropped to the REPL 13.0s into boot\n  ImportError"]}
+    cm.write_step_summary([(board, ["Taxi_L4"], [])])
+
+    rendered = summary.read_text()
+    assert "Boot crashes (recovered by a retry)" in rendered
+    assert "**wpc**" in rendered
+
+
+def test_a_missed_marker_is_recovered_by_asking_the_board(monkeypatch, capsys):
+    """The ready marker prints once, so missing it must not read as a dead board.
+
+    Anything that costs us the moment it goes past - a board that booted while
+    the next one was still being flashed, a reset we did not trigger - looks
+    exactly like a board that never came up. Asking the API tells them apart.
+    """
+    console = watch_boot(monkeypatch, ["already booted, marker long gone"])
+    monkeypatch.setattr(bench, "_server_is_answering", lambda _connection: True)
+
+    connection, _transcript = bench.wait_for_server("/dev/ttyFAKE", timeout=0.5)
+
+    assert connection is console
+    assert "ready marker was never seen" in capsys.readouterr().out
+
+
+def test_a_board_that_answers_nothing_still_fails(monkeypatch):
+    watch_boot(monkeypatch, ["nothing useful"])
+    monkeypatch.setattr(bench, "_server_is_answering", lambda _connection: False)
+
+    with pytest.raises(bench.CheckFailure, match="never reported its web server"):
+        bench.wait_for_server("/dev/ttyFAKE", timeout=0.5)
+
+
+def test_server_is_answering_reads_the_usb_api(monkeypatch):
+    monkeypatch.setattr(bench, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(bench, "UsbApiClient", lambda _c: types.SimpleNamespace(send_and_receive=lambda **kw: {"status": 200, "body": {"version": "1.7.13"}}))
+
+    assert bench._server_is_answering(object()) is True
+
+
+def test_server_is_answering_is_false_when_the_board_is_silent(monkeypatch):
+    monkeypatch.setattr(bench, "prime_usb", lambda _connection: None)
+
+    def times_out(**_kwargs):
+        raise TimeoutError("no response")
+
+    monkeypatch.setattr(bench, "UsbApiClient", lambda _c: types.SimpleNamespace(send_and_receive=times_out))
+
+    assert bench._server_is_answering(object()) is False

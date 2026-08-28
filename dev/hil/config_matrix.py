@@ -59,6 +59,7 @@ from bench import (  # noqa: E402
     DEFAULT_GAMENAME,
     EXPECTED_FAULTS,
     REPO_ROOT,
+    BootCrash,
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
@@ -236,6 +237,7 @@ class Session:
         self.connection = None
         self.client = None
         self.boot_log = []
+        self.crashes = []
 
     def start(self):
         """First boot of the run: reset the board, then watch it come up.
@@ -256,7 +258,30 @@ class Session:
         return self.wait_for_boot()
 
     def wait_for_boot(self):
-        self.connection, self.boot_log = wait_for_server(self.port, timeout=self.boot_timeout)
+        """Watch one boot, retrying once if the firmware raises on the way up.
+
+        A crash is not a timing problem and no amount of waiting fixes it - the
+        program has exited. But it can be intermittent, and losing a whole
+        board's matrix to one flaky boot buys nothing: the retry is what lets
+        the 63 configs actually get checked.
+
+        The crash is never swallowed. Every one is counted, logged with its
+        traceback, and reported in the run summary, so a board that only
+        sometimes comes up still shows up as a problem rather than as a clean
+        run that happened to take longer.
+        """
+        for attempt in range(2):
+            try:
+                self.connection, self.boot_log = wait_for_server(self.port, timeout=self.boot_timeout)
+                break
+            except BootCrash as crash:
+                self.crashes.append(str(crash))
+                self.boot_log = crash.transcript
+                if attempt:
+                    raise
+                log(f"::warning::{self.port} crashed on boot; retrying once. {crash}")
+                reset_board(self.port)
+
         prime_usb(self.connection)
         self.client = UsbApiClient(self.connection)
         return self.client
@@ -454,7 +479,7 @@ def run_matrix(board, args):
         restore_default(session, target)
         endgroup()
 
-    return passed, failures
+    return passed, failures, session.crashes
 
 
 def write_step_summary(results):
@@ -466,6 +491,12 @@ def write_step_summary(results):
     lines = ["## HIL config matrix", "", "| board | target | configs | passed | failed |", "|---|---|---|---:|---:|"]
     for board, passed, failures in results:
         lines.append(f"| `{board['port']}` | {board['target']} | {len(passed) + len(failures)} | {len(passed)} | {len(failures)} |")
+
+    crashed = [(board, crash) for board, _passed, _failures in results for crash in (board.get("crashes") or [])]
+    if crashed:
+        lines += ["", "### Boot crashes (recovered by a retry)", ""]
+        for board, crash in crashed:
+            lines.append(f"- **{board['target']}** - {crash.splitlines()[0]}")
 
     failed = [(board, config, reason) for board, _passed, failures in results for config, reason in failures]
     if failed:
@@ -532,7 +563,7 @@ def main():
     results = []
     for b in boards:
         try:
-            passed, failures = run_matrix(b, args)
+            passed, failures, crashes = run_matrix(b, args)
         except Exception as exc:  # noqa: BLE001
             # A board that cannot even be set up is one board's problem. The
             # bench is a singleton and a run is expensive, so the other boards
@@ -540,7 +571,8 @@ def main():
             # died on a TimeoutExpired escaping teardown, which threw away the
             # results already in hand and skipped the untouched board entirely.
             log(f"::error::{b['target']} on {b['port']}: {exc}")
-            passed, failures = [], [("(board setup)", str(exc))]
+            passed, failures, crashes = [], [("(board setup)", str(exc))], []
+        b["crashes"] = crashes
         results.append((b, passed, failures))
 
     log("")
@@ -551,11 +583,25 @@ def main():
     log("")
     log("=" * 60)
     total_failures = 0
+    total_crashes = 0
     for board, passed, failures in results:
         state = "FAIL" if failures else "ok"
-        log(f"  {state:5} {board['port']:16} {board['target']:12} {len(passed)} passed, {len(failures)} failed")
+        crashes = board.get("crashes") or []
+        crashed = f", {len(crashes)} boot crash(es)" if crashes else ""
+        log(f"  {state:5} {board['port']:16} {board['target']:12} {len(passed)} passed, {len(failures)} failed{crashed}")
         total_failures += len(failures)
+        total_crashes += len(crashes)
     log("=" * 60)
+
+    # A crash that a retry got past is not a passing board. The configs were
+    # still checked, so it does not fail the run, but it is a firmware fault
+    # and gets said out loud rather than buried in a green result.
+    if total_crashes:
+        log("")
+        log(f"::warning::{total_crashes} boot crash(es) recovered by a retry - the firmware raised on the way up:")
+        for board, _passed, _failures in results:
+            for crash in board.get("crashes") or []:
+                log(f"  {board['target']}: {crash}")
 
     write_step_summary(results)
 
