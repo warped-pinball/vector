@@ -42,6 +42,7 @@ on:
       - claude/wpc-hil-config-validation-rc62dn
     paths:
       - dev/hil/recover.py
+      - dev/hil/trench_coat.py
       - .github/workflows/hil-recover.yml
 
 permissions:
@@ -68,6 +69,23 @@ jobs:
           test -x "$VECTOR_HIL_VENV/bin/python" || { echo "bench venv missing"; exit 1; }
           echo "$VECTOR_HIL_VENV/bin" >> "$GITHUB_PATH"
 
+      # TrenchCoat does the actual reflash (dev/hil/trench_coat.py drives it).
+      # Cloned here rather than at runtime so a network problem fails the job
+      # visibly instead of halfway through recovering a board. Pin lives in
+      # dev/hil/trench_coat.py; recover.py re-checks the checkout matches it.
+      - name: Fetch TrenchCoat
+        run: |
+          commit=$(python -c "import sys; sys.path.insert(0, 'dev/hil'); import trench_coat; print(trench_coat.TRENCH_COAT_COMMIT)")
+          root="$PWD/build/hil/trench-coat"
+          mkdir -p "$(dirname "$root")"
+          if [ ! -d "$root/.git" ]; then
+            git clone --quiet https://github.com/warped-pinball/trench-coat "$root"
+          fi
+          git -C "$root" fetch --quiet origin "$commit"
+          git -C "$root" checkout --quiet "$commit"
+          echo "trench-coat at $(git -C "$root" rev-parse --short HEAD)"
+          ls -l "$root/uf2"
+
       - name: Recover
         env:
           HIL_PORT: ${{ inputs.port }}
@@ -88,7 +106,10 @@ jobs:
         if: always()
         run: |
           # stty raw -echo first: a tty reverts to ECHO-on once every handle is
-          # closed, so a bare `cat` feeds the board its own output back.
+          # closed, so a bare `cat` feeds the board its own output back. Both
+          # calls are under `timeout`, because opening a tty waits for carrier
+          # and a wedged board can block even stty - which is what left this
+          # step running for 32 minutes on the last run.
           echo "--- serial ports"
           ls -l /dev/ttyACM* 2>/dev/null || echo "(none)"
           echo "--- bootloader drives"
@@ -96,6 +117,6 @@ jobs:
           for dev in /dev/ttyACM*; do
             [ -e "$dev" ] || continue
             echo "--- $dev"
-            stty -F "$dev" raw -echo 115200 || true
+            timeout 5 stty -F "$dev" raw -echo 115200 || true
             timeout 5 cat "$dev" || true
           done

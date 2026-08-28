@@ -27,6 +27,7 @@ sys.path.insert(0, str(REPO_ROOT / "dev" / "hil"))
 
 import bench  # noqa: E402
 import recover  # noqa: E402
+import trench_coat  # noqa: E402
 
 
 def args(**overrides):
@@ -191,41 +192,92 @@ def test_responsive_is_false_when_mpremote_times_out(monkeypatch):
 
 
 # --------------------------------------------------------------------------
-# the UF2 gate
+# handing the board to TrenchCoat
 # --------------------------------------------------------------------------
 
 
-def test_fetch_uf2_refuses_a_file_that_does_not_match_the_pin(tmp_path):
-    filename, _digest = recover.TARGET_UF2["wpc"]
-    (tmp_path / filename).write_bytes(b"not the firmware you are looking for")
+def test_reflash_delegates_to_trench_coat(monkeypatch, tmp_path):
+    """The sequence is TrenchCoat's, not ours - we only point it at one board."""
+    called = {}
+    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (True, "udisksctl is available"))
+    monkeypatch.setattr(recover.trench_coat, "flash", lambda port, target, root: called.update(port=port, target=target, root=root) or True)
 
-    with pytest.raises(bench.CheckFailure, match="refusing to flash it"):
-        recover.fetch_uf2("wpc", tmp_path)
-
-    # And it does not leave the bad file behind to be picked up next time.
-    assert not (tmp_path / filename).exists()
-
-
-def test_fetch_uf2_accepts_the_pinned_file(tmp_path, monkeypatch):
-    import hashlib
-
-    payload = b"pretend UF2"
-    filename, _digest = recover.TARGET_UF2["wpc"]
-    monkeypatch.setitem(recover.TARGET_UF2, "wpc", (filename, hashlib.sha256(payload).hexdigest()))
-    (tmp_path / filename).write_bytes(payload)
-
-    assert recover.fetch_uf2("wpc", tmp_path) == tmp_path / filename
+    assert recover.reflash("/dev/ttyFAKE", "wpc", tmp_path) is True
+    assert called["port"] == "/dev/ttyFAKE"
+    assert called["target"] == "wpc"
 
 
-def test_fetch_uf2_rejects_a_target_it_has_no_firmware_for(tmp_path):
-    with pytest.raises(bench.CheckFailure, match="no UF2 known"):
-        recover.fetch_uf2("whitestar", tmp_path)
+def test_reflash_will_not_strand_a_board_in_bootsel_it_cannot_flash(monkeypatch, tmp_path, capsys):
+    """Entering BOOTSEL is a one-way door.
+
+    A wedged board is at least still a serial device. Sending it to the ROM
+    bootloader with no way to write a UF2 turns it into a mass-storage device
+    that only a replug gets out of - strictly worse than how it was found.
+    """
+    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (False, "no udisksctl"))
+    monkeypatch.setattr(recover.trench_coat, "flash", lambda *a, **k: pytest.fail("must not touch the board"))
+
+    assert recover.reflash("/dev/ttyFAKE", "wpc", tmp_path) is False
+    assert "not touching the board into BOOTSEL" in capsys.readouterr().out
 
 
-def test_every_target_uf2_pin_is_a_sha256():
-    for target, (filename, digest) in recover.TARGET_UF2.items():
+def test_force_bootsel_overrides_the_guard(monkeypatch, tmp_path):
+    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (False, "no udisksctl"))
+    monkeypatch.setattr(recover.trench_coat, "flash", lambda *a, **k: True)
+
+    assert recover.reflash("/dev/ttyFAKE", "wpc", tmp_path, force=True) is True
+
+
+def test_can_complete_a_reflash_accepts_udisksctl(monkeypatch):
+    monkeypatch.setattr(recover.shutil, "which", lambda name: "/usr/bin/udisksctl" if name == "udisksctl" else None)
+    monkeypatch.setattr(recover.Path, "is_dir", lambda self: False)
+
+    possible, why = recover.can_complete_a_reflash()
+
+    assert possible is True
+    assert "udisksctl" in why
+
+
+def test_can_complete_a_reflash_says_no_when_nothing_can_mount(monkeypatch):
+    monkeypatch.setattr(recover.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(recover.Path, "is_dir", lambda self: False)
+
+    possible, why = recover.can_complete_a_reflash()
+
+    assert possible is False
+    assert "nothing here can mount" in why
+
+
+def test_every_target_maps_to_a_bundled_uf2():
+    for target, filename in trench_coat.TARGET_UF2.items():
         assert filename.endswith(".uf2"), target
-        assert len(digest) == 64 and set(digest) <= set("0123456789abcdef"), target
+
+
+def test_bundled_uf2_rejects_an_unknown_target(tmp_path):
+    with pytest.raises(bench.CheckFailure, match="no TrenchCoat UF2 known"):
+        trench_coat.bundled_uf2(tmp_path, "whitestar")
+
+
+def test_bundled_uf2_reports_a_checkout_missing_the_file(tmp_path):
+    with pytest.raises(bench.CheckFailure, match="missing from the trench-coat checkout"):
+        trench_coat.bundled_uf2(tmp_path, "wpc")
+
+
+def test_load_refuses_the_wrong_src_package(tmp_path, monkeypatch):
+    """Both repos have a top-level `src`; importing ours would fail confusingly."""
+    fake = tmp_path / "src"
+    fake.mkdir()
+    (fake / "__init__.py").write_text("")
+    (fake / "core.py").write_text("")
+    (fake / "ray.py").write_text("")
+
+    real_import = trench_coat.load
+    monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: root)
+
+    # Loading from the right root works; the guard only fires on a mismatch,
+    # which is what the assertion inside load() covers.
+    core, _ray = real_import(tmp_path)
+    assert str(Path(core.__file__).resolve()).startswith(str(tmp_path.resolve()))
 
 
 # --------------------------------------------------------------------------
@@ -269,49 +321,112 @@ def test_hub_location_splits_the_usb_path(tmp_path, monkeypatch, usb_path, expec
     assert recover.hub_location("/dev/ttyACM1") == expected
 
 
-def test_reflash_will_not_strand_a_board_in_bootsel_it_cannot_flash(monkeypatch, tmp_path, capsys):
-    """The touch is a one-way door.
+# --------------------------------------------------------------------------
+# narrowing TrenchCoat to one board
+# --------------------------------------------------------------------------
 
-    A wedged board is at least still a serial device. Touching it into BOOTSEL
-    with no way to write a UF2 turns it into a mass-storage device that only a
-    replug gets out of - strictly worse than how it was found.
+
+def fake_trench_coat(monkeypatch, drives=("/media/RPI-RP2",)):
+    """Stand in for TrenchCoat's core/ray modules and record how they are used."""
+    seen = {"flashed": None, "ports_seen": None, "drives_seen": None, "bootloader": []}
+
+    class FakeRay:
+        def __init__(self, port):
+            seen["bootloader"].append(port)
+
+        def enter_bootloader_mode(self):
+            pass
+
+        @classmethod
+        def find_board_ports(cls):
+            return ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyACM2"]
+
+    ray = types.SimpleNamespace(Ray=FakeRay)
+    core = types.SimpleNamespace(
+        list_rpi_rp2_drives=lambda: list(drives),
+        graceful_exit=lambda now=False: None,
+        flash_firmware=lambda path: seen.update(
+            flashed=path,
+            ports_seen=ray.Ray.find_board_ports(),
+            drives_seen=core.list_rpi_rp2_drives(),
+        ),
+    )
+
+    monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: root)
+    monkeypatch.setattr(trench_coat, "load", lambda root: (core, ray))
+    monkeypatch.setattr(trench_coat, "bundled_uf2", lambda root, target: Path(f"/uf2/{target}.uf2"))
+    return seen
+
+
+def test_flash_hides_the_other_boards_from_trench_coat(monkeypatch, tmp_path):
+    """The one thing that must not go wrong.
+
+    TrenchCoat flashes every board it finds, which on the bench would nuke the
+    two healthy boards alongside the broken one. It only ever gets to see the
+    board being recovered.
     """
+    seen = fake_trench_coat(monkeypatch)
+
+    assert trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path) is True
+    assert seen["ports_seen"] == []
+    assert seen["flashed"] == "/uf2/wpc.uf2"
+    # Only the board being recovered is asked to enter the bootloader.
+    assert seen["bootloader"] == ["/dev/ttyACM1"]
+
+
+def test_flash_gives_trench_coat_the_drive_it_could_not_find(monkeypatch, tmp_path):
+    """A headless runner has no automounter, so we mount and hand the path over."""
+    seen = fake_trench_coat(monkeypatch, drives=())
+    monkeypatch.setattr(trench_coat, "mount_rpi_rp2", lambda: "/media/runner/RPI-RP2")
+    monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: ["/media/runner/RPI-RP2"])
+
+    assert trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path) is True
+    assert seen["drives_seen"] == ["/media/runner/RPI-RP2"]
+
+
+def test_flash_stops_when_the_board_never_reaches_the_bootloader(monkeypatch, tmp_path, capsys):
+    seen = fake_trench_coat(monkeypatch, drives=())
+    monkeypatch.setattr(trench_coat, "mount_rpi_rp2", lambda: None)
+    monkeypatch.setattr(trench_coat, "bootsel_touch", lambda port: None)
+    monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: [])
+
+    assert trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path) is False
+    assert seen["flashed"] is None
+    assert "never presented a bootloader drive" in capsys.readouterr().out
+
+
+def test_flash_turns_trench_coats_exit_into_an_error(monkeypatch, tmp_path):
+    """Its failure path calls sys.exit; the harness needs an exception instead."""
+    seen = fake_trench_coat(monkeypatch)
+    core, _ray = trench_coat.load(tmp_path)
+
+    def bail(_path):
+        core.graceful_exit()
+
+    core.flash_firmware = bail
+
+    with pytest.raises(bench.CheckFailure, match="could not complete the flash"):
+        trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path)
+    assert seen["flashed"] is None
+
+
+def test_enter_bootloader_falls_back_to_the_1200_baud_touch(monkeypatch):
+    """TrenchCoat's route needs the VM alive enough to run one statement."""
     touched = []
-    monkeypatch.setattr(recover, "bootsel_touch", lambda port: touched.append(port))
-    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (False, "no udisksctl"))
+    attempts = []
 
-    assert recover.reflash("/dev/ttyFAKE", "wpc", tmp_path) is False
-    assert touched == []
-    assert "not touching the board into BOOTSEL" in capsys.readouterr().out
+    class FakeRay:
+        def __init__(self, port):
+            pass
 
+        def enter_bootloader_mode(self):
+            attempts.append("machine.bootloader()")
 
-def test_reflash_verifies_the_uf2_before_the_point_of_no_return(monkeypatch, tmp_path):
-    """Download and checksum first: a bad fetch must not cost us the board."""
-    touched = []
-    monkeypatch.setattr(recover, "bootsel_touch", lambda port: touched.append(port))
-    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (True, "udisksctl is available"))
+    monkeypatch.setattr(trench_coat, "bootsel_touch", lambda port: touched.append(port))
+    monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: [] if not touched else ["/media/RPI-RP2"])
 
-    filename, _digest = recover.TARGET_UF2["wpc"]
-    (tmp_path / filename).write_bytes(b"corrupted download")
+    drives = trench_coat.enter_bootloader(types.SimpleNamespace(), types.SimpleNamespace(Ray=FakeRay), "/dev/ttyACM1")
 
-    with pytest.raises(bench.CheckFailure, match="refusing to flash it"):
-        recover.reflash("/dev/ttyFAKE", "wpc", tmp_path)
-    assert touched == []
-
-
-def test_force_bootsel_overrides_the_guard(monkeypatch, tmp_path):
-    import hashlib
-
-    payload = b"pretend UF2"
-    filename, _digest = recover.TARGET_UF2["wpc"]
-    monkeypatch.setitem(recover.TARGET_UF2, "wpc", (filename, hashlib.sha256(payload).hexdigest()))
-    (tmp_path / filename).write_bytes(payload)
-
-    touched = []
-    monkeypatch.setattr(recover, "bootsel_touch", lambda port: touched.append(port))
-    monkeypatch.setattr(recover, "can_complete_a_reflash", lambda: (False, "no udisksctl"))
-    monkeypatch.setattr(recover, "find_bootloader_drive", lambda *a, **k: None)
-    monkeypatch.setattr(recover, "mount_bootloader_drive", lambda *a, **k: None)
-
-    assert recover.reflash("/dev/ttyFAKE", "wpc", tmp_path, force=True) is False
-    assert touched == ["/dev/ttyFAKE"]
+    assert attempts == ["machine.bootloader()"]
+    assert touched == ["/dev/ttyACM1"]
+    assert drives == ["/media/RPI-RP2"]

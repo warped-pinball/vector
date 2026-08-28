@@ -28,32 +28,31 @@ So this escalates, cheapest first, re-testing after each step:
                   The board is USB bus powered (Trench-Coat-Install-Guide.md),
                   so this is a real power cycle, not a signal. Needs a hub that
                   supports per-port power switching.
-  4. reflash    - 1200 baud touch to drop the RP2040 into its ROM bootloader,
-                  then copy a MicroPython UF2 onto the RPI-RP2 drive that
-                  appears. The touch is handled in USB interrupt context rather
-                  than by the Python VM, so it can work when everything above
-                  has failed. Destructive: it replaces the firmware, and the
-                  board needs `dev/flash.py` afterwards to get Vector back.
+  4. reflash    - hand the board to TrenchCoat, the team's own tool for
+                  recovering a board without the BOOTSEL button. It resets into
+                  the ROM bootloader, wipes the whole flash with nuke.uf2, then
+                  writes the real firmware. Destructive: the board needs
+                  `dev/hil/flash_and_check.py` afterwards to get Vector back.
 
-Only step 4 needs anything from outside the repo - the UF2s come from
-warped-pinball/trench-coat, pinned by commit and verified by checksum.
+Only step 4 needs anything from outside the repo: a checkout of
+warped-pinball/trench-coat, pinned by commit. dev/hil/trench_coat.py drives
+it - the sequence is not reimplemented here.
 
 If all four fail, the board needs a person: hold BOOTSEL while replugging it.
 """
 
 import argparse
 import fcntl
-import hashlib
 import os
 import shutil
 import subprocess
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
     CTRL_C,
     REPO_ROOT,
@@ -70,28 +69,17 @@ from bench import (  # noqa: E402
     time_limit,
 )
 
-# warped-pinball/trench-coat, pinned by commit. The checksums are what this
-# revision ships; a mismatch means the pin moved under us and the file is not
-# flashed. UF2s are large, so they are fetched rather than vendored here.
-TRENCH_COAT_COMMIT = "26e6d508c362bed1f6d1323155435c18528de758"
-TRENCH_COAT_RAW = f"https://raw.githubusercontent.com/warped-pinball/trench-coat/{TRENCH_COAT_COMMIT}/uf2"
-
-TARGET_UF2 = {
-    "wpc": ("Vector_WPC_v5.uf2", "3d02a60de852c11087f76ad61a1baf5921270c9a98ca9542a450aad26fac5191"),
-    "data_east": ("Vector_DataEast_v1.uf2", "11afc1d22f28099921e63950ba1e86832f47f2c558f8384ff04d9cf6650e7047"),
-    "sys11": ("vector_system_11_and_9_v4.uf2", "ba63972475f5126c1e5270c30b418510505f5859da9366eb0fac9ef35c9e7a15"),
-}
-
 # ioctl number for USBDEVFS_RESET, from <linux/usbdevice_fs.h>: _IO('U', 20).
 USBDEVFS_RESET = ord("U") << 8 | 20
 
 PROBE_TIMEOUT = 20
 SETTLE_SECONDS = 5
 
-# No single step may hang the job. Generous enough for the slowest one (fetch a
-# 1.7MB UF2, wait for a drive, copy it) and still far short of the workflow's
-# own timeout, so the run always gets to print its summary.
-STEP_TIMEOUT = 180
+# No single step may hang the job. Generous enough for the slowest one - the
+# TrenchCoat reflash, which clones, waits for a drive, and writes two UF2s -
+# and still short of the workflow's own timeout, so the run always gets to
+# print its summary.
+STEP_TIMEOUT = 600
 
 
 def responsive(port, timeout=PROBE_TIMEOUT):
@@ -295,88 +283,28 @@ def power_cycle(port, off_seconds=3):
 
 
 # --------------------------------------------------------------------------
-# 4. reflash over the ROM bootloader
+# 4. reflash, using TrenchCoat
 # --------------------------------------------------------------------------
-
-
-def bootsel_touch(port):
-    """Open the port at 1200 baud to drop the RP2040 into its ROM bootloader.
-
-    The last resort that does not need a person, and the reason it can work
-    when the REPL cannot: the 1200 baud touch is a CDC line-coding change,
-    handled in USB interrupt context, so a blocked Python VM does not stop it.
-    TrenchCoat's own enter_bootloader_mode() goes through `machine.bootloader()`
-    on the REPL instead, which a wedged board will never run.
-    """
-    try:
-        connection = open_serial(port, baudrate=1200)
-        connection.dtr = False
-        time.sleep(0.5)
-        connection.close()
-    except Exception as exc:
-        # The port vanishing underneath us IS the board rebooting into the
-        # bootloader, so this is as often success as failure.
-        log(f"    port closed during the 1200 baud touch ({exc}) - which is what a reboot looks like")
-    return True
-
-
-def find_bootloader_drive(timeout=30):
-    """Wait for an RPI-RP2 drive to appear, the way TrenchCoat looks for it."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        for root in ("/media", "/run/media", "/mnt"):
-            base = Path(root)
-            if not base.is_dir():
-                continue
-            try:
-                for path in base.rglob("INFO_UF2.TXT"):
-                    return path.parent
-            except OSError:
-                continue
-        time.sleep(1)
-    return None
-
-
-def mount_bootloader_drive(timeout=30):
-    """Mount the RPI-RP2 volume ourselves when nothing automounts it.
-
-    A headless runner has no desktop automounter, so the drive that appears
-    after the touch is a block device and nothing more. udisksctl goes through
-    polkit rather than sudo, which is the one route a service user might
-    actually have.
-    """
-    if not shutil.which("udisksctl"):
-        log("    udisksctl is not available, so the bootloader drive cannot be mounted here")
-        return None
-
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        for link in sorted(Path("/dev/disk/by-label").glob("RPI-RP2*")) if Path("/dev/disk/by-label").is_dir() else []:
-            device = link.resolve()
-            log(f"    mounting {device} with udisksctl")
-            result = subprocess.run(["udisksctl", "mount", "-b", str(device)], capture_output=True, text=True, timeout=60)
-            if result.returncode == 0:
-                # "Mounted /dev/sda1 at /media/xxx"
-                mounted = result.stdout.strip().rsplit(" at ", 1)[-1].rstrip(".")
-                log(f"    mounted at {mounted}")
-                return Path(mounted)
-            log(f"    udisksctl could not mount it: {(result.stderr or result.stdout).strip()}")
-            return None
-        time.sleep(1)
-    return None
 
 
 def can_complete_a_reflash():
     """Is there any way this runner could write a UF2 once the board is in BOOTSEL?
 
-    Asked *before* the 1200 baud touch, because the touch is a one-way door: it
-    takes a board that is at least enumerated as a serial device and turns it
-    into a mass-storage device that only a UF2 (or a replug) gets it out of.
-    Doing that with no way to finish the job makes the board harder to recover,
-    not easier.
+    Asked *before* anything touches the board into its bootloader, because that
+    is a one-way door: it takes a board that is at least enumerated as a serial
+    device and turns it into a mass-storage device that only a UF2 (or a
+    replug) gets it out of. Doing that with no way to finish the job makes the
+    board harder to recover, not easier.
     """
-    if find_bootloader_drive(timeout=0) is not None:
-        return True, "a bootloader drive is already mounted"
+    for root in ("/media", "/run/media", "/mnt"):
+        base = Path(root)
+        if not base.is_dir():
+            continue
+        try:
+            if any(base.rglob("INFO_UF2.TXT")):
+                return True, "a bootloader drive is already mounted"
+        except OSError:
+            continue
     if shutil.which("udisksctl"):
         return True, "udisksctl is available to mount the drive"
     if any(Path(root).is_dir() and os.access(root, os.W_OK) for root in ("/media", "/run/media")):
@@ -384,31 +312,16 @@ def can_complete_a_reflash():
     return False, "nothing here can mount an RPI-RP2 drive (no udisksctl, no writable automount directory)"
 
 
-def fetch_uf2(target, cache_dir):
-    """Download the pinned UF2 for `target` and verify it before use."""
-    if target not in TARGET_UF2:
-        raise CheckFailure(f"no UF2 known for target {target!r} (have: {', '.join(sorted(TARGET_UF2))})")
-    filename, expected = TARGET_UF2[target]
-
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    path = cache_dir / filename
-    if not path.exists():
-        url = f"{TRENCH_COAT_RAW}/{filename}"
-        log(f"    downloading {filename} from trench-coat@{TRENCH_COAT_COMMIT[:8]}")
-        request = urllib.request.Request(url, headers={"User-Agent": "vector-hil"})
-        with urllib.request.urlopen(request, timeout=120) as response:
-            path.write_bytes(response.read())
-
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if digest != expected:
-        path.unlink(missing_ok=True)
-        raise CheckFailure(f"{filename} does not match the checksum pinned for trench-coat@{TRENCH_COAT_COMMIT[:8]} (got {digest}) - refusing to flash it")
-    log(f"    {filename} verified ({path.stat().st_size} bytes)")
-    return path
-
-
 def reflash(port, target, cache_dir, force=False):
-    """1200 baud touch, then drop a UF2 on the drive that appears."""
+    """Hand the board to TrenchCoat, which is the tool for exactly this job.
+
+    Not reimplemented here on purpose. TrenchCoat is what the team uses to
+    recover a board without the BOOTSEL button, and its sequence includes the
+    step a naive UF2 copy misses: a nuke.uf2 wipe of the whole flash before the
+    real firmware, so nothing from the old filesystem survives. See
+    dev/hil/trench_coat.py for how it is pointed at one board instead of all of
+    them.
+    """
     possible, why = can_complete_a_reflash()
     log(f"    {'can' if possible else 'cannot'} finish a reflash here: {why}")
     if not possible and not force:
@@ -417,24 +330,7 @@ def reflash(port, target, cache_dir, force=False):
         log("    on the runner (or pass --force-bootsel) to make this step usable.")
         return False
 
-    # Fetch and verify before the point of no return, so a bad download cannot
-    # strand the board in BOOTSEL.
-    uf2 = fetch_uf2(target, cache_dir)
-
-    bootsel_touch(port)
-
-    drive = find_bootloader_drive() or mount_bootloader_drive()
-    if drive is None:
-        log("    no RPI-RP2 drive appeared, so either the board did not reach its ROM bootloader")
-        log("    or nothing mounted the drive it presented")
-        return False
-    log(f"    board is in bootloader mode at {drive}")
-
-    log(f"    copying {uf2.name} to {drive}")
-    shutil.copy(uf2, drive)
-    # The board reboots as soon as the copy lands, taking the drive with it.
-    time.sleep(10)
-    return True
+    return trench_coat.flash(port, target, cache_dir / "trench-coat")
 
 
 # --------------------------------------------------------------------------
@@ -505,6 +401,7 @@ def preflight():
 
     possible, why = can_complete_a_reflash()
     log(f"  reflash     {'ok      ' if possible else 'no      '}  {why}")
+    log(f"  {'':11} {'':9} TrenchCoat pinned at {trench_coat.TRENCH_COAT_COMMIT[:8]}")
 
 
 def main():
@@ -515,7 +412,7 @@ def main():
     parser.add_argument("--no-power-cycle", action="store_true", help="skip the uhubctl step")
     parser.add_argument("--force-bootsel", action="store_true", help="touch the board into BOOTSEL even when nothing here can mount the drive to flash it")
     parser.add_argument("--step-timeout", type=int, default=STEP_TIMEOUT, help=f"hard ceiling on any one recovery step, in seconds (default {STEP_TIMEOUT})")
-    parser.add_argument("--cache-dir", type=Path, default=REPO_ROOT / "build" / "uf2", help="where to keep downloaded UF2s")
+    parser.add_argument("--cache-dir", type=Path, default=REPO_ROOT / "build" / "hil", help="where to keep the trench-coat checkout")
     args = parser.parse_args()
 
     ensure_tools_on_path()

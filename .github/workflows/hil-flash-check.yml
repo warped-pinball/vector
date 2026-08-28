@@ -88,6 +88,6 @@ jobs:
           # it, and the board then parses its own log lines as USB API requests.
           for dev in /dev/ttyACM*; do
             echo "--- $dev"
-            stty -F "$dev" raw -echo 115200 || true
+            timeout 5 stty -F "$dev" raw -echo 115200 || true
             timeout 8 cat "$dev" || true
           done
