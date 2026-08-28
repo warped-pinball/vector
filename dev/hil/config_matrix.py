@@ -253,8 +253,18 @@ class Session:
 
         mpremote is safe here, unlike mid-matrix: no connection of ours is
         open yet, so there is no handoff to lose.
+
+        A board that will not take the reset gets one drain and one retry. A
+        board whose stdout is blocked on an undrained USB endpoint comes back
+        the moment somebody reads it, and reading costs three seconds - much
+        less than writing off a board's whole matrix.
         """
-        reset_board(self.port)
+        try:
+            reset_board(self.port)
+        except Exception as exc:
+            log(f"::warning::{self.port} did not take a reset ({exc}); draining its console and retrying once")
+            drain_port(self.port)
+            reset_board(self.port)
         return self.wait_for_boot()
 
     def wait_for_boot(self):
@@ -398,6 +408,34 @@ def restore_default(session, target):
 # the same 60s timeout 63 times, which is 62 wasted minutes and one lost
 # data_east matrix.
 MAX_CONSECUTIVE_SETUP_FAILURES = 2
+
+
+def flash_before_matrix(board, workdir):
+    """Flash one board immediately before its own matrix, not all up front.
+
+    The ordering is the point, and it is what the bench taught us. Flashing
+    every board first leaves the ones further down the queue running the
+    application for as long as the boards ahead of them take - half an hour or
+    more - printing to a USB CDC console that nothing is draining. TrenchCoat
+    documents where that ends (src/ray.py, send_command): "if nothing ever
+    drains the board's output, the USB CDC buffers fill up, MicroPython blocks
+    writing to stdout, and the board deadlocks mid-script".
+
+    That is not a hypothetical. It is what killed data_east 36 minutes into a
+    run, and it is the most likely explanation for the WPC board that went
+    silent for an hour on the very first bench run.
+
+    Flashed here, a board starts running seconds before we start talking to it.
+    Boards waiting their turn sit at the REPL, where inventory's probe left
+    them, producing no output at all.
+    """
+    group(f"Flash {board['target']} on {board['port']}")
+    try:
+        config_path = bench.write_bench_config(board["target"], workdir)
+        bench.flash(board["target"], board["port"], workdir / board["target"], config_path)
+        log("flashed")
+    finally:
+        endgroup()
 
 
 def run_matrix(board, args):
@@ -544,25 +582,19 @@ def main():
             raise CheckFailure(f"no attached board matches --target {', '.join(sorted(wanted))}")
 
     if not args.skip_flash:
-        # Flash first so the bundle under test is the one this checkout builds.
-        # Without it the matrix would validate whatever happened to be on the
-        # boards, which is the one thing it must not do.
+        # Building touches no hardware, so it all happens up front. Flashing
+        # does not - see flash_before_matrix().
         for target in sorted({b["target"] for b in boards}):
             group(f"Build {target}")
             bench.build(target)
             log(f"built {target} at version {bench.source_version(target)}")
             endgroup()
 
-        for b in boards:
-            group(f"Flash {b['target']} on {b['port']}")
-            config_path = bench.write_bench_config(b["target"], workdir)
-            bench.flash(b["target"], b["port"], workdir / b["target"], config_path)
-            log("flashed")
-            endgroup()
-
     results = []
     for b in boards:
         try:
+            if not args.skip_flash:
+                flash_before_matrix(b, workdir)
             passed, failures, crashes = run_matrix(b, args)
         except Exception as exc:  # noqa: BLE001
             # A board that cannot even be set up is one board's problem. The

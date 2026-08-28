@@ -9,6 +9,7 @@ filename-length rule that decides whether a config can be reached at all.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import time
 import types
@@ -867,3 +868,57 @@ def test_server_is_answering_is_false_when_the_board_is_silent(monkeypatch):
     monkeypatch.setattr(bench, "UsbApiClient", lambda _c: types.SimpleNamespace(send_and_receive=times_out))
 
     assert bench._server_is_answering(object()) is False
+
+
+def test_start_drains_and_retries_a_board_that_will_not_reset(monkeypatch):
+    """A board wedged on its own undrained output comes back when read.
+
+    This is what took out data_east 36 minutes into a run: reading the console
+    is the remedy, and it costs seconds against a whole board's matrix.
+    """
+    attempts = []
+    drained = []
+
+    def reset(port):
+        attempts.append(port)
+        if len(attempts) == 1:
+            raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
+
+    monkeypatch.setattr(cm, "reset_board", reset)
+    monkeypatch.setattr(cm, "drain_port", lambda port, **kw: drained.append(port))
+    monkeypatch.setattr(cm, "wait_for_server", lambda port, timeout=None: (types.SimpleNamespace(close=lambda: None), []))
+    monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
+
+    cm.Session("/dev/ttyFAKE").start()
+
+    assert len(attempts) == 2
+    assert drained == ["/dev/ttyFAKE"]
+
+
+def test_start_gives_up_if_the_retry_also_fails(monkeypatch):
+    def always_times_out(_port):
+        raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
+
+    monkeypatch.setattr(cm, "reset_board", always_times_out)
+    monkeypatch.setattr(cm, "drain_port", lambda port, **kw: None)
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        cm.Session("/dev/ttyFAKE").start()
+
+
+def test_each_board_is_flashed_immediately_before_its_own_matrix(monkeypatch, fake_repo, tmp_path):
+    """Flashing every board up front is what wedges the ones waiting their turn.
+
+    A board flashed and then left running for the half hour the boards ahead of
+    it take is printing into a USB console nothing drains, which is where
+    MicroPython deadlocks. Flashed here, it runs for seconds before we talk
+    to it.
+    """
+    flashed = []
+    monkeypatch.setattr(cm.bench, "write_bench_config", lambda target, workdir: tmp_path / f"{target}.json")
+    monkeypatch.setattr(cm.bench, "flash", lambda target, port, build_dir, config: flashed.append((target, port)))
+
+    cm.flash_before_matrix({"target": "wpc", "port": "/dev/ttyACM1"}, tmp_path)
+
+    assert flashed == [("wpc", "/dev/ttyACM1")]

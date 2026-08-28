@@ -385,6 +385,31 @@ run:
   each board's output back into it; the logs show all three boards parsing
   their own log lines as USB API requests. Fixed in both HIL workflows.
 
+#### Why boards are flashed one at a time
+
+Flashing every board up front and then working through them in turn is the
+obvious ordering, and it is wrong. A board flashed first and used last spends
+however long the boards ahead of it take — half an hour on a full run — running
+the application and printing `SCORE:` / `RESOURCE:` / `DISCOVERY:` lines into a
+USB CDC console that nothing is draining. TrenchCoat documents where that ends
+(`src/ray.py`, `send_command`):
+
+> if nothing ever drains the board's output, the USB CDC buffers fill up,
+> MicroPython blocks writing to stdout, and the board deadlocks mid-script
+
+That is not hypothetical. It killed `data_east` 36 minutes into a run — the
+board simply stopped answering `mpremote` — and it is the most likely
+explanation for the WPC board that went silent for an hour on the very first
+bench run and needed recovering.
+
+So each board is flashed immediately before its own matrix. Boards waiting
+their turn sit at the REPL, where inventory's probe leaves them, producing no
+output at all. Builds still happen up front; they touch no hardware.
+
+As a second line, a board that will not take a reset gets its console drained
+and one retry: reading is the remedy for exactly this deadlock and costs
+seconds, against writing off a whole board's matrix.
+
 #### How a boot is watched
 
 The ready marker (`Server: Loop Forever`) is printed exactly once per boot, which
