@@ -922,3 +922,55 @@ def test_each_board_is_flashed_immediately_before_its_own_matrix(monkeypatch, fa
     cm.flash_before_matrix({"target": "wpc", "port": "/dev/ttyACM1"}, tmp_path)
 
     assert flashed == [("wpc", "/dev/ttyACM1")]
+
+
+# --------------------------------------------------------------------------
+# one wedged board must not abort the whole bench
+# --------------------------------------------------------------------------
+
+
+def test_probe_recovers_a_board_that_hangs_then_answers(monkeypatch):
+    """A drain is the remedy for a board blocked on its own undrained output."""
+    calls = []
+    drained = []
+
+    def hangs_once(*args, timeout=None):
+        calls.append(args)
+        if len(calls) == 1:
+            raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
+        return types.SimpleNamespace(returncode=0, stdout="df13a50c13958980", stderr="")
+
+    monkeypatch.setattr(bench, "mpremote", hangs_once)
+    monkeypatch.setattr(bench, "drain_port", lambda port, **kw: drained.append(port))
+
+    board = bench.probe("/dev/ttyACM2")
+
+    assert board["responsive"] is True
+    assert board["chip_id"] == "df13a50c13958980"
+    assert drained == ["/dev/ttyACM2"]
+
+
+def test_probe_reports_a_board_that_never_answers(monkeypatch):
+    """The survey completes rather than raising - it is one board's problem.
+
+    A board left wedged by an earlier run took out the next run inside
+    inventory, before a single config was checked.
+    """
+
+    def always_hangs(*_args, timeout=None):
+        raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
+
+    monkeypatch.setattr(bench, "mpremote", always_hangs)
+    monkeypatch.setattr(bench, "drain_port", lambda port, **kw: None)
+
+    board = bench.probe("/dev/ttyACM2")
+
+    assert board["responsive"] is False
+    assert board["chip_id"] is None
+
+
+def test_resolve_targets_refuses_to_flash_a_board_that_will_not_talk():
+    boards = [{"port": "/dev/ttyACM0", "chip_id": "aaa", "system": "sys11", "responsive": True}, {"port": "/dev/ttyACM2", "chip_id": None, "system": None, "responsive": False}]
+
+    with pytest.raises(bench.CheckFailure, match="not answering: /dev/ttyACM2"):
+        bench.resolve_targets(boards, {"aaa": "sys11"})

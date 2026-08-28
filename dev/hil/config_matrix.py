@@ -569,6 +569,18 @@ def main():
     boards = inventory()
     endgroup()
 
+    # A board that will not answer is one board's problem. It cannot be
+    # identified and so cannot be safely flashed, but the boards that do work
+    # still have configs worth checking - and aborting the whole run before
+    # anything is tested is how a single board left wedged by an earlier run
+    # took out the next one entirely.
+    unresponsive = [b for b in boards if not b.get("responsive", True)]
+    boards = [b for b in boards if b.get("responsive", True)]
+    for b in unresponsive:
+        log(f"::error::{b['port']} is not answering - skipping it. Run dev/hil/recover.py to get it back.")
+    if not boards:
+        raise CheckFailure("no board on the bench is answering - run dev/hil/recover.py")
+
     group("Resolve targets")
     boards = resolve_targets(boards, parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP")))
     for b in boards:
@@ -590,7 +602,7 @@ def main():
             log(f"built {target} at version {bench.source_version(target)}")
             endgroup()
 
-    results = []
+    results = [({"port": b["port"], "target": "(unknown)", "crashes": []}, [], [("(board setup)", "board is not answering - run dev/hil/recover.py")]) for b in unresponsive]
     for b in boards:
         try:
             if not args.skip_flash:

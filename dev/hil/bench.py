@@ -183,29 +183,53 @@ def list_ports():
     return [line.split()[0] for line in result.stdout.strip().splitlines() if line.strip()]
 
 
+CHIP_ID_SNIPPET = "from machine import unique_id;from binascii import hexlify;print(hexlify(unique_id()).decode())"
+
+
+def _ask_board(port, snippet, timeout=30):
+    """Run a snippet on a board, treating a hung board as an answer of its own.
+
+    A wedged board makes mpremote hang until its timeout rather than fail, and
+    letting that propagate means one bad board aborts the whole run before
+    anything has been tested. It did exactly that: a board left deadlocked by
+    an earlier run took out the next run in `inventory`, before a single config
+    was checked.
+
+    One drain and one retry, because a board blocked writing to an undrained
+    USB endpoint comes back the moment somebody reads it.
+    """
+    try:
+        return mpremote("connect", port, "exec", snippet, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        log(f"    {port} did not answer in {timeout}s; draining its console and retrying once")
+        drain_port(port)
+
+    try:
+        return mpremote("connect", port, "exec", snippet, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None
+
+
 def probe(port):
-    """Return {port, chip_id, system, version} for one board.
+    """Return {port, chip_id, system, version, responsive} for one board.
 
     chip_id comes from the RP2040 itself so it survives any firmware state;
     system/version come from the flashed firmware and may be missing if the
-    board is unflashed or broken.
+    board is unflashed or broken. `responsive` is False for a board that never
+    answered at all - the caller decides what to do about it, but the survey
+    itself always completes.
     """
-    board = {"port": port, "chip_id": None, "system": None, "version": None}
+    board = {"port": port, "chip_id": None, "system": None, "version": None, "responsive": True}
 
-    chip = mpremote(
-        "connect", port, "exec",
-        "from machine import unique_id;from binascii import hexlify;print(hexlify(unique_id()).decode())",
-        timeout=30,
-    )
+    chip = _ask_board(port, CHIP_ID_SNIPPET)
+    if chip is None:
+        board["responsive"] = False
+        return board
     if chip.returncode == 0:
         board["chip_id"] = chip.stdout.strip()
 
-    info = mpremote(
-        "connect", port, "exec",
-        "import systemConfig;print(systemConfig.vectorSystem, systemConfig.SystemVersion)",
-        timeout=30,
-    )
-    if info.returncode == 0 and info.stdout.strip():
+    info = _ask_board(port, "import systemConfig;print(systemConfig.vectorSystem, systemConfig.SystemVersion)")
+    if info is not None and info.returncode == 0 and info.stdout.strip():
         parts = info.stdout.split()
         board["system"] = parts[0]
         if len(parts) > 1:
@@ -221,6 +245,9 @@ def inventory():
 
     log(f"{'port':16} {'chip id':18} {'running':12} version")
     for b in boards:
+        if not b.get("responsive", True):
+            log(f"{b['port']:16} {'NOT ANSWERING':18} {'-':12} -")
+            continue
         log(f"{b['port']:16} {b['chip_id'] or '?':18} {b['system'] or '(none)':12} {b['version'] or '-'}")
     return boards
 
@@ -299,6 +326,15 @@ def resolve_targets(boards, board_map):
     the signature of a previous mis-flash rather than of the hardware, and
     flashing on that basis would silently perpetuate it.
     """
+    dead = [b for b in boards if not b.get("responsive", True)]
+    if dead:
+        raise CheckFailure(
+            "not answering: "
+            + ", ".join(b["port"] for b in dead)
+            + ".\nA board that will not talk cannot be identified, so it cannot be safely flashed.\n"
+            "Run dev/hil/recover.py to get it back."
+        )
+
     if board_map:
         unmapped = [b for b in boards if b["chip_id"] not in board_map]
         if unmapped:
