@@ -16,17 +16,19 @@ name: HIL recover a wedged board
 #
 # Deliberately no `pull_request` trigger - self-hosted runner, real hardware.
 #
-# The push trigger is deliberately off. It shares the `hil-bench` concurrency
-# group with the config matrix, and GitHub keeps only one *pending* run per
-# group, so a push touching both has them race with the loser silently
-# cancelled. The bench is healthy, so the matrix gets the queue. To run this
-# again before it reaches the default branch, add:
-#
-#   push:
-#     branches: [claude/wpc-hil-config-validation-rc62dn]
-#     paths: [dev/hil/recover.py, dev/hil/trench_coat.py, .github/workflows/hil-recover.yml]
+# The `push` trigger exists so this can be used before it reaches the default
+# branch. It shares the `hil-bench` concurrency group with the config matrix and
+# GitHub keeps only one *pending* run per group, so only one of the two carries
+# it at a time. Drop both once this is on main.
 
 on:
+  push:
+    branches:
+      - claude/wpc-hil-config-validation-rc62dn
+    paths:
+      - dev/hil/recover.py
+      - dev/hil/trench_coat.py
+      - .github/workflows/hil-recover.yml
   workflow_dispatch:
     inputs:
       port:

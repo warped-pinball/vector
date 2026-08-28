@@ -445,6 +445,15 @@ stopped, not slowed.
   ordinary CI. Fixing the two that exist means shortening the filenames or
   widening the field (which is a `MapVersion` change — the 96-byte record is
   fully used).
+- **WPC boots intermittently fail on a missing file.** Four crashes in one
+  63-config run, in two flavours — `ImportError: no module named 'origin'` and
+  `OSError: [Errno 2] ENOENT` — both raised from `phew/server.py:create_schedule`
+  during boot. Both are "file not found", on files that plainly exist: the same
+  board boots fine on the retry every time. That points at the on-board
+  filesystem returning ENOENT under some condition, not at the config bundle and
+  not (as first guessed) at memory pressure. A `nuke.uf2` wipe before reflashing,
+  which is what `recover.py`'s reflash rung does, is the obvious thing to try
+  next: if the littlefs on that board is degraded, it would clear it.
 - **`/api/adjustments/status` 500s for configs with no `Adjustments` section.**
   `GameDefsLoad` assigns the parsed config straight to `SharedState.gdata`
   without merging `safe_defaults` into it, so the key is simply absent and
