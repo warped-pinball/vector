@@ -15,8 +15,16 @@ name: HIL recover a wedged board
 # that never responded.
 #
 # Deliberately no `pull_request` trigger - self-hosted runner, real hardware.
-# The `push` trigger exists so this can be used before it reaches the default
-# branch; drop it once this is on main.
+#
+# The push trigger is deliberately off. It shares the `hil-bench` concurrency
+# group with the config matrix, and GitHub keeps only one *pending* run per
+# group, so a push touching both has them race with the loser silently
+# cancelled. The bench is healthy, so the matrix gets the queue. To run this
+# again before it reaches the default branch, add:
+#
+#   push:
+#     branches: [claude/wpc-hil-config-validation-rc62dn]
+#     paths: [dev/hil/recover.py, dev/hil/trench_coat.py, .github/workflows/hil-recover.yml]
 
 on:
   workflow_dispatch:
@@ -37,13 +45,6 @@ on:
         description: "Touch the board into BOOTSEL even if nothing here can mount the drive to flash it"
         type: boolean
         default: false
-  push:
-    branches:
-      - claude/wpc-hil-config-validation-rc62dn
-    paths:
-      - dev/hil/recover.py
-      - dev/hil/trench_coat.py
-      - .github/workflows/hil-recover.yml
 
 permissions:
   contents: read

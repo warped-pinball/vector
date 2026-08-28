@@ -131,6 +131,15 @@ def survey(board_map):
             claimed.add(board_map[chip_id])
         note(f"{port:16} {'ok':14} {chip_id or '?'}")
 
+        # Probing a board means interrupting it, which leaves it sitting at a
+        # bare REPL with the Vector application stopped. A tool that only meant
+        # to look must put it back, or a "nothing to recover" run quietly
+        # leaves the whole bench not running its firmware.
+        try:
+            mpremote("connect", port, "exec", "--no-follow", "import machine; machine.reset()", timeout=30)
+        except subprocess.TimeoutExpired:
+            log(f"    warning: could not restart {port} after probing it")
+
     note("```")
 
     unclaimed = sorted(set(board_map.values()) - claimed)

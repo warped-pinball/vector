@@ -209,4 +209,43 @@ closed, so a bare `cat` makes the kernel echo the board's own output back into i
 board then tries to parse its log lines as USB API requests. Use `stty -F /dev/ttyACM0 raw
 -echo 115200` first, or `mpremote connect /dev/ttyACM0 repl`.
 
+## Recovering a wedged board
+
+A board can deadlock with its USB device still enumerated and the firmware gone: the port is
+there, `mpremote` opens it, nothing answers. `dev/hil/recover.py` escalates through four
+rungs and stops as soon as the board replies. Run it from
+[`hil-recover.yml`](../../.github/workflows/hil-recover.yml), or by hand:
+
+```bash
+cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/recover.py
+```
+
+It opens with a report of which rungs this runner can actually use. As measured on the bench
+on 2026-08-28:
+
+| rung | state | what it needs |
+|---|---|---|
+| drain the console | works | serial access, which the `dialout` group already gives |
+| reset the USB device | **unavailable** | write access to `/dev/bus/usb/*` — a udev rule |
+| power cycle the hub port | **unavailable** | `sudo apt install uhubctl`, and a hub that switches port power |
+| reflash via TrenchCoat | works | `udisksctl`, which is present |
+
+The two unavailable rungs are worth enabling — they are the non-destructive ones, and without
+them a wedged board goes straight from "send it a Ctrl-C" to "wipe its flash". For the USB
+reset, a rule like this grants the runner user write access to the boards' USB nodes:
+
+```
+# /etc/udev/rules.d/60-vector-hil.rules
+SUBSYSTEM=="usb", ATTR{idVendor}=="2e8a", MODE="0660", GROUP="dialout"
+```
+
+then `sudo udevadm control --reload && sudo udevadm trigger`. Note the boards are USB bus
+powered, so a hub with per-port power switching makes the power rung a genuine cold boot —
+the most reliable recovery short of a reflash.
+
+The reflash rung hands the board to [TrenchCoat](https://github.com/warped-pinball/trench-coat),
+pinned by commit in `dev/hil/trench_coat.py`, which resets into the ROM bootloader, wipes the
+flash with `nuke.uf2` and writes the real firmware. It is destructive: run
+`dev/hil/flash_and_check.py` afterwards to put Vector back on the board.
+
 See [DESIGN.md](DESIGN.md) for the test architecture and the security model for fork PRs.
