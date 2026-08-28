@@ -307,8 +307,13 @@ class FakeSession:
         self.boot_log = []
         self.configs_set = []
         self.boots = 0
+        self.starts = 0
         self.nudges = 0
         self.restored = False
+
+    def start(self):
+        self.starts += 1
+        return self.wait_for_boot()
 
     def wait_for_boot(self):
         self.boots += 1
@@ -640,3 +645,32 @@ def test_time_limit_restores_the_previous_handler():
         pass
 
     assert signal.getsignal(signal.SIGALRM) is before
+
+
+def test_run_matrix_resets_the_board_before_watching_its_first_boot(monkeypatch, fake_repo):
+    """The regression that failed all three boards without checking one config.
+
+    The ready marker is printed once per boot. dev/flash.py resets at the end
+    of flashing and flashing runs over every board first, so by the time the
+    matrix opens a console the board booted minutes ago and the marker is gone.
+    Every later boot is triggered by reboot(); the first one has to be
+    triggered by start().
+    """
+    session = FakeSession("/dev/ttyFAKE")
+
+    run_board(monkeypatch, fake_repo, session)
+
+    assert session.starts == 1, "the first boot must be preceded by a reset"
+
+
+def test_session_start_resets_then_waits(monkeypatch):
+    """start() is a reset plus a wait, in that order."""
+    order = []
+    monkeypatch.setattr(cm, "reset_board", lambda port: order.append(f"reset {port}"))
+    monkeypatch.setattr(cm, "wait_for_server", lambda port, timeout=None: (order.append("wait"), (types.SimpleNamespace(close=lambda: None), []))[1])
+    monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
+
+    cm.Session("/dev/ttyFAKE").start()
+
+    assert order == ["reset /dev/ttyFAKE", "wait"]

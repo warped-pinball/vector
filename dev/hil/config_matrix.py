@@ -71,6 +71,7 @@ from bench import (  # noqa: E402
     parse_board_map,
     prime_usb,
     repl_reset,
+    reset_board,
     resolve_targets,
     set_game_config,
     time_limit,
@@ -236,6 +237,24 @@ class Session:
         self.client = None
         self.boot_log = []
 
+    def start(self):
+        """First boot of the run: reset the board, then watch it come up.
+
+        Every later boot is triggered by reboot() over our own connection, but
+        the first one has to be triggered here, and it must be triggered:
+        dev/flash.py resets at the end of flashing, and flashing runs over
+        every board before any of this starts, so the board booted minutes ago
+        and printed its one ready marker long before we opened a console. That
+        is bench.reset_board's whole reason for existing, and dropping it is
+        what made the first matrix run time out on all three boards without
+        checking a single config.
+
+        mpremote is safe here, unlike mid-matrix: no connection of ours is
+        open yet, so there is no handoff to lose.
+        """
+        reset_board(self.port)
+        return self.wait_for_boot()
+
     def wait_for_boot(self):
         self.connection, self.boot_log = wait_for_server(self.port, timeout=self.boot_timeout)
         prime_usb(self.connection)
@@ -339,7 +358,7 @@ def restore_default(session, target):
     default = DEFAULT_GAMENAME[target]
     try:
         if session.connection is None:
-            session.wait_for_boot()
+            session.start()
         session.set_config(default)
         session.reboot()
         log(f"    restored {default}")
@@ -374,7 +393,7 @@ def run_matrix(board, args):
     try:
         group(f"Config bundle {target} on {port}")
         try:
-            client = session.wait_for_boot()
+            client = session.start()
             check_bundle(client, target, configs)
         finally:
             endgroup()
