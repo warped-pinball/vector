@@ -102,6 +102,39 @@ def bundled_uf2(root, target):
     return path
 
 
+# Where automounters actually put a volume: /media/LABEL, /media/<user>/LABEL,
+# /run/media/<user>/LABEL. Deliberately NOT a recursive walk - the first
+# version used rglob over /media, /run/media and /mnt, which walks whatever
+# else happens to be mounted there. On a 512MB Zero 2 W with a drive under
+# /mnt that is minutes of I/O and enough memory pressure to take the runner
+# down with it, which is the most likely reason a bench job died without
+# uploading its logs.
+MOUNT_ROOTS = ("/media", "/run/media")
+
+
+def find_bootloader_drives():
+    """Mounted RPI-RP2 volumes, found without walking arbitrary filesystems."""
+    drives = []
+    for root in MOUNT_ROOTS:
+        base = Path(root)
+        if not base.is_dir():
+            continue
+        try:
+            candidates = list(base.iterdir())
+            for entry in list(candidates):
+                if entry.is_dir():
+                    candidates.extend(entry.iterdir())
+        except OSError:
+            continue
+        for entry in candidates:
+            try:
+                if entry.is_dir() and (entry / "INFO_UF2.TXT").exists():
+                    drives.append(str(entry))
+            except OSError:
+                continue
+    return drives
+
+
 def mount_rpi_rp2():
     """Mount an RPI-RP2 volume that nothing automounted. Returns the path or None."""
     by_label = Path("/dev/disk/by-label")
@@ -141,14 +174,19 @@ def bootsel_touch(port):
 
 
 def wait_for_drive(core, timeout=45):
-    """Wait for a bootloader drive, mounting it ourselves if nothing else does."""
+    """Wait for a bootloader drive, mounting it ourselves if nothing else does.
+
+    Uses our bounded search rather than TrenchCoat's os.walk of /media and
+    /Volumes - same answer on a normal machine, without the risk of walking
+    into something large.
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        drives = core.list_rpi_rp2_drives()
+        drives = find_bootloader_drives()
         if drives:
             return drives
         if mount_rpi_rp2():
-            drives = core.list_rpi_rp2_drives()
+            drives = find_bootloader_drives()
             if drives:
                 return drives
         time.sleep(1)
@@ -194,8 +232,7 @@ def flash(port, target, root):
     # get_all_boards_into_bootloader() a no-op instead of a second attempt, and
     # keeps it away from the healthy boards on the bench.
     ray.Ray.find_board_ports = classmethod(lambda cls: [])
-    original_list_drives = core.list_rpi_rp2_drives
-    core.list_rpi_rp2_drives = lambda: original_list_drives() or drives
+    core.list_rpi_rp2_drives = lambda: find_bootloader_drives() or drives
 
     # Their failure path prints advice and calls sys.exit; make it an exception
     # this harness can report and carry on from.

@@ -306,7 +306,8 @@ def test_usb_device_path_walks_up_to_the_device(tmp_path, monkeypatch):
     [
         ("1-1.4:1.0", ("1-1", "4")),
         ("1-1.2.3:1.0", ("1-1.2", "3")),
-        ("2-3:1.0", ("2", "3")),
+        # A root-hub port (no dot) is deliberately not switchable - see
+        # test_hub_location_refuses_a_root_hub_port.
     ],
 )
 def test_hub_location_splits_the_usb_path(tmp_path, monkeypatch, usb_path, expected):
@@ -355,6 +356,11 @@ def fake_trench_coat(monkeypatch, drives=("/media/RPI-RP2",)):
     monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: root)
     monkeypatch.setattr(trench_coat, "load", lambda root: (core, ray))
     monkeypatch.setattr(trench_coat, "bundled_uf2", lambda root, target: Path(f"/uf2/{target}.uf2"))
+    # Drive discovery is the real function now, and it neither finds a fake
+    # drive nor fails fast - without this the tests sit through its full wait.
+    monkeypatch.setattr(trench_coat, "find_bootloader_drives", lambda: list(drives))
+    monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: list(drives))
+    monkeypatch.setattr(trench_coat, "bootsel_touch", lambda port: None)
     return seen
 
 
@@ -430,3 +436,25 @@ def test_enter_bootloader_falls_back_to_the_1200_baud_touch(monkeypatch):
     assert attempts == ["machine.bootloader()"]
     assert touched == ["/dev/ttyACM1"]
     assert drives == ["/media/RPI-RP2"]
+
+
+def test_hub_location_refuses_a_root_hub_port(tmp_path, monkeypatch, capsys):
+    """Cutting a root hub takes every board down, not just the broken one."""
+    device = tmp_path / "1-1:1.0"
+    device.mkdir(parents=True)
+    (device / "busnum").write_text("1\n")
+
+    link = tmp_path / "link"
+    link.symlink_to(device)
+    monkeypatch.setattr(recover, "Path", lambda p: link if str(p).endswith("/device") else Path(p))
+
+    assert recover.hub_location("/dev/ttyACM1") is None
+    assert "cut every board on the bus" in capsys.readouterr().out
+
+
+def test_power_cycle_stands_down_without_a_switchable_hub_port(monkeypatch, capsys):
+    monkeypatch.setattr(recover.shutil, "which", lambda _name: "/usr/sbin/uhubctl")
+    monkeypatch.setattr(recover, "hub_location", lambda _port: None)
+
+    assert recover.power_cycle("/dev/ttyACM1") is False
+    assert "could not work out which hub port" in capsys.readouterr().out

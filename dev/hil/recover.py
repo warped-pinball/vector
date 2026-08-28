@@ -109,11 +109,15 @@ def survey(board_map):
         raise CheckFailure("no boards found at all - check the USB hub and power")
 
     alive, dead, claimed = [], [], set()
-    log(f"{'port':16} {'state':14} chip id")
+    note("")
+    note("### Boards")
+    note("")
+    note("```")
+    note(f"{'port':16} {'state':14} chip id")
     for port in ports:
         if not responsive(port):
             dead.append(port)
-            log(f"{port:16} {'NOT ANSWERING':14} -")
+            note(f"{port:16} {'NOT ANSWERING':14} -")
             continue
         alive.append(port)
         try:
@@ -125,7 +129,9 @@ def survey(board_map):
             chip_id = None
         if chip_id in board_map:
             claimed.add(board_map[chip_id])
-        log(f"{port:16} {'ok':14} {chip_id or '?'}")
+        note(f"{port:16} {'ok':14} {chip_id or '?'}")
+
+    note("```")
 
     unclaimed = sorted(set(board_map.values()) - claimed)
     targets = {}
@@ -232,6 +238,11 @@ def hub_location(port):
 
     A USB path looks like 1-1.4:1.0 - bus 1, hub at 1-1, port 4. uhubctl wants
     the hub and the port separately.
+
+    Returns None for a device sitting directly on a root hub (1-1:1.0). That is
+    not a case worth handling: cutting power there takes down the whole bus and
+    every other board on it, which on this bench means killing the two healthy
+    boards to recover one. Only a downstream hub port is ours to switch.
     """
     name = os.path.basename(port)
     try:
@@ -245,8 +256,8 @@ def hub_location(port):
             if "." in usb_path:
                 hub, _, portnum = usb_path.rpartition(".")
                 return hub, portnum
-            bus, _, portnum = usb_path.partition("-")
-            return bus, portnum
+            log(f"    {port} is on a root hub ({usb_path}); power cycling it would cut every board on the bus")
+            return None
     return None
 
 
@@ -296,18 +307,11 @@ def can_complete_a_reflash():
     replug) gets it out of. Doing that with no way to finish the job makes the
     board harder to recover, not easier.
     """
-    for root in ("/media", "/run/media", "/mnt"):
-        base = Path(root)
-        if not base.is_dir():
-            continue
-        try:
-            if any(base.rglob("INFO_UF2.TXT")):
-                return True, "a bootloader drive is already mounted"
-        except OSError:
-            continue
+    if trench_coat.find_bootloader_drives():
+        return True, "a bootloader drive is already mounted"
     if shutil.which("udisksctl"):
         return True, "udisksctl is available to mount the drive"
-    if any(Path(root).is_dir() and os.access(root, os.W_OK) for root in ("/media", "/run/media")):
+    if any(Path(root).is_dir() and os.access(root, os.W_OK) for root in trench_coat.MOUNT_ROOTS):
         return True, "an automount directory is writable"
     return False, "nothing here can mount an RPI-RP2 drive (no udisksctl, no writable automount directory)"
 
@@ -347,6 +351,10 @@ def recover(port, target, args):
         else:
             log(f"::warning::{port}: skipping the reflash step - no target known for this board, pass --target")
 
+    note("")
+    note(f"### Recovering {port}" + (f" ({target})" if target else ""))
+    note("")
+
     for name, step in steps:
         group(f"{port}: {name}")
         try:
@@ -362,13 +370,34 @@ def recover(port, target, args):
         if attempted:
             time.sleep(SETTLE_SECONDS)
             if responsive(port):
-                log(f"    {port} is answering again")
+                note(f"- **{port}: recovered by {name}**")
                 endgroup()
                 return name
-            log(f"    {port} still not answering")
+            note(f"- {port}: tried {name} - still not answering")
+        else:
+            note(f"- {port}: could not attempt {name}")
         endgroup()
 
     return None
+
+
+def note(line):
+    """Append a line to the Actions job summary as well as the log.
+
+    Job summaries are stored separately from the log archive, and the last two
+    bench runs proved why that matters: the runner died mid-job, never uploaded
+    its logs, and every finding went with them. Written incrementally rather
+    than at the end for the same reason.
+    """
+    log(line)
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a") as handle:
+            handle.write(line.replace("::warning::", "WARNING: ").replace("::error::", "ERROR: ") + "\n")
+    except OSError:
+        pass
 
 
 def preflight():
@@ -384,24 +413,28 @@ def preflight():
     except CheckFailure:
         pass
 
-    log(f"  serial      ok        {len(ports)} port(s) visible")
+    note("### What this runner can do")
+    note("")
+    note("```")
+    note(f"  serial      ok        {len(ports)} port(s) visible")
 
     node = usb_device_path(ports[0]) if ports else None
     if node is None:
-        log("  usb reset   unknown   no device to check")
+        note("  usb reset   unknown   no device to check")
     elif os.access(node, os.W_OK):
-        log(f"  usb reset   ok        {node} is writable")
+        note(f"  usb reset   ok        {node} is writable")
     else:
-        log(f"  usb reset   no        {node} is not writable - needs a udev rule granting the runner user write access")
+        note(f"  usb reset   no        {node} is not writable - needs a udev rule granting the runner user write access")
 
     if shutil.which("uhubctl"):
-        log("  power       ok        uhubctl is installed (still needs a hub that switches port power)")
+        note("  power       ok        uhubctl is installed (still needs a hub that switches port power)")
     else:
-        log("  power       no        uhubctl not installed - `sudo apt install uhubctl`")
+        note("  power       no        uhubctl not installed - `sudo apt install uhubctl`")
 
     possible, why = can_complete_a_reflash()
-    log(f"  reflash     {'ok      ' if possible else 'no      '}  {why}")
-    log(f"  {'':11} {'':9} TrenchCoat pinned at {trench_coat.TRENCH_COAT_COMMIT[:8]}")
+    note(f"  reflash     {'ok      ' if possible else 'no      '}  {why}")
+    note(f"  {'':11} {'':9} TrenchCoat pinned at {trench_coat.TRENCH_COAT_COMMIT[:8]}")
+    note("```")
 
 
 def main():
