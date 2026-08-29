@@ -466,6 +466,17 @@ the power cycle needs `uhubctl`, and neither is installed (see
 RUNNER_SETUP.md), so everything above the drain escalates straight to a flash
 wipe.
 
+What the two directions did is then the diagnosis, and they point at different
+remedies. Bytes read but the Ctrl-C refused means the board is *talking but not
+listening*: producing output normally and never servicing what we send it, so
+no amount of reading reaches it — that is what the USB reset and power cycle
+rungs are for, and with both unavailable there is genuinely nothing left to
+try. Nothing read at all is the opposite: not a board blocked on a full output
+buffer, because such a board has a backlog to give up the moment somebody
+reads. Both are reported in those words rather than as "still dead", which sent
+a maintainer looking for a bricked Pico when the board in question was running
+the application and printing to its console the whole time.
+
 #### A lost connection is repaired, not treated as a verdict
 
 If a board's boot fails outright, the session is left holding no connection,

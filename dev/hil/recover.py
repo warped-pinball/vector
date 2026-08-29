@@ -179,11 +179,12 @@ def drain(port, seconds=DRAIN_SECONDS):
         return False
 
     drained = 0
+    interrupted = False
     try:
         drained += read_until_quiet(connection, seconds)
         # Ctrl-C twice: once to break out of a sleep, once for whatever the
         # first one dropped us into.
-        interrupt_board(connection, port, CTRL_C + CTRL_C)
+        interrupted = interrupt_board(connection, port, CTRL_C + CTRL_C)
         drained += read_until_quiet(connection, DRAIN_QUIET_SECONDS * 2)
     except Exception as exc:
         log(f"    error draining {port}: {exc}")
@@ -193,11 +194,21 @@ def drain(port, seconds=DRAIN_SECONDS):
         except Exception:
             pass
 
-    log(f"    drained {drained} byte(s) and sent Ctrl-C")
-    # Nothing queued is itself the diagnosis: a board merely blocked on a full
-    # buffer has a backlog to give up the moment somebody reads.
-    if drained == 0:
+    log(f"    drained {drained} byte(s) and {'sent Ctrl-C' if interrupted else 'could not send Ctrl-C'}")
+
+    # What the two directions did is the diagnosis, and they point at
+    # different remedies.
+    if drained and not interrupted:
+        log("    this board is talking but not listening: it is producing output")
+        log("    normally and never servicing what we send it, so no amount of")
+        log("    reading will reach it. That is what the USB reset and power")
+        log("    cycle rungs are for - see RUNNER_SETUP.md if they are skipped")
+        log("    below, because without them there is nothing left to try.")
+    elif not drained:
+        # A board merely blocked on a full buffer has a backlog to give up the
+        # moment somebody reads.
         log("    (nothing queued - so it is not simply blocked on a full output buffer)")
+
     return True
 
 
@@ -498,7 +509,7 @@ def main():
     for port, method in recovered:
         log(f"  recovered  {port:16} by: {method}")
     for port in lost:
-        log(f"  STILL DEAD {port}")
+        log(f"  NOT ANSWERING {port}")
     log("=" * 60)
 
     if lost:
@@ -506,6 +517,15 @@ def main():
         log(f"{len(lost)} board(s) need a person at the bench:")
         log("  hold the BOOTSEL button while replugging the USB cable, then run")
         log("  dev/hil/flash_and_check.py to put Vector back on it.")
+        # A board that would not answer is not necessarily a board that is
+        # gone, and saying so matters: "still dead" sent a maintainer looking
+        # for a bricked Pico when the board in question was running the
+        # application and printing to its console the whole time, and only
+        # ever refused input.
+        log("")
+        log("  (a board here has failed every rung this runner can reach, which is not")
+        log("  the same as being bricked - check the drain output above for what it was")
+        log("  doing, and RUNNER_SETUP.md for the rungs that were skipped)")
         return 1
 
     log("")

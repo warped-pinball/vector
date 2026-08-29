@@ -1137,21 +1137,32 @@ def test_drain_port_interrupts_only_after_it_has_read(monkeypatch):
     assert connection.closed
 
 
-def test_interrupt_board_drains_and_retries_when_the_write_times_out(monkeypatch):
-    """A timed-out write is a reason to read, not a reason to give up."""
+def test_interrupt_board_reports_a_board_that_will_not_accept_input(monkeypatch):
+    """Talking but not listening is a diagnosis, not a reason to keep writing.
+
+    Both callers drain to quiet before interrupting, and reading is the remedy
+    for the wedge where the write times out because the firmware is blocked on
+    stdout. A write that still times out after that means the board is
+    producing output happily and simply never services what we send it -
+    /dev/ttyACM0 sat in exactly that state for three runs. Another five-second
+    write only spends five more seconds saying so.
+    """
     attempts = []
 
-    class Blocked(QuietingSerial):
+    class Deaf(QuietingSerial):
         def write(self, data):
             attempts.append(data)
-            if len(attempts) == 1:
-                raise bench.serial.SerialTimeoutException("blocked")
+            raise bench.serial.SerialTimeoutException("blocked")
 
-    connection = Blocked([])
-    monkeypatch.setattr(bench, "DRAIN_QUIET_SECONDS", 0.05)
+    assert bench.interrupt_board(Deaf([]), "/dev/ttyFAKE") is False
+    assert len(attempts) == 1
+
+
+def test_interrupt_board_reports_a_board_that_takes_the_ctrl_c(monkeypatch):
+    connection = QuietingSerial([])
 
     assert bench.interrupt_board(connection, "/dev/ttyFAKE") is True
-    assert len(attempts) == 2
+    assert connection.written == [bench.CTRL_C]
 
 
 def test_a_session_whose_boot_failed_is_repaired_before_the_next_config(monkeypatch):

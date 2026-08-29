@@ -855,20 +855,21 @@ def read_until_quiet(connection, budget, quiet=DRAIN_QUIET_SECONDS):
 
 
 def interrupt_board(connection, port, keys=CTRL_C):
-    """Send Ctrl-C, draining if the board is too blocked to accept it.
+    """Send Ctrl-C to a board we have just finished draining.
 
-    The write can time out for the same reason the board is stuck: a firmware
-    blocked writing to stdout is not reading stdin either, so the host's OUT
-    endpoint backs up. Reading is what frees it, so a timed-out write is a
-    reason to drain and try once more rather than to give up.
+    Returns whether the board accepted it, which is a diagnosis in its own
+    right. Both callers read the console to quiet first, because that is the
+    remedy for the common wedge: a firmware blocked writing to stdout is not
+    reading stdin either, so the host's OUT endpoint backs up behind it and
+    the write times out against the very deadlock it is trying to clear.
+
+    A write that still times out after that is a different animal. It means
+    the board is producing output happily and simply never services what we
+    send it - and no amount of reading fixes that, because reading is not
+    what it is waiting for. /dev/ttyACM0 has been in exactly that state for
+    three runs: 85, 95 and 112 bytes read, every single write timed out.
+    Retrying the write only spends another five seconds saying so.
     """
-    try:
-        serial_write(connection, keys, port)
-        return True
-    except CheckFailure as exc:
-        log(f"    {exc}; draining and trying the interrupt once more")
-
-    read_until_quiet(connection, DRAIN_SECONDS)
     try:
         serial_write(connection, keys, port)
         return True
@@ -895,9 +896,10 @@ def drain_port(port, seconds=DRAIN_SECONDS):
         return 0
 
     drained = 0
+    interrupted = False
     try:
         drained += read_until_quiet(connection, seconds)
-        interrupt_board(connection, port)
+        interrupted = interrupt_board(connection, port)
         # Whatever the interrupt shook loose - a KeyboardInterrupt traceback,
         # a REPL banner - is backlog too, and leaving it queued re-wedges the
         # board the moment we close.
@@ -910,7 +912,7 @@ def drain_port(port, seconds=DRAIN_SECONDS):
         except Exception:
             pass
 
-    log(f"    drained {drained} byte(s) from {port} and sent Ctrl-C")
+    log(f"    drained {drained} byte(s) from {port} and {'sent Ctrl-C' if interrupted else 'could not send Ctrl-C'}")
     return drained
 
 
