@@ -16,19 +16,17 @@ name: HIL recover a wedged board
 #
 # Deliberately no `pull_request` trigger - self-hosted runner, real hardware.
 #
-# The `push` trigger exists so this can be used before it reaches the default
-# branch. It shares the `hil-bench` concurrency group with the config matrix and
-# GitHub keeps only one *pending* run per group, so only one of the two carries
-# it at a time. Drop both once this is on main.
+# The push trigger is off. Recovery has been run against the wedged data_east
+# board and exhausted every rung available on this runner, so re-running it on
+# each push costs 15 minutes and changes nothing until somebody replugs the
+# board or the two non-destructive rungs are enabled (see RUNNER_SETUP.md).
+# Dispatch it when there is a reason to. To arm it on a branch again:
+#
+#   push:
+#     branches: [<branch>]
+#     paths: [dev/hil/recover.py, dev/hil/trench_coat.py, .github/workflows/hil-recover.yml]
 
 on:
-  push:
-    branches:
-      - claude/wpc-hil-config-validation-rc62dn
-    paths:
-      - dev/hil/recover.py
-      - dev/hil/trench_coat.py
-      - .github/workflows/hil-recover.yml
   workflow_dispatch:
     inputs:
       port:

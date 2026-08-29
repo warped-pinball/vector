@@ -37,7 +37,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bench import CheckFailure, log, open_serial  # noqa: E402
+from bench import SERIAL_WRITE_TIMEOUT, CheckFailure, log, open_serial  # noqa: E402
 
 # Pinned, like every other third-party input to this bench. Bumping it means
 # reviewing what changed in the flashing sequence first.
@@ -91,6 +91,29 @@ def load(root):
     if not str(Path(core.__file__).resolve()).startswith(root):
         raise CheckFailure(f"imported the wrong `src` package: got {core.__file__}, expected it under {root}")
     return core, ray
+
+
+def bound_serial_writes(ray):
+    """Give TrenchCoat's serial connections a write timeout.
+
+    `Ray.open` uses `serial.Serial(port, 115200, timeout=0.1)`, which is the
+    READ timeout only - the same trap this harness had. On a desktop talking to
+    a healthy board that is fine, which is the case TrenchCoat is written for.
+    Here the board is wedged by definition, so the Ctrl-C that `open()` writes
+    blocks with nothing to time it out: one recovery run spent its entire 600s
+    step budget inside enter_bootloader_mode before the SIGALRM backstop cut it
+    short.
+
+    Injected rather than patched upstream: it is their code, and this is our
+    unusual way of using it.
+    """
+    original = ray.serial.Serial
+
+    def bounded(*args, **kwargs):
+        kwargs.setdefault("write_timeout", SERIAL_WRITE_TIMEOUT)
+        return original(*args, **kwargs)
+
+    ray.serial.Serial = bounded
 
 
 def bundled_uf2(root, target):
@@ -220,6 +243,7 @@ def flash(port, target, root):
     Returns True if TrenchCoat reported the board back as a serial device.
     """
     core, ray = load(clone(root))
+    bound_serial_writes(ray)
     uf2 = bundled_uf2(root, target)
 
     drives = enter_bootloader(core, ray, port)

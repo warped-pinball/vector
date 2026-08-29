@@ -342,7 +342,7 @@ def fake_trench_coat(monkeypatch, drives=("/media/RPI-RP2",)):
         def find_board_ports(cls):
             return ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyACM2"]
 
-    ray = types.SimpleNamespace(Ray=FakeRay)
+    ray = types.SimpleNamespace(Ray=FakeRay, serial=types.SimpleNamespace(Serial=lambda *a, **k: object()))
     core = types.SimpleNamespace(
         list_rpi_rp2_drives=lambda: list(drives),
         graceful_exit=lambda now=False: None,
@@ -458,3 +458,42 @@ def test_power_cycle_stands_down_without_a_switchable_hub_port(monkeypatch, caps
 
     assert recover.power_cycle("/dev/ttyACM1") is False
     assert "could not work out which hub port" in capsys.readouterr().out
+
+
+def test_trench_coats_serial_writes_are_bounded(monkeypatch):
+    """TrenchCoat opens with a read timeout only, which hangs on a wedged board.
+
+    One recovery run spent its whole 600s step budget inside
+    enter_bootloader_mode because of this, and only the SIGALRM backstop ended
+    it. Their code is written for a healthy board on a desktop; ours is pointed
+    at a board that is broken by definition.
+    """
+    opened = {}
+
+    class FakeSerialModule:
+        @staticmethod
+        def Serial(*args, **kwargs):
+            opened.update(kwargs)
+            return object()
+
+    ray = types.SimpleNamespace(serial=FakeSerialModule)
+    trench_coat.bound_serial_writes(ray)
+    ray.serial.Serial("/dev/ttyFAKE", 115200, timeout=0.1)
+
+    assert opened["write_timeout"] == bench.SERIAL_WRITE_TIMEOUT
+
+
+def test_bound_serial_writes_leaves_an_explicit_timeout_alone(monkeypatch):
+    opened = {}
+
+    class FakeSerialModule:
+        @staticmethod
+        def Serial(*args, **kwargs):
+            opened.update(kwargs)
+            return object()
+
+    ray = types.SimpleNamespace(serial=FakeSerialModule)
+    trench_coat.bound_serial_writes(ray)
+    ray.serial.Serial("/dev/ttyFAKE", write_timeout=99)
+
+    assert opened["write_timeout"] == 99

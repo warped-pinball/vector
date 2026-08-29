@@ -243,6 +243,15 @@ then `sudo udevadm control --reload && sudo udevadm trigger`. Note the boards ar
 powered, so a hub with per-port power switching makes the power rung a genuine cold boot —
 the most reliable recovery short of a reflash.
 
+> [!IMPORTANT]
+> As measured, **a badly wedged board cannot be recovered from software on this
+> runner.** The drain reads nothing, the USB reset and power cycle are both
+> unavailable for want of the setup above, and a board too far gone to run one
+> statement cannot be talked into its ROM bootloader either — TrenchCoat's route
+> in goes over the REPL, and the 1200 baud touch fell to `[Errno 110]`. That
+> board needs someone to unplug it and plug it back in. Enabling the two rungs
+> above is what would change that.
+
 The reflash rung hands the board to [TrenchCoat](https://github.com/warped-pinball/trench-coat),
 pinned by commit in `dev/hil/trench_coat.py`, which resets into the ROM bootloader, wipes the
 flash with `nuke.uf2` and writes the real firmware. It is destructive: run
