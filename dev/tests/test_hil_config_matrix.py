@@ -968,7 +968,7 @@ def test_resolve_targets_refuses_to_flash_a_board_that_will_not_talk():
 
 
 def test_a_config_that_fails_once_and_passes_is_the_board_not_the_config(monkeypatch, fake_repo):
-    """"Broken config" and "flaky board" look identical on one attempt.
+    """ "Broken config" and "flaky board" look identical on one attempt.
 
     They need opposite responses, so the matrix asks twice. This board fails
     Generic_WPC once and passes it on the retry - the WPC board on the bench
