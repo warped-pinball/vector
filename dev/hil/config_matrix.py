@@ -239,8 +239,9 @@ class Session:
         self.boot_log = []
         self.crashes = []
 
-    def start(self):
-        """First boot of the run: reset the board, then watch it come up.
+    def start(self, reset=True):
+        """First boot of the run: watch the board come up, resetting it first
+        only when something else has not already done so.
 
         Every later boot is triggered by reboot() over our own connection, but
         the first one has to be triggered here, and it must be triggered:
@@ -251,6 +252,14 @@ class Session:
         what made the first matrix run time out on all three boards without
         checking a single config.
 
+        `reset=False` is for a board that was just flashed. dev/flash.py ends
+        by resetting it, so it is already booting - and resetting again lands
+        on top of that boot, while the firmware is still reading its freshly
+        written filesystem. That is not theoretical: sys11 wedged in exactly
+        that window, flashed successfully and then refusing a reset seconds
+        later, and it is the same shape as the ENOENT-on-a-file-that-exists
+        crashes the WPC board raises at boot. One reset per boot.
+
         mpremote is safe here, unlike mid-matrix: no connection of ours is
         open yet, so there is no handoff to lose.
 
@@ -259,12 +268,15 @@ class Session:
         the moment somebody reads it, and reading costs three seconds - much
         less than writing off a board's whole matrix.
         """
-        try:
-            reset_board(self.port)
-        except Exception as exc:
-            log(f"::warning::{self.port} did not take a reset ({exc}); draining its console and retrying once")
-            drain_port(self.port)
-            reset_board(self.port)
+        if reset:
+            try:
+                reset_board(self.port)
+            except Exception as exc:
+                log(f"::warning::{self.port} did not take a reset ({exc}); draining its console and retrying once")
+                drain_port(self.port)
+                reset_board(self.port)
+        else:
+            log("    already booting from the flash; watching that boot rather than forcing another")
         return self.wait_for_boot()
 
     def wait_for_boot(self):
@@ -438,7 +450,7 @@ def flash_before_matrix(board, workdir):
         endgroup()
 
 
-def run_matrix(board, args):
+def run_matrix(board, args, just_flashed=False):
     """Walk one board through its configs. Returns (passed, failures).
 
     One connection per boot, held across the assertions and across setting the
@@ -457,7 +469,8 @@ def run_matrix(board, args):
     try:
         group(f"Config bundle {target} on {port}")
         try:
-            client = session.start()
+            # A board we just flashed is already booting - see Session.start.
+            client = session.start(reset=not just_flashed)
             check_bundle(client, target, configs)
         finally:
             endgroup()
@@ -635,9 +648,10 @@ def main():
     results = [({"port": b["port"], "target": "(unknown)", "crashes": [], "flakes": []}, [], [("(board setup)", "board is not answering - run dev/hil/recover.py")]) for b in unresponsive]
     for b in boards:
         try:
-            if not args.skip_flash:
+            just_flashed = not args.skip_flash
+            if just_flashed:
                 flash_before_matrix(b, workdir)
-            passed, failures, crashes, flakes = run_matrix(b, args)
+            passed, failures, crashes, flakes = run_matrix(b, args, just_flashed=just_flashed)
         except Exception as exc:  # noqa: BLE001
             # A board that cannot even be set up is one board's problem. The
             # bench is a singleton and a run is expensive, so the other boards

@@ -442,6 +442,17 @@ As a second line, a board that will not take a reset gets its console drained
 and one retry: reading is the remedy for exactly this deadlock and costs
 seconds, against writing off a whole board's matrix.
 
+#### One reset per boot
+
+`dev/flash.py` ends by resetting the board, so a freshly flashed board is
+already booting. Resetting it again lands on top of that boot, while the
+firmware is still reading a filesystem written seconds ago — and sys11 wedged
+in exactly that window: flashed successfully, then refusing a reset and any
+console traffic seconds later. `Session.start(reset=False)` watches the boot
+that flashing started instead of forcing another. It is the same shape as the
+`ENOENT`-on-a-file-that-exists crashes WPC raises, and suggests both are the
+firmware being disturbed while it reads freshly written flash.
+
 #### Telling a broken config from a flaky board
 
 They produce the identical symptom on one attempt and need opposite responses,

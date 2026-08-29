@@ -300,12 +300,14 @@ class FakeSession:
         self.configs_set = []
         self.boots = 0
         self.starts = 0
+        self.start_resets = []
         self.nudges = 0
         self.crashes = []
         self.restored = False
 
-    def start(self):
+    def start(self, reset=True):
         self.starts += 1
+        self.start_resets.append(reset)
         return self.wait_for_boot()
 
     def wait_for_boot(self):
@@ -348,8 +350,10 @@ def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
     monkeypatch.setattr(cm, "restore_default", lambda s, _target: setattr(s, "restored", True))
 
     defaults = {"configs": None, "limit": None, "changed_since": None, "keep_going": True, "boot_timeout": 90, "config_timeout": 60}
+    just_flashed = defaults.pop("just_flashed", False)
     defaults.update(arg_overrides)
-    return cm.run_matrix({"port": session.port, "target": "wpc"}, Namespace(**defaults))
+    just_flashed = defaults.pop("just_flashed", just_flashed)
+    return cm.run_matrix({"port": session.port, "target": "wpc"}, Namespace(**defaults), just_flashed=just_flashed)
 
 
 def test_run_matrix_walks_every_config_on_a_healthy_board(monkeypatch, fake_repo):
@@ -1017,3 +1021,26 @@ def test_flaky_configs_are_reported_in_the_job_summary(tmp_path, monkeypatch):
     rendered = summary.read_text()
     assert "Flaky (failed once, passed on retry" in rendered
     assert "**wpc `Congo_21`**" in rendered
+
+
+def test_a_freshly_flashed_board_is_not_reset_again(monkeypatch, fake_repo):
+    """dev/flash.py already reset it, so it is mid-boot.
+
+    Resetting again lands on top of that boot while the firmware is still
+    reading its freshly written filesystem. sys11 wedged in exactly that
+    window - flashed successfully, then refusing a reset seconds later.
+    """
+    session = FakeSession("/dev/ttyFAKE")
+
+    run_board(monkeypatch, fake_repo, session, just_flashed=True)
+
+    assert session.start_resets == [False]
+
+
+def test_a_board_we_did_not_flash_is_reset_first(monkeypatch, fake_repo):
+    """--skip-flash means nobody triggered a boot, so we have to."""
+    session = FakeSession("/dev/ttyFAKE")
+
+    run_board(monkeypatch, fake_repo, session, just_flashed=False)
+
+    assert session.start_resets == [True]
