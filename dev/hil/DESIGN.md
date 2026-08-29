@@ -206,6 +206,38 @@ Tests parameterize over `manifest ∩ dev/ci/targets.json`. Adding `whitestar` l
 
 ## 7. Harness structure
 
+### One workflow, three stages
+
+`.github/workflows/hil.yml` is the whole bench. It replaced four separate
+workflows that shared the `hil-bench` concurrency group — and since GitHub keeps
+only one *pending* run per group, a push touching two of them had them race with
+the loser silently cancelled. One workflow takes one lease and runs:
+
+| stage | what it is | cost |
+|---|---|---|
+| recover | `recover.py` — repair any wedged board | ~30s healthy |
+| flash + health check | G1/G2, API over USB *and* HTTP | ~3.5 min |
+| config matrix | G3, every config on every board | ~45 min |
+
+Every stage runs even when an earlier one fails, and the verdict is taken at the
+end: one broken board should not cost the signal from the others. Running
+recovery first is the point of combining them — it costs almost nothing on a
+healthy bench and turns "a board wedged, so the next four runs were useless"
+into a bench that repairs itself.
+
+**Trigger: `workflow_run` on "Build and Deploy" completion**, which is every
+push to a PR. Not `pull_request`, and the distinction is the security model:
+`workflow_run` workflows always run *from the default branch, using the default
+branch's code*, so a PR cannot change the workflow, `dev/hil/**`, or the pinned
+dependencies that the Pi executes. The bench job checks out the default branch
+and then takes **only `src/`** from the commit under test, so the firmware is
+the PR's and the harness is not.
+
+Fork PRs are gated: the `gate` job stops them with a message saying to review
+and dispatch by hand. Making forks automatic-with-approval needs a
+`hardware-lab` Environment with required reviewers (§4) — a repository setting,
+not something the workflow can create.
+
 What exists today:
 
 ```
@@ -327,7 +359,7 @@ That last one is the valuable one. It turns the API docs into a load-bearing art
 
 ### G3 — every config parses and boots
 
-**Implemented** in `dev/hil/config_matrix.py`, run by `.github/workflows/hil-config-matrix.yml`.
+**Implemented** in `dev/hil/config_matrix.py`, run as a stage of `.github/workflows/hil.yml`.
 
 Per board: build and flash that board's target once, so the config bundle under
 test is the one this checkout produces, then loop over every config in
@@ -435,16 +467,14 @@ stopped, not slowed.
 
 #### Findings and limits
 
-- **Two WPC configs cannot be selected at all.** `configuration.gamename` is a
-  16-byte fixed-width field (`SPI_DataStore.py`), and `struct.pack` truncates
-  silently. `HarleyDavidson_L3` and `GilliganIsland_L9` are 17 characters, so
-  the web UI offers them, the write is accepted, the name is truncated on the
-  way into FRAM, and the next boot matches nothing and comes up on safe
-  defaults with `CONF01`. The harness catches this before spending a boot
-  cycle, and `dev/tests/test_hil_config_matrix.py` catches a *new* offender in
-  ordinary CI. Fixing the two that exist means shortening the filenames or
-  widening the field (which is a `MapVersion` change — the 96-byte record is
-  fully used).
+- **~~Two WPC configs cannot be selected at all.~~ Fixed in #380.** The bench's
+  first real finding: `configuration.gamename` is a 16-byte fixed-width field
+  and `struct.pack` truncates silently, so `HarleyDavidson_L3` and
+  `GilliganIsland_L9` at 17 characters were offered by the web UI, accepted on
+  write, truncated into FRAM, and matched nothing on the next boot — `CONF01`,
+  safe defaults, and a game that could never be selected. Shortened to
+  `HarleyDavid_L3` and `GilliganIsle_L9`. `test_no_config_name_exceeds_the_gamename_field`
+  now enforces the rule absolutely, with no allowlist.
 - **WPC boots intermittently fail on a missing file.** Four crashes in one
   63-config run, in two flavours — `ImportError: no module named 'origin'` and
   `OSError: [Errno 2] ENOENT` — both raised from `phew/server.py:create_schedule`

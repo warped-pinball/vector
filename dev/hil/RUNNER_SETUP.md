@@ -132,20 +132,22 @@ system**, since that means at least one is running firmware for a system it isn'
 
 The runner should show **Idle** under Settings → Actions → Runners with the `vector-hil` label.
 
-End to end, [`.github/workflows/hil-smoke.yml`](../../.github/workflows/hil-smoke.yml) checks
-that the runner picks up jobs, the bench environment reaches them, the serial devices are
-present and accessible, and every detected board answers over `mpremote`. It fails if no
-boards are found or if any detected board doesn't respond.
+End to end, dispatch [`.github/workflows/hil.yml`](../../.github/workflows/hil.yml) with
+**stages: `recover`**. That is the cheapest full-path check there is — it proves the runner
+picks up jobs and the bench environment reaches them, then prints which recovery rungs this
+host can actually use and surveys every board by chip id. It takes under a minute on a healthy
+bench and repairs a wedged board on an unhealthy one.
 
-`VECTOR_HIL_VENV` and `VECTOR_HIL_REPO` are exported into every job from `.env`, so workflows
-don't hardcode paths. The smoke job deliberately does no `actions/checkout` — under the design's
-trust model the bench runs harness code from the clone it already has, not from a PR.
+`VECTOR_HIL_VENV` and the `VECTOR_HIL_*` variables are exported into every job from `.env`, so
+workflows don't hardcode paths. A missing one fails at the point of use with a message naming
+it rather than being pre-flighted separately.
 
 ### Running it before this PR merges
 
-A `workflow_dispatch` workflow isn't dispatchable until it exists on the **default branch**, so
-the "Run workflow" button won't appear while this is still a PR. The workflow therefore also
-triggers on pushes to this branch — push anything to it and the job runs on the bench:
+Neither `workflow_dispatch` nor `workflow_run` does anything until the workflow is on the
+**default branch** — the Run workflow button doesn't appear, and `workflow_run` only ever runs
+default-branch code. The workflow therefore also triggers on pushes to this branch, purely so it
+can be validated pre-merge; push anything to it and the job runs on the bench:
 
 ```bash
 git commit --allow-empty -m "trigger hil smoke" && git push
@@ -214,7 +216,7 @@ board then tries to parse its log lines as USB API requests. Use `stty -F /dev/t
 A board can deadlock with its USB device still enumerated and the firmware gone: the port is
 there, `mpremote` opens it, nothing answers. `dev/hil/recover.py` escalates through four
 rungs and stops as soon as the board replies. Run it from
-[`hil-recover.yml`](../../.github/workflows/hil-recover.yml), or by hand:
+the `recover` stage of [`hil.yml`](../../.github/workflows/hil.yml), which runs first on every bench job, or by hand:
 
 ```bash
 cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/recover.py

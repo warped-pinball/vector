@@ -135,34 +135,25 @@ def test_gamename_field_width_comes_from_the_firmware_source():
     assert bench.gamename_field_bytes() == 16
 
 
-# Two shipped WPC configs are longer than the FRAM `gamename` field and so can
-# never be selected on a real board: the web UI offers them, the write is
-# accepted, the name is truncated on the way into FRAM, and the next boot
-# matches nothing and comes up on safe defaults with CONF01 raised. That is a
-# pre-existing firmware/config defect, not something this harness introduced -
-# it is what the bench found first - so it is recorded here rather than fixed
-# here. Shortening either filename (or widening the field) should shorten this
-# list; nothing should ever lengthen it.
-KNOWN_UNREACHABLE_CONFIGS = {"GilliganIsland_L9", "HarleyDavidson_L3"}
-
-
-def test_no_new_config_name_exceeds_the_gamename_field():
+def test_no_config_name_exceeds_the_gamename_field():
     """A config whose filename is longer than the field can never be selected.
 
     write_record packs `gamename` into a fixed-width field and struct.pack
     truncates silently, so the truncated name matches nothing at boot and the
-    board comes up on safe defaults with CONF01. The bench catches this per
-    board, but it is cheaper to catch here, and this way a new offender fails
-    an ordinary PR rather than 20 minutes of bench time.
+    board comes up on safe defaults with CONF01 - while the web UI happily
+    offers the config. The bench catches this per board; catching it here is
+    cheaper and fails an ordinary PR instead of 20 minutes of bench time.
+
+    Two configs did exceed it, which is what the bench found first:
+    GilliganIsland_L9 and HarleyDavidson_L3, both 17 characters. They were
+    shortened to GilliganIsle_L9 and HarleyDavid_L3 in #380, so the list of
+    known offenders this test used to carry is gone and the rule is now
+    absolute.
     """
     limit = bench.gamename_field_bytes()
-    too_long = {path.stem for path in (REPO_ROOT / "src").glob("*/config/*.json") if len(path.stem.encode()) > limit}
+    too_long = sorted(path.stem for path in (REPO_ROOT / "src").glob("*/config/*.json") if len(path.stem.encode()) > limit)
 
-    new_offenders = sorted(too_long - KNOWN_UNREACHABLE_CONFIGS)
-    assert new_offenders == [], f"config filenames longer than the {limit}-byte FRAM gamename field: {', '.join(new_offenders)}"
-
-    fixed = sorted(KNOWN_UNREACHABLE_CONFIGS - too_long)
-    assert fixed == [], f"{', '.join(fixed)} now fits - drop it from KNOWN_UNREACHABLE_CONFIGS"
+    assert too_long == [], f"config filenames longer than the {limit}-byte FRAM gamename field: {', '.join(too_long)}"
 
 
 # --------------------------------------------------------------------------

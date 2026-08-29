@@ -1,0 +1,235 @@
+name: HIL
+
+# Everything the hardware bench does, in one workflow: recover the boards,
+# flash and health-check them, then boot every board against every game config.
+#
+# It replaces hil-smoke.yml, hil-flash-check.yml, hil-config-matrix.yml and
+# hil-recover.yml. They were separate files sharing one `hil-bench` concurrency
+# group, and GitHub keeps only one *pending* run per group - so a push touching
+# two of them had them race, with the loser silently cancelled. One workflow
+# takes one lease on the bench and runs the stages in order.
+#
+# It also makes recovery automatic. `recover.py` costs ~30s when every board
+# answers and repairs one that does not, so running it first turns "a board
+# wedged and the next four runs were useless" into a self-healing bench.
+#
+# ---------------------------------------------------------------------------
+# Why workflow_run, and not pull_request
+# ---------------------------------------------------------------------------
+#
+# This runs on a self-hosted runner on a private network, wired to real
+# hardware. A `pull_request` trigger would let any fork PR execute its own code
+# there - its own workflow, its own dev/hil/**, its own dependencies.
+#
+# `workflow_run` is the primitive that makes per-PR hardware testing safe:
+# GitHub always runs it *from the default branch, using the default branch's
+# code*, whatever the triggering PR contains. A PR cannot change what the Pi
+# executes. It supplies exactly one thing - the commit that gets built and
+# flashed. See dev/hil/DESIGN.md §4.
+#
+# Fork PRs are not run automatically even so: the gate job stops them and says
+# how to run one deliberately. Making forks automatic-with-approval needs a
+# `hardware-lab` GitHub Environment with required reviewers (DESIGN.md §4);
+# that is a repository setting, not something this file can create.
+
+on:
+  # Fires when "Build and Deploy" finishes, which is every push to a PR.
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "Which stages to run: all, recover, flash-check, config-matrix"
+        type: string
+        default: "all"
+      target:
+        description: "Limit the config matrix to one target, e.g. wpc (blank = all attached boards)"
+        type: string
+        default: ""
+      configs:
+        description: "Comma-separated config names for the matrix instead of all of them"
+        type: string
+        default: ""
+      limit:
+        description: "Stop the matrix after this many configs per board"
+        type: string
+        default: ""
+
+  # Temporary, so this can be validated before it reaches the default branch:
+  # a workflow_run workflow does nothing until it is on main. Drop this once
+  # merged - after that, workflow_run covers every PR.
+  push:
+    branches:
+      - claude/wpc-hil-config-validation-rc62dn
+
+permissions:
+  contents: read
+
+# One set of physical boards. Queue, never interleave.
+concurrency:
+  group: hil-bench
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Decide whether to touch the bench
+    runs-on: ubuntu-latest
+    outputs:
+      run_bench: ${{ steps.decide.outputs.run_bench }}
+      reason: ${{ steps.decide.outputs.reason }}
+      commit: ${{ steps.decide.outputs.commit }}
+    steps:
+      - name: Decide
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          # For workflow_run these describe the run that triggered us.
+          BUILD_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          BUILD_EVENT: ${{ github.event.workflow_run.event }}
+          BUILD_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BUILD_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          run_bench=true
+          reason="running"
+          commit="${BUILD_HEAD_SHA:-$GITHUB_SHA}"
+
+          if [ "$EVENT" = "workflow_run" ]; then
+            # No point flashing a build that failed.
+            if [ "$BUILD_CONCLUSION" != "success" ]; then
+              run_bench=false
+              reason="the build it follows concluded '$BUILD_CONCLUSION', so there is nothing good to flash"
+            # A fork's code must not run on the bench unattended. workflow_run
+            # protects *this* workflow, but the firmware being flashed is still
+            # the fork's, and a board runs it on a private network.
+            elif [ -n "$BUILD_HEAD_REPO" ] && [ "$BUILD_HEAD_REPO" != "$THIS_REPO" ]; then
+              run_bench=false
+              reason="the change comes from the fork '$BUILD_HEAD_REPO'. Review it, then run this workflow by hand (Run workflow) to put it on the bench."
+            fi
+          fi
+
+          echo "run_bench=$run_bench" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### HIL gate"
+            echo
+            echo "- event: \`$EVENT\`"
+            echo "- commit under test: \`$commit\`"
+            echo "- bench: **$([ "$run_bench" = true ] && echo "running" || echo "skipped")** - $reason"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  bench:
+    name: Bench
+    needs: gate
+    if: needs.gate.outputs.run_bench == 'true'
+    runs-on: [self-hosted, vector-hil]
+    timeout-minutes: 180
+
+    steps:
+      # On workflow_run this checks out the DEFAULT BRANCH, not the PR - that
+      # is the whole security property, and it must stay that way. The board
+      # gets the PR's firmware because the harness builds it from the commit
+      # below, not because the PR's harness code runs here.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Check out the commit under test
+        if: github.event_name == 'workflow_run'
+        env:
+          COMMIT: ${{ needs.gate.outputs.commit }}
+        run: |
+          # Only the firmware sources move to the PR's commit. dev/hil/** and
+          # this workflow stay on the default branch, which is what makes a
+          # fork PR unable to change what runs here.
+          git fetch --quiet origin "$COMMIT" || git fetch --quiet --no-tags origin "+refs/heads/*:refs/remotes/origin/*"
+          git checkout --quiet "$COMMIT" -- src/
+          echo "firmware sources at $COMMIT; harness from ${{ github.ref_name }}"
+
+      - name: Prepare environment
+        run: |
+          test -x "$VECTOR_HIL_VENV/bin/python" || { echo "bench venv missing"; exit 1; }
+          echo "$VECTOR_HIL_VENV/bin" >> "$GITHUB_PATH"
+
+      # 1. Recover. Cheap when the bench is healthy, and the difference between
+      #    a wedged board costing one run and costing every run until someone
+      #    notices.
+      - name: Recover any wedged board
+        id: recover
+        if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'recover')
+        continue-on-error: true
+        run: python dev/hil/recover.py
+
+      # 2. Flash and health-check: DESIGN.md G1/G2. Exercises the API over both
+      #    USB and HTTP, which the config matrix does not.
+      - name: Flash and health-check every board
+        id: flash_check
+        if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'flash-check')
+        continue-on-error: true
+        run: python dev/hil/flash_and_check.py
+
+      # 3. The config matrix: DESIGN.md G3.
+      - name: Boot every config on every board
+        id: config_matrix
+        if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'config-matrix')
+        continue-on-error: true
+        env:
+          HIL_TARGET: ${{ inputs.target }}
+          HIL_CONFIGS: ${{ inputs.configs }}
+          HIL_LIMIT: ${{ inputs.limit }}
+        run: |
+          args=""
+          if [ -n "${HIL_TARGET:-}" ]; then args="$args --target $HIL_TARGET"; fi
+          if [ -n "${HIL_CONFIGS:-}" ]; then args="$args --configs $HIL_CONFIGS"; fi
+          if [ -n "${HIL_LIMIT:-}" ]; then args="$args --limit $HIL_LIMIT"; fi
+
+          # shellcheck disable=SC2086  # args is a deliberately word-split list
+          python dev/hil/config_matrix.py $args
+
+      - name: Board serial logs on failure
+        if: failure() || steps.flash_check.outcome == 'failure' || steps.config_matrix.outcome == 'failure'
+        run: |
+          # `stty raw -echo` first, and both calls under `timeout`: a tty reverts
+          # to ECHO-on once every handle closes, so a bare `cat` feeds the board
+          # its own output back, and opening a tty waits for carrier, so a wedged
+          # board can block even stty.
+          for dev in /dev/ttyACM*; do
+            [ -e "$dev" ] || continue
+            echo "--- $dev"
+            timeout 5 stty -F "$dev" raw -echo 115200 || true
+            timeout 8 cat "$dev" || true
+          done
+
+      - name: Verdict
+        if: always()
+        env:
+          RECOVER: ${{ steps.recover.outcome }}
+          FLASH_CHECK: ${{ steps.flash_check.outcome }}
+          CONFIG_MATRIX: ${{ steps.config_matrix.outcome }}
+        run: |
+          {
+            echo "### HIL stages"
+            echo
+            echo "| stage | result |"
+            echo "|---|---|"
+            echo "| recover | ${RECOVER:-skipped} |"
+            echo "| flash + health check | ${FLASH_CHECK:-skipped} |"
+            echo "| config matrix | ${CONFIG_MATRIX:-skipped} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "recover:      ${RECOVER:-skipped}"
+          echo "flash-check:  ${FLASH_CHECK:-skipped}"
+          echo "config-matrix: ${CONFIG_MATRIX:-skipped}"
+
+          # Every stage runs even when an earlier one fails - one broken board
+          # should not cost the signal from the others - so the verdict is
+          # taken here rather than by the first failure.
+          failed=0
+          for outcome in "$RECOVER" "$FLASH_CHECK" "$CONFIG_MATRIX"; do
+            [ "$outcome" = "failure" ] && failed=1
+          done
+          exit "$failed"
