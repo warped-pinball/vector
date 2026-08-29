@@ -355,7 +355,7 @@ def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
 def test_run_matrix_walks_every_config_on_a_healthy_board(monkeypatch, fake_repo):
     session = FakeSession("/dev/ttyFAKE")
 
-    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session)
+    passed, failures, _crashes, _flakes = run_board(monkeypatch, fake_repo, session)
 
     assert failures == []
     assert passed == ["AttackMars_11", "Generic_WPC", "Taxi_L4"]
@@ -380,7 +380,7 @@ def test_run_matrix_abandons_a_board_that_stops_answering(monkeypatch, fake_repo
     # survives exactly one config before going quiet.
     session = FakeSession("/dev/ttyFAKE", dies_after=2)
 
-    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session)
+    passed, failures, _crashes, _flakes = run_board(monkeypatch, fake_repo, session)
 
     assert len(passed) == 1
     assert session.boots <= 1 + cm.MAX_CONSECUTIVE_SETUP_FAILURES
@@ -400,7 +400,7 @@ def test_run_matrix_keeps_going_after_a_failing_config(monkeypatch, fake_repo):
         return expected["name"]
 
     session = FakeSession("/dev/ttyFAKE")
-    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session, check=one_bad_config)
+    passed, failures, _crashes, _flakes = run_board(monkeypatch, fake_repo, session, check=one_bad_config)
 
     assert passed == ["AttackMars_11", "Taxi_L4"]
     assert [config for config, _reason in failures] == ["Generic_WPC"]
@@ -411,7 +411,7 @@ def test_run_matrix_stops_at_the_first_failure_when_asked(monkeypatch, fake_repo
         raise bench.CheckFailure("board reports game name 'Generic System'")
 
     session = FakeSession("/dev/ttyFAKE")
-    passed, failures, _crashes = run_board(monkeypatch, fake_repo, session, check=always_fails, keep_going=False)
+    passed, failures, _crashes, _flakes = run_board(monkeypatch, fake_repo, session, check=always_fails, keep_going=False)
 
     assert passed == []
     assert len(failures) == 1
@@ -965,3 +965,55 @@ def test_resolve_targets_refuses_to_flash_a_board_that_will_not_talk():
 
     with pytest.raises(bench.CheckFailure, match="not answering: /dev/ttyACM2"):
         bench.resolve_targets(boards, {"aaa": "sys11"})
+
+
+def test_a_config_that_fails_once_and_passes_is_the_board_not_the_config(monkeypatch, fake_repo):
+    """"Broken config" and "flaky board" look identical on one attempt.
+
+    They need opposite responses, so the matrix asks twice. This board fails
+    Generic_WPC once and passes it on the retry - the WPC board on the bench
+    does exactly this, raising ENOENT on files that exist.
+    """
+    seen = []
+
+    def flaky_once(_client, _target, config, expected):
+        seen.append(config)
+        if config == "Generic_WPC" and seen.count("Generic_WPC") == 1:
+            raise bench.CheckFailure("/api/leaders returned 500, expected 200")
+        return expected["name"]
+
+    session = FakeSession("/dev/ttyFAKE")
+    passed, failures, _crashes, flakes = run_board(monkeypatch, fake_repo, session, check=flaky_once)
+
+    # Counted as a pass, because the config is fine...
+    assert "Generic_WPC" in passed
+    assert failures == []
+    # ...but never silently: the flake is reported against the board.
+    assert [config for config, _reason in flakes] == ["Generic_WPC"]
+    assert "500" in flakes[0][1]
+
+
+def test_a_config_that_fails_twice_is_a_real_failure(monkeypatch, fake_repo):
+    def always_fails(_client, _target, config, expected):
+        if config == "Generic_WPC":
+            raise bench.CheckFailure("board reports game name 'Generic System'")
+        return expected["name"]
+
+    session = FakeSession("/dev/ttyFAKE")
+    passed, failures, _crashes, flakes = run_board(monkeypatch, fake_repo, session, check=always_fails)
+
+    assert [config for config, _reason in failures] == ["Generic_WPC"]
+    assert flakes == []
+    assert "Generic_WPC" not in passed
+
+
+def test_flaky_configs_are_reported_in_the_job_summary(tmp_path, monkeypatch):
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+
+    board = {"port": "/dev/ttyACM1", "target": "wpc", "crashes": [], "flakes": [("Congo_21", "/api/leaders returned 500, expected 200")]}
+    cm.write_step_summary([(board, ["Congo_21"], [])])
+
+    rendered = summary.read_text()
+    assert "Flaky (failed once, passed on retry" in rendered
+    assert "**wpc `Congo_21`**" in rendered

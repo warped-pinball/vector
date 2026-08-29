@@ -442,6 +442,21 @@ As a second line, a board that will not take a reset gets its console drained
 and one retry: reading is the remedy for exactly this deadlock and costs
 seconds, against writing off a whole board's matrix.
 
+#### Telling a broken config from a flaky board
+
+They produce the identical symptom on one attempt and need opposite responses,
+so every failing config is retried once. Fails twice → the config, and the run
+goes red. Passes on the retry → the board, recorded as a **flake** against that
+board and reported in the summary, without blaming the config.
+
+This is not hypothetical either. The WPC board raises `ENOENT` mid-boot on files
+that plainly exist; a board that will do that to an import will do it to a route,
+and a run where `Congo_21` failed `/api/leaders` with a 500 and `Theatre_13`
+failed `/api/adjustments/status` the same way — on a board that also crashed
+once on boot in the same run — is exactly the ambiguity this resolves. Without
+the retry those read as two broken configs, which would be the wrong conclusion
+and would erode trust in the check.
+
 #### How a boot is watched
 
 The ready marker (`Server: Loop Forever`) is printed exactly once per boot, which

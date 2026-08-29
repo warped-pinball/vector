@@ -451,6 +451,7 @@ def run_matrix(board, args):
     session = Session(port, boot_timeout=args.boot_timeout)
     passed = []
     failures = []
+    flakes = []
     consecutive_setup_failures = 0
 
     try:
@@ -468,21 +469,44 @@ def run_matrix(board, args):
         for index, config in enumerate(names, 1):
             started = time.monotonic()
             group(f"[{index}/{len(names)}] {target} {config}")
+            first_error = None
             try:
-                with time_limit(args.config_timeout, f"{target} {config}"):
-                    # Set the config on the board we are already talking to,
-                    # then reboot into it. The connection dies with the reset;
-                    # the next wait_for_boot opens a fresh one.
-                    session.set_config(config)
-                    session.reboot()
-                    client = session.wait_for_boot()
-                    consecutive_setup_failures = 0
+                # Two attempts, because "this config is broken" and "this board
+                # is flaky" produce the identical symptom on one attempt, and
+                # they need opposite responses. A config that fails twice is a
+                # config bug and fails the run; one that passes on the retry is
+                # the board, and is reported as a flake instead of being
+                # blamed on the config. The bench has already shown it can do
+                # this - a WPC board raising ENOENT mid-boot on files that
+                # exist will do it to a route just as readily.
+                for attempt in range(2):
+                    try:
+                        with time_limit(args.config_timeout, f"{target} {config}"):
+                            # Set the config on the board we are already talking
+                            # to, then reboot into it. The connection dies with
+                            # the reset; the next wait_for_boot opens a fresh one.
+                            session.set_config(config)
+                            session.reboot()
+                            client = session.wait_for_boot()
+                            consecutive_setup_failures = 0
 
-                    name = check_booted_config(client, target, config, configs[config])
-                log(f"    ok  {config:20} -> {name!r}  [{time.monotonic() - started:.1f}s]")
+                            name = check_booted_config(client, target, config, configs[config])
+                        break
+                    except CheckFailure as exc:
+                        if attempt:
+                            raise
+                        first_error = exc
+                        log(f"::warning::{target} {config} failed, retrying once to tell a broken config from a flaky board: {exc}")
+
+                elapsed = time.monotonic() - started
+                if first_error is None:
+                    log(f"    ok  {config:20} -> {name!r}  [{elapsed:.1f}s]")
+                else:
+                    log(f"    ok  {config:20} -> {name!r}  [{elapsed:.1f}s] (FLAKY - failed once, passed on retry)")
+                    flakes.append((config, str(first_error)))
                 passed.append(config)
             except CheckFailure as exc:
-                log(f"::error::{target} {config}: {exc}")
+                log(f"::error::{target} {config}: failed twice, so this is the config, not the board: {exc}")
                 _dump_boot_log({"port": port, "boot_log": session.boot_log})
                 failures.append((config, str(exc)))
                 # An assertion that ran is a result about the config. Anything
@@ -517,7 +541,7 @@ def run_matrix(board, args):
         restore_default(session, target)
         endgroup()
 
-    return passed, failures, session.crashes
+    return passed, failures, session.crashes, flakes
 
 
 def write_step_summary(results):
@@ -529,6 +553,12 @@ def write_step_summary(results):
     lines = ["## HIL config matrix", "", "| board | target | configs | passed | failed |", "|---|---|---|---:|---:|"]
     for board, passed, failures in results:
         lines.append(f"| `{board['port']}` | {board['target']} | {len(passed) + len(failures)} | {len(passed)} | {len(failures)} |")
+
+    flaky = [(board, config, reason) for board, _p, _f in results for config, reason in (board.get("flakes") or [])]
+    if flaky:
+        lines += ["", "### Flaky (failed once, passed on retry - the board, not the config)", ""]
+        for board, config, reason in flaky:
+            lines.append(f"- **{board['target']} `{config}`** - {reason.splitlines()[0]}")
 
     crashed = [(board, crash) for board, _passed, _failures in results for crash in (board.get("crashes") or [])]
     if crashed:
@@ -602,12 +632,12 @@ def main():
             log(f"built {target} at version {bench.source_version(target)}")
             endgroup()
 
-    results = [({"port": b["port"], "target": "(unknown)", "crashes": []}, [], [("(board setup)", "board is not answering - run dev/hil/recover.py")]) for b in unresponsive]
+    results = [({"port": b["port"], "target": "(unknown)", "crashes": [], "flakes": []}, [], [("(board setup)", "board is not answering - run dev/hil/recover.py")]) for b in unresponsive]
     for b in boards:
         try:
             if not args.skip_flash:
                 flash_before_matrix(b, workdir)
-            passed, failures, crashes = run_matrix(b, args)
+            passed, failures, crashes, flakes = run_matrix(b, args)
         except Exception as exc:  # noqa: BLE001
             # A board that cannot even be set up is one board's problem. The
             # bench is a singleton and a run is expensive, so the other boards
@@ -615,8 +645,9 @@ def main():
             # died on a TimeoutExpired escaping teardown, which threw away the
             # results already in hand and skipped the untouched board entirely.
             log(f"::error::{b['target']} on {b['port']}: {exc}")
-            passed, failures, crashes = [], [("(board setup)", str(exc))], []
+            passed, failures, crashes, flakes = [], [("(board setup)", str(exc))], [], []
         b["crashes"] = crashes
+        b["flakes"] = flakes
         results.append((b, passed, failures))
 
     log("")
@@ -631,8 +662,10 @@ def main():
     for board, passed, failures in results:
         state = "FAIL" if failures else "ok"
         crashes = board.get("crashes") or []
-        crashed = f", {len(crashes)} boot crash(es)" if crashes else ""
-        log(f"  {state:5} {board['port']:16} {board['target']:12} {len(passed)} passed, {len(failures)} failed{crashed}")
+        flaky = board.get("flakes") or []
+        extra = f", {len(crashes)} boot crash(es)" if crashes else ""
+        extra += f", {len(flaky)} flaky" if flaky else ""
+        log(f"  {state:5} {board['port']:16} {board['target']:12} {len(passed)} passed, {len(failures)} failed{extra}")
         total_failures += len(failures)
         total_crashes += len(crashes)
     log("=" * 60)
@@ -640,6 +673,13 @@ def main():
     # A crash that a retry got past is not a passing board. The configs were
     # still checked, so it does not fail the run, but it is a firmware fault
     # and gets said out loud rather than buried in a green result.
+    flaky_all = [(board, config, reason) for board, _p, _f in results for config, reason in (board.get("flakes") or [])]
+    if flaky_all:
+        log("")
+        log(f"::warning::{len(flaky_all)} config(s) failed once and passed on retry - the board, not the config:")
+        for board, config, reason in flaky_all:
+            log(f"  {board['target']} {config}: {reason}")
+
     if total_crashes:
         log("")
         log(f"::warning::{total_crashes} boot crash(es) recovered by a retry - the firmware raised on the way up:")
