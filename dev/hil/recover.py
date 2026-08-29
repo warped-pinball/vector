@@ -55,17 +55,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
     CTRL_C,
+    DRAIN_QUIET_SECONDS,
+    DRAIN_SECONDS,
     REPO_ROOT,
     CheckFailure,
     endgroup,
     ensure_tools_on_path,
     group,
+    interrupt_board,
     list_ports,
     log,
     mpremote,
     open_serial,
     parse_board_map,
-    serial_write,
+    read_until_quiet,
     time_limit,
 )
 
@@ -159,8 +162,16 @@ def survey(board_map):
 # --------------------------------------------------------------------------
 
 
-def drain(port, seconds=5):
-    """Read whatever is queued and interrupt the board."""
+def drain(port, seconds=DRAIN_SECONDS):
+    """Read whatever is queued until the board goes quiet, then interrupt it.
+
+    This is the only rung of the ladder this runner can always reach - the USB
+    reset needs a udev rule and the power cycle needs uhubctl, and neither is
+    installed - so it is worth being patient here. A bench run proved the
+    point: a board written off after a three-second drain of 63 bytes was read
+    with `cat` moments later and turned out to be a healthy, running server
+    that had merely blocked on a full output buffer.
+    """
     try:
         connection = open_serial(port)
     except Exception as exc:
@@ -169,15 +180,11 @@ def drain(port, seconds=5):
 
     drained = 0
     try:
-        deadline = time.monotonic() + seconds
-        while time.monotonic() < deadline:
-            drained += len(connection.read(connection.in_waiting or 1))
-        serial_write(connection, CTRL_C + CTRL_C, port)
-    except CheckFailure as exc:
-        # Expected against a truly wedged board, and worth saying out loud:
-        # a board that will not accept a Ctrl-C is not going to be talked
-        # back to life, so the next step up the ladder is the real hope.
-        log(f"    {exc}")
+        drained += read_until_quiet(connection, seconds)
+        # Ctrl-C twice: once to break out of a sleep, once for whatever the
+        # first one dropped us into.
+        interrupt_board(connection, port, CTRL_C + CTRL_C)
+        drained += read_until_quiet(connection, DRAIN_QUIET_SECONDS * 2)
     except Exception as exc:
         log(f"    error draining {port}: {exc}")
     finally:

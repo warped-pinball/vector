@@ -308,6 +308,31 @@ class Session:
         self.client = UsbApiClient(self.connection)
         return self.client
 
+    def ensure_connected(self):
+        """Get the board back to a booted, talking state if it is not already.
+
+        Without this, one exhausted boot leaves the session poisoned: the
+        connection is None, so every later `set_config` raises "the board is
+        not connected" instantly - including the retry that exists precisely
+        to survive a flaky board. A bench run showed the shape exactly. The
+        WPC board crashed on boot twice for FishTales_L4, and from there the
+        retry failed in no time at all and the next config failed in 0.0s,
+        two configs blamed on a board that came back on its own moments later
+        and served the restore step happily.
+
+        So a lost connection is a thing to repair, not a verdict. Drain first,
+        because the commonest reason a board stops talking is that nothing has
+        read what it printed, then reset and watch it come up. If it will not,
+        the caller's consecutive-failure counter still ends the board's matrix
+        - this only stops that happening while the board is still recoverable.
+        """
+        if self.connection is not None:
+            return self.client
+        log(f"    {self.port} has no live connection; draining and rebooting it before this config")
+        drain_port(self.port)
+        reset_board(self.port)
+        return self.wait_for_boot()
+
     def _require_connection(self, what):
         if self.connection is None:
             raise CheckFailure(f"cannot {what} on {self.port}: the board is not connected (its last boot did not complete)")
@@ -498,6 +523,7 @@ def run_matrix(board, args, just_flashed=False):
                             # Set the config on the board we are already talking
                             # to, then reboot into it. The connection dies with
                             # the reset; the next wait_for_boot opens a fresh one.
+                            session.ensure_connected()
                             session.set_config(config)
                             session.reboot()
                             client = session.wait_for_boot()

@@ -17,7 +17,9 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-sys.modules.setdefault("serial", types.ModuleType("serial"))
+_serial_stub = sys.modules.setdefault("serial", types.ModuleType("serial"))
+if not hasattr(_serial_stub, "SerialTimeoutException"):
+    _serial_stub.SerialTimeoutException = type("SerialTimeoutException", (Exception,), {})
 if "usb_coms_demo" not in sys.modules:
     stub = types.ModuleType("usb_coms_demo")
     stub.UsbApiClient = object

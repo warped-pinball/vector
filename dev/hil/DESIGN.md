@@ -442,6 +442,45 @@ As a second line, a board that will not take a reset gets its console drained
 and one retry: reading is the remedy for exactly this deadlock and costs
 seconds, against writing off a whole board's matrix.
 
+#### Draining reads until the board goes quiet, not for a fixed few seconds
+
+A blocked board does not hand its backlog over in one gulp. It unblocks, runs
+a little further, prints some more, and only then falls silent — so a drain
+with a fixed three-second budget catches the first mouthful and declares the
+board dead. That is measured, not argued: one bench run wrote off
+`/dev/ttyACM0` as unrecoverable after draining 63 bytes from it, and the very
+next step in the same job read the port with `cat` for eight seconds and got a
+healthy, running web server.
+
+So `bench.read_until_quiet` reads until the port has been silent for a couple
+of seconds, capped at a budget. A port with nothing to say costs the quiet
+period; one with a backlog gets as long as it needs. The Ctrl-C comes *after*
+the drain, because a firmware blocked writing to stdout is not reading stdin
+either — the host's OUT endpoint backs up too, so writing first only times out
+against the wedge it is trying to clear. A timed-out interrupt is likewise a
+reason to read more and try again, not a reason to give up.
+
+This matters more than it sounds: on the current runner the drain is the only
+recovery rung that can always be reached. The USB reset needs a udev rule and
+the power cycle needs `uhubctl`, and neither is installed (see
+RUNNER_SETUP.md), so everything above the drain escalates straight to a flash
+wipe.
+
+#### A lost connection is repaired, not treated as a verdict
+
+If a board's boot fails outright, the session is left holding no connection,
+and without care every config after it fails instantly with "the board is not
+connected" — including the retry that exists precisely to survive a flaky
+board. The bench showed the exact shape: the WPC board crashed on boot twice
+for one config, and from there the retry failed in no time at all and the next
+config failed in 0.0s, two configs blamed on a board that came back on its own
+moments later and served the restore step happily.
+
+So `Session.ensure_connected()` runs before each attempt: if there is no live
+connection it drains, resets, and watches the board come up. A board that is
+genuinely gone still ends its own matrix through the consecutive-failure
+counter; this only stops that happening while the board is still recoverable.
+
 #### One reset per boot
 
 `dev/flash.py` ends by resetting the board, so a freshly flashed board is

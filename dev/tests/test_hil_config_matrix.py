@@ -23,7 +23,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # bench.py imports pyserial (which ships with mpremote) and dev/usb_coms_demo.
 # Neither is needed for the pure helpers under test and neither is guaranteed to
 # be installed wherever these tests run, so stand them in before the import.
-sys.modules.setdefault("serial", types.ModuleType("serial"))
+_serial_stub = sys.modules.setdefault("serial", types.ModuleType("serial"))
+if not hasattr(_serial_stub, "SerialTimeoutException"):
+    _serial_stub.SerialTimeoutException = type("SerialTimeoutException", (Exception,), {})
 if "usb_coms_demo" not in sys.modules:
     stub = types.ModuleType("usb_coms_demo")
     stub.UsbApiClient = object
@@ -320,6 +322,11 @@ class FakeSession:
         self.connection = object()
         return self.client
 
+    def ensure_connected(self):
+        if self.connection is None:
+            return self.wait_for_boot()
+        return self.client
+
     def set_config(self, gamename):
         if self.client is None:
             raise bench.CheckFailure(f"could not reach the REPL on {self.port}")
@@ -387,7 +394,12 @@ def test_run_matrix_abandons_a_board_that_stops_answering(monkeypatch, fake_repo
     passed, failures, _crashes, _flakes = run_board(monkeypatch, fake_repo, session)
 
     assert len(passed) == 1
-    assert session.boots <= 1 + cm.MAX_CONSECUTIVE_SETUP_FAILURES
+    # A dead board costs at most two attempts per config, each of which may
+    # spend a boot repairing the connection and a boot on the config itself -
+    # and only MAX_CONSECUTIVE_SETUP_FAILURES configs are attempted at all.
+    # The point is the ceiling: nine configs must not cost nine timeouts.
+    assert session.boots <= 1 + 4 * cm.MAX_CONSECUTIVE_SETUP_FAILURES
+    assert len(passed) + len([f for f in failures if f[0] != "(not run)"]) <= 1 + cm.MAX_CONSECUTIVE_SETUP_FAILURES
     assert any("skipped after" in reason for _config, reason in failures)
     # Every setup failure gets one cheap recovery attempt before we give up.
     assert session.nudges == cm.MAX_CONSECUTIVE_SETUP_FAILURES
@@ -1044,3 +1056,140 @@ def test_a_board_we_did_not_flash_is_reset_first(monkeypatch, fake_repo):
     run_board(monkeypatch, fake_repo, session, just_flashed=False)
 
     assert session.start_resets == [True]
+
+
+# --------------------------------------------------------------------------
+# a board that stops talking is repaired, not written off
+# --------------------------------------------------------------------------
+
+
+class QuietingSerial:
+    """A port that hands over a backlog in mouthfuls, then falls silent."""
+
+    def __init__(self, chunks):
+        self.chunks = list(chunks)
+        self.written = []
+        self.closed = False
+
+    @property
+    def in_waiting(self):
+        return len(self.chunks[0]) if self.chunks else 0
+
+    def read(self, _size):
+        return self.chunks.pop(0) if self.chunks else b""
+
+    def write(self, data):
+        self.written.append(data)
+
+    def close(self):
+        self.closed = True
+
+
+def test_read_until_quiet_keeps_reading_while_the_board_is_still_printing(monkeypatch):
+    """Three seconds catches the first mouthful and calls a live board dead.
+
+    /dev/ttyACM0 was written off after a drain of 63 bytes; the next step in
+    the same job read it with `cat` and got a healthy running server.
+    """
+    connection = QuietingSerial([b"RESOURCE: ", b"RAM=71%", b"Server: Check Wifi"])
+
+    drained = bench.read_until_quiet(connection, budget=30, quiet=0)
+
+    assert drained == len(b"RESOURCE: RAM=71%Server: Check Wifi")
+    assert connection.chunks == []
+
+
+def test_read_until_quiet_stops_once_the_port_has_been_silent(monkeypatch):
+    """A port with nothing to say costs `quiet`, not the whole budget."""
+    connection = QuietingSerial([])
+    started = time.monotonic()
+
+    assert bench.read_until_quiet(connection, budget=30, quiet=0.05) == 0
+    assert time.monotonic() - started < 5
+
+
+def test_drain_port_interrupts_only_after_it_has_read(monkeypatch):
+    """The Ctrl-C is useless until the read has unblocked the firmware.
+
+    A board blocked writing to stdout is not reading stdin either, so writing
+    first just times out against the wedge we are trying to clear.
+    """
+    order = []
+
+    class Recorder(QuietingSerial):
+        def read(self, size):
+            chunk = super().read(size)
+            if chunk:
+                order.append("read")
+            return chunk
+
+        def write(self, data):
+            order.append("write")
+            super().write(data)
+
+    connection = Recorder([b"backlog"])
+    monkeypatch.setattr(bench, "open_serial", lambda port, **kw: connection)
+    monkeypatch.setattr(bench, "DRAIN_QUIET_SECONDS", 0.05)
+
+    assert bench.drain_port("/dev/ttyFAKE", seconds=5) == len(b"backlog")
+    assert order[0] == "read"
+    assert "write" in order
+    assert connection.closed
+
+
+def test_interrupt_board_drains_and_retries_when_the_write_times_out(monkeypatch):
+    """A timed-out write is a reason to read, not a reason to give up."""
+    attempts = []
+
+    class Blocked(QuietingSerial):
+        def write(self, data):
+            attempts.append(data)
+            if len(attempts) == 1:
+                raise bench.serial.SerialTimeoutException("blocked")
+
+    connection = Blocked([])
+    monkeypatch.setattr(bench, "DRAIN_QUIET_SECONDS", 0.05)
+
+    assert bench.interrupt_board(connection, "/dev/ttyFAKE") is True
+    assert len(attempts) == 2
+
+
+def test_a_session_whose_boot_failed_is_repaired_before_the_next_config(monkeypatch):
+    """One exhausted boot must not poison every config after it.
+
+    The WPC board crashed on boot twice for one config, and from there the
+    retry failed instantly and the next config failed in 0.0s - both blamed on
+    a board that came back on its own moments later.
+    """
+    drained = []
+    resets = []
+
+    session = cm.Session("/dev/ttyFAKE")
+    monkeypatch.setattr(cm, "drain_port", lambda port, **kw: drained.append(port))
+    monkeypatch.setattr(cm, "reset_board", lambda port: resets.append(port))
+    monkeypatch.setattr(cm, "wait_for_server", lambda port, timeout=None: (types.SimpleNamespace(close=lambda: None), []))
+    monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
+
+    assert session.connection is None
+    client = session.ensure_connected()
+
+    assert client is not None
+    assert session.connection is not None
+    assert drained == ["/dev/ttyFAKE"]
+    assert resets == ["/dev/ttyFAKE"]
+
+
+def test_ensure_connected_leaves_a_live_session_alone(monkeypatch):
+    """It repairs a lost connection; it does not add a boot to every config."""
+    session = cm.Session("/dev/ttyFAKE")
+    session.connection = types.SimpleNamespace(close=lambda: None)
+    session.client = FakeClient()
+
+    def fail(*_args, **_kwargs):
+        raise AssertionError("a connected session must not be reset")
+
+    monkeypatch.setattr(cm, "drain_port", fail)
+    monkeypatch.setattr(cm, "reset_board", fail)
+
+    assert session.ensure_connected() is session.client

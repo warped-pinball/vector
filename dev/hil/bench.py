@@ -167,7 +167,7 @@ def ensure_tools_on_path():
 
     raise CheckFailure(
         "mpremote not found. Run with the bench venv, e.g.\n"
-        f"  cd {REPO_ROOT} && PATH=\"$PWD/.venv/bin:$PATH\" .venv/bin/python dev/hil/<harness>.py ...\n"
+        f'  cd {REPO_ROOT} && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/<harness>.py ...\n'
         "(VECTOR_HIL_VENV is exported by the runner service, so it is not set in a login shell.)"
     )
 
@@ -284,7 +284,9 @@ def identify(boards, seconds=8):
     for index, board in enumerate(boards, 1):
         log(f"  [{index}/{len(boards)}] BLINKING NOW: {board['port']}  chip {board['chip_id']}")
         result = mpremote(
-            "connect", board["port"], "exec",
+            "connect",
+            board["port"],
+            "exec",
             IDENTIFY_SNIPPET.format(blinks=int(seconds / 0.5)),
             timeout=seconds + 30,
         )
@@ -329,19 +331,13 @@ def resolve_targets(boards, board_map):
     dead = [b for b in boards if not b.get("responsive", True)]
     if dead:
         raise CheckFailure(
-            "not answering: "
-            + ", ".join(b["port"] for b in dead)
-            + ".\nA board that will not talk cannot be identified, so it cannot be safely flashed.\n"
-            "Run dev/hil/recover.py to get it back."
+            "not answering: " + ", ".join(b["port"] for b in dead) + ".\nA board that will not talk cannot be identified, so it cannot be safely flashed.\n" "Run dev/hil/recover.py to get it back."
         )
 
     if board_map:
         unmapped = [b for b in boards if b["chip_id"] not in board_map]
         if unmapped:
-            raise CheckFailure(
-                "VECTOR_HIL_BOARD_MAP is set but does not cover: "
-                + ", ".join(f"{b['port']} ({b['chip_id']})" for b in unmapped)
-            )
+            raise CheckFailure("VECTOR_HIL_BOARD_MAP is set but does not cover: " + ", ".join(f"{b['port']} ({b['chip_id']})" for b in unmapped))
         for b in boards:
             b["target"] = board_map[b["chip_id"]]
         log("targets from VECTOR_HIL_BOARD_MAP")
@@ -349,24 +345,17 @@ def resolve_targets(boards, board_map):
 
     missing = [b for b in boards if not b["system"]]
     if missing:
-        raise CheckFailure(
-            "cannot identify "
-            + ", ".join(b["port"] for b in missing)
-            + " - firmware did not report a system. Set VECTOR_HIL_BOARD_MAP."
-        )
+        raise CheckFailure("cannot identify " + ", ".join(b["port"] for b in missing) + " - firmware did not report a system. Set VECTOR_HIL_BOARD_MAP.")
 
     systems = [b["system"] for b in boards]
     duplicates = {s for s in systems if systems.count(s) > 1}
     if duplicates:
         raise CheckFailure(
-            "refusing to flash from autodetection: "
-            + ", ".join(sorted(duplicates))
-            + " is reported by more than one board.\n"
+            "refusing to flash from autodetection: " + ", ".join(sorted(duplicates)) + " is reported by more than one board.\n"
             "Detection reads the *flashed firmware*, not the hardware, so duplicates mean\n"
             "at least one board is running firmware for a system it is not wired for.\n"
             "Pin them explicitly instead, using the chip ids above:\n"
-            "  VECTOR_HIL_BOARD_MAP="
-            + ",".join(f"{b['chip_id']}=<target>" for b in boards)
+            "  VECTOR_HIL_BOARD_MAP=" + ",".join(f"{b['chip_id']}=<target>" for b in boards)
         )
 
     for b in boards:
@@ -392,7 +381,10 @@ def build(target):
     build_dir = REPO_ROOT / "build" / target
     result = subprocess.run(
         [VENV_PYTHON, "dev/build.py", "--target_hardware", target, "--build-dir", str(build_dir)],
-        cwd=REPO_ROOT, capture_output=True, text=True, timeout=900,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=900,
     )
     if result.returncode != 0:
         log(result.stdout[-3000:])
@@ -435,7 +427,10 @@ def write_bench_config(target, workdir):
 def flash(target, port, build_dir, config_path):
     result = subprocess.run(
         [VENV_PYTHON, "dev/flash.py", str(build_dir), "--port", port, "--write-config", str(config_path)],
-        cwd=REPO_ROOT, capture_output=True, text=True, timeout=900,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=900,
     )
     if result.returncode != 0:
         log(result.stdout[-3000:])
@@ -458,7 +453,11 @@ def reset_board(port):
     deterministic and the reported boot time meaningful.
     """
     result = mpremote(
-        "connect", port, "exec", "--no-follow", "import machine; machine.reset()",
+        "connect",
+        port,
+        "exec",
+        "--no-follow",
+        "import machine; machine.reset()",
         timeout=30,
     )
     if result.returncode != 0:
@@ -546,9 +545,7 @@ def wait_for_server(port, timeout=BOOT_TIMEOUT):
             pass
 
     tail = "\n      ".join(transcript[-20:]) or "(nothing on the console)"
-    raise CheckFailure(
-        f"{port} never reported its web server within {timeout}s. Last console output:\n      {tail}"
-    )
+    raise CheckFailure(f"{port} never reported its web server within {timeout}s. Last console output:\n      {tail}")
 
 
 def _server_is_answering(connection):
@@ -606,10 +603,7 @@ def get(client, route, expect=200):
         # The board narrates its own routing failures ("USB REQ: route not
         # found: ..."), but the client discards every line that is not a
         # response. Drain whatever is pending so the reason is visible.
-        raise CheckFailure(
-            f"{route} returned {status}, expected {expect}"
-            f"{_drain_serial(client.ser)}"
-        )
+        raise CheckFailure(f"{route} returned {status}, expected {expect}" f"{_drain_serial(client.ser)}")
     return response.get("body")
 
 
@@ -828,15 +822,71 @@ def repl_reset(connection):
     Repl(connection).enter().reset()
 
 
-def drain_port(port, seconds=3):
-    """Open a port and read whatever the board has queued, then interrupt it.
+DRAIN_SECONDS = 20
+DRAIN_QUIET_SECONDS = 2
 
-    A cheap attempt at unsticking a board that has gone quiet, and it costs one
-    open and three seconds. The wedge worth recovering from is a board blocked
-    writing into a CDC endpoint that nothing is draining: reading is the whole
-    remedy, and the Ctrl-C afterwards gets it back to a REPL if the read freed
-    it. Reports what it saw either way - a board that yields zero bytes and a
-    board that yields a backlog are different problems.
+
+def read_until_quiet(connection, budget, quiet=DRAIN_QUIET_SECONDS):
+    """Read from an open port until it stops producing, or the budget runs out.
+
+    A board blocked writing into a CDC endpoint nothing is draining does not
+    hand over its backlog in one gulp: it unblocks, runs a little further,
+    prints some more, and only then goes quiet. Reading for a fixed three
+    seconds catches the first mouthful and calls the board dead. That is not
+    a guess - a bench run declared /dev/ttyACM0 unrecoverable after draining
+    63 bytes from it, and the very next step in the same job read it with
+    `cat` for eight seconds and got a healthy, running server.
+
+    So read until it has been silent for `quiet` seconds, capped at `budget`.
+    A port that is already quiet costs `quiet`; one with a backlog gets as
+    long as it needs to finish coughing it up.
+    """
+    drained = 0
+    deadline = time.monotonic() + budget
+    silent_since = time.monotonic()
+    while time.monotonic() < deadline:
+        chunk = connection.read(connection.in_waiting or 1)
+        if chunk:
+            drained += len(chunk)
+            silent_since = time.monotonic()
+        elif time.monotonic() - silent_since >= quiet:
+            break
+    return drained
+
+
+def interrupt_board(connection, port, keys=CTRL_C):
+    """Send Ctrl-C, draining if the board is too blocked to accept it.
+
+    The write can time out for the same reason the board is stuck: a firmware
+    blocked writing to stdout is not reading stdin either, so the host's OUT
+    endpoint backs up. Reading is what frees it, so a timed-out write is a
+    reason to drain and try once more rather than to give up.
+    """
+    try:
+        serial_write(connection, keys, port)
+        return True
+    except CheckFailure as exc:
+        log(f"    {exc}; draining and trying the interrupt once more")
+
+    read_until_quiet(connection, DRAIN_SECONDS)
+    try:
+        serial_write(connection, keys, port)
+        return True
+    except CheckFailure as exc:
+        log(f"    {exc}")
+        return False
+
+
+def drain_port(port, seconds=DRAIN_SECONDS):
+    """Open a port, read the board's console until it goes quiet, interrupt it.
+
+    A cheap attempt at unsticking a board, and it costs one open. The wedge
+    worth recovering from is a board blocked writing into a CDC endpoint that
+    nothing is draining: reading is the whole remedy, and the Ctrl-C afterwards
+    gets it back to a REPL once the read has freed it - which is why the
+    interrupt comes after the drain and not before. Reports what it saw either
+    way; a board that yields zero bytes and a board that yields a backlog are
+    different problems.
     """
     try:
         connection = open_serial(port)
@@ -846,10 +896,12 @@ def drain_port(port, seconds=3):
 
     drained = 0
     try:
-        deadline = time.monotonic() + seconds
-        while time.monotonic() < deadline:
-            drained += len(connection.read(connection.in_waiting or 1))
-        serial_write(connection, CTRL_C, port)
+        drained += read_until_quiet(connection, seconds)
+        interrupt_board(connection, port)
+        # Whatever the interrupt shook loose - a KeyboardInterrupt traceback,
+        # a REPL banner - is backlog too, and leaving it queued re-wedges the
+        # board the moment we close.
+        drained += read_until_quiet(connection, DRAIN_QUIET_SECONDS * 2)
     except Exception as exc:
         log(f"    error while draining {port}: {exc}")
     finally:
