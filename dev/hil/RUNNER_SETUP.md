@@ -118,9 +118,16 @@ hence the explicit `.venv` path here.)
 Then record what you saw:
 
 ```bash
+# the value is the whole map - list every board, including ones already correct
+sed -i '/^VECTOR_HIL_BOARD_MAP=/d' ~/actions-runner/.env
 echo 'VECTOR_HIL_BOARD_MAP=<chip1>=sys11,<chip2>=wpc,<chip3>=data_east' >> ~/actions-runner/.env
 cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 ```
+
+Valid targets are the config families: `sys11`, `wpc`, `data_east`, `em`. The map must cover
+*every* board the harness sees - adding a board to the bench means adding it here, or the run
+stops with `VECTOR_HIL_BOARD_MAP is set but does not cover: ...`. That failure (and the other
+map-related ones) prints these same instructions, pre-filled with the bench's actual chip ids.
 
 With the map set, `flash_and_check.py` uses it and ignores self-report entirely. Without it,
 the harness falls back to self-report but **refuses to flash when two boards claim the same

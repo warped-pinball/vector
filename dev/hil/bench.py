@@ -295,14 +295,57 @@ def identify(boards, seconds=8):
         else:
             log("        done")
     log("")
-    log("Now map what you saw to the chip ids, and put this in the runner's .env:")
-    log("")
-    log("  VECTOR_HIL_BOARD_MAP=" + ",".join(f"{b['chip_id']}=<target>" for b in boards))
+    log("Now map what you saw to the chip ids:")
+    log(board_map_instructions(boards, parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP"))))
 
 
 # --------------------------------------------------------------------------
 # 2. resolve
 # --------------------------------------------------------------------------
+
+
+def board_map_instructions(boards, board_map=None):
+    """How to write or amend VECTOR_HIL_BOARD_MAP for this bench.
+
+    Printed with every map-related failure: the map lives in the runner's
+    .env on the bench host, so whoever reads the CI log is usually not
+    looking at the machine that needs editing.
+    """
+    board_map = board_map or {}
+    suggested = ",".join(f"{b['chip_id']}={board_map.get(b['chip_id'], '<target>')}" for b in boards)
+    lines = [
+        "",
+        "VECTOR_HIL_BOARD_MAP pins each board to the system it is wired to, by RP2040",
+        "chip id (stable across reflashing). Every board on the bench must appear in it.",
+        "",
+        "  format:  <chip id>=<target>,<chip id>=<target>",
+        "  targets: " + ", ".join(sorted(DEFAULT_GAMENAME)),
+        "",
+    ]
+    if board_map:
+        lines += ["current map:"] + [f"  {chip}={target}" for chip, target in sorted(board_map.items())] + [""]
+    lines += [
+        "Fill in the target for each board and set the whole line - it replaces the old",
+        "value, so keep the entries that were already right:",
+        "",
+        "  VECTOR_HIL_BOARD_MAP=" + suggested,
+        "",
+        "On the bench host (the map is runner environment, not repo config):",
+        "",
+        "  # drop any existing entry, then append the new one",
+        "  sed -i '/^VECTOR_HIL_BOARD_MAP=/d' ~/actions-runner/.env",
+        "  echo 'VECTOR_HIL_BOARD_MAP=" + suggested + "' >> ~/actions-runner/.env",
+        "  cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start",
+        "",
+        "The service only reads .env at start, so the restart is required.",
+        "",
+        "Not sure which physical board is which chip id? Blink them in turn:",
+        "",
+        "  cd ~/vector && .venv/bin/python dev/hil/flash_and_check.py --identify",
+        "",
+        "See dev/hil/RUNNER_SETUP.md for the full walkthrough.",
+    ]
+    return "\n".join(lines)
 
 
 def parse_board_map(raw):
@@ -337,7 +380,7 @@ def resolve_targets(boards, board_map):
     if board_map:
         unmapped = [b for b in boards if b["chip_id"] not in board_map]
         if unmapped:
-            raise CheckFailure("VECTOR_HIL_BOARD_MAP is set but does not cover: " + ", ".join(f"{b['port']} ({b['chip_id']})" for b in unmapped))
+            raise CheckFailure("VECTOR_HIL_BOARD_MAP is set but does not cover: " + ", ".join(f"{b['port']} ({b['chip_id']})" for b in unmapped) + "\n" + board_map_instructions(boards, board_map))
         for b in boards:
             b["target"] = board_map[b["chip_id"]]
         log("targets from VECTOR_HIL_BOARD_MAP")
@@ -345,7 +388,7 @@ def resolve_targets(boards, board_map):
 
     missing = [b for b in boards if not b["system"]]
     if missing:
-        raise CheckFailure("cannot identify " + ", ".join(b["port"] for b in missing) + " - firmware did not report a system. Set VECTOR_HIL_BOARD_MAP.")
+        raise CheckFailure("cannot identify " + ", ".join(b["port"] for b in missing) + " - firmware did not report a system. Set VECTOR_HIL_BOARD_MAP.\n" + board_map_instructions(boards, board_map))
 
     systems = [b["system"] for b in boards]
     duplicates = {s for s in systems if systems.count(s) > 1}
@@ -354,8 +397,7 @@ def resolve_targets(boards, board_map):
             "refusing to flash from autodetection: " + ", ".join(sorted(duplicates)) + " is reported by more than one board.\n"
             "Detection reads the *flashed firmware*, not the hardware, so duplicates mean\n"
             "at least one board is running firmware for a system it is not wired for.\n"
-            "Pin them explicitly instead, using the chip ids above:\n"
-            "  VECTOR_HIL_BOARD_MAP=" + ",".join(f"{b['chip_id']}=<target>" for b in boards)
+            "Pin them explicitly instead, using the chip ids above.\n" + board_map_instructions(boards, board_map)
         )
 
     for b in boards:
