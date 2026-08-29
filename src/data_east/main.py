@@ -164,6 +164,10 @@ Formats.initialize()
 from backend import go  # noqa
 
 Log.log("MAIN: Launching Wifi")
-go(ap_mode)
+try:
+    go(ap_mode)
+except BaseException:
+    faults.timer.deinit()  # stop the LED pattern timer before dropping to the REPL
+    raise
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)
