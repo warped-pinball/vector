@@ -376,11 +376,77 @@ def inventory():
     return boards
 
 
+def usb_devices():
+    """Every USB device sysfs knows about - the harness's own `lsusb`.
+
+    Written out whenever the bench looks empty, because "no boards found" and
+    "lsusb shows all three" is a contradiction the log has to be able to
+    settle: it says whether the boards are absent from the bus, present under
+    an id this harness does not know, or present with no driver bound.
+    """
+    devices = []
+    for device in sorted(USB_DEVICES.glob("*")):
+        try:
+            vendor = (device / "idVendor").read_text().strip().lower()
+            product = (device / "idProduct").read_text().strip().lower()
+        except OSError:
+            continue
+        if not vendor or not product:
+            continue
+
+        def attribute(name):
+            try:
+                return (device / name).read_text().strip()
+            except OSError:
+                return ""
+
+        devices.append(
+            {
+                "path": device.name,
+                "id": f"{vendor}:{product}",
+                "name": " ".join(filter(None, (attribute("manufacturer"), attribute("product")))) or "(no product string)",
+                "serial": attribute("serial"),
+            }
+        )
+    return devices
+
+
+def usb_bus_report():
+    """The USB bus as sysfs sees it, for a log that has to explain an empty bench."""
+    devices = usb_devices()
+    if not devices:
+        return [
+            "Nothing at all is on the USB bus (" + str(USB_DEVICES) + " lists no devices),",
+            "which is a host-side answer rather than a board-side one: the hub is unplugged,",
+            "unpowered, or this process cannot read sysfs.",
+        ]
+
+    lines = ["What is on the USB bus, as sysfs sees it:", ""]
+    for device in devices:
+        lines.append(f"  {device['path']:12} {device['id']:10} {device['name']}" + (f"  serial {device['serial']}" if device["serial"] else ""))
+
+    unknown = [d for d in devices if d["id"].startswith(BOOTSEL_VID + ":")]
+    if unknown:
+        lines += [
+            "",
+            "Raspberry Pi devices are on the bus (" + ", ".join(sorted({d["id"] for d in unknown})) + ") but none of them is",
+            "a serial port or a bootloader this harness recognises (" + ", ".join(f"{BOOTSEL_VID}:{pid}" for pid in BOOTSEL_PIDS) + ").",
+            "That id is the thing to chase - it says what mode the boards are actually in.",
+        ]
+    return lines
+
+
 def no_boards_message(stranded=None):
     """Why the bench looks empty, told apart from a bench that is not there."""
     stranded = bootsel_boards() if stranded is None else stranded
     if not stranded:
-        return "no boards found - check the USB hub and power"
+        return "\n".join(
+            [
+                "no boards found: nothing on serial, and nothing in the ROM bootloader either.",
+                "",
+                *usb_bus_report(),
+            ]
+        )
     ids = ", ".join(b["chip_id"] or "?" for b in stranded)
     return (
         f"no board is on serial, but {len(stranded)} are in the ROM bootloader (BOOTSEL/UF2 mode): {ids}.\n"

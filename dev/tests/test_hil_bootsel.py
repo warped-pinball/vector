@@ -80,9 +80,10 @@ def test_bootsel_boards_is_empty_without_sysfs(monkeypatch, tmp_path):
     assert bench.bootsel_boards() == []
 
 
-def test_an_empty_bench_is_told_apart_from_one_in_the_bootloader(monkeypatch):
+def test_an_empty_bench_is_told_apart_from_one_in_the_bootloader(monkeypatch, tmp_path):
     monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
-    assert "check the USB hub and power" in bench.no_boards_message()
+    monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing")
+    assert "nothing in the ROM bootloader either" in bench.no_boards_message()
 
     monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "e66141040380b42e"}])
     message = bench.no_boards_message()
@@ -434,3 +435,36 @@ def test_a_different_finding_still_gets_through(job_summary):
 
     written = job_summary.read_text()
     assert "cccc" in written and "dddd" in written
+
+
+# --------------------------------------------------------------------------
+# an empty bench has to explain itself
+# --------------------------------------------------------------------------
+
+
+def test_an_empty_bench_prints_the_usb_bus(monkeypatch, tmp_path):
+    """ "no boards found" and "lsusb shows them" is a contradiction the log must settle."""
+    root = usb_tree(
+        tmp_path,
+        {
+            "usb1": ("1d6b", "0002", "0000:01:00.0"),
+            "1-1": ("2109", "3431", None),
+            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),  # a mode we do not handle
+            "1-1.1:1.0": None,
+        },
+    )
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    message = bench.no_boards_message()
+
+    assert "2e8a:0005" in message
+    assert "2109:3431" in message
+    # The recognised ids are named, so the reader can see what the mismatch is.
+    assert "2e8a:0003" in message
+    # Interfaces carry no ids and are not devices.
+    assert "1-1.1:1.0" not in message
+
+
+def test_an_empty_sysfs_says_so_rather_than_blaming_the_boards(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing")
+    assert "Nothing at all is on the USB bus" in bench.no_boards_message()
