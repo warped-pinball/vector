@@ -779,6 +779,14 @@ def check_bench_complete(boards):
             "Either put the missing board back (`dev/hil/recover.py`, and check it is in",
             "`VECTOR_HIL_BOARD_MAP`), or set `VECTOR_HIL_REQUIRED_TARGETS` on the runner to the systems",
             "the bench really has.",
+            "",
+            # Which of those it is turns on one question the log could not answer:
+            # is the board on the bus at all? A board that is enumerated but silent
+            # is a job for the recovery ladder; a board that is simply gone needs
+            # someone to replug it, and no amount of draining or resetting will
+            # help. The bus listing already exists for an empty bench - an
+            # incomplete one deserves it just as much.
+            *usb_bus_report(),
         ],
     )
     return missing

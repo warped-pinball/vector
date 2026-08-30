@@ -555,3 +555,29 @@ def test_the_instructions_name_what_cannot_be_mapped(job_summary):
     # Naming them matters: the board on the bench is running one of them, and
     # the only wrong move is mapping it to a system it is not wired for.
     assert "classic" in text and "whitestar" in text
+
+
+def test_an_incomplete_bench_says_whether_the_board_is_even_plugged_in(job_summary, monkeypatch, tmp_path):
+    """ "Missing" has two remedies and they are opposite.
+
+    A board that is enumerated but silent is the recovery ladder's job. A board
+    that has dropped off the bus needs a person to replug it - which is exactly
+    what happened to the wpc board between two runs, with nothing in the log to
+    tell the two apart.
+    """
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    root = usb_tree(tmp_path, {"1-1.1": ("2e8a", "0005", "aaaa"), "1-1.2": ("2e8a", "0005", "bbbb")})
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    assert bench.check_bench_complete(boards_for("sys11", "data_east")) == ["wpc"]
+
+    written = job_summary.read_text()
+    assert "What is on the USB bus" in written
+    assert "2e8a:0005" in written
+
+
+def test_a_complete_bench_does_not_print_the_bus(job_summary, monkeypatch):
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    monkeypatch.setattr(bench, "usb_bus_report", lambda: pytest.fail("nothing is missing, so there is nothing to explain"))
+
+    assert bench.check_bench_complete(boards_for("sys11", "wpc", "data_east")) == []
