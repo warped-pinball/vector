@@ -52,6 +52,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bench  # noqa: E402
+import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
@@ -634,6 +635,9 @@ def main():
     workdir = REPO_ROOT / "build"
     workdir.mkdir(exist_ok=True)
 
+    board_map = parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP"))
+    trench_coat.rescue_bootsel(board_map, REPO_ROOT / "build" / "hil")
+
     group("Inventory")
     boards = inventory()
     endgroup()
@@ -651,9 +655,13 @@ def main():
         raise CheckFailure("no board on the bench is answering - run dev/hil/recover.py")
 
     group("Resolve targets")
-    boards = resolve_targets(boards, parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP")))
+    boards = resolve_targets(boards, board_map)
     for b in boards:
         log(f"  {b['port']}  ->  {b['target']}")
+    # Only when the run is meant to cover the bench: --target says the caller
+    # asked for one board on purpose, and failing that for incompleteness
+    # would be answering a question nobody asked.
+    missing_targets = [] if args.target else bench.check_bench_complete(boards)
     endgroup()
 
     if args.target:
@@ -737,6 +745,10 @@ def main():
         return 1
 
     checked = sum(len(passed) for _board, passed, _failures in results)
+    if missing_targets:
+        log(f"\nall {checked} config(s) booted on the boards that are here, but the bench is missing " + ", ".join(missing_targets))
+        return 1
+
     log(f"\nall {checked} config(s) booted and reported the right game name")
     return 0
 

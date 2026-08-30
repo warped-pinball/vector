@@ -15,6 +15,7 @@ Nothing in here asserts anything about firmware behaviour, so a change to what
 a harness checks does not belong in this file.
 """
 
+import concurrent.futures
 import json
 import os
 import re
@@ -107,6 +108,56 @@ def log(msg):
     print(msg, flush=True)
 
 
+def _append_summary(line):
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a") as handle:
+            handle.write(line.replace("::warning::", "WARNING: ").replace("::error::", "ERROR: ") + "\n")
+    except OSError:
+        pass
+
+
+def summary(line):
+    """Put a line in the Actions job summary as well as the log.
+
+    Job summaries are stored separately from the log archive, and two bench
+    runs proved why that matters: the runner died mid-job, never uploaded its
+    logs, and every finding went with them. Written incrementally rather than
+    at the end for the same reason.
+    """
+    log(line)
+    _append_summary(line)
+
+
+def summary_once(marker, lines):
+    """Log `lines`, and add them to the summary unless `marker` is there already.
+
+    Three stages share one summary page and reach the same conclusion about
+    the bench - "this board is not in the map", "this system is missing" - so
+    without this the reader gets the same block three times, which reads like
+    three problems. The log still says it every time, where repetition is
+    exactly what you want: each step's failure explains itself.
+    """
+    for line in lines:
+        log(line)
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        try:
+            if marker in Path(path).read_text():
+                return
+        except OSError:
+            pass
+    for line in lines:
+        _append_summary(line)
+
+
+def as_block(text):
+    """A multi-line string as preformatted summary lines."""
+    return ["", "```", *text.splitlines(), "```"]
+
+
 _TIMINGS = []
 _group = None
 
@@ -183,6 +234,65 @@ def list_ports():
     return [line.split()[0] for line in result.stdout.strip().splitlines() if line.strip()]
 
 
+# --------------------------------------------------------------------------
+# Boards in the ROM bootloader
+# --------------------------------------------------------------------------
+#
+# A board in BOOTSEL/UF2 mode is not a serial device at all: the RP2040 ROM
+# bootloader enumerates as USB mass storage, so `mpremote devs` shows nothing
+# and every serial-based question about it - chip id, running system, is it
+# alive - has no answer. A whole bench in that state reported "no boards found
+# - check the USB hub and power" while `lsusb` listed all three, which is the
+# most misleading thing the harness has ever said: the boards were fine, and
+# one UF2 each away from working.
+#
+# They can still be identified. The bootrom publishes the board's unique id as
+# the USB serial number, which is the same id `machine.unique_id()` returns
+# once MicroPython is running, so VECTOR_HIL_BOARD_MAP covers a board in this
+# state exactly as it covers a running one.
+
+BOOTSEL_VID = "2e8a"  # Raspberry Pi
+BOOTSEL_PIDS = {"0003": "RP2040", "000f": "RP2350"}  # "RP2 Boot"
+
+USB_DEVICES = Path("/sys/bus/usb/devices")
+
+
+def bootsel_boards():
+    """Boards sitting in the ROM bootloader, from sysfs.
+
+    Read straight out of sysfs rather than by shelling out to lsusb: it needs
+    no privileges, no package, and it hands us the device directory, which is
+    what finds the board's mass-storage drive later.
+    """
+    boards = []
+    for device in sorted(USB_DEVICES.glob("*")):
+        try:
+            vendor = (device / "idVendor").read_text().strip().lower()
+            product = (device / "idProduct").read_text().strip().lower()
+        except OSError:
+            # Interfaces (1-1:1.0) and the like have no ids. Not devices.
+            continue
+        if vendor != BOOTSEL_VID or product not in BOOTSEL_PIDS:
+            continue
+        try:
+            chip_id = (device / "serial").read_text().strip().lower() or None
+        except OSError:
+            chip_id = None
+        boards.append(
+            {
+                "port": None,
+                "chip_id": chip_id,
+                "system": None,
+                "version": None,
+                "responsive": False,
+                "bootsel": True,
+                "processor": BOOTSEL_PIDS[product],
+                "usb_device": device,
+            }
+        )
+    return boards
+
+
 CHIP_ID_SNIPPET = "from machine import unique_id;from binascii import hexlify;print(hexlify(unique_id()).decode())"
 
 
@@ -239,9 +349,16 @@ def probe(port):
 
 
 def inventory():
+    """Survey the bench: every board on serial, plus any stuck in BOOTSEL.
+
+    Only the serial boards are returned - a board in the bootloader cannot be
+    flashed by the normal route and has to be rescued first (see
+    trench_coat.rescue_bootsel) - but they are always listed, because "no
+    boards found" is a wrong and expensive answer when three of them are
+    sitting there as mass-storage devices.
+    """
     boards = [probe(port) for port in list_ports()]
-    if not boards:
-        raise CheckFailure("no boards found - check the USB hub and power")
+    stranded = bootsel_boards()
 
     log(f"{'port':16} {'chip id':18} {'running':12} version")
     for b in boards:
@@ -249,7 +366,28 @@ def inventory():
             log(f"{b['port']:16} {'NOT ANSWERING':18} {'-':12} -")
             continue
         log(f"{b['port']:16} {b['chip_id'] or '?':18} {b['system'] or '(none)':12} {b['version'] or '-'}")
+    for b in stranded:
+        log(f"{'(BOOTSEL)':16} {b['chip_id'] or '?':18} {'bootloader':12} {b['processor']} ROM")
+
+    if not boards:
+        raise CheckFailure(no_boards_message(stranded))
+    if stranded:
+        log(f"::warning::{len(stranded)} board(s) are in BOOTSEL/UF2 mode and were not surveyed - run dev/hil/recover.py to put firmware back on them")
     return boards
+
+
+def no_boards_message(stranded=None):
+    """Why the bench looks empty, told apart from a bench that is not there."""
+    stranded = bootsel_boards() if stranded is None else stranded
+    if not stranded:
+        return "no boards found - check the USB hub and power"
+    ids = ", ".join(b["chip_id"] or "?" for b in stranded)
+    return (
+        f"no board is on serial, but {len(stranded)} are in the ROM bootloader (BOOTSEL/UF2 mode): {ids}.\n"
+        "They are attached and healthy - they are just running the bootloader instead of firmware,\n"
+        "which is what a UF2 flash that did not finish leaves behind. dev/hil/recover.py flashes them\n"
+        "back; if it already ran, its output above says what stopped it."
+    )
 
 
 IDENTIFY_SNIPPET = """
@@ -343,6 +481,10 @@ def board_map_instructions(boards, board_map=None):
         "",
         "  cd ~/vector && .venv/bin/python dev/hil/flash_and_check.py --identify",
         "",
+        "A board in BOOTSEL cannot blink, and the id above is the one its ROM",
+        "bootloader publishes. That is the same unique id MicroPython reports, but if",
+        "a board ever turns up under two, map both - a spare entry costs nothing.",
+        "",
         "See dev/hil/RUNNER_SETUP.md for the full walkthrough.",
     ]
     return "\n".join(lines)
@@ -360,6 +502,27 @@ def parse_board_map(raw):
         chip, target = entry.split("=", 1)
         mapping[chip.strip()] = target.strip()
     return mapping
+
+
+def report_unknown_boards(unmapped, boards, board_map):
+    """Say which boards the map does not cover, and how to add them.
+
+    Written to the Actions job summary as well as the log: a board arriving on
+    the bench is a one-line edit on the runner host, and whoever has to make
+    it is reading the run's summary page, not scrolling a log for the chip id.
+    """
+    described = ", ".join(f"{b.get('port') or '(BOOTSEL)'} {b['chip_id'] or '?'}" for b in unmapped)
+    summary_once(
+        described,
+        [
+            "",
+            "### Unrecognised board" + ("s" if len(unmapped) > 1 else ""),
+            "",
+            f"`VECTOR_HIL_BOARD_MAP` does not cover: **{described}**",
+            *as_block(board_map_instructions(boards, board_map)),
+        ],
+    )
+    return "VECTOR_HIL_BOARD_MAP is set but does not cover: " + described
 
 
 def resolve_targets(boards, board_map):
@@ -380,7 +543,7 @@ def resolve_targets(boards, board_map):
     if board_map:
         unmapped = [b for b in boards if b["chip_id"] not in board_map]
         if unmapped:
-            raise CheckFailure("VECTOR_HIL_BOARD_MAP is set but does not cover: " + ", ".join(f"{b['port']} ({b['chip_id']})" for b in unmapped) + "\n" + board_map_instructions(boards, board_map))
+            raise CheckFailure(report_unknown_boards(unmapped, boards, board_map))
         for b in boards:
             b["target"] = board_map[b["chip_id"]]
         log("targets from VECTOR_HIL_BOARD_MAP")
@@ -404,6 +567,60 @@ def resolve_targets(boards, board_map):
         b["target"] = b["system"]
     log("targets from firmware self-report (all distinct)")
     return boards
+
+
+# Every system the bench exists to cover. A run that quietly tests two of the
+# three proves nothing about the third while still reporting green, which is
+# worse than not running: it is a check that has stopped checking. Overridable
+# for a bench that has genuinely lost a board - deliberately, by whoever runs
+# it, and visibly in the log.
+REQUIRED_TARGETS = ("sys11", "wpc", "data_east")
+
+
+def required_targets():
+    raw = os.environ.get("VECTOR_HIL_REQUIRED_TARGETS")
+    if raw is None:
+        return list(REQUIRED_TARGETS)
+    return [target.strip() for target in raw.split(",") if target.strip()]
+
+
+def check_bench_complete(boards):
+    """Which required systems are not on the bench, reported where it shows.
+
+    Returns the missing targets rather than raising: the boards that *are*
+    here still have checks worth running, and a run is expensive. The caller
+    keeps the result and fails the run at the end - green on two boards out of
+    three is the outcome this exists to prevent.
+    """
+    wanted = required_targets()
+    if not wanted:
+        log("no required targets set - running whatever is attached")
+        return []
+    present = {b.get("target") for b in boards}
+    missing = [target for target in wanted if target not in present]
+    if not missing:
+        log("bench is complete: " + ", ".join(wanted))
+        return []
+
+    have = ", ".join(f"{b['target']} ({b['port']})" for b in boards) or "nothing"
+    log(f"::error::the bench is missing {', '.join(missing)} - only {have} answered")
+    summary_once(
+        "### Incomplete bench",
+        [
+            "",
+            "### Incomplete bench",
+            "",
+            f"Missing: **{', '.join(missing)}**. Attached: {have}.",
+            "",
+            "A run proves nothing about a system that is not on the bench, so this fails the run rather",
+            "than reporting green on two boards out of three. The boards that are here are still checked.",
+            "",
+            "Either put the missing board back (`dev/hil/recover.py`, and check it is in",
+            "`VECTOR_HIL_BOARD_MAP`), or set `VECTOR_HIL_REQUIRED_TARGETS` on the runner to the systems",
+            "the bench really has.",
+        ],
+    )
+    return missing
 
 
 # --------------------------------------------------------------------------
@@ -475,9 +692,49 @@ def flash(target, port, build_dir, config_path):
         timeout=900,
     )
     if result.returncode != 0:
-        log(result.stdout[-3000:])
-        log(result.stderr[-3000:])
-        raise CheckFailure(f"flash failed for {target} on {port}")
+        # The output travels with the failure rather than being logged here:
+        # boards are flashed concurrently, and a line printed from a worker
+        # thread lands next to another board's output with nothing to say
+        # which board it came from.
+        tail = (result.stdout[-2000:] + result.stderr[-2000:]).strip()
+        raise CheckFailure(f"flash failed for {target} on {port}:\n      " + "\n      ".join(tail.splitlines()[-20:]))
+
+
+def flash_boards(boards, workdir):
+    """Flash every board at once, and report per board.
+
+    The boards are independent devices on independent serial ports, and
+    dev/flash.py is one subprocess per board that spends nearly all its time
+    waiting on USB - so doing them one after another just adds up the waits.
+    Three boards on the bench Pi: about a minute, instead of three.
+
+    Returns {port: error message}, empty when every board flashed.
+    """
+
+    def flash_one(board):
+        started = time.monotonic()
+        config_path = write_bench_config(board["target"], workdir)
+        flash(board["target"], board["port"], REPO_ROOT / "build" / board["target"], config_path)
+        return time.monotonic() - started
+
+    errors = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(boards))) as pool:
+        futures = {pool.submit(flash_one, board): board for board in boards}
+        for future in concurrent.futures.as_completed(futures):
+            board = futures[future]
+            try:
+                elapsed = future.result()
+            except CheckFailure as exc:
+                errors[board["port"]] = str(exc)
+            except Exception as exc:  # noqa: BLE001 - reported per board, never fatal to the others
+                errors[board["port"]] = f"{type(exc).__name__}: {exc}"
+            else:
+                log(f"  ok    {board['port']:16} {board['target']:12} {elapsed:5.1f}s")
+
+    for port, error in errors.items():
+        log(f"  FAIL  {port}")
+        log(f"::error::{error}")
+    return errors
 
 
 # --------------------------------------------------------------------------

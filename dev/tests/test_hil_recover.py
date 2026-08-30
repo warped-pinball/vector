@@ -363,6 +363,9 @@ def fake_trench_coat(monkeypatch, drives=("/media/RPI-RP2",)):
     monkeypatch.setattr(trench_coat, "find_bootloader_drives", lambda: list(drives))
     monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: list(drives))
     monkeypatch.setattr(trench_coat, "bootsel_touch", lambda port: None)
+    # The bench's healthy boards. Real serial ports would make what
+    # find_board_ports is allowed to see depend on the developer's own desk.
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: ["/dev/ttyACM0", "/dev/ttyACM2"])
     return seen
 
 
@@ -376,6 +379,7 @@ def test_flash_hides_the_other_boards_from_trench_coat(monkeypatch, tmp_path):
     seen = fake_trench_coat(monkeypatch)
 
     assert trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path) is True
+    # Neither healthy board is visible to it, so neither gets reset.
     assert seen["ports_seen"] == []
     assert seen["flashed"] == "/uf2/wpc.uf2"
     # Only the board being recovered is asked to enter the bootloader.

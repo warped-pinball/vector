@@ -225,6 +225,36 @@ recovery first is the point of combining them — it costs almost nothing on a
 healthy bench and turns "a board wedged, so the next four runs were useless"
 into a bench that repairs itself.
 
+### What "the bench is here" means
+
+Three states have to be told apart before any of the above is worth running, and
+getting them confused has cost whole runs:
+
+- **On serial.** The normal case: a port, a chip id, a system it reports running.
+- **In BOOTSEL.** No serial port at all — the ROM bootloader enumerates as USB
+  mass storage, so `mpremote devs` is empty while `lsusb` lists every board.
+  This looked exactly like an unplugged bench and was reported as "no boards
+  found — check the USB hub and power" for a bench that was fine. The bootrom
+  publishes the board's unique id as its USB serial number, which is the same id
+  `machine.unique_id()` returns, so these boards are identifiable through
+  `VECTOR_HIL_BOARD_MAP` like any other: the harness mounts the drive and writes
+  the pinned TrenchCoat UF2 for the mapped target, and the board rejoins the run.
+- **Absent.** Not enumerated either way. This is the state that must fail the
+  run rather than shrink it: two boards out of three passing is a green run that
+  proves nothing about the third. `REQUIRED_TARGETS` names the systems the bench
+  is for; `VECTOR_HIL_REQUIRED_TARGETS` on the runner is how a bench that has
+  really lost a board says so out loud.
+
+A board whose chip id is in none of the map's entries is never guessed at — the
+id and the exact line to add are written to the job summary, because the fix is
+one edit on the runner host and whoever makes it is reading the run, not the log.
+
+Boards are flashed concurrently. They are independent devices on independent
+ports and `dev/flash.py` is one subprocess each, spending nearly all of its time
+waiting on USB, so the stage costs about what one board costs instead of three.
+The failure output travels with the exception rather than being printed by the
+worker, so a failing board's log is still that board's log.
+
 **Trigger: `workflow_run` on "Build and Deploy" completion**, which is every
 push to a PR. Not `pull_request`, and the distinction is the security model:
 `workflow_run` workflows always run *from the default branch, using the default

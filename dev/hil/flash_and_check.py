@@ -39,6 +39,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
@@ -49,10 +50,12 @@ from bench import (  # noqa: E402
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
+    board_map_instructions,
     build,
+    check_bench_complete,
     endgroup,
     ensure_tools_on_path,
-    flash,
+    flash_boards,
     get,
     group,
     identify,
@@ -64,7 +67,6 @@ from bench import (  # noqa: E402
     resolve_targets,
     source_version,
     wait_for_server,
-    write_bench_config,
 )
 
 # Read-only routes exercised over HTTP. Kept side-effect free so the check can
@@ -102,8 +104,7 @@ def check_faults(board):
 
     warned = codes & BENCH_WARN_FAULTS
     if warned:
-        log(f"::warning::{board['port']} raised {sorted(warned)} - bare-board bus noise, "
-            "the board is in safe mode and the game config was NOT loaded")
+        log(f"::warning::{board['port']} raised {sorted(warned)} - bare-board bus noise, " "the board is in safe mode and the game config was NOT loaded")
     return warned
 
 
@@ -235,19 +236,14 @@ def health_check_http(board):
 
     http_configs = payloads["/api/game/configs_list"]
     if len(http_configs) != board["usb_config_count"]:
-        raise CheckFailure(
-            f"http lists {len(http_configs)} configs, USB lists {board['usb_config_count']}"
-        )
+        raise CheckFailure(f"http lists {len(http_configs)} configs, USB lists {board['usb_config_count']}")
 
     # Authentication is enforced over HTTP and deliberately bypassed over USB
     # (backend.py:280), so this is the only transport that can prove the gate
     # works. password_check is the one auth route with no side effects.
     status = http_status(f"{base}/api/auth/password_check")
     if status != 401:
-        raise CheckFailure(
-            f"/api/auth/password_check returned {status} without credentials, expected 401 - "
-            "HTTP authentication is not being enforced"
-        )
+        raise CheckFailure(f"/api/auth/password_check returned {status} without credentials, expected 401 - " "HTTP authentication is not being enforced")
     log(f"    GET {'/api/auth/password_check':34} 401  (auth enforced, as expected)")
 
     # A challenge must not be reusable: the handler deletes it on use.
@@ -275,13 +271,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-http", action="store_true", help="USB checks only; do not exercise the network stack")
     parser.add_argument("--skip-flash", action="store_true", help="health-check what is already on the boards")
-    parser.add_argument("--inventory-only", action="store_true",
-                        help="print each board's chip id and stop - use this to build VECTOR_HIL_BOARD_MAP")
-    parser.add_argument("--identify", action="store_true",
-                        help="blink each board in turn so you can tell which physical board is which")
+    parser.add_argument("--inventory-only", action="store_true", help="print each board's chip id and stop - use this to build VECTOR_HIL_BOARD_MAP")
+    parser.add_argument("--identify", action="store_true", help="blink each board in turn so you can tell which physical board is which")
     args = parser.parse_args()
 
     ensure_tools_on_path()
+    board_map = parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP"))
 
     if args.identify:
         group("Inventory")
@@ -296,29 +291,30 @@ def main():
         group("Inventory")
         boards = inventory()
         endgroup()
-        log("")
-        log("The boards are dedicated to the bench, so pin them by chip id once and")
-        log("autodetection stops mattering. Put this in the runner's .env, filling in")
-        log("the target for each (sys11, wpc, data_east, em, whitestar, classic):")
-        log("")
-        log("  VECTOR_HIL_BOARD_MAP=" + ",".join(f"{b['chip_id']}=<target>" for b in boards))
-        log("")
-        log("Then: cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start")
+        log(board_map_instructions(boards, board_map))
         return 0
 
     workdir = REPO_ROOT / "build"
     workdir.mkdir(exist_ok=True)
     failures = []
 
+    # A board in BOOTSEL has no serial port, so it is invisible to every stage
+    # below. Put firmware back on it first and it joins the run normally.
+    trench_coat.rescue_bootsel(board_map, REPO_ROOT / "build" / "hil")
+
     group("Inventory")
     boards = inventory()
     endgroup()
 
     group("Resolve targets")
-    boards = resolve_targets(boards, parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP")))
+    boards = resolve_targets(boards, board_map)
     for b in boards:
         log(f"  {b['port']}  ->  {b['target']}")
+    missing = check_bench_complete(boards)
     endgroup()
+
+    if missing:
+        failures.append("the bench is missing " + ", ".join(missing))
 
     if not args.skip_flash:
         for target in sorted({b["target"] for b in boards}):
@@ -327,17 +323,13 @@ def main():
             log(f"built {target} at version {source_version(target)}")
             endgroup()
 
+        group(f"Flash {len(boards)} board(s)")
+        errors = flash_boards(boards, workdir)
         for b in boards:
-            group(f"Flash {b['target']} on {b['port']}")
-            try:
-                config_path = write_bench_config(b["target"], workdir)
-                flash(b["target"], b["port"], REPO_ROOT / "build" / b["target"], config_path)
-                log("flashed")
-            except CheckFailure as exc:
-                log(f"::error::{exc}")
-                failures.append(f"{b['port']} ({b['target']}): {exc}")
+            if b["port"] in errors:
+                failures.append(f"{b['port']} ({b['target']}): {errors[b['port']]}")
                 b["skip"] = True
-            endgroup()
+        endgroup()
 
     for b in boards:
         if b.get("skip"):
@@ -386,10 +378,12 @@ def main():
     for b in boards:
         state = "FAIL" if any(b["port"] in f for f in failures) else "ok"
         log(f"  {state:5} {b['port']:16} {b['target']:12} {b.get('ip') or ''}")
+    for target in missing:
+        log(f"  {'ABSENT':5} {'-':16} {target}")
     log("=" * 60)
 
     if failures:
-        log(f"\n{len(failures)} board(s) failed:")
+        log(f"\n{len(failures)} failure(s):")
         for failure in failures:
             log(f"  - {failure}")
         return 1

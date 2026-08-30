@@ -52,6 +52,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import bench  # noqa: E402
 import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
     CTRL_C,
@@ -69,8 +70,13 @@ from bench import (  # noqa: E402
     open_serial,
     parse_board_map,
     read_until_quiet,
+    summary,
     time_limit,
 )
+
+# Anything worth saying about a recovery is worth saying in the job summary
+# too - see bench.summary for why.
+note = summary
 
 # ioctl number for USBDEVFS_RESET, from <linux/usbdevice_fs.h>: _IO('U', 20).
 USBDEVFS_RESET = ord("U") << 8 | 20
@@ -109,7 +115,7 @@ def survey(board_map):
     """
     ports = list_ports()
     if not ports:
-        raise CheckFailure("no boards found at all - check the USB hub and power")
+        raise CheckFailure(bench.no_boards_message())
 
     alive, dead, claimed = [], [], set()
     note("")
@@ -408,25 +414,6 @@ def recover(port, target, args):
     return None
 
 
-def note(line):
-    """Append a line to the Actions job summary as well as the log.
-
-    Job summaries are stored separately from the log archive, and the last two
-    bench runs proved why that matters: the runner died mid-job, never uploaded
-    its logs, and every finding went with them. Written incrementally rather
-    than at the end for the same reason.
-    """
-    log(line)
-    path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not path:
-        return
-    try:
-        with open(path, "a") as handle:
-            handle.write(line.replace("::warning::", "WARNING: ").replace("::error::", "ERROR: ") + "\n")
-    except OSError:
-        pass
-
-
 def preflight():
     """Report which recovery steps are actually available here.
 
@@ -444,6 +431,10 @@ def preflight():
     note("")
     note("```")
     note(f"  serial      ok        {len(ports)} port(s) visible")
+
+    stranded = bench.bootsel_boards()
+    if stranded:
+        note(f"  bootsel     found     {len(stranded)} board(s) in the ROM bootloader: " + ", ".join(b["chip_id"] or "?" for b in stranded))
 
     node = usb_device_path(ports[0]) if ports else None
     if node is None:
@@ -481,8 +472,15 @@ def main():
     preflight()
     endgroup()
 
-    group("Survey")
     board_map = parse_board_map(os.environ.get("VECTOR_HIL_BOARD_MAP"))
+
+    # Rung 0, before the ladder proper. A board in BOOTSEL has no serial port,
+    # so none of the four steps below can even be attempted on it - and it is
+    # the one state that is always repairable, because the bootloader is
+    # sitting there waiting for a UF2.
+    trench_coat.rescue_bootsel(board_map, args.cache_dir)
+
+    group("Survey")
     alive, dead, targets = survey(board_map)
     endgroup()
 

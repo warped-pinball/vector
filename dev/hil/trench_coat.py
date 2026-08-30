@@ -24,12 +24,19 @@ what TrenchCoat can see rather than by changing what it does:
     so `list_rpi_rp2_drives` is wrapped to mount the RPI-RP2 volume with
     udisksctl first.
 
+A board found *already* in BOOTSEL is the one case its `flash_firmware` cannot
+be narrowed to - see the second half of this file for why, and for the copy
+sequence that replaces it there. It keeps the parts that matter: the nuke.uf2
+wipe, and the pinned UF2 bundle from this checkout.
+
 Only `src.core`, `src.ray`, `src.ui` and `src.util` are imported, and between
 them they need nothing but pyserial - which the bench venv already has because
 mpremote ships it. `src.main` and `src.interactive` are the parts that want
 InquirerPy and a human, and neither is used here.
 """
 
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -37,7 +44,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from bench import SERIAL_WRITE_TIMEOUT, CheckFailure, log, open_serial  # noqa: E402
+import bench  # noqa: E402
+from bench import (  # noqa: E402
+    SERIAL_WRITE_TIMEOUT,
+    CheckFailure,
+    endgroup,
+    group,
+    log,
+    open_serial,
+)
 
 # Pinned, like every other third-party input to this bench. Bumping it means
 # reviewing what changed in the flashing sequence first.
@@ -246,16 +261,26 @@ def flash(port, target, root):
     bound_serial_writes(ray)
     uf2 = bundled_uf2(root, target)
 
+    port_being_recovered = port
     drives = enter_bootloader(core, ray, port)
     if not drives:
         log("    the board never presented a bootloader drive, so there is nothing to flash")
         return False
 
-    # From here TrenchCoat drives, on this board only. find_board_ports is
-    # emptied because the board is already a drive - that makes its
-    # get_all_boards_into_bootloader() a no-op instead of a second attempt, and
-    # keeps it away from the healthy boards on the bench.
-    ray.Ray.find_board_ports = classmethod(lambda cls: [])
+    # From here TrenchCoat drives, on this board only. It sees every serial
+    # port except the healthy boards' - which is empty right now (the board
+    # being recovered is a drive, not a port), so its
+    # get_all_boards_into_bootloader() is a no-op instead of a second attempt,
+    # and it never touches the rest of the bench.
+    #
+    # Hiding *every* port instead would break the other end of the sequence:
+    # flash_firmware finishes by waiting for as many ports as it flashed
+    # drives, so a permanently empty list makes that wait unsatisfiable and
+    # turns a successful reflash into a timeout. Filtering rather than
+    # emptying also survives the board coming back on a different ttyACM
+    # number, which it often does.
+    others = {port for port in serial_ports() if port != port_being_recovered}
+    ray.Ray.find_board_ports = classmethod(lambda cls: [p for p in serial_ports() if p not in others])
     core.list_rpi_rp2_drives = lambda: find_bootloader_drives() or drives
 
     # Their failure path prints advice and calls sys.exit; make it an exception
@@ -272,3 +297,231 @@ def flash(port, target, root):
     # port, so reaching here is the success condition.
     log("    TrenchCoat reports the board restarted")
     return True
+
+
+# --------------------------------------------------------------------------
+# Boards that are already in the bootloader
+# --------------------------------------------------------------------------
+#
+# A board found in BOOTSEL needs the second half of the sequence above and not
+# the first: there is no port to reset, because the board is a mass-storage
+# device already. TrenchCoat's own `core.flash_firmware` cannot be pointed at
+# one board here - it wipes every drive it can see and then waits on
+# `Ray.find_board_ports()` for as many boards as it flashed, so restricting it
+# to one board (which the bench must do, or a rescue takes the healthy boards
+# with it) makes its final wait unsatisfiable. So the copy sequence is spelled
+# out below, with the parts that matter kept: nuke.uf2 first, and the pinned
+# UF2 bundle from the checkout.
+
+BOOTSEL_SETTLE = 5
+DRIVE_TIMEOUT = 60
+RESTART_TIMEOUT = 90
+
+
+def serial_ports():
+    return sorted(str(path) for path in Path("/dev").glob("ttyACM*"))
+
+
+def block_device(usb_device):
+    """The /dev node behind a bootloader's mass-storage interface.
+
+    Walked from the USB device's own sysfs directory rather than looked up in
+    /dev/disk/by-id, because that is exact: with three boards in BOOTSEL the
+    by-id names differ only by a serial string whose format is the bootrom's
+    business, while this path belongs to the one device we are holding.
+    """
+    for block in sorted(Path(usb_device).glob("*/host*/target*/*/block/*")):
+        return Path("/dev") / block.name
+    return None
+
+
+def mount_point(device):
+    """Where `device` is mounted, if it is."""
+    try:
+        for line in Path("/proc/mounts").read_text().splitlines():
+            fields = line.split()
+            if len(fields) > 1 and fields[0] == str(device):
+                return fields[1].replace("\\040", " ")
+    except OSError:
+        pass
+    return None
+
+
+_mount_error = None
+
+
+def mount(device):
+    """Mount a bootloader drive, whoever has to do it. Returns the path or None."""
+    existing = mount_point(device)
+    if existing:
+        return existing
+    result = subprocess.run(["udisksctl", "mount", "--no-user-interaction", "-b", str(device)], capture_output=True, text=True, timeout=120)
+    if result.returncode == 0:
+        return result.stdout.strip().rsplit(" at ", 1)[-1].rstrip(".")
+    if "AlreadyMounted" in result.stderr:
+        return mount_point(device)
+
+    # Said once. bootsel_drive keeps asking while it waits for a drive that
+    # may still be settling, and the same permission error sixty times over
+    # buries everything else in the log.
+    global _mount_error
+    detail = (result.stderr or result.stdout).strip()
+    if detail != _mount_error:
+        _mount_error = detail
+        log(f"    could not mount {device}: {detail}")
+    return None
+
+
+def unmount(device):
+    """Best effort, so the next flash does not trip over a stale mount."""
+    subprocess.run(["udisksctl", "unmount", "--no-user-interaction", "-b", str(device)], capture_output=True, text=True, timeout=60)
+
+
+def bootsel_drive(chip_id, timeout=DRIVE_TIMEOUT):
+    """Wait for one board's bootloader drive, by chip id, and mount it.
+
+    Looked up afresh every time rather than remembered: writing a UF2 reboots
+    the board, so the device node, the sysfs path and the mount point are all
+    different on the other side of a copy. The chip id is the only handle that
+    survives.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        for board in bench.bootsel_boards():
+            if board["chip_id"] != chip_id:
+                continue
+            device = block_device(board["usb_device"])
+            if device is None or not device.exists():
+                break
+            path = mount(device)
+            if path and (Path(path) / "INFO_UF2.TXT").exists():
+                return device, path
+            break
+        if time.monotonic() >= deadline:
+            return None, None
+        time.sleep(1)
+
+
+def wait_for_bootsel(chip_id, present, timeout=DRIVE_TIMEOUT, poll=0.25):
+    """Wait until the board is (or is no longer) enumerated as a bootloader.
+
+    Polled quickly, because one of the two things it watches for is a gap:
+    the board vanishes when it starts running a UF2 and is back moments later,
+    and a slow poll can step straight over that.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        here = any(board["chip_id"] == chip_id for board in bench.bootsel_boards())
+        if here == present:
+            return True
+        time.sleep(poll)
+    return False
+
+
+def copy_uf2(uf2, device, drive):
+    """Write a UF2 to a mounted bootloader drive.
+
+    An I/O error at the end of the copy is not reported as a failure: the
+    board reboots the moment the last block lands, which is exactly what a
+    successful flash looks like from this side - the device goes away
+    mid-write. Whether it worked is decided by what comes back, below.
+    """
+    log(f"    writing {uf2.name} to {drive}")
+    try:
+        shutil.copy(str(uf2), drive)
+        os.sync()
+    except OSError as exc:
+        log(f"    the drive went away during the copy ({exc}) - that is usually the board rebooting")
+    unmount(device)
+
+
+def flash_bootsel(chip_id, target, root):
+    """Put firmware back on a board that is sitting in its ROM bootloader.
+
+    Returns the serial port it came back on, or None. The board is left
+    running TrenchCoat's bundled firmware for its target, which is a working
+    Vector board and, more to the point, a board the normal build-and-flash
+    path can talk to again.
+    """
+    uf2 = bundled_uf2(root, target)
+    nuke = Path(root) / "uf2" / "nuke.uf2"
+    if not nuke.exists():
+        raise CheckFailure(f"{nuke} is missing from the trench-coat checkout")
+
+    before = set(serial_ports())
+    device, drive = bootsel_drive(chip_id)
+    if drive is None:
+        log(f"    no bootloader drive for {chip_id} - it is enumerated but its filesystem never appeared")
+        return None
+
+    # The wipe is the load-bearing step: it erases the whole flash, so nothing
+    # from whatever state the board was left in survives into the new firmware.
+    copy_uf2(nuke, device, drive)
+    # Not seeing it leave is not a failure: a wipe can start and finish
+    # between two polls, and what matters is the state it settles in.
+    if not wait_for_bootsel(chip_id, present=False, timeout=30):
+        log("    never saw it restart - either the wipe was quick or it never began")
+    if not wait_for_bootsel(chip_id, present=True, timeout=DRIVE_TIMEOUT):
+        log("    the board did not come back as a bootloader after the wipe")
+        return None
+    time.sleep(BOOTSEL_SETTLE)
+
+    device, drive = bootsel_drive(chip_id)
+    if drive is None:
+        log("    the wiped board never presented its drive again")
+        return None
+    copy_uf2(uf2, device, drive)
+
+    deadline = time.monotonic() + RESTART_TIMEOUT
+    while time.monotonic() < deadline:
+        new = [port for port in serial_ports() if port not in before]
+        if new:
+            log(f"    back as {new[0]} running {uf2.name}")
+            return new[0]
+        time.sleep(1)
+    log(f"    {uf2.name} was written but the board never came back as a serial device")
+    return None
+
+
+def rescue_bootsel(board_map, cache_dir):
+    """Flash every board found in BOOTSEL back to a serial device.
+
+    Runs before anything else on the bench, because a board in this state is
+    invisible to every other stage: no serial port, no chip id over the REPL,
+    nothing to flash or health-check. Boards the map does not cover are
+    reported and left alone - there is no way to guess which UF2 they need,
+    and writing the wrong system's firmware is worse than leaving them.
+
+    Returns the number of boards put back.
+    """
+    stranded = bench.bootsel_boards()
+    if not stranded:
+        return 0
+
+    group(f"Rescue {len(stranded)} board(s) in BOOTSEL")
+    log("These boards are in the ROM bootloader, not running firmware. Flashing them back.")
+    unmapped = [board for board in stranded if board["chip_id"] not in board_map]
+    if unmapped:
+        log(f"::error::{bench.report_unknown_boards(unmapped, stranded, board_map)}")
+
+    rescued = 0
+    root = None
+    for board in stranded:
+        chip_id = board["chip_id"]
+        target = board_map.get(chip_id)
+        if not target:
+            continue
+        log(f"  {chip_id}  {board['processor']}  ->  {target}")
+        try:
+            if root is None:
+                root = clone(cache_dir / "trench-coat")
+            if flash_bootsel(chip_id, target, root):
+                rescued += 1
+        except CheckFailure as exc:
+            log(f"::error::{chip_id} ({target}): {exc}")
+        except Exception as exc:  # noqa: BLE001 - one board's rescue never stops the next
+            log(f"::error::{chip_id} ({target}): {type(exc).__name__}: {exc}")
+
+    log(f"{rescued} of {len(stranded)} board(s) rescued")
+    endgroup()
+    return rescued

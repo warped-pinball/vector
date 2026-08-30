@@ -135,6 +135,27 @@ system**, since that means at least one is running firmware for a system it isn'
 
 `--inventory-only` prints the chip ids without blinking or flashing anything.
 
+A board in BOOTSEL is covered by the same map. Its ROM bootloader publishes the board's unique
+id as the USB serial number, which is the id `machine.unique_id()` reports once firmware is
+running, so a board can be recognised and put back without ever being a serial device. If one
+ever turns up under two different ids, map both — a spare entry costs nothing.
+
+## Every system, every run
+
+The bench exists to cover `sys11`, `wpc` and `data_east`, and a run that quietly tests two of
+them still reports green about the third. So a missing board fails the run: the boards that are
+present are still flashed and checked, and the verdict at the end says which system was absent.
+
+If the bench has genuinely lost a board for a while, say so deliberately rather than letting the
+check rot:
+
+```bash
+echo 'VECTOR_HIL_REQUIRED_TARGETS=sys11,wpc' >> ~/actions-runner/.env
+cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
+```
+
+Unset, it defaults to all three. Set to an empty value, the check is off entirely.
+
 ## Verify
 
 The runner should show **Idle** under Settings → Actions → Runners with the `vector-hil` label.
@@ -229,7 +250,17 @@ the `recover` stage of [`hil.yml`](../../.github/workflows/hil.yml), which runs 
 cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/recover.py
 ```
 
-It opens with a report of which rungs this runner can actually use. As measured on the bench
+Before the ladder it deals with the one state none of the rungs can reach: a board in
+**BOOTSEL/UF2 mode**. Such a board is not a serial device at all — the ROM bootloader
+enumerates as USB mass storage, so `mpremote devs` shows nothing and `lsusb` shows everything,
+which is exactly how a healthy bench came to report "no boards found". Every harness now looks
+for those boards, identifies each one by the id its bootloader publishes, mounts its drive and
+writes the TrenchCoat UF2 for the target the map gives it — after which the board is an ordinary
+serial device again and the run carries on. A board the map does not cover is left alone, with
+its id and the line to add printed to the job summary: there is no way to guess which system's
+firmware it wants, and writing the wrong one is worse than leaving it.
+
+It then opens with a report of which rungs this runner can actually use. As measured on the bench
 on 2026-08-28:
 
 | rung | state | what it needs |
