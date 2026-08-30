@@ -259,6 +259,7 @@ def list_ports():
 
 BOOTSEL_VID = "2e8a"  # Raspberry Pi
 BOOTSEL_PIDS = {"0003": "RP2040", "000f": "RP2350"}  # "RP2 Boot"
+RUNNING_PID = "0005"  # MicroPython "Board in FS mode" - a normal, working board
 
 USB_DEVICES = Path("/sys/bus/usb/devices")
 
@@ -491,14 +492,30 @@ def usb_bus_report():
     for device in devices:
         lines.append(f"  {device['path']:12} {device['id']:10} {device['name']}" + (f"  serial {device['serial']}" if device["serial"] else ""))
 
-    unknown = [d for d in devices if d["id"].startswith(BOOTSEL_VID + ":")]
-    if unknown:
+    # Say what each Raspberry Pi device *is*, rather than lumping them together.
+    # The first version called every 2e8a device unrecognised, which produced a
+    # flatly self-contradictory report on the bench: it listed a 2e8a:000f
+    # bootloader and then said none of the devices was "a bootloader this
+    # harness recognises (2e8a:0003, 2e8a:000f)".
+    running = [d for d in devices if d["id"] == f"{BOOTSEL_VID}:{RUNNING_PID}"]
+    bootloaders = [d for d in devices if d["id"].split(":")[1] in BOOTSEL_PIDS and d["id"].startswith(BOOTSEL_VID + ":")]
+    strangers = [d for d in devices if d["id"].startswith(BOOTSEL_VID + ":") and d not in running and d not in bootloaders]
+
+    if running or bootloaders or strangers:
+        lines.append("")
+        lines.append("Raspberry Pi devices on the bus:")
+    if running:
+        lines.append(f"  {len(running)} running MicroPython - these are the boards that appear as serial ports")
+    for device in bootloaders:
+        lines.append(f"  1 in the ROM bootloader: {device['serial'] or '?'} ({device['id']})")
+    if bootloaders:
         lines += [
-            "",
-            "Raspberry Pi devices are on the bus (" + ", ".join(sorted({d["id"] for d in unknown})) + ") but none of them is",
-            "a serial port or a bootloader this harness recognises (" + ", ".join(f"{BOOTSEL_VID}:{pid}" for pid in BOOTSEL_PIDS) + ").",
-            "That id is the thing to chase - it says what mode the boards are actually in.",
+            "    A board here is the rescue stage's job, not a missing board: it is attached and",
+            "    one UF2 away from working. If it is still in this state, the rescue ran and could",
+            "    not finish - its output above says where it stopped.",
         ]
+    for device in strangers:
+        lines.append(f"  1 in a mode this harness does not handle: {device['id']} - that id is the thing to chase")
     return lines
 
 

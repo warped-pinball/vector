@@ -369,7 +369,36 @@ def mount(device):
     if detail != _mount_error:
         _mount_error = detail
         log(f"    could not mount {device}: {detail}")
+        for line in describe_block_device(device):
+            log(f"    {line}")
     return None
+
+
+def describe_block_device(device):
+    """What the kernel thinks of a drive udisks would not mount.
+
+    "not a mountable filesystem" is where a bench recovery actually stopped,
+    and on its own it does not say whether the board is presenting a broken
+    filesystem or no drive at all. The size settles it: a bootloader offering
+    zero sectors is a board-side fault that no amount of retrying fixes, and
+    it needs picotool or a person rather than this code.
+    """
+    name = Path(device).name
+    lines = []
+    try:
+        sectors = int((Path("/sys/block") / name / "size").read_text().strip())
+    except (OSError, ValueError):
+        return ["(could not read the drive's size from sysfs)"]
+
+    if sectors == 0:
+        lines.append("the drive reports ZERO sectors, so there is no filesystem to mount and never will be.")
+        lines.append("The board is in the bootloader but its mass storage is presenting nothing - a UF2 cannot")
+        lines.append("be copied to it. picotool talks to the bootrom directly and does not need the drive:")
+        lines.append(f"  picotool load -x <uf2>   # or: picotool info    (board is {name})")
+    else:
+        lines.append(f"the drive reports {sectors} sectors ({sectors * 512 // 1024} KiB) but no filesystem udisks will mount.")
+        lines.append("Worth checking by hand on the bench host: sudo blkid " + str(device) + " ; sudo dmesg | tail -30")
+    return lines
 
 
 def unmount(device):
@@ -451,7 +480,8 @@ def flash_bootsel(chip_id, target, root):
     before = set(serial_ports())
     device, drive = bootsel_drive(chip_id)
     if drive is None:
-        log(f"    no bootloader drive for {chip_id} - it is enumerated but its filesystem never appeared")
+        log(f"    no usable bootloader drive for {chip_id}: it is enumerated and in the bootloader, but")
+        log("    nothing here could mount a filesystem to copy a UF2 onto - see the reason above")
         return None
 
     # The wipe is the load-bearing step: it erases the whole flash, so nothing

@@ -449,7 +449,7 @@ def test_an_empty_bench_prints_the_usb_bus(monkeypatch, tmp_path):
         {
             "usb1": ("1d6b", "0002", "0000:01:00.0"),
             "1-1": ("2109", "3431", None),
-            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),  # a mode we do not handle
+            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),  # running, but no serial port for it
             "1-1.1:1.0": None,
         },
     )
@@ -459,8 +459,9 @@ def test_an_empty_bench_prints_the_usb_bus(monkeypatch, tmp_path):
 
     assert "2e8a:0005" in message
     assert "2109:3431" in message
-    # The recognised ids are named, so the reader can see what the mismatch is.
-    assert "2e8a:0003" in message
+    # A board in this state is running firmware, so say that rather than
+    # calling it unrecognised - the mismatch is that it has no serial port.
+    assert "1 running MicroPython" in message
     # Interfaces carry no ids and are not devices.
     assert "1-1.1:1.0" not in message
 
@@ -581,3 +582,68 @@ def test_a_complete_bench_does_not_print_the_bus(job_summary, monkeypatch):
     monkeypatch.setattr(bench, "usb_bus_report", lambda: pytest.fail("nothing is missing, so there is nothing to explain"))
 
     assert bench.check_bench_complete(boards_for("sys11", "wpc", "data_east")) == []
+
+
+# --------------------------------------------------------------------------
+# the bus report has to describe what it lists
+# --------------------------------------------------------------------------
+
+
+def test_a_bootloader_on_the_bus_is_not_called_unrecognised(monkeypatch, tmp_path):
+    """The first version contradicted itself on the bench.
+
+    It listed a 2e8a:000f device and then said none of the devices was "a
+    bootloader this harness recognises (2e8a:0003, 2e8a:000f)".
+    """
+    root = usb_tree(
+        tmp_path,
+        {
+            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),
+            "1-1.2": ("2e8a", "000f", "DF13A50C13958980"),
+            "1-1.3": ("2e8a", "0005", "899fab8c90bfeb9a"),
+        },
+    )
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    report = "\n".join(bench.usb_bus_report())
+
+    assert "in the ROM bootloader: DF13A50C13958980" in report
+    assert "2 running MicroPython" in report
+    assert "does not handle" not in report
+    assert "rescue stage's job" in report
+
+
+def test_a_genuinely_unknown_mode_is_still_called_out(monkeypatch, tmp_path):
+    root = usb_tree(tmp_path, {"1-1.1": ("2e8a", "abcd", "aaaa")})
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    report = "\n".join(bench.usb_bus_report())
+
+    assert "mode this harness does not handle: 2e8a:abcd" in report
+
+
+def test_a_zero_sector_drive_says_so_and_names_picotool(monkeypatch, tmp_path):
+    """Where a real bench recovery stopped: enumerated, in BOOTSEL, no filesystem."""
+    block = tmp_path / "sda"
+    block.mkdir()
+    (block / "size").write_text("0\n")
+    real_read = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real_read(block / "size") if str(self).endswith("/sys/block/sda/size") else real_read(self, *a, **k))
+
+    described = "\n".join(trench_coat.describe_block_device("/dev/sda"))
+
+    assert "ZERO sectors" in described
+    assert "picotool" in described
+
+
+def test_a_drive_with_sectors_but_no_filesystem_points_at_blkid(monkeypatch, tmp_path):
+    block = tmp_path / "sda"
+    block.mkdir()
+    (block / "size").write_text("256\n")
+    real_read = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real_read(block / "size") if str(self).endswith("/sys/block/sda/size") else real_read(self, *a, **k))
+
+    described = "\n".join(trench_coat.describe_block_device("/dev/sda"))
+
+    assert "256 sectors" in described
+    assert "blkid" in described
