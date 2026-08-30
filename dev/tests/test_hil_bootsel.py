@@ -776,3 +776,36 @@ def test_picotool_makes_a_reflash_possible_without_any_mount(monkeypatch):
 
     assert possible is True
     assert "picotool" in why
+
+
+def test_a_board_with_no_chip_id_is_never_put_in_the_suggested_line():
+    """The bench printed `VECTOR_HIL_BOARD_MAP=None=<target>,...` as the fix.
+
+    A board that will not say who it is cannot be mapped - an entry needs an
+    id to key on - so it is named separately rather than rendered into the
+    line somebody is meant to paste.
+    """
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": None},
+        {"port": "/dev/ttyACM1", "chip_id": "899fab8c90bfeb9a"},
+    ]
+
+    text = board_map_instructions_for(boards, {"899fab8c90bfeb9a": "data_east"})
+
+    assert "None=" not in text
+    assert "VECTOR_HIL_BOARD_MAP=899fab8c90bfeb9a=data_east" in text
+    assert "/dev/ttyACM0 did not report a chip id" in text
+    assert "left mid-flash" in text
+
+
+def board_map_instructions_for(boards, board_map):
+    return bench.board_map_instructions(boards, board_map)
+
+
+def test_every_board_still_appears_when_they_all_have_ids():
+    boards = [{"port": "/dev/ttyACM0", "chip_id": "aaaa"}, {"port": "/dev/ttyACM1", "chip_id": "bbbb"}]
+
+    text = bench.board_map_instructions(boards, {"aaaa": "sys11", "bbbb": "wpc"})
+
+    assert "VECTOR_HIL_BOARD_MAP=aaaa=sys11,bbbb=wpc" in text
+    assert "did not report a chip id" not in text

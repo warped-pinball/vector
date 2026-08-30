@@ -614,7 +614,13 @@ def board_map_instructions(boards, board_map=None):
         suggestion = suggest_target(target)
         return suggestion if suggestion in bench_targets() else "<target>"
 
-    suggested = ",".join(f"{b['chip_id']}={wanted(b['chip_id'])}" for b in boards)
+    # A board whose chip id could not be read cannot be mapped at all - there
+    # is nothing to key the entry on. Leaving it in produced a suggestion of
+    # `None=<target>` on the bench, which is a broken value presented as the
+    # fix. It is named separately instead, with what to do about it.
+    nameless = [b for b in boards if not b.get("chip_id")]
+    identified = [b for b in boards if b.get("chip_id")]
+    suggested = ",".join(f"{b['chip_id']}={wanted(b['chip_id'])}" for b in identified)
     lines = [
         "",
         "VECTOR_HIL_BOARD_MAP pins each board to the system it is wired to, by RP2040",
@@ -624,6 +630,13 @@ def board_map_instructions(boards, board_map=None):
         "  targets: " + ", ".join(bench_targets()),
         "",
     ]
+    if nameless:
+        lines += [
+            "  " + ", ".join(b.get("port") or "(BOOTSEL)" for b in nameless) + " did not report a chip id, so it cannot be",
+            "  mapped yet - an entry needs an id to key on. A board that enumerates but will not say",
+            "  who it is has usually been left mid-flash; recover it first, then map the id it reports.",
+            "",
+        ]
     unusable = [target for target in buildable_targets() if target not in bench_targets()]
     if unusable:
         lines += [
