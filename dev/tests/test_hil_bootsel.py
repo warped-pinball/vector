@@ -468,3 +468,60 @@ def test_an_empty_bench_prints_the_usb_bus(monkeypatch, tmp_path):
 def test_an_empty_sysfs_says_so_rather_than_blaming_the_boards(monkeypatch, tmp_path):
     monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing")
     assert "Nothing at all is on the USB bus" in bench.no_boards_message()
+
+
+# --------------------------------------------------------------------------
+# a board wired for a system the bench cannot drive
+# --------------------------------------------------------------------------
+
+
+def test_the_target_list_comes_from_the_repo(monkeypatch):
+    """src/common is shared code, and sys11_tiny is the sys11 board twice."""
+    buildable = bench.buildable_targets()
+
+    assert "classic" in buildable and "whitestar" in buildable
+    assert "common" not in buildable
+    assert "sys11_tiny" not in buildable and "sys11" in buildable
+
+
+def test_only_targets_with_configs_can_be_driven():
+    ready = bench.bench_targets()
+
+    assert set(ready) == {"sys11", "wpc", "data_east", "em"}
+    # Real build targets, but nothing to boot them against.
+    assert "classic" not in ready and "whitestar" not in ready
+
+
+def test_a_board_mapped_to_a_configless_target_is_refused_early():
+    """A classic board turned up on the bench; the map must not be able to lie about it."""
+    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True}]
+
+    with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
+        bench.resolve_targets(boards, {"899f": "classic"})
+
+
+def test_a_target_that_does_not_exist_at_all_says_what_does():
+    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": None, "responsive": True}]
+
+    with pytest.raises(bench.CheckFailure, match="not a target in this checkout"):
+        bench.resolve_targets(boards, {"899f": "sys12"})
+
+
+def test_self_report_cannot_smuggle_in_an_undriveable_target():
+    """Autodetection reads the flashed firmware, which can say 'classic' too."""
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": "aaaa", "system": "wpc", "responsive": True},
+        {"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True},
+    ]
+
+    with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
+        bench.resolve_targets(boards, {})
+
+
+def test_the_instructions_name_what_cannot_be_mapped(job_summary):
+    text = bench.board_map_instructions([{"port": None, "chip_id": "899f"}], {})
+
+    assert "targets: data_east, em, sys11, wpc" in text
+    # Naming them matters: the board on the bench is running one of them, and
+    # the only wrong move is mapping it to a system it is not wired for.
+    assert "classic" in text and "whitestar" in text

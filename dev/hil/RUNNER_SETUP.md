@@ -124,7 +124,11 @@ echo 'VECTOR_HIL_BOARD_MAP=<chip1>=sys11,<chip2>=wpc,<chip3>=data_east' >> ~/act
 cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
-Valid targets are the config families: `sys11`, `wpc`, `data_east`, `em`. The map must cover
+Valid targets are the ones with game configs to boot against: `sys11`, `wpc`, `data_east`, `em`.
+The tree also builds `classic` and `whitestar`, and the bench **cannot** drive those — they have a
+`systemConfig.py` and no `config/` directory, so there is nothing to flash and boot. A board wired
+for one of them cannot be mapped at all until that target has configs; mapping it to a different
+system would flash the wrong firmware to real hardware, so the harness refuses it by name. The map must cover
 *every* board the harness sees - adding a board to the bench means adding it here, or the run
 stops with `VECTOR_HIL_BOARD_MAP is set but does not cover: ...`. That failure (and the other
 map-related ones) prints these same instructions, pre-filled with the bench's actual chip ids.

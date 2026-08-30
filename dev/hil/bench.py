@@ -523,9 +523,18 @@ def board_map_instructions(boards, board_map=None):
         "chip id (stable across reflashing). Every board on the bench must appear in it.",
         "",
         "  format:  <chip id>=<target>,<chip id>=<target>",
-        "  targets: " + ", ".join(sorted(DEFAULT_GAMENAME)),
+        "  targets: " + ", ".join(bench_targets()),
         "",
     ]
+    unusable = [target for target in buildable_targets() if target not in bench_targets()]
+    if unusable:
+        lines += [
+            "This checkout also builds " + ", ".join(unusable) + ", which the bench cannot drive:",
+            "those targets have no game configs to boot against yet. A board running one of them",
+            "cannot be mapped to it - and mapping it to a different system would flash the wrong",
+            "firmware to real hardware.",
+            "",
+        ]
     if board_map:
         lines += ["current map:"] + [f"  {chip}={target}" for chip, target in sorted(board_map.items())] + [""]
     lines += [
@@ -612,6 +621,7 @@ def resolve_targets(boards, board_map):
             raise CheckFailure(report_unknown_boards(unmapped, boards, board_map))
         for b in boards:
             b["target"] = board_map[b["chip_id"]]
+            check_target(b["target"])
         log("targets from VECTOR_HIL_BOARD_MAP")
         return boards
 
@@ -631,6 +641,7 @@ def resolve_targets(boards, board_map):
 
     for b in boards:
         b["target"] = b["system"]
+        check_target(b["target"])
     log("targets from firmware self-report (all distinct)")
     return boards
 
@@ -692,6 +703,61 @@ def check_bench_complete(boards):
 # --------------------------------------------------------------------------
 # 3. build
 # --------------------------------------------------------------------------
+
+
+# The repo's own list of what it builds - the same file the bench manifest in
+# DESIGN.md §6 says a board's target must match. Read rather than restated,
+# because a hardcoded copy is a list that goes stale silently.
+TARGETS_JSON = REPO_ROOT / "dev" / "ci" / "targets.json"
+
+
+def buildable_targets():
+    """Every distinct hardware target this checkout can build.
+
+    `hardware_id` collapses the variants that are one board with two firmware
+    passes (sys11_tiny is sys11), because this list answers "what can a board
+    be", not "what can be built".
+    """
+    try:
+        entries = json.loads(TARGETS_JSON.read_text())
+        targets = {entry.get("hardware_id") or entry["id"] for entry in entries}
+    except (OSError, ValueError, KeyError):
+        # src/common is shared code, not a system.
+        targets = {path.parent.name for path in (REPO_ROOT / "src").glob("*/systemConfig.py")} - {"common"}
+    return sorted(targets)
+
+
+def bench_targets():
+    """Targets the bench can actually flash and health-check.
+
+    Narrower than what the tree can build, and the gap is real: `classic` and
+    `whitestar` have a systemConfig.py and nothing else - no config directory,
+    so no generic game config to boot them against and nothing for
+    /api/game/configs_list to return. A board running one of them turned up on
+    the bench and the harness had no way to say any of this: it offered four
+    targets with no hint that the tree has seven, and a map entry naming one of
+    the other three died on a bare KeyError three stages later.
+    """
+    ready = []
+    for target in buildable_targets():
+        config = DEFAULT_GAMENAME.get(target)
+        if config and (REPO_ROOT / "src" / target / "config" / f"{config}.json").exists():
+            ready.append(target)
+    return ready
+
+
+def check_target(target):
+    """Refuse a target the bench cannot drive, while it is still cheap to say so."""
+    if target in bench_targets():
+        return
+    known = buildable_targets()
+    if target not in known:
+        raise CheckFailure(f"{target!r} is not a target in this checkout - it builds " + ", ".join(known))
+    raise CheckFailure(
+        f"{target!r} is a real build target but the bench cannot drive it: src/{target}/config holds no\n"
+        f"      generic game config to flash and boot against. The bench can drive " + ", ".join(bench_targets()) + ".\n"
+        "      A board wired for it can only join the bench once that target has configs."
+    )
 
 
 def source_version(target):
