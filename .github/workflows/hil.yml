@@ -209,13 +209,17 @@ jobs:
           HIL_CONFIGS: ${{ inputs.configs }}
           HIL_LIMIT: ${{ inputs.limit }}
         run: |
-          args=""
-          if [ -n "${HIL_TARGET:-}" ]; then args="$args --target $HIL_TARGET"; fi
-          if [ -n "${HIL_CONFIGS:-}" ]; then args="$args --configs $HIL_CONFIGS"; fi
-          if [ -n "${HIL_LIMIT:-}" ]; then args="$args --limit $HIL_LIMIT"; fi
+          # An array, not a word-split string: `configs: "Taxi_L4, AttackMars_11"`
+          # is a natural thing to type, and splitting on that space hands
+          # argparse a stray positional and fails the run. config_matrix strips
+          # whitespace around the commas itself, so the value only has to
+          # arrive as one argument.
+          args=()
+          if [ -n "${HIL_TARGET:-}" ]; then args+=(--target "$HIL_TARGET"); fi
+          if [ -n "${HIL_CONFIGS:-}" ]; then args+=(--configs "$HIL_CONFIGS"); fi
+          if [ -n "${HIL_LIMIT:-}" ]; then args+=(--limit "$HIL_LIMIT"); fi
 
-          # shellcheck disable=SC2086  # args is a deliberately word-split list
-          python dev/hil/config_matrix.py $args
+          python dev/hil/config_matrix.py "${args[@]}"
 
       # Diagnostics read from boards that are by definition misbehaving.
       - name: Board serial logs on failure
