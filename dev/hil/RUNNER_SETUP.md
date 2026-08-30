@@ -282,9 +282,16 @@ on 2026-08-28:
 | rung | state | what it needs |
 |---|---|---|
 | drain the console | works | serial access, which the `dialout` group already gives |
-| reset the USB device | **unavailable** | write access to `/dev/bus/usb/*` — a udev rule |
-| power cycle the hub port | **unavailable** | `sudo apt install uhubctl`, and a hub that switches port power |
-| reflash via TrenchCoat | works | `udisksctl`, which is present |
+| reset the USB device | works | write access to `/dev/bus/usb/*` — the udev rule below |
+| power cycle the hub port | **unavailable** | a hub that switches port power; this bench's is `ganged`, so it cannot |
+| reflash via TrenchCoat | works | `udisksctl` to mount the drive, or `picotool` when there isn't one |
+
+`picotool` is the fallback that matters when a board comes back wrong. Copying a UF2 needs the
+board's mass storage to work, and a board power-cycled mid-flash can present a drive nothing
+will mount — one on this bench came back with a DOS partition table where a bootloader drive
+should have a bare filesystem. `picotool` speaks the bootrom's own USB protocol and needs no
+drive at all, so `sudo apt install picotool` is worth doing before you need it. It is always
+aimed at a single board by USB bus and address, never at whatever it finds first.
 
 The two unavailable rungs are worth enabling — they are the non-destructive ones, and without
 them a wedged board goes straight from "send it a Ctrl-C" to "wipe its flash". For the USB

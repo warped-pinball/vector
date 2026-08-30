@@ -475,6 +475,104 @@ def copy_uf2(uf2, device, drive):
     unmount(device)
 
 
+PICOTOOL_TIMEOUT = 300
+
+
+def picotool_available():
+    return bool(shutil.which("picotool"))
+
+
+def usb_address(chip_id):
+    """(bus, address) for one board in BOOTSEL, so picotool can be aimed.
+
+    This is the whole safety story for the fallback. picotool with no device
+    selection acts on whatever RP2 device it finds first, which on this bench
+    could be a healthy board someone is mid-flash on. Reading bus and address
+    out of the sysfs directory we already matched by chip id means the command
+    can only ever reach the board we identified.
+    """
+    for board in bench.bootsel_boards():
+        if board["chip_id"] != chip_id:
+            continue
+        try:
+            bus = int((Path(board["usb_device"]) / "busnum").read_text())
+            address = int((Path(board["usb_device"]) / "devnum").read_text())
+        except (OSError, ValueError):
+            return None
+        return bus, address
+    return None
+
+
+def picotool(arguments, chip_id, timeout=PICOTOOL_TIMEOUT):
+    """Run picotool against exactly one board."""
+    where = usb_address(chip_id)
+    if where is None:
+        return None
+    command = ["picotool", *arguments, "--bus", str(where[0]), "--address", str(where[1])]
+    return subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+
+
+def _picotool_output(result, lines=10):
+    return [line for line in (result.stderr or result.stdout or "").strip().splitlines()[-lines:]]
+
+
+def flash_over_picotool(chip_id, uf2):
+    """Write a UF2 without a drive, by talking to the ROM bootloader itself.
+
+    The drive-copy route needs the board's mass storage to work. A bench board
+    came back from a power cycle mid-flash with a drive udisks would not touch
+    - `blkid` saw a DOS partition table where a bootloader drive should have a
+    bare filesystem - and no retry was ever going to fix that. picotool speaks
+    the bootrom's own USB protocol (PICOBOOT) and needs no filesystem at all;
+    on that same board `picotool info` answered while the drive was unusable.
+
+    The erase keeps the property that makes this a recovery rather than an
+    upgrade - nothing of the old filesystem survives - and is best effort,
+    because a board that will not erase may still accept the firmware.
+    """
+    if not picotool_available():
+        log("    picotool is not installed, so there is no way past an unusable drive here")
+        log("    (`sudo apt install picotool` gives the bench a route that needs no filesystem)")
+        return False
+
+    where = usb_address(chip_id)
+    if where is None:
+        log("    could not read the board's USB bus/address, and picotool must be aimed at one board")
+        return False
+
+    log(f"    falling back to picotool on bus {where[0]} address {where[1]} - it needs no drive")
+    erased = picotool(["erase"], chip_id)
+    if erased is None or erased.returncode != 0:
+        detail = "; ".join(_picotool_output(erased, 2)) if erased is not None else "the board moved"
+        log(f"    erase declined ({detail}) - writing the firmware anyway")
+
+    loaded = picotool(["load", "-x", str(uf2)], chip_id)
+    if loaded is None:
+        log("    the board stopped being a bootloader before the firmware could be written")
+        return False
+    if loaded.returncode != 0:
+        log("    picotool could not write the firmware:")
+        for line in _picotool_output(loaded):
+            log(f"      {line}")
+        return False
+
+    log(f"    picotool wrote {uf2.name} and started it")
+    return True
+
+
+def wait_for_serial(before, uf2):
+    """Wait for a flashed board to come back as a port it did not hold before."""
+    deadline = time.monotonic() + RESTART_TIMEOUT
+    while time.monotonic() < deadline:
+        new = [port for port in serial_ports() if port not in before]
+        if new:
+            log(f"    back as {new[0]} running {uf2.name}")
+            return new[0]
+        time.sleep(1)
+    log(f"    {uf2.name} was written but the board never came back as a serial device")
+    return None
+
+
 def flash_bootsel(chip_id, target, root):
     """Put firmware back on a board that is sitting in its ROM bootloader.
 
@@ -493,7 +591,9 @@ def flash_bootsel(chip_id, target, root):
     if drive is None:
         log(f"    no usable bootloader drive for {chip_id}: it is enumerated and in the bootloader, but")
         log("    nothing here could mount a filesystem to copy a UF2 onto - see the reason above")
-        return None
+        if not flash_over_picotool(chip_id, uf2):
+            return None
+        return wait_for_serial(before, uf2)
 
     # The wipe is the load-bearing step: it erases the whole flash, so nothing
     # from whatever state the board was left in survives into the new firmware.
@@ -510,18 +610,12 @@ def flash_bootsel(chip_id, target, root):
     device, drive = bootsel_drive(chip_id)
     if drive is None:
         log("    the wiped board never presented its drive again")
-        return None
+        if not flash_over_picotool(chip_id, uf2):
+            return None
+        return wait_for_serial(before, uf2)
     copy_uf2(uf2, device, drive)
 
-    deadline = time.monotonic() + RESTART_TIMEOUT
-    while time.monotonic() < deadline:
-        new = [port for port in serial_ports() if port not in before]
-        if new:
-            log(f"    back as {new[0]} running {uf2.name}")
-            return new[0]
-        time.sleep(1)
-    log(f"    {uf2.name} was written but the board never came back as a serial device")
-    return None
+    return wait_for_serial(before, uf2)
 
 
 def rescue_bootsel(board_map, cache_dir):

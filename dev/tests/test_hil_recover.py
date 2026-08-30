@@ -247,7 +247,8 @@ def test_can_complete_a_reflash_says_no_when_nothing_can_mount(monkeypatch):
     possible, why = recover.can_complete_a_reflash()
 
     assert possible is False
-    assert "nothing here can mount" in why
+    # Names every route it looked for, so the message says what to install.
+    assert "no picotool" in why and "no udisksctl" in why
 
 
 def test_every_target_maps_to_a_bundled_uf2():

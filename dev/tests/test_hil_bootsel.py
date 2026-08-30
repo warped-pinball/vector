@@ -28,6 +28,7 @@ if "usb_coms_demo" not in sys.modules:
 sys.path.insert(0, str(REPO_ROOT / "dev" / "hil"))
 
 import bench  # noqa: E402
+import recover  # noqa: E402
 import trench_coat  # noqa: E402
 
 
@@ -673,3 +674,105 @@ def test_an_unpartitioned_bootloader_drive_still_uses_the_disk(tmp_path):
     (block / "size").write_text("262144\n")
 
     assert trench_coat.block_device(device) == Path("/dev/sda")
+
+
+# --------------------------------------------------------------------------
+# picotool: the route that needs no drive
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def picotool_calls(monkeypatch, tmp_path):
+    """Record picotool invocations, with one board in BOOTSEL at a known address."""
+    device = tmp_path / "1-1.2"
+    device.mkdir()
+    (device / "busnum").write_text("1\n")
+    (device / "devnum").write_text("22\n")
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "df13", "usb_device": device, "processor": "RP2350"}])
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: "/usr/bin/picotool")
+
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(trench_coat.subprocess, "run", run)
+    return calls
+
+
+def test_picotool_is_aimed_at_one_board_by_bus_and_address(picotool_calls):
+    """The safety property: never "whatever RP2 device it finds first"."""
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is True
+
+    for command in picotool_calls:
+        assert "--bus" in command and command[command.index("--bus") + 1] == "1"
+        assert "--address" in command and command[command.index("--address") + 1] == "22"
+
+
+def test_picotool_erases_before_it_writes(picotool_calls):
+    """Keeps the property that makes this a recovery, not an upgrade."""
+    trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2"))
+
+    assert [c[1] for c in picotool_calls][:2] == ["erase", "load"]
+    assert "-x" in picotool_calls[1] and "/uf2/wpc.uf2" in picotool_calls[1]
+
+
+def test_a_board_that_will_not_erase_is_still_offered_the_firmware(monkeypatch, picotool_calls):
+    results = iter([types.SimpleNamespace(returncode=1, stdout="", stderr="erase not supported"), types.SimpleNamespace(returncode=0, stdout="", stderr="")])
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda command, **k: picotool_calls.append(command) or next(results))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is True
+    assert [c[1] for c in picotool_calls] == ["erase", "load"]
+
+
+def test_a_failed_load_is_reported_as_failure(monkeypatch, picotool_calls):
+    results = iter([types.SimpleNamespace(returncode=0, stdout="", stderr=""), types.SimpleNamespace(returncode=1, stdout="", stderr="no such device")])
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda command, **k: next(results))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_without_picotool_the_fallback_declines_rather_than_guessing(monkeypatch, picotool_calls):
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: None)
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda *a, **k: pytest.fail("picotool is not installed"))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_a_board_that_is_no_longer_in_bootsel_is_never_targeted(monkeypatch):
+    """No address means no command - picotool is never run unaimed."""
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: "/usr/bin/picotool")
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda *a, **k: pytest.fail("there is no board to aim at"))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_an_unmountable_drive_falls_through_to_picotool(monkeypatch, tmp_path):
+    """The bench case end to end: in BOOTSEL, drive unusable, firmware written anyway."""
+    root = tmp_path / "trench-coat"
+    (root / "uf2").mkdir(parents=True)
+    (root / "uf2" / "nuke.uf2").write_text("nuke")
+    (root / "uf2" / trench_coat.TARGET_UF2["wpc"]).write_text("firmware")
+
+    monkeypatch.setattr(trench_coat, "bootsel_drive", lambda chip_id, timeout=None: (None, None))
+    # Absent before the flash, present after - which is what "it came back" means.
+    ports = iter([[], ["/dev/ttyACM3"]])
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: next(ports, ["/dev/ttyACM3"]))
+    tried = []
+    monkeypatch.setattr(trench_coat, "flash_over_picotool", lambda chip_id, uf2: tried.append(uf2.name) or True)
+
+    assert trench_coat.flash_bootsel("df13", "wpc", root) == "/dev/ttyACM3"
+    assert tried == [trench_coat.TARGET_UF2["wpc"]]
+
+
+def test_picotool_makes_a_reflash_possible_without_any_mount(monkeypatch):
+    monkeypatch.setattr(trench_coat, "picotool_available", lambda: True)
+    monkeypatch.setattr(trench_coat, "find_bootloader_drives", lambda: [])
+    monkeypatch.setattr(recover.shutil, "which", lambda name: None)
+
+    possible, why = recover.can_complete_a_reflash()
+
+    assert possible is True
+    assert "picotool" in why

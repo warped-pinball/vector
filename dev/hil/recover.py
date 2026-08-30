@@ -340,13 +340,18 @@ def can_complete_a_reflash():
     replug) gets it out of. Doing that with no way to finish the job makes the
     board harder to recover, not easier.
     """
+    # picotool first: it is the only route that does not depend on the board
+    # presenting a usable drive, which is exactly the case that stranded a
+    # bench board here (enumerated, in BOOTSEL, no mountable filesystem).
+    if trench_coat.picotool_available():
+        return True, "picotool can write over the bootrom, with or without a drive"
     if trench_coat.find_bootloader_drives():
         return True, "a bootloader drive is already mounted"
     if shutil.which("udisksctl"):
         return True, "udisksctl is available to mount the drive"
     if any(Path(root).is_dir() and os.access(root, os.W_OK) for root in trench_coat.MOUNT_ROOTS):
         return True, "an automount directory is writable"
-    return False, "nothing here can mount an RPI-RP2 drive (no udisksctl, no writable automount directory)"
+    return False, "nothing here can flash a board in BOOTSEL (no picotool, no udisksctl, no writable automount directory)"
 
 
 def reflash(port, target, cache_dir, force=False):
