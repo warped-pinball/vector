@@ -647,3 +647,29 @@ def test_a_drive_with_sectors_but_no_filesystem_points_at_blkid(monkeypatch, tmp
 
     assert "256 sectors" in described
     assert "blkid" in described
+
+
+def test_the_partition_is_preferred_over_the_whole_disk(tmp_path):
+    """udisks will not mount a partitioned disk, and a bench board was one.
+
+    `blkid /dev/sda` reported PTUUID/PTTYPE="dos" while udisks said "not a
+    mountable filesystem" - correct of it, because the filesystem is on the
+    partition.
+    """
+    device = tmp_path / "1-1"
+    block = device / "1-1:1.0" / "host0" / "target0:0:0" / "0:0:0:0" / "block" / "sda"
+    (block / "sda1").mkdir(parents=True)
+
+    assert trench_coat.block_device(device) == Path("/dev/sda1")
+
+
+def test_an_unpartitioned_bootloader_drive_still_uses_the_disk(tmp_path):
+    """The normal case: an RP2 drive has no partition table and no partitions."""
+    device = tmp_path / "1-1"
+    block = device / "1-1:1.0" / "host0" / "target0:0:0" / "0:0:0:0" / "block" / "sda"
+    block.mkdir(parents=True)
+    # sysfs puts other things in here; none of them is a partition.
+    (block / "queue").mkdir()
+    (block / "size").write_text("262144\n")
+
+    assert trench_coat.block_device(device) == Path("/dev/sda")

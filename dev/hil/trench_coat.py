@@ -331,6 +331,14 @@ def block_device(usb_device):
     business, while this path belongs to the one device we are holding.
     """
     for block in sorted(Path(usb_device).glob("*/host*/target*/*/block/*")):
+        # A filesystem lives on a partition when the drive has a partition
+        # table, and udisks rightly refuses to mount the whole disk in that
+        # case - "/dev/sda is not a mountable filesystem" is exactly what a
+        # bench board produced, with `blkid` reporting PTTYPE="dos" on it.
+        # A plain RP2 bootloader drive has no partition table and no
+        # partitions, so this falls through to the disk as before.
+        for partition in sorted(block.glob(f"{block.name}[0-9]*")):
+            return Path("/dev") / partition.name
         return Path("/dev") / block.name
     return None
 
@@ -398,6 +406,9 @@ def describe_block_device(device):
     else:
         lines.append(f"the drive reports {sectors} sectors ({sectors * 512 // 1024} KiB) but no filesystem udisks will mount.")
         lines.append("Worth checking by hand on the bench host: sudo blkid " + str(device) + " ; sudo dmesg | tail -30")
+        lines.append("A `PTTYPE=` in blkid's output means the drive is partitioned and the filesystem is on a")
+        lines.append("partition; a bootloader drive normally has neither. picotool talks to the bootrom directly")
+        lines.append("and needs no drive at all, which is the way past this: picotool info ; picotool load -x <uf2>")
     return lines
 
 
