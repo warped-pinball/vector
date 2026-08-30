@@ -516,7 +516,22 @@ def board_map_instructions(boards, board_map=None):
     looking at the machine that needs editing.
     """
     board_map = board_map or {}
-    suggested = ",".join(f"{b['chip_id']}={board_map.get(b['chip_id'], '<target>')}" for b in boards)
+
+    def wanted(chip_id):
+        """What this board's entry should say - never what a broken one says.
+
+        Echoing the current value back is how a wrong entry survives being
+        reported: the line offered as the fix contained the very `de` that
+        failed. A value the bench cannot drive is replaced by the target it
+        was probably reaching for, or by a blank to fill in.
+        """
+        target = board_map.get(chip_id)
+        if target in bench_targets():
+            return target
+        suggestion = suggest_target(target)
+        return suggestion if suggestion in bench_targets() else "<target>"
+
+    suggested = ",".join(f"{b['chip_id']}={wanted(b['chip_id'])}" for b in boards)
     lines = [
         "",
         "VECTOR_HIL_BOARD_MAP pins each board to the system it is wired to, by RP2040",
@@ -621,7 +636,7 @@ def resolve_targets(boards, board_map):
             raise CheckFailure(report_unknown_boards(unmapped, boards, board_map))
         for b in boards:
             b["target"] = board_map[b["chip_id"]]
-            check_target(b["target"])
+        check_targets(boards, board_map)
         log("targets from VECTOR_HIL_BOARD_MAP")
         return boards
 
@@ -641,7 +656,7 @@ def resolve_targets(boards, board_map):
 
     for b in boards:
         b["target"] = b["system"]
-        check_target(b["target"])
+    check_targets(boards, board_map)
     log("targets from firmware self-report (all distinct)")
     return boards
 
@@ -746,18 +761,75 @@ def bench_targets():
     return ready
 
 
-def check_target(target):
-    """Refuse a target the bench cannot drive, while it is still cheap to say so."""
-    if target in bench_targets():
-        return
-    known = buildable_targets()
-    if target not in known:
-        raise CheckFailure(f"{target!r} is not a target in this checkout - it builds " + ", ".join(known))
-    raise CheckFailure(
-        f"{target!r} is a real build target but the bench cannot drive it: src/{target}/config holds no\n"
-        f"      generic game config to flash and boot against. The bench can drive " + ", ".join(bench_targets()) + ".\n"
-        "      A board wired for it can only join the bench once that target has configs."
+def target_labels():
+    """{target id: human label} from the repo's target list, for suggestions."""
+    labels = {}
+    try:
+        for entry in json.loads(TARGETS_JSON.read_text()):
+            labels.setdefault(entry.get("hardware_id") or entry["id"], entry.get("label", ""))
+    except (OSError, ValueError, KeyError):
+        pass
+    return labels
+
+
+def suggest_target(name):
+    """The target somebody probably meant when they wrote `name`.
+
+    People write the name they use out loud, not the directory: the bench map
+    arrived with `de` in it, which is what everyone calls the Data East board
+    and is nothing like the `data_east` the tree wants. Matching the label and
+    its initials as well as the id turns that from a puzzle into a correction.
+    """
+    wanted = (name or "").strip().lower().replace("-", "_").replace(" ", "")
+    if not wanted:
+        return None
+    candidates = {}
+    for target, label in target_labels().items():
+        candidates[target.lower()] = target
+        candidates[target.lower().replace("_", "")] = target
+        if label:
+            candidates[label.lower()] = target
+            candidates["".join(c for c in label if c.isupper()).lower()] = target
+    return candidates.get(wanted)
+
+
+def describe_bad_target(target):
+    """Why this target cannot be used, in one sentence plus the way out."""
+    if target not in buildable_targets():
+        suggestion = suggest_target(target)
+        did_you_mean = f" - did you mean {suggestion}?" if suggestion else ""
+        return f"{target!r} is not a target in this checkout{did_you_mean} The bench can drive " + ", ".join(bench_targets()) + "."
+    return (
+        f"{target!r} is a real build target but the bench cannot drive it: src/{target}/config holds no "
+        f"generic game config to flash and boot against, so there is nothing to boot the board against. "
+        f"The bench can drive " + ", ".join(bench_targets()) + "."
     )
+
+
+def check_targets(boards, board_map=None):
+    """Refuse targets the bench cannot drive, while they are still configuration.
+
+    Reported like an unrecognised chip id - to the job summary, with the map
+    and how to edit it - because it is the same mistake seen from the other
+    end, and the same person on the same host has to fix it. Left to run, it
+    would have flashed nothing and died on a bare KeyError two stages later.
+    """
+    bad = sorted({b["target"] for b in boards if b.get("target") not in bench_targets()}, key=str)
+    if not bad:
+        return
+
+    described = [describe_bad_target(target) for target in bad]
+    summary_once(
+        "### Board map names a target the bench cannot use",
+        [
+            "",
+            "### Board map names a target the bench cannot use",
+            "",
+            *[f"- {line}" for line in described],
+            *as_block(board_map_instructions(boards, board_map or {})),
+        ],
+    )
+    raise CheckFailure(" ".join(described))
 
 
 def source_version(target):

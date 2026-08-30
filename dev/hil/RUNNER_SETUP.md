@@ -125,6 +125,9 @@ cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
 Valid targets are the ones with game configs to boot against: `sys11`, `wpc`, `data_east`, `em`.
+Use the directory name, not the name people say out loud — the Data East board is `data_east`,
+not `de` (the harness suggests the right one if you get it wrong, and refuses the run rather
+than flashing anything).
 The tree also builds `classic` and `whitestar`, and the bench **cannot** drive those — they have a
 `systemConfig.py` and no `config/` directory, so there is nothing to flash and boot. A board wired
 for one of them cannot be mapped at all until that target has configs; mapping it to a different

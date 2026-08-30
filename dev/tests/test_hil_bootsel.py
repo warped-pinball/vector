@@ -492,19 +492,49 @@ def test_only_targets_with_configs_can_be_driven():
     assert "classic" not in ready and "whitestar" not in ready
 
 
-def test_a_board_mapped_to_a_configless_target_is_refused_early():
+def test_a_board_mapped_to_a_configless_target_is_refused_early(job_summary):
     """A classic board turned up on the bench; the map must not be able to lie about it."""
     boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True}]
 
     with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
         bench.resolve_targets(boards, {"899f": "classic"})
 
+    # Reported where an unrecognised chip id is reported, for the same person.
+    assert "target the bench cannot use" in job_summary.read_text()
 
-def test_a_target_that_does_not_exist_at_all_says_what_does():
+
+def test_a_target_that_does_not_exist_at_all_says_what_does(job_summary):
     boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": None, "responsive": True}]
 
     with pytest.raises(bench.CheckFailure, match="not a target in this checkout"):
         bench.resolve_targets(boards, {"899f": "sys12"})
+
+
+@pytest.mark.parametrize(
+    ("written", "meant"),
+    [("de", "data_east"), ("DE", "data_east"), ("DataEast", "data_east"), ("data-east", "data_east"), ("ws", "whitestar")],
+)
+def test_the_name_people_actually_use_is_recognised(written, meant):
+    """The bench map arrived saying `de`, which is what everyone calls that board."""
+    assert bench.suggest_target(written) == meant
+
+
+def test_a_name_nobody_meant_gets_no_guess():
+    assert bench.suggest_target("nonsense") is None
+    assert bench.suggest_target("") is None
+
+
+def test_the_suggested_map_line_never_repeats_a_broken_entry():
+    """The fix on offer must not contain the value that just failed."""
+    boards = [{"port": "/dev/ttyACM0", "chip_id": "899f"}, {"port": "/dev/ttyACM1", "chip_id": "df13"}]
+
+    corrected = bench.board_map_instructions(boards, {"899f": "de", "df13": "wpc"})
+    assert "VECTOR_HIL_BOARD_MAP=899f=data_east,df13=wpc" in corrected
+
+    # Nothing to suggest for a target that exists but cannot be driven, so it
+    # is left blank rather than being offered back.
+    blanked = bench.board_map_instructions(boards, {"899f": "classic", "df13": "wpc"})
+    assert "VECTOR_HIL_BOARD_MAP=899f=<target>,df13=wpc" in blanked
 
 
 def test_self_report_cannot_smuggle_in_an_undriveable_target():
