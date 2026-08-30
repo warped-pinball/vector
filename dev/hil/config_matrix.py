@@ -639,7 +639,7 @@ def main():
     trench_coat.rescue_bootsel(board_map, REPO_ROOT / "build" / "hil")
 
     group("Inventory")
-    boards = inventory()
+    boards = inventory(board_map)
     endgroup()
 
     # A board that will not answer is one board's problem. It cannot be
@@ -647,12 +647,16 @@ def main():
     # still have configs worth checking - and aborting the whole run before
     # anything is tested is how a single board left wedged by an earlier run
     # took out the next one entirely.
+    #
+    # Inventory has already run the cheap recovery rungs against these, so
+    # anything still here needs the destructive one, which is a decision for a
+    # person rather than for the middle of a matrix.
     unresponsive = [b for b in boards if not b.get("responsive", True)]
     boards = [b for b in boards if b.get("responsive", True)]
     for b in unresponsive:
-        log(f"::error::{b['port']} is not answering - skipping it. Run dev/hil/recover.py to get it back.")
+        log(f"::error::{b['port']} is not answering, and draining, resetting and power cycling it did not help - skipping it")
     if not boards:
-        raise CheckFailure("no board on the bench is answering - run dev/hil/recover.py")
+        raise CheckFailure("no board on the bench is answering, and the cheap recovery rungs did not bring any back.\nRun dev/hil/recover.py by hand to also reflash them over the ROM bootloader.")
 
     group("Resolve targets")
     boards = resolve_targets(boards, board_map)
@@ -679,7 +683,10 @@ def main():
             log(f"built {target} at version {bench.source_version(target)}")
             endgroup()
 
-    results = [({"port": b["port"], "target": "(unknown)", "crashes": [], "flakes": []}, [], [("(board setup)", "board is not answering - run dev/hil/recover.py")]) for b in unresponsive]
+    results = [
+        ({"port": b["port"], "target": "(unknown)", "crashes": [], "flakes": []}, [], [("(board setup)", "board is not answering, and the cheap recovery rungs did not bring it back")])
+        for b in unresponsive
+    ]
     for b in boards:
         try:
             just_flashed = not args.skip_flash

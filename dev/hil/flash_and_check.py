@@ -303,7 +303,7 @@ def main():
     trench_coat.rescue_bootsel(board_map, REPO_ROOT / "build" / "hil")
 
     group("Inventory")
-    boards = inventory()
+    boards = inventory(board_map)
     endgroup()
 
     group("Resolve targets")

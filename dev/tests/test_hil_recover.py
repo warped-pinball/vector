@@ -503,3 +503,103 @@ def test_bound_serial_writes_leaves_an_explicit_timeout_alone(monkeypatch):
     ray.serial.Serial("/dev/ttyFAKE", write_timeout=99)
 
     assert opened["write_timeout"] == 99
+
+
+# --------------------------------------------------------------------------
+# recovery as a call, not an instruction
+# --------------------------------------------------------------------------
+
+
+def test_inventory_repairs_a_board_that_did_not_answer(monkeypatch, capsys):
+    """The bench runs unattended: printing "run recover.py" helps nobody at 3am."""
+    monkeypatch.setattr(bench, "list_ports", lambda: ["/dev/ttyACM0"])
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+
+    probes = iter(
+        [
+            {"port": "/dev/ttyACM0", "chip_id": None, "system": None, "version": None, "responsive": False},
+            {"port": "/dev/ttyACM0", "chip_id": "aaaa", "system": "sys11", "version": "1.10.7", "responsive": True},
+        ]
+    )
+    monkeypatch.setattr(bench, "probe", lambda port: next(probes))
+    monkeypatch.setattr(bench, "repair_board", lambda port, target=None: "drain the console")
+
+    boards = bench.inventory()
+
+    # Re-probed after the repair, so the run continues with a live board.
+    assert boards[0]["responsive"] is True
+    assert boards[0]["chip_id"] == "aaaa"
+    assert "came back after drain the console" in capsys.readouterr().out
+
+
+def test_a_board_that_stays_dead_is_reported_not_hidden(monkeypatch, capsys):
+    monkeypatch.setattr(bench, "list_ports", lambda: ["/dev/ttyACM0"])
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(bench, "probe", lambda port: {"port": port, "chip_id": None, "system": None, "version": None, "responsive": False})
+    monkeypatch.setattr(bench, "repair_board", lambda port, target=None: None)
+
+    boards = bench.inventory()
+
+    assert boards[0]["responsive"] is False
+    printed = capsys.readouterr().out
+    assert "still not answering" in printed
+    assert "NOT ANSWERING" in printed
+
+
+def test_repair_can_be_turned_off(monkeypatch):
+    monkeypatch.setattr(bench, "list_ports", lambda: ["/dev/ttyACM0"])
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(bench, "probe", lambda port: {"port": port, "chip_id": None, "system": None, "version": None, "responsive": False})
+    monkeypatch.setattr(bench, "repair_board", lambda *a, **k: pytest.fail("must not repair when asked not to"))
+
+    bench.inventory(repair=False)
+
+
+def test_an_automatic_repair_never_reflashes(monkeypatch):
+    """The one rung that must stay a human decision mid-run.
+
+    A reflash leaves the board running TrenchCoat's bundled firmware, so a
+    matrix that carried on afterwards would be testing firmware other than the
+    build under test - and reporting the results as if it were not.
+    """
+    seen = {}
+    monkeypatch.setattr(recover, "recover", lambda port, target, options: seen.update(port=port, target=target, options=options) or "drain the console")
+
+    assert bench.repair_board("/dev/ttyACM1") == "drain the console"
+    assert seen["options"].reflash is False
+    # And the cheap rungs are all still enabled.
+    assert seen["options"].no_power_cycle is False
+
+
+def test_a_repair_may_be_asked_for_the_full_ladder(monkeypatch):
+    """The recover stage does want it: flash_and_check re-flashes right after."""
+    seen = {}
+    monkeypatch.setattr(recover, "recover", lambda port, target, options: seen.update(options=options) or None)
+
+    bench.repair_board("/dev/ttyACM1", target="wpc", allow_reflash=True)
+
+    assert seen["options"].reflash is True
+
+
+def test_a_repair_is_bounded_well_below_the_stage_cap(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(recover, "recover", lambda port, target, options: seen.update(options=options) or None)
+
+    bench.repair_board("/dev/ttyACM1")
+
+    # The 600s ceiling in recover.py is for the reflash, which this never runs.
+    assert seen["options"].step_timeout == bench.REPAIR_TIMEOUT < recover.STEP_TIMEOUT
+
+
+def test_repair_does_not_depend_on_the_caller_having_fixed_sys_path(monkeypatch):
+    """bench does not add its own directory; every harness happens to.
+
+    Relying on that leaves the in-process import broken for the first caller
+    that does not, which is a failure mode with no signal until a board wedges.
+    """
+    here = str(REPO_ROOT / "dev" / "hil")
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != here])
+    monkeypatch.setattr(recover, "recover", lambda port, target, options: "drain the console")
+
+    assert bench.repair_board("/dev/ttyACM1") == "drain the console"
+    assert here in sys.path

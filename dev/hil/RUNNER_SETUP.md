@@ -257,6 +257,15 @@ the `recover` stage of [`hil.yml`](../../.github/workflows/hil.yml), which runs 
 cd ~/vector && PATH="$PWD/.venv/bin:$PATH" .venv/bin/python dev/hil/recover.py
 ```
 
+The ladder is also a library, not just a script. Every harness runs the **cheap rungs
+automatically** against a board that stops answering — inventory drains, USB-resets and power
+cycles it, then probes again — so a board that wedges *after* the recover stage no longer costs
+the rest of the run. The reflash rung is deliberately **not** automatic: it is destructive, and
+it leaves the board running TrenchCoat's bundled firmware rather than the build under test, so a
+matrix that carried on afterwards would be testing the wrong thing and reporting it as if it
+were not. That one stays a decision for a person running `recover.py` by hand — or for the
+recover stage itself, where `flash_and_check.py` re-flashes everything immediately afterwards.
+
 Before the ladder it deals with the one state none of the rungs can reach: a board in
 **BOOTSEL/UF2 mode**. Such a board is not a serial device at all — the ROM bootloader
 enumerates as USB mass storage, so `mpremote devs` shows nothing and `lsusb` shows everything,

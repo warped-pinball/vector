@@ -25,6 +25,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "dev"))
@@ -79,6 +80,11 @@ CRASH_MARKER_GRACE = 3
 # moment to actually accept the listening socket. http_get's retries cover any
 # remainder.
 SERVER_SETTLE_SECONDS = 2
+
+# A repair mid-run is bounded well below the workflow's per-stage caps: the
+# rungs it can reach are a drain, a USB reset and a power cycle, none of which
+# is slow. The 600s in recover.py exists for the reflash, which this never runs.
+REPAIR_TIMEOUT = 180
 
 # Measured across 70 boots on the bench: 11.8s min, 15.5s mean, 25.6s max. The
 # flash harness keeps 150s; the matrix runs a tighter one (see
@@ -348,7 +354,65 @@ def probe(port):
     return board
 
 
-def inventory():
+def repair_board(port, target=None, allow_reflash=False, step_timeout=REPAIR_TIMEOUT):
+    """Run the recovery ladder against one board, in-process.
+
+    `recover.py` is a harness, not just a script, so a board that stops
+    answering mid-run is repaired by calling it rather than by printing "run
+    dev/hil/recover.py" at somebody who is not there. The bench is meant to
+    run unattended, and the recover *stage* only runs once at the start of the
+    job - a board that wedges after it used to cost the rest of the run.
+
+    Reflashing is off by default, and that is the load-bearing part: it is the
+    one destructive rung, and it leaves the board running TrenchCoat's bundled
+    firmware rather than the build under test. Harmless in the recover stage,
+    where flash_and_check re-flashes everything straight afterwards; wrong in
+    the middle of a matrix, where the run would silently continue against
+    firmware that is not the one being tested.
+
+    Imported here rather than at the top because recover imports this module,
+    and its directory is added to sys.path here rather than assumed: every
+    harness happens to add it today, so relying on that would leave a trap for
+    the first caller that does not.
+    """
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+
+    import recover
+
+    options = SimpleNamespace(
+        reflash=allow_reflash,
+        no_power_cycle=False,
+        force_bootsel=False,
+        step_timeout=step_timeout,
+        cache_dir=REPO_ROOT / "build" / "hil",
+    )
+    return recover.recover(port, target, options)
+
+
+def repair_unresponsive(boards, board_map=None):
+    """Give every board that did not answer one pass of the cheap rungs."""
+    dead = [b for b in boards if not b.get("responsive", True)]
+    if not dead:
+        return boards
+
+    group(f"Repair {len(dead)} board(s) that did not answer")
+    for b in dead:
+        # A wedged board cannot tell us its chip id, so there is no target to
+        # look up - which is fine, because the rungs that need one are the
+        # rungs this deliberately does not run.
+        method = repair_board(b["port"], (board_map or {}).get(b.get("chip_id")))
+        if not method:
+            log(f"::warning::{b['port']} is still not answering after the cheap recovery rungs")
+            continue
+        log(f"{b['port']} came back after {method} - probing it again")
+        b.update(probe(b["port"]))
+    endgroup()
+    return boards
+
+
+def inventory(board_map=None, repair=True):
     """Survey the bench: every board on serial, plus any stuck in BOOTSEL.
 
     Only the serial boards are returned - a board in the bootloader cannot be
@@ -358,6 +422,8 @@ def inventory():
     sitting there as mass-storage devices.
     """
     boards = [probe(port) for port in list_ports()]
+    if repair:
+        boards = repair_unresponsive(boards, board_map)
     stranded = bootsel_boards()
 
     log(f"{'port':16} {'chip id':18} {'running':12} version")
@@ -372,7 +438,7 @@ def inventory():
     if not boards:
         raise CheckFailure(no_boards_message(stranded))
     if stranded:
-        log(f"::warning::{len(stranded)} board(s) are in BOOTSEL/UF2 mode and were not surveyed - run dev/hil/recover.py to put firmware back on them")
+        log(f"::warning::{len(stranded)} board(s) are in BOOTSEL/UF2 mode and were not surveyed - the rescue stage puts firmware back on them, and reports here when it cannot")
     return boards
 
 
@@ -627,7 +693,10 @@ def resolve_targets(boards, board_map):
     dead = [b for b in boards if not b.get("responsive", True)]
     if dead:
         raise CheckFailure(
-            "not answering: " + ", ".join(b["port"] for b in dead) + ".\nA board that will not talk cannot be identified, so it cannot be safely flashed.\n" "Run dev/hil/recover.py to get it back."
+            "not answering: " + ", ".join(b["port"] for b in dead) + ".\nA board that will not talk cannot be identified, so it cannot be safely flashed.\n"
+            "The cheap recovery rungs have already been tried on it. dev/hil/recover.py run by hand\n"
+            "can also reflash it over the ROM bootloader, which this will not do on its own: that is\n"
+            "destructive and would leave the board running firmware other than the build under test."
         )
 
     if board_map:

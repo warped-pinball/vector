@@ -252,6 +252,14 @@ getting them confused has cost whole runs:
   is for; `VECTOR_HIL_REQUIRED_TARGETS` on the runner is how a bench that has
   really lost a board says so out loud.
 
+Recovery is a call, not an instruction. A board that stops answering mid-run
+is drained, USB-reset and power cycled by whichever harness found it, then
+probed again — "run `dev/hil/recover.py`" is useless advice on a bench that is
+supposed to run unattended, and the recover stage only runs once at the start
+of a job. The reflash rung stays manual: it is destructive and leaves the board
+on TrenchCoat's bundled firmware, so a matrix continuing past it would be
+testing firmware other than the build under test.
+
 A board whose chip id is in none of the map's entries is never guessed at — the
 id and the exact line to add are written to the job summary, because the fix is
 one edit on the runner host and whoever makes it is reading the run, not the log.
