@@ -76,6 +76,7 @@ jobs:
   gate:
     name: Decide whether to touch the bench
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       run_bench: ${{ steps.decide.outputs.run_bench }}
       reason: ${{ steps.decide.outputs.reason }}
@@ -127,18 +128,38 @@ jobs:
     needs: gate
     if: needs.gate.outputs.run_bench == 'true'
     runs-on: [self-hosted, vector-hil]
-    timeout-minutes: 180
+
+    # The bench is a singleton behind `concurrency: hil-bench`, and this job
+    # holds that lease for as long as it runs. At 180 minutes a wedged job
+    # blocked every later run for three hours - which is what happened: a
+    # checkout hung, the runner stopped acknowledging, and the queue behind it
+    # went nowhere until someone noticed.
+    #
+    # So the cap is the healthy run plus headroom, not a number picked to never
+    # fire. A full healthy pass is ~50 minutes (recover ~30s, flash and health
+    # check ~4 min, the matrix ~45 for 130 configs across three boards).
+    #
+    # cancel-in-progress stays false deliberately: cancelling a live bench job
+    # can stop it mid-flash and leave a board half-written, which is a worse
+    # problem than a queue.
+    timeout-minutes: 90
 
     steps:
       # On workflow_run this checks out the DEFAULT BRANCH, not the PR - that
       # is the whole security property, and it must stay that way. The board
       # gets the PR's firmware because the harness builds it from the commit
       # below, not because the PR's harness code runs here.
+      #
+      # Capped because this is the step that actually wedged: it sat in
+      # `in_progress` while the runner stopped answering, with 180 minutes of
+      # job budget to sit in.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        timeout-minutes: 10
         with:
           fetch-depth: 0
 
       - name: Check out the commit under test
+        timeout-minutes: 10
         if: github.event_name == 'workflow_run'
         env:
           COMMIT: ${{ needs.gate.outputs.commit }}
@@ -157,23 +178,29 @@ jobs:
 
       # 1. Recover. Cheap when the bench is healthy, and the difference between
       #    a wedged board costing one run and costing every run until someone
-      #    notices.
+      #    notices. ~30s when every board answers; a ladder still going after
+      #    the cap has failed in a way that needs a person, not more waiting.
       - name: Recover any wedged board
+        timeout-minutes: 15
         id: recover
         if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'recover')
         continue-on-error: true
         run: python dev/hil/recover.py
 
       # 2. Flash and health-check: DESIGN.md G1/G2. Exercises the API over both
-      #    USB and HTTP, which the config matrix does not.
+      #    USB and HTTP, which the config matrix does not. ~4 min: three builds
+      #    on the Zero 2 W, one parallel flash pass, a health check per board.
       - name: Flash and health-check every board
+        timeout-minutes: 25
         id: flash_check
         if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'flash-check')
         continue-on-error: true
         run: python dev/hil/flash_and_check.py
 
-      # 3. The config matrix: DESIGN.md G3.
+      # 3. The config matrix: DESIGN.md G3. The long pole - ~20s per config,
+      #    130 configs across three boards.
       - name: Boot every config on every board
+        timeout-minutes: 70
         id: config_matrix
         if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'config-matrix')
         continue-on-error: true
@@ -190,7 +217,9 @@ jobs:
           # shellcheck disable=SC2086  # args is a deliberately word-split list
           python dev/hil/config_matrix.py $args
 
+      # Diagnostics read from boards that are by definition misbehaving.
       - name: Board serial logs on failure
+        timeout-minutes: 5
         if: failure() || steps.flash_check.outcome == 'failure' || steps.config_matrix.outcome == 'failure'
         run: |
           # `stty raw -echo` first, and both calls under `timeout`: a tty reverts

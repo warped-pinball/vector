@@ -213,11 +213,18 @@ workflows that shared the `hil-bench` concurrency group — and since GitHub kee
 only one *pending* run per group, a push touching two of them had them race with
 the loser silently cancelled. One workflow takes one lease and runs:
 
-| stage | what it is | cost |
-|---|---|---|
-| recover | `recover.py` — repair any wedged board | ~30s healthy |
-| flash + health check | G1/G2, API over USB *and* HTTP | ~3.5 min |
-| config matrix | G3, every config on every board | ~45 min |
+| stage | what it is | cost | cap |
+|---|---|---|---|
+| recover | `recover.py` — repair any wedged board | ~30s healthy | 15 min |
+| flash + health check | G1/G2, API over USB *and* HTTP | ~3.5 min | 25 min |
+| config matrix | G3, every config on every board | ~45 min | 70 min |
+
+The caps are per step, under a 90-minute cap on the job as a whole, and they
+exist because this job holds the `hil-bench` lease while it runs. At the
+original 180 minutes one wedged job — a hung `actions/checkout`, on a runner
+that had stopped acknowledging — blocked every run behind it for three hours.
+`cancel-in-progress` stays `false` regardless: cancelling a live bench job can
+stop it mid-flash and leave a board half-written, which is worse than a queue.
 
 Every stage runs even when an earlier one fails, and the verdict is taken at the
 end: one broken board should not cost the signal from the others. Running
