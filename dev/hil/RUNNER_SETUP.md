@@ -163,6 +163,24 @@ cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 
 Unset, it defaults to all three. Set to an empty value, the check is off entirely.
 
+## Approving PR runs
+
+This is a repo setting, not something on the Pi, but it's the other half of getting the bench
+running and easy to miss. Every automatic run (`workflow_run`, on every push to a PR) queues a
+check and then waits — it does not touch a board until a maintainer approves it. That's on
+purpose: see [DESIGN.md §4](DESIGN.md#4-execution-model). Nothing in `hil.yml` can create this
+setting, so it needs doing once, by a repo admin:
+
+1. Repo → **Settings → Environments → New environment**.
+2. Name it exactly `hardware-lab` (that's what `hil.yml` references).
+3. Under **Deployment protection rules**, enable **Required reviewers** and add whichever
+   maintainers should be allowed to greenlight a bench run.
+
+Once that's saved, every queued HIL run shows a **Review deployments** button on the run page
+(Actions tab → the run → the `approve` job) until someone with reviewer access clicks Approve
+(or Reject). Nothing else needs configuring — `workflow_dispatch` (the "Run workflow" button,
+already a deliberate maintainer action) skips this and runs immediately.
+
 ## Verify
 
 The runner should show **Idle** under Settings → Actions → Runners with the `vector-hil` label.

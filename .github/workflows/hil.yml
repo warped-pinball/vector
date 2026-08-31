@@ -2,11 +2,23 @@ name: HIL
 
 # Recovers the bench, flashes + health-checks every board, then boots every
 # board against every game config. One workflow, one lease on the bench
-# (see `concurrency` below), so stages never race each other.
+# (see the `bench` job's own `concurrency:` below), so stages never race
+# each other.
 #
 # Triggered by workflow_run, not pull_request: workflow_run always runs this
-# file from the default branch, so a fork PR can't change what the runner
-# executes - it only supplies the commit to flash. See DESIGN.md §4.
+# file from the default branch, so a PR - fork or not - can't change what
+# the runner executes; it only supplies the commit to flash. See DESIGN.md §4.
+#
+# Every automatic run is also a human quality gate: `gate` posts a "queued"
+# check on the PR immediately (so the offer to run is visible right away),
+# then `approve` sits on the `hardware-lab` environment until a maintainer
+# clicks "Review deployments" and approves it. Nothing runs on the bench
+# until that happens, so pushing WIP commits never spends bench time - a
+# contributor (or reviewer) triggers the actual hardware run only once the
+# PR is ready, and the resulting check is attached to that exact commit as
+# proof it doesn't break the boards. `approve` carries no `concurrency:`
+# group, so any number of PRs can sit "Waiting" at once without blocking
+# each other; only an approved run competes for the physical bench.
 #
 # workflow_run runs aren't attached to the triggering PR's checks, so `gate`
 # and `report` post an "HIL" check run against that commit instead.
@@ -38,11 +50,6 @@ on:
 permissions:
   contents: read
 
-# One set of physical boards. Queue, never interleave.
-concurrency:
-  group: hil-bench
-  cancel-in-progress: false
-
 jobs:
   gate:
     name: Decide whether to touch the bench
@@ -67,18 +74,24 @@ jobs:
           THIS_REPO: ${{ github.repository }}
         run: |
           run_bench=true
-          reason="running"
+          state="queued"
+          reason="queued - waiting for a maintainer to approve the bench run (open this run and use \"Review deployments\")"
           commit="${BUILD_HEAD_SHA:-$GITHUB_SHA}"
 
           if [ "$EVENT" = "workflow_run" ]; then
             if [ "$BUILD_CONCLUSION" != "success" ]; then
               run_bench=false
+              state="skipped"
               reason="the build it follows concluded '$BUILD_CONCLUSION', so there is nothing good to flash"
-            # A fork's firmware must not run on the bench unattended.
+            # Still queued for approval, same as a same-repo PR - just flagged
+            # for extra scrutiny before a reviewer approves it.
             elif [ -n "$BUILD_HEAD_REPO" ] && [ "$BUILD_HEAD_REPO" != "$THIS_REPO" ]; then
-              run_bench=false
-              reason="the change comes from the fork '$BUILD_HEAD_REPO'. Review it, then run this workflow by hand (Run workflow) to put it on the bench."
+              reason="queued - this PR is from the fork '$BUILD_HEAD_REPO'. Review the diff before approving the bench run."
             fi
+          else
+            # workflow_dispatch is already a deliberate maintainer action.
+            state="running"
+            reason="running (dispatched by hand)"
           fi
 
           echo "run_bench=$run_bench" >> "$GITHUB_OUTPUT"
@@ -90,7 +103,7 @@ jobs:
             echo
             echo "- event: \`$EVENT\`"
             echo "- commit under test: \`$commit\`"
-            echo "- bench: **$([ "$run_bench" = true ] && echo "running" || echo "skipped")** - $reason"
+            echo "- bench: **$state** - $reason"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish check run
@@ -107,33 +120,83 @@ jobs:
           TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
-            const running = process.env.RUN_BENCH === 'true';
+            const queued = process.env.RUN_BENCH === 'true';
             const { data } = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: 'HIL',
               head_sha: process.env.SHA,
               details_url: process.env.TARGET_URL,
-              status: running ? 'in_progress' : 'completed',
-              conclusion: running ? undefined : 'neutral',
+              status: queued ? 'queued' : 'completed',
+              conclusion: queued ? undefined : 'neutral',
               output: {
-                title: running ? 'Bench running' : 'Bench skipped',
+                title: queued ? 'Waiting for a maintainer to approve' : 'Bench skipped',
                 summary: process.env.REASON,
               },
             });
             core.setOutput('check_id', data.id);
 
-  bench:
-    name: Bench
+  approve:
+    name: Wait for a human to approve the bench run
     needs: gate
     if: needs.gate.outputs.run_bench == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # The human quality gate. `hardware-lab` has required reviewers
+    # configured in repo Settings -> Environments (a setting, not something
+    # this file can create - see DESIGN.md §4), so this job sits as
+    # "Waiting", not "queued" or "in progress", until a maintainer approves
+    # it from the run's "Review deployments" button - GitHub does not count
+    # that wait against `timeout-minutes` (it has its own 30-day cap). It
+    # deliberately carries no `concurrency:` group, so any number of PRs can
+    # sit here waiting at once without blocking each other or holding the
+    # bench's lease - only the `bench` job below competes for that.
+    # workflow_dispatch is already a deliberate maintainer action, so it
+    # runs through the unprotected `hil-bench-manual` environment instead.
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && 'hil-bench-manual' || 'hardware-lab' }}
+    permissions:
+      checks: write
+    steps:
+      - name: Mark the check run in progress
+        if: github.event_name == 'workflow_run'
+        continue-on-error: true
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        env:
+          CHECK_ID: ${{ needs.gate.outputs.check_id }}
+        with:
+          script: |
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: process.env.CHECK_ID,
+              status: 'in_progress',
+              output: {
+                title: 'Approved - bench running',
+                summary: 'A maintainer approved this run. The bench job is running now.',
+              },
+            });
+
+  bench:
+    name: Bench
+    needs: [gate, approve]
+    if: success() && needs.gate.outputs.run_bench == 'true'
     runs-on: [self-hosted, vector-hil]
 
-    # A wedged job holds the bench's only lease (see `concurrency` above) for
-    # its whole timeout - a hung checkout once blocked every later run for 3
-    # hours. The cap is a healthy run (~50 min) plus headroom, not "never
-    # fires". cancel-in-progress stays false: killing a live job mid-flash can
-    # leave a board half-written, worse than a queue.
+    # One set of physical boards. Queue, never interleave. Scoped to this
+    # job (not the whole workflow) deliberately: `approve` above has no
+    # concurrency group of its own, so PRs can queue for human approval in
+    # parallel and only take this lease once a maintainer has actually said
+    # go - see the comment on `approve`.
+    concurrency:
+      group: hil-bench
+      cancel-in-progress: false
+
+    # A wedged job holds the bench's only lease for its whole timeout - a
+    # hung checkout once blocked every later run for 3 hours. The cap is a
+    # healthy run (~50 min) plus headroom, not "never fires".
+    # cancel-in-progress stays false: killing a live job mid-flash can leave
+    # a board half-written, worse than a queue.
     timeout-minutes: 90
 
     steps:
@@ -241,8 +304,11 @@ jobs:
 
   report:
     name: Report result to the commit
-    needs: [gate, bench]
-    if: always() && needs.gate.outputs.check_id != ''
+    needs: [gate, approve, bench]
+    # run_bench == 'false' means gate already posted a terminal (neutral)
+    # check for this commit - nothing here to update. Only revisit a check
+    # that was actually queued.
+    if: always() && needs.gate.outputs.run_bench == 'true' && needs.gate.outputs.check_id != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -256,19 +322,36 @@ jobs:
         env:
           CHECK_ID: ${{ needs.gate.outputs.check_id }}
           RESULT: ${{ needs.bench.result }}
+          APPROVE_RESULT: ${{ needs.approve.result }}
           TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
-            const ok = process.env.RESULT === 'success';
+            const benchResult = process.env.RESULT;
+            const approveResult = process.env.APPROVE_RESULT;
+
+            let conclusion, title, summary;
+            if (benchResult === 'success') {
+              conclusion = 'success';
+              title = 'Bench passed';
+              summary = 'bench job result: success';
+            } else if (approveResult !== 'success') {
+              // Rejected, cancelled, or otherwise never cleared the gate -
+              // the bench never touched hardware for this commit.
+              conclusion = 'cancelled';
+              title = 'Bench run not approved';
+              summary = `the required-reviewer approval did not succeed (result: ${approveResult}), so the bench never ran`;
+            } else {
+              conclusion = 'failure';
+              title = 'Bench failed';
+              summary = `bench job result: ${benchResult}`;
+            }
+
             await github.rest.checks.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               check_run_id: process.env.CHECK_ID,
               status: 'completed',
-              conclusion: ok ? 'success' : 'failure',
+              conclusion,
               details_url: process.env.TARGET_URL,
-              output: {
-                title: ok ? 'Bench passed' : 'Bench failed',
-                summary: `bench job result: ${process.env.RESULT}`,
-              },
+              output: { title, summary },
             });
