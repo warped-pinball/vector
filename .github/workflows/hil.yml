@@ -1,39 +1,17 @@
 name: HIL
 
-# Everything the hardware bench does, in one workflow: recover the boards,
-# flash and health-check them, then boot every board against every game config.
+# Recovers the bench, flashes + health-checks every board, then boots every
+# board against every game config. One workflow, one lease on the bench
+# (see `concurrency` below), so stages never race each other.
 #
-# It replaces hil-smoke.yml, hil-flash-check.yml, hil-config-matrix.yml and
-# hil-recover.yml. They were separate files sharing one `hil-bench` concurrency
-# group, and GitHub keeps only one *pending* run per group - so a push touching
-# two of them had them race, with the loser silently cancelled. One workflow
-# takes one lease on the bench and runs the stages in order.
+# Triggered by workflow_run, not pull_request: workflow_run always runs this
+# file from the default branch, so a fork PR can't change what the runner
+# executes - it only supplies the commit to flash. See DESIGN.md §4.
 #
-# It also makes recovery automatic. `recover.py` costs ~30s when every board
-# answers and repairs one that does not, so running it first turns "a board
-# wedged and the next four runs were useless" into a self-healing bench.
-#
-# ---------------------------------------------------------------------------
-# Why workflow_run, and not pull_request
-# ---------------------------------------------------------------------------
-#
-# This runs on a self-hosted runner on a private network, wired to real
-# hardware. A `pull_request` trigger would let any fork PR execute its own code
-# there - its own workflow, its own dev/hil/**, its own dependencies.
-#
-# `workflow_run` is the primitive that makes per-PR hardware testing safe:
-# GitHub always runs it *from the default branch, using the default branch's
-# code*, whatever the triggering PR contains. A PR cannot change what the Pi
-# executes. It supplies exactly one thing - the commit that gets built and
-# flashed. See dev/hil/DESIGN.md §4.
-#
-# Fork PRs are not run automatically even so: the gate job stops them and says
-# how to run one deliberately. Making forks automatic-with-approval needs a
-# `hardware-lab` GitHub Environment with required reviewers (DESIGN.md §4);
-# that is a repository setting, not something this file can create.
+# workflow_run runs aren't attached to the triggering PR's checks, so `gate`
+# and `report` post an "HIL" check run against that commit instead.
 
 on:
-  # Fires when "Build and Deploy" finishes, which is every push to a PR.
   workflow_run:
     workflows: ["Build and Deploy"]
     types: [completed]
@@ -57,13 +35,6 @@ on:
         type: string
         default: ""
 
-  # Temporary, so this can be validated before it reaches the default branch:
-  # a workflow_run workflow does nothing until it is on main. Drop this once
-  # merged - after that, workflow_run covers every PR.
-  push:
-    branches:
-      - claude/wpc-hil-config-validation-rc62dn
-
 permissions:
   contents: read
 
@@ -77,10 +48,13 @@ jobs:
     name: Decide whether to touch the bench
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      checks: write
     outputs:
       run_bench: ${{ steps.decide.outputs.run_bench }}
       reason: ${{ steps.decide.outputs.reason }}
       commit: ${{ steps.decide.outputs.commit }}
+      check_id: ${{ steps.publish.outputs.check_id }}
     steps:
       - name: Decide
         id: decide
@@ -88,7 +62,6 @@ jobs:
           EVENT: ${{ github.event_name }}
           # For workflow_run these describe the run that triggered us.
           BUILD_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          BUILD_EVENT: ${{ github.event.workflow_run.event }}
           BUILD_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           BUILD_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
           THIS_REPO: ${{ github.repository }}
@@ -98,13 +71,10 @@ jobs:
           commit="${BUILD_HEAD_SHA:-$GITHUB_SHA}"
 
           if [ "$EVENT" = "workflow_run" ]; then
-            # No point flashing a build that failed.
             if [ "$BUILD_CONCLUSION" != "success" ]; then
               run_bench=false
               reason="the build it follows concluded '$BUILD_CONCLUSION', so there is nothing good to flash"
-            # A fork's code must not run on the bench unattended. workflow_run
-            # protects *this* workflow, but the firmware being flashed is still
-            # the fork's, and a board runs it on a private network.
+            # A fork's firmware must not run on the bench unattended.
             elif [ -n "$BUILD_HEAD_REPO" ] && [ "$BUILD_HEAD_REPO" != "$THIS_REPO" ]; then
               run_bench=false
               reason="the change comes from the fork '$BUILD_HEAD_REPO'. Review it, then run this workflow by hand (Run workflow) to put it on the bench."
@@ -123,37 +93,54 @@ jobs:
             echo "- bench: **$([ "$run_bench" = true ] && echo "running" || echo "skipped")** - $reason"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish check run
+        if: github.event_name == 'workflow_run'
+        id: publish
+        # Never let a reporting hiccup (rate limit, API blip) block the
+        # actual bench run below.
+        continue-on-error: true
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        env:
+          SHA: ${{ steps.decide.outputs.commit }}
+          RUN_BENCH: ${{ steps.decide.outputs.run_bench }}
+          REASON: ${{ steps.decide.outputs.reason }}
+          TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const running = process.env.RUN_BENCH === 'true';
+            const { data } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'HIL',
+              head_sha: process.env.SHA,
+              details_url: process.env.TARGET_URL,
+              status: running ? 'in_progress' : 'completed',
+              conclusion: running ? undefined : 'neutral',
+              output: {
+                title: running ? 'Bench running' : 'Bench skipped',
+                summary: process.env.REASON,
+              },
+            });
+            core.setOutput('check_id', data.id);
+
   bench:
     name: Bench
     needs: gate
     if: needs.gate.outputs.run_bench == 'true'
     runs-on: [self-hosted, vector-hil]
 
-    # The bench is a singleton behind `concurrency: hil-bench`, and this job
-    # holds that lease for as long as it runs. At 180 minutes a wedged job
-    # blocked every later run for three hours - which is what happened: a
-    # checkout hung, the runner stopped acknowledging, and the queue behind it
-    # went nowhere until someone noticed.
-    #
-    # So the cap is the healthy run plus headroom, not a number picked to never
-    # fire. A full healthy pass is ~50 minutes (recover ~30s, flash and health
-    # check ~4 min, the matrix ~45 for 130 configs across three boards).
-    #
-    # cancel-in-progress stays false deliberately: cancelling a live bench job
-    # can stop it mid-flash and leave a board half-written, which is a worse
-    # problem than a queue.
+    # A wedged job holds the bench's only lease (see `concurrency` above) for
+    # its whole timeout - a hung checkout once blocked every later run for 3
+    # hours. The cap is a healthy run (~50 min) plus headroom, not "never
+    # fires". cancel-in-progress stays false: killing a live job mid-flash can
+    # leave a board half-written, worse than a queue.
     timeout-minutes: 90
 
     steps:
-      # On workflow_run this checks out the DEFAULT BRANCH, not the PR - that
-      # is the whole security property, and it must stay that way. The board
-      # gets the PR's firmware because the harness builds it from the commit
-      # below, not because the PR's harness code runs here.
-      #
-      # Capped because this is the step that actually wedged: it sat in
-      # `in_progress` while the runner stopped answering, with 180 minutes of
-      # job budget to sit in.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Checks out the DEFAULT BRANCH here, not the PR - see the note at the
+      # top of this file. The commit under test is applied to src/ only,
+      # below.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 10
         with:
           fetch-depth: 0
@@ -164,9 +151,8 @@ jobs:
         env:
           COMMIT: ${{ needs.gate.outputs.commit }}
         run: |
-          # Only the firmware sources move to the PR's commit. dev/hil/** and
-          # this workflow stay on the default branch, which is what makes a
-          # fork PR unable to change what runs here.
+          # Only src/ moves to the PR's commit; dev/hil/** and this workflow
+          # stay on the default branch.
           git fetch --quiet origin "$COMMIT" || git fetch --quiet --no-tags origin "+refs/heads/*:refs/remotes/origin/*"
           git checkout --quiet "$COMMIT" -- src/
           echo "firmware sources at $COMMIT; harness from ${{ github.ref_name }}"
@@ -176,10 +162,8 @@ jobs:
           test -x "$VECTOR_HIL_VENV/bin/python" || { echo "bench venv missing"; exit 1; }
           echo "$VECTOR_HIL_VENV/bin" >> "$GITHUB_PATH"
 
-      # 1. Recover. Cheap when the bench is healthy, and the difference between
-      #    a wedged board costing one run and costing every run until someone
-      #    notices. ~30s when every board answers; a ladder still going after
-      #    the cap has failed in a way that needs a person, not more waiting.
+      # DESIGN.md's G1-G3. Self-healing recovery, then a USB+HTTP health
+      # check, then every game config on every board.
       - name: Recover any wedged board
         timeout-minutes: 15
         id: recover
@@ -187,9 +171,6 @@ jobs:
         continue-on-error: true
         run: python dev/hil/recover.py
 
-      # 2. Flash and health-check: DESIGN.md G1/G2. Exercises the API over both
-      #    USB and HTTP, which the config matrix does not. ~4 min: three builds
-      #    on the Zero 2 W, one parallel flash pass, a health check per board.
       - name: Flash and health-check every board
         timeout-minutes: 25
         id: flash_check
@@ -197,8 +178,6 @@ jobs:
         continue-on-error: true
         run: python dev/hil/flash_and_check.py
 
-      # 3. The config matrix: DESIGN.md G3. The long pole - ~20s per config,
-      #    130 configs across three boards.
       - name: Boot every config on every board
         timeout-minutes: 70
         id: config_matrix
@@ -209,11 +188,8 @@ jobs:
           HIL_CONFIGS: ${{ inputs.configs }}
           HIL_LIMIT: ${{ inputs.limit }}
         run: |
-          # An array, not a word-split string: `configs: "Taxi_L4, AttackMars_11"`
-          # is a natural thing to type, and splitting on that space hands
-          # argparse a stray positional and fails the run. config_matrix strips
-          # whitespace around the commas itself, so the value only has to
-          # arrive as one argument.
+          # An array, not a word-split string, so "Taxi_L4, AttackMars_11"
+          # survives as one --configs value.
           args=()
           if [ -n "${HIL_TARGET:-}" ]; then args+=(--target "$HIL_TARGET"); fi
           if [ -n "${HIL_CONFIGS:-}" ]; then args+=(--configs "$HIL_CONFIGS"); fi
@@ -221,15 +197,12 @@ jobs:
 
           python dev/hil/config_matrix.py "${args[@]}"
 
-      # Diagnostics read from boards that are by definition misbehaving.
       - name: Board serial logs on failure
         timeout-minutes: 5
         if: failure() || steps.flash_check.outcome == 'failure' || steps.config_matrix.outcome == 'failure'
         run: |
-          # `stty raw -echo` first, and both calls under `timeout`: a tty reverts
-          # to ECHO-on once every handle closes, so a bare `cat` feeds the board
-          # its own output back, and opening a tty waits for carrier, so a wedged
-          # board can block even stty.
+          # stty raw -echo first, both under `timeout`: a tty re-echoes once
+          # every handle closes, and opening one can block on carrier.
           for dev in /dev/ttyACM*; do
             [ -e "$dev" ] || continue
             echo "--- $dev"
@@ -254,15 +227,48 @@ jobs:
             echo "| config matrix | ${CONFIG_MATRIX:-skipped} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "recover:      ${RECOVER:-skipped}"
-          echo "flash-check:  ${FLASH_CHECK:-skipped}"
+          echo "recover:       ${RECOVER:-skipped}"
+          echo "flash-check:   ${FLASH_CHECK:-skipped}"
           echo "config-matrix: ${CONFIG_MATRIX:-skipped}"
 
-          # Every stage runs even when an earlier one fails - one broken board
-          # should not cost the signal from the others - so the verdict is
-          # taken here rather than by the first failure.
+          # Every stage runs even after an earlier failure, so the verdict is
+          # taken here rather than at the first one.
           failed=0
           for outcome in "$RECOVER" "$FLASH_CHECK" "$CONFIG_MATRIX"; do
             [ "$outcome" = "failure" ] && failed=1
           done
           exit "$failed"
+
+  report:
+    name: Report result to the commit
+    needs: [gate, bench]
+    if: always() && needs.gate.outputs.check_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      checks: write
+    steps:
+      # Off the self-hosted runner deliberately: it sits on a private
+      # network and this needs the GitHub API.
+      - name: Complete check run
+        continue-on-error: true
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        env:
+          CHECK_ID: ${{ needs.gate.outputs.check_id }}
+          RESULT: ${{ needs.bench.result }}
+          TARGET_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const ok = process.env.RESULT === 'success';
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: process.env.CHECK_ID,
+              status: 'completed',
+              conclusion: ok ? 'success' : 'failure',
+              details_url: process.env.TARGET_URL,
+              output: {
+                title: ok ? 'Bench passed' : 'Bench failed',
+                summary: `bench job result: ${process.env.RESULT}`,
+              },
+            });

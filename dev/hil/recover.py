@@ -422,9 +422,11 @@ def recover(port, target, args):
 def preflight():
     """Report which recovery steps are actually available here.
 
-    A recovery that fails is still worth the run if it says precisely which
-    one-time bit of runner setup would have made the bench self-healing. Each
-    line below is a step that either works or names what it needs.
+    Logged only, not put in the job summary: it is the same on every run
+    regardless of outcome, so it is noise on a healthy bench and clutter on a
+    failing one - what a failure needs is why *that* board did not come back,
+    which the per-board recovery notes below already say. Anyone chasing a
+    "recovery step not available" hint reads this from the raw log instead.
     """
     ports = []
     try:
@@ -432,32 +434,28 @@ def preflight():
     except CheckFailure:
         pass
 
-    note("### What this runner can do")
-    note("")
-    note("```")
-    note(f"  serial      ok        {len(ports)} port(s) visible")
+    log(f"  serial      ok        {len(ports)} port(s) visible")
 
     stranded = bench.bootsel_boards()
     if stranded:
-        note(f"  bootsel     found     {len(stranded)} board(s) in the ROM bootloader: " + ", ".join(b["chip_id"] or "?" for b in stranded))
+        log(f"  bootsel     found     {len(stranded)} board(s) in the ROM bootloader: " + ", ".join(b["chip_id"] or "?" for b in stranded))
 
     node = usb_device_path(ports[0]) if ports else None
     if node is None:
-        note("  usb reset   unknown   no device to check")
+        log("  usb reset   unknown   no device to check")
     elif os.access(node, os.W_OK):
-        note(f"  usb reset   ok        {node} is writable")
+        log(f"  usb reset   ok        {node} is writable")
     else:
-        note(f"  usb reset   no        {node} is not writable - needs a udev rule granting the runner user write access")
+        log(f"  usb reset   no        {node} is not writable - needs a udev rule granting the runner user write access")
 
     if shutil.which("uhubctl"):
-        note("  power       ok        uhubctl is installed (still needs a hub that switches port power)")
+        log("  power       ok        uhubctl is installed (still needs a hub that switches port power)")
     else:
-        note("  power       no        uhubctl not installed - `sudo apt install uhubctl`")
+        log("  power       no        uhubctl not installed - `sudo apt install uhubctl`")
 
     possible, why = can_complete_a_reflash()
-    note(f"  reflash     {'ok      ' if possible else 'no      '}  {why}")
-    note(f"  {'':11} {'':9} TrenchCoat pinned at {trench_coat.TRENCH_COAT_COMMIT[:8]}")
-    note("```")
+    log(f"  reflash     {'ok      ' if possible else 'no      '}  {why}")
+    log(f"  {'':11} {'':9} TrenchCoat pinned at {trench_coat.TRENCH_COAT_COMMIT[:8]}")
 
 
 def main():
