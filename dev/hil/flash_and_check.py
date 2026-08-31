@@ -50,6 +50,7 @@ from bench import (  # noqa: E402
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
+    as_block,
     board_map_instructions,
     build,
     check_bench_complete,
@@ -267,6 +268,38 @@ def _summarise(payload):
     return repr(payload)[:60]
 
 
+def write_step_summary(boards, failures, missing):
+    """Render the run as a table in the Actions job summary, when there is one.
+
+    Without this, a failing "flash + health check" step showed up in the HIL
+    stages table as a bare `failure` - the actual reason (a board that would
+    not reset, a config bundle that came up empty) only ever reached the raw
+    log and the annotations panel, which is not where a developer chasing a
+    red run starts looking.
+    """
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+
+    lines = ["## Flash + health check", "", "| board | target | result |", "|---|---|---|"]
+    for b in boards:
+        state = "FAIL" if any(b["port"] in f for f in failures) else "ok"
+        lines.append(f"| `{b['port']}` | {b.get('target', '?')} | {state} |")
+    for target in missing:
+        lines.append(f"| - | {target} | ABSENT |")
+
+    if failures:
+        lines += ["", "### Failures", ""]
+        for failure in failures:
+            head, _, rest = failure.partition("\n")
+            lines.append(f"- {head}")
+            if rest.strip():
+                lines += as_block(rest)
+
+    with open(path, "a") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-http", action="store_true", help="USB checks only; do not exercise the network stack")
@@ -381,6 +414,8 @@ def main():
     for target in missing:
         log(f"  {'ABSENT':5} {'-':16} {target}")
     log("=" * 60)
+
+    write_step_summary(boards, failures, missing)
 
     if failures:
         log(f"\n{len(failures)} failure(s):")
