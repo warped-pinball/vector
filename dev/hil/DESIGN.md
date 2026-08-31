@@ -27,7 +27,7 @@ Non-goals for v1: gameplay/bus-level correctness (bare boards, no machine attach
 | Harness location | All in `warped-pinball/vector`. Bench topology and credentials live on the Pi, not in git. |
 | Bench hardware | Bare boards, no machine or bus emulator attached. |
 | Board networking | Dedicated VLAN on the existing LAN. |
-| Trigger policy | Automatic for branches in `warped-pinball/vector`; forks require a maintainer gate. |
+| Trigger policy | Every PR queues automatically (`workflow_run`, every push); a maintainer approves the run via the `hardware-lab` environment before the bench touches hardware. Same-repo and fork PRs go through the identical gate. |
 | Board recovery | Software reset only (`machine.reset()` over `mpremote`). |
 | Update signing | `skip_signature_check: true` for the upgrade path, plus negative tests that the signature gate still rejects bad packages. |
 | Initial inventory | `sys11`, `wpc`, `data_east`. More systems added later. |
@@ -102,14 +102,18 @@ pull_request (fork or branch)
         ▼
   workflow_run: completed
         │
-        ├─ gate job (ubuntu-latest): decide auto vs. approval
-        │     head repo == warped-pinball/vector → proceed
-        │     fork                               → environment `hardware-lab`,
-        │                                          required reviewers, job blocks
+        ├─ gate job (ubuntu-latest): build succeeded? → queue; else stop
+        │     posts a "queued, waiting for approval" check immediately
         ▼
-  hil job (runs-on: [self-hosted, vector-hil])
+  approve job (ubuntu-latest, environment: hardware-lab)
+        │  required reviewers on the environment → job sits "Waiting"
+        │  until a maintainer clicks Review deployments → Approve
+        │  (no concurrency group: any number of PRs can queue here)
+        ▼
+  bench job (runs-on: [self-hosted, vector-hil])
         │  workflow + harness from default branch  ← trusted
-        │  artifact downloaded from the build run  ← untrusted payload only
+        │  artifact downloaded from the build run   ← untrusted payload only
+        │  concurrency: hil-bench                   ← the physical lease
         ▼
   boards on isolated VLAN
         │
@@ -117,12 +121,11 @@ pull_request (fork or branch)
   check run posted against the PR head SHA
 ```
 
-**Gating.** Auto for same-repo branches, approval for forks. Two mechanisms, both auditable:
+**Gating.** A human approves every run before hardware is touched — same-repo branches and forks alike, no special-casing by repo. The mechanism is a `hardware-lab` GitHub Environment with required reviewers (Settings → Environments → New environment, name it `hardware-lab`, add required reviewers): the `bench` job's `needs` chain runs through an `approve` job that references it, so the job literally pauses with status "Waiting" until a maintainer approves, and the approval is logged on the run. This is not a repository setting the workflow file can create — a repo admin has to add it once (see `README` note below).
 
-- a `hardware-lab` GitHub Environment with required reviewers — the job literally pauses until a maintainer clicks approve, and the approval is logged
-- a `safe-to-hil` label as a secondary signal, **auto-removed on every new push** by a tiny `pull_request.synchronize` workflow, so a contributor can't get a clean diff approved and then push a dirty one
+Because the check is scoped to the workflow run for one specific commit, a fresh push gets a fresh, unapproved check — there is no window where an approval granted for one diff silently carries over to a later, different one. `workflow_dispatch` (a maintainer already choosing to run this by hand) is exempted via a second, unprotected environment name so it still runs immediately — see the comment on the `approve` job in `hil.yml`.
 
-Belt and braces, but the label alone is not enough — label state and head SHA can desync — and the environment gate alone gives no signal on the PR itself.
+**Why this is also a scheduling win, not just security.** The `approve` job carries no `concurrency:` group, only `bench` does. So a PR mid-iteration can sit "queued, waiting for approval" indefinitely without spending any bench time or blocking any other PR's queue — a contributor (or reviewer) triggers the actual hardware run only when the PR is ready, and it stays attached to that PR's check list as proof the change doesn't break the boards.
 
 **Reporting.** `workflow_run` jobs have write permissions, so the result is posted as a check run keyed to the PR's head SHA via the Checks API. That's what makes it eligible to be a required check later.
 
@@ -278,10 +281,11 @@ dependencies that the Pi executes. The bench job checks out the default branch
 and then takes **only `src/`** from the commit under test, so the firmware is
 the PR's and the harness is not.
 
-Fork PRs are gated: the `gate` job stops them with a message saying to review
-and dispatch by hand. Making forks automatic-with-approval needs a
-`hardware-lab` Environment with required reviewers (§4) — a repository setting,
-not something the workflow can create.
+Every push queues, but nothing runs the bench without a maintainer approving
+it first — see "Gating" in §4. That applies identically to same-repo branches
+and fork PRs; there is no separate fork code path to keep in sync. The
+`hardware-lab` Environment with required reviewers is a repository setting,
+not something the workflow can create — see the README's runner setup notes.
 
 What exists today:
 
@@ -772,7 +776,7 @@ Note that `machine.reset()` is a full MCU reset, so `boot.py` and `main.py` do r
 |---|---|
 | `HDWR01` fires nondeterministically on bare boards | Characterize during bring-up; add a resistor pack if needed (§8, G1) |
 | Bench is a singleton; PRs queue | Concurrency group, path filters, add boards as needed |
-| Fork PR approved clean, then pushes dirty | Label auto-removed on `synchronize`; environment gate is per-run |
+| PR approved clean, then pushes dirty | Not possible by construction: the environment approval is scoped to one `workflow_run` for one commit SHA, so a new push always needs its own fresh approval |
 | Harness rots as API changes | Contract tests generated from `@api` docstrings fail when routes drift |
 | Flaky HIL erodes trust in CI | Keep it non-blocking until measured flake rate is under ~1% over a week |
 | `mpy-cross` bytecode version drifts away from shipped firmware | Now pinned; add a post-update HIL assertion that every `.mpy` imports (§8, G4) |
@@ -785,7 +789,7 @@ Note that `machine.reset()` is a full MCU reset, so `boot.py` and `main.py` do r
 |---|---|---|
 | 0 | Pi, VLAN, udev rules, 3 boards. Characterize bare-board fault behavior. Measure reset→ready. | 50 consecutive boots produce an identical fault set |
 | 1 | `dev/hil` package, boot smoke test, `workflow_dispatch` only | Green run driven by hand |
-| 2 | API contract tests over both transports. `workflow_run` trigger on, auto for maintainer branches, fork gate live. Non-blocking check. | Contract tests catch a deliberately broken route |
+| 2 | API contract tests over both transports. `workflow_run` trigger on, `hardware-lab` approval gate live for every PR. Non-blocking check. | Contract tests catch a deliberately broken route |
 | 3 | **Upgrade matrix, every PR.** Promoted ahead of the config matrix — it's the highest-value signal and the suspected problem area. | Full 5-version matrix green across all three boards |
 | 4 | Full config matrix | Combined run under ~50 min; flake rate under 1% over a week → make it a required check |
 | 5 | Expand manifest to `em`, `whitestar`, `classic`; second WPC board to parallelize G3 against G4 | — |
@@ -798,7 +802,7 @@ Note that phases 3 and 4 are deliberately ordered opposite to the goal numbering
 
 1. **What should `mpy-cross` be pinned to?** It's now frozen at `1.28.0.post2` (what CI already resolved), but the shipped UF2s carry MicroPython v1.24.1 for System 11/9 and v1.26.0-preview for WPC and Data East. Ideally the build toolchain matches the target's firmware, which today would mean a per-target `mpy-cross` rather than one for all of them. Needs a hardware decision: standardize the firmware across targets, or make the build toolchain per-target. See §8.
 2. **Bench WiFi credentials** — does the VLAN get its own SSID, or do boards join the existing one with VLAN assignment by MAC?
-3. **Should HIL be a required check?** Recommendation: yes for G1–G4 once the flake rate is measured over a week. With G4 running per-PR by design, making it advisory-only would waste most of its value.
+3. **Should HIL be a required check?** Recommendation: yes for G1–G4 once the flake rate is measured over a week. With G4 running per-PR by design, making it advisory-only would waste most of its value. Note the approval gate (§4) means "required" would also mean a PR cannot merge until a maintainer has approved and run it — that's the intended quality-gate behavior, not a side effect to work around.
 4. **How many versions back do we actually support?** The design says 5 stable releases; if the real support window is different, that's a one-line change to the matrix.
 5. **Do we want a `latest.json` fixture served from the Pi** to make `/api/update/check` testable, or leave that endpoint untested?
 6. **Is the existing USB hub self-powered?** Three Picos on a Zero 2 W's OTG port wants a powered hub.
