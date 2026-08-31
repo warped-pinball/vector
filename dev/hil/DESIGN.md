@@ -1,6 +1,6 @@
 # Hardware-in-the-Loop (HIL) Testing — Design
 
-**Status:** design proposal; bench bring-up and the flash/health-check harness are implemented and running
+**Status:** design proposal; bench bring-up, the flash/health-check harness (G1/G2) and the config matrix (G3) are implemented and running
 **Scope:** a self-hosted GitHub Actions runner driving real Vector boards, safely, from a public repository.
 
 ---
@@ -206,6 +206,110 @@ Tests parameterize over `manifest ∩ dev/ci/targets.json`. Adding `whitestar` l
 
 ## 7. Harness structure
 
+### One workflow, three stages
+
+`.github/workflows/hil.yml` is the whole bench. It replaced four separate
+workflows that shared the `hil-bench` concurrency group — and since GitHub keeps
+only one *pending* run per group, a push touching two of them had them race with
+the loser silently cancelled. One workflow takes one lease and runs:
+
+| stage | what it is | cost | cap |
+|---|---|---|---|
+| recover | `recover.py` — repair any wedged board | ~30s healthy | 15 min |
+| flash + health check | G1/G2, API over USB *and* HTTP | ~3.5 min | 25 min |
+| config matrix | G3, every config on every board | ~45 min | 70 min |
+
+The caps are per step, under a 90-minute cap on the job as a whole, and they
+exist because this job holds the `hil-bench` lease while it runs. At the
+original 180 minutes one wedged job — a hung `actions/checkout`, on a runner
+that had stopped acknowledging — blocked every run behind it for three hours.
+`cancel-in-progress` stays `false` regardless: cancelling a live bench job can
+stop it mid-flash and leave a board half-written, which is worse than a queue.
+
+Every stage runs even when an earlier one fails, and the verdict is taken at the
+end: one broken board should not cost the signal from the others. Running
+recovery first is the point of combining them — it costs almost nothing on a
+healthy bench and turns "a board wedged, so the next four runs were useless"
+into a bench that repairs itself.
+
+### What "the bench is here" means
+
+Three states have to be told apart before any of the above is worth running, and
+getting them confused has cost whole runs:
+
+- **On serial.** The normal case: a port, a chip id, a system it reports running.
+- **In BOOTSEL.** No serial port at all — the ROM bootloader enumerates as USB
+  mass storage, so `mpremote devs` is empty while `lsusb` lists every board.
+  This looked exactly like an unplugged bench and was reported as "no boards
+  found — check the USB hub and power" for a bench that was fine. The bootrom
+  publishes the board's unique id as its USB serial number, which is the same id
+  `machine.unique_id()` returns, so these boards are identifiable through
+  `VECTOR_HIL_BOARD_MAP` like any other: the harness mounts the drive and writes
+  the pinned TrenchCoat UF2 for the mapped target, and the board rejoins the run.
+- **Absent.** Not enumerated either way. This is the state that must fail the
+  run rather than shrink it: two boards out of three passing is a green run that
+  proves nothing about the third. `REQUIRED_TARGETS` names the systems the bench
+  is for; `VECTOR_HIL_REQUIRED_TARGETS` on the runner is how a bench that has
+  really lost a board says so out loud.
+
+Recovery is a call, not an instruction. A board that stops answering mid-run
+is drained, USB-reset and power cycled by whichever harness found it, then
+probed again — "run `dev/hil/recover.py`" is useless advice on a bench that is
+supposed to run unattended, and the recover stage only runs once at the start
+of a job. The reflash rung stays manual: it is destructive and leaves the board
+on TrenchCoat's bundled firmware, so a matrix continuing past it would be
+testing firmware other than the build under test.
+
+A board whose chip id is in none of the map's entries is never guessed at — the
+id and the exact line to add are written to the job summary, because the fix is
+one edit on the runner host and whoever makes it is reading the run, not the log.
+
+Boards are flashed concurrently. They are independent devices on independent
+ports and `dev/flash.py` is one subprocess each, spending nearly all of its time
+waiting on USB, so the stage costs about what one board costs instead of three.
+The failure output travels with the exception rather than being printed by the
+worker, so a failing board's log is still that board's log.
+
+**Trigger: `workflow_run` on "Build and Deploy" completion**, which is every
+push to a PR. Not `pull_request`, and the distinction is the security model:
+`workflow_run` workflows always run *from the default branch, using the default
+branch's code*, so a PR cannot change the workflow, `dev/hil/**`, or the pinned
+dependencies that the Pi executes. The bench job checks out the default branch
+and then takes **only `src/`** from the commit under test, so the firmware is
+the PR's and the harness is not.
+
+Fork PRs are gated: the `gate` job stops them with a message saying to review
+and dispatch by hand. Making forks automatic-with-approval needs a
+`hardware-lab` Environment with required reviewers (§4) — a repository setting,
+not something the workflow can create.
+
+What exists today:
+
+```
+dev/hil/
+  bench.py               # shared plumbing: inventory, resolve, build, flash,
+                         #   reset, wait-for-boot, USB request, config select
+  flash_and_check.py     # G1/G2: one flash per board, then the API health
+                         #   check over both USB and HTTP
+  config_matrix.py       # G3: one flash per board, then every game config for
+                         #   that target in turn
+  setup-runner.sh        # bench Pi provisioning
+  DESIGN.md, RUNNER_SETUP.md
+```
+
+`bench.py` deliberately asserts nothing about firmware behaviour — it only gets
+a board into a known state and talks to it, including driving the raw REPL over
+a connection the caller owns (`bench.Repl`) rather than shelling out to
+`mpremote`. Assertions live in the harness that
+imports it, so adding a check never means touching the plumbing. The
+hardware-free parts (config discovery, selection and ordering, and each
+assertion with the board faked out) are covered by
+`dev/tests/test_hil_config_matrix.py`.
+
+The originally proposed structure, for reference — pytest-driven, with a
+manifest and a board pool. Worth revisiting when a second board of the same
+target arrives and sharding starts to matter:
+
 ```
 dev/hil/
   bench.py               # manifest load + validation
@@ -300,18 +404,223 @@ That last one is the valuable one. It turns the API docs into a load-bearing art
 
 ### G3 — every config parses and boots
 
-Full matrix on every PR, per the decision above. Per board, loop over that hardware's configs:
+**Implemented** in `dev/hil/config_matrix.py`, run as a stage of `.github/workflows/hil.yml`.
 
-1. Interrupt to REPL, write `gamename` into `SPI_DataStore` `configuration` record, `machine.reset()`
-2. Wait for boot
+Per board: build and flash that board's target once, so the config bundle under
+test is the one this checkout produces, then loop over every config in
+`src/<target>/config/`:
+
+1. Write `gamename` into the `SPI_DataStore` `configuration` record over the REPL, and **read it back** — see the fixed-width field note below
+2. `machine.reset()`, then wait for the ready marker on the console
 3. Assert:
-   - no `CONF00` / `CONF01` fault
+   - no `CONF00` / `CONF01` fault, and no `HDWR01` either — `HDWR01` puts `main.py` down the `safe_mode` path where the config is never read at all, so it is fatal here even though `flash_and_check.py` only warns about it
    - `/api/game/active_config` is the config we set
    - `/api/game/name` matches `GameInfo.GameName` **from the source JSON in the repo** — this cross-checks the on-board `config/all.jsonl.z` against the source and catches build-time config-packing bugs, not just parse errors
    - `/api/leaders` and `/api/adjustments/status` both return 200 — proves the parsed definition is *usable*, not merely loadable
-   - free memory after load is above a floor
 
-That last assertion is the one that earns its keep. `sys11_tiny` exists because RAM is tight; a config that parses fine but leaves too little heap is the failure that actually reaches customers.
+Each board's bundle is also compared against the source directory once, before
+the loop: same set of config names, same game names. That localises a packing
+bug to one boot instead of one boot per affected config.
+
+**Why the game name is the load-bearing assertion.** A config that fails to
+apply does not fault or crash from the outside: `GameDefsLoad.go` falls back to
+`safe_defaults` and the board serves a generic definition for its hardware,
+healthy in every other respect. `/api/game/active_config` does not catch this —
+it reads the `gamename` field back out of FRAM, not what actually loaded. The
+game name is what separates "loaded my config" from "silently fell back".
+
+#### Bench results, first full run
+
+sys11 passed all 39 of its configs, at 20–22s each (~14 min). That is the
+harness working end to end: set the config, reboot, and confirm the board comes
+up reporting that game.
+
+WPC did not, and the reason is worth recording because it shaped the design.
+The board wedged — silent console, no reply to Ctrl-C — on the first handoff
+from our serial connection to `mpremote`, and stayed wedged for the remaining
+62 configs. The Pico has a single CDC endpoint, so using `mpremote` mid-run
+meant closing our connection, letting a second process open the port, and
+reopening afterwards, once per config. sys11 (MicroPython v1.24.1) survived
+that 39 times; WPC (v1.26.0-preview) did not survive it once. A running board
+printing into a CDC endpoint that nothing is draining is the difference between
+them.
+
+So the harness now **never hands the port to another process and never leaves
+it unread while the board is running.** The REPL is driven directly over the
+connection the harness already holds (`bench.Repl`), and the port is closed
+only while the board is mid-reset. Three further changes came out of the same
+run:
+
+- **Two consecutive setup failures abandon the board.** The first run spent 63
+  minutes writing the same 60s timeout 63 times. A board that stops answering
+  does not start again on its own.
+- **Teardown cannot fail the run.** A `TimeoutExpired` escaped `restore_default`
+  and took the whole process down with a traceback — losing the summary and
+  skipping data_east, which had never been touched.
+- **`stty raw -echo` before dumping a console.** A tty reverts to ECHO-on once
+  every handle closes, so the `cat /dev/ttyACM*` diagnostic step was echoing
+  each board's output back into it; the logs show all three boards parsing
+  their own log lines as USB API requests. Fixed in both HIL workflows.
+
+#### Why boards are flashed one at a time
+
+Flashing every board up front and then working through them in turn is the
+obvious ordering, and it is wrong. A board flashed first and used last spends
+however long the boards ahead of it take — half an hour on a full run — running
+the application and printing `SCORE:` / `RESOURCE:` / `DISCOVERY:` lines into a
+USB CDC console that nothing is draining. TrenchCoat documents where that ends
+(`src/ray.py`, `send_command`):
+
+> if nothing ever drains the board's output, the USB CDC buffers fill up,
+> MicroPython blocks writing to stdout, and the board deadlocks mid-script
+
+That is not hypothetical. It killed `data_east` 36 minutes into a run — the
+board simply stopped answering `mpremote` — and it is the most likely
+explanation for the WPC board that went silent for an hour on the very first
+bench run and needed recovering.
+
+So each board is flashed immediately before its own matrix. Boards waiting
+their turn sit at the REPL, where inventory's probe leaves them, producing no
+output at all. Builds still happen up front; they touch no hardware.
+
+As a second line, a board that will not take a reset gets its console drained
+and one retry: reading is the remedy for exactly this deadlock and costs
+seconds, against writing off a whole board's matrix.
+
+#### Draining reads until the board goes quiet, not for a fixed few seconds
+
+A blocked board does not hand its backlog over in one gulp. It unblocks, runs
+a little further, prints some more, and only then falls silent — so a drain
+with a fixed three-second budget catches the first mouthful and declares the
+board dead. That is measured, not argued: one bench run wrote off
+`/dev/ttyACM0` as unrecoverable after draining 63 bytes from it, and the very
+next step in the same job read the port with `cat` for eight seconds and got a
+healthy, running web server.
+
+So `bench.read_until_quiet` reads until the port has been silent for a couple
+of seconds, capped at a budget. A port with nothing to say costs the quiet
+period; one with a backlog gets as long as it needs. The Ctrl-C comes *after*
+the drain, because a firmware blocked writing to stdout is not reading stdin
+either — the host's OUT endpoint backs up too, so writing first only times out
+against the wedge it is trying to clear. A timed-out interrupt is likewise a
+reason to read more and try again, not a reason to give up.
+
+This matters more than it sounds: on the current runner the drain is the only
+recovery rung that can always be reached. The USB reset needs a udev rule and
+the power cycle needs `uhubctl`, and neither is installed (see
+RUNNER_SETUP.md), so everything above the drain escalates straight to a flash
+wipe.
+
+What the two directions did is then the diagnosis, and they point at different
+remedies. Bytes read but the Ctrl-C refused means the board is *talking but not
+listening*: producing output normally and never servicing what we send it, so
+no amount of reading reaches it — that is what the USB reset and power cycle
+rungs are for, and with both unavailable there is genuinely nothing left to
+try. Nothing read at all is the opposite: not a board blocked on a full output
+buffer, because such a board has a backlog to give up the moment somebody
+reads. Both are reported in those words rather than as "still dead", which sent
+a maintainer looking for a bricked Pico when the board in question was running
+the application and printing to its console the whole time.
+
+#### A lost connection is repaired, not treated as a verdict
+
+If a board's boot fails outright, the session is left holding no connection,
+and without care every config after it fails instantly with "the board is not
+connected" — including the retry that exists precisely to survive a flaky
+board. The bench showed the exact shape: the WPC board crashed on boot twice
+for one config, and from there the retry failed in no time at all and the next
+config failed in 0.0s, two configs blamed on a board that came back on its own
+moments later and served the restore step happily.
+
+So `Session.ensure_connected()` runs before each attempt: if there is no live
+connection it drains, resets, and watches the board come up. A board that is
+genuinely gone still ends its own matrix through the consecutive-failure
+counter; this only stops that happening while the board is still recoverable.
+
+#### One reset per boot
+
+`dev/flash.py` ends by resetting the board, so a freshly flashed board is
+already booting. Resetting it again lands on top of that boot, while the
+firmware is still reading a filesystem written seconds ago — and sys11 wedged
+in exactly that window: flashed successfully, then refusing a reset and any
+console traffic seconds later. `Session.start(reset=False)` watches the boot
+that flashing started instead of forcing another. It is the same shape as the
+`ENOENT`-on-a-file-that-exists crashes WPC raises, and suggests both are the
+firmware being disturbed while it reads freshly written flash.
+
+#### Telling a broken config from a flaky board
+
+They produce the identical symptom on one attempt and need opposite responses,
+so every failing config is retried once. Fails twice → the config, and the run
+goes red. Passes on the retry → the board, recorded as a **flake** against that
+board and reported in the summary, without blaming the config.
+
+This is not hypothetical either. The WPC board raises `ENOENT` mid-boot on files
+that plainly exist; a board that will do that to an import will do it to a route,
+and a run where `Congo_21` failed `/api/leaders` with a 500 and `Theatre_13`
+failed `/api/adjustments/status` the same way — on a board that also crashed
+once on boot in the same run — is exactly the ambiguity this resolves. Without
+the retry those read as two broken configs, which would be the wrong conclusion
+and would erode trust in the check.
+
+#### How a boot is watched
+
+The ready marker (`Server: Loop Forever`) is printed exactly once per boot, which
+makes watching for it precise but brittle in two directions. Both are handled:
+
+- **The board crashes instead of coming up.** MicroPython prints a traceback and
+  drops to the REPL; nothing will ever print the marker. The watcher recognises
+  the REPL banner and fails immediately *with the traceback*, rather than burning
+  the timeout and reporting "never reported its web server" — which is what
+  happened on the first full bench run and buried the real cause. A crash is
+  retried once, because it can be intermittent and losing a whole board's matrix
+  to one flaky boot buys nothing; every crash is counted and reported in the run
+  summary either way, so a board that only sometimes boots never reads as clean.
+- **The marker goes past before we are watching.** Any boot we did not trigger
+  ourselves looks identical to a board that never came up. On timeout the watcher
+  asks the board over the USB API before failing: a board that answers is up,
+  whatever we did or did not see, and says so as a warning.
+
+Timeouts are set from measurement, not guesswork. Across 70 boots on the bench:
+**11.8s minimum, 15.5s mean, 25.6s maximum.** The matrix allows 90s and the flash
+harness 150s, so neither is close to marginal — a boot that exceeds them has
+stopped, not slowed.
+
+#### Findings and limits
+
+- **~~Two WPC configs cannot be selected at all.~~ Fixed in #380.** The bench's
+  first real finding: `configuration.gamename` is a 16-byte fixed-width field
+  and `struct.pack` truncates silently, so `HarleyDavidson_L3` and
+  `GilliganIsland_L9` at 17 characters were offered by the web UI, accepted on
+  write, truncated into FRAM, and matched nothing on the next boot — `CONF01`,
+  safe defaults, and a game that could never be selected. Shortened to
+  `HarleyDavid_L3` and `GilliganIsle_L9`. `test_no_config_name_exceeds_the_gamename_field`
+  now enforces the rule absolutely, with no allowlist.
+- **WPC boots intermittently fail on a missing file.** Four crashes in one
+  63-config run, in two flavours — `ImportError: no module named 'origin'` and
+  `OSError: [Errno 2] ENOENT` — both raised from `phew/server.py:create_schedule`
+  during boot. Both are "file not found", on files that plainly exist: the same
+  board boots fine on the retry every time. That points at the on-board
+  filesystem returning ENOENT under some condition, not at the config bundle and
+  not (as first guessed) at memory pressure. A `nuke.uf2` wipe before reflashing,
+  which is what `recover.py`'s reflash rung does, is the obvious thing to try
+  next: if the littlefs on that board is degraded, it would clear it.
+- **`/api/adjustments/status` 500s for configs with no `Adjustments` section.**
+  `GameDefsLoad` assigns the parsed config straight to `SharedState.gdata`
+  without merging `safe_defaults` into it, so the key is simply absent and
+  `Adjustments._get_range_from_gamedef` raises `KeyError`. 14 shipped configs
+  are affected. Warned about rather than failed, so that a firmware gap the
+  harness cannot fix does not bury the signal it exists for.
+- **Configs that share a `GameName` are not distinguished from each other.**
+  The four `AddamsFam_*` variants all report "Addams Family", and no route
+  exposes anything else from `gdata`. For those, a pass means "this config
+  parsed and loaded without faulting", not "this exact ROM revision's
+  definition is in memory".
+- **The free-memory floor is not implemented.** No route reports heap, and
+  reading `gc.mem_free()` over the REPL means interrupting the running
+  firmware, which ends the boot being measured. `sys11_tiny` exists because RAM
+  is tight, so this assertion is still worth having — it needs a small
+  firmware-side route first.
 
 **Throughput.** Measured on the bench, per board, from the flash/health-check harness:
 
