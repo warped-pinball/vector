@@ -60,7 +60,7 @@ def interactive_select(label: str, options: List[str]) -> Optional[str]:
 def flash_single(system: str, port: Optional[str], write_config: Optional[str], test_data: Optional[bool]) -> int:
     """Build *system* firmware and flash a single board."""
     build_dir = build_for_hardware(system)
-    cmd = ["python", "dev/flash.py", build_dir]
+    cmd = [sys.executable, "dev/flash.py", build_dir]
     if port:
         cmd.extend(["--port", port])
     if write_config is not None:

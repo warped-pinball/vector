@@ -14,7 +14,12 @@ def build_for_hardware(hardware: str, quiet: bool = False) -> str:
     build_dir = f"build/{hardware}"
     subprocess.run(
         [
-            "python",
+            # sys.executable, not "python": on Windows these scripts are often
+            # launched through the file association rather than the active
+            # virtualenv, and resolving "python" through PATH can pick a
+            # different interpreter than the one running this process -- one
+            # without the dev requirements installed.
+            sys.executable,
             "dev/build.py",
             "--build-dir",
             build_dir,
@@ -35,7 +40,7 @@ def flash_port(build_dir: str, port: str, quiet: bool = False, flash_args: Optio
     extra = flash_args or []
     return subprocess.Popen(
         [
-            "python",
+            sys.executable,
             "dev/flash.py",
             build_dir,
             "--port",
