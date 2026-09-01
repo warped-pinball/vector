@@ -62,7 +62,7 @@
       "ScoreSpacing": 7
   },
   "Switches": {
-    "Type": 10,
+    "Type": 0,
     "Address": 5835,
     "Length": 48,
     "Names": [
