@@ -1853,7 +1853,13 @@ def app_origin_target(request):
         return '{"error":"a valid IPv4 target ip is required"}', 400
 
     secret = data.get("secret")
-    if not secret or not isinstance(secret, str) or len(secret) > origin.MAX_SECRET_LENGTH:
+    if not secret or not isinstance(secret, str):
+        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+    try:
+        secret.encode("ascii")
+    except Exception:
+        return '{"error":"secret must be ASCII"}', 400
+    if len(secret) > origin.MAX_SECRET_LENGTH:
         return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
 
     origin.set_target(str(ip), secret)
