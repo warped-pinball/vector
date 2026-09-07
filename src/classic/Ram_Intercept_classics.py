@@ -191,7 +191,7 @@ def GetWriteAddress():
     
     #WRITE Process, Get Address  
     mov(isr,y)             .side(0)     #copy 23 bit address msb to isr,ready to shift in 11 lsb from pins    
-    in_(pins,1)            .side(0)     #read A8, set A_Select to 1  
+    in_(pins,2)            .side(0)     #read A8, set A_Select to 1  
     nop()            [7]   .side(1)  #   7 * 6.67nS=47nS 
     in_(pins,8)            .side(1)     #read A0-7, set A_Select back to 0        
     push(noblock)          .side(0)     #send out address result for DMA
