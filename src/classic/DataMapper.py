@@ -20,6 +20,19 @@ import SharedState as S
 from Shadow_Ram_Definitions import shadowRam
 
 
+def on_game_reboot():
+    """Reboot-time hook called by backend.app_reboot_game (/api/game/reboot).
+
+    Runs while the main board is held in reset. Zeroes the 5101 battery-backed
+    NV window (0x200-0x2FF) so the game powers back up with a blank NV area;
+    copy_to_fram then mirrors the zeros into FRAM. The 0x000-0x1FF scratch
+    region is left alone - the game re-initializes it on boot anyway.
+    """
+    for i in range(0x200, 0x300):
+        shadowRam[i] = 0x00
+    log.log("DATAMAPPER: shadow RAM NV window 0x200-0x2FF wiped on game reboot")
+
+
 def _bcd_to_int(score_bytes):
     """
     Convert BCD (Binary Coded Decimal) bytes from Classics machine format to integer.
