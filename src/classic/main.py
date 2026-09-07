@@ -120,10 +120,13 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
-    # MPU-200 boards have full-byte RAM at 0x100-0x200
-    # so the low-nibble forcer state machine needs to be disabled for them.
-    is_mpu200 = SharedState.gdata.get("GameInfo", {}).get("System") == "MPU200"
-    RamInt.enableMPU200Mode(is_mpu200)
+
+# MPU-200 boards have full-byte RAM at 0x100-0x200
+# so the low-nibble forcer state machine needs to be disabled for them.
+#do this even if early activity detected
+is_mpu200 = SharedState.gdata.get("GameInfo", {}).get("System") == "MPU200"
+RamInt.enableMPU200Mode(is_mpu200)
+Log.log(f"MAIN: MPU200 mode {'ON' if is_mpu200 else 'OFF'}")
 
 
 time.sleep(1)
