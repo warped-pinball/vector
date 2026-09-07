@@ -74,7 +74,8 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
         start = time.ticks_ms()
         status = wlan.status()
 
-        logging.debug(f"  - {statuses.get(status, f'unknown status {status}')}")  # got '2' as status sometimes
+        unknown_status = f"unknown status {status}"
+        logging.debug(f"  - {statuses.get(status, unknown_status)}")  # got '2' as status sometimes
         while not wlan.isconnected() and time.ticks_diff(time.ticks_ms(), start) < (timeout_seconds * 1000):
             new_status = wlan.status()
             if status != new_status:
