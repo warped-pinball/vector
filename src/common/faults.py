@@ -9,7 +9,7 @@ import BoardLED as L
 import machine
 import rp2
 import SharedState as S
-from micropython import const
+from micropython import const, schedule
 from phew import is_connected_to_wifi
 
 # Hardware Faults
@@ -102,8 +102,16 @@ timer = machine.Timer()
 enableWS2812led = False
 sequence = [L.BLACK]
 index = 0
-update_sequence_continuous = 75  # about 1 minute at timer period of 790ms
+update_sequence_continuous = 152  # about 2 minutes at timer period of 790ms
 LED_Out = None
+_led_refresh_pending = False
+
+
+def _refresh_led_sequence(_):
+    """Rebuild the LED sequence. Deferred off the timer IRQ via micropython.schedule()."""
+    global _led_refresh_pending
+    _led_refresh_pending = False
+    update_led_sequence()
 
 
 def initialize_board_LED():
@@ -116,19 +124,22 @@ def initialize_board_LED():
     else:
 
         def _timerCallBack(_):
-            """
-            Timer callback to update LED color based on fault sequence
-            """
-            global index, sequence, update_sequence_continuous
+            """Advance the blink sequence only - keep the IRQ minimal; the
+            sequence rebuild is deferred to _refresh_led_sequence()."""
+            global index, _led_refresh_pending, update_sequence_continuous
 
-            # If the sequence has shortened or we reached the end, reset the index
-            index = index if index < len(sequence) else 0
-            L.ledColor(sequence[index])
+            seq = sequence
+            if index >= len(seq):
+                index = 0
+            L.ledColor(seq[index])
             index = index + 1
 
             if update_sequence_continuous > 0:
-                update_led_sequence()
                 update_sequence_continuous -= 1
+                # rebuild the sequence only every 3rd tick - keeps the deferred work light
+                if update_sequence_continuous % 3 == 0 and not _led_refresh_pending:
+                    _led_refresh_pending = True
+                    schedule(_refresh_led_sequence, 0)
 
         L.startUp()
         L.ledOff()
@@ -162,20 +173,6 @@ def get_fault_led_sequence(fault):
 def update_led_sequence():
     global sequence
 
-    led_sequences = [get_fault_led_sequence(fault) for fault in S.faults]
-
-    # Separate each fault code sequence with OFF states
-    code_sep = [L.BLACK, L.BLACK, L.BLACK]
-    combined_sequence = []
-    for seq in led_sequences:
-        combined_sequence.extend(seq)
-        combined_sequence.extend(code_sep)
-
-    if combined_sequence:
-        sequence = combined_sequence
-        return
-
-    # no faults - get and report normal status
     def in_ap_mode():
         """A lightly cursed way to determine if we are in AP mode without using global memory"""
         from json import loads
@@ -187,6 +184,24 @@ def update_led_sequence():
             return False
         return loads(route(0)[0])["in_ap_mode"]
 
+    led_sequences = [get_fault_led_sequence(fault) for fault in S.faults]
+
+    # Separate each fault code sequence with OFF states
+    code_sep = [L.BLACK, L.BLACK, L.BLACK]
+    combined_sequence = []
+    for seq in led_sequences:
+        combined_sequence.extend(seq)
+        combined_sequence.extend(code_sep)
+
+    if combined_sequence:
+        # if we're also in AP mode, tack the AP-mode blink on after the fault codes
+        if in_ap_mode():
+            combined_sequence.extend([L.PURPLE, L.PURPLE_DIM])
+            combined_sequence.extend(code_sep)
+        sequence = combined_sequence
+        return
+
+    # no faults - get and report normal status
     if in_ap_mode():
         combined_sequence = [L.PURPLE, L.PURPLE_DIM]  # AP mode
     elif is_connected_to_wifi():

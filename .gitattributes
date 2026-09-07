@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Bench setup scripts run as POSIX sh on the Pi; CRLF would break the shebang.
+dev/hil/*.sh text eol=lf

@@ -4,15 +4,6 @@
       "System": "WPC",
       "FileVer": 1
   },
-  "Definition": {
-      "version": 1
-  },
-  "Memory": {
-      "Start": 1,
-      "Length": 8192,
-      "NvStart": 2048,
-      "NvLength": 2048
-  },
   "BallInPlay": {
       "Type": 1,
       "Address": 4063,

@@ -408,12 +408,15 @@ def write_live_scores(scores):
         if not isinstance(scores, (list, tuple)) or len(scores) != 4:
             log.log(f"DATAMAPPER: invalid scores format, expected list of 4 integers")
             return False
-            
+
+        if "InPlay" not in S.gdata or "ScoreAdr" not in S.gdata["InPlay"]:
+            return False
+
         for idx in range(4):
             score_start = S.gdata["InPlay"]["ScoreAdr"] + idx * 4
             score_bcd = _int_to_bcd(scores[idx])
             shadowRam[score_start : score_start + 4] = score_bcd
-            
+
         return True
     except Exception as e:
         log.log(f"DATAMAPPER: error writing in-play scores: {e}")

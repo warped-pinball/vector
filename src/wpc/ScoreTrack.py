@@ -533,12 +533,11 @@ def CheckForNewScores(nState=[0]):
         place_machine_scores()
         nState[0] = 1
         # if enter initials on game set high score rewards to zero
-        if S.gdata["HSRewards"]["Type"] == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
+        if S.gdata.get("HSRewards", {}).get("Type") == 10 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
             for key, value in S.gdata["HSRewards"].items():
                 if key.startswith("HS"):  # Check if the key starts with 'HS'
                     shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
         from Adjustments import _fixChecksum
-
         _fixChecksum()
 
     # only run this if ball in play is enabled

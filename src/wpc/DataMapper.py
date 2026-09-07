@@ -216,8 +216,8 @@ def get_initials_entered():
     """
     global stored_grand_champion
     
-    # Initialize return list with empty entries
-    new_entries = [["", 0], ["", 0], ["", 0], ["", 0]]
+    # Initialize return list with empty entries (5 slots: GC + 4 regular high scores can all be new)
+    new_entries = [["", 0], ["", 0], ["", 0], ["", 0], ["", 0]]
     
     # Read current high scores (index 0 = GC, 1-4 = regular high scores)
     current_scores = read_high_scores()

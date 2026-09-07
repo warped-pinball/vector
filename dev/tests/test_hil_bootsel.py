@@ -1,0 +1,811 @@
+"""Tests for the states the bench harness has to survive without a serial port.
+
+A board in BOOTSEL, a board the map has never seen, and a bench that is a board
+short are the three ways a run can be worthless while looking fine, and all
+three are hardware-free to pin down: sysfs is a directory, the job summary is a
+file, and flashing is a subprocess.
+"""
+
+from __future__ import annotations
+
+import sys
+import time
+import types
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+_serial_stub = sys.modules.setdefault("serial", types.ModuleType("serial"))
+if not hasattr(_serial_stub, "SerialTimeoutException"):
+    _serial_stub.SerialTimeoutException = type("SerialTimeoutException", (Exception,), {})
+if "usb_coms_demo" not in sys.modules:
+    stub = types.ModuleType("usb_coms_demo")
+    stub.UsbApiClient = object
+    sys.modules["usb_coms_demo"] = stub
+
+sys.path.insert(0, str(REPO_ROOT / "dev" / "hil"))
+
+import bench  # noqa: E402
+import recover  # noqa: E402
+import trench_coat  # noqa: E402
+
+
+def usb_tree(tmp_path, devices):
+    """Build a fake /sys/bus/usb/devices holding `devices` = {name: (vid, pid, serial)}."""
+    root = tmp_path / "usb"
+    root.mkdir()
+    for name, fields in devices.items():
+        entry = root / name
+        entry.mkdir()
+        if fields is None:  # an interface, which has no ids at all
+            continue
+        vid, pid, serial = fields
+        (entry / "idVendor").write_text(vid + "\n")
+        (entry / "idProduct").write_text(pid + "\n")
+        if serial is not None:
+            (entry / "serial").write_text(serial + "\n")
+    return root
+
+
+# --------------------------------------------------------------------------
+# finding a board that has no serial port
+# --------------------------------------------------------------------------
+
+
+def test_bootsel_boards_finds_rp2_bootloaders(monkeypatch, tmp_path):
+    root = usb_tree(
+        tmp_path,
+        {
+            "1-1": ("2e8a", "0003", "E661A4D4179A5B2F"),  # RP2040 in BOOTSEL
+            "1-2": ("2e8a", "000f", "df13a50c13958980"),  # RP2350 in BOOTSEL
+            "1-3": ("2e8a", "0005", "e66141040380b42e"),  # running MicroPython
+            "1-4": ("1d6b", "0002", None),  # a hub
+            "1-1:1.0": None,  # an interface
+        },
+    )
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    found = bench.bootsel_boards()
+
+    assert [b["chip_id"] for b in found] == ["e661a4d4179a5b2f", "df13a50c13958980"]
+    assert [b["processor"] for b in found] == ["RP2040", "RP2350"]
+    # The id is the same one the map is keyed by, so a board is identifiable
+    # here even though nothing can be asked of it.
+    assert all(b["port"] is None and b["bootsel"] and not b["responsive"] for b in found)
+
+
+def test_bootsel_boards_is_empty_without_sysfs(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing here")
+    assert bench.bootsel_boards() == []
+
+
+def test_an_empty_bench_is_told_apart_from_one_in_the_bootloader(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing")
+    assert "nothing in the ROM bootloader either" in bench.no_boards_message()
+
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "e66141040380b42e"}])
+    message = bench.no_boards_message()
+    assert "e66141040380b42e" in message
+    assert "recover.py" in message
+    assert "check the USB hub and power" not in message
+
+
+def test_inventory_lists_bootsel_boards_alongside_the_others(monkeypatch, capsys):
+    monkeypatch.setattr(bench, "list_ports", lambda: ["/dev/ttyACM0"])
+    monkeypatch.setattr(bench, "probe", lambda port: {"port": port, "chip_id": "aaaa", "system": "wpc", "version": "1.7", "responsive": True})
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "bbbb", "processor": "RP2040"}])
+
+    boards = bench.inventory()
+    printed = capsys.readouterr().out
+
+    # Only the usable board is returned, but the other one is not silent.
+    assert [b["port"] for b in boards] == ["/dev/ttyACM0"]
+    assert "bbbb" in printed and "BOOTSEL" in printed
+    assert "::warning::" in printed
+
+
+def test_inventory_explains_a_bench_that_is_entirely_in_the_bootloader(monkeypatch):
+    monkeypatch.setattr(bench, "list_ports", lambda: [])
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "bbbb", "processor": "RP2040"}])
+
+    with pytest.raises(bench.CheckFailure, match="ROM bootloader"):
+        bench.inventory()
+
+
+# --------------------------------------------------------------------------
+# a board the map does not know
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def job_summary(monkeypatch, tmp_path):
+    path = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(path))
+    return path
+
+
+def test_an_unknown_board_puts_its_id_and_the_fix_in_the_job_summary(job_summary):
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": "aaaa"},
+        {"port": None, "chip_id": "cccc"},
+    ]
+    board_map = {"aaaa": "wpc"}
+
+    message = bench.report_unknown_boards([boards[1]], boards, board_map)
+    written = job_summary.read_text()
+
+    assert "cccc" in message
+    # The id, the line to set, and where to set it - the whole remedy, on the
+    # page somebody reads when a run goes red.
+    assert "cccc" in written
+    assert "VECTOR_HIL_BOARD_MAP=aaaa=wpc,cccc=<target>" in written
+    assert "actions-runner/.env" in written
+    # A board already mapped keeps its target in the suggested line.
+    assert "aaaa=<target>" not in written
+
+
+def test_resolve_targets_reports_the_board_it_cannot_place(job_summary):
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": "aaaa", "system": "wpc", "responsive": True},
+        {"port": "/dev/ttyACM1", "chip_id": "cccc", "system": None, "responsive": True},
+    ]
+
+    with pytest.raises(bench.CheckFailure, match="does not cover"):
+        bench.resolve_targets(boards, {"aaaa": "wpc"})
+
+    assert "cccc" in job_summary.read_text()
+
+
+def test_the_instructions_name_the_valid_targets(job_summary):
+    text = bench.board_map_instructions([{"port": None, "chip_id": "cccc"}], {})
+    for target in bench.DEFAULT_GAMENAME:
+        assert target in text
+
+
+# --------------------------------------------------------------------------
+# a bench that is a board short
+# --------------------------------------------------------------------------
+
+
+def boards_for(*targets):
+    return [{"port": f"/dev/ttyACM{i}", "target": target} for i, target in enumerate(targets)]
+
+
+def test_a_missing_system_fails_the_run(job_summary, monkeypatch):
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+
+    missing = bench.check_bench_complete(boards_for("wpc", "sys11"))
+
+    assert missing == ["data_east"]
+    written = job_summary.read_text()
+    assert "Incomplete bench" in written
+    assert "data_east" in written
+
+
+def test_a_complete_bench_says_nothing_to_the_summary(job_summary, monkeypatch):
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+
+    assert bench.check_bench_complete(boards_for("wpc", "sys11", "data_east")) == []
+    assert not job_summary.exists()
+
+
+def test_a_bench_that_really_has_lost_a_board_can_say_so(job_summary, monkeypatch):
+    monkeypatch.setenv("VECTOR_HIL_REQUIRED_TARGETS", "wpc,sys11")
+    assert bench.check_bench_complete(boards_for("wpc", "sys11")) == []
+
+
+def test_the_check_can_be_turned_off_entirely(job_summary, monkeypatch):
+    monkeypatch.setenv("VECTOR_HIL_REQUIRED_TARGETS", "")
+    assert bench.check_bench_complete([]) == []
+
+
+# --------------------------------------------------------------------------
+# flashing every board at once
+# --------------------------------------------------------------------------
+
+
+def test_boards_are_flashed_in_parallel(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "write_bench_config", lambda target, workdir: tmp_path / f"{target}.json")
+
+    def slow_flash(target, port, build_dir, config_path):
+        time.sleep(0.3)
+
+    monkeypatch.setattr(bench, "flash", slow_flash)
+    boards = boards_for("wpc", "sys11", "data_east")
+
+    started = time.monotonic()
+    assert bench.flash_boards(boards, tmp_path) == {}
+    elapsed = time.monotonic() - started
+
+    # Three 0.3s flashes, one after another, would be 0.9s.
+    assert elapsed < 0.6
+
+
+def test_one_board_failing_to_flash_does_not_take_the_others_with_it(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "write_bench_config", lambda target, workdir: tmp_path / f"{target}.json")
+
+    def flash(target, port, build_dir, config_path):
+        if target == "sys11":
+            raise bench.CheckFailure("flash failed for sys11: no space left")
+
+    monkeypatch.setattr(bench, "flash", flash)
+    boards = boards_for("wpc", "sys11", "data_east")
+
+    errors = bench.flash_boards(boards, tmp_path)
+
+    # Attributed to the right board, which is the whole risk of doing this
+    # concurrently.
+    assert list(errors) == ["/dev/ttyACM1"]
+    assert "no space left" in errors["/dev/ttyACM1"]
+
+
+def test_an_unexpected_error_is_reported_rather_than_escaping(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "write_bench_config", lambda target, workdir: tmp_path / f"{target}.json")
+
+    def flash(target, port, build_dir, config_path):
+        raise RuntimeError("the venv moved")
+
+    monkeypatch.setattr(bench, "flash", flash)
+
+    errors = bench.flash_boards(boards_for("wpc"), tmp_path)
+
+    assert "RuntimeError: the venv moved" in errors["/dev/ttyACM0"]
+
+
+# --------------------------------------------------------------------------
+# putting firmware back on a board in the bootloader
+# --------------------------------------------------------------------------
+
+
+def test_the_drive_is_found_through_the_devices_own_sysfs_path(tmp_path):
+    device = tmp_path / "1-1"
+    block = device / "1-1:1.0" / "host0" / "target0:0:0" / "0:0:0:0" / "block" / "sda"
+    block.mkdir(parents=True)
+
+    assert trench_coat.block_device(device) == Path("/dev/sda")
+
+
+def test_no_drive_yet_is_not_an_error(tmp_path):
+    device = tmp_path / "1-1"
+    device.mkdir()
+    assert trench_coat.block_device(device) is None
+
+
+def test_an_already_mounted_drive_is_not_mounted_again(monkeypatch):
+    monkeypatch.setattr(trench_coat, "mount_point", lambda device: "/media/runner/RPI-RP2")
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda *a, **k: pytest.fail("udisksctl must not be called for a drive that is already mounted"))
+
+    assert trench_coat.mount("/dev/sda") == "/media/runner/RPI-RP2"
+
+
+def test_mount_point_reads_proc_mounts(monkeypatch, tmp_path):
+    mounts = tmp_path / "mounts"
+    mounts.write_text("proc /proc proc rw 0 0\n/dev/sdb /media/runner/RPI-RP2 vfat rw 0 0\n")
+    real_read = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real_read(mounts) if str(self) == "/proc/mounts" else real_read(self, *a, **k))
+
+    assert trench_coat.mount_point("/dev/sdb") == "/media/runner/RPI-RP2"
+    assert trench_coat.mount_point("/dev/sdc") is None
+
+
+@pytest.fixture()
+def rescue(monkeypatch):
+    """Fake out everything below rescue_bootsel and record what it flashed."""
+    flashed = []
+    monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: Path("/trench-coat"))
+    monkeypatch.setattr(trench_coat, "flash_bootsel", lambda chip_id, target, root: flashed.append((chip_id, target)) or "/dev/ttyACM9")
+    return flashed
+
+
+def test_a_board_in_the_bootloader_is_flashed_with_its_own_targets_firmware(monkeypatch, rescue, tmp_path):
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "aaaa", "processor": "RP2040"}, {"chip_id": "bbbb", "processor": "RP2040"}])
+
+    assert trench_coat.rescue_bootsel({"aaaa": "wpc", "bbbb": "data_east"}, tmp_path) == 2
+    assert rescue == [("aaaa", "wpc"), ("bbbb", "data_east")]
+
+
+def test_an_unmapped_board_is_reported_and_left_alone(monkeypatch, rescue, tmp_path, job_summary):
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "aaaa", "processor": "RP2040"}, {"chip_id": "cccc", "processor": "RP2350"}])
+
+    # Guessing which system's firmware to write would be a good way to flash
+    # WPC firmware onto the Data East board.
+    assert trench_coat.rescue_bootsel({"aaaa": "wpc"}, tmp_path) == 1
+    assert rescue == [("aaaa", "wpc")]
+    assert "cccc" in job_summary.read_text()
+
+
+def test_nothing_in_the_bootloader_costs_nothing(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(trench_coat, "clone", lambda *a, **k: pytest.fail("must not clone trench-coat with nothing to rescue"))
+
+    assert trench_coat.rescue_bootsel({"aaaa": "wpc"}, tmp_path) == 0
+
+
+def test_one_boards_rescue_failing_does_not_stop_the_next(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "aaaa", "processor": "RP2040"}, {"chip_id": "bbbb", "processor": "RP2040"}])
+    monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: Path("/trench-coat"))
+    tried = []
+
+    def flash_bootsel(chip_id, target, root):
+        tried.append(chip_id)
+        if chip_id == "aaaa":
+            raise bench.CheckFailure("no drive ever appeared")
+        return "/dev/ttyACM1"
+
+    monkeypatch.setattr(trench_coat, "flash_bootsel", flash_bootsel)
+
+    assert trench_coat.rescue_bootsel({"aaaa": "wpc", "bbbb": "sys11"}, tmp_path) == 1
+    assert tried == ["aaaa", "bbbb"]
+
+
+def test_the_wipe_comes_before_the_firmware(monkeypatch, tmp_path):
+    """nuke.uf2 first is the whole difference between a recovery and an upgrade."""
+    root = tmp_path / "trench-coat"
+    (root / "uf2").mkdir(parents=True)
+    (root / "uf2" / "nuke.uf2").write_text("nuke")
+    (root / "uf2" / trench_coat.TARGET_UF2["wpc"]).write_text("firmware")
+
+    copied = []
+    monkeypatch.setattr(trench_coat, "copy_uf2", lambda uf2, device, drive: copied.append(uf2.name))
+    monkeypatch.setattr(trench_coat, "bootsel_drive", lambda chip_id, timeout=None: ("/dev/sda", "/media/RPI-RP2"))
+    monkeypatch.setattr(trench_coat, "wait_for_bootsel", lambda chip_id, present, timeout=None: True)
+    monkeypatch.setattr(trench_coat, "BOOTSEL_SETTLE", 0)
+    ports = iter([[], [], ["/dev/ttyACM0"]])
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: next(ports, ["/dev/ttyACM0"]))
+
+    assert trench_coat.flash_bootsel("aaaa", "wpc", root) == "/dev/ttyACM0"
+    assert copied == ["nuke.uf2", trench_coat.TARGET_UF2["wpc"]]
+
+
+def test_a_board_that_never_presents_a_drive_is_not_flashed(monkeypatch, tmp_path):
+    root = tmp_path / "trench-coat"
+    (root / "uf2").mkdir(parents=True)
+    (root / "uf2" / "nuke.uf2").write_text("nuke")
+    (root / "uf2" / trench_coat.TARGET_UF2["wpc"]).write_text("firmware")
+
+    monkeypatch.setattr(trench_coat, "copy_uf2", lambda *a: pytest.fail("nothing to copy to"))
+    monkeypatch.setattr(trench_coat, "bootsel_drive", lambda chip_id, timeout=None: (None, None))
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: [])
+
+    assert trench_coat.flash_bootsel("aaaa", "wpc", root) is None
+
+
+def test_trench_coat_is_shown_the_recovered_board_and_no_other(monkeypatch, tmp_path):
+    """The port filter has to do two opposite things at two moments.
+
+    Before the flash it must hide every board, so TrenchCoat resets none of
+    them; after it, it must show the recovered one, or its own wait for the
+    board to restart can never be satisfied.
+    """
+    seen = {}
+
+    class FakeRay:
+        def __init__(self, port):
+            seen.setdefault("bootloader", []).append(port)
+
+        def enter_bootloader_mode(self):
+            pass
+
+        @classmethod
+        def find_board_ports(cls):
+            return []
+
+    ray = types.SimpleNamespace(Ray=FakeRay, serial=types.SimpleNamespace(Serial=lambda *a, **k: object()))
+    core = types.SimpleNamespace(
+        list_rpi_rp2_drives=lambda: ["/media/RPI-RP2"],
+        graceful_exit=lambda now=False: None,
+        flash_firmware=lambda path: seen.update(during=ray.Ray.find_board_ports()),
+    )
+    monkeypatch.setattr(trench_coat, "clone", lambda root, commit=None: root)
+    monkeypatch.setattr(trench_coat, "load", lambda root: (core, ray))
+    monkeypatch.setattr(trench_coat, "bundled_uf2", lambda root, target: Path("/uf2/wpc.uf2"))
+    monkeypatch.setattr(trench_coat, "find_bootloader_drives", lambda: ["/media/RPI-RP2"])
+    monkeypatch.setattr(trench_coat, "wait_for_drive", lambda core, timeout=None: ["/media/RPI-RP2"])
+
+    # The two healthy boards are on ACM0 and ACM2; the board being recovered is
+    # a drive right now and comes back on a number it did not have before.
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: ["/dev/ttyACM0", "/dev/ttyACM2"])
+    assert trench_coat.flash("/dev/ttyACM1", "wpc", tmp_path) is True
+    assert seen["during"] == []
+    assert seen["bootloader"] == ["/dev/ttyACM1"]
+
+    hidden = ray.Ray.find_board_ports
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: ["/dev/ttyACM0", "/dev/ttyACM2", "/dev/ttyACM3"])
+    assert hidden() == ["/dev/ttyACM3"]
+
+
+def test_the_same_finding_reaches_the_summary_once(job_summary, monkeypatch):
+    """Three stages, one summary page, one problem."""
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    boards = boards_for("wpc", "sys11")
+
+    for _stage in range(3):
+        assert bench.check_bench_complete(boards) == ["data_east"]
+
+    assert job_summary.read_text().count("### Incomplete bench") == 1
+
+
+def test_a_different_finding_still_gets_through(job_summary):
+    boards = [{"port": None, "chip_id": "cccc"}, {"port": None, "chip_id": "dddd"}]
+
+    bench.report_unknown_boards([boards[0]], boards, {})
+    bench.report_unknown_boards([boards[1]], boards, {})
+
+    written = job_summary.read_text()
+    assert "cccc" in written and "dddd" in written
+
+
+# --------------------------------------------------------------------------
+# an empty bench has to explain itself
+# --------------------------------------------------------------------------
+
+
+def test_an_empty_bench_prints_the_usb_bus(monkeypatch, tmp_path):
+    """ "no boards found" and "lsusb shows them" is a contradiction the log must settle."""
+    root = usb_tree(
+        tmp_path,
+        {
+            "usb1": ("1d6b", "0002", "0000:01:00.0"),
+            "1-1": ("2109", "3431", None),
+            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),  # running, but no serial port for it
+            "1-1.1:1.0": None,
+        },
+    )
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    message = bench.no_boards_message()
+
+    assert "2e8a:0005" in message
+    assert "2109:3431" in message
+    # A board in this state is running firmware, so say that rather than
+    # calling it unrecognised - the mismatch is that it has no serial port.
+    assert "1 running MicroPython" in message
+    # Interfaces carry no ids and are not devices.
+    assert "1-1.1:1.0" not in message
+
+
+def test_an_empty_sysfs_says_so_rather_than_blaming_the_boards(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "USB_DEVICES", tmp_path / "nothing")
+    assert "Nothing at all is on the USB bus" in bench.no_boards_message()
+
+
+# --------------------------------------------------------------------------
+# a board wired for a system the bench cannot drive
+# --------------------------------------------------------------------------
+
+
+def test_the_target_list_comes_from_the_repo(monkeypatch):
+    """src/common is shared code, and sys11_tiny is the sys11 board twice."""
+    buildable = bench.buildable_targets()
+
+    assert "classic" in buildable and "whitestar" in buildable
+    assert "common" not in buildable
+    assert "sys11_tiny" not in buildable and "sys11" in buildable
+
+
+def test_only_targets_with_configs_can_be_driven():
+    ready = bench.bench_targets()
+
+    assert set(ready) == {"sys11", "wpc", "data_east", "em"}
+    # Real build targets, but nothing to boot them against.
+    assert "classic" not in ready and "whitestar" not in ready
+
+
+def test_a_board_mapped_to_a_configless_target_is_refused_early(job_summary):
+    """A classic board turned up on the bench; the map must not be able to lie about it."""
+    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True}]
+
+    with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
+        bench.resolve_targets(boards, {"899f": "classic"})
+
+    # Reported where an unrecognised chip id is reported, for the same person.
+    assert "target the bench cannot use" in job_summary.read_text()
+
+
+def test_a_target_that_does_not_exist_at_all_says_what_does(job_summary):
+    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": None, "responsive": True}]
+
+    with pytest.raises(bench.CheckFailure, match="not a target in this checkout"):
+        bench.resolve_targets(boards, {"899f": "sys12"})
+
+
+@pytest.mark.parametrize(
+    ("written", "meant"),
+    [("de", "data_east"), ("DE", "data_east"), ("DataEast", "data_east"), ("data-east", "data_east"), ("ws", "whitestar")],
+)
+def test_the_name_people_actually_use_is_recognised(written, meant):
+    """The bench map arrived saying `de`, which is what everyone calls that board."""
+    assert bench.suggest_target(written) == meant
+
+
+def test_a_name_nobody_meant_gets_no_guess():
+    assert bench.suggest_target("nonsense") is None
+    assert bench.suggest_target("") is None
+
+
+def test_the_suggested_map_line_never_repeats_a_broken_entry():
+    """The fix on offer must not contain the value that just failed."""
+    boards = [{"port": "/dev/ttyACM0", "chip_id": "899f"}, {"port": "/dev/ttyACM1", "chip_id": "df13"}]
+
+    corrected = bench.board_map_instructions(boards, {"899f": "de", "df13": "wpc"})
+    assert "VECTOR_HIL_BOARD_MAP=899f=data_east,df13=wpc" in corrected
+
+    # Nothing to suggest for a target that exists but cannot be driven, so it
+    # is left blank rather than being offered back.
+    blanked = bench.board_map_instructions(boards, {"899f": "classic", "df13": "wpc"})
+    assert "VECTOR_HIL_BOARD_MAP=899f=<target>,df13=wpc" in blanked
+
+
+def test_self_report_cannot_smuggle_in_an_undriveable_target():
+    """Autodetection reads the flashed firmware, which can say 'classic' too."""
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": "aaaa", "system": "wpc", "responsive": True},
+        {"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True},
+    ]
+
+    with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
+        bench.resolve_targets(boards, {})
+
+
+def test_the_instructions_name_what_cannot_be_mapped(job_summary):
+    text = bench.board_map_instructions([{"port": None, "chip_id": "899f"}], {})
+
+    assert "targets: data_east, em, sys11, wpc" in text
+    # Naming them matters: the board on the bench is running one of them, and
+    # the only wrong move is mapping it to a system it is not wired for.
+    assert "classic" in text and "whitestar" in text
+
+
+def test_an_incomplete_bench_says_whether_the_board_is_even_plugged_in(job_summary, monkeypatch, tmp_path):
+    """ "Missing" has two remedies and they are opposite.
+
+    A board that is enumerated but silent is the recovery ladder's job. A board
+    that has dropped off the bus needs a person to replug it - which is exactly
+    what happened to the wpc board between two runs, with nothing in the log to
+    tell the two apart.
+    """
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    root = usb_tree(tmp_path, {"1-1.1": ("2e8a", "0005", "aaaa"), "1-1.2": ("2e8a", "0005", "bbbb")})
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    assert bench.check_bench_complete(boards_for("sys11", "data_east")) == ["wpc"]
+
+    written = job_summary.read_text()
+    assert "What is on the USB bus" in written
+    assert "2e8a:0005" in written
+
+
+def test_a_complete_bench_does_not_print_the_bus(job_summary, monkeypatch):
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    monkeypatch.setattr(bench, "usb_bus_report", lambda: pytest.fail("nothing is missing, so there is nothing to explain"))
+
+    assert bench.check_bench_complete(boards_for("sys11", "wpc", "data_east")) == []
+
+
+# --------------------------------------------------------------------------
+# the bus report has to describe what it lists
+# --------------------------------------------------------------------------
+
+
+def test_a_bootloader_on_the_bus_is_not_called_unrecognised(monkeypatch, tmp_path):
+    """The first version contradicted itself on the bench.
+
+    It listed a 2e8a:000f device and then said none of the devices was "a
+    bootloader this harness recognises (2e8a:0003, 2e8a:000f)".
+    """
+    root = usb_tree(
+        tmp_path,
+        {
+            "1-1.1": ("2e8a", "0005", "e661a4d4179a5b2f"),
+            "1-1.2": ("2e8a", "000f", "DF13A50C13958980"),
+            "1-1.3": ("2e8a", "0005", "899fab8c90bfeb9a"),
+        },
+    )
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    report = "\n".join(bench.usb_bus_report())
+
+    assert "in the ROM bootloader: DF13A50C13958980" in report
+    assert "2 running MicroPython" in report
+    assert "does not handle" not in report
+    assert "rescue stage's job" in report
+
+
+def test_a_genuinely_unknown_mode_is_still_called_out(monkeypatch, tmp_path):
+    root = usb_tree(tmp_path, {"1-1.1": ("2e8a", "abcd", "aaaa")})
+    monkeypatch.setattr(bench, "USB_DEVICES", root)
+
+    report = "\n".join(bench.usb_bus_report())
+
+    assert "mode this harness does not handle: 2e8a:abcd" in report
+
+
+def test_a_zero_sector_drive_says_so_and_names_picotool(monkeypatch, tmp_path):
+    """Where a real bench recovery stopped: enumerated, in BOOTSEL, no filesystem."""
+    block = tmp_path / "sda"
+    block.mkdir()
+    (block / "size").write_text("0\n")
+    real_read = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real_read(block / "size") if str(self).endswith("/sys/block/sda/size") else real_read(self, *a, **k))
+
+    described = "\n".join(trench_coat.describe_block_device("/dev/sda"))
+
+    assert "ZERO sectors" in described
+    assert "picotool" in described
+
+
+def test_a_drive_with_sectors_but_no_filesystem_points_at_blkid(monkeypatch, tmp_path):
+    block = tmp_path / "sda"
+    block.mkdir()
+    (block / "size").write_text("256\n")
+    real_read = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real_read(block / "size") if str(self).endswith("/sys/block/sda/size") else real_read(self, *a, **k))
+
+    described = "\n".join(trench_coat.describe_block_device("/dev/sda"))
+
+    assert "256 sectors" in described
+    assert "blkid" in described
+
+
+def test_the_partition_is_preferred_over_the_whole_disk(tmp_path):
+    """udisks will not mount a partitioned disk, and a bench board was one.
+
+    `blkid /dev/sda` reported PTUUID/PTTYPE="dos" while udisks said "not a
+    mountable filesystem" - correct of it, because the filesystem is on the
+    partition.
+    """
+    device = tmp_path / "1-1"
+    block = device / "1-1:1.0" / "host0" / "target0:0:0" / "0:0:0:0" / "block" / "sda"
+    (block / "sda1").mkdir(parents=True)
+
+    assert trench_coat.block_device(device) == Path("/dev/sda1")
+
+
+def test_an_unpartitioned_bootloader_drive_still_uses_the_disk(tmp_path):
+    """The normal case: an RP2 drive has no partition table and no partitions."""
+    device = tmp_path / "1-1"
+    block = device / "1-1:1.0" / "host0" / "target0:0:0" / "0:0:0:0" / "block" / "sda"
+    block.mkdir(parents=True)
+    # sysfs puts other things in here; none of them is a partition.
+    (block / "queue").mkdir()
+    (block / "size").write_text("262144\n")
+
+    assert trench_coat.block_device(device) == Path("/dev/sda")
+
+
+# --------------------------------------------------------------------------
+# picotool: the route that needs no drive
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def picotool_calls(monkeypatch, tmp_path):
+    """Record picotool invocations, with one board in BOOTSEL at a known address."""
+    device = tmp_path / "1-1.2"
+    device.mkdir()
+    (device / "busnum").write_text("1\n")
+    (device / "devnum").write_text("22\n")
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [{"chip_id": "df13", "usb_device": device, "processor": "RP2350"}])
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: "/usr/bin/picotool")
+
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(trench_coat.subprocess, "run", run)
+    return calls
+
+
+def test_picotool_is_aimed_at_one_board_by_bus_and_address(picotool_calls):
+    """The safety property: never "whatever RP2 device it finds first"."""
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is True
+
+    for command in picotool_calls:
+        assert "--bus" in command and command[command.index("--bus") + 1] == "1"
+        assert "--address" in command and command[command.index("--address") + 1] == "22"
+
+
+def test_picotool_erases_before_it_writes(picotool_calls):
+    """Keeps the property that makes this a recovery, not an upgrade."""
+    trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2"))
+
+    assert [c[1] for c in picotool_calls][:2] == ["erase", "load"]
+    assert "-x" in picotool_calls[1] and "/uf2/wpc.uf2" in picotool_calls[1]
+
+
+def test_a_board_that_will_not_erase_is_still_offered_the_firmware(monkeypatch, picotool_calls):
+    results = iter([types.SimpleNamespace(returncode=1, stdout="", stderr="erase not supported"), types.SimpleNamespace(returncode=0, stdout="", stderr="")])
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda command, **k: picotool_calls.append(command) or next(results))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is True
+    assert [c[1] for c in picotool_calls] == ["erase", "load"]
+
+
+def test_a_failed_load_is_reported_as_failure(monkeypatch, picotool_calls):
+    results = iter([types.SimpleNamespace(returncode=0, stdout="", stderr=""), types.SimpleNamespace(returncode=1, stdout="", stderr="no such device")])
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda command, **k: next(results))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_without_picotool_the_fallback_declines_rather_than_guessing(monkeypatch, picotool_calls):
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: None)
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda *a, **k: pytest.fail("picotool is not installed"))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_a_board_that_is_no_longer_in_bootsel_is_never_targeted(monkeypatch):
+    """No address means no command - picotool is never run unaimed."""
+    monkeypatch.setattr(bench, "bootsel_boards", lambda: [])
+    monkeypatch.setattr(trench_coat.shutil, "which", lambda name: "/usr/bin/picotool")
+    monkeypatch.setattr(trench_coat.subprocess, "run", lambda *a, **k: pytest.fail("there is no board to aim at"))
+
+    assert trench_coat.flash_over_picotool("df13", Path("/uf2/wpc.uf2")) is False
+
+
+def test_an_unmountable_drive_falls_through_to_picotool(monkeypatch, tmp_path):
+    """The bench case end to end: in BOOTSEL, drive unusable, firmware written anyway."""
+    root = tmp_path / "trench-coat"
+    (root / "uf2").mkdir(parents=True)
+    (root / "uf2" / "nuke.uf2").write_text("nuke")
+    (root / "uf2" / trench_coat.TARGET_UF2["wpc"]).write_text("firmware")
+
+    monkeypatch.setattr(trench_coat, "bootsel_drive", lambda chip_id, timeout=None: (None, None))
+    # Absent before the flash, present after - which is what "it came back" means.
+    ports = iter([[], ["/dev/ttyACM3"]])
+    monkeypatch.setattr(trench_coat, "serial_ports", lambda: next(ports, ["/dev/ttyACM3"]))
+    tried = []
+    monkeypatch.setattr(trench_coat, "flash_over_picotool", lambda chip_id, uf2: tried.append(uf2.name) or True)
+
+    assert trench_coat.flash_bootsel("df13", "wpc", root) == "/dev/ttyACM3"
+    assert tried == [trench_coat.TARGET_UF2["wpc"]]
+
+
+def test_picotool_makes_a_reflash_possible_without_any_mount(monkeypatch):
+    monkeypatch.setattr(trench_coat, "picotool_available", lambda: True)
+    monkeypatch.setattr(trench_coat, "find_bootloader_drives", lambda: [])
+    monkeypatch.setattr(recover.shutil, "which", lambda name: None)
+
+    possible, why = recover.can_complete_a_reflash()
+
+    assert possible is True
+    assert "picotool" in why
+
+
+def test_a_board_with_no_chip_id_is_never_put_in_the_suggested_line():
+    """The bench printed `VECTOR_HIL_BOARD_MAP=None=<target>,...` as the fix.
+
+    A board that will not say who it is cannot be mapped - an entry needs an
+    id to key on - so it is named separately rather than rendered into the
+    line somebody is meant to paste.
+    """
+    boards = [
+        {"port": "/dev/ttyACM0", "chip_id": None},
+        {"port": "/dev/ttyACM1", "chip_id": "899fab8c90bfeb9a"},
+    ]
+
+    text = board_map_instructions_for(boards, {"899fab8c90bfeb9a": "data_east"})
+
+    assert "None=" not in text
+    assert "VECTOR_HIL_BOARD_MAP=899fab8c90bfeb9a=data_east" in text
+    assert "/dev/ttyACM0 did not report a chip id" in text
+    assert "left mid-flash" in text
+
+
+def board_map_instructions_for(boards, board_map):
+    return bench.board_map_instructions(boards, board_map)
+
+
+def test_every_board_still_appears_when_they_all_have_ids():
+    boards = [{"port": "/dev/ttyACM0", "chip_id": "aaaa"}, {"port": "/dev/ttyACM1", "chip_id": "bbbb"}]
+
+    text = bench.board_map_instructions(boards, {"aaaa": "sys11", "bbbb": "wpc"})
+
+    assert "VECTOR_HIL_BOARD_MAP=aaaa=sys11,bbbb=wpc" in text
+    assert "did not report a chip id" not in text

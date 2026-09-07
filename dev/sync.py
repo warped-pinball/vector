@@ -57,7 +57,7 @@ def interactive_select(label: str, options: List[str]) -> Optional[str]:
     return options[idx]
 
 
-def flash_single(system: str, port: Optional[str], write_config: Optional[str]) -> int:
+def flash_single(system: str, port: Optional[str], write_config: Optional[str], test_data: Optional[bool]) -> int:
     """Build *system* firmware and flash a single board."""
     build_dir = build_for_hardware(system)
     cmd = ["python", "dev/flash.py", build_dir]
@@ -68,6 +68,8 @@ def flash_single(system: str, port: Optional[str], write_config: Optional[str]) 
             cmd.append("--write-config")
         else:
             cmd.extend(["--write-config", write_config])
+    if test_data:
+        cmd.extend(["--test-data"])
     return subprocess.call(cmd)
 
 
@@ -92,6 +94,11 @@ def main(argv: list[str]) -> int:
         const="__DEFAULT__",
         metavar="PATH",
         help=("Pass through to flash.py: wipe config on Pico and write configuration from PATH. " "If provided with no PATH, uses the default config for the selected build_dir."),
+    )
+    parser.add_argument(
+        "--test-data",
+        action="store_true",
+        help="Write test data from test_data.json to Pico.",
     )
     args = parser.parse_args(argv[1:])
 
@@ -128,7 +135,7 @@ def main(argv: list[str]) -> int:
             if port is None:
                 return 1
 
-    rc = flash_single(system, port, args.write_config)
+    rc = flash_single(system, port, args.write_config, args.test_data)
     if rc == 0:
         open_repl(port)
     return rc

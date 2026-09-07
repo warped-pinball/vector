@@ -38,7 +38,7 @@
     "InPlay": {
         "Type": 20,
         "Players": 1610,
-        "PlayerUp": 205,
+        "PlayerUp": 1609,
         "ScoreAdr": 1408,
         "BytesInScore": 4,
         "ScoreSpacing": 32,

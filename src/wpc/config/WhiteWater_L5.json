@@ -53,7 +53,7 @@
   },
   "InPlay": {
       "Type": 10,
-      "GameActiveAdr": 123,
+      "GameActiveAdr": 141,
       "GameActiveValue": 0,
       "Players": 6053,
       "PlayerUp": 1039,
@@ -137,5 +137,28 @@
       ["Bigfoot Opto 1", 60],
       ["Bigfoot Opto 2", 60]
     ]
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "HalfLife": {
+          "Id": 5
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
   }
 }
