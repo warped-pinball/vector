@@ -21,7 +21,6 @@ import Ram_Intercept_classics as RamInt
 import reset_control
 import SharedState
 from logger import logger_instance
-from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
 import Switches
 import Formats
