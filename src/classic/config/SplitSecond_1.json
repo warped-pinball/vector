@@ -12,14 +12,14 @@
     },
     "InPlay": {
       "Type": 32,
-      "ScoreAdr": 384,
+      "ScoreAdr": 640,
       "ScoreSpacing": 17,
       "PlayerUp": 56,
-      "Players": 491,
+      "Players": 747,
       "ActiveScoreAdr": 21
     },
     "HighScores": {
       "Type": 32,
-      "ScoreAdr": 458
+      "ScoreAdr": 714
     }
 }
