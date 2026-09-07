@@ -35,49 +35,7 @@ DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 
 led_board = None
 
-# Set True to boot in TRANSPARENT mode: Vector stays off the memory bus
-# (no RAM intercept) and simply releases the main board to run on its own.
-# Useful for diagnostics / confirming the game runs with Vector bypassed.
-TRANSPARENT_MODE = False
-
 faults.initialize_board_LED()
-
-
-def transparent_mode():
-    """Bypass mode: release the board and stay transparent (no RAM intercept)."""
-    print("Main: TRANSPARENT MODE - Vector bypassed, board runs untouched")
-    # Keep the bus pins passive so the Pico doesn't drive the data bus.
-    AS_output.value(0)
-    DD_output.value(0)
-    reset_control.init()  # hold main board in reset
-    time.sleep(5)
-    reset_control.release(True)  # release main board to run on its own
-    # Idle, blinking the board LED to show we're alive but passive.
-    while True:
-        faults.toggle_board_LED()
-        print("T mode")
-        time.sleep(2)
-
-
-
-def blank_all_shadowram():
-    """Zero the entire shadow RAM block (all 0x200 bytes) before anything uses it."""
-    for i in range(len(shadowRam)):
-        shadowRam[i] = 0x00
-
-
-def init_shadow_ram():
-    """Init unused shadow RAM areas
-
-    - 0x080-0x100: write zeroes to the unused area
-    - 0x100-0x200: set the lower nibble of each byte to 1's (0x0F),
-    (this will ned to change for STern System 3 - they have full byte in the 0x100-0x200 range)
-    """
-    for i in range(0x080, 0x100):
-        shadowRam[i] = 0x00
-    for i in range(0x100, 0x200):
-        shadowRam[i] = shadowRam[i] | 0x0F
-
 
 def bus_activity_fault_check():
     # Looking for bus activity via transitions - reset hold is not working?
@@ -144,9 +102,6 @@ This work is licensed under CC BY-NC 4.0
 )
 
 
-if TRANSPARENT_MODE:
-    transparent_mode()  # does not return
-
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
 
@@ -184,10 +139,6 @@ Formats.initialize()
 from backend import go  # noqa
 
 Log.log("MAIN: Launching Wifi")
-try:
-    go(ap_mode)
-    Log.log("MAIN: drop through fault")
-    faults.timer.deinit()  # stop the LED pattern timer before dropping to the REPL
-finally:
-    faults.timer.deinit()  #stop led
-    
+go(ap_mode)
+Log.log("MAIN: drop through fault")
+faults.raise_fault(faults.SFTW01)

@@ -576,8 +576,18 @@ def get_modes():
     
     except Exception as e:
         log.log(f"DATAMAPPER: Error reading modes: {e}")
-    
+
     return modes_data
+
+
+def get_mode_champs():
+    """
+    No-op: Classics do not track mode champions.
+
+    Returns:
+        dict: Always empty (matches the /api/game/mode_champs contract).
+    """
+    return {}
 
 
 
