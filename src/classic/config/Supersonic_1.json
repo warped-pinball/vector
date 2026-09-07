@@ -1,0 +1,34 @@
+{
+    "GameInfo": {
+        "GameName": "Supersonic",
+        "System": "Bally35"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 18
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 572,
+        "Length": 6,
+        "Spacing": 6
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 30,
+        "GameActiveAdr": 19,
+        "Players": 19,
+        "PlayerUp": 20,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 572,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    },
+    "HighScores": {
+        "Type": 30,
+        "ScoreAdr": 615,
+        "ScoreAdr2": 719
+    }
+}

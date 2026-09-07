@@ -1,0 +1,28 @@
+{
+    "GameInfo": {
+        "GameName": "Split Second",
+        "System": "MPU200"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 19
+    },
+    "DisplayMessage": {
+        "Type": 0
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 32,
+        "ScoreAdr": 640,
+        "ScoreSpacing": 17,
+        "PlayerUp": 56,
+        "Players": 747,
+        "ActiveScoreAdr": 21
+    },
+    "HighScores": {
+        "Type": 32,
+        "ScoreAdr": 714
+    }
+}

@@ -2266,7 +2266,7 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def connect_to_wifi():
+def connect_to_wifi(initialize=False):
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 

@@ -2,13 +2,6 @@ from backend import add_route
 import SharedState as S
 import os
 
-try:
-    import ujson as json
-except Exception:
-    import json
-
-import time
-
 from logger import logger_instance
 log = logger_instance
 
@@ -52,103 +45,10 @@ def get_em_config(request):
     return config
 
 
-@add_route("/api/em/record_calibration_game", auth=True)
-def record_calibration_game(request):
-    """
-    Find the first game_history<N>.dat (1..4) file that does NOT exist.
-    Set ScoreTrack.fileNumber = N (1..4). If all exist, return an error.
-    No placeholder file is created here.
-    """
-    import ScoreTrack
-    ScoreTrack.storeCalibrationGameProgress=0
-
-    try:
-        # use check_files() to see which slots exist
-        info = check_files()
-        exists = info.get("exists", [False, False, False, False])
-
-        for idx, present in enumerate(exists, start=1):
-            if not present:
-                ScoreTrack.fileNumber = idx
-                break
-
-        log.log(f"EMCAL: store file num: {idx}")
-        S.run_learning_game = True
-
-        while (S.run_learning_game == True):
-            print("&", end="")
-            yield json.dumps({"progress": ScoreTrack.storeCalibrationGameProgress})
-            time.sleep(0.5)
-       
-        return {"status": "ok"}
-
-    except Exception as e:
-        S.run_learning_game = False
-        return {"status": "error", "error": str(e)}, 500
-
-
-@add_route("/api/em/set_calibration_scores", auth=True)
-def final_calibration_game_scores(request):
-    scores_in = (request.data or {}).get("scores", [])
-    log.log(f"EMCAL: raw score entry {scores_in}")
-
-    def to_int(v):
-        try:
-            return int(v)
-        except Exception:
-            return 0
-
-    # compose each inner list of digits into an integer
-    composed = []
-    for series in scores_in:
-        n = 0
-        if isinstance(series, (list, tuple)):
-            for d in series:
-                n = n * 10 + to_int(d)
-        else:
-            n = to_int(series)
-        composed.append(n)
-        if len(composed) == 4:
-            break
-
-    # pad to 4 scores
-    while len(composed) < 4:
-        composed.append(0)
-
-    log.log(f"EMCAL: score save {composed}")
-    from ScoreTrack import add_actual_score_to_file
-    add_actual_score_to_file(filename=None, actualScores=tuple(composed))
-
-    return {"status": "ok", "scores": composed}
-   
-
-
-
-@add_route("/api/em/start_learning_process", auth=True)
-def start_learning_process(request):
-    # TODO actually start the learning process and report progress
-    #target = 20
-
-    from ScoreTrack import learnModeProcessNow
-    learnModeProcessNow()
-
-    #for i in range(target):
-    #    yield json.dumps({"progress": int((i + 1) / target * 100)})
-    #    time.sleep(1)
-    return json.dumps({"status": "done"})
-
-
-
-
-
-@add_route("/api/em/recorded_games_count")
-def recorded_games_count(request):
-    return check_files()
-
-def check_files():   
+def check_files():
     """
     Check for game_history1.dat .. game_history4.dat return boolean array of their existence.
-    """ 
+    """
     try:
         try:
             names = set(os.listdir("/"))
@@ -164,32 +64,8 @@ def check_files():
         return {"exists": exists, "count": sum(1 for x in exists if x)}
     
     except Exception as e:
-        log.log(f"EMCAL: recorded_games_count error: {e}")
+        log.log(f"EMCAL: check_files error: {e}")
         return {"exists": [False, False, False, False], "count": 0, "error": str(e)}
-
-
-@add_route("/api/em/delete_calibration_games", auth=True)
-def delete_calibration_games(request):
-    print("CAL GAMes DEL ----------------------------")
-    """Delete all stored calibration games. Deletes files starting with 'game_history' in root directory."""
-    deleted_files = []
-    roots = ["/"]
-    for root in roots:
-        try:
-            for name in os.listdir(root):
-                if name.startswith("game_history"):
-                    filepath = (root.rstrip("/") + "/" + name)
-                    try:
-                        os.remove(filepath)
-                        deleted_files.append(filepath)
-                    except Exception:
-                        pass
-        except Exception:
-            pass    
-    log.log("EMCAL: delete calibration files")
-    return json.dumps({"status": "deleted"})
-
-
 
 
 @add_route("/api/em/diagnostics")

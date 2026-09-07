@@ -47,6 +47,11 @@ safe_defaults = {
 }
 
 
+def get_safe_defaults():
+    """Two-level copy so gdata never aliases (or mutates) the module-level defaults."""
+    return {key: dict(value) for key, value in safe_defaults.items()}
+
+
 def parse_config_line(line):
     """Parse a line in format: filename{json_data}"""
     try:
@@ -125,7 +130,7 @@ def list_game_configs():
 def go(safe_mode=False):
     Log.log(f"Loading game definitions with safe mode set to {safe_mode}")
 
-    data = safe_defaults.copy()
+    data = get_safe_defaults()
 
     if not safe_mode:
         try:
@@ -135,22 +140,22 @@ def go(safe_mode=False):
 
             if config_filename not in all_configs.keys():
                 faults.raise_fault(faults.CONF01, f"Game config {config_filename} not found")
-                data = safe_defaults
             else:
                 config_data = find_config_in_file(config_filename)
-                if config_data:
+                if isinstance(config_data, dict):
                     if "GameInfo" in config_data and "GameName" in config_data["GameInfo"]:
-                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")  
-                    data = config_data
+                        print(f"DEBUG: Game name is '{config_data['GameInfo']['GameName']}'")
+                    # Merge over the safe defaults so any section missing from the
+                    # config file keeps its safe {"Type": 0} stub
+                    data.update(config_data)
                 else:
                     faults.raise_fault(faults.CONF01, f"Error loading game config {config_filename}")
-                    data = safe_defaults
 
         except Exception as e:
             Log.log(f"Error loading game config: {e}")
             Log.log("Using safe defaults")
             faults.raise_fault(faults.CONF00)
-            data = safe_defaults
+            data = get_safe_defaults()  # discard any partial merge
 
     # This isn't wrapped in try/except because if this fails we want to stop execution
     SharedState.gdata = convert_hex_to_int(data)

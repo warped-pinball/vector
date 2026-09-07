@@ -21,6 +21,10 @@ nav:
           - Installation & use manual: guides/system9/manual.md
       - Data East:
           - Installation & use manual: guides/data_east/manual.md
+      - Classic (Bally / Stern):
+          - Quick start: guides/classic/quick-start.md
+          - Installation & use manual: guides/classic/manual.md
+          - Add a ROM profile: guides/classic/add-rom.md
   - Technical references:
       - API reference: routes.md
       - Authentication: authentication.md
