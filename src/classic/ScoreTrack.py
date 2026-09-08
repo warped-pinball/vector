@@ -210,7 +210,8 @@ def initialize_leaderboard():
 
 def check_for_machine_high_scores():
     """check for a high score in the machine that vector doesn't have yet"""
-    if S.gdata.get("HighScores", {}).get("Type") != 30:
+    # Types 30 and 32 are the machine-high-score encodings DataMapper.read_high_scores() decodes
+    if S.gdata.get("HighScores", {}).get("Type") not in (30, 32):
         return
 
     score = DataMapper.read_high_scores()[0][1]
