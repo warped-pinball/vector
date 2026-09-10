@@ -28,7 +28,7 @@ Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com).
 
 ![Socket Photo](../../img/sys11/socket.jpg)
 
-5. Attach the sticky standoff and screw to the Vector board and peel the backing.
+5. (Optional) Attach the sticky standoff and screw to the Vector board and peel the backing.
 6. Place the board into the MPU-board socket, confirm all pins are seated, and make
    sure the processor orientation matches the original.
 <br><br>
