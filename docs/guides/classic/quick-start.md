@@ -31,17 +31,19 @@ Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com).
 5. Attach the sticky standoff and screw to the Vector board and peel the backing.
 6. Place the board into the MPU-board socket, confirm all pins are seated, and make
    sure the processor orientation matches the original.
+<br><br>
+Installed on a Bally MPU board:<br>
+![Installed on a Bally board](../../img/classic/classic_bally.png)
+<br><br>
+Installed on a Stern MPU board:<br>
+![Installed on a Stern board](../../img/classic/classic_stern.png)
+<br><br>
+
 7. Clip the white wire to the reset point shown below. This same location is present
    on every Bally AS-2518 and Stern MPU-100/200 board.
 <br><br>
 Clip-to location:<br>
 ![Clip location](../../img/classic/classic_clip_location.png)
-<br><br>
-Completed installation on a Bally MPU board:<br>
-![Installed on a Bally board](../../img/classic/classic_bally.png)
-<br><br>
-Completed installation on a Stern MPU board:<br>
-![Installed on a Stern board](../../img/classic/classic_stern.png)
 <br><br>
 **Using an Alltek Systems replacement MPU?** Skip the white wire clip — see
 [Alltek Systems replacement MPU board](#alltek-systems-replacement-mpu-board) at the
@@ -69,9 +71,10 @@ everyone gets an individual best-score board.
 If your game has an **Alltek Systems "Ultimate MPU"** board in place of the original
 Bally or Stern MPU, change **step 7**:
 
-- Do **not** use the white wire clip.
-- Instead, install the jumper included in your kit onto the header on the Warped
-  Pinball Vector board. The Alltek board handles reset timing on its own.
+- Do **not** use the white wire clip. You may clip the white wire on the extra board 
+test point to keep it out of the way.
+- Instead, install the shorting jumper included in your kit onto the header on the Warped
+  Pinball Vector board. See the picture here for correct board placement.
 
 Everything else in the install is the same.
 
