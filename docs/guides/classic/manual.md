@@ -265,9 +265,8 @@ computer — see the
 
 ## RAM corruption problems
 
-Classic Bally and Stern games shipped with no battery backup, and their RAM often
-powers up with random contents. After a power interruption, a dead machine sitting
-for years, or a rough install you may see:
+after installation you may see evidence of ram corruption.  This is particulally commmon
+with MPU-200 boards. You may see:
 
 - Missing or garbled digits on the score displays
 - A nonsense or impossibly high machine high score
@@ -279,9 +278,6 @@ restarts the machine. Play one full game afterward and confirm the displays and 
 high score look correct. Vector then keeps that clean RAM image in permanent memory,
 so the problem should not come back on the next power-up.
 
-If displays are still wrong after a reset and a test game, the issue is likely in
-the game's own display or driver hardware rather than RAM — consult a Bally/Stern
-repair guide.
 
 ## Support
 
