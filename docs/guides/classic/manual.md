@@ -55,7 +55,7 @@ in sequence with a pause (dark) between each code.
 ### Hardware faults (first blink: RED)
 | LED pattern | Code | Description |
 | --- | --- | --- |
-| Red-Yellow | HDWR01 | Early bus activity — reset hold not working (check the reset connection) |
+| Red-Yellow | HDWR01 | Early bus activity — reset hold not working (check the white wire connection) |
 | Red-White | HDWR02 | No bus activity |
 | Red-Purple | HDWR00 | Unknown hardware error |
 
@@ -119,7 +119,7 @@ identify your game and choose the right profile during WiFi setup.
    confirm no pins are bent under.
 3. **Install the pin-strip headers.** Insert the supplied pin strips into the MPU
    board's processor socket. Press firmly on sections of three to four pins until
-   fully seated. (These are the same pin strips used in the System 11 kit.)
+   fully seated.
 
    ![Pin strip Photo](../../img/sys11/pin_strip.jpg)
 
@@ -128,7 +128,7 @@ identify your game and choose the right profile during WiFi setup.
    the Vector board — if so, skip this step.
 
    ![Socket Photo](../../img/sys11/socket.jpg)
-5. **Mount the standoff.** Attach the adhesive standoff to the Vector board with the
+5. **Mount the standoff.** (optional, placement varies) Attach the adhesive standoff to the Vector board with the
    plastic screw and remove the backing.
 6. **Seat the Vector board.** Align it with the socket, keeping pin #1 oriented the
    same as the original processor, and press until every corner is seated.
@@ -180,13 +180,13 @@ same as an original board.
    - Select your local WiFi **SSID** and enter the password (case sensitive).
    - Choose your **game** and software version from the dropdown; an incorrect
      selection can cause erratic behavior.
-   - Optionally set an **Admin Password** to protect actions such as erasing scores.
+   - Set an **Admin Password** to protect actions such as erasing scores.
    - If the board previously joined a network, its last IP address appears on this
      screen.
 
    ![Configuration page](../../img/sys11/Installation_AP_setup_screen.png)
 
-   **Choosing a profile.** If your title and ROM revision appear in the dropdown,
+   **Choosing a profile.** If your title appears in the dropdown,
    pick it — you get live scoring and high-score capture. If not, choose a generic
    profile instead:
 
@@ -197,10 +197,10 @@ same as an original board.
    A generic profile provides NVRAM service and the web interface only.
 
    If your game or ROM isn't supported yet, you can help us add it — email us at:
-   [roms@WarpedPinball.com](mailto:roms@WarpedPinball.com) and we'll add full
+   [roms@WarpedPinball.com](mailto:roms@WarpedPinball.com) with your help we'll add full
    support in a firmware update.
 
-5. Click **Save**, power-cycle the machine, and let it reconnect. Yellow during connection and green once connected.  See the chart above for other errir codes.
+5. Click **Save**, power-cycle the machine, and let it reconnect. Yellow during connection and green once connected.  See the chart above for other error codes.
 6. If joining fails (yellow blink for several minutes), power down, hold the WiFi setup
    button, power up, release when the LED blinks rapidly, and repeat setup.
 
