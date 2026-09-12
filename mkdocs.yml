@@ -22,6 +22,9 @@ nav:
           - Installation & use manual: guides/system9/manual.md
       - Data East:
           - Installation & use manual: guides/data_east/manual.md
+  - Origin:
+      - Quick start: guides/origin/quick-start.md
+      - Installation & operation manual: guides/origin/manual.md
   - Technical references:
       - API reference: routes.md
       - Authentication: authentication.md
