@@ -21,6 +21,9 @@ nav:
           - Installation & use manual: guides/system9/manual.md
       - Data East:
           - Installation & use manual: guides/data_east/manual.md
+      - Classic Bally / Stern:
+          - Quick start: guides/classic/quick-start.md
+          - Installation & use manual: guides/classic/manual.md
   - Origin:
       - Quick start: guides/origin/quick-start.md
       - Installation & operation manual: guides/origin/manual.md
