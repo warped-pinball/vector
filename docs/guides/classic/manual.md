@@ -36,7 +36,7 @@ permanent changes.
 
 ## Indicators and controls
 
-| ![Vector installed on a Bally AS-2518 MPU board](../../img/classic/classic_bally.png) | **WiFi Status LED**<br>- Fast blink: AP (setup) mode<br>- Slow blink: joining WiFi<br>- Solid on: WiFi joined<br><br>**WiFi Configure Button**<br>Hold during power-up and release when the LED flashes to enter AP setup mode.<br><br>**Status LED**<br>Two-color blink codes — see the tables below. |
+| ![Vector installed on a classic Bally/Stern MPU board](../../img/classic/classic_board_.png) | **WiFi Status LED**<br>- Fast blink: AP (setup) mode<br>- Slow blink: joining WiFi<br>- Solid on: WiFi joined<br><br>**WiFi Configure Button**<br>Hold during power-up and release when the LED flashes to enter AP setup mode.<br><br>**Status LED**<br>Two-color blink codes — see the tables below. |
 | --- | --- |
 
 ## LED codes
@@ -79,10 +79,6 @@ in sequence with a pause (dark) between each code.
 | Yellow-White | SFTW02 | Async loop interrupted |
 | Yellow-Purple | SFWR00 | Unknown software error |
 
-### Other
-| LED pattern | Code | Description |
-| --- | --- | --- |
-| White | DUNO00 | Unknown error |
 
 ## Disclaimer
 
@@ -102,23 +98,17 @@ identify your game and choose the right profile during WiFi setup.
 
 | Board | Titles |
 | --- | --- |
-| **Bally MPU AS-2518-17**<br>*(1977–1978)* | Black Jack<br>Bobby Orr Power Play<br>Eight Ball<br>Evel Knievel<br>Freedom<br>Mata Hari<br>Night Rider<br>Strikes and Spares<br><br>*Also: 301/Bullseye (export) and the Bow &amp; Arrow prototype.* |
-| **Bally MPU AS-2518-35**<br>*(1978–1985)* | Black Pyramid<br>BMX<br>Centaur<br>Centaur II<br>Dolly Parton<br>Eight Ball Deluxe<br>Eight Ball Deluxe Limited Edition<br>Elektra<br>Embryon<br>Fathom<br>Fireball II<br>Flash Gordon<br>Frontier<br>Future Spa<br>Grand Slam<br>Harlem Globetrotters<br>Hotdoggin'<br>Kings of Steel<br>KISS<br>Lost World<br>Medusa<br>Mr. &amp; Mrs. Pac-Man<br>Mystic<br>Nitro Ground Shaker<br>Paragon<br>Playboy<br>Rolling Stones<br>Silverball Mania<br>The Six Million Dollar Man<br>Skateball<br>Space Invaders<br>Speakeasy<br>Spectrum<br>Spy Hunter<br>Star Trek<br>Supersonic<br>Vector<br>Viking<br>Voltan Escapes Cosmic Doom<br>X's &amp; O's<br>Xenon |
-| **Stern MPU-100**<br>*(1977–1979)* | Cosmic Princess<br>Dracula<br>Hot Hand<br>Lectronamo<br>Magic<br>Memory Lane<br>Nugent<br>Pinball<br>Stars<br>Stingray<br>Trident<br>Wild Fyre |
-| **Stern MPU-200**<br>*(1979–1985)* | Ali<br>Big Game<br>Catacomb<br>Cheetah<br>Flight 2000<br>Freefall<br>Galaxy<br>Iron Maiden<br>Lightning<br>Meteor<br>Nine Ball<br>Orbitor 1<br>Quicksilver<br>Seawitch<br>Split Second<br>Star Gazer<br>Viper |
+| **Bally MPU AS-2518-17**<br>*(1977–1978)* | Black Jack · Bobby Orr Power Play · Eight Ball · Evel Knievel · Freedom · Mata Hari · Night Rider · Strikes and Spares |
+| **Bally MPU AS-2518-35**<br>*(1978–1985)* | Black Pyramid · BMX · Centaur · Centaur II · Dolly Parton · Eight Ball Deluxe · Eight Ball Deluxe Limited Edition · Elektra · Embryon · Fathom · Fireball II · Flash Gordon · Frontier · Future Spa · Grand Slam · Harlem Globetrotters · Hotdoggin' · Kings of Steel · KISS · Lost World · Medusa · Mr. &amp; Mrs. Pac-Man · Mystic · Nitro Ground Shaker · Paragon · Playboy · Rolling Stones · Silverball Mania · The Six Million Dollar Man · Skateball · Space Invaders · Speakeasy · Spectrum · Spy Hunter · Star Trek · Supersonic · Vector · Viking · Voltan Escapes Cosmic Doom · X's &amp; O's · Xenon |
 
-**Choosing a profile.** If your exact title and ROM revision appear in the setup
-dropdown, pick it — you get live scoring and high-score capture. If not, choose a
-generic profile:
+![Vector installed on a Bally AS-2518 MPU board](../../img/classic/classic_bally.png)
 
-- **Generic Bally/Stern MPU** — any Bally game (AS-2518-17 or -35) or Stern MPU-100
-  game.
-- **Generic MPU-200** — any Stern MPU-200 game.
+| Board | Titles |
+| --- | --- |
+| **Stern MPU-100**<br>*(1977–1979)* | Cosmic Princess · Dracula · Hot Hand · Lectronamo · Magic · Memory Lane · Nugent · Pinball · Stars · Stingray · Trident · Wild Fyre |
+| **Stern MPU-200**<br>*(1979–1985)* | Ali · Big Game · Catacomb · Cheetah · Flight 2000 · Freefall · Galaxy · Iron Maiden · Lightning · Meteor · Nine Ball · Orbitor 1 · Quicksilver · Seawitch · Split Second · Star Gazer · Viper |
 
-A generic profile provides NVRAM service and a single machine high-score board.
-Email your files and ROM revision to
-[roms@WarpedPinball.com](mailto:roms@WarpedPinball.com) and we will add full support
-in a firmware update.
+![Vector installed on a Stern MPU-200 board](../../img/classic/classic_stern.png)
 
 ## Hardware installation
 
@@ -174,7 +164,7 @@ same as an original board.
 
 ## Connecting to local WiFi
 
-1. Power on the machine. The WiFi status LED starts yellow, then flashes to indicate
+1. Power on the machine. The WiFi status LED starts yellow, then flashes purple to indicate
    AP mode.
 2. On a phone or computer, join the **Warped Pinball** network. Ignore any
    "no internet" warning.
@@ -188,18 +178,30 @@ same as an original board.
 
 4. On the configuration page:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
-   - Choose your **game** and software version from the dropdown. Use
-     **Generic Bally/Stern MPU** or **Generic MPU-200** if your title is not listed;
-     an incorrect selection can cause erratic behavior.
+   - Choose your **game** and software version from the dropdown; an incorrect
+     selection can cause erratic behavior.
    - Optionally set an **Admin Password** to protect actions such as erasing scores.
    - If the board previously joined a network, its last IP address appears on this
      screen.
 
    ![Configuration page](../../img/sys11/Installation_AP_setup_screen.png)
 
-5. Click **Save**, power-cycle the machine, and let it reconnect. Slow blinking means
-   it is joining; solid means connected.
-6. If joining fails (slow blink for several minutes), power down, hold the WiFi setup
+   **Choosing a profile.** If your title and ROM revision appear in the dropdown,
+   pick it — you get live scoring and high-score capture. If not, choose a generic
+   profile instead:
+
+   - **Generic Bally/Stern MPU** — any Bally game (AS-2518-17 or -35) or Stern
+     MPU-100 game.
+   - **Generic MPU-200** — any Stern MPU-200 game.
+
+   A generic profile provides NVRAM service and the web interface only.
+
+   If your game or ROM isn't supported yet, you can help us add it — email us at:
+   [roms@WarpedPinball.com](mailto:roms@WarpedPinball.com) and we'll add full
+   support in a firmware update.
+
+5. Click **Save**, power-cycle the machine, and let it reconnect. Yellow during connection and green once connected.  See the chart above for other errir codes.
+6. If joining fails (yellow blink for several minutes), power down, hold the WiFi setup
    button, power up, release when the LED blinks rapidly, and repeat setup.
 
 **Pro tip:** to re-enter configuration mode later, hold the WiFi config button during
@@ -214,7 +216,7 @@ power-up and release when the LED blinks rapidly.
   configuration page.
 - For stability, set a static IP for the device in your router once it appears in
   the device list.
-- Titles that have a profiled display-message area (for example Supersonic) can show
+- Titles that have a profiled display-message area can and will show
   the IP address on the score displays during attract mode.
 
 ## Web interface
