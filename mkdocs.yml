@@ -17,6 +17,7 @@ nav:
           - Quick start: guides/system11/quick-start.md
           - Installation & use manual: guides/system11/manual.md
           - Add a ROM profile: guides/system11/add-rom.md
+          - RottenDog support: guides/system11/rottendog-support.md
       - System 9:
           - Installation & use manual: guides/system9/manual.md
       - Data East:
