@@ -1,0 +1,239 @@
+<!doctype html>
+<html data-theme="dark" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/pico.min.css" />
+    <style id="custom_styles"></style>
+    <link rel="manifest" href="/manifest.json" />
+    <style>
+      svg {
+        width: 20%;
+        height: auto;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      /* button tags in nav tag set to w/h of 28px */
+      nav button {
+        padding: 0;
+        width: 45px !important;
+        height: 45px !important;
+      }
+
+      /* SVGs in nav buttons should fill the space */
+      nav button svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* make the ::after on summary text 0 width*/
+      details.dropdown summary::after {
+        width: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body class="container-fluid">
+    <header class="container">
+      <div class="grid">
+        <div style="align-self: center; justify-self: center">
+          <strong id="game_name"></strong>
+        </div>
+        <nav style="justify-self: end">
+          <ul>
+            <li><a href="#" id="navigate-scores">Scores</a></li>
+            <li><a href="#" id="navigate-players">Players</a></li>
+            <li><a href="#" id="navigate-about">About</a></li>
+            <li><a href="#" id="navigate-admin">Admin</a></li>
+            <li>
+              <button
+                id="dark-mode-button"
+                onclick="window.toggleTheme()"
+                data-tooltip="Dark Mode Toggle"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>brightness-6</title>
+                  <path
+                    d="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li>
+              <button
+                class="hide"
+                id="logout-button"
+                onclick="window.logout()"
+                data-tooltip="Logout"
+                data-placement="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <title>logout</title>
+                  <path
+                    d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main
+      class="container"
+      aria-busy="true"
+      style="text-align: center; text-wrap: auto"
+    >
+      <!--        -->
+      <!-- MODALS -->
+      <!--        -->
+      <dialog id="configure_modal">
+        <article>
+          <header>
+            <h2>Configure Your Vector</h2>
+          </header>
+          <h3>WiFi Settings</h3>
+          <details id="ssid_select_placeholder" class="dropdown">
+            <summary>Scanning for WiFi networks</summary>
+          </details>
+          <input
+            type="password"
+            name="wifi_password"
+            placeholder="WiFi password"
+            aria-label="WiFi Password"
+          />
+
+          <h3>Game Settings</h3>
+          <details id="game_config_select_placeholder" class="dropdown">
+            <summary>Building list of games</summary>
+          </details>
+          <input
+            type="password"
+            name="vector_password"
+            placeholder="Admin Password"
+            aria-label="Pinball Admin Password"
+          />
+
+          <p>
+            Please <mark>double check your game and ROM version</mark> If you
+            are unsure, do not guess. If you have a ROM that is not listed we
+            may be able to add it for you.
+          </p>
+
+          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
+
+          <p>
+            Once you have saved, please power cycle your pinball machine and
+            connect to your selected WiFi network.
+          </p>
+
+          <footer style="position: relative">
+            <small
+              style="
+                position: absolute;
+                display: block;
+                top: 50%;
+                transform: translateY(-50%);
+                bottom: auto;
+              "
+              >Previous IP: <a id="previous-ip" href="#"></a
+            ></small>
+            <button onclick="window.save_configuration()">💾 Save</button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="install_warning_modal">
+        <article>
+          <h2>Warning: Issues Detected</h2>
+          <p>
+            Warped Pinball features may not work correctly until the issue(s)
+            below are resolved. For guidence on how to resolve these issues,
+            please read our guide:
+          </p>
+          <a href="https://warpedpinball.com/warped-pinball-user-support/"
+            >https://warpedpinball.com/warped-pinball-user-support/</a
+          >
+          <p>
+            We take every preventive measure we can, but some types of issues
+            when left unresolved can cause your machine to malfunction.
+          </p>
+          <code id="fault_list"></code>
+          <footer>
+            <button
+              onclick="document.getElementById('install_warning_modal').removeAttribute('open')"
+            >
+              OK I want to continue anyway
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="password_modal">
+        <article>
+          <h3>Enter Admin Password</h3>
+          <input
+            type="password"
+            id="admin_password_input"
+            placeholder="Admin Password"
+            aria-label="Admin Password"
+          />
+          <!-- stay logged in option -->
+          <fieldset>
+            <label>
+              <input
+                id="stay-logged-in"
+                type="checkbox"
+                role="switch"
+                id="stay_logged_in"
+                aria-label="Stay Logged In"
+              />
+              Stay Logged In
+            </label>
+          </fieldset>
+          <footer>
+            <button class="secondary" id="password_cancel_button">
+              Cancel
+            </button>
+            <button id="password_save_button">Login</button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="confirm-modal">
+        <article>
+          <header>
+            <h2>Confirm Action</h2>
+          </header>
+          <p id="modal-message"></p>
+          <footer>
+            <button id="modal-cancel-button" class="secondary">Cancel</button>
+            <button id="modal-confirm-button">Confirm</button>
+          </footer>
+        </article>
+      </dialog>
+      <div id="page_html" style="display: none"></div>
+    </main>
+
+    <footer class="container" style="text-align: center; text-wrap: auto">
+      <div class="grid">
+        <section>
+          <img id="logo" width="175px" alt="logo" />
+          <div>
+            Powered by <a href="https://warpedpinball.com">Warped Pinball</a>
+          </div>
+          <p><code id="version">Vector 0.0.0</code></p>
+        </section>
+      </div>
+    </footer>
+
+    <div id="page_js" style="display: none"></div>
+    <script src="/js/js-sha256.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/install_warning.js"></script>
+    <script src="/js/configure.js"></script>
+  </body>
+</html>
