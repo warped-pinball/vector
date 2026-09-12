@@ -31,9 +31,26 @@ SW_pin = machine.Pin(22, machine.Pin.IN)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 LED_Out = machine.Pin(26, machine.Pin.OUT)
+HW_version_pin = machine.Pin(14, machine.Pin.IN)
 
 timer = machine.Timer()
 led_board = None
+
+
+def detect_hardware_version(pin, checks=10, interval_ms=5):
+    """Read pin until its value is stable across `checks` consecutive reads,
+    then classify the board: LOW = 2player, HIGH = 4player."""
+    last = pin.value()
+    stable_count = 1
+    while stable_count < checks:
+        time.sleep_ms(interval_ms)
+        current = pin.value()
+        if current == last:
+            stable_count += 1
+        else:
+            last = current
+            stable_count = 1
+    return "4player" if last else "2player"
 
 adjustButtons.init_buttons()
 
@@ -96,6 +113,9 @@ This work is licensed under CC BY-NC 4.0
 """
 )
 
+
+S.hardware_version = detect_hardware_version(HW_version_pin)
+Log.log(f"MAIN: Hardware version = {S.hardware_version}")
 
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)

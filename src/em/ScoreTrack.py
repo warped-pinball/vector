@@ -240,11 +240,17 @@ def loadState():
 
     p1_score_vals, p1_reset_vals = _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
     p2_score_vals, p2_reset_vals = _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+    p3_score_vals, p3_reset_vals = _apply_player_timing(2, "timing_p3_score", "timing_p3_reset")
+    p4_score_vals, p4_reset_vals = _apply_player_timing(3, "timing_p4_score", "timing_p4_reset")
 
     S.gdata["timing_p1_score"] = p1_score_vals
     S.gdata["timing_p1_reset"] = p1_reset_vals
     S.gdata["timing_p2_score"] = p2_score_vals
     S.gdata["timing_p2_reset"] = p2_reset_vals
+    S.gdata["timing_p3_score"] = p3_score_vals
+    S.gdata["timing_p3_reset"] = p3_reset_vals
+    S.gdata["timing_p4_score"] = p4_score_vals
+    S.gdata["timing_p4_reset"] = p4_reset_vals
 
     # Keep runtime filtermasks for compatibility/inspection (not persisted).
     fm = bytearray(64)
@@ -317,14 +323,20 @@ def saveState():
         return score_vals, reset_vals
 
     # Timing arrays from API map to channel groups as player*8 + digit(0..4)
-    # P1: ch 0..4, P2: ch 8..12
+    # P1: ch 0..4, P2: ch 8..12, P3: ch 16..20, P4: ch 24..28
     p1_score_vals, p1_reset_vals = _apply_player_timing(0, "timing_p1_score", "timing_p1_reset")
     p2_score_vals, p2_reset_vals = _apply_player_timing(1, "timing_p2_score", "timing_p2_reset")
+    p3_score_vals, p3_reset_vals = _apply_player_timing(2, "timing_p3_score", "timing_p3_reset")
+    p4_score_vals, p4_reset_vals = _apply_player_timing(3, "timing_p4_score", "timing_p4_reset")
 
     S.gdata["timing_p1_score"] = p1_score_vals
     S.gdata["timing_p1_reset"] = p1_reset_vals
     S.gdata["timing_p2_score"] = p2_score_vals
     S.gdata["timing_p2_reset"] = p2_reset_vals
+    S.gdata["timing_p3_score"] = p3_score_vals
+    S.gdata["timing_p3_reset"] = p3_reset_vals
+    S.gdata["timing_p4_score"] = p4_score_vals
+    S.gdata["timing_p4_reset"] = p4_reset_vals
 
     # Build runtime 64-byte filtermasks for compatibility/inspection only.
     # Persistence stores timing arrays; masks are regenerated on boot.

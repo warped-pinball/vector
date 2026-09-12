@@ -147,7 +147,8 @@ def serialize(record, structure_name):
         #   I : startpause
         #   I : endpause
         #   B : sensitivity (0..100)
-        # 20s : timing arrays [p1_score(5), p1_reset(5), p2_score(5), p2_reset(5)]
+        # 40s : timing arrays [p1_score(5), p1_reset(5), p2_score(5), p2_reset(5),
+        #                       p3_score(5), p3_reset(5), p4_score(5), p4_reset(5)]
         name = record.get("gamename", "")
         if not isinstance(name, (bytes, bytearray)):
             name = str(name).encode()
@@ -207,9 +208,13 @@ def serialize(record, structure_name):
         p1_reset = _coerce_timing(record.get("timing_p1_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
         p2_score = _coerce_timing(record.get("timing_p2_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
         p2_reset = _coerce_timing(record.get("timing_p2_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
-        timing_blob = p1_score + p1_reset + p2_score + p2_reset
+        p3_score = _coerce_timing(record.get("timing_p3_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
+        p3_reset = _coerce_timing(record.get("timing_p3_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
+        p4_score = _coerce_timing(record.get("timing_p4_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
+        p4_reset = _coerce_timing(record.get("timing_p4_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
+        timing_blob = p1_score + p1_reset + p2_score + p2_reset + p3_score + p3_reset + p4_score + p4_reset
 
-        packed = struct.pack("<40sBBI64s32sIIIIB20s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
+        packed = struct.pack("<40sBBI64s32sIIIIB40s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -327,7 +332,7 @@ def deserialize(data, structure_name):
                     out.append(int(n))
                 return out
 
-            fmt_new = "<40sBBI64s32sIIIIB20s"
+            fmt_new = "<40sBBI64s32sIIIIB40s"
             name, players, digits, multiplier, _stored_fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
             timing_blob = bytes(timing_blob)
 
@@ -335,11 +340,19 @@ def deserialize(data, structure_name):
             p1_reset_raw = list(timing_blob[5:10])
             p2_score_raw = list(timing_blob[10:15])
             p2_reset_raw = list(timing_blob[15:20])
+            p3_score_raw = list(timing_blob[20:25])
+            p3_reset_raw = list(timing_blob[25:30])
+            p4_score_raw = list(timing_blob[30:35])
+            p4_reset_raw = list(timing_blob[35:40])
 
             p1_score = _coerce_loaded_timing(p1_score_raw, [8, 8, 8, 8, 8], 1, 10)
             p1_reset = _coerce_loaded_timing(p1_reset_raw, [8, 8, 8, 8, 8], 1, 15)
             p2_score = _coerce_loaded_timing(p2_score_raw, [8, 8, 8, 8, 8], 1, 10)
             p2_reset = _coerce_loaded_timing(p2_reset_raw, [8, 8, 8, 8, 8], 1, 15)
+            p3_score = _coerce_loaded_timing(p3_score_raw, [8, 8, 8, 8, 8], 1, 10)
+            p3_reset = _coerce_loaded_timing(p3_reset_raw, [8, 8, 8, 8, 8], 1, 15)
+            p4_score = _coerce_loaded_timing(p4_score_raw, [8, 8, 8, 8, 8], 1, 10)
+            p4_reset = _coerce_loaded_timing(p4_reset_raw, [8, 8, 8, 8, 8], 1, 15)
 
             # Rebuild runtime filtermasks from timing arrays.
             fm = bytearray(64)
@@ -353,6 +366,8 @@ def deserialize(data, structure_name):
 
             _apply_player_timing(0, p1_score, p1_reset)
             _apply_player_timing(1, p2_score, p2_reset)
+            _apply_player_timing(2, p3_score, p3_reset)
+            _apply_player_timing(3, p4_score, p4_reset)
 
             return {
                 "gamename": name.decode().rstrip("\0"),
@@ -369,6 +384,10 @@ def deserialize(data, structure_name):
                 "timing_p1_reset": p1_reset,
                 "timing_p2_score": p2_score,
                 "timing_p2_reset": p2_reset,
+                "timing_p3_score": p3_score,
+                "timing_p3_reset": p3_reset,
+                "timing_p4_score": p4_score,
+                "timing_p4_reset": p4_reset,
             }
         except Exception:
             Log.log("DATSTORE: fault EMData Load")
@@ -387,6 +406,10 @@ def deserialize(data, structure_name):
                 "timing_p1_reset": [8, 8, 8, 8, 8],
                 "timing_p2_score": [8, 8, 8, 8, 8],
                 "timing_p2_reset": [8, 8, 8, 8, 8],
+                "timing_p3_score": [8, 8, 8, 8, 8],
+                "timing_p3_reset": [8, 8, 8, 8, 8],
+                "timing_p4_score": [8, 8, 8, 8, 8],
+                "timing_p4_reset": [8, 8, 8, 8, 8],
             }
     else:
         raise ValueError("Unknown structure name")
@@ -437,6 +460,10 @@ def blankStruct(structure_name):
             "timing_p1_reset": [9, 9, 9, 9, 9],
             "timing_p2_score": [3, 3, 3, 3, 3],
             "timing_p2_reset": [9, 9, 9, 9, 9],
+            "timing_p3_score": [3, 3, 3, 3, 3],
+            "timing_p3_reset": [9, 9, 9, 9, 9],
+            "timing_p4_score": [3, 3, 3, 3, 3],
+            "timing_p4_reset": [9, 9, 9, 9, 9],
         }
     structure = memory_map[structure_name]
     if "sets" in structure:

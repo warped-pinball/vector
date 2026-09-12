@@ -71,7 +71,7 @@ def em_config(request):
 
 
 @add_route("/api/em/get_config")
-def get_em_config(request):   
+def get_em_config(request):
     config = {
         "name": S.gdata["gamename"],
         "players": int(S.gdata["players"]),
@@ -79,6 +79,7 @@ def get_em_config(request):
         "dummy_reels":  int(S.gdata["dummy_reels"]),
         "startpause": int(S.gdata.get("startpause", 9)),
         "endpause": int(S.gdata.get("endpause", 5)),
+        "hardware_version": getattr(S, "hardware_version", None),
     }
     return config
 
@@ -151,7 +152,7 @@ _TIMING_ADJ_RESET_MAX = 15
 def get_timing_sensitivity(request):
     """Return per-player timing sensitivity arrays (5 values each).
     Score values are 1–10. Reset values are 1–15.
-    Keys: p1_score, p1_reset, p2_score, p2_reset.
+    Keys: p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset.
     """
     def _get(key, value_max):
         v = list(S.gdata.get(key, _TIMING_ADJ_DEFAULT))
@@ -171,15 +172,24 @@ def get_timing_sensitivity(request):
     p1_reset = _get("timing_p1_reset", _TIMING_ADJ_RESET_MAX)
     p2_score = _get("timing_p2_score", _TIMING_ADJ_SCORE_MAX)
     p2_reset = _get("timing_p2_reset", _TIMING_ADJ_RESET_MAX)
-    print(f"EMSEN: get_timing_sensitivity -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
-    return {"p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
+    p3_score = _get("timing_p3_score", _TIMING_ADJ_SCORE_MAX)
+    p3_reset = _get("timing_p3_reset", _TIMING_ADJ_RESET_MAX)
+    p4_score = _get("timing_p4_score", _TIMING_ADJ_SCORE_MAX)
+    p4_reset = _get("timing_p4_reset", _TIMING_ADJ_RESET_MAX)
+    print(f"EMSEN: get_timing_sensitivity -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset} p3_score={p3_score} p3_reset={p3_reset} p4_score={p4_score} p4_reset={p4_reset}")
+    return {
+        "p1_score": p1_score, "p1_reset": p1_reset,
+        "p2_score": p2_score, "p2_reset": p2_reset,
+        "p3_score": p3_score, "p3_reset": p3_reset,
+        "p4_score": p4_score, "p4_reset": p4_reset,
+    }
 
 
 @add_route("/api/em/set_timing_sensitivity", auth=True)
 def set_timing_sensitivity(request):
     """Set per-player timing sensitivity arrays (5 values each).
     Score values are 1–10. Reset values are 1–15.
-    Expects: p1_score, p1_reset, p2_score, p2_reset.
+    Expects: p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset.
     """
     print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
 
@@ -197,17 +207,31 @@ def set_timing_sensitivity(request):
     p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
     p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
     p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
+    p3_score = _coerce(d.get("p3_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
+    p3_reset = _coerce(d.get("p3_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
+    p4_score = _coerce(d.get("p4_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
+    p4_reset = _coerce(d.get("p4_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
 
     S.gdata["timing_p1_score"] = p1_score
     S.gdata["timing_p1_reset"] = p1_reset
     S.gdata["timing_p2_score"] = p2_score
     S.gdata["timing_p2_reset"] = p2_reset
+    S.gdata["timing_p3_score"] = p3_score
+    S.gdata["timing_p3_reset"] = p3_reset
+    S.gdata["timing_p4_score"] = p4_score
+    S.gdata["timing_p4_reset"] = p4_reset
 
     from ScoreTrack import saveState
     saveState()
-    print(f"EMSEN: set_timing_sensitivity saved -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
-    log.log(f"EMSEN: timing p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset}")
-    return {"status": "ok", "p1_score": p1_score, "p1_reset": p1_reset, "p2_score": p2_score, "p2_reset": p2_reset}
+    print(f"EMSEN: set_timing_sensitivity saved -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset} p3_score={p3_score} p3_reset={p3_reset} p4_score={p4_score} p4_reset={p4_reset}")
+    log.log(f"EMSEN: timing p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset} p3_score={p3_score} p3_reset={p3_reset} p4_score={p4_score} p4_reset={p4_reset}")
+    return {
+        "status": "ok",
+        "p1_score": p1_score, "p1_reset": p1_reset,
+        "p2_score": p2_score, "p2_reset": p2_reset,
+        "p3_score": p3_score, "p3_reset": p3_reset,
+        "p4_score": p4_score, "p4_reset": p4_reset,
+    }
 
 
 def check_files():

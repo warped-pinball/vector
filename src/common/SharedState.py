@@ -1,5 +1,8 @@
 VectorVersion = "1.11.0"
 
+# EM hardware variant, detected at boot from GPIO14: "2player" or "4player"
+hardware_version = None
+
 # counts game start cycles
 gameCounter = 0
 

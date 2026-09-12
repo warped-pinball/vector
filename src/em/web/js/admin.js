@@ -4,6 +4,18 @@
 "use strict";
 // ------------------ Setup / Sensitivity Helpers ------------------
 
+// Hardware variant detected by main.py at boot: "2player" or "4player" (or
+// null before it's known). Player 3/4 timing controls only show for 4player.
+let emHardwareVersion = null;
+
+function applyHardwareVersionVisibility() {
+  const show = emHardwareVersion === "4player";
+  const p3 = document.getElementById("timing-section-p3");
+  const p4 = document.getElementById("timing-section-p4");
+  if (p3) p3.style.display = show ? "" : "none";
+  if (p4) p4.style.display = show ? "" : "none";
+}
+
 // Helper: show modal by id
 async function showModal(id) {
   const modal = document.getElementById(id);
@@ -43,6 +55,10 @@ async function initSetupUI() {
         startPause.value = clampPause(cfg.startpause);
       if (endPause && cfg.endpause != null)
         endPause.value = clampPause(cfg.endpause);
+      if (cfg.hardware_version != null) {
+        emHardwareVersion = cfg.hardware_version;
+        applyHardwareVersionVisibility();
+      }
       serverCfgLoaded = true;
     }
   } catch (e) {
@@ -415,13 +431,18 @@ async function initSensitivityUI() {
 }
 
 // Timing filter: per-decade score (red) and reset (blue) depth adjusters
-// p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths
+// p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths;
+// p3/p4 depths only apply (and are shown) on 4player hardware.
 async function initTimingSensitivityUI() {
   const N = TIMING_ADJ_COLUMN_COUNT;
   let p1_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
   let p1_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
   let p2_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
   let p2_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+  let p3_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+  let p3_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+  let p4_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+  let p4_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
 
   try {
     const resp = await window.smartFetch("/api/em/get_timing_sensitivity", null, false);
@@ -431,6 +452,10 @@ async function initTimingSensitivityUI() {
       p1_reset = coerceTimingArray(data.p1_reset, p1_reset, clampTimingAdjReset);
       p2_score = coerceTimingArray(data.p2_score, p2_score, clampTimingAdjScore);
       p2_reset = coerceTimingArray(data.p2_reset, p2_reset, clampTimingAdjReset);
+      p3_score = coerceTimingArray(data.p3_score, p3_score, clampTimingAdjScore);
+      p3_reset = coerceTimingArray(data.p3_reset, p3_reset, clampTimingAdjReset);
+      p4_score = coerceTimingArray(data.p4_score, p4_score, clampTimingAdjScore);
+      p4_reset = coerceTimingArray(data.p4_reset, p4_reset, clampTimingAdjReset);
     }
   } catch (e) {
     // use defaults
@@ -439,7 +464,7 @@ async function initTimingSensitivityUI() {
   async function saveTimingSensitivity() {
     try {
       await window.smartFetch("/api/em/set_timing_sensitivity",
-        { p1_score, p1_reset, p2_score, p2_reset }, true);
+        { p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset }, true);
     } catch (e) {
       console.error("Failed to save timing sensitivity", e);
     }
@@ -507,6 +532,9 @@ async function initTimingSensitivityUI() {
     const labels = getTimingAdjLabels(getConfiguredDummyReels());
     buildPlayerRow("timing-adj-p1", p1_score, p1_reset, labels);
     buildPlayerRow("timing-adj-p2", p2_score, p2_reset, labels);
+    buildPlayerRow("timing-adj-p3", p3_score, p3_reset, labels);
+    buildPlayerRow("timing-adj-p4", p4_score, p4_reset, labels);
+    applyHardwareVersionVisibility();
   }
 
   renderTimingRows();
@@ -691,7 +719,9 @@ function startSensorActivityPolling() {
 function startLivePlayerScorePolling() {
   const p1El = document.getElementById("live-score-p1");
   const p2El = document.getElementById("live-score-p2");
-  if (!p1El && !p2El) return;
+  const p3El = document.getElementById("live-score-p3");
+  const p4El = document.getElementById("live-score-p4");
+  if (!p1El && !p2El && !p3El && !p4El) return;
 
   const POLL_MS = 1000;
 
@@ -712,6 +742,8 @@ function startLivePlayerScorePolling() {
         const scores = Array.isArray(data.Scores) ? data.Scores : [];
         if (p1El) p1El.textContent = formatScore(scores[0] ?? 0);
         if (p2El) p2El.textContent = formatScore(scores[1] ?? 0);
+        if (p3El) p3El.textContent = formatScore(scores[2] ?? 0);
+        if (p4El) p4El.textContent = formatScore(scores[3] ?? 0);
       }
     } catch (e) {
       // keep last displayed values on transient errors
