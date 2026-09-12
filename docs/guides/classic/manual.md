@@ -32,11 +32,11 @@ the RAM chip where settings and scores are stored. Gameplay continues unchanged:
 same ROM runs on the same `MC6800` processor. Vector mirrors the game's RAM into
 on-board permanent memory, so scores and settings survive a power-off with no
 battery and no board modifications. Installation requires no soldering and no
-permanent changes.
+permanent changes to your game.
 
 ## Indicators and controls
 
-| ![Vector installed on a classic Bally/Stern MPU board](../../img/classic/classic_board_.png) | **WiFi Status LED**<br>- Fast blink: AP (setup) mode<br>- Slow blink: joining WiFi<br>- Solid on: WiFi joined<br><br>**WiFi Configure Button**<br>Hold during power-up and release when the LED flashes to enter AP setup mode.<br><br>**Status LED**<br>Two-color blink codes — see the tables below. |
+| ![Vector installed on a classic Bally/Stern MPU board](../../img/classic/classic_board_ar.png) | <br>**WiFi Configure Button**<br>Hold during power-up and release when the LED flashes to enter AP setup mode.<br><br>**Status LED**<br>Two-color blink codes (more below)<br>![Status LED](../../img/classic/status_led_.png) <br>    <br> **WiFi Status LED**<br>- Fast blink: AP (setup) mode<br>- Slow blink: joining WiFi<br>- Solid on: WiFi joined<br>|
 | --- | --- |
 
 ## LED codes
@@ -261,9 +261,6 @@ power-up and release when the LED blinks rapidly.
 
 ![Admin page, bottom](../../img/sys11/Installation_vector_screen_admin_bottom.png)
 
-In case of trouble there is a program to reload the software over a USB cable from a
-computer — see the
-[Trench Coat install guide](https://github.com/warped-pinball/trench-coat/blob/main/Trench-Coat-Install-Guide.md).
 
 ## RAM corruption problems
 
