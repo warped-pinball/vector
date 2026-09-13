@@ -30,6 +30,10 @@ safe_defaults = {
     "timing_p1_reset": [8, 8, 8, 8, 8],
     "timing_p2_score": [8, 8, 8, 8, 8],
     "timing_p2_reset": [8, 8, 8, 8, 8],
+    "timing_p3_score": [8, 8, 8, 8, 8],
+    "timing_p3_reset": [8, 8, 8, 8, 8],
+    "timing_p4_score": [8, 8, 8, 8, 8],
+    "timing_p4_reset": [8, 8, 8, 8, 8],
 }
 
 
