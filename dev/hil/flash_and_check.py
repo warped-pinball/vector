@@ -64,10 +64,11 @@ from bench import (  # noqa: E402
     log,
     parse_board_map,
     prime_usb,
-    reset_board,
+    reset_board_with_drain,
     resolve_targets,
     source_version,
     wait_for_server,
+    wait_out_post_flash_boot,
 )
 
 # Read-only routes exercised over HTTP. Kept side-effect free so the check can
@@ -369,7 +370,11 @@ def main():
             continue
         group(f"Health check {b['target']} on {b['port']}")
         try:
-            reset_board(b["port"])
+            # Set by flash_boards, and absent under --skip-flash: a board we
+            # did not just flash is not mid-boot and needs no grace period.
+            if b.get("flashed_at") is not None:
+                wait_out_post_flash_boot(b["port"], b["flashed_at"])
+            reset_board_with_drain(b["port"])
             connection, boot_log = wait_for_server(b["port"])
             b["boot_log"] = boot_log
             prime_usb(connection)

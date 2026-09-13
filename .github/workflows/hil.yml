@@ -112,7 +112,7 @@ jobs:
         # Never let a reporting hiccup (rate limit, API blip) block the
         # actual bench run below.
         continue-on-error: true
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           SHA: ${{ steps.decide.outputs.commit }}
           RUN_BENCH: ${{ steps.decide.outputs.run_bench }}
@@ -161,7 +161,7 @@ jobs:
       - name: Mark the check run in progress
         if: github.event_name == 'workflow_run'
         continue-on-error: true
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHECK_ID: ${{ needs.gate.outputs.check_id }}
         with:
@@ -318,7 +318,7 @@ jobs:
       # network and this needs the GitHub API.
       - name: Complete check run
         continue-on-error: true
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CHECK_ID: ${{ needs.gate.outputs.check_id }}
           RESULT: ${{ needs.bench.result }}
