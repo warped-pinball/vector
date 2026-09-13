@@ -675,7 +675,7 @@ def test_run_matrix_resets_the_board_before_watching_its_first_boot(monkeypatch,
 def test_session_start_resets_then_waits(monkeypatch):
     """start() is a reset plus a wait, in that order."""
     order = []
-    monkeypatch.setattr(cm, "reset_board", lambda port: order.append(f"reset {port}"))
+    monkeypatch.setattr(bench, "reset_board", lambda port: order.append(f"reset {port}"))
     monkeypatch.setattr(cm, "wait_for_server", lambda port, timeout=None: (order.append("wait"), (types.SimpleNamespace(close=lambda: None), []))[1])
     monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
     monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
@@ -891,8 +891,8 @@ def test_start_drains_and_retries_a_board_that_will_not_reset(monkeypatch):
         if len(attempts) == 1:
             raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
 
-    monkeypatch.setattr(cm, "reset_board", reset)
-    monkeypatch.setattr(cm, "drain_port", lambda port, **kw: drained.append(port))
+    monkeypatch.setattr(bench, "reset_board", reset)
+    monkeypatch.setattr(bench, "drain_port", lambda port, **kw: drained.append(port))
     monkeypatch.setattr(cm, "wait_for_server", lambda port, timeout=None: (types.SimpleNamespace(close=lambda: None), []))
     monkeypatch.setattr(cm, "prime_usb", lambda _connection: None)
     monkeypatch.setattr(cm, "UsbApiClient", lambda _connection: FakeClient())
@@ -907,8 +907,8 @@ def test_start_gives_up_if_the_retry_also_fails(monkeypatch):
     def always_times_out(_port):
         raise subprocess.TimeoutExpired(cmd="mpremote", timeout=30)
 
-    monkeypatch.setattr(cm, "reset_board", always_times_out)
-    monkeypatch.setattr(cm, "drain_port", lambda port, **kw: None)
+    monkeypatch.setattr(bench, "reset_board", always_times_out)
+    monkeypatch.setattr(bench, "drain_port", lambda port, **kw: None)
 
     with pytest.raises(subprocess.TimeoutExpired):
         cm.Session("/dev/ttyFAKE").start()
