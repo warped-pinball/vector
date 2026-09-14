@@ -32,6 +32,11 @@ Pick your system to find quick starts, installation manuals, and ROM handling no
 
 Owner's documentation coming soon.
 
+### Classic Bally / Stern
+
+- [Quick start](guides/classic/quick-start.md)
+- [Installation & use manual](guides/classic/manual.md)
+
 ### Electromechanical (EM)
 
 Owner's documentation coming soon.
