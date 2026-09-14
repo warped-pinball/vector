@@ -5,7 +5,7 @@
 display message for EM machines
 
 handles on board displays only - LEDs for all the inputs
-  and the single digit 7 segment for IP address
+  and the single digit 7 segment for IP address, learn mode counts
 """
 import time
 from machine import Pin
@@ -26,6 +26,8 @@ gameOverLED = True
 ipDigitDisplay="  "
 ipDigitUpNext = 0
 displayState = 0
+captureModeCounter = -1
+learnModeCounter = -1
 faultNumber = -1
 
 lastSendValue=0x0000
@@ -82,7 +84,7 @@ def init(ipAddress=""):
     from phew.server import schedule
     schedule(displayUpdate, 1000, 500)
 
-#keep - compatible with server.py in common
+#keep - compatiblewith server.py in common
 def refresh():
     return
 
@@ -96,6 +98,21 @@ def setSensorLeds(pattern):
     '''add on bits to sensor pattern leds - will cause led to BLINK ONLY'''
     global sensorPattern
     sensorPattern = sensorPattern | pattern
+
+def setLearnModeDigit(d):
+    global learnModeCounter
+    if isinstance(d, int) and 0 <= d <= 9:
+        learnModeCounter = d
+    else:
+        learnModeCounter = -1
+
+def setCaptureModeDigit(d):
+    global captureModeCounter
+    if isinstance(d, int) and 0 <= d <= 9:
+        captureModeCounter = d
+    else:
+        captureModeCounter = -1
+
 
 # PIO program: pull a 32-bit word, shift out the top 24 bits MSB-first
 # out(pins, 1) writes the top bit of OSR to MOSI (out_base)
@@ -160,17 +177,22 @@ def displayUpdate():
     if gameOverLED:
         mid_byte |= 0x40
 
-    # decide which input to put on digit display
-    ch = ipDigitDisplay[ipDigitUpNext]
-    ipDigitUpNext = (ipDigitUpNext + 1) % len(ipDigitDisplay)
-    if '0' <= ch <= '9':
-        idx = ord(ch) - ord('0')     # 0..9
-    elif ch == '.':
-        idx = 10
-    elif ch == ' ':
-        idx = 11                      # blank / space
+    #deicde which input to put on digit display
+    if 0 <= captureModeCounter <= 9:
+        idx = captureModeCounter
+    elif 0 <= learnModeCounter <= 9:
+        idx= learnModeCounter
     else:
-        idx = 11                      # unknown -> blank
+        ch = ipDigitDisplay[ipDigitUpNext]
+        ipDigitUpNext = (ipDigitUpNext + 1) % len(ipDigitDisplay)
+        if '0' <= ch <= '9':
+            idx = ord(ch) - ord('0')     # 0..9
+        elif ch == '.':
+            idx = 10
+        elif ch == ' ':
+            idx = 11                      # blank / space
+        else:
+            idx = 11                      # unknown -> blank
 
     #convert ascii digit to 7 segment code
     top_byte = SEGMENTS[idx]
