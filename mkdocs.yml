@@ -17,14 +17,17 @@ nav:
           - Quick start: guides/system11/quick-start.md
           - Installation & use manual: guides/system11/manual.md
           - Add a ROM profile: guides/system11/add-rom.md
+          - RottenDog support: guides/system11/rottendog-support.md
       - System 9:
           - Installation & use manual: guides/system9/manual.md
       - Data East:
           - Installation & use manual: guides/data_east/manual.md
-      - Classic (Bally / Stern):
+      - Classic Bally / Stern:
           - Quick start: guides/classic/quick-start.md
           - Installation & use manual: guides/classic/manual.md
-          - Add a ROM profile: guides/classic/add-rom.md
+  - Origin:
+      - Quick start: guides/origin/quick-start.md
+      - Installation & operation manual: guides/origin/manual.md
   - Technical references:
       - API reference: routes.md
       - Authentication: authentication.md

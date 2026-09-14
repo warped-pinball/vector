@@ -74,6 +74,7 @@ from bench import (  # noqa: E402
     prime_usb,
     repl_reset,
     reset_board,
+    reset_board_with_drain,
     resolve_targets,
     set_game_config,
     time_limit,
@@ -270,12 +271,7 @@ class Session:
         less than writing off a board's whole matrix.
         """
         if reset:
-            try:
-                reset_board(self.port)
-            except Exception as exc:
-                log(f"::warning::{self.port} did not take a reset ({exc}); draining its console and retrying once")
-                drain_port(self.port)
-                reset_board(self.port)
+            reset_board_with_drain(self.port)
         else:
             log("    already booting from the flash; watching that boot rather than forcing another")
         return self.wait_for_boot()

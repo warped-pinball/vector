@@ -1026,7 +1026,11 @@ def flash_boards(boards, workdir):
         started = time.monotonic()
         config_path = write_bench_config(board["target"], workdir)
         flash(board["target"], board["port"], REPO_ROOT / "build" / board["target"], config_path)
-        return time.monotonic() - started
+        # Stamped so a later stage can tell how far into its post-flash boot
+        # this board is. dev/flash.py resets at the end, so "flashed" and
+        # "busy booting" are the same instant - see wait_out_post_flash_boot.
+        board["flashed_at"] = time.monotonic()
+        return board["flashed_at"] - started
 
     errors = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(boards))) as pool:
@@ -1053,6 +1057,61 @@ def flash_boards(boards, workdir):
 # --------------------------------------------------------------------------
 
 
+# A board is gone from the USB bus for a second or two across a reset, and
+# every serial tool answers "no such device" for that whole window.
+PORT_RETURN_TIMEOUT = 30
+
+# How long a board needs, after dev/flash.py resets it, before it is safe to
+# reset again. Observed post-flash boots run 11-25s; this is the ceiling of
+# that plus room to spare, and it is only ever waited out in full for
+# whichever board finished flashing last.
+POST_FLASH_BOOT_GRACE = 35
+
+
+def wait_for_port(port, timeout=PORT_RETURN_TIMEOUT):
+    """Wait for a port to come back after a reset re-enumerates it.
+
+    Without this, anything that touches a board within a second of its reset
+    reports it as missing when it is merely rebooting - which is exactly how a
+    healthy sys11 board failed its health check with an empty error message.
+    """
+    deadline = time.monotonic() + timeout
+    last_error = None
+    while time.monotonic() < deadline:
+        if os.path.exists(port):
+            try:
+                open_serial(port).close()
+                return
+            except Exception as exc:  # noqa: BLE001 - retried until the deadline
+                last_error = exc
+        time.sleep(0.5)
+    detail = f": {last_error}" if last_error else ""
+    raise CheckFailure(f"{port} did not come back within {timeout}s{detail}")
+
+
+def wait_out_post_flash_boot(port, flashed_at, grace=POST_FLASH_BOOT_GRACE):
+    """Let a just-flashed board finish the boot dev/flash.py started.
+
+    dev/flash.py ends by resetting the board, so it is already booting by the
+    time flash_boards returns - and a second reset landing on top of that
+    boot, while the firmware is still reading its freshly written filesystem,
+    is what wedges a board. sys11 did exactly that: flashed successfully, then
+    refused a reset 90ms later and failed the whole run with no error text to
+    explain it. config_matrix.py hit the same wall and answers it by not
+    resetting a just-flashed board at all; the health check cannot do that,
+    because it checks boards one at a time and would miss the ready marker of
+    every board but the first. So it waits the boot out instead.
+
+    Boards are flashed in parallel and checked in sequence, so most have long
+    since finished by the time their turn comes and this returns immediately.
+    """
+    remaining = grace - (time.monotonic() - flashed_at)
+    if remaining > 0:
+        log(f"    letting the post-flash boot finish before resetting ({remaining:.0f}s)")
+        time.sleep(remaining)
+    wait_for_port(port)
+
+
 def reset_board(port):
     """Reset the board so we own the boot we are about to watch.
 
@@ -1061,6 +1120,9 @@ def reset_board(port):
     any health check starts, so by the time we open a console the board booted
     a minute ago and the marker is long gone. Resetting here makes the wait
     deterministic and the reported boot time meaningful.
+
+    A board that was flashed moments ago is the one case where this is unsafe:
+    see wait_out_post_flash_boot.
     """
     result = mpremote(
         "connect",
@@ -1071,7 +1133,28 @@ def reset_board(port):
         timeout=30,
     )
     if result.returncode != 0:
-        raise CheckFailure(f"could not reset {port} before the health check: {result.stderr.strip()}")
+        # mpremote puts connection errors on stdout, not stderr, so reading
+        # only stderr produced "could not reset /dev/ttyACM0 before the health
+        # check:" with nothing after the colon - the least useful form this
+        # failure could take.
+        detail = result.stderr.strip() or result.stdout.strip() or f"mpremote exited {result.returncode} without saying why"
+        raise CheckFailure(f"could not reset {port} before the health check: {detail}")
+
+
+def reset_board_with_drain(port):
+    """reset_board, with the one drain-and-retry a sulking board earns.
+
+    A board whose stdout is blocked on an undrained USB endpoint comes back
+    the moment somebody reads it, and reading costs a few seconds - much less
+    than writing off the board. config_matrix.py has always done this around
+    its own reset; the health check now gets the same treatment.
+    """
+    try:
+        reset_board(port)
+    except Exception as exc:  # noqa: BLE001 - a timeout deserves the retry as much as a refusal
+        log(f"::warning::{port} did not take a reset ({exc}); draining its console and retrying once")
+        drain_port(port)
+        reset_board(port)
 
 
 def wait_for_server(port, timeout=BOOT_TIMEOUT):

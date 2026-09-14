@@ -32,9 +32,23 @@ Pick your system to find quick starts, installation manuals, and ROM handling no
 
 Owner's documentation coming soon.
 
+### Classic Bally / Stern
+
+- [Quick start](guides/classic/quick-start.md)
+- [Installation & use manual](guides/classic/manual.md)
+
 ### Electromechanical (EM)
 
 Owner's documentation coming soon.
+
+## Origin hub
+
+Origin is a self-hosted service that collects live scores and game state from
+every Vector board on your network and serves leaderboards, a real-time
+big-screen view, and tournament tools from one place.
+
+- [Quick start](guides/origin/quick-start.md)
+- [Installation & operation manual](guides/origin/manual.md)
 
 ## Mod maker & technical guides
 
