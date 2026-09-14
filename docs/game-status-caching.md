@@ -52,7 +52,7 @@ regardless, *in addition to* once per HTTP request — redundant work.
 
 ## Scope
 
-This affects all systems that share `src/common/GameStatus.py` (sys11, classic,
-whitestar), since they schedule `poll_fast` via the common path. The `wpc`,
-`em`, and `data_east` builds maintain their own `GameStatus.py` copies and were
-left unchanged.
+This affects every game system. `sys11`, `classic`, `whitestar`, `wpc`, and
+`data_east` all share `src/common/GameStatus.py` and schedule `poll_fast` via
+the common path. `em` maintains its own `GameStatus.py` copy, which already
+implements the same `_last_report` / `cached_report()` caching independently.
