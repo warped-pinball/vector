@@ -17,10 +17,10 @@ SCHEMA_RULES = [
             "src/sys11/config/*.json",
             "src/wpc/config/*.json",
             "src/data_east/config/*.json",
+            "src/classic/config/*.json",
         ],
         "required": {
             "GameInfo": ["GameName", "System"],
-            "Memory": ["Start", "Length", "NvStart", "NvLength"],
             "BallInPlay": ["Type"],
             "DisplayMessage": ["Type"],
             "Adjustments": ["Type"],

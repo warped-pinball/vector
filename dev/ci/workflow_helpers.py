@@ -133,7 +133,8 @@ def build_updates(
 ) -> None:
     for target in targets:
         target_id = target["id"]
-        _run_command(["python", "dev/build.py", "--build-dir", build_dir, "--target_hardware", target_id])
+        hardware_id = target.get("hardware_id", target_id)
+        _run_command(["python", "dev/build.py", "--build-dir", build_dir, "--target_hardware", hardware_id])
 
         base_command = [
             "python",
@@ -145,8 +146,11 @@ def build_updates(
             "--version",
             target_versions[target_id],
             "--target_hardware",
-            target_id,
+            hardware_id,
         ]
+
+        if target.get("tiny"):
+            base_command.append("--tiny")
 
         if sign and private_key:
             with tempfile.NamedTemporaryFile("w", delete=False) as key_file:

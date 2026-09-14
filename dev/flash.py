@@ -15,6 +15,45 @@ REPL_RETRY_DELAY = 1
 REPL_MAX_RETRIES = 5
 BUILD_DIR_DEFAULT = "build"
 
+# Nothing here should take minutes. mpremote has no timeout of its own, so a
+# board that stops answering mid-step leaves it blocked on a USB read forever
+# and the only thing that ever notices is whatever wraps this script. On the
+# HIL bench that wrapper is a 900s timeout, and one wedged board spent the
+# whole of it inside `fs cp`, ending the run with a half-flashed board that
+# could not even report its chip id. Bound each step instead: a hung one fails
+# in a couple of minutes and the caller gets to retry it.
+STEP_TIMEOUT = 120  # a single exec-style step
+COPY_TIMEOUT = 300  # the whole filesystem copy, which is genuinely slow
+COPY_MAX_RETRIES = 3
+
+
+def mpremote_cmd():
+    """Prefer the mpremote executable, fall back to `python -m mpremote`."""
+    return ["mpremote"] if shutil.which("mpremote") else [sys.executable, "-m", "mpremote"]
+
+
+def run_step(argv, timeout=STEP_TIMEOUT, **kwargs):
+    """Run one mpremote step under a timeout that actually fires.
+
+    argv rather than a shell string, deliberately: with shell=True the timeout
+    kills the shell and leaves mpremote behind still holding the port, which
+    is how CI runs end with "Terminate orphan process: (mpremote)" and the
+    next job finds the board busy.
+
+    Returns the CompletedProcess, or None if the step timed out - callers
+    treat that like any other failure, and may retry it.
+    """
+    try:
+        return subprocess.run(argv, timeout=timeout, **kwargs)
+    except subprocess.TimeoutExpired:
+        print(f"Timed out after {timeout}s: {' '.join(argv[:4])} ...")
+        return None
+
+
+def step_failed(result):
+    """True for a step that timed out (None) or exited non-zero."""
+    return result is None or result.returncode != 0
+
 
 def autodetect_pico_port():
     """Auto-detect the Pico port. Returns the first port that actually responds
@@ -47,9 +86,8 @@ def wipe_pico(pico_port):
             "    remove('/' + entry)",
         ]
     )
-    cmd = f'mpremote connect {pico_port} exec "{mpython}"'
-    result = subprocess.run(cmd, shell=True)
-    if result.returncode != 0:
+    result = run_step(mpremote_cmd() + ["connect", pico_port, "exec", mpython])
+    if step_failed(result):
         print("Error wiping Pico's filesystem.")
         sys.exit(1)
 
@@ -60,10 +98,19 @@ def copy_files_to_pico(build_dir, pico_port):
     original_dir = os.getcwd()
     os.chdir(build_dir)
     try:
-        cmd = f"mpremote connect {pico_port} fs cp -r . :"
-        result = subprocess.run(cmd, shell=True)
-        if result.returncode != 0:
-            print("Error copying files to Pico.")
+        # The longest step, and the one that actually hangs: a board that
+        # stops draining its USB endpoint part way through a copy takes
+        # mpremote down with it. Retrying re-copies from the top, which is
+        # harmless - every file is overwritten anyway.
+        argv = mpremote_cmd() + ["connect", pico_port, "fs", "cp", "-r", ".", ":"]
+        for attempt in range(COPY_MAX_RETRIES):
+            result = run_step(argv, timeout=COPY_TIMEOUT)
+            if not step_failed(result):
+                break
+            print(f"Error copying files to Pico. Retrying... ({attempt + 1})")
+            time.sleep(REPL_RETRY_DELAY)
+        if step_failed(result):
+            print(f"Error copying files to Pico after {COPY_MAX_RETRIES} attempts.")
             sys.exit(1)
     finally:
         os.chdir(original_dir)
@@ -72,15 +119,12 @@ def copy_files_to_pico(build_dir, pico_port):
 
 def restart_pico(pico_port):
     # Avoid shell quoting issues across platforms by using argv + shell=False.
-    # Prefer the mpremote executable if present; otherwise fall back to `python -m mpremote`.
-    mpremote_base_cmd = ["mpremote"] if shutil.which("mpremote") else [sys.executable, "-m", "mpremote"]
+    cmd = mpremote_cmd() + ["connect", pico_port, "exec", "--no-follow", "import machine; machine.reset()"]
+    result = run_step(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    cmd = mpremote_base_cmd + ["connect", pico_port, "exec", "--no-follow", "import machine; machine.reset()"]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    if result.returncode != 0:
+    if step_failed(result):
         print("Error restarting the Pico.")
-        if result.stderr:
+        if result is not None and result.stderr:
             print(result.stderr.strip())
         sys.exit(1)
 
@@ -90,14 +134,14 @@ def restart_pico(pico_port):
 def wipe_config_data(pico_port):
     print("Wiping config data on Pico...")
     script = "\n".join(["import SPI_DataStore as datastore", "datastore.blankAll()", "import Adjustments", "Adjustments.blank_all()"])
-    cmd = f'mpremote connect {pico_port} exec "{script}"'
+    argv = mpremote_cmd() + ["connect", pico_port, "exec", script]
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = subprocess.run(cmd, shell=True)
-        if result.returncode == 0:
+        result = run_step(argv)
+        if not step_failed(result):
             break
         print(f"Error wiping config on Pico. Retrying... ({attempt + 1})")
-    if result.returncode != 0:
+    if step_failed(result):
         print("Error wiping config on Pico after 3 attempts.")
         sys.exit(1)
 
@@ -120,11 +164,11 @@ def apply_local_config_to_pico(pico_port, config_file="dev/config.json"):
         config_script_lines.append(f"config['{key}'] = '{value}'")
     config_script_lines.append("datastore.write_record('configuration', config)")
 
-    cmd = f"mpremote connect {pico_port} exec \"{';'.join(config_script_lines)}\""
+    argv = mpremote_cmd() + ["connect", pico_port, "exec", ";".join(config_script_lines)]
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = subprocess.run(cmd, shell=True)
-        if result.returncode == 0:
+        result = run_step(argv)
+        if not step_failed(result):
             print("Configuration updated successfully on Pico.")
             return
         print(f"Error applying configuration to Pico. Retrying... ({attempt + 1})")
@@ -165,14 +209,14 @@ def write_test_data(pico_port, test_data_file="dev/test_data.json"):
         + [f"ScoreTrack.update_individual_score({json.dumps(record)})" for record in test_data["individual"]]
     )
 
-    cmd = f"mpremote connect {pico_port} exec '{test_data_script}'"
+    argv = mpremote_cmd() + ["connect", pico_port, "exec", test_data_script]
     for attempt in range(3):
         time.sleep(REPL_RETRY_DELAY)
-        result = subprocess.run(cmd, shell=True)
-        if result.returncode == 0:
+        result = run_step(argv)
+        if not step_failed(result):
             break
         print(f"Error writing test data to Pico. Retrying... ({attempt + 1})")
-    if result.returncode != 0:
+    if step_failed(result):
         print("Error writing test data to Pico.")
         sys.exit(1)
     print("Test data written successfully to Pico.")

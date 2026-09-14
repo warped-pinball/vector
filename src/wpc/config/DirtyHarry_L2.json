@@ -1,79 +1,137 @@
 {
-    "GameInfo": {
-        "GameName": "Dirty Harry",
-        "System": "WPC",
-        "FileVer": 1,
-        "Clock": "MM"
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
-    },
-    "BallInPlay": {
-        "Type": 1,
-        "Address": 947,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
-    },
-    "DisplayMessage": {
-        "Type": 10,
-        "AddressS1": 7688,
-        "AddressS2": 7753,
-        "AddressS3": 7818,
-        "Length": 32,
-        "ChecksumStartAdr": 7688,
-        "ChecksumEndAdr": 7880,
-        "ChecksumResultAdr": 7881
-    },
-    "Adjustments": {
-        "Type": 10,
-        "CustomMessageOn": 7102,
-        "ChecksumStartAdr": 7061,
-        "ChecksumEndAdr": 7290,
-        "ChecksumResultAdr": 7291
-    },
-    "HighScores": {
-        "Type": 10,
-        "ScoreAdr": 7398,
-        "BytesInScore": 6,
-        "ScoreSpacing": 9,
-        "InitialAdr": 7395,
-        "InitialSpacing": 9,
-        "NumberOfScores": 4,
-        "GrandChampScoreAdr": 7436,
-        "GrandChampInitAdr": 7433,
-        "ChecksumStartAdr": 7395,
-        "ChecksumEndAdr": 7430,
-        "ChecksumResultAdr": 7431,
-        "GCChecksumStartAdr": 7433,
-        "GCChecksumEndAdr": 7441,
-        "GCChecksumResultAdr": 7442
-    },
-    "HSRewards": {
-        "Type": 0,
-        "HS1": 0,
-        "HS2": 0,
-        "HS3": 0,
-        "HS4": 0,
-        "HS5": 0,
-        "DisableByte": 0
-    },
-    "InPlay": {
-        "Type": 10,
-        "GameActiveAdr": 141,
-        "GameActiveValue": 0,
-        "Players": 5913,
-        "PlayerUp": 663,
-        "ScoreAdr": 5792,
-        "ScoreBytes": 6,
-        "ScoreSpacing": 7
-    }
+  "GameInfo": {
+      "GameName": "Dirty Harry",
+      "System": "WPC",
+      "FileVer": 1,
+      "Clock": "MM"
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 947
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7688,
+      "AddressS2": 7753,
+      "AddressS3": 7818,
+      "Length": 32,
+      "ChecksumStartAdr": 7688,
+      "ChecksumEndAdr": 7880,
+      "ChecksumResultAdr": 7881
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7102,
+      "ChecksumStartAdr": 7061,
+      "ChecksumEndAdr": 7290,
+      "ChecksumResultAdr": 7291
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7398,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7395,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7436,
+      "GrandChampInitAdr": 7433,
+      "ChecksumStartAdr": 7395,
+      "ChecksumEndAdr": 7430,
+      "ChecksumResultAdr": 7431,
+      "GCChecksumStartAdr": 7433,
+      "GCChecksumEndAdr": 7441,
+      "GCChecksumResultAdr": 7442
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 5913,
+      "PlayerUp": 946,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5835,
+    "Length": 55,
+    "Names": [
+      ["Gun Handle Trigger", 60],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Shooter Lane", 60],
+      ["Right Outlane", 60],
+      ["Right Inlane", 60],
+      ["Standup 8", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy In Button", 60],
+      ["Always Closed", 0],
+      ["Left Inlane", 60],
+      ["Left Outlane", 60],
+      ["Standup 1", 60],
+      ["Standup 2", 60],
+
+      ["Trough Jam", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      [],
+      [],
+      ["Right Ramp Make", 60],
+
+      ["Left Ramp Enter", 60],
+      ["Right Loop", 60],
+      ["Left Ramp Make", 60],
+      ["Gun Chamber", 60],
+      ["Gun Popper", 60],
+      ["Warehouse Popper", 60],
+      ["Left Popper", 60],
+      [],
+
+      ["Right Ramp Enter", 60],
+      [],
+      [],
+      ["Standup 6", 60],
+      ["Standup 7", 60],
+      ["Standup 5", 60],
+      ["Standup 4", 60],
+      ["Standup 3", 60],
+
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Left Jet", 60],
+      ["Middle Jet", 60],
+      ["Right Jet", 60],
+      ["Left Rollover", 60],
+      ["Middle Rollover", 60],
+      ["Right Rollover", 60],
+
+      ["Left Loop", 60],
+      [],
+      ["Safehouse", 60],
+      [],
+      [],
+      ["Gun Position", 60],
+      ["Gun Lockup", 60]
+    ]
+  },
+  "Flippers": {
+      "Type": 10,
+      "Address": 173
+  }
 }

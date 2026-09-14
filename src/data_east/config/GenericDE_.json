@@ -19,16 +19,17 @@
 
      "InPlay": {
         "Type": 0,
-        "GameActiveAdr": 0,
-        "GameActiveValue": 0,
         "Players": 0,
+        "PlayerUp": 0,
         "ScoreAdr": 0,
-        "ScoreBytes": 0
+        "ScoreSpacing": 0,
+        "BytesInScore": 0,
+        "Multiplier": 1
     },
 
     "DisplayMessage": {
        "Type": 0,
-        "AddressS1": 0
+        "Address": 0
     },
 
     "Adjustments" :{

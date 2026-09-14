@@ -8,6 +8,7 @@
     fault check updated for early sys11 game compatibility
 """
 
+import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
 
 #allocate DMA - wifi chip channel now
 import Pico_Led
@@ -30,6 +31,9 @@ import reset_control
 from logger import logger_instance
 from Shadow_Ram_Definitions import shadowRam
 from systemConfig import SystemVersion
+
+import Switches
+import Formats
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -153,11 +157,16 @@ reset_control.release(True)
 time.sleep(4)
 
 resource.go(True)
+Switches.initialize()
+Formats.initialize()
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa
 
 Log.log("MAIN: Launching Wifi")
-go(ap_mode)
-Log.log("MAIN: drop through fault")
-faults.raise_fault(faults.SFTW01)
+try:
+    go(ap_mode)
+    Log.log("MAIN: drop through fault")
+    faults.raise_fault(faults.SFTW01)
+finally:
+    faults.timer.deinit()  # stop the LED pattern timer before dropping to the REPL

@@ -8,22 +8,55 @@ on:
       - "dev/ci/version_bump_guard.py"
       - ".github/workflows/version-bump-guard.yml"
 
+permissions:
+  contents: write
+
 jobs:
   version-bump:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout PR branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
-      - name: Validate required version bumps
+      - name: Apply required patch version bumps (non-fork only)
+        if: github.event.pull_request.head.repo.full_name == github.repository
         run: |
           python dev/ci/version_bump_guard.py \
             --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}"
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --apply \
+            --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Check required patch version bumps (fork PRs — cannot auto-commit)
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          if ! python dev/ci/version_bump_guard.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --summary-file "$GITHUB_STEP_SUMMARY"; then
+            echo "::error::Version bump required. This PR modifies source files but is missing a patch version bump. Because this is a fork PR the bot cannot apply it automatically — please bump the patch version in the affected systemConfig.py file(s) and push the change to your branch."
+            exit 1
+          fi
+
+      - name: Commit and push version bumps
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/common/SharedState.py src/em/systemConfig.py src/sys11/systemConfig.py src/wpc/systemConfig.py src/data_east/systemConfig.py src/whitestar/systemConfig.py src/classic/systemConfig.py
+          git commit -m "ci: auto-bump required patch versions"
+          git push origin HEAD:${{ github.head_ref }}

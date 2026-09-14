@@ -3,6 +3,7 @@
 import argparse
 import gzip
 import json
+import zlib
 import math
 import os
 import shutil
@@ -72,7 +73,9 @@ class Builder:
         print("Copying files to build directory...")
         if os.path.exists(self.build_dir):
             shutil.rmtree(self.build_dir)
-        shutil.copytree(os.path.join(self.source_dir, "common"), self.build_dir)
+
+        common_src = os.path.join(self.source_dir, "common")
+        shutil.copytree(common_src, self.build_dir)
 
         sys_src_path = os.path.join(self.source_dir, self.target_hardware)
         for root, dirs, files in os.walk(sys_src_path):
@@ -183,25 +186,75 @@ class Builder:
                     else:
                         print(f"Error scouring {file_path}")
 
+    def validate_linkto_references(self, config_dir):
+        """Validate LinkTo references in JSON config files before combining."""
+        configs = {}
+        
+        # Load all JSON files
+        for root, dirs, files in os.walk(config_dir):
+            for file in files:
+                if file.endswith(".json"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, "r") as f:
+                        data = json.load(f)
+                    file_name = os.path.splitext(file)[0]
+                    configs[file_name] = data
+        
+        # Validate LinkTo references
+        link_count = 0
+        errors = []
+        
+        for filename, data in configs.items():
+            if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
+                link_count += 1
+                target = data["GameInfo"]["LinkTo"]
+                
+                # Check target exists
+                if target not in configs:
+                    errors.append(f"ERROR: {filename} links to {target}, but {target}.json not found")
+                    continue
+                
+                # Check target doesn't have LinkTo (no chaining)
+                target_data = configs[target]
+                if isinstance(target_data.get("GameInfo"), dict) and "LinkTo" in target_data["GameInfo"]:
+                    errors.append(f"ERROR: {filename} links to {target}, but {target} also contains LinkTo (chaining not allowed)")
+        
+        # Report results
+        if errors:
+            print("LinkTo validation failed:")
+            for error in errors:
+                print(f"  {error}")
+            raise ValueError(f"Found {len(errors)} LinkTo validation error(s)")
+        
+        if link_count > 0:
+            print(f"Validated {link_count} LinkTo reference(s) - all valid")
+
     @step_report
     def combine_json_configs(self):
-        """Combine JSON files in build/config into all.jsonl."""
+        """Combine JSON files in build/config into a deflate-compressed all.jsonl.z file."""
         print("Combining JSON config files...")
         config_dir = os.path.join(self.build_dir, "config")
         if not os.path.isdir(config_dir):
             print("No 'config' directory found; skipping.")
             return
-        output_path = os.path.join(config_dir, "all.jsonl")
-        with open(output_path, "w") as outfile:
+        
+        # Validate LinkTo references before combining
+        self.validate_linkto_references(config_dir)
+        
+        output_path = os.path.join(config_dir, "all.jsonl.z")
+        compressor = zlib.compressobj(level=9, wbits=8)
+        with open(output_path, "wb") as outfile:
             for root, dirs, files in os.walk(config_dir):
                 for file in files:
-                    if file.endswith(".json") and file != "all.jsonl":
+                    if file.endswith(".json"):
                         file_path = os.path.join(root, file)
                         with open(file_path, "r") as f:
                             data = json.load(f)
                         file_name = os.path.splitext(file)[0]
-                        outfile.write(f"{file_name}{json.dumps(data, separators=(',',':'))}\n")
+                        line = f"{file_name}{json.dumps(data, separators=(',',':'))}\n"
+                        outfile.write(compressor.compress(line.encode("utf-8")))
                         os.remove(file_path)
+            outfile.write(compressor.flush())
 
     @step_report
     def zip_files(self):

@@ -19,7 +19,7 @@ def list_pico_ports(timeout: float = 5.0) -> List[str]:
             check=True,
             timeout=timeout,
         )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         return []
     ports: List[str] = []
     for line in result.stdout.strip().splitlines():
@@ -67,4 +67,10 @@ def detect_boards() -> Dict[str, List[str]]:
 
 
 if __name__ == "__main__":
-    print(json.dumps(detect_boards()))
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "list":
+        for port in list_pico_ports():
+            print(port)
+    else:
+        print(json.dumps(detect_boards()))

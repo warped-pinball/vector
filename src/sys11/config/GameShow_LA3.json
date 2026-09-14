@@ -1,0 +1,76 @@
+{
+    "GameInfo": {
+        "GameName": "Bally's Game Show",
+        "System": "11c"
+    },
+    "BallInPlay": {
+        "Type": 2,
+        "Address": 56
+    },
+    "DisplayMessage": {
+        "Type": 3,
+        "Address": 1972,
+        "Length": 16,
+        "Number": 3,
+        "EnableByteAddress": 1968
+    },
+    "Adjustments": {
+        "Type": 1,
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2019,
+        "ChecksumResultAdr": 2022
+    },
+    "HighScores": {
+        "Type": 3,
+        "ScoreAdr": 1806,
+        "InitialAdr": 1822,
+        "BytesInScore": 4
+    },
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": 512,
+        "Players": 169,
+        "PlayerUp": 170,
+        "GameActive": 166
+    },
+    "Switches": {
+        "Type": 1,
+        "Address": 1535,
+        "Length": 64,
+        "Sensitivity": [
+                    240, -1, 60, 60, 60, 60, -1, 60,
+                    -1, 60, 60, 60, 60, 60, -1, 60,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, -1, -1, 60,
+                    60, -1, 60, 60, 60, 60, -1, 60,
+                    60, 60, -1, 60, -1, 60, -1, 60,
+                    -1, -1, 60, 60, 60, 60, -1, 60,
+                    60, 60, -1, 60, -1, 60, -1, 60
+                ]
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "HalfLife": {
+            "Id": 5,
+            "Options": {
+                "ScoreDecay": {
+                    "Value": 8
+                }
+            }
+        },
+        "LongestBall": {
+            "Id": 6
+        }
+    }
+}

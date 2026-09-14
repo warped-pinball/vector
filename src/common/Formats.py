@@ -42,6 +42,7 @@ MODE_ID_GOLF = 3
 MODE_ID_PRACTICE = 4
 MODE_ID_HALF_LIFE = 5
 MODE_ID_LONGESTBALL = 6
+MODE_ID_ONEBALL = 7
 
 
 """
@@ -135,6 +136,18 @@ DEFAULT_FORMATS = {
                 "Value": True
             }
         }                  
+    },
+    "OneBall": {
+        "Id": MODE_ID_ONEBALL,
+        "Sort": "Normal",
+        "Description": "Only one ball to play",
+        "Options": {
+            "GetPlayerID": {
+                "Name": "Collect Player Initials",
+                "Type": "fixed",
+                "Value": True
+            }
+        }                  
     }
 }
 
@@ -187,17 +200,35 @@ def get_next_up_format():
 def set_active_format(format_name, options=None):
     """
     Set the active game format by its name (key) in to "next_format"
+    OR you may pass the Id - Id is preferred as name strings may change but Ids will remain unique for all time
     Loads format settings in layers: defaults → config → runtime options
     """
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
     game_formats_config = S.gdata.get("Formats", {})
-    if format_name not in game_formats_config or format_name not in DEFAULT_FORMATS:
+    selected_name = format_name
+
+    if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
+        # Fallback: if caller passed a numeric format id (int or numeric string), resolve to a configured format name
+        format_id = None
+        if isinstance(format_name, int) and not isinstance(format_name, bool):
+            format_id = format_name
+        elif isinstance(format_name, str) and format_name.isdigit():
+            format_id = int(format_name)
+
+        if format_id is not None:
+            selected_name = None
+            for name in game_formats_config:
+                if name in DEFAULT_FORMATS and DEFAULT_FORMATS[name].get("Id") == format_id:
+                    selected_name = name
+                    break
+
+    if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
         return False
 
     # Merge defaults and config: game_formats_config takes priority over DEFAULT_FORMATS
-    combined_format = _deep_merge(DEFAULT_FORMATS.get(format_name, {}), game_formats_config.get(format_name, {}))
+    combined_format = _deep_merge(DEFAULT_FORMATS.get(selected_name, {}), game_formats_config.get(selected_name, {}))
 
     # Apply incoming options (highest priority) to the Options section
     if options and isinstance(options, dict):
@@ -207,9 +238,9 @@ def set_active_format(format_name, options=None):
 
     next_format = combined_format.copy()
     # Store the format name for reference
-    next_format["Name"] = format_name
+    next_format["Name"] = selected_name
 
-    log.log(f"FORMAT: next format {format_name} id = {next_format.get('Id', 0)}")
+    log.log(f"FORMAT: next format {selected_name} id = {next_format.get('Id', 0)}")
 
     return True
 
@@ -220,9 +251,11 @@ def set_active_format(format_name, options=None):
 def practice_run():
     """Run practice mode (keep at ball 1 in play)"""
     global next_format
-    if next_format.get("Id", 0) != MODE_ID_PRACTICE:  # end on next ball drain
-        DataMapper.write_ball_in_play(5)
-        DataMapper.write_live_scores([1, 1, 1, 1])
+
+    if next_format.get("Id", 0) != MODE_ID_PRACTICE :  # end on next ball drain
+        if DataMapper.get_game_active() == True:
+            DataMapper.write_ball_in_play(5)
+            DataMapper.write_live_scores([1, 1, 1, 1])
     elif DataMapper.get_ball_in_play() > 1:
         DataMapper.write_ball_in_play(1)
 
@@ -522,6 +555,25 @@ def longest_ball_run():
     return True
   
 
+
+def one_ball_run():
+    """
+    one ball only - just end the game after one ball
+    """
+    global player_scores
+    ball_in_play = DataMapper.get_ball_in_play()
+    current_scores = DataMapper.get_live_scores(use_format=False)
+    game_active = DataMapper.get_game_active()
+    
+    # Only end game if ball 1 is in play and player 1 has scored
+    if ball_in_play < 5 and current_scores[0] > 0 and game_active==True:
+        DataMapper.write_ball_in_play(5)
+
+    player_scores = current_scores
+    return game_active
+
+
+
 # ============================================================================
 # Stub Mode Handlers
 # ============================================================================
@@ -546,18 +598,27 @@ game_state =0
 GameEndCount =0
 last_high_score_count =0
 in_play_scores_hold = [["", 0], ["", 0], ["", 0], ["", 0]]
+push_game_count = 0
+last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 def formats_run():
     """
     periodic tasks related to game formats.   
         call rate CALL_TIMER milli-seconds
     """
-    global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold
+    global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game
+       
+    #push multiple copies of game end for reliability   
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>5:
+            push_game_count =0
 
     # Waiting to change format?
     active_id = S.active_format.get("Id", 0)
-    next_id = next_format.get("Id", 0)
-    
+    next_id = next_format.get("Id", 0) 
     if active_id != next_id:        
         if DataMapper.get_game_active() is False and game_state==0:                   
             S.active_format = next_format.copy()
@@ -566,14 +627,12 @@ def formats_run():
             
     if active_id == MODE_ID_STANDARD:
         return
-
-    #print("FORMATS: state=",game_state)
  
     #waiting for game to start
     if game_state == 0:
         if DataMapper.get_game_active() is True:  #game started
             game_state=1
-            S.gameCounter = (S.gameCounter + 1) % 100
+            #S.gameCounter = (S.gameCounter + 1) % 100
             
             #remove machine high scores?
             get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
@@ -587,7 +646,7 @@ def formats_run():
             try:
                 handlers[HANDLER_INIT]()
             except Exception as e:
-                log.log(f"FORMAT: Error running init format {active_id}: {e}")
+                log.log(f"FORMAT: Error running init format {active_id}: {e}")       
     
 
     # Call handler during game, wait for game end
@@ -624,11 +683,14 @@ def formats_run():
             game_state = 3   # timeout           
         else:
             scores = DataMapper.read_high_scores()
+            if len(scores) >= 5:
+                scores = scores[-4:]
+
             print("FORMAT: high score read:",scores)
             
             # Check high scores - handle both WPC (5 scores) and SYS11 (4 scores) formats
             high_score_count = 0
-            for x in range(0, min(5, len(scores))):
+            for x in range(0, len(scores)):
                 alpha_count = sum(1 for c in scores[x][0] if c.isalpha())
                 if scores[x][1] > 100 and alpha_count > 2:  #score and three initials are in 
                     high_score_count += 1
@@ -662,7 +724,10 @@ def formats_run():
             from origin import push_end_of_game
             # Format: [gameCounter, [initials, score], [initials, score], [initials, score], [initials, score]]
             game = [S.gameCounter, final_scores_by_player[0], final_scores_by_player[1], final_scores_by_player[2], final_scores_by_player[3]]
-            push_end_of_game(game)
+            push_game_count=1
+            last_pushed_game = game
+            push_end_of_game(last_pushed_game,push_game_count)
+
         except Exception as e:
             log.log(f"FORMATS: Error pushing end of game to origin: {e}")            
 
@@ -671,6 +736,7 @@ def formats_run():
             DataMapper.write_high_scores(saved_high_scores)
             saved_high_scores = None
 
+        S.gameCounter = (S.gameCounter + 1) % 100
         game_state=0
 
     else:
@@ -694,7 +760,9 @@ FORMAT_HANDLERS = [
     # 5: Half Life
     [half_life_init, half_life_run, empty_close],
     # 6: Longest Ball
-    [longest_ball_init, longest_ball_run, empty_close]
+    [longest_ball_init, longest_ball_run, empty_close],
+    # 7: One Ball
+    [empty_init, one_ball_run, empty_close]
 ]
 
 

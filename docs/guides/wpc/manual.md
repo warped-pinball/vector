@@ -13,11 +13,12 @@ How the Vector board installs, what the LEDs mean, and how to bring a classic Wi
 
 - [How it works](#how-it-works)
 - [Indicators and controls](#indicators-and-controls)
+- [LED codes](#led-codes)
 - [Disclaimer](#disclaimer)
 - [Hardware installation](#hardware-installation)
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
-- [Operation](#operation)
+- [Web interface and spotting trouble](#web-interface-and-spotting-trouble)
 
 ## How it works
 
@@ -27,6 +28,51 @@ Vector sits between the processor chip and the game’s main board so it can act
 
 | ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_Board_Controls.png) | WiFi Status LED <br>-Fast blink: AP Mode <br>-Slow Blink: Joining WiFi<br>-Solid ON: WiFi joined<br><br>WiFi Configure Button: Hold during power up and release when LED flashes for AP setup mode<br><br>Status LED<br>-fast blink: installation fault |
 | --- | --- |
+
+## LED codes
+
+Newer board revisions replace the single-color patterns above with a two-color blink code on the Status LED. Each fault code consists of two color blinks separated by a brief pause.
+
+### Normal Operation
+| LED Pattern | Status |
+| --- | --- |
+| Yellow-Yellow (dim) | Trying to join WiFi at startup |
+| Green-Green (dim) | WiFi connected, all systems OK |
+| Purple-Purple (dim) | AP mode - join with your phone |
+
+### Hardware Faults (First blink: RED)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Red-Yellow | HDWR01 | Early Bus Activity |
+| Red-White | HDWR02 | No Bus Activity |
+| Red-Purple | HDWR00 | Unknown Hardware Error |
+
+### WiFi Faults (First blink: BLUE)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Blue-Yellow | WIFI01 | Invalid WiFi Credentials (wrong password) |
+| Blue-Purple | WIFI02 | No WiFi Signal (network not found) |
+| Blue-Red | WIFI00 | Unknown WiFi Error |
+
+### Configuration Faults (First blink: WHITE)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| White-Yellow | CONF01 | Invalid Configuration |
+| White-Purple | CONF00 | Unknown Configuration Error |
+
+### Software Faults (First blink: YELLOW)
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| Yellow-Red | SFTW01 | Drop Through |
+| Yellow-White | SFTW02 | Async loop interrupted |
+| Yellow-Purple | SFTW00 | Unknown Software Error |
+
+### Other
+| LED Pattern | Code | Description |
+| --- | --- | --- |
+| White-White | DUNO00 | Unknown Error |
+
+**Note:** Multiple faults will be displayed in sequence with a pause (black) between each fault code.
 
 ## Disclaimer
 
@@ -53,7 +99,7 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 
 Throughout the installation pay attention to pin #1 alignment:
 
-![Pin one Photo](../../img/wpc/manual/pin_one.png){ width=220 }
+![Pin one Photo](../../img/wpc/manual/pin_one.png)
 
 2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
 
@@ -62,11 +108,11 @@ Throughout the installation pay attention to pin #1 alignment:
 3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
 
 
-![socket Photo](../../img/wpc/manual/socket.jpg){ width=180 }
+![socket Photo](../../img/wpc/manual/socket.jpg)
 
 4. (Optional) Attach the adhesive standoff to the Vector board with the included plastic screw so it can adhere to a neighboring chip. <br>
 
-![Pin standoff Photo](../../img/wpc/manual/standoff.png){ width=180 }
+![Pin standoff Photo](../../img/wpc/manual/standoff.png)
 
 5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
@@ -88,12 +134,12 @@ After connection the game operates normally while the Vector board provides NVRA
 1. Power up the pinball machine; the WiFi status LED should blink fast.
 2. On a phone or computer, open WiFi settings and join the **Warped Pinball** network. A no-internet warning is expected.
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_select_AP.png)
 
 3. When prompted, tap **Sign In** or open a browser to reach the configuration screen.
 
 
-![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin sign in screen](../../img/wpc/manual/WPC-Installation-manual_sign_in_button.png)
 
 4. On the configuration screen:
    - Select your local WiFi **SSID** and enter the password (case sensitive).
@@ -102,7 +148,7 @@ After connection the game operates normally while the Vector board provides NVRA
    - If Vector previously joined a network, the assigned IP address is shown at the bottom.
 
 
-![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png){ width=220 style="display:block; margin: 0 auto;" }
+![Pin setup screen](../../img/wpc/manual/WPC-Installation-manual_AP_setup_screen.png)
 
 5. Click **Save**. The WiFi status LED will stop blinking. Power-cycle the game to apply settings. On the next boot:
    - Slow blinking indicates the unit is locating the network.
@@ -116,17 +162,56 @@ After connection the game operates normally while the Vector board provides NVRA
 Each machine receives an IP address from your router (for example `192.168.1.79`). Access Vector by entering the IP in a browser and save it as a bookmark. Router DHCP assignments can change; the Vector board periodically displays the current IP on the machine display. To keep the same address, log into your router, locate the device, and mark the entry as **static**.
 
 
-![Pin DMD Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png){ width=420 style="display:block; margin: 0 auto;" }
+![Pin DMD Photo](../../img/wpc/manual/WPC-Installation-manual_IP_on_DMD.png)
 
 Have a color Pin2DMD?   Use the buttons on the back of the display to set it to **Williams/Bally Mode**.
 
-## Operation
+## Web interface
 
-- Navigation buttons are in the upper-right corner.
-- Tournament and personal best scoreboards are accessible via the banner.
-- Enter player full names under **Players**.
+- **Game name** is shown in the upper left. If it is not correct, check your AP mode configuration.
+- **Navigation** is in the upper right.
+- Note the 20 position leaderboard — it will fill up as you play new games.
 
+![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png)
 
-![Pin main web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_main.png){ style="display:block; margin: 0 auto;" }
+- A game in play is shown on the same screen (see below).
+- Note the ball in play and scores update as you play.
+- Something not looking correct? Check your ROM version. On game bootup the ROM version is generally displayed on the screen — make sure you pick that ROM version when configuring your Warped Pinball board in AP mode. If you have a ROM that isn't supported, please contact us, we add ROMs regularly.
+
+![Pin game in play web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_game_in_play.png)
+
+- Click on **Players** to see and edit the active players list.
+- All players get individual best boards.
+- Initials are entered on the left and full name on the right.
+
+![Pin players web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_players.png)
+
+- The top of the admin page shows several setup options.
+- **Tournament mode** just saves all scores to the tournament list (and not your normal leaderboard).
+- **Score claim: on machine** will cause all players to enter initials to claim their scores after playing (this also records to the individual best boards).
+- If you don't want to enter initials every play, you can try **Score claim: web interface** — here you claim your score on a web browser after you play.
+- This game has **Midnight Madness mode** (not all do).
+- Then a section of **adjustment profiles** — use the normal coin door buttons to set up a profile, then enter a name and click capture here to save those settings. You can save and restore up to four.
+- Normally the display will show the IP address in attract mode; you can turn this off here.
+
+![Pin admin top web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_admin_top.png)
+
+**Example of score claim on front page (note the section at the bottom of the screen)**
+
+![Example of score claim on front page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_score_claim.png)
+
+- **Software update process:** just check the Yellow button — it will let you know when there is a software update available.
+- The button will also show if the update server was unreachable — if so, just look again later.
+- **Upload Developer Build** is used for test versions when directed by Warped Pinball staff.
+- The remaining button controls are self-explanatory.
+
+![Pin admin bottom web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_admin_bottom.png)
+
+- Use the WiFi status to determine if you have a strong connection.
+- Switch diagnostics are shown in the grid of colors at the end of the admin page.
+
+![Pin admin end web page](../../img/wpc/manual/WPC-Installation-manual_vector_screen_admin_end.png)
+
+**A note about the software update process:** The Yellow button is the preferred method and takes about 2 minutes to complete. The game will automatically reboot at the end of the process. Check the bottom of any page for the currently installed software version (note that each type of game — WPC, System 11, Data East, EM, etc. — has its own version numbers). In case of trouble (unusual), there is an available program to reload the software via USB cable from a computer. See the [instructions here](https://github.com/warped-pinball/trench-coat/blob/main/Trench-Coat-Install-Guide.md).
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).

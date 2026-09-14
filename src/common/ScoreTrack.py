@@ -8,10 +8,10 @@ Score Track
 """
 import displayMessage
 import SharedState as S
+import DataMapper
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
-import DataMapper
 from Shadow_Ram_Definitions import shadowRam
 
 log = logger_instance
@@ -19,6 +19,8 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
+push_game_count = 0
+last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -35,7 +37,6 @@ recent_scores = [
 def reset_scores():
     # reset leader board scores
     from SPI_DataStore import blankStruct
-
     blankStruct("leaders")
 
 
@@ -72,6 +73,7 @@ def claim_score(initials, player_index, score):
 
 def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""
+    global push_game_count, last_pushed_game
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
@@ -431,7 +433,14 @@ def update_tournament(new_entry):
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter
+    global nGameIdleCounter, push_game_count, last_pushed_game
+
+    if push_game_count>0:
+        from origin import push_end_of_game
+        push_game_count+=1
+        push_end_of_game(last_pushed_game,push_game_count)
+        if push_game_count>5:
+            push_game_count =0
 
 
 
@@ -446,21 +455,10 @@ def CheckForNewScores(nState=[0]):
             place_machine_scores()
         nState[0] = 1
 
-        # if enter initials on game set high score rewards to zero
-        if S.gdata["HSRewards"]["Type"] == 1 and DataStore.read_record("extras", 0)["enter_initials_on_game"]:
-            shadowRam[S.gdata["HSRewards"]["HS1"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS2"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS3"]] = S.gdata["HSRewards"]["DisableByte"]
-            shadowRam[S.gdata["HSRewards"]["HS4"]] = S.gdata["HSRewards"]["DisableByte"]
+    if S.gdata["BallInPlay"]["Type"] in [2,3]: 
 
 
-    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
-        BallInPlayAdr = S.gdata["BallInPlay"]["Address"]
-        Ball1Value = S.gdata["BallInPlay"]["Ball1"]
-        Ball2Value = S.gdata["BallInPlay"]["Ball2"]
-        Ball3Value = S.gdata["BallInPlay"]["Ball3"]
-        Ball4Value = S.gdata["BallInPlay"]["Ball4"]
-        Ball5Value = S.gdata["BallInPlay"]["Ball5"]
+        print(" BALL IN PLAY:",DataMapper.get_ball_in_play())
 
         if nState[0] == 1:  # waiting for a game to start
 
@@ -470,24 +468,24 @@ def CheckForNewScores(nState=[0]):
                 return
                 
             nGameIdleCounter += 1  # claim score list expiration timer
-            if nGameIdleCounter > (3 * 60 / 5):  # 3 min, push empty onto list so old games expire
+            if nGameIdleCounter > (3 * 60 // 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
                 _place_game_in_claim_list(game)
                 nGameIdleCounter = 0
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
-            if shadowRam[BallInPlayAdr] in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value):
+            if  DataMapper.get_game_active() == True:
                 nState[0] = 2
                 # Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
                 _remove_machine_scores()
-                S.gameCounter = (S.gameCounter + 1) % 100
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
-            if shadowRam[BallInPlayAdr] not in (Ball1Value, Ball2Value, Ball3Value, Ball4Value, Ball5Value, 0xFF):
+            #if  DataMapper.get_game_active() == False:
+            if DataMapper.get_ball_in_play() == 0:
                 # game over, get new scores
                 nState[0] = 1
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
@@ -509,8 +507,16 @@ def CheckForNewScores(nState=[0]):
                 game = [S.gameCounter, scores[0], scores[1], scores[2], scores[3]]
                 _place_game_in_claim_list(game)
 
+                from origin import push_end_of_game
+                push_game_count = 1
+                last_pushed_game = game
+                push_end_of_game(last_pushed_game, push_game_count)
+
                 # put high scores back in machine memory
                 place_machine_scores()
 
                 # put ip address back up on system 9 displays
                 displayMessage.refresh_9()
+
+                S.gameCounter = (S.gameCounter + 1) % 100
+                

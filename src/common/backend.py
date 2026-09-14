@@ -11,6 +11,7 @@ import uctypes
 from ls import ls
 from micropython import const
 from phew.server import add_route as phew_add_route
+from phew.server import schedule, unschedule_by_name
 from Shadow_Ram_Definitions import SRAM_DATA_BASE, SRAM_DATA_LENGTH
 from SPI_DataStore import memory_map as ds_memory_map
 from SPI_DataStore import read_record as ds_read_record
@@ -127,6 +128,8 @@ def get_content_type(file_path):
 
 
 def create_file_handler(file_path):
+    import os
+
     is_gz = file_path.endswith(".gz")
     served_path = file_path[:-3] if is_gz else file_path
 
@@ -165,6 +168,14 @@ def create_file_handler(file_path):
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        # Always advertise Content-Length for static assets to prevent truncated
+        # transfers from being cached as complete when using Cache-Control: immutable.
+        # For gzipped files, this is the compressed size sent over the socket.
+        try:
+            headers["Content-Length"] = os.stat(file_path)[6]
+        except Exception as e:
+            print(f"Failed to stat {file_path}: {e}")
+
         if is_gz:
             if served_path.endswith(".svg"):
                 headers["Content-Type"] = "application/gzip"
@@ -519,10 +530,9 @@ def app_game_status(request):
             }
     @end
     """
-    # TODO cache me
-    from GameStatus import game_report
+    from GameStatus import cached_report
 
-    return game_report()
+    return cached_report()
 
 
 #
@@ -1590,23 +1600,23 @@ def app_version(request):
     return {"version": SystemVersion}
 
 
-@add_route("/api/uid")
-def app_uid(request):
+@add_route("/api/machine_id")
+def app_machine_id(request):
     """
     @api
-    summary: Get the unique hardware identifier
+    summary: Get the unique identifier for this Vector installation (hardware + configuration)
     response:
       status_codes:
         - code: 200
-          description: UID returned
+          description: Machine ID returned
       body:
-        description: Unique hardware identifier as a hex string
-        example: {"uid": "1a2b3c4d5e6f"}
+        description: Unique identifier derived from hardware serial and active game configuration as a hex string
+        example: {"machine_id": "1a2b3c4d5e6f"}
     @end
     """
-    from machine import unique_id
+    from origin import get_machine_id
 
-    return {"uid": hexlify(unique_id()).decode()}
+    return {"machine_id": get_machine_id()}
 
 
 @add_route("/api/fault")
@@ -1698,6 +1708,251 @@ def app_memory_snapshot(request):
         yield f"{value}\n".encode("utf-8")
 
 
+def _valid_ipv4(ip):
+    parts = ip.split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit() or not (0 <= int(part) <= 255):
+            return False
+    return True
+
+
+def _make_memory_snapshot_sender(ip):
+    """Build the scheduled task that streams memory to one client.
+
+    The target IP is captured only by this closure, whose sole reference
+    lives in the scheduler's task list — no module-level state remembers
+    the target, so unscheduling the task releases the IP and the closure
+    entirely.
+    """
+    import discovery
+
+    def send_memory_snapshot():
+        ram_access = bytes(uctypes.bytearray_at(SRAM_DATA_BASE, SRAM_DATA_LENGTH))
+        chunk_size = 256
+        offset = 0
+
+        while offset < len(ram_access):
+            chunk = ram_access[offset : offset + chunk_size]
+            # Prepend 4-byte offset header to each chunk
+            message = offset.to_bytes(4, "big") + chunk
+            discovery.send_sock.sendto(message, (ip, 2040))
+            offset += chunk_size
+
+    return send_memory_snapshot
+
+
+@add_route("/api/memory/toggle-broadcast", auth=True)
+def app_memory_broadcast(request):
+    """
+    @api
+    summary: Start or stop streaming memory snapshots to one client
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: true
+          description: True to start streaming, false to stop
+        - name: frequency_ms
+          type: integer
+          required: false
+          description: Milliseconds between snapshots (default 100, clamped 10-60000)
+        - name: ip
+          type: string
+          required: false
+          description: IPv4 address to stream to; defaults to the requesting client's IP
+    response:
+      status_codes:
+        - code: 200
+          description: Streaming state updated
+        - code: 400
+          description: No valid target IP available
+    @end
+
+    Snapshots are sent as UDP packets to port 2040 on the target IP only
+    (a 4-byte big-endian offset header followed by up to 256 data bytes per
+    packet) -- never broadcast to the whole network.
+    """
+    data = request.data
+    if data.get("enable", False):
+        raw_freq = data.get("frequency_ms", 100)
+        try:
+            freq = int(raw_freq)
+        except (TypeError, ValueError):
+            freq = 100
+
+        # Clamp frequency to sane bounds to avoid overload or absurd delays
+        if freq < 10:
+            freq = 10
+        elif freq > 60000:
+            freq = 60000
+
+        # Stream to the explicitly requested IP, or back to whoever asked.
+        # (Over USB there is no client IP, so "ip" must be supplied.)
+        ip = data.get("ip") or request.client_ip
+        if not ip or not _valid_ipv4(str(ip)):
+            return '{"error":"a valid IPv4 target ip is required"}', 400
+
+        # Never accumulate senders: one stream target at a time.
+        unschedule_by_name("send_memory_snapshot")
+        schedule(_make_memory_snapshot_sender(str(ip)), phase_ms=0, frequency_ms=freq)
+    else:
+        # Remove the sender from the scheduler (drops its baked-in IP too)
+        unschedule_by_name("send_memory_snapshot")
+    return
+
+
+@add_route("/api/origin/target", auth=True)
+def app_origin_target(request):
+    """
+    @api
+    summary: Register where this board sends its Origin game events
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: false
+          description: True to register a listener (default), false to stop sending
+        - name: secret
+          type: string
+          required: false
+          description: Shared secret every datagram is signed with; required when enabling
+        - name: ip
+          type: string
+          required: false
+          description: IPv4 address to send to; defaults to the requesting client's IP
+    response:
+      status_codes:
+        - code: 200
+          description: Target updated
+        - code: 400
+          description: No valid target IP, or a missing/oversized secret
+    @end
+
+    Game events (game state, end of game, reset) are sent as UDP datagrams to
+    port 6809 on the registered IP only -- never broadcast to the whole
+    network -- and each one is prefixed with 16 hex characters of
+    HMAC-SHA256(secret, body). With nobody registered the board sends nothing.
+    """
+    import origin
+
+    data = request.data
+    if not data.get("enable", True):
+        origin.clear_target()
+        return
+
+    # Send to the explicitly requested IP, or back to whoever asked.  A
+    # listener behind NAT cannot name its own translated address, so letting
+    # the board fill it in is the case that matters.
+    # (Over USB there is no client IP, so "ip" must be supplied.)
+    ip = data.get("ip") or request.client_ip
+    if not ip or not _valid_ipv4(str(ip)):
+        return '{"error":"a valid IPv4 target ip is required"}', 400
+
+    secret = data.get("secret")
+    if not secret or not isinstance(secret, str):
+        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+    try:
+        secret.encode("ascii")
+    except Exception:
+        return '{"error":"secret must be ASCII"}', 400
+    if len(secret) > origin.MAX_SECRET_LENGTH:
+        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+
+    origin.set_target(str(ip), secret)
+    return
+
+
+#
+# Address Read / Write API
+#
+# A lightweight way to read and write arbitrary SRAM addresses.
+#
+
+
+@add_route("/api/address/read", auth=True)
+def app_address_read(request):
+    """
+    @api
+    summary: Read one or more bytes from SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: count
+          type: integer
+          required: false
+          description: Number of bytes to read (default 1, max 256)
+    response:
+      status_codes:
+        - code: 200
+          description: Values returned
+      body:
+        example: {"offset": 100, "values": [0, 255, 128]}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    if offset is None:
+        return '{"error":"offset required"}', 400
+    count = data.get("count", 1)
+    if count < 1:
+        count = 1
+    if count > 256:
+        count = 256
+    if offset < 0 or (offset + count) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, count)
+    return {"offset": offset, "values": list(ram)}
+
+
+@add_route("/api/address/write", auth=True)
+def app_address_write(request):
+    """
+    @api
+    summary: Write one or more bytes to SRAM at the given offset
+    auth: true
+    request:
+      body:
+        - name: offset
+          type: integer
+          required: true
+          description: Byte offset relative to SRAM_DATA_BASE
+        - name: values
+          type: array
+          required: true
+          description: List of byte values (0-255) to write
+    response:
+      status_codes:
+        - code: 200
+          description: Write completed
+      body:
+        example: {"offset": 100, "count": 3}
+    @end
+    """
+    data = request.data
+    offset = data.get("offset")
+    values = data.get("values")
+    if offset is None or values is None:
+        return '{"error":"offset and values required"}', 400
+    if not isinstance(values, list) or len(values) == 0:
+        return '{"error":"values must be a non-empty list"}', 400
+    if len(values) > 256:
+        return '{"error":"max 256 bytes per write"}', 400
+    if offset < 0 or (offset + len(values)) > SRAM_DATA_LENGTH:
+        return '{"error":"offset out of range"}', 400
+    ram = uctypes.bytearray_at(SRAM_DATA_BASE + offset, len(values))
+    for i, v in enumerate(values):
+        ram[i] = v & 0xFF
+    return {"offset": offset, "count": len(values)}
+
+
 @add_route("/api/logs", cool_down_seconds=10, single_instance=True, auth=True)
 def app_getLogs(request):
     """
@@ -1756,6 +2011,7 @@ def app_list_available_formats(request):
     @end
     """
     from Formats import get_available_formats
+
     return get_available_formats()
 
 
@@ -1768,42 +2024,38 @@ def app_set_current_format(request):
     auth: true
     request:
         body:
-            identified by NAME STRING
-
             - name: format_id
-                type: int
-                required: true
-                description: Format identifier to activate
+              type: int
+              required: false
+              description: Format identifier to activate
+            - name: format_name
+              type: string
+              required: false
+              description: Format name to activate
             - name: options
-                type: dict
-                required: false
-                description: Configuration options for the selected format
+              type: dict
+              required: false
+              description: Configuration options for the selected format
     response:
       status_codes:
         - code: 200
           description: Format set successfully
+        - code: 400
+          description: Missing or invalid format identifier
     @end
     """
     from Formats import set_active_format
 
     data = request.data
-    if not isinstance(data, dict) or len(data) == 0:
-        return {"error": "Missing format data"}, 400
-
-    # Extract the format name from the top level key
-    format_name = list(data.keys())[0]
-    format_data = data[format_name]
 
     # Extract Options section if it exists
-    options = format_data.get("Options", {})
+    format_id = data.get("format_id", data.get("format_name", None))
+    if format_id is None:
+        return {"error": "Missing format_id"}, 400
 
     # Set the active format with validation
-    if not set_active_format(format_name, options):
-        return {"error": f"Invalid format: {format_name}"}, 400
-
-    S.game_status["format"] = {"name": format_name}
-    if options:
-        S.game_status["format"]["options"] = options
+    if not set_active_format(format_id, data.get("Options", {})):
+        return {"error": f"Invalid format: {format_id}"}, 400
 
     return
 
@@ -1844,8 +2096,8 @@ def app_get_active_formats(request):
     @end
     """
     from Formats import get_active_format
-    return get_active_format()
 
+    return get_active_format()
 
 
 # get switch diagnostics
@@ -2076,12 +2328,16 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def connect_to_wifi(initialize=False):
+def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
 
-    if phew_is_connected() and not initialize:
-        schedule(initialize_timedate, 5000, log="Server: Initialize time /date")
+    if phew_is_connected():
+        # Already associated (e.g. after a soft reboot, where the wifi chip
+        # keeps its connection). Still report the IP so it shows on the terminal.
+        from phew import get_ip_address
+
+        print(f"Connected to wifi with IP address: {get_ip_address()}")
         return True
 
     Pico_Led.start_slow_blink()
@@ -2101,6 +2357,7 @@ def connect_to_wifi(initialize=False):
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
     password = wifi_credentials["password"]
+    print(f"Connecting to SSID: {ssid}")
 
     if not ssid:
         return False
@@ -2172,7 +2429,7 @@ def go(ap_mode):
         ip = ap.ifconfig()[0]
         dns.run_catchall(ip)
     else:
-        connect_to_wifi(True)
+        connect_to_wifi()
         add_app_mode_routes()
         from phew.server import set_callback
 

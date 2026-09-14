@@ -8,6 +8,7 @@
     fault check updated for early sys11 game compatability
 """
 
+import nonblocking_print  # noqa: F401  -- must be first; installs non-blocking print()
 import resource
 import time
 
@@ -22,6 +23,8 @@ from machine import Pin
 
 import Switches
 import Formats
+import SharedState
+from Shadow_Ram_Definitions import shadowRam
 
 Log = logger_instance
 # other gen I/O pin inits
@@ -130,6 +133,12 @@ else:
 if not bus_activity_fault:
     MemoryMain.go()
 
+ram_fill = SharedState.gdata.get("RamFill")
+if ram_fill:
+    fill_start, fill_end, fill_value = ram_fill
+    for addr in range(fill_start, fill_end + 1):
+        shadowRam[addr] = fill_value
+    Log.log(f"Main: RamFill {fill_start}-{fill_end} = {fill_value}")
 
 import Time
 Time.initialize()
@@ -146,6 +155,9 @@ Formats.initialize()
 from backend import go  # noqa: E402
 
 print("MAIN: Launching Wifi AP mode=", ap_mode)
-go(ap_mode)
-Log.log("MAIN: drop through fault")
-faults.raise_fault(faults.SFTW01)
+try:
+    go(ap_mode)
+    Log.log("MAIN: drop through fault")
+    faults.raise_fault(faults.SFTW01)
+finally:
+    faults.timer.deinit()  # stop the LED pattern timer before dropping to the REPL

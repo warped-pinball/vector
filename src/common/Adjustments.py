@@ -71,19 +71,6 @@ def restore_adjustments(index, reset=True):
     if index < 0 or index >= ADJ_NUM_SLOTS:
         return "Fault: Invalid Index"
 
-    # Check if a game is in progress and reset is requested
-    if reset and shadowRam[S.gdata["BallInPlay"]["Address"]] in [
-        S.gdata["BallInPlay"]["Ball1"],
-        S.gdata["BallInPlay"]["Ball2"],
-        S.gdata["BallInPlay"]["Ball3"],
-        S.gdata["BallInPlay"]["Ball4"],
-        S.gdata["BallInPlay"]["Ball5"],
-    ]:
-        # TODO do we have to fail if a game is in progress? can we restart the machine anyway?
-        # if we do need this, we should raise an exception and catch it in the backend
-        Log.log("ADJS: No restore - game in progress")
-        return "Fault: Game in Progress"
-
     fram_adr = ADJ_FRAM_START + ADJ_FRAM_RECORD_SIZE * index
     data = fram.read(fram_adr, ADJ_FRAM_RECORD_SIZE)
 

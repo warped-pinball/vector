@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Tomy",
+        "GameName": "Tommy Pinball Wizard",
         "System": "DataEast",
         "FileVer": 1
     },
@@ -27,22 +27,42 @@
     },
     "HighScores": {
         "Type": 24,
-        "ScoreAdr": 5752,
+        "ScoreAdr": 5756,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1,
         "InitialAdr": 5818,
         "InitialSpacing": 3,
         "NumberOfScores": 6,
-        "ScoreAdrNV": 5901
+        "ScoreAdrNV": 7711
     },
     "InPlay": {
         "Type": 24,
-        "Players": 383,
+        "Players": 437,
         "PlayerUp": 434,
         "ScoreAdr": 5846,
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "Limbo": {
+            "Id": 1
+        },
+        "LowBall": {
+            "Id": 2
+        },
+        "Practice": {
+            "Id": 4
+        },
+        "LongestBall": {
+            "Id": 6
+        },
+        "OneBall": {
+            "Id": 7
+        }
     }
 }

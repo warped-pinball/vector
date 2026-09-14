@@ -145,8 +145,6 @@ class DiscoveryMessage:
             return DiscoveryMessage(MessageType.HELLO, name=name)
 
         if mtype == MessageType.FULL:
-            # print(f"Decoding FULL message with length {len(data)}")
-            # print(f"Data: {data}")
             if len(data) < 2:
                 return None
             count = data[1]
@@ -204,7 +202,7 @@ def _get_local_name_bytes():
     return str_name.encode("utf-8")
 
 
-def _send(msg: DiscoveryMessage, addr: tuple = ("255.255.255.255", _DISCOVERY_PORT)) -> None:
+def _send(msg, addr=("255.255.255.255", _DISCOVERY_PORT)):
     # print(f"DISCOVERY: Sending message to {addr}: {msg}")
 
     global send_sock

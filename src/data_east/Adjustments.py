@@ -65,7 +65,7 @@ def _get_range_from_gamedef():
     """ 
         get range of adjustments in shadowram from gamedef json
     """
-    cpyStart = cpyEnd = chkAdr = 0
+    cpyStart = cpyEnd = chkAdr = extraStart = extraEnd = 0
     if S.gdata["Adjustments"]["Type"] == 20:
         cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
         cpyEnd = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
@@ -74,11 +74,12 @@ def _get_range_from_gamedef():
         extraStart = S.gdata["Adjustments"].get("ExtraStartAdr", 0)
         extraEnd = S.gdata["Adjustments"].get("ExtraEndAdr", 0)
 
-    if ((cpyEnd-cpyStart)+(extraEnd-extraStart)+4) > ADJ_FRAM_RECORD_SIZE:
-        Log.log("ADJ: adjustment record size fault")
-        return 0,0,0,0,0
+        if ((cpyEnd-cpyStart)+(extraEnd-extraStart)+4) > ADJ_FRAM_RECORD_SIZE:
+            Log.log("ADJ: adjustment record size fault")
+            return 0,0,0,0,0
     return cpyStart, cpyEnd, chkAdr, extraStart, extraEnd          
-
+    
+    
 def set_name(index, name):
     """set name for index"""
     if index < 0 or index >= ADJ_NUM_SLOTS:
