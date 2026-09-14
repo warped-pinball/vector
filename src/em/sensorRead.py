@@ -92,16 +92,15 @@ def spi_master_16bit_invert():
 
     mov(isr,invert(null))   .side(0)
 
-    set(pins, 1)                [3] #[7]        #set load pin high
+    set(pins, 1)                [3]     #set load pin (CS) high
     set(x, 7)                   [3]       #init first transfer bit length   
     nop()                       [3]
 
     label("MSbitloop")         
-    nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
-    jmp(x_dec, "MSbitloop")    .side(0)
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]  #side set happnens and then delay cycles
+    jmp(x_dec, "MSbitloop")     .side(0)
 
     mov(isr,invert(isr))
     set(x, 7) 
@@ -109,33 +108,30 @@ def spi_master_16bit_invert():
     label("LSbitloop")         
     nop()                    .side(0)  [1]
     in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
+    nop()                    .side(1)  [3]    
     jmp(x_dec, "LSbitloop")    .side(0)
 
-    set(pins, 0)             .side(0)
-    
+    set(pins, 0)             .side(0)       #CS off (load pin)    
     push(noblock)
 
     #Delay loop for pause between reads - set up for 0.775mS cycle
     set(y, 11)    .side(2)   # set(y, 11)    
     label("delay2")
     nop()                   [3]
-    nop()  [2]
+    nop()                   [2]
     jmp(y_dec, "delay2")    [3]
-
 
     wrap()
 
 
 
     """
-    set(y, 11)    .side(2) # set(y, 11)    
+    set(y, 11)    .side(2) # set(y, 11)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [2]  #[7]
 
-    set(y, 11)    .side(0)   # set(y, 11)    
+    set(y, 11)    .side(0)   # set(y, 11)
     label("delay2")
     nop()                   [1]
     jmp(y_dec, "delay2")     [2] #[7]
@@ -145,6 +141,78 @@ def spi_master_16bit_invert():
     """
 
 
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH)
+def spi_master_32bit_invert():
+    """
+    4-player variant of spi_master_16bit_invert(): clocks in 32 bits per
+    sample as four 8-bit sensor-register groups, shifted in order
+    P4,P3,P2,P1, and pushes the full 32-bit ISR to the RX FIFO.
+
+    The real 4-player board hardware-inverts the 1st and 3rd bytes (P4,
+    P2) but not the 2nd and 4th (P3, P1) -- an alternating pattern. A
+    single mov(isr, invert(isr)) flips the *entire* ISR (every bit shifted
+    in so far, not just the newest group), so it looks like one invert
+    can't isolate just one group -- but applying it after EVERY group
+    (not just once) works out correctly: each already-placed group picks
+    up one more inversion for every later group's invert, and the
+    resulting parity alternates exactly right. Verified by simulation:
+    group 1 (P4) ends up inverted, group 2 (P3) ends up raw, group 3 (P2)
+    inverted, group 4 (P1) raw -- matching the real hardware exactly, no
+    software-side byte inversion needed for this board.
+    """
+
+    wrap_target()
+
+    mov(isr, invert(null))   .side(0)
+
+    set(pins, 1)                [3]     #set load pin (CS) high
+    set(x, 7)                   [3]     #8 bits per group
+    nop()                       [3]
+
+    label("p4loop")                     # group 1: P4 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p4loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p3loop")                     # group 2: P3 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p3loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p2loop")                     # group 3: P2 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p2loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p1loop")                     # group 4: P1 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p1loop")        .side(0)
+
+    set(pins, 0)             .side(0)       #CS off (load pin)
+    push(noblock)
+
+    #Delay loop for pause between reads
+    set(y, 11)    .side(2)
+    label("delay2")
+    nop()                   [3]
+    nop()                   [2]
+    jmp(y_dec, "delay2")    [3]
+
+    wrap()
 
 
 
@@ -220,7 +288,11 @@ def initialize():
     dma_start()
 
     #state machine - for SPI read of coil sensors
-    smSpi = rp2.StateMachine(4, spi_master_16bit_invert, freq=340000,
+    #  2player board: 16 bits/sample (P1,P2), alternating invert baked into the PIO.
+    #  4player board: 32 bits/sample (P4,P3,P2,P1), same alternating invert
+    #  baked in too (see spi_master_32bit_invert() for how).
+    sensor_pio_program = spi_master_32bit_invert if S.hardware_version == "4player" else spi_master_16bit_invert
+    smSpi = rp2.StateMachine(4, sensor_pio_program, freq=340000,
         in_base=machine.Pin(PIO_MISO_PIN),
         sideset_base=machine.Pin(PIO_SCK_PIN),
         set_base=machine.Pin(PIO_CS_PIN)

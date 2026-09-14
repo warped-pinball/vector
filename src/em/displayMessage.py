@@ -133,8 +133,11 @@ def pio_spi_tx():
     set(pins, 0)           [0]
     wrap()
 
-# Initialize the PIO state machine (runs at import)
-_sm_display = StateMachine(7, pio_spi_tx, freq=200000,
+# Initialize the PIO state machine (runs at import). Uses SM0 (PIO0) rather
+# than PIO1 (SM4-7) because on 4player boards spi_master_32bit_invert() in
+# sensorRead.py fills PIO1's entire 32-instruction memory by itself; PIO0
+# has plenty of headroom alongside sample_and_count/drive_game_active_pin.
+_sm_display = StateMachine(0, pio_spi_tx, freq=200000,
                           out_base=Pin(SPI_MOSI_PIN),
                           set_base=Pin(LOAD_PIN),
                           sideset_base=Pin(SPI_CLK_PIN))
