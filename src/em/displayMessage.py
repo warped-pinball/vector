@@ -160,7 +160,7 @@ def displayUpdate():
     if gameOverLED:
         mid_byte |= 0x40
 
-    #deicde which input to put on digit display
+    # decide which input to put on digit display
     ch = ipDigitDisplay[ipDigitUpNext]
     ipDigitUpNext = (ipDigitUpNext + 1) % len(ipDigitDisplay)
     if '0' <= ch <= '9':
