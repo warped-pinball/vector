@@ -9,6 +9,8 @@ import sys
 import time
 from pathlib import Path
 
+from detect_boards import detect_board_type, list_pico_ports
+
 REPL_RETRY_DELAY = 1
 REPL_MAX_RETRIES = 5
 BUILD_DIR_DEFAULT = "build"
@@ -54,18 +56,13 @@ def step_failed(result):
 
 
 def autodetect_pico_port():
-    """Auto-detect the Pico port using mpremote. Returns port or exits on failure."""
+    """Auto-detect the Pico port. Returns the first port that actually responds
+    as a Vector board, rather than just the first serial port mpremote sees
+    (which may be an unrelated COM port). Exits on failure."""
     try:
-        result = run_step(
-            mpremote_cmd() + ["connect", "list"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if not step_failed(result):
-            output = result.stdout.decode().strip()
-            if output:
-                # first line, first token
-                return output.split("\n")[0].split()[0]
+        for port in list_pico_ports():
+            if detect_board_type(port):
+                return port
         print("Unable to detect Pico port using mpremote. Please specify the correct port manually.")
     except Exception as e:
         print(f"Error detecting Pico port: {e}")

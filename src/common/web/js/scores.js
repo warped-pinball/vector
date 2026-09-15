@@ -3,6 +3,9 @@
 // Global variable for the current auto-refresh interval
 window.currentRefreshIntervalId = null;
 
+// Track all scores-page polling intervals so cleanup can stop them
+window._scoresPollingIds = [];
+
 // Format numeric scores with commas for readability
 window.formatScore = function (score) {
   var num = parseInt(score, 10);
@@ -1185,6 +1188,20 @@ window.exitScoreEdit = function () {
 // Initial call
 window.getGameStatus();
 
-// Poll for updates
-setInterval(window.getGameStatus, 1500);
-setInterval(window.getClaimableScores, 4000);
+// Poll for updates — store IDs for cleanup
+window._scoresPollingIds.push(setInterval(window.getGameStatus, 1500));
+window._scoresPollingIds.push(setInterval(window.getClaimableScores, 4000));
+
+// Cleanup function called by main.js when navigating away from scores
+window.cleanup_scores = function () {
+  // Stop game status and claimable scores polling
+  if (window._scoresPollingIds) {
+    window._scoresPollingIds.forEach(function (id) { clearInterval(id); });
+    window._scoresPollingIds = [];
+  }
+  // Stop tab auto-refresh
+  if (window.currentRefreshIntervalId) {
+    clearInterval(window.currentRefreshIntervalId);
+    window.currentRefreshIntervalId = null;
+  }
+};

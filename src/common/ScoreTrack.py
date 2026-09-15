@@ -77,6 +77,9 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
+    from origin import push_end_of_game
+
+    push_end_of_game(game)
 
 
 def _read_machine_score(HighScores):
@@ -438,6 +441,13 @@ def CheckForNewScores(nState=[0]):
         push_end_of_game(last_pushed_game,push_game_count)
         if push_game_count>5:
             push_game_count =0
+
+
+
+
+    print("################################   game status : ",DataMapper.get_in_play_data())
+
+
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()

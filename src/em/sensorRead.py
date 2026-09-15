@@ -25,12 +25,20 @@ log = logger_instance
 # Pin assignments
 PIO_MISO_PIN = 12  
 PIO_SCK_PIN  = 10  
+DIAG_OUTPUT_PIN = 1
+GPIO11_OUTPUT_PIN = 11
 PIO_CS_PIN   = 13  # CS (or Load...)
 ANALOG_HI_GPIO = 19
 ANALOG_LOW_GPIO = 18
 
 #MISO data pin init
 machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_DOWN)
+
+#GPIO11 output init
+machine.Pin(GPIO11_OUTPUT_PIN, machine.Pin.OUT, value=1)
+
+#GPIO1 diagnostic output init
+machine.Pin(DIAG_OUTPUT_PIN, machine.Pin.OUT, value=0)
 
 #analog thresholds PWMs
 hiPwm = machine.PWM(machine.Pin(19))
@@ -59,37 +67,40 @@ def spi_master_16bit():
     push(noblock)
 
     #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 2)   # set(y, 19)
+    set(y, 2)   .side(2) # set(y, 19)
     label("delay")
     nop()                   [1]
     jmp(y_dec, "delay")     [7]
 
-    #nop()                   .side(0)   [3]
+
+    set(y, 2)   .side(0)  # set(y, 19)
+    label("delay2")
+    nop()                   [1]
+    jmp(y_dec, "delay2")     [7]
+
+
+
     wrap()
 
 
 
 
-
-
-
-
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH) 
 def spi_master_16bit_invert():
    
     wrap_target()
 
-    mov(isr,invert(null))
+    mov(isr,invert(null))   .side(0)
 
-    set(x, 7)                          #init first transfer bit length
-    set(pins, 1)             [7]        #set load pin high
+    set(pins, 1)                [3]     #set load pin (CS) high
+    set(x, 7)                   [3]       #init first transfer bit length   
+    nop()                       [3]
 
     label("MSbitloop")         
-    nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
-    jmp(x_dec, "MSbitloop")    .side(0)
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]  #side set happnens and then delay cycles
+    jmp(x_dec, "MSbitloop")     .side(0)
 
     mov(isr,invert(isr))
     set(x, 7) 
@@ -97,24 +108,111 @@ def spi_master_16bit_invert():
     label("LSbitloop")         
     nop()                    .side(0)  [1]
     in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
+    nop()                    .side(1)  [3]    
     jmp(x_dec, "LSbitloop")    .side(0)
 
-    set(pins, 0)             .side(0)
-    
+    set(pins, 0)             .side(0)       #CS off (load pin)    
     push(noblock)
 
     #Delay loop for pause between reads - set up for 0.775mS cycle
-    set(y, 11)     # set(y, 19)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [7]
+    set(y, 11)    .side(2)   # set(y, 11)    
+    label("delay2")
+    nop()                   [3]
+    nop()                   [2]
+    jmp(y_dec, "delay2")    [3]
 
     wrap()
 
 
 
+    """
+    set(y, 11)    .side(2) # set(y, 11)
+    label("delay")
+    nop()                   [1]
+    jmp(y_dec, "delay")     [2]  #[7]
+
+    set(y, 11)    .side(0)   # set(y, 11)
+    label("delay2")
+    nop()                   [1]
+    jmp(y_dec, "delay2")     [2] #[7]
+
+
+    wrap()
+    """
+
+
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH)
+def spi_master_32bit_invert():
+    """
+    4-player variant of spi_master_16bit_invert(): clocks in 32 bits per
+    sample as four 8-bit sensor-register groups, shifted in order
+    P4,P3,P2,P1, and pushes the full 32-bit ISR to the RX FIFO.
+
+    The real 4-player board hardware-inverts the 1st and 3rd bytes (P4,
+    P2) but not the 2nd and 4th (P3, P1) -- an alternating pattern. A
+    single mov(isr, invert(isr)) flips the *entire* ISR (every bit shifted
+    in so far, not just the newest group), so it looks like one invert
+    can't isolate just one group -- but applying it after EVERY group
+    (not just once) works out correctly: each already-placed group picks
+    up one more inversion for every later group's invert, and the
+    resulting parity alternates exactly right. Verified by simulation:
+    group 1 (P4) ends up inverted, group 2 (P3) ends up raw, group 3 (P2)
+    inverted, group 4 (P1) raw -- matching the real hardware exactly, no
+    software-side byte inversion needed for this board.
+    """
+
+    wrap_target()
+
+    mov(isr, invert(null))   .side(0)
+
+    set(pins, 1)                [3]     #set load pin (CS) high
+    set(x, 7)                   [3]     #8 bits per group
+    nop()                       [3]
+
+    label("p4loop")                     # group 1: P4 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p4loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p3loop")                     # group 2: P3 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p3loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p2loop")                     # group 3: P2 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p2loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p1loop")                     # group 4: P1 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p1loop")        .side(0)
+
+    set(pins, 0)             .side(0)       #CS off (load pin)
+    push(noblock)
+
+    #Delay loop for pause between reads
+    set(y, 11)    .side(2)
+    label("delay2")
+    nop()                   [3]
+    nop()                   [2]
+    jmp(y_dec, "delay2")    [3]
+
+    wrap()
 
 
 
@@ -190,7 +288,11 @@ def initialize():
     dma_start()
 
     #state machine - for SPI read of coil sensors
-    smSpi = rp2.StateMachine(4, spi_master_16bit_invert, freq=340000,
+    #  2player board: 16 bits/sample (P1,P2), alternating invert baked into the PIO.
+    #  4player board: 32 bits/sample (P4,P3,P2,P1), same alternating invert
+    #  baked in too (see spi_master_32bit_invert() for how).
+    sensor_pio_program = spi_master_32bit_invert if S.hardware_version == "4player" else spi_master_16bit_invert
+    smSpi = rp2.StateMachine(4, sensor_pio_program, freq=340000,
         in_base=machine.Pin(PIO_MISO_PIN),
         sideset_base=machine.Pin(PIO_SCK_PIN),
         set_base=machine.Pin(PIO_CS_PIN)
@@ -202,6 +304,9 @@ def initialize():
     lowPwm.freq(1000)
     hiPwm.duty_u16(int(65535 * 0.55))   # 80% duty cycle
     lowPwm.duty_u16(int(65535 * 0.45))  # 20% duty cycle
+
+    # Restore persisted calibration/sensitivity thresholds on boot and write PWM regs.
+    _restore_sensor_thresholds_from_store()
 
     # Set up state machine for the game active detection
     sma = rp2.StateMachine(
@@ -297,23 +402,62 @@ def gameActive():
 
 lowCalThres=32000
 highCalThres=32000
+sensitivityBaseLow = 32000
+sensitivityBaseHigh = 32000
+
+
+def _persist_sensor_thresholds():
+    """Persist current sensor thresholds/sensitivity to EMData."""
+    try:
+        from ScoreTrack import saveState
+
+        saveState()
+    except Exception as e:
+        log.log(f"SENSOR: failed to persist thresholds: {e}")
+
+
+def _restore_sensor_thresholds_from_store():
+    """Restore persisted thresholds and immediately apply PWM outputs."""
+    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
+
+    sensor_levels = S.gdata.get("sensorlevels")
+    if not isinstance(sensor_levels, (list, tuple)) or len(sensor_levels) < 2:
+        return False
+
+    try:
+        cal_low = int(sensor_levels[0])
+        cal_high = int(sensor_levels[1])
+    except Exception:
+        return False
+
+    # Sanity checks: keep in valid register range and ensure a useful spread.
+    if cal_low < 0 or cal_low > 65535 or cal_high < 0 or cal_high > 65535:
+        return False
+    if cal_high <= cal_low:
+        return False
+    if cal_low < 20000 or cal_high > (65535 - 20000):
+        return False
+
+    lowCalThres = cal_low
+    highCalThres = cal_high
+    sensitivityBaseLow = cal_low
+    sensitivityBaseHigh = cal_high
+
+    lowPwm.duty_u16(lowCalThres)
+    hiPwm.duty_u16(highCalThres)
+    log.log(f"SENSOR: sensor calibration restored: cal_low={cal_low}, cal_high={cal_high}")
+    return True
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
+    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres,sensitivityBaseLow,sensitivityBaseHigh
 
-    #check existing cal from spi datastore
-    cal_high = S.gdata.get("sensorlevels")[1]
-    cal_low = S.gdata.get("sensorlevels")[0]
-    if (cal_high>20000  and   cal_low<(65535-20000) ):
-        log.log(f"SENSOR: sensor calibration restored:  cal_low={cal_low}, cal_high={cal_high}")
-        lowPwm.duty_u16(cal_low)
-        lowCalThres=cal_low
-        hiPwm.duty_u16(cal_high)
-        highCalThres=cal_high
-        return
+    print("SENSOR: Calibrate sensor circuit start")
 
-    print("SENSOR: Calibrate sensor circuit")
+    # check existing cal from SPI datastore and apply as the starting point
+    _restore_sensor_thresholds_from_store()
+
+    print("SENSOR: Calibrate sensor circuit - run CAL")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
     time.sleep(0.4)  
@@ -358,13 +502,74 @@ def calibrate():
                 break
 
 
-    #print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.88)   #0.9
+    print("\nSENSOR: calibration complete:",lowCal,highCal)
+    lowCalThres = int(lowCal*0.6)   #0.9
     lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.12)  #1.1
+    highCalThres = int(highCal*1.4)  #1.1
     hiPwm.duty_u16(highCalThres)
+    sensitivityBaseLow = lowCalThres
+    sensitivityBaseHigh = highCalThres
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][0] = lowCalThres
+        S.gdata["sensorlevels"][1] = highCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
     log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
     print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
+    _persist_sensor_thresholds()
+
+
+def setSensitivityPercent(percent):
+    """Set sensor thresholds from 0..100% sensitivity.
+
+    0% keeps full calibrated threshold spread.
+    100% collapses thresholds to the same midpoint value.
+    """
+    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
+
+    try:
+        pct = int(percent)
+    except Exception:
+        pct = 50
+    pct = max(0, min(100, pct))
+
+    # initialize baseline from current values if needed
+    if sensitivityBaseHigh <= sensitivityBaseLow:
+        sensitivityBaseLow = int(lowCalThres)
+        sensitivityBaseHigh = int(highCalThres)
+
+    base_low = int(sensitivityBaseLow)
+    base_high = int(sensitivityBaseHigh)
+    if base_high < base_low:
+        base_low, base_high = base_high, base_low
+
+    spread = base_high - base_low
+    midpoint = (base_low + base_high) // 2
+
+    # linearly shrink spread as sensitivity rises; 100% => spread=0 (equal thresholds)
+    new_spread = (spread * (100 - pct)) // 100
+    lowCalThres = midpoint - (new_spread // 2)
+    highCalThres = lowCalThres + new_spread
+
+    # hard clamp and ordering
+    lowCalThres = max(0, min(65535, int(lowCalThres)))
+    highCalThres = max(0, min(65535, int(highCalThres)))
+    if highCalThres < lowCalThres:
+        highCalThres = lowCalThres
+
+    lowPwm.duty_u16(lowCalThres)
+    hiPwm.duty_u16(highCalThres)
+
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][0] = lowCalThres
+        S.gdata["sensorlevels"][1] = highCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
+
+    S.gdata["sensitivity"] = pct
+    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres} (sensitivity={pct}%)")
+    _persist_sensor_thresholds()
+    return pct, lowCalThres, highCalThres
 
 
 
@@ -384,12 +589,12 @@ def sensitivityChange(dir):
     hiPwm.duty_u16(highCalThres)
     log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
 
-    #import SPI_DataStore as DataStore
-    S.gdata.get("sensorlevels")[1] = highCalThres
-    S.gdata.get("sensorlevels")[0] = lowCalThres
-    #DataStore.write_record("EMData", S.gdata)
-    from ScoreTrack import saveState
-    saveState()
+    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
+        S.gdata["sensorlevels"][1] = highCalThres
+        S.gdata["sensorlevels"][0] = lowCalThres
+    else:
+        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
+    _persist_sensor_thresholds()
 
 #test
 if __name__ == "__main__":
