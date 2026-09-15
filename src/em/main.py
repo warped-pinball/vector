@@ -137,6 +137,14 @@ resource.go(True)
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402SCORE: scores
 print("MAIN: Launching Wifi AP mode=", ap_mode)
-go(ap_mode)
+try:
+    go(ap_mode)
+finally:
+    # freeze the display (stop its periodic update) rather than let it
+    # keep scrolling/blinking once main has stopped driving it - covers
+    # both a normal fall-through and an unhandled exception dropping to REPL
+    import displayMessage
+    displayMessage.stop()
+
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)
