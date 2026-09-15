@@ -432,6 +432,15 @@ def app_reboot_game(request):
     from phew.server import restart_schedule as phew_restart_schedule
 
     reset_control.reset()
+
+    # Optional per-platform hook: runs while the machine is held in reset.
+    # Only defined on builds that need it (e.g. classic wipes shadow RAM here);
+    # a no-op everywhere else.
+    import DataMapper
+
+    if hasattr(DataMapper, "on_game_reboot"):
+        DataMapper.on_game_reboot()
+
     sleep(2)
     reset_control.release(True)
     phew_restart_schedule()
