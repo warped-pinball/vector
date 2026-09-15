@@ -1,4 +1,6 @@
 game_name,mpu,rom_versions,live_scores,switch_diagnostics,special_formats,formats
+Supersonic,BALLY35,1,no,no,no,
+Generic,CLASSICBALLY,,no,no,no,
 Back to the Future,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Batman,DATA_EAST,106,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Batman Forever,DATA_EAST,401,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -28,6 +30,8 @@ Time Machine,DATA_EAST,a24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standar
 Tommy Pinball Wizard,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Torpedo Alley,DATA_EAST,21,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 EM machine,EM,,yes,no,no,
+Generic,MPU200,,no,no,no,
+Split Second,MPU200,1,no,no,no,
 Bad Cats,SYS11,LA5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
 Banzai Run,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard

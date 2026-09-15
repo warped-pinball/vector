@@ -1,4 +1,4 @@
-VectorVersion = "1.12.6"
+VectorVersion = "1.12.7"
 
 
 # EM hardware variant, detected at boot from GPIO14: "2player" or "4player"
