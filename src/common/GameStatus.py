@@ -33,6 +33,7 @@ def cached_report():
 def game_report():
     """Generate a report of the current game status, return dict"""
 
+    data = {}
     try:
         data = DataMapper.get_in_play_data()
         gameActive = data["GameActive"]
