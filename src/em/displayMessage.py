@@ -71,10 +71,12 @@ SEGMENTS = [
     0x00,  # _
     0x79,  # E
     0x77,  # A
-    0x73   # P
+    0x73,  # P
+    0x39   # C
 ]
 IDX_A = 13
 IDX_P = 14
+IDX_C = 15
 
 
 def fixAdjustmentChecksum():
@@ -171,6 +173,18 @@ def setCaptureModeDigit(d):
         captureModeCounter = d
     else:
         captureModeCounter = -1
+
+def showCalibratingDigit():
+    """Immediately push a static 'C' onto the digit position, bypassing the
+    scheduled displayUpdate() tick. calibrate() blocks the scheduler for
+    several seconds (time.sleep() in its sweep loop), so displayUpdate()
+    never runs meanwhile - a flag/alternation there would never reach the
+    hardware. Player LED bytes are left as whatever was last sent; the next
+    displayUpdate() tick (once calibrate() returns) overwrites the digit
+    again on its own."""
+    top_byte = SEGMENTS[IDX_C]
+    new_word0 = (lastSendWords[0] & 0x00FFFFFF) | ((top_byte << 24) & 0xFF000000)
+    _sendToHardware((new_word0,) + lastSendWords[1:])
 
 
 # PIO program: pull a 32-bit word, shift out the top 24 bits MSB-first
@@ -299,6 +313,8 @@ def displayUpdate():
             idx = IDX_A
         elif ch == 'P':
             idx = IDX_P
+        elif ch == 'C':
+            idx = IDX_C
         else:
             idx = 11                      # unknown -> blank
 

@@ -359,6 +359,7 @@ sensitivity = 0              # percent, SENSITIVITY_MIN..SENSITIVITY_MAX; 0 = as
 SENSITIVITY_MIN = -200
 SENSITIVITY_MAX = 0
 COUNTS_PER_PERCENT = 200     # total threshold spread change (both thresholds combined) per 1% sensitivity
+CAL_MIN_GAP = 40             # calibration record's threshold spread (raw PWM counts); also the restore sanity-check floor
 
 
 def _setThresholds(pct, persist=True):
@@ -413,12 +414,12 @@ def _restore_sensor_thresholds_from_store():
         return False
 
     # Sanity checks: keep in valid register range and ensure a useful spread.
-    # (calibrate() stores calLow/calHigh already margin-expanded - 0.6x/1.4x
-    # of the raw sweep points - so they routinely fall outside the raw
-    # 20000..45535 sweep window; that is expected, not a fault.)
+    # calibrate() pulls calLow/calHigh in tight around the midpoint (only
+    # CAL_MIN_GAP counts apart) rather than scaling them outward, so that is
+    # the real floor here - anything smaller means corrupt/uninitialized data.
     if cal_low < 0 or cal_low > 65535 or cal_high < 0 or cal_high > 65535:
         return False
-    if (cal_high - cal_low) < 1000:
+    if (cal_high - cal_low) < CAL_MIN_GAP:
         return False
 
     calLow = cal_low
@@ -433,20 +434,42 @@ def _restore_sensor_thresholds_from_store():
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm,calLow,calHigh
 
-    print("SENSOR: Calibrate sensor circuit start")
+    # calibrate() blocks the scheduler for several seconds (time.sleep() in
+    # the sweep loop below), so displayUpdate() never runs meanwhile - a
+    # one-shot direct write is the only way to get a 'C' on the digit display
+    # here. It stays until the next displayUpdate() tick overwrites it once
+    # this function returns.
+    import displayMessage
+    displayMessage.showCalibratingDigit()
 
-    # check existing cal from SPI datastore and apply as the starting point
-    _restore_sensor_thresholds_from_store()
+    # phew's scheduler can't run at all while we're blocked below, so every
+    # scheduled task's next_run falls behind - left alone, they all fire in
+    # a rapid back-to-back burst once we return, trying to catch up (that's
+    # the fast-flickering display after calibration). Halting now and
+    # calling restart_schedule() in finally resets everyone's next_run to
+    # now+phase instead, so they just resume on their normal cadence with
+    # no burst. Same pattern as LowMemoryMode in common/update.py.
+    import phew.server
+    phew.server._halt_schedule = True
 
-    print("SENSOR: Calibrate sensor circuit - run CAL")
+    try:
+        return _calibrate_sweep()
+    finally:
+        phew.server._halt_schedule = False
+        phew.server.restart_schedule()
+
+
+def _calibrate_sweep():
+    global calLow, calHigh
+
+    print("SENSOR: Calibrate sensor circuit")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
-    time.sleep(0.4)  
+    time.sleep(0.4)
     clearSensorRx()
-    time.sleep(0.1)  
-    v = readSensorRx()   
+    time.sleep(0.1)
+    v = readSensorRx()
     if (v&0x03) != 0:
         log.log("SENSOR: sensor cal fault")
 
@@ -459,12 +482,12 @@ def calibrate():
         time.sleep(0.1)
 
         # Check buffer for two LSBs clear
-        v = readSensorRx()               
+        v = readSensorRx()
         if v is not None:
             if (v & 3) == 3:  # Two LSBs
-                print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
+                print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")
                 lowCal=duty
-                break        
+                break
 
 
     lowPwm.duty_u16(int(0))
@@ -472,14 +495,14 @@ def calibrate():
     for duty in range(65535-20000, 19999, -256):
         print(".",end="")
         hiPwm.duty_u16(duty)
-        clearSensorRx()        
-        time.sleep(0.08)  
+        clearSensorRx()
+        time.sleep(0.08)
 
         # Check buffer for two LSBs clear
-        v = readSensorRx()   
-        if v is not None:        
-            if (v & 3) == 3:  # Two LSBs               
-                print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
+        v = readSensorRx()
+        if v is not None:
+            if (v & 3) == 3:  # Two LSBs
+                print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")
                 highCal=duty
                 break
 
@@ -490,7 +513,6 @@ def calibrate():
     # outward, so they land close together regardless of how far apart the
     # sweep's found crossing points are. CAL_MIN_GAP is the smallest allowed
     # spread (raw PWM counts) and also guarantees calHigh > calLow.
-    CAL_MIN_GAP = 40
     midpoint = (lowCal + highCal) // 2
     calLow = max(0, min(65535, midpoint - CAL_MIN_GAP // 2))
     calHigh = max(calLow + 1, min(65535, midpoint + CAL_MIN_GAP // 2))
@@ -508,7 +530,7 @@ def setSensitivityPercent(percent):
     live against the calibration record, writing the result to the PWM
     registers.
 
-    0% keeps the full calibrated threshold spread (most sensitive).
+    0% keeps the full calibrated threshold spread.
     Negative % = less sensitive (thresholds move further apart), down to
     SENSITIVITY_MIN.
     """
@@ -518,7 +540,7 @@ def setSensitivityPercent(percent):
         pct = 0
 
     pct, low, high = _setThresholds(pct)
-    log.log(f"SENSOR: sensitivity set to {pct}% -> low={low} high={high}")
+    log.log(f"SENSOR: sensitivity, Cal low={calLow} high={calHigh} to {pct}% -> low={low} high={high}")
     return pct, low, high
 
 
@@ -532,7 +554,13 @@ def sensitivityChange(dir):
     pct = int(S.gdata.get("sensitivity", 0))
     step = 1 if dir == 1 else -1
     pct = max(SENSITIVITY_MIN, min(SENSITIVITY_MAX, pct + step))
-    return setSensitivityPercent(pct)
+    result = setSensitivityPercent(pct)
+
+    # Persist to FRAM, same as the web admin +/- buttons (em_routes.set_sensitivity).
+    from ScoreTrack import saveState
+    saveState()
+
+    return result
 
 #test
 if __name__ == "__main__":
