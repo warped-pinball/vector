@@ -673,13 +673,13 @@ def processAndRun():
                 fifo_depth = sensorRead.depthSensorRx()
             except Exception:
                 fifo_depth = -1
-            warn = f"SCORE: WARN #$%#$%#$%#$%#$%#$%#$%#$%#$%#$%       zero-sample streak={zero_sample_streak} fifo_depth={fifo_depth} game_active={sensorRead.gameActive()} buf_idx={bufferPointerIndex}"
-            print(warn)
+            warn = f"SCORE: WARN no samples found, #cycles={zero_sample_streak} fifo_depth={fifo_depth} game_active={sensorRead.gameActive()} buf_idx={bufferPointerIndex}"
+            #print(warn)
             log.log(warn)
             sensorRead.initialize()
 
     elif zero_sample_streak > 0:
-        log.log(f"SCORE: zero-sample streak cleared at {zero_sample_streak}")
+        log.log(f"SCORE: WARN no samples found cleared at {zero_sample_streak}")
         zero_sample_streak = 0
 
     # stamp SharedState for web indicator lamp
