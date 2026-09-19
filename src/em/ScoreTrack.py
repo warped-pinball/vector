@@ -388,7 +388,7 @@ def setScoreMask(bit, scoreDepth, resetDepth):
     global score_mask, reset_mask, scoreDepths, resetDepths
 
 
-    print("SCORE: setting score mask",bit,scoreDepth,resetDepth)
+    #print("SCORE: setting score mask",bit,scoreDepth,resetDepth)
 
     if not (0 <= bit < 32):
         log.log("SCORE: bit - out of range 0..31")
