@@ -107,12 +107,11 @@ digitsPerPlayer = 1
 
 def reset_live_scores_on_boot():
     """Reset all live scoring state so EM boots with zeroed scores."""
-    global sensorScores, carryCount, last_sc, scoreState
+    global sensorScores, last_sc, scoreState
     global stateVar, stateCount, gameover, nGameIdleCounter
     global lastValue, segmentMS
 
     sensorScores = [[0 for _ in range(8)] for _ in range(4)]
-    carryCount = [0] * 32
 
     last_sc = 0
     scoreState = 0
@@ -371,8 +370,8 @@ def saveState():
         # DataStore.write_record("configuration",0)
 
         DataStore.write_record("EMData", S.gdata)
-        #print("EMData updated from globals (filtermasks, carrythresholds).", S.gdata)
-        printMasks()
+        
+        #  printMasks()
     except Exception as e:
         print("Error writing EMData:", e)
 
@@ -476,24 +475,25 @@ def processSensorData():
     """called each every 800mS.    watch game active and decide when to operate on data
     coming in from sensor module - process for live scores"""
     global stateVar, stateCount, gameover
-    global lastValue, segmentMS
+    global lastValue, segmentMS,sensorScores 
 
     stateCount += 1
 
     if stateVar == PROCESS_IDLE:
         """wait for game to start"""
+        processAndRun()  #run so lights blink for user cal       
+        sensorScores = [[0 for _ in range(8)] for _ in range(4)]   #but keep scores at 000000 !
         if sensorRead.gameActive() == 1:
             stateVar = PROCESS_START
-            stateCount = 0
-        else:
-            processEmpty()
-
+            stateCount = 0            
+            
     elif stateVar == PROCESS_START:
         """game start delay - wait for score reset to happen
         -make smarter in the future?  wait fro a few seconds and more if signal detected...."""
 
         if sensorRead.gameActive() == 1:
             processEmpty()
+            sensorScores = [[0 for _ in range(8)] for _ in range(4)]
             lastValue = sensorBitMask  # init lastValue (alll ones) since scores are incremented on falling edges
 
             if stateCount > PROCESS_START_PAUSE:
@@ -568,118 +568,68 @@ for _ in range(5):
 
 
 last_sc = 0
-carryCount = [0] * 32
 zero_sample_streak = 0
 ZERO_SAMPLE_WARN_EVERY = 20
 
 
-def processRisingEdge(sc, risingEdge):
-    """process rising edge and increment sensor Scores as needed
+def processRisingEdge(risingEdge):
+    """process rising edge and increment sensor scores as needed
     used by run and replay stored game...
-    sc is sensor state (32 bit)
-    rising edge bit=1 for single cycle on rising edge"""
-    global last_sc, sensorScores, carryThresholds, carryCount
+    risingEdge bit=1 for single cycle on rising edge"""
+    global sensorScores
 
-    if 1:
-        # increment digits based on risingEdge - count over laps for carry corrections - no loops for speed
-        # PLR1-ONES
-        if risingEdge & 0x00000001:
-            sensorScores[0][0] = sensorScores[0][0] + 1  # inc score
-        if sc & 0x01 == 0x01:
-            carryCount[0] = carryCount[0] + 1
-        else:
-            carryCount[0] = 0
+    # player 1
+    if risingEdge & 0x00000001:
+        sensorScores[0][0] += 1  # ONES
+    if risingEdge & 0x00000002:
+        sensorScores[0][1] += 1  # TENS
+    if risingEdge & 0x00000004:
+        sensorScores[0][2] += 1  # HUNDREDS
+    if risingEdge & 0x00000008:
+        sensorScores[0][3] += 1  # THOUSANDS
+    if risingEdge & 0x00000010:
+        sensorScores[0][4] += 1  # TEN THOUSANDS
 
-        # PLR1-TENS
-        if risingEdge & 0x00000002:
-            sensorScores[0][1] = sensorScores[0][1] + 1  # inc score
-            if _carry_window_hit(carryCount[0], 0, 0):
-                sensorScores[0][0] = 0  # carry correction
-        if sc & 0x02 == 0x02:
-            carryCount[1] = carryCount[1] + 1
-        else:
-            carryCount[1] = 0
+    # player 2
+    if risingEdge & 0x00000100:
+        sensorScores[1][0] += 1
+    if risingEdge & 0x00000200:
+        sensorScores[1][1] += 1
+    if risingEdge & 0x00000400:
+        sensorScores[1][2] += 1
+    if risingEdge & 0x00000800:
+        sensorScores[1][3] += 1
+    if risingEdge & 0x00001000:
+        sensorScores[1][4] += 1
 
-        # PLR1-HUNDERDS
-        if risingEdge & 0x00000004:
-            sensorScores[0][2] = sensorScores[0][2] + 1  # inc score
-            if _carry_window_hit(carryCount[1], 0, 1):
-                sensorScores[0][1] = 0  # carry correction
-        if sc & 0x04 == 0x04:
-            carryCount[2] = carryCount[2] + 1
-        else:
-            carryCount[2] = 0
+    # player 3
+    if risingEdge & 0x00010000:
+        sensorScores[2][0] += 1
+    if risingEdge & 0x00020000:
+        sensorScores[2][1] += 1
+    if risingEdge & 0x00040000:
+        sensorScores[2][2] += 1
+    if risingEdge & 0x00080000:
+        sensorScores[2][3] += 1
+    if risingEdge & 0x00100000:
+        sensorScores[2][4] += 1
 
-        # PLR1-THOUSANDS
-        if risingEdge & 0x00000008:
-            sensorScores[0][3] = sensorScores[0][3] + 1  # inc score
-            if _carry_window_hit(carryCount[2], 0, 2):
-                sensorScores[0][2] = 0  # carry correction
-            # carryCount[3]=0
-        if sc & 0x08 == 0x08:
-            carryCount[3] = carryCount[3] + 1
-        else:
-            carryCount[3] = 0
-
-        # PLR1-TEN THOUSAND
-        if risingEdge & 0x00000010:
-            sensorScores[0][4] = sensorScores[0][4] + 1  # inc score
-            if _carry_window_hit(carryCount[3], 0, 3):
-                sensorScores[0][3] = 0
-
-        # player 2
-        # PLR2-ONES
-        if risingEdge & 0x00000100:
-            sensorScores[1][0] = sensorScores[1][0] + 1  # inc score
-        if sc & 0x0100 == 0x0100:
-            carryCount[8] = carryCount[8] + 1
-        else:
-            carryCount[8] = 0
-
-        # PLR2-TENS
-        if risingEdge & 0x00000200:
-            sensorScores[1][1] = sensorScores[1][1] + 1  # inc score
-            if _carry_window_hit(carryCount[8], 1, 0):
-                sensorScores[1][0] = 0  # carry correction
-        if sc & 0x0200 == 0x0200:
-            carryCount[9] = carryCount[9] + 1
-        else:
-            carryCount[9] = 0
-
-        # PLR2-HUNDERDS
-        if risingEdge & 0x00000400:
-            sensorScores[1][2] = sensorScores[1][2] + 1  # inc score
-            if _carry_window_hit(carryCount[9], 1, 1):
-                sensorScores[1][1] = 0  # carry correction
-        if sc & 0x0400 == 0x0400:
-            carryCount[10] = carryCount[10] + 1
-        else:
-            carryCount[10] = 0
-
-        # PLR2-THOUSANDS
-        if risingEdge & 0x00000800:
-            sensorScores[1][3] = sensorScores[1][3] + 1  # inc score
-            if _carry_window_hit(carryCount[10], 1, 2):
-                sensorScores[1][2] = 0  # carry correction
-        if sc & 0x0800 == 0x0800:
-            carryCount[11] = carryCount[11] + 1
-        else:
-            carryCount[11] = 0
-
-        # PLR2-TEN THOUSAND
-        if risingEdge & 0x00001000:
-            sensorScores[1][4] = sensorScores[1][4] + 1  # inc score
-            if _carry_window_hit(carryCount[11], 1, 3):
-                sensorScores[1][3] = 0
-
-    # ADD Player 3
-
-    # ADD Player 4
+    # player 4
+    if risingEdge & 0x01000000:
+        sensorScores[3][0] += 1
+    if risingEdge & 0x02000000:
+        sensorScores[3][1] += 1
+    if risingEdge & 0x04000000:
+        sensorScores[3][2] += 1
+    if risingEdge & 0x08000000:
+        sensorScores[3][3] += 1
+    if risingEdge & 0x10000000:
+        sensorScores[3][4] += 1
 
 
 def processAndRun():
     """pull data from ram buffer and feed to score module - for active game running"""
-    global last_sc, sensorScores, carryThresholds, zero_sample_streak
+    global last_sc, sensorScores, zero_sample_streak
 
     def _count_set_bits(v):
         c = 0
@@ -692,21 +642,20 @@ def processAndRun():
     samples_processed = 0
 
     start_time = time.ticks_ms()  # Start timer
-    for _ in range(2500):
+    for samp in range(2500):
         d = pullWithDelete()
         if d == 0:
-            break  # end of buffer data
-
-        samples_processed += 1
-
-        sc = processBitFilter(d & sensorBitMask)
+            samples_processed = samp
+            break  # end of buffer data, drop ougta here
 
         # keep all channels that go active for led display
-        allActivesChannels = allActivesChannels | sc
+        allActivesChannels = allActivesChannels | (d & sensorBitMask) #sc
+
+        sc = processBitFilter(d & sensorBitMask)       
         
         # Detect rising edges on all 32 bits at once
         risingEdge = (~last_sc) & sc
-        processRisingEdge(sc, risingEdge)
+        processRisingEdge(risingEdge)
         last_sc = sc
 
     # send to display green digit leds
@@ -715,14 +664,7 @@ def processAndRun():
     # set SharedState for admin sensitivity indicator: off / green / red
     maskedActivesChannels = allActivesChannels & sensorBitMask
 
-    if maskedActivesChannels == 0:
-        S.sensor_activity_level = 0
-    elif _count_set_bits(maskedActivesChannels) == 1:
-        S.sensor_activity_level = 1
-    else:
-        S.sensor_activity_level = 2
-
-    print("          sensor level - - - - - -   ", S.sensor_activity_level, hex(maskedActivesChannels), samples_processed)
+    #print("                                          sensor levels:", hex(maskedActivesChannels), samples_processed)
 
     if samples_processed == 0:
         zero_sample_streak += 1
@@ -734,7 +676,6 @@ def processAndRun():
             warn = f"SCORE: WARN #$%#$%#$%#$%#$%#$%#$%#$%#$%#$%       zero-sample streak={zero_sample_streak} fifo_depth={fifo_depth} game_active={sensorRead.gameActive()} buf_idx={bufferPointerIndex}"
             print(warn)
             log.log(warn)
-
             sensorRead.initialize()
 
     elif zero_sample_streak > 0:
@@ -762,8 +703,7 @@ def processAndRun():
 
     end_time = time.ticks_ms()
     elapsed = time.ticks_diff(end_time, start_time)
-    print("SCORE: samples=", samples_processed, "process/Run time:", elapsed, "ms")
-    #print("SCORE: scores,", getPlayerScore(0), getPlayerScore(1), getPlayerScore(2), getPlayerScore(3))
+    print("SCORE: samples=", samples_processed, "process/Run time=", elapsed, "ms/sensors=", hex(maskedActivesChannels))
 
     return
 
@@ -1101,5 +1041,5 @@ def CheckForNewScores(nState=[0]):
             # game over
             nState[0] = 1
             log.log("SCORE: game end")
-            sensorScores = [[0 for _ in range(6)] for _ in range(4)]
+            sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 

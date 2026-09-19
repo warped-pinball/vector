@@ -86,21 +86,21 @@ def get_em_config(request):
 
 @add_route("/api/em/get_sensitivity")
 def get_sensitivity(request):
-    """Return the global detection sensitivity (1–100)."""
-    sensitivity = S.gdata.get("sensitivity", 50)
-    print(f"EMSEN: get_sensitivity -> {sensitivity}")
+    """Return the global detection sensitivity (-200-0)."""
+    sensitivity = S.gdata.get("sensitivity", 0)
+    #print(f"EMSEN: get_sensitivity -> {sensitivity}")
     return {"sensitivity": int(sensitivity)}
 
 
 @add_route("/api/em/set_sensitivity", auth=True)
 def set_sensitivity(request):
-    """Set global detection sensitivity (0–100) and apply sensor thresholds."""
+    """Set global detection sensitivity (-200-0) and apply sensor thresholds."""
     print(f"EMSEN: set_sensitivity raw request data: {request.data}")
     try:
-        value = int(request.data.get("sensitivity", 50))
-        value = max(0, min(100, value))
+        value = int(request.data.get("sensitivity", 0))
+        value = max(-200, min(0, value))
     except Exception:
-        value = 50
+        value = 0
 
     try:
         import sensorRead
@@ -120,18 +120,13 @@ def set_sensitivity(request):
 
 @add_route("/api/em/recalibrate_sensors", auth=True)
 def recalibrate_sensors(request):
-    """Force sensor calibration and then re-apply current sensitivity percent."""
+    """Force sensor calibration and apply its starting sensitivity."""
     print("EMSEN: recalibrate_sensors start")
     try:
         import sensorRead
 
-        sensorRead.calibrate()
-        sensitivity = int(S.gdata.get("sensitivity", 50))
-        sensitivity, low_thres, high_thres = sensorRead.setSensitivityPercent(sensitivity)
+        sensitivity, low_thres, high_thres = sensorRead.calibrate()
 
-        from ScoreTrack import saveState
-
-        saveState()
         print(f"EMSEN: recalibrate complete low={low_thres} high={high_thres} sensitivity={sensitivity}")
         log.log(f"EMSEN: recalibrate complete low={low_thres} high={high_thres} sensitivity={sensitivity}")
         return {"status": "ok", "sensitivity": sensitivity, "low": low_thres, "high": high_thres}

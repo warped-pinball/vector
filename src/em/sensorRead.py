@@ -45,46 +45,7 @@ hiPwm = machine.PWM(machine.Pin(19))
 lowPwm = machine.PWM(machine.Pin(18))
 
 
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
-def spi_master_16bit():
-    set(x, 15)                          #init first transfer bit length
-
-    wrap_target()
-    set(pins, 1)             [7]        #set load pin high
-
-    label("bitloop")         
-
-    nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]
-    
-    jmp(x_dec, "bitloop")    .side(0)
-
-    set(pins, 0)             .side(0)
-    set(x, 15)               .side(0) #bit length (-1)
-
-    push(noblock)
-
-    #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 2)   .side(2) # set(y, 19)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [7]
-
-
-    set(y, 2)   .side(0)  # set(y, 19)
-    label("delay2")
-    nop()                   [1]
-    jmp(y_dec, "delay2")     [7]
-
-
-
-    wrap()
-
-
-
-
+#read sebsors
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH) 
 def spi_master_16bit_invert():
    
@@ -125,20 +86,6 @@ def spi_master_16bit_invert():
 
 
 
-    """
-    set(y, 11)    .side(2) # set(y, 11)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [2]  #[7]
-
-    set(y, 11)    .side(0)   # set(y, 11)
-    label("delay2")
-    nop()                   [1]
-    jmp(y_dec, "delay2")     [2] #[7]
-
-
-    wrap()
-    """
 
 
 @rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH)
@@ -217,7 +164,7 @@ def spi_master_32bit_invert():
 
 
 
-# GAME active detector - - - first level filering
+# GAME active detector - - - first level filtering
 INPUT_PIN = 21  # Input to sample  <- changed to gpio21 for version 2 pcb (switched with Aux input)
 OUTPUT_PIN = 17 # Output to set/clear
 machine.Pin(INPUT_PIN, machine.Pin.IN)
@@ -400,25 +347,60 @@ def gameActive():
     return game_active_pin.value()
 
 
-lowCalThres=32000
-highCalThres=32000
-sensitivityBaseLow = 32000
-sensitivityBaseHigh = 32000
+# Calibration record - set only by calibrate() (or restored from flash on
+# boot). Sensitivity is applied live, on top of this record, every time
+# thresholds are written to the PWM registers - the record itself never
+# changes just because sensitivity changes, so a recalibrate cycle always
+# starts from a clean hardware reading.
+calLow = 32000
+calHigh = 32000
+sensitivity = 0              # percent, SENSITIVITY_MIN..SENSITIVITY_MAX; 0 = as-calibrated
+
+SENSITIVITY_MIN = -200
+SENSITIVITY_MAX = 0
+COUNTS_PER_PERCENT = 200     # total threshold spread change (both thresholds combined) per 1% sensitivity
 
 
-def _persist_sensor_thresholds():
-    """Persist current sensor thresholds/sensitivity to EMData."""
-    try:
-        from ScoreTrack import saveState
+def _setThresholds(pct, persist=True):
+    """Single point of control for sensor thresholds: clamps/stores the
+    sensitivity percent, computes (low, high) PWM counts live from the
+    calibration record, writes them to the analog PWM registers, and
+    (unless persist=False) saves the result to EMData.
 
-        saveState()
-    except Exception as e:
-        log.log(f"SENSOR: failed to persist thresholds: {e}")
+    Every function that changes sensitivity or thresholds must go through
+    here so the PWM outputs, S.gdata, and persisted state can never drift
+    apart from one another."""
+    global sensitivity
+
+    pct = max(SENSITIVITY_MIN, min(SENSITIVITY_MAX, int(pct)))
+    sensitivity = pct
+
+    delta = (COUNTS_PER_PERCENT * pct)   # counts each threshold moves toward/away from midpoint
+    low = max(0, min(65535, int(calLow + delta)))
+    high = max(0, min(65535, int(calHigh - delta)))
+    if high < low:
+        low = high = (low + high) // 2
+
+    lowPwm.duty_u16(low)
+    hiPwm.duty_u16(high)
+    print(f"SENSOR: PWM thresholds low={low} high={high} (cal low={calLow} high={calHigh}, sensitivity={sensitivity}%)")
+
+    S.gdata["sensitivity"] = pct
+
+    if persist:
+        try:
+            from ScoreTrack import saveState
+
+            saveState()
+        except Exception as e:
+            log.log(f"SENSOR: failed to persist thresholds: {e}")
+
+    return pct, low, high
 
 
 def _restore_sensor_thresholds_from_store():
-    """Restore persisted thresholds and immediately apply PWM outputs."""
-    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
+    """Restore the persisted calibration record + sensitivity and apply to PWM."""
+    global calLow, calHigh
 
     sensor_levels = S.gdata.get("sensorlevels")
     if not isinstance(sensor_levels, (list, tuple)) or len(sensor_levels) < 2:
@@ -431,26 +413,27 @@ def _restore_sensor_thresholds_from_store():
         return False
 
     # Sanity checks: keep in valid register range and ensure a useful spread.
+    # (calibrate() stores calLow/calHigh already margin-expanded - 0.6x/1.4x
+    # of the raw sweep points - so they routinely fall outside the raw
+    # 20000..45535 sweep window; that is expected, not a fault.)
     if cal_low < 0 or cal_low > 65535 or cal_high < 0 or cal_high > 65535:
         return False
-    if cal_high <= cal_low:
-        return False
-    if cal_low < 20000 or cal_high > (65535 - 20000):
+    if (cal_high - cal_low) < 1000:
         return False
 
-    lowCalThres = cal_low
-    highCalThres = cal_high
-    sensitivityBaseLow = cal_low
-    sensitivityBaseHigh = cal_high
+    calLow = cal_low
+    calHigh = cal_high
+    pct = int(S.gdata.get("sensitivity", 0))
 
-    lowPwm.duty_u16(lowCalThres)
-    hiPwm.duty_u16(highCalThres)
-    log.log(f"SENSOR: sensor calibration restored: cal_low={cal_low}, cal_high={cal_high}")
+    # Restoring reapplies exactly what was already persisted, so there's
+    # nothing new to save back to EMData.
+    pct, low, high = _setThresholds(pct, persist=False)
+    log.log(f"SENSOR: sensor calibration restored: cal_low={cal_low}, cal_high={cal_high}, sensitivity={pct}%, applied low={low} high={high}")
     return True
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres,sensitivityBaseLow,sensitivityBaseHigh
+    global smSpi,lowPwm,hiPwm,calLow,calHigh
 
     print("SENSOR: Calibrate sensor circuit start")
 
@@ -467,14 +450,13 @@ def calibrate():
     if (v&0x03) != 0:
         log.log("SENSOR: sensor cal fault")
 
-    for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed        
+    lowCal = 0
+    highCal = 0
+    for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed
         print(".",end="")
         lowPwm.duty_u16(duty)
         clearSensorRx()
-        time.sleep(0.1)  
-      
-        lowCal=0
-        highCal=0
+        time.sleep(0.1)
 
         # Check buffer for two LSBs clear
         v = readSensorRx()               
@@ -503,98 +485,54 @@ def calibrate():
 
 
     print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.6)   #0.9
-    lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.4)  #1.1
-    hiPwm.duty_u16(highCalThres)
-    sensitivityBaseLow = lowCalThres
-    sensitivityBaseHigh = highCalThres
-    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
-        S.gdata["sensorlevels"][0] = lowCalThres
-        S.gdata["sensorlevels"][1] = highCalThres
-    else:
-        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
-    log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
-    print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
-    _persist_sensor_thresholds()
+    # calLow/calHigh define the calibration record's threshold spread - pull
+    # them in tight around the midpoint instead of scaling lowCal/highCal
+    # outward, so they land close together regardless of how far apart the
+    # sweep's found crossing points are. CAL_MIN_GAP is the smallest allowed
+    # spread (raw PWM counts) and also guarantees calHigh > calLow.
+    CAL_MIN_GAP = 40
+    midpoint = (lowCal + highCal) // 2
+    calLow = max(0, min(65535, midpoint - CAL_MIN_GAP // 2))
+    calHigh = max(calLow + 1, min(65535, midpoint + CAL_MIN_GAP // 2))
+    S.gdata["sensorlevels"] = [calLow, calHigh]
+    log.log(f"SENSOR: calibration record, low={calLow} high={calHigh}")
+    print("SENSOR: calibration record as percentage: Low = {:.2%}, High = {:.2%}".format(calLow/65535, calHigh/65535))
+
+    # A fresh calibration applies this starting sensitivity on top of the
+    # newly-calibrated record before returning.
+    return _setThresholds(-10)
 
 
 def setSensitivityPercent(percent):
-    """Set sensor thresholds from 0..100% sensitivity.
+    """Set sensitivity percent (SENSITIVITY_MIN..SENSITIVITY_MAX) and apply it
+    live against the calibration record, writing the result to the PWM
+    registers.
 
-    0% keeps full calibrated threshold spread.
-    100% collapses thresholds to the same midpoint value.
+    0% keeps the full calibrated threshold spread (most sensitive).
+    Negative % = less sensitive (thresholds move further apart), down to
+    SENSITIVITY_MIN.
     """
-    global lowCalThres, highCalThres, sensitivityBaseLow, sensitivityBaseHigh
-
     try:
         pct = int(percent)
     except Exception:
-        pct = 50
-    pct = max(0, min(100, pct))
+        pct = 0
 
-    # initialize baseline from current values if needed
-    if sensitivityBaseHigh <= sensitivityBaseLow:
-        sensitivityBaseLow = int(lowCalThres)
-        sensitivityBaseHigh = int(highCalThres)
-
-    base_low = int(sensitivityBaseLow)
-    base_high = int(sensitivityBaseHigh)
-    if base_high < base_low:
-        base_low, base_high = base_high, base_low
-
-    spread = base_high - base_low
-    midpoint = (base_low + base_high) // 2
-
-    # linearly shrink spread as sensitivity rises; 100% => spread=0 (equal thresholds)
-    new_spread = (spread * (100 - pct)) // 100
-    lowCalThres = midpoint - (new_spread // 2)
-    highCalThres = lowCalThres + new_spread
-
-    # hard clamp and ordering
-    lowCalThres = max(0, min(65535, int(lowCalThres)))
-    highCalThres = max(0, min(65535, int(highCalThres)))
-    if highCalThres < lowCalThres:
-        highCalThres = lowCalThres
-
-    lowPwm.duty_u16(lowCalThres)
-    hiPwm.duty_u16(highCalThres)
-
-    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
-        S.gdata["sensorlevels"][0] = lowCalThres
-        S.gdata["sensorlevels"][1] = highCalThres
-    else:
-        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
-
-    S.gdata["sensitivity"] = pct
-    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres} (sensitivity={pct}%)")
-    _persist_sensor_thresholds()
-    return pct, lowCalThres, highCalThres
-
+    pct, low, high = _setThresholds(pct)
+    log.log(f"SENSOR: sensitivity set to {pct}% -> low={low} high={high}")
+    return pct, low, high
 
 
 def sensitivityChange(dir):
-    '''sensitivy adjust - up=1 so more sensitive'''
-    global lowCalThres,highCalThres
-    if dir==1:
-        if int(highCalThres*0.98) > int(lowCalThres*1.02):
-            highCalThres=int(highCalThres*0.98)
-            lowCalThres=int(lowCalThres*1.02)
-    else:
-        if int(highCalThres*1.02) < 55000 :
-            highCalThres=int(highCalThres*1.02)
-            lowCalThres=int(lowCalThres*0.98)
+    '''sensitivity adjust via physical buttons - dir=1 so more sensitive.
 
-    lowPwm.duty_u16(lowCalThres)
-    hiPwm.duty_u16(highCalThres)
-    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
-
-    if isinstance(S.gdata.get("sensorlevels"), (list, tuple)) and len(S.gdata.get("sensorlevels")) >= 2:
-        S.gdata["sensorlevels"][1] = highCalThres
-        S.gdata["sensorlevels"][0] = lowCalThres
-    else:
-        S.gdata["sensorlevels"] = [lowCalThres, highCalThres]
-    _persist_sensor_thresholds()
+    Routes through setSensitivityPercent() (same path as the web admin
+    +/- buttons) so thresholds are always derived live from the calibration
+    record instead of drifting relative to themselves.
+    '''
+    pct = int(S.gdata.get("sensitivity", 0))
+    step = 1 if dir == 1 else -1
+    pct = max(SENSITIVITY_MIN, min(SENSITIVITY_MAX, pct + step))
+    return setSensitivityPercent(pct)
 
 #test
 if __name__ == "__main__":

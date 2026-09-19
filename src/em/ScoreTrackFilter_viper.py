@@ -75,66 +75,66 @@ def _viper_process(buf: ptr32, ptr: int, idxmsk: int, s_state: int, s_mask: ptr3
     # Reset detection: stages 1..14 (range(1,15))
     # falling low when inactive, this is when it will be counted    
     idx :int = ptr
-    cumulative_low = (~buf[idx]) & 0xFFFF
-  
+    cumulative_low = ~buf[idx]
+
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[1]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[2]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[3]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[4]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[5]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[6]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[7]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[8]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[9]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[10]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[11]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[12]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[13]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[14]
 
     idx = (idx -1) & idxmsk
-    cumulative_low &= (~buf[idx]) & 0xFFFF
+    cumulative_low &= ~buf[idx]
     reset_hits |= cumulative_low & r_mask[15]
 
     # set reset hits into state

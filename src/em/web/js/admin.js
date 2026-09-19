@@ -236,11 +236,11 @@ async function saveGameConfig() {
 
 // ------------------ Sensitivity Controls ------------------
 
-// Sensitivity: 0–100%
-const SENSITIVITY_MIN = 0;
-const SENSITIVITY_MAX = 100;
+// Sensitivity: -200 to 0%, 0 = as-calibrated
+const SENSITIVITY_MIN = -200;
+const SENSITIVITY_MAX = 0;
 const SENSITIVITY_STEP = 1;
-const SENSITIVITY_DEFAULT = 50;
+const SENSITIVITY_DEFAULT = 0;
 
 // Timing sensitivity: 5 decade columns in descending order.
 // Score range: 1–10, Reset range: 1–15
@@ -350,7 +350,7 @@ function buildAdjGroup(label, value, colorClass, onUp, onDown) {
   return { group, valDisplay };
 }
 
-// Global sensitivity (0â€“100%)
+// Global sensitivity (-80 to +50%)
 async function initSensitivityUI() {
   let value = SENSITIVITY_DEFAULT;
 
@@ -370,7 +370,7 @@ async function initSensitivityUI() {
   const recalBtn = document.getElementById("sensitivity-recalibrate");
 
   function updateDisplay() {
-    if (display) display.textContent = value + "%";
+    if (display) display.textContent = (value > 0 ? "+" : "") + value + "%";
   }
 
   async function saveSensitivity() {
@@ -414,6 +414,9 @@ async function initSensitivityUI() {
         if (!resp || !resp.ok) {
           throw new Error(`recalibrate failed: ${resp ? resp.status : "no response"}`);
         }
+        // Recalibrating resets sensitivity back to 0% on the device - reflect that here.
+        value = 0;
+        updateDisplay();
         recalBtn.textContent = "Done";
       } catch (e) {
         console.error("Failed to recalibrate sensors", e);
@@ -428,6 +431,35 @@ async function initSensitivityUI() {
   }
 
   updateDisplay();
+
+  // Poll so sensitivity changes made from the cabinet's physical up/down
+  // buttons show up here without a page reload. Guarded so a retry of
+  // initSensitivityUI() (see _runAdminDataInit) doesn't start a second loop.
+  if (display && !display.dataset.polling) {
+    display.dataset.polling = "1";
+    const SENSITIVITY_POLL_MS = 1300;
+    (async function pollSensitivity() {
+      if (!window.adminPollingActive) return;
+      try {
+        const resp = await window.smartFetch("/api/em/get_sensitivity", null, false);
+        if (resp && resp.ok) {
+          const data = await resp.json();
+          if (data.sensitivity != null) {
+            const serverValue = Math.min(SENSITIVITY_MAX, Math.max(SENSITIVITY_MIN, Number(data.sensitivity)));
+            if (serverValue !== value) {
+              value = serverValue;
+              updateDisplay();
+            }
+          }
+        }
+      } catch (e) {
+        // keep last displayed value on transient errors
+      }
+      if (window.adminPollingActive) {
+        setTimeout(pollSensitivity, SENSITIVITY_POLL_MS);
+      }
+    })();
+  }
 }
 
 // Timing filter: per-decade score (red) and reset (blue) depth adjusters
@@ -660,7 +692,6 @@ async function initializeAdminPage() {
     _scheduleRetry();
   }
 
-  startSensorActivityPolling();
   startLivePlayerScorePolling();
 
   // wire save button
@@ -679,41 +710,6 @@ async function initializeAdminPage() {
 }
 
 initializeAdminPage();
-
-// Sensor activity indicator lamp — polls /api/em/sensor_activity at ~5 Hz
-function startSensorActivityPolling() {
-  const lamp = document.getElementById("sensor-activity-lamp");
-  if (!lamp) return;
-
-  const POLL_MS = 200; // poll interval
-
-  async function poll() {
-    if (!window.adminPollingActive) {
-      return;
-    }
-    try {
-      const resp = await window.smartFetch("/api/em/sensor_activity", null, false);
-      if (resp && resp.ok) {
-        const data = await resp.json();
-        if (data.state === "green") {
-          lamp.style.background = "#2ecc71";
-        } else if (data.state === "red") {
-          lamp.style.background = "#e74c3c";
-        } else {
-          lamp.style.background = "var(--pico-muted-border-color)";
-        }
-      }
-    } catch (e) {
-      // ignore — lamp just stays dark
-      lamp.style.background = "var(--pico-muted-border-color)";
-    }
-    if (window.adminPollingActive) {
-      setTimeout(poll, POLL_MS);
-    }
-  }
-
-  poll();
-}
 
 // Live player score indicators beside timing filter controls
 function startLivePlayerScorePolling() {

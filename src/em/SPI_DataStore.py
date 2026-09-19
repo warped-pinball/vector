@@ -146,7 +146,7 @@ def serialize(record, structure_name):
         #   I : sensorlevels[1]
         #   I : startpause
         #   I : endpause
-        #   B : sensitivity (0..100)
+        #   b : sensitivity (signed, -80..50)
         # 40s : timing arrays [p1_score(5), p1_reset(5), p2_score(5), p2_reset(5),
         #                       p3_score(5), p3_reset(5), p4_score(5), p4_reset(5)]
         name = record.get("gamename", "")
@@ -185,8 +185,8 @@ def serialize(record, structure_name):
         startpause = int(record.get("startpause", 0)) & 0xFFFFFFFF
         endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF
 
-        sensitivity = int(record.get("sensitivity", 50))
-        sensitivity = max(0, min(100, sensitivity))
+        sensitivity = int(record.get("sensitivity", 0))
+        sensitivity = max(-80, min(50, sensitivity))
 
         def _coerce_timing(raw, default, lo, hi):
             try:
@@ -214,7 +214,7 @@ def serialize(record, structure_name):
         p4_reset = _coerce_timing(record.get("timing_p4_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
         timing_blob = p1_score + p1_reset + p2_score + p2_reset + p3_score + p3_reset + p4_score + p4_reset
 
-        packed = struct.pack("<40sBBI64s32sIIIIB40s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
+        packed = struct.pack("<40sBBI64s32sIIIIb40s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -332,7 +332,7 @@ def deserialize(data, structure_name):
                     out.append(int(n))
                 return out
 
-            fmt_new = "<40sBBI64s32sIIIIB40s"
+            fmt_new = "<40sBBI64s32sIIIIb40s"
             name, players, digits, multiplier, _stored_fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
             timing_blob = bytes(timing_blob)
 
@@ -379,7 +379,7 @@ def deserialize(data, structure_name):
                 "sensorlevels": [int(s0), int(s1)],
                 "startpause": int(startpause),
                 "endpause": int(endpause),
-                "sensitivity": max(0, min(100, int(sensitivity))),
+                "sensitivity": max(-200, min(20, int(sensitivity))),
                 "timing_p1_score": p1_score,
                 "timing_p1_reset": p1_reset,
                 "timing_p2_score": p2_score,
@@ -401,7 +401,7 @@ def deserialize(data, structure_name):
                 "sensorlevels": [0, 0],
                 "startpause": 5,
                 "endpause": 9,
-                "sensitivity": 50,
+                "sensitivity": 0,
                 "timing_p1_score": [8, 8, 8, 8, 8],
                 "timing_p1_reset": [8, 8, 8, 8, 8],
                 "timing_p2_score": [8, 8, 8, 8, 8],
@@ -455,7 +455,7 @@ def blankStruct(structure_name):
             "sensorlevels": [0, 0],
             "startpause": 8,
             "endpause": 5,
-            "sensitivity": 70,
+            "sensitivity": 0,
             "timing_p1_score": [3, 3, 3, 3, 3],
             "timing_p1_reset": [9, 9, 9, 9, 9],
             "timing_p2_score": [3, 3, 3, 3, 3],

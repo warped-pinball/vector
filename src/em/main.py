@@ -136,6 +136,15 @@ resource.go(True)
 
 # launch wifi, and server. Should not return
 from backend import go  # noqa: E402SCORE: scores
+
+# EM has no use for the periodic shadow-RAM -> FRAM mirror that other game
+# systems rely on (SRAM_DATA_BASE here is a transient sensor sample buffer,
+# not persistent score/game state), so it's pure wasted FRAM bus time every
+# 100ms. Patched out here rather than in the shared phew/server.py scheduler
+# so wpc/sys11/etc. keep running it unchanged.
+import phew.server as _phew_server
+_phew_server.copy_to_fram = lambda: None
+
 print("MAIN: Launching Wifi AP mode=", ap_mode)
 try:
     go(ap_mode)

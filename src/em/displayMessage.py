@@ -118,7 +118,7 @@ def init(ipAddress=""):
 
     if isinstance(ipAddress, str) and len(ipAddress) > 3:
         if ipAddress == AP_MODE_IP_SENTINEL:
-            setipAddress("AP", pad=False)
+            setipAddress("AP ", pad=False)
         else:
             setipAddress(ipAddress)
 
@@ -128,7 +128,7 @@ def init(ipAddress=""):
     # time to be visible on the display
     if not _display_update_scheduled:
         from phew.server import schedule
-        schedule(displayUpdate, 1000, 300)
+        schedule(displayUpdate, 1000, 220)
         _display_update_scheduled = True
 
 def stop():
@@ -207,6 +207,7 @@ def pio_spi_tx_40():
     out(pins, 1)  .side(0) [1]
     nop()         .side(1) [1]
     jmp(x_dec, "bitloopA")
+    
     pull()                 # word B: P1 in the top byte (8 bits used)
     set(x, 7)
     label("bitloopB")

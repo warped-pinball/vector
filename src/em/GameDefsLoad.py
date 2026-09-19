@@ -27,7 +27,7 @@ safe_defaults = {
     "startpause": 9,
     "endpause": 5,
     "sensorlevels": [0, 0],
-    "sensitivity": 50,
+    "sensitivity": 0,
     "timing_p1_score": [8, 8, 8, 8, 8],
     "timing_p1_reset": [8, 8, 8, 8, 8],
     "timing_p2_score": [8, 8, 8, 8, 8],
