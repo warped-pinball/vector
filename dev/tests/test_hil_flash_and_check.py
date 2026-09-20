@@ -7,6 +7,7 @@ out of reach here.
 
 from __future__ import annotations
 
+import ast
 import sys
 import types
 from pathlib import Path
@@ -65,6 +66,21 @@ def test_write_step_summary_is_a_no_op_outside_actions(monkeypatch):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
 
     fac.write_step_summary([{"port": "/dev/ttyACM0", "target": "wpc"}], failures=[], missing=[])
+
+
+def test_classic_ap_button_pin_uses_a_pull_up():
+    source = (REPO_ROOT / "src" / "classic" / "main.py").read_text()
+    module = ast.parse(source)
+
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "SW_pin" for target in node.targets):
+            call = node.value
+            assert isinstance(call, ast.Call)
+            assert len(call.args) >= 3
+            assert ast.unparse(call.args[2]) == "machine.Pin.PULL_UP"
+            break
+    else:
+        pytest.fail("SW_pin assignment not found in src/classic/main.py")
 
 
 # --------------------------------------------------------------------------

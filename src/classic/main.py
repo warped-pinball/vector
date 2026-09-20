@@ -28,7 +28,9 @@ import Formats
 Log = logger_instance
 
 # other gen I/O pin inits
-SW_pin = machine.Pin(22, machine.Pin.IN)
+# Classic benches can leave the setup-button input floating; pull it high so a
+# disconnected button does not force AP mode at boot.
+SW_pin = machine.Pin(22, machine.Pin.IN, machine.Pin.PULL_UP)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 
