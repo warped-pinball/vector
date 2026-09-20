@@ -177,11 +177,8 @@ def loadState():
 
     # load start/end pause values from configuration (EMData -> S.gdata)
     # keys are "startpause" and "endpause"; fall back to current defaults if missing
-    print(f"SCORE: Loading pauses from S.gdata: startpause={S.gdata.get('startpause', 'NOT SET')}, endpause={S.gdata.get('endpause', 'NOT SET')}")
-    
     PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
     PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
-    print("SCORE: pauses= ", PROCESS_START_PAUSE, PROCESS_END_PAUSE)
 
     buildSensorBitMask()
 
@@ -259,9 +256,12 @@ def loadState():
     S.gdata["filtermasks"] = bytes(fm)
 
     log.log(f"ScoreTrack initialized: players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X}")
-    print("ScoreTrack pauses: startpause=%d endpause=%d" % (PROCESS_START_PAUSE, PROCESS_END_PAUSE))
 
-    print("LOAD", S.gdata)
+    players_table = [("P1", p1_score_vals, p1_reset_vals), ("P2", p2_score_vals, p2_reset_vals),
+                      ("P3", p3_score_vals, p3_reset_vals), ("P4", p4_score_vals, p4_reset_vals)]
+    table = "\n".join(f"  {p}: score={s} reset={r}" for p, s, r in players_table)
+    print(f"SCORE: loaded -> players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X} "
+          f"startpause={PROCESS_START_PAUSE} endpause={PROCESS_END_PAUSE}\n{table}")
 
 
 def updatePauseGlobals():

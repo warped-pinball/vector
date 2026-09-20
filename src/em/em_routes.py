@@ -186,7 +186,7 @@ def set_timing_sensitivity(request):
     Score values are 1–10. Reset values are 1–15.
     Expects: p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset.
     """
-    print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
+    #print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
 
     def _coerce(raw, value_max):
         try:
@@ -218,8 +218,10 @@ def set_timing_sensitivity(request):
 
     from ScoreTrack import saveState
     saveState()
-    print(f"EMSEN: set_timing_sensitivity saved -> p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset} p3_score={p3_score} p3_reset={p3_reset} p4_score={p4_score} p4_reset={p4_reset}")
-    log.log(f"EMSEN: timing p1_score={p1_score} p1_reset={p1_reset} p2_score={p2_score} p2_reset={p2_reset} p3_score={p3_score} p3_reset={p3_reset} p4_score={p4_score} p4_reset={p4_reset}")
+    players = [("P1", p1_score, p1_reset), ("P2", p2_score, p2_reset), ("P3", p3_score, p3_reset), ("P4", p4_score, p4_reset)]
+    table = "\n".join(f"  {p}: score={s} reset={r}" for p, s, r in players)
+    print(f"EMSEN: timing saved ->\n{table}")
+    log.log("EMSEN: timing saved")
     return {
         "status": "ok",
         "p1_score": p1_score, "p1_reset": p1_reset,

@@ -391,26 +391,7 @@ def deserialize(data, structure_name):
             }
         except Exception:
             Log.log("DATSTORE: fault EMData Load")
-            return {
-                "gamename": "",
-                "players": 1,
-                "digits": 1,
-                "dummy_reels": 0,
-                "filtermasks": bytes(64),
-                "carrythresholds": bytes(32),
-                "sensorlevels": [0, 0],
-                "startpause": 5,
-                "endpause": 9,
-                "sensitivity": 0,
-                "timing_p1_score": [8, 8, 8, 8, 8],
-                "timing_p1_reset": [8, 8, 8, 8, 8],
-                "timing_p2_score": [8, 8, 8, 8, 8],
-                "timing_p2_reset": [8, 8, 8, 8, 8],
-                "timing_p3_score": [8, 8, 8, 8, 8],
-                "timing_p3_reset": [8, 8, 8, 8, 8],
-                "timing_p4_score": [8, 8, 8, 8, 8],
-                "timing_p4_reset": [8, 8, 8, 8, 8],
-            }
+
     else:
         raise ValueError("Unknown structure name")
 
@@ -452,18 +433,18 @@ def blankStruct(structure_name):
             "dummy_reels": 0,
             "filtermasks": filtermasks,
             "carrythresholds": carrythresholds,
-            "sensorlevels": [0, 0],
+            "sensorlevels": [31000, 32000],
             "startpause": 8,
             "endpause": 5,
             "sensitivity": 0,
-            "timing_p1_score": [3, 3, 3, 3, 3],
-            "timing_p1_reset": [9, 9, 9, 9, 9],
-            "timing_p2_score": [3, 3, 3, 3, 3],
-            "timing_p2_reset": [9, 9, 9, 9, 9],
-            "timing_p3_score": [3, 3, 3, 3, 3],
-            "timing_p3_reset": [9, 9, 9, 9, 9],
-            "timing_p4_score": [3, 3, 3, 3, 3],
-            "timing_p4_reset": [9, 9, 9, 9, 9],
+            "timing_p1_score": [5, 5, 5, 3, 3],
+            "timing_p1_reset": [8, 8, 8, 4, 4],
+            "timing_p2_score": [5, 5, 5, 3, 3],
+            "timing_p2_reset": [8, 8, 8, 4, 4],
+            "timing_p3_score": [5, 5, 5, 3, 3],
+            "timing_p3_reset": [8, 8, 8, 4, 4],
+            "timing_p4_score": [5, 5, 5, 3, 3],
+            "timing_p4_reset": [8, 8, 8, 4, 4],
         }
     structure = memory_map[structure_name]
     if "sets" in structure:
