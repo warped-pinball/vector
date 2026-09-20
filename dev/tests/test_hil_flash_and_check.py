@@ -77,7 +77,13 @@ def test_classic_ap_button_pin_uses_a_pull_up():
             call = node.value
             assert isinstance(call, ast.Call)
             assert len(call.args) >= 3
-            assert ast.unparse(call.args[2]) == "machine.Pin.PULL_UP"
+            pull = call.args[2]
+            assert isinstance(pull, ast.Attribute)
+            assert pull.attr == "PULL_UP"
+            assert isinstance(pull.value, ast.Attribute)
+            assert pull.value.attr == "Pin"
+            assert isinstance(pull.value.value, ast.Name)
+            assert pull.value.value.id == "machine"
             break
     else:
         pytest.fail("SW_pin assignment not found in src/classic/main.py")
