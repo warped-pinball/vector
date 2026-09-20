@@ -776,7 +776,7 @@ def _place_game_in_claim_list(game):
     print("SCORE: add to claims list: ", recent_scores)
     from origin import push_end_of_game
 
-    push_end_of_game(game)
+    push_end_of_game(game, 1)
 
 
 def _read_machine_score(HighScores):

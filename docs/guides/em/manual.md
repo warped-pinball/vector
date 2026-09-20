@@ -57,7 +57,7 @@ Confirm your voltage is between 5.5 and 10 Volts AC as shown:
 
 ![Checking GI voltage with a multimeter](../../img/em/voltmeter_check.jpg)
 
-With the game turned off, make the power connections with the included alligator clips as shown. An extender cable (included) can then be used to connect power to the main board in the upper left corner. (Red and black are interchangeable.)
+If the voltage is not within range it is possible to power the WarpedPinball board with a USB power supply, contact us at Warped for details. With the game turned off, make the power connections with the included alligator clips as shown. An extender cable (included) can then be used to connect power to the main board in the upper left corner. (Red and black are interchangeable.)
 
 ![Power connection with alligator clips](../../img/em/power_alligator_clips.jpg)
 
@@ -75,7 +75,7 @@ Reels are always numbered 1, 10, 100, 1000, etc. from left to right as you look 
 
 ![Score reel numbering including a dummy reel](../../img/em/reel_numbering.jpg)
 
-Attach each sensor to a wire assembly before installing on the coil. If your coil paper is damaged you can use the included high-temperature tape dots to repair it before placing sensors. Use the longer wire ties - feeding around the coil and through the loop on the sensor circuit board. Note the "upside down" orientation of the sensor on the coil.
+Attach each sensor to a wire assembly before installing on the coil. If your coil paper is damaged you can use the included high-temperature tape dots to repair it before placing sensors. Use the longer wire ties - feeding around the coil and through the loop on the sensor circuit board. Note the "upside down" orientation of the sensor on the coil. This orientataion is very important,make sure the sensor faces down towards the coil. check that the sensor stays in position as you reinstall the score reel.
 
 ![Sensor assembly with connector](../../img/em/sensor_assembly.jpg)
 
