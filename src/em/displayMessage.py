@@ -27,8 +27,6 @@ gameOverLED = True
 ipDigitDisplay="  "
 ipDigitUpNext = 0
 displayState = 0
-captureModeCounter = -1
-learnModeCounter = -1
 faultNumber = -1
 
 # words (32-bit each) last sent to the PIO, MSB-first: word[0]'s top byte is
@@ -161,20 +159,6 @@ def setSensorLeds(pattern):
     global sensorPattern
     sensorPattern = sensorPattern | pattern
 
-def setLearnModeDigit(d):
-    global learnModeCounter
-    if isinstance(d, int) and 0 <= d <= 9:
-        learnModeCounter = d
-    else:
-        learnModeCounter = -1
-
-def setCaptureModeDigit(d):
-    global captureModeCounter
-    if isinstance(d, int) and 0 <= d <= 9:
-        captureModeCounter = d
-    else:
-        captureModeCounter = -1
-
 def showCalibratingDigit():
     """Immediately push a static 'C' onto the digit position, bypassing the
     scheduled displayUpdate() tick. calibrate() blocks the scheduler for
@@ -296,45 +280,39 @@ def displayUpdate():
     if not gameOverLED:
         p2_byte |= 0x40
 
-    #deicde which input to put on digit display
-    if 0 <= captureModeCounter <= 9:
-        idx = captureModeCounter
-    elif 0 <= learnModeCounter <= 9:
-        idx= learnModeCounter
-    else:
-        # WIFI01 (bad password) / WIFI02 (network not found) have no other
-        # visible indicator on this board (no RGB status LED like other
-        # variants), so scroll them as "E1"/"E2" on the single digit instead
-        # of the IP address. Every other fault is left exactly as before -
-        # logged only, no display change.
-        wifi_fault_text = None
-        for _f in S.faults:
-            if _f.startswith("WIFI01"):
-                wifi_fault_text = "E1  "
-                break
-            if _f.startswith("WIFI02"):
-                wifi_fault_text = "E2  "
-                break
-        scroll_text = wifi_fault_text if wifi_fault_text else ipDigitDisplay
+    # WIFI01 (bad password) / WIFI02 (network not found) have no other
+    # visible indicator on this board (no RGB status LED like other
+    # variants), so scroll them as "E1"/"E2" on the single digit instead
+    # of the IP address. Every other fault is left exactly as before -
+    # logged only, no display change.
+    wifi_fault_text = None
+    for _f in S.faults:
+        if _f.startswith("WIFI01"):
+            wifi_fault_text = "E1  "
+            break
+        if _f.startswith("WIFI02"):
+            wifi_fault_text = "E2  "
+            break
+    scroll_text = wifi_fault_text if wifi_fault_text else ipDigitDisplay
 
-        ch = scroll_text[ipDigitUpNext % len(scroll_text)]
-        ipDigitUpNext = (ipDigitUpNext + 1) % len(scroll_text)
-        if '0' <= ch <= '9':
-            idx = ord(ch) - ord('0')     # 0..9
-        elif ch == '.':
-            idx = 10
-        elif ch == ' ':
-            idx = 11                      # blank / space
-        elif ch == 'E':
-            idx = IDX_E
-        elif ch == 'A':
-            idx = IDX_A
-        elif ch == 'P':
-            idx = IDX_P
-        elif ch == 'C':
-            idx = IDX_C
-        else:
-            idx = 11                      # unknown -> blank
+    ch = scroll_text[ipDigitUpNext % len(scroll_text)]
+    ipDigitUpNext = (ipDigitUpNext + 1) % len(scroll_text)
+    if '0' <= ch <= '9':
+        idx = ord(ch) - ord('0')     # 0..9
+    elif ch == '.':
+        idx = 10
+    elif ch == ' ':
+        idx = 11                      # blank / space
+    elif ch == 'E':
+        idx = IDX_E
+    elif ch == 'A':
+        idx = IDX_A
+    elif ch == 'P':
+        idx = IDX_P
+    elif ch == 'C':
+        idx = IDX_C
+    else:
+        idx = 11                      # unknown -> blank
 
     #convert ascii digit to 7 segment code
     top_byte = SEGMENTS[idx]

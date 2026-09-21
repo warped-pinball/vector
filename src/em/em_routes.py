@@ -1,6 +1,5 @@
 from backend import add_route
 import SharedState as S
-import os
 import time
 
 from logger import logger_instance
@@ -231,58 +230,3 @@ def set_timing_sensitivity(request):
     }
 
 
-def check_files():
-    """Check for game_history1.dat .. game_history4.dat; return existence flags and count."""
-    try:
-        try:
-            names = set(os.listdir("/"))
-        except Exception:
-            names = set(os.listdir())
-
-        exists = []
-        for idx in range(1, 5):
-            fname = f"game_history{idx}.dat"
-            exists.append(fname in names)
-
-        return {"exists": exists, "count": sum(1 for x in exists if x)}
-
-    except Exception as e:
-        log.log(f"EMCAL: check_files error: {e}")
-        return {"exists": [False, False, False, False], "count": 0, "error": str(e)}
-
-
-@add_route("/api/em/diagnostics")
-def diagnostics(request):
-    """Stream diagnostic data - game history files."""
-    candidate_files = ["game_history1.dat", "game_history2.dat", "game_history3.dat", "game_history4.dat"]
-    info = check_files()
-    exists = info.get("exists", [False, False, False, False])
-    existing = ["/" + name for name, present in zip(candidate_files, exists) if present]
-
-    def _stream():
-        if not existing:
-            yield "No game_history* files found.\n"
-            return
-
-        yield "Vector EM Diagnostics - Game History Dump\n"
-        yield "Files: " + ", ".join(existing) + "\n"
-        yield "----------------------------------------\n"
-
-        for path in existing:
-            yield f"\n==== BEGIN {path} ====\n"
-            try:
-                with open(path, "rb") as f:
-                    while True:
-                        chunk = f.read(256)
-                        if not chunk:
-                            break
-                        # hex representation (binary data is not safely decodable)
-                        yield chunk.hex() + "\n"
-            except Exception as e:
-                yield f"[ERROR reading {path}: {e}]\n"
-            yield f"\n==== END {path} ====\n"
-
-        yield "\n-- End of diagnostics stream --\n"
-
-    # Return the generator so the framework streams it
-    return _stream()

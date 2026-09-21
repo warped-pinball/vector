@@ -19,6 +19,7 @@ How the Vector board installs on an Electro-Mechanical pinball machine, what the
 - [Hardware installation - score reel sensors](#hardware-installation-score-reel-sensors)
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
+- [Errors](#errors)
 - [Configure your game](#configure-your-game)
 - [Sensitivity adjustment](#sensitivity-adjustment)
 - [Play a few games](#play-a-few-games)
@@ -124,6 +125,14 @@ SYS EM.Wifi uses the number display on the main board to show you the IP address
 
 All routers have a mechanism to set IP addresses as "static" so it is not changed in the future. Once you have connected to your SYS EM.Wifi board we recommend that you log into your local router, find the IP address in the list of connected devices, and check the box making that address static.
 
+## Errors
+
+If the number display shows an error code instead of the IP address, check for the following:
+
+- **E1** - Bad WiFi password. Double check the password you entered for your local WiFi network and try again.
+- **E2** - WiFi network not found. Confirm the SSID you selected is correct and that your WiFi network is in range and broadcasting.
+- **AP** - The board has dropped back into AP (setup) mode, and the WiFi status LED will be blinking fast to match. This can happen if the saved WiFi settings no longer work. Reconnect with a phone or computer as described in [Connecting to local WiFi](#connecting-to-local-wifi) - look for the **Warped Pinball** network and sign in again to reconfigure your WiFi settings.
+
 ## Configure your game
 
 Open a web browser on any computer on your local WiFi. Type the IP address in the URL bar and you should get the Warped Pinball game screen. Select **Admin** in the upper right corner to get to the page where you configure the game. Input the name, players, reels, and number of dummy (0) reels. Be sure to click **Save Game Config**.
@@ -144,7 +153,7 @@ Take time with this step, test each score type (1s, 10s, 100s, etc.) and each pl
 
 ## Play a few games
 
-There is further adjustment possible in the section below calibration and sensitivity, but changing these values usually isn't necessary. Try a few games, watching what happens on the Admin panel - each player's score is shown so you can compare it with the game score at any time.
+There is further adjustment possible in the section below calibration and sensitivity, but changing these values usually isn't necessary. Try a few games, watching what happens on the Admin panel - each player's score is shown so you can compare it with the game score at any time.  If you notice a particular digit counting too high you can increase the red detection depth number for that digit.  The detection depth number represets the minimum amount of time the coil must be on to count.  You can also try increasing the Blue hold off depth number which represets the minimum time between score pulses.  
 
 ![Timing adjustment controls](../../img/em/timing.png)
 
@@ -154,8 +163,6 @@ This is a brand new system and board for us - we want to hear your feedback to m
 
 ![Update button on the Admin page](../../img/em/admin_update_button.png)
 
-The **Clear Browser Storage** button can be useful if the web pages are acting funny or locked up. Two file downloads are available - **Download Logs** and **Download Diagnostic Data**. If Warped is helping you diagnose an issue we will likely ask you to download both of these files and send them to us.
-
-![Reset Tournament Board, Clear Browser Storage, Factory Reset Vector, and Debug buttons](../../img/em/admin_factory_reset.png)
+The **Clear Browser Storage** button can be useful if the web pages are acting funny or locked up. 
 
 Thanks for your support!
