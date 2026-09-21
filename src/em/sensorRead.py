@@ -275,6 +275,12 @@ def initialize():
 
 dma_sensor = None
 
+# rp2.DMA() wrapper for the channel dma_sensor points at - kept alive (rather
+# than a dma_start()-local var) so the channel isn't reallocated and leaked
+# every time dma_start() re-runs (initialize() calls it on every zero-sample
+# recovery attempt, not just at boot).
+_dma_obj = None
+
 def dma_diag():
     global dma_sensor
     if dma_sensor is not None:
@@ -283,14 +289,15 @@ def dma_diag():
 
 
 def dma_start():
-    global dma_sensor    
+    global dma_sensor, _dma_obj
     #**************************************************
     # DMA Setup for bus memory access, read and writes
     #**************************************************
-    a=rp2.DMA()
-   
-    # DMA channel assignment (we can use any channel in this case)
-    DMA_SENSOR = a.channel 
+    if _dma_obj is None:
+        _dma_obj = rp2.DMA()
+
+    # DMA channel assignment (reused across calls - see _dma_obj above)
+    DMA_SENSOR = _dma_obj.channel
     log.log(f"SENSOR: using DMA channel: {DMA_SENSOR}")
 
     #uctypes struct for registers
