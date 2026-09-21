@@ -20,8 +20,8 @@ How the Vector board installs on an Electro-Mechanical pinball machine, what the
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
 - [Configure your game](#configure-your-game)
-- [Sensor adjustment](#sensor-adjustment)
-- [Training games and learn mode](#training-games-and-learn-mode)
+- [Sensitivity adjustment](#sensitivity-adjustment)
+- [Play a few games](#play-a-few-games)
 - [Problems? Updates?](#problems-updates)
 
 ## How it works
@@ -37,13 +37,15 @@ The circuit board is installed in the back box of your Electro-Mechanical pinbal
 
 While we make every effort to make this an easy and safe process, damage to your game is possible and we cannot be responsible if something goes wrong. If you have never worked on EM games we encourage you to find someone who has and offer them some pizza to come help.
 
-Some things to watch for: static electricity can damage circuits. When working with the circuit board it is not a bad idea to touch the metal backplane before you touch electronics - just to make sure that charge you got walking across the carpet is gone.
+Some things to watch for: static electricity can damage circuits. When working with the circuit board it is not a bad idea to touch the metal frame before you touch electronics - just to make sure that charge you got walking across the carpet is gone.
 
 We offer email support and will do anything we can to help you enjoy Warped Pinball accessories. We cannot however be liable for any damage to yourself or machine.
 
+This Warped product counts the actual pulses sent to your score reels. The mechanical action of the reels does not always perfectly reflect the number of pulses - as a result, the Warped score can differ slightly from the score shown on the reels.
+
 ## Hardware installation - main board mounting
 
-SYS EM.Wifi main board will be installed on the inside of your back box. It is best to place the board on the inside of the vertical side wall. Every game is a little different, you want to find a spot where game wires will not touch the board and there is not a metal back plate to interfere with WiFi. Before committing to a location check score reel sensor cable lengths. There is a pack of short sensor leads and one with long sensor leads - make sure you mount the main board in a location where the required sensor leads can reach the score reel coils.
+SYS EM.Wifi main board will be installed on the inside of your back box. It is best to place the board on the inside of the vertical side wall. Every game is a little different, you want to find a spot where game wires will not touch the board and there is not a metal back plate to interfere with WiFi. Before committing to a location check score reel sensor cable lengths. There is a pack of short sensor leads and some with long sensor leads - make sure you mount the main board in a location where the required sensor leads can reach the score reel coils.
 
 The included mounting screws fit into and through the board plastic standoff spacers as shown. (Two are shown here - you can use all four if you want.)
 
@@ -75,7 +77,7 @@ Reels are always numbered 1, 10, 100, 1000, etc. from left to right as you look 
 
 ![Score reel numbering including a dummy reel](../../img/em/reel_numbering.jpg)
 
-Attach each sensor to a wire assembly before installing on the coil. If your coil paper is damaged you can use the included high-temperature tape dots to repair it before placing sensors. Use the longer wire ties - feeding around the coil and through the loop on the sensor circuit board. Note the "upside down" orientation of the sensor on the coil. This orientataion is very important,make sure the sensor faces down towards the coil. check that the sensor stays in position as you reinstall the score reel.
+Attach each sensor to a wire assembly before installing on the coil. If your coil paper is damaged you can use the included high-temperature tape dots to repair it before placing sensors. Use the longer wire ties - feeding around the coil and through the loop on the sensor circuit board. Note the "upside down" orientation of the sensor on the coil. This orientation is very important - make sure the sensor faces down towards the coil, and check that it stays in position as you reinstall the score reel. It is important that all the sensors are mounted in the same orientation and angle on each coil.
 
 ![Sensor assembly with connector](../../img/em/sensor_assembly.jpg)
 
@@ -128,25 +130,23 @@ Open a web browser on any computer on your local WiFi. Type the IP address in th
 
 ![Admin setup page with game configuration and calibration](../../img/em/admin_setup.png)
 
-## Sensor adjustment
+## Sensitivity adjustment
+
+With all the coil sensors installed, and your game powered up and in standby mode (game over mode), click the "Recalibrate" button. The process takes about a minute; during this time the display on the board will show the letter "C".
 
 Now set the sensitivity of the coil sensors for your specific game. Take the glass out so you can hit single targets on the playfield one at a time. Watch the green sensor LEDs on the main board while testing targets (good time to have a helper). The green LED under the correct connector should turn on briefly after the score reel increments. When a carry over occurs you will see two LEDs blink, one for each reel that is incremented.
 
 Watch carefully and note if the LED does not blink sometimes when the reel increments. If this is the case just press the "+" button on the main board once and retest. On the other hand if you see too many LEDs come on when reels are not incrementing, press the "-" button on the main board once and retest. Keep adjusting + or - as required until all score reels register correctly on the green LEDs.
 
-## Training games and learn mode
+Take time with this step, test each score type (1s, 10s, 100s, etc.) and each player. Make sure you see a single LED blink for each single score increment. You can adjust sensitivity on the web page or with the +/- button right on the board, whichever is more convenient.
 
-Click **Record Calibration Game** in the Admin panel.
+![Sensitivity adjustment buttons on the Admin page](../../img/em/sensitivy_buttons.png)
 
-![Record Calibration Game button](../../img/em/admin_record_calibration.png)
+## Play a few games
 
-Play a normal game with all players. After hitting the start button wait 8 seconds or more to plunge - give the computer time to keep up. During the game the number display on the main board will count up from 0 to 9 as you play. Your game must end at or before 9 is reached. Once the display is at 7 just let balls drain. Let the game end, wait a few seconds, and then continue on the computer. At the end of the game enter the actual scores into the web interface.
+There is further adjustment possible in the section below calibration and sensitivity, but changing these values usually isn't necessary. Try a few games, watching what happens on the Admin panel - each player's score is shown so you can compare it with the game score at any time.
 
-When you have at least two games recorded, the **Start Learning Process** button will enable.
-
-![Two calibration games recorded](../../img/em/admin_calibration_recorded.png)
-
-Click the button to start the process. Learning can take up to 15 minutes to complete. The number display on the main board will count down from 9 to 0 during the process. Once complete, your game is ready to play and enjoy online scoring!
+![Timing adjustment controls](../../img/em/timing.png)
 
 ## Problems? Updates?
 

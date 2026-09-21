@@ -74,6 +74,7 @@ SEGMENTS = [
     0x73,  # P
     0x39   # C
 ]
+IDX_E = 12
 IDX_A = 13
 IDX_P = 14
 IDX_C = 15
@@ -292,7 +293,7 @@ def displayUpdate():
         p2_byte |= 0x80
 
     gameOverLED = gameActive()
-    if gameOverLED:
+    if not gameOverLED:
         p2_byte |= 0x40
 
     #deicde which input to put on digit display
@@ -301,14 +302,31 @@ def displayUpdate():
     elif 0 <= learnModeCounter <= 9:
         idx= learnModeCounter
     else:
-        ch = ipDigitDisplay[ipDigitUpNext]
-        ipDigitUpNext = (ipDigitUpNext + 1) % len(ipDigitDisplay)
+        # WIFI01 (bad password) / WIFI02 (network not found) have no other
+        # visible indicator on this board (no RGB status LED like other
+        # variants), so scroll them as "E1"/"E2" on the single digit instead
+        # of the IP address. Every other fault is left exactly as before -
+        # logged only, no display change.
+        wifi_fault_text = None
+        for _f in S.faults:
+            if _f.startswith("WIFI01"):
+                wifi_fault_text = "E1  "
+                break
+            if _f.startswith("WIFI02"):
+                wifi_fault_text = "E2  "
+                break
+        scroll_text = wifi_fault_text if wifi_fault_text else ipDigitDisplay
+
+        ch = scroll_text[ipDigitUpNext % len(scroll_text)]
+        ipDigitUpNext = (ipDigitUpNext + 1) % len(scroll_text)
         if '0' <= ch <= '9':
             idx = ord(ch) - ord('0')     # 0..9
         elif ch == '.':
             idx = 10
         elif ch == ' ':
             idx = 11                      # blank / space
+        elif ch == 'E':
+            idx = IDX_E
         elif ch == 'A':
             idx = IDX_A
         elif ch == 'P':
