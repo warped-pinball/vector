@@ -8,6 +8,20 @@
 // null before it's known). Player 3/4 timing controls only show for 4player.
 let emHardwareVersion = null;
 
+// Per-script-load generation token. The SPA can re-execute this whole file
+// (see the IIFE comment above) before an earlier load's in-flight fetches
+// resolve - e.g. the user leaves Admin and comes back before a suspended
+// initializeAdminPage() continuation resumes. window.adminGeneration is
+// bumped on every load and on cleanup; each load captures its own number
+// into this module-scoped variable so isCurrentGeneration() can tell a
+// stale continuation from the live one, even though a plain "is polling
+// active" boolean can't (a newer load re-sets it true and the stale one
+// reads that as itself still being current).
+let myGeneration = 0;
+function isCurrentGeneration() {
+  return myGeneration === window.adminGeneration;
+}
+
 function applyHardwareVersionVisibility() {
   const show = emHardwareVersion === "4player";
   const p3 = document.getElementById("timing-section-p3");
@@ -439,7 +453,7 @@ async function initSensitivityUI() {
     display.dataset.polling = "1";
     const SENSITIVITY_POLL_MS = 1300;
     (async function pollSensitivity() {
-      if (!window.adminPollingActive) return;
+      if (!isCurrentGeneration()) return;
       try {
         const resp = await window.smartFetch("/api/em/get_sensitivity", null, false);
         if (resp && resp.ok) {
@@ -455,7 +469,7 @@ async function initSensitivityUI() {
       } catch (e) {
         // keep last displayed value on transient errors
       }
-      if (window.adminPollingActive) {
+      if (isCurrentGeneration()) {
         setTimeout(pollSensitivity, SENSITIVITY_POLL_MS);
       }
     })();
@@ -664,13 +678,18 @@ function _adminInitOk() {
 }
 
 async function initializeAdminPage() {
-  window.adminPollingActive = true;
+  window.adminGeneration = (window.adminGeneration || 0) + 1;
+  myGeneration = window.adminGeneration;
   window.cleanup_admin = function () {
-    window.adminPollingActive = false;
+    // Bump (rather than just flip a boolean) so this generation is
+    // invalidated even if the user never navigates back to Admin - a
+    // continuation suspended mid-await still needs to notice it's stale.
+    window.adminGeneration = (window.adminGeneration || 0) + 1;
   };
 
   // First attempt
   await _runAdminDataInit();
+  if (!isCurrentGeneration()) return; // a newer Admin load has since started
 
   // If data didn't load, schedule retries (server may have been busy with
   // stale requests from the previous page).
@@ -681,10 +700,11 @@ async function initializeAdminPage() {
     if (_retries >= _MAX_RETRIES) return;
     _retries++;
     setTimeout(async () => {
-      if (!window.adminPollingActive) return; // navigated away
+      if (!isCurrentGeneration()) return; // navigated away, or a newer load took over
       if (_adminInitOk()) return;             // already loaded
       console.warn("ADMIN: data incomplete, retry " + _retries + "/" + _MAX_RETRIES);
       await _runAdminDataInit();
+      if (!isCurrentGeneration()) return;
       _scheduleRetry();
     }, _RETRY_MS);
   }
@@ -728,7 +748,7 @@ function startLivePlayerScorePolling() {
   }
 
   async function poll() {
-    if (!window.adminPollingActive) {
+    if (!isCurrentGeneration()) {
       return;
     }
     try {
@@ -744,7 +764,7 @@ function startLivePlayerScorePolling() {
     } catch (e) {
       // keep last displayed values on transient errors
     }
-    if (window.adminPollingActive) {
+    if (isCurrentGeneration()) {
       setTimeout(poll, POLL_MS);
     }
   }

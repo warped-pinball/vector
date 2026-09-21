@@ -36,20 +36,28 @@ def em_config(request):
     else:
         S.gdata["gamename"] = str(name).strip()
 
+    # Player count is hardware-bounded: a 2player board's sensor read only
+    # covers P1/P2 (16-bit sample), so persisting players=3/4 there would
+    # silently leave those extra channels reading zero forever - see
+    # sensorRead.py's 16-bit vs 32-bit PIO program selection.
+    max_players = 2 if getattr(S, "hardware_version", None) == "2player" else 4
     try:
-        S.gdata["players"] = int(request.data.get("players") or 0)
+        players = int(request.data.get("players") or 1)
+        S.gdata["players"] = max(1, min(max_players, players))
     except Exception:
         S.gdata["players"] = 1
 
     try:
-        S.gdata["digits"] = int(request.data.get("reels_per_player") or 0)
+        digits = int(request.data.get("reels_per_player") or 1)
+        S.gdata["digits"] = max(1, min(5, digits))
     except Exception:
         S.gdata["digits"] = 1
 
     try:
-        S.gdata["dummy_reels"] = int(request.data.get("dummy_reels") or 0)
-    except Exception:        
-        S.gdata["dummy_reels"] =  0
+        dummy_reels = int(request.data.get("dummy_reels") or 0)
+        S.gdata["dummy_reels"] = max(0, min(4, dummy_reels))
+    except Exception:
+        S.gdata["dummy_reels"] = 0
 
     try:
         startpause = int(request.data.get("startpause") or 9)

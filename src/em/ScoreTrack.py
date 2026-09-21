@@ -88,8 +88,15 @@ bit_buf_mv = memoryview(bit_buf)
 score_mask_mv = memoryview(score_mask)
 reset_mask_mv = memoryview(reset_mask)
 
-# carryThresholds (timing) as a 4x4x2 array [player][digit][low,high]
-carryThresholds = [[[12, 28] for _ in range(4)] for _ in range(4)]
+# carryThresholds (timing) as a 4x5x2 array [player][digit][low,high].
+# Digit dimension is 5 to match the max supported reels_per_player (see
+# em_routes.py set_config); only digits 0..3 are persisted (the on-flash
+# EMData "carrythresholds" blob is a fixed 32 bytes = 4 players * 4 digits
+# * 2 bytes), so digit index 4 always stays at this in-memory default.
+# Safe today since CARRY_COUNT_CORRECTION_ENABLED is False and nothing
+# calls _carry_window_hit(), but sized to 5 so it can't IndexError if that
+# ever changes on a 5-reel game.
+carryThresholds = [[[12, 28] for _ in range(5)] for _ in range(4)]
 
 # Temporary toggle: set False to disable carry-count correction logic.
 CARRY_COUNT_CORRECTION_ENABLED = False
@@ -182,7 +189,8 @@ def loadState():
 
     buildSensorBitMask()
 
-    # carryThresholds (4 players * 4 digits * 2 values (1 byte each))
+    # carryThresholds (4 players * 4 digits * 2 values (1 byte each)) - only
+    # digits 0..3 are persisted; digit 4 keeps the module-level default.
     ct_blob = S.gdata["carrythresholds"]
     if not isinstance(ct_blob, (bytes, bytearray)) or len(ct_blob) != 32:
         raise ValueError("S.gdata['carrythresholds'] must be 32-byte bytes or bytearray")
@@ -347,7 +355,9 @@ def saveState():
         fm[ch * 2 + 1] = r
     S.gdata["filtermasks"] = bytes(fm)
 
-    # Build 32-byte carrythresholds: players 0..3, digit 0..3, two 1-byte values (low, high)
+    # Build 32-byte carrythresholds: players 0..3, digit 0..3, two 1-byte values (low, high).
+    # digit 4 (5-reel games) is intentionally not persisted here - see the
+    # carryThresholds definition above.
     ct = bytearray(32)
     pos = 0
     for p in range(4):

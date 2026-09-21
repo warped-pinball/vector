@@ -71,11 +71,21 @@ async function fetchAndApply(url, targetId) {
     return;
   }
   if (url.endsWith(".js")) {
-    const script = document.createElement("script");
-    script.src = url;
-    script.id = targetId;
-    script.async = false;
-    placeholder.replaceWith(script);
+    // Resolve only once the script has actually downloaded and run its
+    // top-level code (not just been inserted into the DOM) - otherwise
+    // callers think navigation is complete before e.g. admin.js has
+    // registered its cleanup_admin hook, and a quick further navigation
+    // can leave this script to execute later against a page it no longer
+    // belongs to.
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.id = targetId;
+      script.async = false;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script ${url}`));
+      placeholder.replaceWith(script);
+    });
   } else {
     const response = await fetch(url);
     if (!response.ok) {
