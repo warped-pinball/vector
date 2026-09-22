@@ -489,17 +489,16 @@ def test_the_target_list_comes_from_the_repo(monkeypatch):
 def test_only_targets_with_configs_can_be_driven():
     ready = bench.bench_targets()
 
-    assert set(ready) == {"sys11", "wpc", "data_east", "em"}
-    # Real build targets, but nothing to boot them against.
-    assert "classic" not in ready and "whitestar" not in ready
+    assert set(ready) == {"sys11", "wpc", "data_east", "em", "classic"}
+    # Real build target, but nothing to boot it against.
+    assert "whitestar" not in ready
 
 
 def test_a_board_mapped_to_a_configless_target_is_refused_early(job_summary):
-    """A classic board turned up on the bench; the map must not be able to lie about it."""
-    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True}]
+    boards = [{"port": "/dev/ttyACM2", "chip_id": "899f", "system": "whitestar", "responsive": True}]
 
     with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
-        bench.resolve_targets(boards, {"899f": "classic"})
+        bench.resolve_targets(boards, {"899f": "whitestar"})
 
     # Reported where an unrecognised chip id is reported, for the same person.
     assert "target the bench cannot use" in job_summary.read_text()
@@ -535,15 +534,18 @@ def test_the_suggested_map_line_never_repeats_a_broken_entry():
 
     # Nothing to suggest for a target that exists but cannot be driven, so it
     # is left blank rather than being offered back.
-    blanked = bench.board_map_instructions(boards, {"899f": "classic", "df13": "wpc"})
+    blanked = bench.board_map_instructions(boards, {"899f": "whitestar", "df13": "wpc"})
     assert "VECTOR_HIL_BOARD_MAP=899f=<target>,df13=wpc" in blanked
+
+    preserved = bench.board_map_instructions(boards, {"899f": "classic", "df13": "wpc"})
+    assert "VECTOR_HIL_BOARD_MAP=899f=classic,df13=wpc" in preserved
 
 
 def test_self_report_cannot_smuggle_in_an_undriveable_target():
-    """Autodetection reads the flashed firmware, which can say 'classic' too."""
+    """Autodetection reads the flashed firmware, which can say 'whitestar' too."""
     boards = [
         {"port": "/dev/ttyACM0", "chip_id": "aaaa", "system": "wpc", "responsive": True},
-        {"port": "/dev/ttyACM2", "chip_id": "899f", "system": "classic", "responsive": True},
+        {"port": "/dev/ttyACM2", "chip_id": "899f", "system": "whitestar", "responsive": True},
     ]
 
     with pytest.raises(bench.CheckFailure, match="bench cannot drive"):
@@ -553,7 +555,7 @@ def test_self_report_cannot_smuggle_in_an_undriveable_target():
 def test_the_instructions_name_what_cannot_be_mapped(job_summary):
     text = bench.board_map_instructions([{"port": None, "chip_id": "899f"}], {})
 
-    assert "targets: data_east, em, sys11, wpc" in text
+    assert "targets: classic, data_east, em, sys11, wpc" in text
     # Naming them matters: the board on the bench is running one of them, and
     # the only wrong move is mapping it to a system it is not wired for.
     assert "classic" in text and "whitestar" in text
