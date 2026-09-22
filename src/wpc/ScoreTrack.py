@@ -115,9 +115,7 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-    from origin import push_end_of_game
 
-    push_end_of_game(game)
 
 
 def _read_machine_score(UseHighScores=True):
@@ -579,7 +577,6 @@ def CheckForNewScores(nState=[0]):
                     initials_capture_this_game = True
                 else:
                     initials_capture_this_game = False
-                #S.gameCounter = (S.gameCounter + 1) % 100
 
         # waiting for game to end
         elif nState[0] == 2:
