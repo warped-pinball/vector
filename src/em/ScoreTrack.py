@@ -491,8 +491,15 @@ def processSensorData():
 
     if stateVar == PROCESS_IDLE:
         """wait for game to start"""
-        processAndRun()  #run so lights blink for user cal       
-        sensorScores = [[0 for _ in range(8)] for _ in range(4)]   #but keep scores at 000000 !
+        processAndRun()  #run so lights blink for user cal
+        # Leave sensorScores (and the scores.html live display) holding the
+        # last finished game's score through this idle/game-over gap - it
+        # gets cleared in PROCESS_START below, right as the next game
+        # actually begins, not here. CheckForNewScores (common/phew/server.py,
+        # 5s cadence) is the only thing that flips game_active/"in play"
+        # off, up to several seconds after this 800ms loop reaches idle -
+        # zeroing the score here made it disappear well before "in play"
+        # did instead of together.
         if sensorRead.gameActive() == 1:
             stateVar = PROCESS_START
             stateCount = 0            
