@@ -26,6 +26,10 @@ from systemConfig import SystemVersion
 import ScoreTrack
 import SharedState as S
 
+# EM hardware variant, detected at boot from GPIO14: "2player" or "4player"
+hardware_version = None
+
+
 Log = logger_instance
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
