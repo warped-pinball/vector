@@ -386,6 +386,21 @@ The allowlist keeps tolerating `HDWR02` for now — harmless, and it costs nothi
 is ever reconnected. `HDWR01` stays a warning that suppresses the active-config assertion,
 since if it ever does fire the board is in safe mode and the config genuinely was not loaded.
 
+**The third bare-board boot path, found on the bench (2026-09-20):** `main.py` also takes the
+`safe_mode` branch when `check_ap_button()` reads GPIO22 as held, and that path raises **no
+fault at all**. The classic board did this on every boot of HIL run 86 — `Total transitions: 0`,
+`faults: none`, every route answering, and `Loading game definitions with safe mode set to
+True` — so it came up as an access point on generic defaults, reported `Generic System` for
+its game name, and the config matrix blamed all four classic configs for a boot that never
+read one. GPIO22 is now asked for with `machine.Pin.PULL_UP` on classic so a floating or
+unpowered net cannot read as a press.
+
+Because it is faultless, the fault allowlist cannot catch it. Both harnesses read the boot
+console instead (`bench.booted_in_safe_mode`): `config_matrix.py` fails the board once, up
+front, before spending a boot cycle per config, and `flash_and_check.py` folds it into its
+existing `safe_mode` warning. Anything that would send `main.py` down `safe_mode` without a
+fault has to be visible here, or the config assertions are vacuous and say the opposite.
+
 Bring-up task: boot each bare board 50 times, record the fault set each time, and confirm it is identical every time. Until that holds, nothing else is worth automating.
 
 ### G2 — connect and hit the API

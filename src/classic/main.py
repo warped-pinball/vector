@@ -28,7 +28,16 @@ import Formats
 Log = logger_instance
 
 # other gen I/O pin inits
-SW_pin = machine.Pin(22, machine.Pin.IN)
+# The WiFi config button shorts GPIO22 to ground, so the pin only reads high
+# when something holds it there. Asked for as a bare input, it floats whenever
+# the external pull-up is absent or unpowered - and a floating pin reads 0,
+# which check_ap_button() below takes as "button held". That sends the board
+# into AP mode, and AP mode is the branch where main.py loads safe defaults
+# instead of the configured game, so the board comes up healthy and generic
+# with nothing faulted to say why. The internal pull-up makes the read correct
+# either way: it sits in parallel with any external one, and a real press
+# still wins over it.
+SW_pin = machine.Pin(22, machine.Pin.IN, machine.Pin.PULL_UP)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 
@@ -66,12 +75,18 @@ def bus_activity_fault_check():
 
 def check_ap_button():
     # holding down AP setup button?
+    # Sampled after a settle delay and with the reads spaced out, so the answer
+    # describes the button rather than the moment the pin was configured: the
+    # pull-up has to charge whatever is hanging off the net, and five
+    # back-to-back reads taken microseconds apart can all land before it has.
+    time.sleep_ms(50)
     zero_count = 0
     num_Checks = 5
     for _ in range(num_Checks):
         pin_state = SW_pin.value()
         if pin_state == 0:
             zero_count += 1
+        time.sleep_ms(10)
 
     if zero_count == num_Checks:
         Log.log("Main: Button press-wifi config")
@@ -115,6 +130,10 @@ if bus_activity_fault:
 if not bus_activity_fault and not ap_mode:
     GameDefsLoad.go()
 else:
+    # Say which branch sent us here. Safe mode raises no fault, so without
+    # this line a board on generic defaults looks identical to one that
+    # loaded its config, from the console and from the API alike.
+    Log.log(f"Main: safe mode (ap_mode={ap_mode}, bus_activity_fault={bus_activity_fault}) - game config NOT loaded")
     GameDefsLoad.go(safe_mode=True)
 
 if not bus_activity_fault:

@@ -43,6 +43,21 @@ EXPECTED_FAULTS = {"HDWR02"}
 # see DESIGN.md §8 (G1).
 BENCH_WARN_FAULTS = {"HDWR01"}
 
+# The other way into safe_mode, and the one nothing reports. main.py takes the
+# safe_mode branch when the AP button reads as held *or* when the bus check
+# trips, but only the second raises a fault - so an AP-mode boot loads generic
+# defaults while /api/fault stays empty and every route answers normally. The
+# firmware prints this on its way past, and it is the only evidence there is.
+# A classic board did exactly this on the bench for a whole matrix, and all
+# four of its configs were reported as broken.
+SAFE_MODE_MARKER = "safe mode set to True"
+
+
+def booted_in_safe_mode(boot_log):
+    """True when this boot's console says the game config was never read."""
+    return any(SAFE_MODE_MARKER in line for line in (boot_log or []))
+
+
 # Config key is the config filename without .json (dev/build.py:253).
 DEFAULT_GAMENAME = {
     "sys11": "GenericSystem11_",

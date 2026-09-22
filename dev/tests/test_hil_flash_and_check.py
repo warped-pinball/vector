@@ -144,3 +144,50 @@ def test_reset_board_never_raises_an_empty_reason(monkeypatch):
 
     with pytest.raises(bench.CheckFailure, match="without saying why"):
         bench.reset_board("/dev/ttyFAKE")
+
+
+# SPI_DataStore seeds the `extras` record's lastIP with the string "none"
+# (src/common/SPI_DataStore.py:248), so a board that never joined a network
+# hands back a truthy, unusable IP. Run 86 of the HIL workflow failed on
+# "GET http://none/ failed after 3 attempts: URLError(gaierror(-2, 'Name or
+# service not known'))", which describes a DNS lookup rather than the board.
+@pytest.mark.parametrize("placeholder", ["none", "None", "", "  ", "0.0.0.0", "000.000.000.000"])
+def test_health_check_usb_treats_a_placeholder_ip_as_no_ip(monkeypatch, placeholder):
+    responses = {
+        "/api/version": {"version": "1.2.3"},
+        "/api/fault": [],
+        "/api/game/status": {"GameActive": False},
+        "/api/game/configs_list": {"Generic_WPC": {"name": "Generic System WPC"}},
+        "/api/game/active_config": {"active_config": "Generic_WPC"},
+        "/api/leaders": [],
+        "/api/players": [],
+        "/api/machine_id": {"id": "abc"},
+        "/api/wifi/status": {"connected": False, "ssid": "bench"},
+        "/api/settings/get_tournament_mode": {"tournament_mode": False},
+        "/api/auth/challenge": {"challenge": "x"},
+        "/api/last_ip": {"ip": placeholder},
+    }
+    monkeypatch.setattr(fac, "get", lambda _client, route: responses[route])
+    monkeypatch.setattr(fac, "source_version", lambda _target: "1.2.3")
+
+    ip, _wifi = fac.health_check_usb({"client": object(), "target": "wpc", "port": "/dev/ttyFAKE"})
+
+    assert ip is None
+
+
+def test_health_check_http_names_safe_mode_when_a_board_has_no_ip():
+    board = {
+        "port": "/dev/ttyFAKE",
+        "ip": None,
+        "boot_log": ["Loading game definitions with safe mode set to True", "Starting in AP mode"],
+    }
+
+    with pytest.raises(bench.CheckFailure, match="it booted in safe mode"):
+        fac.health_check_http(board)
+
+
+def test_health_check_http_says_only_what_it_knows_without_a_safe_mode_marker():
+    with pytest.raises(bench.CheckFailure, match="did not join the bench wifi") as exc:
+        fac.health_check_http({"port": "/dev/ttyFAKE", "ip": None, "boot_log": ["Server: Loop Forever"]})
+
+    assert "safe mode" not in str(exc.value)

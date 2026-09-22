@@ -64,6 +64,7 @@ from bench import (  # noqa: E402
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
+    booted_in_safe_mode,
     drain_port,
     endgroup,
     get,
@@ -386,9 +387,23 @@ def check_bundle(client, target, configs):
     log(f"    bundle matches source: {len(configs)} configs, names identical")
 
 
-def check_booted_config(client, target, config, expected):
+def check_booted_config(client, target, config, expected, boot_log=None):
     """Assert that the board in front of us booted on `config`."""
     expected_name = expected["name"]
+
+    # Safe mode first, because every assertion below is about a config the
+    # board never read. main.py takes that branch for a held AP button as well
+    # as for the bus check, and the AP-button case raises no fault at all, so
+    # check_faults() sails straight past it and the game-name assertion then
+    # reports the board's generic fallback as a broken config. That is exactly
+    # how a classic board with a floating GPIO22 got all four of its configs
+    # blamed for a boot that never looked at one.
+    if booted_in_safe_mode(boot_log):
+        raise CheckFailure(
+            "the board booted in safe mode, so no config was loaded and this result would be meaningless "
+            "- main.py logged 'safe mode set to True', which means the AP button read as held or the bus "
+            "activity check tripped, not that anything is wrong with this config"
+        )
 
     check_faults(client, config)
 
@@ -493,6 +508,17 @@ def run_matrix(board, args, just_flashed=False):
         try:
             # A board we just flashed is already booting - see Session.start.
             client = session.start(reset=not just_flashed)
+            # Cheapest possible place to catch it: a board in safe mode never
+            # reads a config, so running the matrix against it spends a boot
+            # cycle per config to produce the same meaningless answer every
+            # time. Fail here, once, while the reason is still on screen.
+            if booted_in_safe_mode(session.boot_log):
+                raise CheckFailure(
+                    f"{port} booted in safe mode ('safe mode set to True'), so the game config was never loaded. "
+                    "main.py takes that branch when the AP button reads as held or the bus activity check trips; "
+                    "the AP-button case raises no fault, so nothing else on this board will say so. "
+                    "No config can be checked until the board boots normally."
+                )
             check_bundle(client, target, configs)
         finally:
             endgroup()
@@ -526,7 +552,7 @@ def run_matrix(board, args, just_flashed=False):
                             client = session.wait_for_boot()
                             consecutive_setup_failures = 0
 
-                            name = check_booted_config(client, target, config, configs[config])
+                            name = check_booted_config(client, target, config, configs[config], session.boot_log)
                         break
                     except CheckFailure as exc:
                         if attempt:

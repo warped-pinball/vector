@@ -216,6 +216,47 @@ def test_check_booted_config_catches_a_silent_fallback_to_the_generic_config(mon
         cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
 
 
+# The bench's classic board booted into AP mode for a whole matrix - a held
+# AP button is the one route into safe_mode that raises no fault - and all four
+# of its configs were reported as "failed twice, so this is the config, not the
+# board". These three pin the harness to the opposite answer.
+def test_booted_in_safe_mode_reads_the_firmware_marker():
+    assert bench.booted_in_safe_mode(["Total transitions: 0", "Loading game definitions with safe mode set to True"])
+    assert not bench.booted_in_safe_mode(["Loading game definitions with safe mode set to False"])
+    assert not bench.booted_in_safe_mode([])
+    assert not bench.booted_in_safe_mode(None)
+
+
+def test_check_booted_config_blames_safe_mode_rather_than_the_config(monkeypatch):
+    """An AP-mode boot loads generic defaults with nothing faulted.
+
+    The name assertion would fire on the fallback and read as a broken config,
+    so the safe-mode check has to come first and say what actually happened.
+    """
+    monkeypatch.setattr(cm, "get", responder(healthy(name="Generic System")))
+    boot_log = ["Loading game definitions with safe mode set to True", "Starting in AP mode"]
+
+    with pytest.raises(bench.CheckFailure, match="booted in safe mode"):
+        cm.check_booted_config(FakeClient(), "classic", "Supersonic_1", {"name": "Supersonic", "adjustments": False}, boot_log)
+
+
+def test_run_matrix_stops_before_spending_a_boot_on_a_safe_mode_board(monkeypatch, fake_repo):
+    """One clear failure up front, not one meaningless one per config.
+
+    It leaves run_matrix as a board-setup failure (main() records it as
+    "(board setup)"), which is the honest classification: nothing was learned
+    about any config, because the board never read one.
+    """
+    session = FakeSession("/dev/ttyFAKE")
+    session.boot_log = ["Loading game definitions with safe mode set to True"]
+
+    with pytest.raises(bench.CheckFailure, match="booted in safe mode"):
+        run_board(monkeypatch, fake_repo, session)
+
+    assert session.configs_set == []
+    assert session.restored is True
+
+
 def test_check_booted_config_catches_a_board_running_a_different_config(monkeypatch):
     monkeypatch.setattr(cm, "get", responder(healthy(config="Taxi_L4")))
 
@@ -348,7 +389,7 @@ def run_board(monkeypatch, fake_repo, session, check=None, **arg_overrides):
     """Drive run_matrix against a fake board. `check` replaces the assertions."""
     if check is None:
 
-        def check(_client, _target, _config, expected):
+        def check(_client, _target, _config, expected, _boot_log=None):
             return expected["name"]
 
     monkeypatch.setattr(cm, "Session", lambda port, boot_timeout=None: session)
@@ -410,7 +451,7 @@ def test_run_matrix_abandons_a_board_that_stops_answering(monkeypatch, fake_repo
 def test_run_matrix_keeps_going_after_a_failing_config(monkeypatch, fake_repo):
     """An assertion failure is a result about the config, not about the board."""
 
-    def one_bad_config(_client, _target, config, expected):
+    def one_bad_config(_client, _target, config, expected, _boot_log=None):
         if config == "Generic_WPC":
             raise bench.CheckFailure("board reports game name 'Generic System' - fell back to a generic definition")
         return expected["name"]
@@ -992,7 +1033,7 @@ def test_a_config_that_fails_once_and_passes_is_the_board_not_the_config(monkeyp
     """
     seen = []
 
-    def flaky_once(_client, _target, config, expected):
+    def flaky_once(_client, _target, config, expected, _boot_log=None):
         seen.append(config)
         if config == "Generic_WPC" and seen.count("Generic_WPC") == 1:
             raise bench.CheckFailure("/api/leaders returned 500, expected 200")
@@ -1010,7 +1051,7 @@ def test_a_config_that_fails_once_and_passes_is_the_board_not_the_config(monkeyp
 
 
 def test_a_config_that_fails_twice_is_a_real_failure(monkeypatch, fake_repo):
-    def always_fails(_client, _target, config, expected):
+    def always_fails(_client, _target, config, expected, _boot_log=None):
         if config == "Generic_WPC":
             raise bench.CheckFailure("board reports game name 'Generic System'")
         return expected["name"]

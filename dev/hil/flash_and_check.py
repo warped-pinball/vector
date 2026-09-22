@@ -52,6 +52,7 @@ from bench import (  # noqa: E402
     _dump_boot_log,
     as_block,
     board_map_instructions,
+    booted_in_safe_mode,
     build,
     check_bench_complete,
     endgroup,
@@ -121,7 +122,18 @@ def health_check_usb(board):
     if expected_version not in str(reported):
         raise CheckFailure(f"version {reported!r} does not match built {expected_version!r}")
 
-    safe_mode = check_faults(board)
+    safe_mode = bool(check_faults(board))
+
+    # The other route into safe mode, and the silent one: main.py also takes
+    # that branch when the AP button reads as held, and unlike the bus check it
+    # raises no fault. Nothing above would notice, so read the console, which
+    # is where the firmware says so.
+    if booted_in_safe_mode(board.get("boot_log")):
+        safe_mode = True
+        log(
+            f"::warning::{board['port']} booted in safe mode ('safe mode set to True') with no fault raised - "
+            "the AP button read as held, so the board came up as an access point and the game config was NOT loaded"
+        )
 
     status = get(client, "/api/game/status")
     if not isinstance(status, dict):
@@ -159,6 +171,14 @@ def health_check_usb(board):
         ip = last_ip.get("ip") if isinstance(last_ip, dict) else None
     except CheckFailure:
         pass
+    # SPI_DataStore seeds the `extras` record's lastIP with the string "none"
+    # (SPI_DataStore.py:248), so a board that has never joined a network
+    # reports an IP that is truthy and unusable. Left alone it reaches urllib
+    # as a hostname and the run fails on "GET http://none/ ... Name or service
+    # not known", which says nothing about the board - the real answer is the
+    # one health_check_http gives for a missing IP.
+    if isinstance(ip, str) and ip.strip().lower() in ("", "none", "0.0.0.0", "000.000.000.000"):
+        ip = None
     return ip, wifi
 
 
@@ -200,7 +220,10 @@ def http_status(url):
 def health_check_http(board):
     ip = board.get("ip")
     if not ip:
-        raise CheckFailure("board reported no IP address - it did not join the bench wifi")
+        detail = ""
+        if booted_in_safe_mode(board.get("boot_log")):
+            detail = " - it booted in safe mode ('safe mode set to True'), which on an AP-button read means it came up as an access point instead"
+        raise CheckFailure("board reported no IP address - it did not join the bench wifi" + detail)
     base = f"http://{ip}"
 
     # The index page is served pre-gzipped; http_get transparently inflates it.

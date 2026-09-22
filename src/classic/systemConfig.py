@@ -2,7 +2,7 @@ vectorSystem = "classic"
 updatesURL = "http://software.warpedpinball.com/vector/classic/latest.json"
 
 # Firmware version for the Classic build
-SystemVersion = "0.1.1"
+SystemVersion = "0.1.2"
 
 
 # System specific scheduled tasks
