@@ -120,21 +120,21 @@ Then record what you saw:
 ```bash
 # the value is the whole map - list every board, including ones already correct
 sed -i '/^VECTOR_HIL_BOARD_MAP=/d' ~/actions-runner/.env
-echo 'VECTOR_HIL_BOARD_MAP=<chip1>=sys11,<chip2>=wpc,<chip3>=data_east' >> ~/actions-runner/.env
+echo 'VECTOR_HIL_BOARD_MAP=<chip1>=sys11,<chip2>=wpc,<chip3>=data_east,<chip4>=classic' >> ~/actions-runner/.env
 cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
-Valid targets are the ones with game configs to boot against: `sys11`, `wpc`, `data_east`, `em`.
+Valid targets are the ones with game configs to boot against: `sys11`, `wpc`, `data_east`, `em`, `classic`.
 Use the directory name, not the name people say out loud — the Data East board is `data_east`,
 not `de` (the harness suggests the right one if you get it wrong, and refuses the run rather
 than flashing anything).
-The tree also builds `classic` and `whitestar`, and the bench **cannot** drive those — they have a
-`systemConfig.py` and no `config/` directory, so there is nothing to flash and boot. A board wired
-for one of them cannot be mapped at all until that target has configs; mapping it to a different
-system would flash the wrong firmware to real hardware, so the harness refuses it by name. The map must cover
-*every* board the harness sees - adding a board to the bench means adding it here, or the run
-stops with `VECTOR_HIL_BOARD_MAP is set but does not cover: ...`. That failure (and the other
-map-related ones) prints these same instructions, pre-filled with the bench's actual chip ids.
+The tree also builds `whitestar`, and the bench **cannot** drive it — it has a `systemConfig.py`
+and no `config/` directory, so there is nothing to flash and boot. A board wired for it cannot be
+mapped until that target has configs; mapping it to a different system would flash the wrong
+firmware to real hardware, so the harness refuses it by name. The map must cover *every* board the
+harness sees - adding a board to the bench means adding it here, or the run stops with
+`VECTOR_HIL_BOARD_MAP is set but does not cover: ...`. That failure (and the other map-related
+ones) prints these same instructions, pre-filled with the bench's actual chip ids.
 
 With the map set, `flash_and_check.py` uses it and ignores self-report entirely. Without it,
 the harness falls back to self-report but **refuses to flash when two boards claim the same

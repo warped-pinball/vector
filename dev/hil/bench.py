@@ -49,6 +49,7 @@ DEFAULT_GAMENAME = {
     "wpc": "Generic_WPC",
     "data_east": "GenericDE_",
     "em": "EM_machine_",
+    "classic": "Generic_",
 }
 
 # Boot is slow and variable, so we watch the console for the firmware saying
@@ -852,13 +853,13 @@ def buildable_targets():
 def bench_targets():
     """Targets the bench can actually flash and health-check.
 
-    Narrower than what the tree can build, and the gap is real: `classic` and
-    `whitestar` have a systemConfig.py and nothing else - no config directory,
-    so no generic game config to boot them against and nothing for
-    /api/game/configs_list to return. A board running one of them turned up on
-    the bench and the harness had no way to say any of this: it offered four
-    targets with no hint that the tree has seven, and a map entry naming one of
-    the other three died on a bare KeyError three stages later.
+    Narrower than what the tree can build, and the gap is real: `whitestar`
+    has a systemConfig.py and nothing else - no config directory, so no generic
+    game config to boot it against and nothing for /api/game/configs_list to
+    return. A board running one of those targets turned up on the bench and the
+    harness had no way to say any of this: it offered too few targets with no
+    hint that the tree has seven, and a map entry naming one of the others died
+    on a bare KeyError three stages later.
     """
     ready = []
     for target in buildable_targets():
