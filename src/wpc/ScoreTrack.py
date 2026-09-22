@@ -117,7 +117,6 @@ def _place_game_in_claim_list(game):
     print("SCORE: add to claims list: ", recent_scores)
 
 
-
 def _read_machine_score(UseHighScores=True):
     """read machine scores - in play and highscores
     and if HighScores is True try to get initials from highscore area
