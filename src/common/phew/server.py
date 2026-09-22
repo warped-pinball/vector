@@ -1,7 +1,6 @@
 import time
 
 import faults
-import machine
 import ntptime
 import uasyncio
 from ScoreTrack import (
