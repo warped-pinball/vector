@@ -126,7 +126,7 @@ sensorRead.initialize()
 resource.go(True)
 
 # launch wifi, and server. Should not return
-from backend import go  # noqa: E402SCORE: scores
+from backend import go  
 
 # EM has no use for the periodic shadow-RAM -> FRAM mirror that other game
 # systems rely on (SRAM_DATA_BASE here is a transient sensor sample buffer,
