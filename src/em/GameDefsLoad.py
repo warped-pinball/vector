@@ -19,6 +19,7 @@ Log = logger_instance
 
 safe_defaults = {
     "gamename": "EM Generic",
+    "GameInfo": {"System": "EM", "GameName": "EM Generic"},
     "players": 1,
     "digits": 4,
     "dummy_reels": 0,
@@ -37,6 +38,23 @@ safe_defaults = {
     "timing_p4_score": [8, 8, 8, 8, 8],
     "timing_p4_reset": [8, 8, 8, 8, 8],
 }
+
+_LIST_KEYS = (
+    "sensorlevels",
+    "timing_p1_score", "timing_p1_reset",
+    "timing_p2_score", "timing_p2_reset",
+    "timing_p3_score", "timing_p3_reset",
+    "timing_p4_score", "timing_p4_reset",
+)
+
+
+def get_safe_defaults():
+    """Copy so gdata never aliases (or mutates) the module-level defaults."""
+    data = dict(safe_defaults)
+    data["GameInfo"] = dict(safe_defaults["GameInfo"])
+    for key in _LIST_KEYS:
+        data[key] = list(safe_defaults[key])
+    return data
 
 
 def parse_config_line(line):
@@ -121,7 +139,7 @@ def go(safe_mode=False):
         print("Loaded EMData from SPI_DataStore")
 
     except Exception as e:
-        Log.log(f"Error loading EMData: {e}")        
+        Log.log(f"Error loading EMData: {e}")
         faults.raise_fault(faults.CONF00)
-        SharedState.gdata = safe_defaults
-        print("Using safe defaults:", safe_defaults)
+        SharedState.gdata = get_safe_defaults()
+        print("Using safe defaults:", SharedState.gdata)

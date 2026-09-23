@@ -59,19 +59,6 @@ def detect_hardware_version(pin, checks=10, interval_ms=5):
 
 adjustButtons.init_buttons()
 
-def error_toggle(timer):
-    led_board.toggle()
-
-
-def set_error_led():
-    global led_board
-    led_board = machine.Pin(26, machine.Pin.OUT)
-    timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
-
-
-def bus_activity_fault_check():
-    pass
-    return False
 
 
 def check_ap_button():
@@ -109,11 +96,11 @@ def clear_ram_section(start_addr=0x20080000, length=0x20):
 print("\n\n")
 print("  Warped Pinball :: System EM")
 Log.log(f"          Version EM {SystemVersion}")
-print("Contact Paul -> Inventingfun@gmail.com")
+print("Contact Paul -> Paul@WarpedPinball.com")
 
 print(
     """
-WPC.Wifi (Vector) from Warped Pinball
+ EM.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )

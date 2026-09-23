@@ -186,7 +186,7 @@ def serialize(record, structure_name):
         endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF
 
         sensitivity = int(record.get("sensitivity", 0))
-        sensitivity = max(-80, min(50, sensitivity))
+        #sensitivity = max(-80, min(50, sensitivity))
 
         def _coerce_timing(raw, default, lo, hi):
             try:
@@ -410,7 +410,7 @@ def blankStruct(structure_name):
         "ssid": "",
         "password": "",
         "Gpassword": "",
-        "gamename": "GenericSystem11_",
+        "gamename": "EM_",
         "other": 1,
     }
     # default EMData

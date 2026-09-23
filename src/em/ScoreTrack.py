@@ -40,9 +40,6 @@ recent_scores = [
     [5, ("", 0), ("", 6), ("", 0), ("", 0)],
 ]
 
-lastValue = 0
-segmentMS = 0
-
 # Diagnostics #gpio26 = Pin(26, Pin.OUT)
 # gpio26.value(not gpio26.value())
 # gpio1 = Pin(1, Pin.OUT)
@@ -116,7 +113,6 @@ def reset_live_scores_on_boot():
     """Reset all live scoring state so EM boots with zeroed scores."""
     global sensorScores, last_sc, scoreState
     global stateVar, stateCount, gameover, nGameIdleCounter
-    global lastValue, segmentMS
 
     sensorScores = [[0 for _ in range(8)] for _ in range(4)]
 
@@ -126,8 +122,6 @@ def reset_live_scores_on_boot():
     stateCount = 0
     gameover = False
     nGameIdleCounter = 0
-    lastValue = 0
-    segmentMS = 0
 
     S.game_status["game_active"] = False
 
@@ -485,7 +479,7 @@ def processSensorData():
     """called each every 800mS.    watch game active and decide when to operate on data
     coming in from sensor module - process for live scores"""
     global stateVar, stateCount, gameover
-    global lastValue, segmentMS,sensorScores 
+    global sensorScores
 
     stateCount += 1
 
@@ -511,7 +505,6 @@ def processSensorData():
         if sensorRead.gameActive() == 1:
             processEmpty()
             sensorScores = [[0 for _ in range(8)] for _ in range(4)]
-            lastValue = sensorBitMask  # init lastValue (alll ones) since scores are incremented on falling edges
 
             if stateCount > PROCESS_START_PAUSE:
                 log.log("SCORE: Run game scoring")
