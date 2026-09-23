@@ -104,6 +104,17 @@ def claim_score(initials, player_index, score):
                     update_tournament(new_score)
                 else:
                     update_leaderboard(new_score)
+
+                # Tell Origin the game again, now that it has a name on it.
+                # This used to happen by accident: the end-of-game retries
+                # re-sent this very list, so editing it here changed what the
+                # next retry carried. They now send a frozen copy, so the
+                # claim has to be reported deliberately. Same game number, so
+                # Origin recognises it as the game it already has rather than
+                # a new one.
+                from origin import push_end_of_game
+
+                push_end_of_game(recent_scores[game_index])
                 return
 
     # required for case where user resets high scores on the machine
@@ -509,19 +520,10 @@ def update_tournament(new_entry):
 GameEndCount = 0
 initials_capture_this_game=False
 live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
-push_game_count = 0
-last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game  
-
-    if push_game_count>0:
-        from origin import push_end_of_game
-        push_game_count+=1        
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -650,9 +652,7 @@ def CheckForNewScores(nState=[0]):
             game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
 
             from origin import push_end_of_game
-            push_game_count=1
-            last_pushed_game = game
-            push_end_of_game(last_pushed_game,push_game_count)
+            push_end_of_game(game)
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory

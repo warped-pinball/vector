@@ -19,8 +19,6 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
-push_game_count = 0
-last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus initials
@@ -85,6 +83,17 @@ def claim_score(initials, player_index, score):
                     update_tournament(new_score)
                 else:
                     update_leaderboard(new_score)
+
+                # Tell Origin the game again, now that it has a name on it.
+                # This used to happen by accident: the end-of-game retries
+                # re-sent this very list, so editing it here changed what the
+                # next retry carried. They now send a frozen copy, so the
+                # claim has to be reported deliberately. Same game number, so
+                # Origin recognises it as the game it already has rather than
+                # a new one.
+                from origin import push_end_of_game
+
+                push_end_of_game(recent_scores[game_index])
                 return
 
     # required for case where user resets high scores on the machine
@@ -309,14 +318,7 @@ _game_state = STATE_INIT
 
 def CheckForNewScores():
     """Called by scheduler every 5 seconds. Tracks game state and updates scores."""
-    global nGameIdleCounter, GameEndCount, _game_state, push_game_count, last_pushed_game
-
-    if push_game_count>0:
-        from origin import push_end_of_game
-        push_game_count+=1
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+    global nGameIdleCounter, GameEndCount, _game_state
 
     print(f"SCORE: CheckForNewScores - State={_game_state}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
 
@@ -446,9 +448,7 @@ def CheckForNewScores():
                     _place_game_in_claim_list(game)
 
                     from origin import push_end_of_game
-                    push_game_count = 1
-                    last_pushed_game = game
-                    push_end_of_game(last_pushed_game, push_game_count)
+                    push_end_of_game(game)
 
                     S.gameCounter = (S.gameCounter + 1) % 100
 

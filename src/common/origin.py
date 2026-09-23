@@ -30,6 +30,14 @@ from ujson import dumps
 
 # UDP port a listener receives Origin messages on
 _ORIGIN_PORT = const(6809)
+# How many times a finished game is sent, and how far apart. These datagrams
+# are not acknowledged, so sending again is the only defence against a dropped
+# packet. Origin records which attempt arrived first, so how well these
+# numbers are chosen is something that can be reviewed rather than guessed at.
+# The attempt number also varies the payload, which matters: send_origin_message
+# drops a message identical to the one before it.
+_END_OF_GAME_ATTEMPTS = const(6)
+_END_OF_GAME_RETRY_MS = const(5000)
 # Hex characters of truncated HMAC-SHA256 prefixed to every datagram
 _MAC_LEN = const(16)
 # Secrets are short hex strings; cap the length so a caller can't park a large
@@ -114,23 +122,53 @@ def push_game_state(game_report):
     send_origin_message("game_state", game_report)
 
 
-def push_end_of_game(game, try_count):
-    # game = [0, ['', 0], ['', 0], ['', 0], ['', 0]]
-    # try_count is 1 for first attempt and then increments for retransmits
+def push_end_of_game(game):
+    """Report a finished game to Origin, and keep reporting it for a while.
 
-    # ensure list of tuples with initial, and score
-    plays = []
-    for play in game[1:]:
-        if len(play) == 2 and isinstance(play[1], int) and play[1] != 0:
-            if isinstance(play, tuple):
-                plays.append(list(play))
-            else:
-                plays.append(play)
+    *game* is ``[game_num, [initials, score], ... ]``, one entry per player.
 
+    What is sent is a copy taken here, not the caller's list. The caller's is
+    live: claiming a score on the board's own web page rewrites an entry in
+    place, and the game counter moves on to the next game. Holding a reference
+    would let a message change between attempts, so two listeners could end up
+    with different ideas of the same game.
+
+    How many attempts, and how far apart, is not the caller's business -- it
+    has a finished game to report and no way to know what makes delivery
+    reliable -- so it is decided here.
+    """
+    plays = [
+        [play[0], play[1]]
+        for play in game[1:]
+        if len(play) == 2 and isinstance(play[1], int) and play[1] != 0
+    ]
     if not plays:
         return
 
-    send_origin_message("end_of_game", {"plays": plays, "try": try_count, "game_num": game[0]})
+    _send_end_of_game(game[0], plays, 1)
+
+
+def _send_end_of_game(game_num, plays, attempt):
+    """Send one attempt, then book the next one if any are left.
+
+    Each attempt schedules its successor rather than a loop counting down
+    somewhere, so the only state is what the pending task closes over. Nothing
+    survives a reboot, which is right: an unsent game is not worth keeping.
+    """
+    send_origin_message(
+        "end_of_game", {"plays": plays, "try": attempt, "game_num": game_num}
+    )
+
+    if attempt >= _END_OF_GAME_ATTEMPTS:
+        return
+
+    from phew.server import schedule
+
+    def resend_end_of_game():
+        _send_end_of_game(game_num, plays, attempt + 1)
+
+    # frequency_ms=None runs the task once and drops it from the schedule.
+    schedule(resend_end_of_game, phase_ms=_END_OF_GAME_RETRY_MS, frequency_ms=None)
 
 
 def push_reset():

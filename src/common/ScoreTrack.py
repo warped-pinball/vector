@@ -19,8 +19,6 @@ log = logger_instance
 rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
-push_game_count = 0
-last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -67,13 +65,22 @@ def claim_score(initials, player_index, score):
                 update_tournament(new_score)
             else:
                 update_leaderboard(new_score)
+
+            # Tell Origin the game again, now that it has a name on it. This
+            # used to happen by accident: the end-of-game retries re-sent this
+            # very list, so editing it here changed what the next retry
+            # carried. They now send a frozen copy, so the claim has to be
+            # reported deliberately. Same game number, so Origin recognises it
+            # as the game it already has rather than a new one.
+            from origin import push_end_of_game
+
+            push_end_of_game(recent_scores[game_index])
             return
     raise ValueError("SCORE: Score not found in claim list")
 
 
 def _place_game_in_claim_list(game):
     """place game up to four players in claim list"""
-    global push_game_count, last_pushed_game
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
@@ -430,14 +437,7 @@ def update_tournament(new_entry):
 
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, push_game_count, last_pushed_game
-
-    if push_game_count>0:
-        from origin import push_end_of_game
-        push_game_count+=1
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+    global nGameIdleCounter
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
@@ -465,15 +465,7 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
-            # A game has not started until a ball is actually in play. The
-            # game-active flag on its own is not enough: on the System 11
-            # titles that configure InPlay.GameActive, the latch in
-            # get_game_active() reads active again during attract mode once the
-            # flag returns to 0. With no ball to wait for, the game-end check
-            # below then fires on the very next pass, re-reading the finished
-            # game's scores and pushing them again under a fresh game number --
-            # every ten seconds, for as long as the machine sits in attract.
-            if DataMapper.get_game_active() == True and DataMapper.get_ball_in_play() > 0:
+            if  DataMapper.get_game_active() == True:
                 nState[0] = 2
                 # Game Started!
                 log.log("SCORE: Game Started")
@@ -506,9 +498,8 @@ def CheckForNewScores(nState=[0]):
                 _place_game_in_claim_list(game)
 
                 from origin import push_end_of_game
-                push_game_count = 1
-                last_pushed_game = game
-                push_end_of_game(last_pushed_game, push_game_count)
+
+                push_end_of_game(game)
 
                 # put high scores back in machine memory
                 place_machine_scores()
