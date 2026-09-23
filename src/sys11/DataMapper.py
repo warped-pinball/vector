@@ -368,6 +368,10 @@ def get_game_active():
     If GameActive configuration exists in InPlay, uses that address.
     Otherwise falls back to checking if ball_in_play is non-zero.
     
+    notes: early sys11 gmaes ball inplay can return 0xF1 (ball one)
+    or 0xff (blank, entering intiials).  get_ball_in_play can return 0x0F
+    
+
     Returns:
         bool: True if game is active, False otherwise
     """
@@ -375,13 +379,15 @@ def get_game_active():
     try:
         if "InPlay" in S.gdata and "GameActive" in S.gdata["InPlay"]:
             game_active_flag = shadowRam[S.gdata["InPlay"]["GameActive"]]
-            ball_in_play = shadowRam[S.gdata["BallInPlay"]["Address"]]
-            if game_active_state == False:
-                if game_active_flag == 0:
-                    game_active_state=True
-            else:
-                if game_active_flag == 1 and ball_in_play != 0xFF:
-                    game_active_state=False
+            ball_in_play = get_ball_in_play() 
+
+            # only update state when ball_in_play and game_active_flag agree
+            if ball_in_play == 0 and game_active_flag != 0:
+                game_active_state = False
+
+            elif ball_in_play in (1,2,3,4,5) and game_active_flag == 0:
+                game_active_state = True
+                
             return game_active_state
         
     except Exception as e:
