@@ -31,6 +31,9 @@ _carrythresholds = bytes([i % 256 for i in range(32)])
 safe_defaults = {
     "gamename": "EM Game",
     "GameInfo": {"System": "EM", "GameName": "EM Game"},
+    # EM only ever supports the standard high-score format - same shape as
+    # every sys11/wpc/data_east game config's "Formats" section.
+    "Formats": {"Standard": {"Id": 0}},
     "players": 1,
     "digits": 4,
     "dummy_reels": 0,
@@ -63,6 +66,7 @@ def get_safe_defaults():
     """Copy so gdata never aliases (or mutates) the module-level defaults."""
     data = dict(safe_defaults)
     data["GameInfo"] = dict(safe_defaults["GameInfo"])
+    data["Formats"] = {name: dict(cfg) for name, cfg in safe_defaults["Formats"].items()}
     for key in _LIST_KEYS:
         data[key] = list(safe_defaults[key])
     return data
@@ -147,6 +151,12 @@ def go(safe_mode=False):
             SharedState.gdata["GameInfo"] = {}
         SharedState.gdata["GameInfo"]["System"] = "EM"
         SharedState.gdata["GameInfo"]["GameName"] = em_data["gamename"]
+
+        # EM only ever supports the standard high-score format - not
+        # persisted in EMData, so it's set here same as GameInfo above.
+        if not isinstance(SharedState.gdata.get("Formats"), dict):
+            SharedState.gdata["Formats"] = {"Standard": {"Id": 0}}
+
         print("Loaded EMData from SPI_DataStore")
 
     except Exception as e:
