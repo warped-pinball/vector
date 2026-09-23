@@ -465,7 +465,15 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
-            if  DataMapper.get_game_active() == True:
+            # A game has not started until a ball is actually in play. The
+            # game-active flag on its own is not enough: on the System 11
+            # titles that configure InPlay.GameActive, the latch in
+            # get_game_active() reads active again during attract mode once the
+            # flag returns to 0. With no ball to wait for, the game-end check
+            # below then fires on the very next pass, re-reading the finished
+            # game's scores and pushing them again under a fresh game number --
+            # every ten seconds, for as long as the machine sits in attract.
+            if DataMapper.get_game_active() == True and DataMapper.get_ball_in_play() > 0:
                 nState[0] = 2
                 # Game Started!
                 log.log("SCORE: Game Started")
