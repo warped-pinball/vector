@@ -17,26 +17,37 @@ from logger import logger_instance
 Log = logger_instance
 
 
+# Mirrors SPI_DataStore.blankStruct("EMData")'s manufacturing defaults, so a
+# fallback boot (FRAM read failed) looks the same as a freshly factory-reset
+# board rather than introducing a third, different set of numbers.
+_filtermasks = bytearray(64)
+for _ch in range(32):
+    _filtermasks[_ch * 2] = 3
+    _filtermasks[_ch * 2 + 1] = 9
+_filtermasks = bytes(_filtermasks)
+
+_carrythresholds = bytes([i % 256 for i in range(32)])
+
 safe_defaults = {
-    "gamename": "EM Generic",
-    "GameInfo": {"System": "EM", "GameName": "EM Generic"},
+    "gamename": "EM Game",
+    "GameInfo": {"System": "EM", "GameName": "EM Game"},
     "players": 1,
     "digits": 4,
     "dummy_reels": 0,
-    "filtermasks": bytes(64),
-    "carrythresholds": bytes(32),
-    "startpause": 9,
+    "filtermasks": _filtermasks,
+    "carrythresholds": _carrythresholds,
+    "sensorlevels": [31000, 32000],
+    "startpause": 8,
     "endpause": 5,
-    "sensorlevels": [0, 0],
     "sensitivity": 0,
-    "timing_p1_score": [8, 8, 8, 8, 8],
-    "timing_p1_reset": [8, 8, 8, 8, 8],
-    "timing_p2_score": [8, 8, 8, 8, 8],
-    "timing_p2_reset": [8, 8, 8, 8, 8],
-    "timing_p3_score": [8, 8, 8, 8, 8],
-    "timing_p3_reset": [8, 8, 8, 8, 8],
-    "timing_p4_score": [8, 8, 8, 8, 8],
-    "timing_p4_reset": [8, 8, 8, 8, 8],
+    "timing_p1_score": [5, 5, 5, 3, 3],
+    "timing_p1_reset": [8, 8, 8, 4, 4],
+    "timing_p2_score": [5, 5, 5, 3, 3],
+    "timing_p2_reset": [8, 8, 8, 4, 4],
+    "timing_p3_score": [5, 5, 5, 3, 3],
+    "timing_p3_reset": [8, 8, 8, 4, 4],
+    "timing_p4_score": [5, 5, 5, 3, 3],
+    "timing_p4_reset": [8, 8, 8, 4, 4],
 }
 
 _LIST_KEYS = (
