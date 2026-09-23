@@ -31,8 +31,8 @@ The circuit board is installed in the back box of your Electro-Mechanical pinbal
 
 ## Indicators and controls
 
-| ![EM board layout](../../img/em/board_layout.jpg) | **WiFi Configure Button**<br>Hold during power up, release when LED flashes, for setup mode<br><br>**WiFi Status LED**<br>Fast blink = AP mode<br><br>**Sensor sensitivity adjustment buttons** (+ / -)<br><br>**Number display**<br>WiFi IP address shown here<br><br>**Score reel sensor indicators**<br>(under each connector) |
-| --- | --- |
+| ![EM board layout](../../img/em/board_layout_w_text.jpg) |
+
 
 ## Disclaimer
 
