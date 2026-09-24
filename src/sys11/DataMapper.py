@@ -368,8 +368,8 @@ def get_game_active():
     If GameActive configuration exists in InPlay, uses that address.
     Otherwise falls back to checking if ball_in_play is non-zero.
     
-    notes: early sys11 gmaes ball inplay can return 0xF1 (ball one)
-    or 0xff (blank, entering intiials).  get_ball_in_play can return 0x0F
+    notes: early sys11 games ball inplay can return 0xF1 (ball one)
+    or 0xff (blank, entering initials).  get_ball_in_play can return 0x0F
     
 
     Returns:
