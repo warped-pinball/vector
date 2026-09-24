@@ -363,7 +363,7 @@ def get_peer_map():
     """Return mapping of known devices keyed by IP string."""
     global known_devices
 
-    peers = {bytes_to_ip(_get_local_ip_bytes()): {"name": _get_local_name_bytes(), "self": True}}
+    peers = {bytes_to_ip(_get_local_ip_bytes()): {"name": _get_local_name_bytes().decode("utf-8", "ignore"), "self": True}}
     for dev in known_devices:
         ip_bytes, name = dev[:4], dev[4:]
         ip = bytes_to_ip(ip_bytes)
