@@ -62,6 +62,15 @@ jobs:
           fi
           python -m dev.ci.workflow_helpers build-updates "${ARGS[@]}"
 
+      # A well formed, correctly signed update file can still be missing a module:
+      # release 1.11.27 published update_classic.json with no DataMapper in it,
+      # which is an image a Classic board installs and then cannot boot. The
+      # source tree says what belongs in each update - this is where that is
+      # checked, before anything is uploaded or released.
+      - name: Verify update files match their source trees
+        run: |
+          python -m dev.ci.check_update_contents --targets dev/ci/targets.json
+
       - name: Prepare PR artifacts
         if: ${{ github.event_name == 'pull_request' }}
         run: |
