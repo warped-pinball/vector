@@ -87,9 +87,10 @@ Attach each sensor to a wire assembly before installing on the coil. If your coi
 | ![Sensor mounted at top of coil](../../img/em/sensor_mount_top.jpg) | ![Sensor mounted with bracket clip](../../img/em/sensor_mount_bracket.jpg) |
 | --- | --- |
 
-Connect each sensor wire to the main board connectors. The picture below shows the "1" digit for player number one connected. In game setup later you will set how many dummy reels are installed so that your scores scale up correctly.
+Connect each sensor wire to the main board connectors. The pictures below shows the "1" digit for player number one connected on a two player board and a full setp on a four player board. In game setup later you will set how many dummy reels are installed so that your scores scale up correctly.
 
 ![Sensors wired to the main board](../../img/em/sensors_connected_board.jpg)
+![Four player board layout](../../img/em/em_4player.png)
 
 Once all the sensors are connected, double-check all wiring and wire routing. Keep those wires out of moving parts! There are extra wire ties included to help with this step. Make sure your alligator clips will not short out - tape them up if necessary. Now you are ready to power up the game and get connected to WiFi!
 
