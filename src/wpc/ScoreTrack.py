@@ -576,6 +576,8 @@ def CheckForNewScores(nState=[0]):
                     initials_capture_this_game = True
                 else:
                     initials_capture_this_game = False
+                #S.gameCounter = (S.gameCounter + 1) % 100       
+        
 
         # waiting for game to end
         elif nState[0] == 2:
