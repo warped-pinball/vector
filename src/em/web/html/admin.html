@@ -5,6 +5,14 @@
         text-align: center; */
   }
 
+  /* Keep all the Game Configuration inputs aligned on one line even when a
+     longer label (e.g. "Score Reels per Player:") wraps to two lines on
+     narrow screens. Bottom-aligning the grid cells anchors every input to the
+     same baseline instead of letting tall labels push their input down. */
+  #game-configuration .grid {
+    align-items: end;
+  }
+
   button.danger {
     background-color: #e73434;
     color: white;
@@ -35,7 +43,8 @@
     }
   }
 
-  /* Adjustments Profiles Styling */
+  /* Adjustments Profiles Styling */y
+  
   .profile-row {
     display: flex;
     align-items: center;
@@ -75,6 +84,128 @@
   input[type="radio"]:disabled {
     opacity: 0;
   }
+
+  /* Sensitivity and Timing Adjuster Controls */
+  .adj-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 3.5rem;
+  }
+
+  .adj-group-label {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--pico-muted-color);
+    text-align: center;
+  }
+
+  .adj-value {
+    font-weight: bold;
+    min-width: 2.5rem;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .adj-btn {
+    width: 100%;
+    padding: 0.15rem 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .timing-adj-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .sensitivity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Decade column: layout only, no border */
+  .decade-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 4rem;
+  }
+
+  .decade-col-label {
+    font-weight: bold;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  /* Red = score/detection depth (uses Pico's "del" red, theme-aware).
+     !important needed to win over Pico's .outline.secondary variable rule. */
+  .adj-val-score { color: var(--pico-del-color); }
+  .adj-btn-score {
+    --pico-color: var(--pico-del-color) !important;
+    --pico-border-color: var(--pico-del-color) !important;
+  }
+
+  /* Blue = reset/hold-off depth (uses Pico's primary accent, theme-aware) */
+  .adj-val-reset { color: var(--pico-primary); }
+  .adj-btn-reset {
+    --pico-color: var(--pico-primary) !important;
+    --pico-border-color: var(--pico-primary) !important;
+  }
+
+  .timing-legend {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .timing-legend-score { color: var(--pico-del-color); font-weight: bold; }
+  .timing-legend-reset { color: var(--pico-primary); font-weight: bold; }
+
+  .timing-section {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .timing-section-main {
+    min-width: 0;
+    flex: 1 1 28rem;
+  }
+
+  .live-player-score {
+    min-width: 10rem;
+    flex: 0 0 13rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 0.2rem;
+  }
+
+  .live-player-score-label {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+  }
+
+  .live-player-score-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--pico-color);
+    line-height: 1.2;
+  }
 </style>
 
 <div style="text-align: left">
@@ -90,15 +221,23 @@
         </div>
         <div>
           <label for="total-players"><b>Total Players:</b></label>
-          <input id="total-players" type="number" min="1" value="4" />
+          <input id="total-players" type="number" min="1" max="4" value="4" />
         </div>
         <div>
           <label for="score-reels"><b>Score Reels per Player:</b></label>
-          <input id="score-reels" type="number" min="1" value="1" />
+          <input id="score-reels" type="number" min="1" max="5" value="1" />
         </div>
         <div>
           <label for="dummy-reels"><b>Dummy Reels:</b></label>
-          <input id="dummy-reels" type="number" min="0" value="0" />
+          <input id="dummy-reels" type="number" min="0" max="4" value="0" />
+        </div>
+        <div>
+          <label for="start-pause"><b>Start Pause (seconds):</b></label>
+          <input id="start-pause" type="number" min="2" max="30" value="9" />
+        </div>
+        <div>
+          <label for="end-pause"><b>End Pause (seconds):</b></label>
+          <input id="end-pause" type="number" min="2" max="30" value="5" />
         </div>
       </div>
       <button id="save-game-config" style="margin-left: 1rem; display: none">
@@ -106,114 +245,86 @@
       </button>
     </fieldset>
     <h3>Calibration</h3>
+
     <div style="margin-top: 1rem">
-      <button
-        id="record-calibration"
-        onclick="window.startRecordingCalibration()"
-      >
-        Record Calibration Game
-      </button>
-      <span
-        id="recorded-games-status"
-        style="margin-left: 1rem; font-weight: bold"
-      >
-        Recorded: 0/4
-      </span>
+      <label><b>Sensitivity:</b></label>
+      <div class="sensitivity-row">
+        <button class="secondary outline adj-btn" id="sensitivity-down" style="width: auto; padding: 0.3rem 0.8rem">&#9660;</button>
+        <span id="sensitivity-value" class="adj-value" style="min-width: 2rem">0%</span>
+        <button class="secondary outline adj-btn" id="sensitivity-up" style="width: auto; padding: 0.3rem 0.8rem">&#9650;</button>
+        <button class="secondary outline" id="sensitivity-recalibrate" style="margin-left: 0.75rem; width: auto; padding: 0.3rem 0.8rem">Recalibrate</button>
+      </div>
     </div>
 
-    <div style="margin-top: 0.5rem">
-      <button
-        id="start-learning"
-        onclick="window.startLearningProcess()"
-        disabled
-      >
-        Start Learning Process
-      </button>
-      <button
-        id="delete-calibration-games"
-        class="danger"
-        style="margin-left: 1rem"
-        onclick="window.deleteCalibrationGames()"
-      >
-        Delete Calibration Games
-      </button>
+    <div style="margin-top: 1.5rem" class="timing-section">
+      <div class="timing-section-main">
+        <label><b>Player 1 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p1">
+          <!-- dynamically populated by admin.js -->
+        </div>
+      </div>
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 1 Score</div>
+        <div class="live-player-score-value" id="live-score-p1">0</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem" class="timing-section">
+      <div class="timing-section-main">
+        <label><b>Player 2 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p2">
+          <!-- dynamically populated by admin.js -->
+        </div>
+      </div>
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 2 Score</div>
+        <div class="live-player-score-value" id="live-score-p2">0</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; display: none" class="timing-section" id="timing-section-p3">
+      <div class="timing-section-main">
+        <label><b>Player 3 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p3">
+          <!-- dynamically populated by admin.js -->
+        </div>
+      </div>
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 3 Score</div>
+        <div class="live-player-score-value" id="live-score-p3">0</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; display: none" class="timing-section" id="timing-section-p4">
+      <div class="timing-section-main">
+        <label><b>Player 4 Timing Filter:</b></label>
+        <div class="timing-legend">
+          <span class="timing-legend-score">&#9632; Score (detection depth)</span>
+          <span class="timing-legend-reset">&#9632; Reset (hold-off depth)</span>
+        </div>
+        <div class="timing-adj-row" id="timing-adj-p4">
+          <!-- dynamically populated by admin.js -->
+        </div>
+      </div>
+      <div class="live-player-score">
+        <div class="live-player-score-label">Live Player 4 Score</div>
+        <div class="live-player-score-value" id="live-score-p4">0</div>
+      </div>
     </div>
   </section>
 
-  <!-- Calibration modal (shows streaming progress, then score input form) -->
-  <dialog id="calibration-modal">
-    <article>
-      <header>
-        <h2>Recording Calibration - Please play the game</h2>
-      </header>
-      <p>
-        <b
-          >Do not close this window or disconnect while recording is in
-          progress.</b
-        >
-      </p>
-
-      <!-- Hidden raw log (kept for debug) -->
-      <code
-        id="calibration-log"
-        style="
-          display: none;
-          width: 100%;
-          height: 160px;
-          overflow: auto;
-          white-space: pre-wrap;
-          padding-bottom: 1em;
-        "
-      ></code>
-
-      <!-- User-facing static message that changes with progress -->
-      <div
-        id="calibration-message"
-        style="
-          width: 100%;
-          height: 160px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.2rem;
-        "
-      >
-        Keep going
-      </div>
-
-      <progress
-        id="calibration-progress"
-        value="0"
-        max="100"
-        style="width: 100%"
-      ></progress>
-
-      <div style="margin-top: 0.5rem">
-        <button id="end-calibration-game">
-          End Calibration & Record Scores
-        </button>
-      </div>
-
-      <div id="calibration-results" style="display: none; margin-top: 1rem">
-        <h3>Enter Scores for Calibration Game</h3>
-        <div
-          id="calibration-instructions"
-          style="margin-top: 0.5rem; font-style: italic; display: none"
-        ></div>
-        <form id="calibration-scores-form">
-          <!-- dynamically filled -->
-        </form>
-        <div style="margin-top: 0.5rem">
-          <button id="save-calibration-scores">Save Calibration Scores</button>
-          <button
-            onclick="document.getElementById('calibration-modal').close();"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </article>
-  </dialog>
 
   <h2>Settings</h2>
   <hr />
@@ -358,13 +469,6 @@
     <h3>Debug</h3>
     <!-- Memory snapshot download removed for EM builds -->
     <button class="secondary" onclick="downloadLogs()">Download Logs</button>
-    <button
-      class="secondary"
-      style="margin-left: 0.5rem"
-      onclick="downloadDiagnostics()"
-    >
-      Download Diagnostic Data
-    </button>
     <fieldset style="margin-top: 1rem">
       <legend>WiFi Status</legend>
       <div>
@@ -477,31 +581,3 @@
   </article>
 </dialog>
 
-<!-- Learning modal (shows progress while processing calibration games) -->
-<dialog id="learning-modal">
-  <article>
-    <header>
-      <h2>Processing Calibration Games</h2>
-    </header>
-    <p>
-      <b>Please wait while your calibration games are processed.</b>
-    </p>
-    <code
-      id="learning-log"
-      style="
-        display: none;
-        width: 100%;
-        height: 120px;
-        overflow: auto;
-        white-space: pre-wrap;
-        padding-bottom: 1em;
-      "
-    ></code>
-    <progress
-      id="learning-progress"
-      value="0"
-      max="100"
-      style="width: 100%"
-    ></progress>
-  </article>
-</dialog>
