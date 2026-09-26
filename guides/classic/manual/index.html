@@ -1,0 +1,2121 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.warpedpinball.com/guides/classic/manual/">
+      
+      
+        <link rel="prev" href="../quick-start/">
+      
+      
+        <link rel="next" href="../../origin/quick-start/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Installation & use manual - Vector Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#table-of-contents" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Vector Documentation" class="md-header__button md-logo" aria-label="Vector Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Vector Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Installation & use manual
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Vector Documentation" class="md-nav__button md-logo" aria-label="Vector Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Vector Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WPC
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    WPC
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wpc/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wpc/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wpc/add-rom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a ROM profile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System 11
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System 11
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system11/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system11/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system11/add-rom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a ROM profile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system11/rottendog-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RottenDog support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System 9
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    System 9
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../system9/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data East
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data East
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data_east/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Classic Bally / Stern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Classic Bally / Stern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & use manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indicators-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indicators and controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#led-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LED codes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LED codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#normal-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normal operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardware-faults-first-blink-red" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware faults (first blink: RED)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifi-faults-first-blink-blue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi faults (first blink: BLUE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-faults-first-blink-white" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration faults (first blink: WHITE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#software-faults-first-blink-yellow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Software faults (first blink: YELLOW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disclaimer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disclaimer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boards-and-supported-games" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boards and supported games
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alltek-systems-replacement-mpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alltek Systems replacement MPU
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connecting-to-local-wifi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connecting to local WiFi
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ip-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IP addresses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ram-corruption-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM corruption problems
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Origin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Origin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../origin/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../origin/manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation & operation manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical references
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Technical references
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../routes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    USB transport
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indicators-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indicators and controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#led-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LED codes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LED codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#normal-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normal operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardware-faults-first-blink-red" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware faults (first blink: RED)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifi-faults-first-blink-blue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi faults (first blink: BLUE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-faults-first-blink-white" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration faults (first blink: WHITE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#software-faults-first-blink-yellow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Software faults (first blink: YELLOW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disclaimer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disclaimer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boards-and-supported-games" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boards and supported games
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hardware-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alltek-systems-replacement-mpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alltek Systems replacement MPU
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connecting-to-local-wifi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connecting to local WiFi
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ip-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IP addresses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ram-corruption-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM corruption problems
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+  <h1 style="margin: 0;">Classic Bally / Stern Vector Installation and Use Manual</h1>
+  <button onclick="window.print()" style="white-space: nowrap;">
+    <span aria-hidden="true">🖨️</span> Print This Guide
+  </button>
+</div>
+
+<p>How the Vector board installs on a classic solid-state Bally or Stern machine, what
+the LEDs mean, how to get it on your WiFi, and how to recover from RAM corruption.</p>
+<h2 id="table-of-contents">Table of contents</h2>
+<ul>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#indicators-and-controls">Indicators and controls</a></li>
+<li><a href="#led-codes">LED codes</a></li>
+<li><a href="#disclaimer">Disclaimer</a></li>
+<li><a href="#boards-and-supported-games">Boards and supported games</a></li>
+<li><a href="#hardware-installation">Hardware installation</a></li>
+<li><a href="#alltek-systems-replacement-mpu">Alltek Systems replacement MPU</a></li>
+<li><a href="#connecting-to-local-wifi">Connecting to local WiFi</a></li>
+<li><a href="#ip-addresses">IP addresses</a></li>
+<li><a href="#web-interface">Web interface</a></li>
+<li><a href="#ram-corruption-problems">RAM corruption problems</a></li>
+<li><a href="#support">Support</a></li>
+</ul>
+<h2 id="how-it-works">How it works</h2>
+<p>Vector sits between the processor chip and the game's MPU board so it can act like
+the RAM chip where settings and scores are stored. Gameplay continues unchanged: the
+same ROM runs on the same <code>MC6800</code> processor. Vector mirrors the game's RAM into
+on-board permanent memory, so scores and settings survive a power-off with no
+battery and no board modifications. Installation requires no soldering and no
+permanent changes to your game.</p>
+<h2 id="indicators-and-controls">Indicators and controls</h2>
+<table>
+<thead>
+<tr>
+<th><img alt="Vector installed on a classic Bally/Stern MPU board" src="../../../img/classic/classic_board_ar.png" /></th>
+<th><br><strong>WiFi Configure Button</strong><br>Hold during power-up and release when the LED flashes to enter AP setup mode.<br><br><strong>Status LED</strong><br>Two-color blink codes (more below)<br><img alt="Status LED" src="../../../img/classic/status_led_.png" /> <br>    <br> <strong>WiFi Status LED</strong><br>- Fast blink: AP (setup) mode<br>- Slow blink: joining WiFi<br>- Solid on: WiFi joined<br></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="led-codes">LED codes</h2>
+<p>The Status LED uses color combinations to indicate system status and faults. Each
+fault code is two color blinks separated by a brief pause. Multiple faults are shown
+in sequence with a pause (dark) between each code.</p>
+<h3 id="normal-operation">Normal operation</h3>
+<table>
+<thead>
+<tr>
+<th>LED pattern</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Yellow-Yellow (dim)</td>
+<td>Trying to join WiFi at startup</td>
+</tr>
+<tr>
+<td>Green-Green (dim)</td>
+<td>WiFi connected, all systems OK</td>
+</tr>
+<tr>
+<td>Purple-Purple (dim)</td>
+<td>AP mode — join with your phone</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hardware-faults-first-blink-red">Hardware faults (first blink: RED)</h3>
+<table>
+<thead>
+<tr>
+<th>LED pattern</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Red-Yellow</td>
+<td>HDWR01</td>
+<td>Early bus activity — reset hold not working (check the white wire connection)</td>
+</tr>
+<tr>
+<td>Red-White</td>
+<td>HDWR02</td>
+<td>No bus activity</td>
+</tr>
+<tr>
+<td>Red-Purple</td>
+<td>HDWR00</td>
+<td>Unknown hardware error</td>
+</tr>
+</tbody>
+</table>
+<h3 id="wifi-faults-first-blink-blue">WiFi faults (first blink: BLUE)</h3>
+<table>
+<thead>
+<tr>
+<th>LED pattern</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Blue-Yellow</td>
+<td>WIFI01</td>
+<td>Invalid WiFi credentials (wrong password)</td>
+</tr>
+<tr>
+<td>Blue-Purple</td>
+<td>WIFI02</td>
+<td>No WiFi signal (network not found)</td>
+</tr>
+<tr>
+<td>Blue-Red</td>
+<td>WIFI00</td>
+<td>Unknown WiFi error</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration-faults-first-blink-white">Configuration faults (first blink: WHITE)</h3>
+<table>
+<thead>
+<tr>
+<th>LED pattern</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>White-Yellow</td>
+<td>CONF01</td>
+<td>Invalid configuration</td>
+</tr>
+<tr>
+<td>White-Purple</td>
+<td>CONF00</td>
+<td>Unknown configuration error</td>
+</tr>
+</tbody>
+</table>
+<h3 id="software-faults-first-blink-yellow">Software faults (first blink: YELLOW)</h3>
+<table>
+<thead>
+<tr>
+<th>LED pattern</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Yellow-Red</td>
+<td>SFTW01</td>
+<td>Drop through</td>
+</tr>
+<tr>
+<td>Yellow-White</td>
+<td>SFTW02</td>
+<td>Async loop interrupted</td>
+</tr>
+<tr>
+<td>Yellow-Purple</td>
+<td>SFWR00</td>
+<td>Unknown software error</td>
+</tr>
+</tbody>
+</table>
+<h2 id="disclaimer">Disclaimer</h2>
+<p>Removing chips from classic games carries risk. Work with the game powered off but
+still grounded, discharge static on the metal backplane before touching electronics,
+and double-check that every socket and IC is fully seated. Incorrect fuse sizes or
+partially seated components can damage the machine. If you have never re-seated
+chips, ask someone experienced to help. Warped Pinball provides email support but
+cannot be liable for damage to persons or machines.</p>
+<h2 id="boards-and-supported-games">Boards and supported games</h2>
+<p>Vector installs and operates identically on every Bally and Stern single-CPU MPU
+board. The Bally AS-2518-17 and AS-2518-35, and the Stern MPU-100 and MPU-200, are
+electrically compatible with one another; the lists below exist only to help you
+identify your game and choose the right profile during WiFi setup.</p>
+<table>
+<thead>
+<tr>
+<th>Board</th>
+<th>Titles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bally MPU AS-2518-17</strong><br><em>(1977–1978)</em></td>
+<td>Black Jack · Bobby Orr Power Play · Eight Ball · Evel Knievel · Freedom · Mata Hari · Night Rider · Strikes and Spares</td>
+</tr>
+<tr>
+<td><strong>Bally MPU AS-2518-35</strong><br><em>(1978–1985)</em></td>
+<td>Black Pyramid · BMX · Centaur · Centaur II · Dolly Parton · Eight Ball Deluxe · Eight Ball Deluxe Limited Edition · Elektra · Embryon · Fathom · Fireball II · Flash Gordon · Frontier · Future Spa · Grand Slam · Harlem Globetrotters · Hotdoggin' · Kings of Steel · KISS · Lost World · Medusa · Mr. &amp; Mrs. Pac-Man · Mystic · Nitro Ground Shaker · Paragon · Playboy · Rolling Stones · Silverball Mania · The Six Million Dollar Man · Skateball · Space Invaders · Speakeasy · Spectrum · Spy Hunter · Star Trek · Supersonic · Vector · Viking · Voltan Escapes Cosmic Doom · X's &amp; O's · Xenon</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Vector installed on a Bally AS-2518 MPU board" src="../../../img/classic/classic_bally.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Board</th>
+<th>Titles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Stern MPU-100</strong><br><em>(1977–1979)</em></td>
+<td>Cosmic Princess · Dracula · Hot Hand · Lectronamo · Magic · Memory Lane · Nugent · Pinball · Stars · Stingray · Trident · Wild Fyre</td>
+</tr>
+<tr>
+<td><strong>Stern MPU-200</strong><br><em>(1979–1985)</em></td>
+<td>Ali · Big Game · Catacomb · Cheetah · Flight 2000 · Freefall · Galaxy · Iron Maiden · Lightning · Meteor · Nine Ball · Orbitor 1 · Quicksilver · Seawitch · Split Second · Star Gazer · Viper</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Vector installed on a Stern MPU-200 board" src="../../../img/classic/classic_stern.png" /></p>
+<h2 id="hardware-installation">Hardware installation</h2>
+<ol>
+<li><strong>Remove the main processor.</strong> Locate the <code>MC6800</code> on the MPU board and carefully
+   lift it out. Inspect the pins for alignment.</li>
+<li><strong>Insert the processor into Vector.</strong> Place the <code>MC6800</code> into the socket on the
+   Vector board according to the pin #1 marking. Press evenly until fully seated and
+   confirm no pins are bent under.</li>
+<li><strong>Install the pin-strip headers.</strong> Insert the supplied pin strips into the MPU
+   board's processor socket. Press firmly on sections of three to four pins until
+   fully seated.</li>
+</ol>
+<p><img alt="Pin strip Photo" src="../../../img/sys11/pin_strip.jpg" /></p>
+<ol>
+<li><strong>Add the round-pin chip carrier.</strong> Place the 40-pin carrier onto the headers and
+   press down all the way around. Some kits ship with this carrier pre-attached to
+   the Vector board — if so, skip this step.</li>
+</ol>
+<p><img alt="Socket Photo" src="../../../img/sys11/socket.jpg" />
+5. <strong>Mount the standoff.</strong> (optional, placement varies) Attach the adhesive standoff to the Vector board with the
+   plastic screw and remove the backing.
+6. <strong>Seat the Vector board.</strong> Align it with the socket, keeping pin #1 oriented the
+   same as the original processor, and press until every corner is seated.
+7. <strong>Make the reset connection.</strong>
+   - <strong>Original Bally / Stern MPU board:</strong> attach the white micro-clip to the point
+     shown below. This synchronizes Vector's reset with the game's reset on
+     power-up, so expect a few extra seconds at startup. This same location is
+     present on every Bally AS-2518 and Stern MPU-100/200 board (near test points
+     TP2 / TP3).</p>
+<pre><code> ![Reset clip location, identical on all Bally and Stern MPU boards](../../img/classic/classic_clip_location.png)
+</code></pre>
+<ul>
+<li><strong>Alltek Systems replacement MPU:</strong> do not use the white wire clip — see the
+     next section.</li>
+</ul>
+<p>After installation the game operates normally while Vector provides NVRAM service.
+Configure WiFi to enable leaderboards, tournament mode, and the other features.</p>
+<h2 id="alltek-systems-replacement-mpu">Alltek Systems replacement MPU</h2>
+<p>If your game uses an <strong>Alltek Systems "Ultimate MPU"</strong> replacement board instead of
+the original Bally or Stern MPU, the reset connection is handled differently:</p>
+<ul>
+<li><strong>Do not</strong> attach the white wire clip anywhere on the Alltek board.</li>
+<li>Instead, install the small <strong>jumper</strong> included in your Vector kit onto the jumper
+  header on the Warped Pinball Vector board.</li>
+</ul>
+<p>The Alltek board drives the processor reset cleanly on its own, and the jumper tells
+Vector to use that signal directly. Everything else about the installation is the
+same as an original board.</p>
+<p><img alt="Vector installed on an Alltek Ultimate MPU with the kit jumper fitted" src="../../../img/classic/classic_allteksystems.png" /></p>
+<h2 id="connecting-to-local-wifi">Connecting to local WiFi</h2>
+<ol>
+<li>Power on the machine. The WiFi status LED starts yellow, then flashes purple to indicate
+   AP mode.</li>
+<li>On a phone or computer, join the <strong>Warped Pinball</strong> network. Ignore any
+   "no internet" warning.</li>
+</ol>
+<p><img alt="Join the Warped Pinball access point" src="../../../img/sys11/Installation_select_AP.png" /></p>
+<ol>
+<li>If a captive portal does not appear, open a browser to reach the configuration
+   page.</li>
+</ol>
+<p><img alt="Sign in to reach the configuration page" src="../../../img/sys11/Installation_sign_in_button.png" /></p>
+<ol>
+<li>On the configuration page:</li>
+<li>Select your local WiFi <strong>SSID</strong> and enter the password (case sensitive).</li>
+<li>Choose your <strong>game</strong> and software version from the dropdown; an incorrect
+     selection can cause erratic behavior.</li>
+<li>Set an <strong>Admin Password</strong> to protect actions such as erasing scores.</li>
+<li>If the board previously joined a network, its last IP address appears on this
+     screen.</li>
+</ol>
+<p><img alt="Configuration page" src="../../../img/sys11/Installation_AP_setup_screen.png" /></p>
+<p><strong>Choosing a profile.</strong> If your title appears in the dropdown,
+   pick it — you get live scoring and high-score capture. If not, choose a generic
+   profile instead:</p>
+<ul>
+<li><strong>Generic Bally/Stern MPU</strong> — any Bally game (AS-2518-17 or -35) or Stern
+     MPU-100 game.</li>
+<li><strong>Generic MPU-200</strong> — any Stern MPU-200 game.</li>
+</ul>
+<p>A generic profile provides NVRAM service and the web interface only.</p>
+<p>If your game or ROM isn't supported yet, you can help us add it — email us at:
+   <a href="mailto:roms@WarpedPinball.com">roms@WarpedPinball.com</a> with your help we'll add full
+   support in a firmware update.</p>
+<ol>
+<li>Click <strong>Save</strong>, power-cycle the machine, and let it reconnect. Yellow during connection and green once connected.  See the chart above for other error codes.</li>
+<li>If joining fails (yellow blink for several minutes), power down, hold the WiFi setup
+   button, power up, release when the LED blinks rapidly, and repeat setup.</li>
+</ol>
+<p><strong>Pro tip:</strong> to re-enter configuration mode later, hold the WiFi config button during
+power-up and release when the LED blinks rapidly.</p>
+<h2 id="ip-addresses">IP addresses</h2>
+<ul>
+<li>Your router assigns an IP address to each machine (for example <code>192.168.1.239</code>).</li>
+<li>Enter that address in a browser on the same network and bookmark it.</li>
+<li>Router DHCP assignments can change. Find the current address in your router's
+  connected-devices list, or re-enter WiFi setup and read it at the bottom of the
+  configuration page.</li>
+<li>For stability, set a static IP for the device in your router once it appears in
+  the device list.</li>
+<li>Titles that have a profiled display-message area can and will show
+  the IP address on the score displays during attract mode.</li>
+</ul>
+<h2 id="web-interface">Web interface</h2>
+<ul>
+<li><strong>Game name</strong> is shown in the upper left. If it is wrong, re-check your AP-mode
+  configuration.</li>
+<li><strong>Navigation</strong> is in the upper right.</li>
+<li>The leaderboard fills in as you play new games.</li>
+</ul>
+<p><img alt="Main web page" src="../../../img/sys11/Installation_vector_screen_main.png" /></p>
+<ul>
+<li>A game in play is shown on the same screen — ball in play and scores update live.</li>
+<li>Something not looking right? Check your ROM version. The ROM revision is usually
+  shown on the displays at power-up; pick that same revision when configuring Vector
+  in AP mode. If your ROM is not supported yet, contact us — we add ROMs regularly.</li>
+</ul>
+<p><img alt="Game in play" src="../../../img/sys11/Installation_vector_screen_game_in_play.png" /></p>
+<ul>
+<li>Click <strong>Players</strong> to see and edit the active players list. All players get
+  individual best boards. Initials go on the left, full name on the right.</li>
+</ul>
+<p><img alt="Players page" src="../../../img/sys11/Installation_vector_screen_players.png" /></p>
+<ul>
+<li>The top of the <strong>Admin</strong> page has several setup options.</li>
+<li><strong>Tournament mode</strong> saves all scores to the tournament list instead of the normal
+  leaderboard.</li>
+<li>Score claim on classic games is done from the <strong>web interface</strong> — after a game,
+  claim your score in a browser.</li>
+<li><strong>Adjustment profiles</strong> are not available on classic Bally / Stern games (those
+  games store settings with mechanical switches, not in software).</li>
+<li>You can turn the attract-mode IP display on or off here on titles that support it.</li>
+</ul>
+<p><img alt="Admin page, top" src="../../../img/sys11/Installation_vector_screen_admin_top.png" /></p>
+<ul>
+<li><strong>Software update:</strong> click the update button — it tells you when a new version is
+  available, or that the update server was unreachable (try again later). Updates
+  take about two minutes and the game reboots automatically at the end. The current
+  version is shown at the bottom of every page (each platform — WPC, System 11,
+  Classic, etc. — has its own version numbers).</li>
+<li><strong>Upload Developer Build</strong> is for test versions when directed by Warped Pinball
+  staff.</li>
+</ul>
+<p><img alt="Admin page, bottom" src="../../../img/sys11/Installation_vector_screen_admin_bottom.png" /></p>
+<h2 id="ram-corruption-problems">RAM corruption problems</h2>
+<p>after installation you may see evidence of ram corruption.  This is particulally commmon
+with MPU-200 boards. You may see:</p>
+<ul>
+<li>Missing or garbled digits on the score displays</li>
+<li>A nonsense or impossibly high machine high score</li>
+<li>Credits that will not clear, or strange attract-mode behavior</li>
+</ul>
+<p><strong>Fix:</strong> open the Vector web page, go to the <strong>Admin</strong> panel, and click
+<strong>Reset Pinball Machine</strong>. This reinitializes the game's RAM to a clean state and
+restarts the machine. Play one full game afterward and confirm the displays and the
+high score look correct. Vector then keeps that clean RAM image in permanent memory,
+so the problem should not come back on the next power-up.</p>
+<h2 id="support">Support</h2>
+<p>Need help or have feature ideas? Visit <a href="https://WarpedPinball.com">WarpedPinball.com</a>.</p>
+<p>This Warped Pinball product is patent pending.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
