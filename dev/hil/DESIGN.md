@@ -398,6 +398,52 @@ Bring-up task: boot each bare board 50 times, record the fault set each time, an
 
 That last one is the valuable one. It turns the API docs into a load-bearing artifact and makes "shipped an undocumented endpoint" a build failure instead of a discovery.
 
+#### Machine id — the one value only hardware can vouch for
+
+**Implemented** in `dev/hil/flash_and_check.py` (`check_machine_id`), run per board in the health stage.
+
+`/api/machine_id` is where the rest of the API's "it is all shared code, so one
+board proves every board" reasoning stops holding. `origin.get_machine_id()`
+(`src/common/origin.py:50`) is common to every target, but its two inputs are
+not: `machine.unique_id()` and `binascii.crc32` come from whichever MicroPython
+image the board is running, and the bench runs a **different image per system**
+— `Vector_DataEast_v1.uf2`, `Vector_WPC_v5.uf2`,
+`vector_system_11_and_9_v4.uf2` (`dev/hil/trench_coat.py` `TARGET_UF2`). A
+target whose image is built without `crc32`, or that answers `unique_id()`
+differently, is wrong on exactly one system and right everywhere else, which no
+host-side test can see.
+
+It also matters more than its size suggests. Origin identifies a machine by this
+value alone — it is the only field on every datagram (`origin.py:98`) — so a
+board with the wrong id has its games filed under another machine, and a board
+that cannot produce one at all silently leaves Origin. Neither failure is
+visible from the board: it keeps serving scores.
+
+The check is a recomputation, not a regex, because a shape check passes just as
+happily on an id built from the wrong inputs:
+
+1. `/api/machine_id` returns 200 with a `machine_id` key
+2. the value is 8 lowercase hex digits (crc32 folded to four bytes, `origin.py:55`) and not `00000000`/`ffffffff`, the placeholder both-inputs-empty produces
+3. two calls agree — the board caches the value (`origin.py:52`), so a second answer that differs means one machine turns into another mid-game
+4. it equals `crc32(unique_id + gamename)` computed on the host, from the chip id the inventory stage already read and the game name `/api/game/active_config` reports (the same FRAM record `origin.py` reads, `backend.py:490`)
+5. HTTP and USB report the same id — one board, one identity, whichever transport asks
+6. across the bench, no two boards report the same id
+
+Step 1 has a wrinkle worth naming: `origin.py` imports `crc32` at module scope,
+and a handler that raises leaves the USB bridge with nothing to send
+(`usb_comms.py:176`), so the client times out instead of reporting a status. The
+check turns that into "the handler raised on the board" plus whatever the board
+printed, because "no response within timeout period" names neither the board nor
+the reason.
+
+Step 4 is the one that catches a target deriving its identity from something
+other than those two inputs, and step 6 the one that catches it deriving the
+identity from nothing board-specific at all. Distinct chip ids make a collision
+impossible by construction, so if one ever appears, the id is not per board.
+
+The machine id each board reported is printed in the run's summary table, so a
+value that is merely surprising is visible without a failure.
+
 **Auth behavior** (HTTP only): wrong password rejected; a replayed challenge rejected (`backend.py` deletes the challenge on use — worth a regression test); expired challenge rejected; more than 10 outstanding challenges returns 429.
 
 **Round-trip state:** set an adjustment profile name → read back; import scores → export → compare; set tournament mode → reset → still set (proves FRAM persistence, which is what update tests depend on later).
