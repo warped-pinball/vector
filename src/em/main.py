@@ -13,8 +13,6 @@ import resource
 import time
 
 import sensorRead
-sensorRead.initialize()
-
 
 import faults
 import GameDefsLoad
@@ -28,31 +26,39 @@ from systemConfig import SystemVersion
 import ScoreTrack
 import SharedState as S
 
+# EM hardware variant, detected at boot from GPIO14: "2player" or "4player"
+hardware_version = None
+
+
 Log = logger_instance
 # other gen I/O pin inits
 SW_pin = machine.Pin(22, machine.Pin.IN)
 AS_output = machine.Pin(27, machine.Pin.OUT, value=0)
 DD_output = machine.Pin(28, machine.Pin.OUT, value=0)
 LED_Out = machine.Pin(26, machine.Pin.OUT)
+HW_version_pin = machine.Pin(14, machine.Pin.IN)
 
 timer = machine.Timer()
 led_board = None
 
+
+def detect_hardware_version(pin, checks=10, interval_ms=5):
+    """Read pin until its value is stable across `checks` consecutive reads,
+    then classify the board: LOW = 2player, HIGH = 4player."""
+    last = pin.value()
+    stable_count = 1
+    while stable_count < checks:
+        time.sleep_ms(interval_ms)
+        current = pin.value()
+        if current == last:
+            stable_count += 1
+        else:
+            last = current
+            stable_count = 1
+    return "4player" if last else "2player"
+
 adjustButtons.init_buttons()
 
-def error_toggle(timer):
-    led_board.toggle()
-
-
-def set_error_led():
-    global led_board
-    led_board = machine.Pin(26, machine.Pin.OUT)
-    timer.init(freq=3, mode=machine.Timer.PERIODIC, callback=error_toggle)
-
-
-def bus_activity_fault_check():
-    pass
-    return False
 
 
 def check_ap_button():
@@ -90,15 +96,18 @@ def clear_ram_section(start_addr=0x20080000, length=0x20):
 print("\n\n")
 print("  Warped Pinball :: System EM")
 Log.log(f"          Version EM {SystemVersion}")
-print("Contact Paul -> Inventingfun@gmail.com")
+print("Contact Paul -> Paul@WarpedPinball.com")
 
 print(
     """
-WPC.Wifi (Vector) from Warped Pinball
+ EM.Wifi (Vector) from Warped Pinball
 This work is licensed under CC BY-NC 4.0
 """
 )
 
+
+S.hardware_version = detect_hardware_version(HW_version_pin)
+Log.log(f"MAIN: Hardware version = {S.hardware_version}")
 
 ap_mode = check_ap_button()
 print("Main: AP mode = ", ap_mode)
@@ -110,13 +119,32 @@ if not ap_mode:
 else:
     GameDefsLoad.go(safe_mode=True)
 
-sensorRead.calibrate()
+
+#initialization order is important
 ScoreTrack.initialize()
+sensorRead.initialize()
 resource.go(True)
 
 # launch wifi, and server. Should not return
-from backend import go  # noqa: E402
+from backend import go  
+
+# EM has no use for the periodic shadow-RAM -> FRAM mirror that other game
+# systems rely on (SRAM_DATA_BASE here is a transient sensor sample buffer,
+# not persistent score/game state), so it's pure wasted FRAM bus time every
+# 100ms. Patched out here rather than in the shared phew/server.py scheduler
+# so wpc/sys11/etc. keep running it unchanged.
+import phew.server as _phew_server
+_phew_server.copy_to_fram = lambda: None
+
 print("MAIN: Launching Wifi AP mode=", ap_mode)
-go(ap_mode)
+try:
+    go(ap_mode)
+finally:
+    # freeze the display (stop its periodic update) rather than let it
+    # keep scrolling/blinking once main has stopped driving it - covers
+    # both a normal fall-through and an unhandled exception dropping to REPL
+    import displayMessage
+    displayMessage.stop()
+
 Log.log("MAIN: drop through fault")
 faults.raise_fault(faults.SFTW01)

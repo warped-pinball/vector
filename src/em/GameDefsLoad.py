@@ -17,7 +17,59 @@ from logger import logger_instance
 Log = logger_instance
 
 
-safe_defaults = {"gamename": "EM Generic", "players": 1, "digits": 4, "dummy_reels": 0, "filtermasks": bytes(40), "carrythresholds": bytes(32), "startpause": 5,"endpause":5,"sensorlevels": [0, 0]}
+# Mirrors SPI_DataStore.blankStruct("EMData")'s manufacturing defaults, so a
+# fallback boot (FRAM read failed) looks the same as a freshly factory-reset
+# board rather than introducing a third, different set of numbers.
+_filtermasks = bytearray(64)
+for _ch in range(32):
+    _filtermasks[_ch * 2] = 3
+    _filtermasks[_ch * 2 + 1] = 9
+_filtermasks = bytes(_filtermasks)
+
+_carrythresholds = bytes([i % 256 for i in range(32)])
+
+safe_defaults = {
+    "gamename": "EM Game",
+    "GameInfo": {"System": "EM", "GameName": "EM Game"},
+    # EM only ever supports the standard high-score format - same shape as
+    # every sys11/wpc/data_east game config's "Formats" section.
+    "Formats": {"Standard": {"Id": 0}},
+    "players": 1,
+    "digits": 4,
+    "dummy_reels": 0,
+    "filtermasks": _filtermasks,
+    "carrythresholds": _carrythresholds,
+    "sensorlevels": [31000, 32000],
+    "startpause": 8,
+    "endpause": 5,
+    "sensitivity": 0,
+    "timing_p1_score": [5, 5, 5, 3, 3],
+    "timing_p1_reset": [8, 8, 8, 4, 4],
+    "timing_p2_score": [5, 5, 5, 3, 3],
+    "timing_p2_reset": [8, 8, 8, 4, 4],
+    "timing_p3_score": [5, 5, 5, 3, 3],
+    "timing_p3_reset": [8, 8, 8, 4, 4],
+    "timing_p4_score": [5, 5, 5, 3, 3],
+    "timing_p4_reset": [8, 8, 8, 4, 4],
+}
+
+_LIST_KEYS = (
+    "sensorlevels",
+    "timing_p1_score", "timing_p1_reset",
+    "timing_p2_score", "timing_p2_reset",
+    "timing_p3_score", "timing_p3_reset",
+    "timing_p4_score", "timing_p4_reset",
+)
+
+
+def get_safe_defaults():
+    """Copy so gdata never aliases (or mutates) the module-level defaults."""
+    data = dict(safe_defaults)
+    data["GameInfo"] = dict(safe_defaults["GameInfo"])
+    data["Formats"] = {name: dict(cfg) for name, cfg in safe_defaults["Formats"].items()}
+    for key in _LIST_KEYS:
+        data[key] = list(safe_defaults[key])
+    return data
 
 
 def parse_config_line(line):
@@ -99,10 +151,16 @@ def go(safe_mode=False):
             SharedState.gdata["GameInfo"] = {}
         SharedState.gdata["GameInfo"]["System"] = "EM"
         SharedState.gdata["GameInfo"]["GameName"] = em_data["gamename"]
+
+        # EM only ever supports the standard high-score format - not
+        # persisted in EMData, so it's set here same as GameInfo above.
+        if not isinstance(SharedState.gdata.get("Formats"), dict):
+            SharedState.gdata["Formats"] = {"Standard": {"Id": 0}}
+
         print("Loaded EMData from SPI_DataStore")
 
     except Exception as e:
-        Log.log(f"Error loading EMData: {e}")        
+        Log.log(f"Error loading EMData: {e}")
         faults.raise_fault(faults.CONF00)
-        SharedState.gdata = safe_defaults
-        print("Using safe defaults:", safe_defaults)
+        SharedState.gdata = get_safe_defaults()
+        print("Using safe defaults:", SharedState.gdata)
