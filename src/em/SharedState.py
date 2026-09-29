@@ -18,5 +18,10 @@ gdata = {"numberOfPlayers": 2, "digitsPerPlayer": 4, "dummy_reels": 0}
 # game status
 game_status = {}
 
+# Timestamp (ticks_ms) of the most recent sensor channel activation.
+# Written by ScoreTrack.processAndRun(); read by the sensor-activity poll endpoint.
+sensor_last_hit_ms = 0
 
-run_learning_game = False
+# Sensor activity level for admin sensitivity indicator.
+# 0 = off (no channels), 1 = green (one channel), 2 = red (more than one channel).
+sensor_activity_level = 0
