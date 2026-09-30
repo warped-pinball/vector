@@ -581,6 +581,46 @@ last_sc = 0
 zero_sample_streak = 0
 ZERO_SAMPLE_WARN_EVERY = 20
 
+# player-up detection: PLAYER_UP_STREAK consecutive score increments by one
+# player, with no other player scoring in between, means that player is up
+PLAYER_UP_STREAK = 5
+player_up = 1  # 1..4
+players_in_game = 1  # highest player_up seen this game
+_streak_player = -1
+_streak_count = 0
+
+
+def reset_player_up():
+    global player_up, players_in_game, _streak_player, _streak_count
+    player_up = 1
+    players_in_game = 1
+    _streak_player = -1
+    _streak_count = 0
+
+
+def _track_player_up(risingEdge):
+    """risingEdge is non-zero; one call counts as one increment for the scoring player"""
+    global player_up, players_in_game, _streak_player, _streak_count
+    p = -1
+    for i in range(4):
+        if risingEdge & (0xFF << (i * 8)):
+            if p >= 0:
+                # two players scored at once - break the streak, keep player_up as is
+                _streak_player = -1
+                _streak_count = 0
+                return
+            p = i
+    if p == _streak_player:
+        _streak_count += 1
+    else:
+        _streak_player = p
+        _streak_count = 1
+    if _streak_count >= PLAYER_UP_STREAK and player_up != p + 1:
+        player_up = p + 1
+        if player_up > players_in_game:
+            players_in_game = player_up
+        print("SCORE: player up =", player_up, "players in game =", players_in_game)
+
 
 def processRisingEdge(risingEdge):
     """process rising edge and increment sensor scores as needed
@@ -665,7 +705,9 @@ def processAndRun():
         
         # Detect rising edges on all 32 bits at once
         risingEdge = (~last_sc) & sc
-        processRisingEdge(risingEdge)
+        if risingEdge:
+            processRisingEdge(risingEdge)
+            _track_player_up(risingEdge)
         last_sc = sc
 
     # send to display green digit leds
@@ -1024,6 +1066,7 @@ def CheckForNewScores(nState=[0]):
         # if game_active_flag == True:
         if sensorRead.gameActive() == 1:
             gameover = False
+            reset_player_up()
             S.game_status["game_active"] = True
             print("SCORE: Game Start")
             nState[0] = 2

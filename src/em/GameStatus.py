@@ -56,6 +56,10 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        # detected from scoring streaks in ScoreTrack (1..4)
+        data["PlayerUp"] = ScoreTrack.player_up
+        data["PlayersInGame"] = ScoreTrack.players_in_game
+
         configured_players = (
             S.gdata.get("players")
             if S.gdata.get("players") is not None
