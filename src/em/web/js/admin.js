@@ -374,7 +374,7 @@ function buildAdjGroup(label, value, colorClass, onUp, onDown, context) {
   return { group, valDisplay };
 }
 
-// Global sensitivity (-80 to +50%)
+// Global sensitivity (-200 to 0%)
 async function initSensitivityUI() {
   let value = SENSITIVITY_DEFAULT;
 
