@@ -204,14 +204,14 @@ def serialize(record, structure_name):
                 out[i] = int(v) & 0xFF
             return bytes(out)
 
-        p1_score = _coerce_timing(record.get("timing_p1_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
-        p1_reset = _coerce_timing(record.get("timing_p1_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
-        p2_score = _coerce_timing(record.get("timing_p2_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
-        p2_reset = _coerce_timing(record.get("timing_p2_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
-        p3_score = _coerce_timing(record.get("timing_p3_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
-        p3_reset = _coerce_timing(record.get("timing_p3_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
-        p4_score = _coerce_timing(record.get("timing_p4_score", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 10)
-        p4_reset = _coerce_timing(record.get("timing_p4_reset", [8, 8, 8, 8, 8]), [8, 8, 8, 8, 8], 1, 15)
+        p1_score = _coerce_timing(record.get("timing_p1_score", [1, 1, 1, 1, 1]), [1, 1, 1, 1, 1], 1, 10)
+        p1_reset = _coerce_timing(record.get("timing_p1_reset", [6, 6, 6, 6, 6]), [6, 6, 6, 6, 6], 1, 15)
+        p2_score = _coerce_timing(record.get("timing_p2_score", [1, 1, 1, 1, 1]), [1, 1, 1, 1, 1], 1, 10)
+        p2_reset = _coerce_timing(record.get("timing_p2_reset", [6, 6, 6, 6, 6]), [6, 6, 6, 6, 6], 1, 15)
+        p3_score = _coerce_timing(record.get("timing_p3_score", [1, 1, 1, 1, 1]), [1, 1, 1, 1, 1], 1, 10)
+        p3_reset = _coerce_timing(record.get("timing_p3_reset", [6, 6, 6, 6, 6]), [6, 6, 6, 6, 6], 1, 15)
+        p4_score = _coerce_timing(record.get("timing_p4_score", [1, 1, 1, 1, 1]), [1, 1, 1, 1, 1], 1, 10)
+        p4_reset = _coerce_timing(record.get("timing_p4_reset", [6, 6, 6, 6, 6]), [6, 6, 6, 6, 6], 1, 15)
         timing_blob = p1_score + p1_reset + p2_score + p2_reset + p3_score + p3_reset + p4_score + p4_reset
 
         packed = struct.pack("<40sBBI64s32sIIIIb40s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
@@ -345,14 +345,14 @@ def deserialize(data, structure_name):
             p4_score_raw = list(timing_blob[30:35])
             p4_reset_raw = list(timing_blob[35:40])
 
-            p1_score = _coerce_loaded_timing(p1_score_raw, [8, 8, 8, 8, 8], 1, 10)
-            p1_reset = _coerce_loaded_timing(p1_reset_raw, [8, 8, 8, 8, 8], 1, 15)
-            p2_score = _coerce_loaded_timing(p2_score_raw, [8, 8, 8, 8, 8], 1, 10)
-            p2_reset = _coerce_loaded_timing(p2_reset_raw, [8, 8, 8, 8, 8], 1, 15)
-            p3_score = _coerce_loaded_timing(p3_score_raw, [8, 8, 8, 8, 8], 1, 10)
-            p3_reset = _coerce_loaded_timing(p3_reset_raw, [8, 8, 8, 8, 8], 1, 15)
-            p4_score = _coerce_loaded_timing(p4_score_raw, [8, 8, 8, 8, 8], 1, 10)
-            p4_reset = _coerce_loaded_timing(p4_reset_raw, [8, 8, 8, 8, 8], 1, 15)
+            p1_score = _coerce_loaded_timing(p1_score_raw, [1, 1, 1, 1, 1], 1, 10)
+            p1_reset = _coerce_loaded_timing(p1_reset_raw, [6, 6, 6, 6, 6], 1, 15)
+            p2_score = _coerce_loaded_timing(p2_score_raw, [1, 1, 1, 1, 1], 1, 10)
+            p2_reset = _coerce_loaded_timing(p2_reset_raw, [6, 6, 6, 6, 6], 1, 15)
+            p3_score = _coerce_loaded_timing(p3_score_raw, [1, 1, 1, 1, 1], 1, 10)
+            p3_reset = _coerce_loaded_timing(p3_reset_raw, [6, 6, 6, 6, 6], 1, 15)
+            p4_score = _coerce_loaded_timing(p4_score_raw, [1, 1, 1, 1, 1], 1, 10)
+            p4_reset = _coerce_loaded_timing(p4_reset_raw, [6, 6, 6, 6, 6], 1, 15)
 
             # Rebuild runtime filtermasks from timing arrays.
             fm = bytearray(64)
@@ -437,14 +437,14 @@ def blankStruct(structure_name):
             "startpause": 8,
             "endpause": 5,
             "sensitivity": 0,
-            "timing_p1_score": [5, 5, 5, 3, 3],
-            "timing_p1_reset": [8, 8, 8, 4, 4],
-            "timing_p2_score": [5, 5, 5, 3, 3],
-            "timing_p2_reset": [8, 8, 8, 4, 4],
-            "timing_p3_score": [5, 5, 5, 3, 3],
-            "timing_p3_reset": [8, 8, 8, 4, 4],
-            "timing_p4_score": [5, 5, 5, 3, 3],
-            "timing_p4_reset": [8, 8, 8, 4, 4],
+            "timing_p1_score": [1, 1, 1, 1, 1],
+            "timing_p1_reset": [6, 6, 6, 6, 6],
+            "timing_p2_score": [1, 1, 1, 1, 1],
+            "timing_p2_reset": [6, 6, 6, 6, 6],
+            "timing_p3_score": [1, 1, 1, 1, 1],
+            "timing_p3_reset": [6, 6, 6, 6, 6],
+            "timing_p4_score": [1, 1, 1, 1, 1],
+            "timing_p4_reset": [6, 6, 6, 6, 6],
         }
     structure = memory_map[structure_name]
     if "sets" in structure:

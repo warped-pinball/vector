@@ -225,8 +225,8 @@ def loadState():
         def _ch_for_ui_idx(ui_idx):
             return base + (4 - int(ui_idx))
 
-        default_score = [8, 8, 8, 8, 8]
-        default_reset = [8, 8, 8, 8, 8]
+        default_score = [1, 1, 1, 1, 1]
+        default_reset = [6, 6, 6, 6, 6]
         score_vals = _coerce_timing_array(S.gdata.get(score_key, default_score), default_score, 1, 10)
         reset_vals = _coerce_timing_array(S.gdata.get(reset_key, default_reset), default_reset, 1, 15)
 
@@ -485,7 +485,7 @@ def processSensorData():
 
     if stateVar == PROCESS_IDLE:
         """wait for game to start"""
-        processAndRun()  #run so lights blink for user cal
+        processAndRun(False)  #run so lights blink for user cal
         # Leave sensorScores (and the scores.html live display) holding the
         # last finished game's score through this idle/game-over gap - it
         # gets cleared in PROCESS_START below, right as the next game
@@ -505,6 +505,7 @@ def processSensorData():
         if sensorRead.gameActive() == 1:
             processEmpty()
             sensorScores = [[0 for _ in range(8)] for _ in range(4)]
+            reset_player_up()
 
             if stateCount > PROCESS_START_PAUSE:
                 log.log("SCORE: Run game scoring")
@@ -582,25 +583,38 @@ zero_sample_streak = 0
 ZERO_SAMPLE_WARN_EVERY = 20
 
 # player-up detection: PLAYER_UP_STREAK consecutive score increments by one
-# player, with no other player scoring in between, means that player is up
+# player, with no other player scoring in between, means that player is up.
+# EMs have no ball counter, so ball in play is inferred from player_up
+# wrapping back to a lower player - only possible once 2+ players are seen.
 PLAYER_UP_STREAK = 5
 player_up = 1  # 1..4
 players_in_game = 1  # highest player_up seen this game
+ball_in_play = 1  # internal count, reported only when players_in_game >= 2
 _streak_player = -1
 _streak_count = 0
 
 
 def reset_player_up():
-    global player_up, players_in_game, _streak_player, _streak_count
+    global player_up, players_in_game, ball_in_play, _streak_player, _streak_count
     player_up = 1
     players_in_game = 1
+    ball_in_play = 1
     _streak_player = -1
     _streak_count = 0
 
 
+def get_in_play():
+    """return (player_up, players_in_game, ball_in_play) for game status reports
+    all 0 when no game is active; ball_in_play is 0 until a second player is seen"""
+    if not S.game_status["game_active"]:
+        return 0, 0, 0
+    bip = ball_in_play if players_in_game >= 2 else 0
+    return player_up, players_in_game, bip
+
+
 def _track_player_up(risingEdge):
     """risingEdge is non-zero; one call counts as one increment for the scoring player"""
-    global player_up, players_in_game, _streak_player, _streak_count
+    global player_up, players_in_game, ball_in_play, _streak_player, _streak_count
     p = -1
     for i in range(4):
         if risingEdge & (0xFF << (i * 8)):
@@ -616,10 +630,13 @@ def _track_player_up(risingEdge):
         _streak_player = p
         _streak_count = 1
     if _streak_count >= PLAYER_UP_STREAK and player_up != p + 1:
+        if p + 1 < player_up:
+            # wrapped back to a lower player - next ball
+            ball_in_play += 1
         player_up = p + 1
         if player_up > players_in_game:
             players_in_game = player_up
-        print("SCORE: player up =", player_up, "players in game =", players_in_game)
+        print("SCORE: player up =", player_up, "players in game =", players_in_game, "ball =", ball_in_play)
 
 
 def processRisingEdge(risingEdge):
@@ -677,8 +694,9 @@ def processRisingEdge(risingEdge):
         sensorScores[3][4] += 1
 
 
-def processAndRun():
-    """pull data from ram buffer and feed to score module - for active game running"""
+def processAndRun(track_player_up=True):
+    """pull data from ram buffer and feed to score module - for active game running
+    track_player_up=False when idle (sensor lights only) so player up is not disturbed"""
     global last_sc, sensorScores, zero_sample_streak
 
     def _count_set_bits(v):
@@ -707,7 +725,8 @@ def processAndRun():
         risingEdge = (~last_sc) & sc
         if risingEdge:
             processRisingEdge(risingEdge)
-            _track_player_up(risingEdge)
+            if track_player_up:
+                _track_player_up(risingEdge)
         last_sc = sc
 
     # send to display green digit leds
@@ -1066,7 +1085,6 @@ def CheckForNewScores(nState=[0]):
         # if game_active_flag == True:
         if sensorRead.gameActive() == 1:
             gameover = False
-            reset_player_up()
             S.game_status["game_active"] = True
             print("SCORE: Game Start")
             nState[0] = 2
@@ -1095,4 +1113,5 @@ def CheckForNewScores(nState=[0]):
             nState[0] = 1
             log.log("SCORE: game end")
             sensorScores = [[0 for _ in range(8)] for _ in range(4)]
+            reset_player_up()
 

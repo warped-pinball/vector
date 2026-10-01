@@ -259,8 +259,8 @@ const SENSITIVITY_DEFAULT = 0;
 // Timing sensitivity: 5 decade columns in descending order.
 // Score range: 1–10, Reset range: 1–15
 const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
-const TIMING_ADJ_DEFAULT_SCORE = 8;
-const TIMING_ADJ_DEFAULT_RESET = 8;
+const TIMING_ADJ_DEFAULT_SCORE = 1;
+const TIMING_ADJ_DEFAULT_RESET = 6;
 const TIMING_ADJ_MIN = 1;
 const TIMING_ADJ_SCORE_MAX = 10;
 const TIMING_ADJ_RESET_MAX = 15;
