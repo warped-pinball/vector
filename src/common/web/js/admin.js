@@ -433,7 +433,10 @@ async function getMidnightMadness() {
   addListener(alwaysToggle);
 
   nowButton.addEventListener("click", async () => {
-    await window.smartFetch("/api/time/trigger_midnight_madness", null, false);
+    // not retried: this GET has a side effect
+    await window.smartFetch("/api/time/trigger_midnight_madness", null, false, {
+      retries: 0,
+    });
   });
 }
 
@@ -815,10 +818,13 @@ if (typeof window !== "undefined") {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
+      // The device fetches this from GitHub synchronously (up to ~10s+), and
+      // the route has a 10s cool down, so allow longer and don't retry.
       const response = await window.smartFetch(
         "/api/update/check",
         null,
         false,
+        { timeoutMs: 30000, retries: 0 },
       );
       if (!response.ok) {
         throw new Error(`update check failed: ${response.status}`);
