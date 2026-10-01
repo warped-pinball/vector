@@ -146,9 +146,11 @@ def serialize(record, structure_name):
         #   I : sensorlevels[1]
         #   I : startpause
         #   I : endpause
-        #   b : sensitivity (signed, -80..50)
+        #   b : sensitivity, legacy signed byte (clamped to -128..0)
         # 40s : timing arrays [p1_score(5), p1_reset(5), p2_score(5), p2_reset(5),
         #                       p3_score(5), p3_reset(5), p4_score(5), p4_reset(5)]
+        #   B : sensitivity magnitude 0..200 (full range -200..0) - was zero padding in
+        #       older records, so 0 here means "use the legacy b field"
         name = record.get("gamename", "")
         if not isinstance(name, (bytes, bytearray)):
             name = str(name).encode()
@@ -185,8 +187,9 @@ def serialize(record, structure_name):
         startpause = int(record.get("startpause", 0)) & 0xFFFFFFFF
         endpause = int(record.get("endpause", 0)) & 0xFFFFFFFF
 
-        sensitivity = int(record.get("sensitivity", 0))
-        #sensitivity = max(-80, min(50, sensitivity))
+        sensitivity = max(-200, min(0, int(record.get("sensitivity", 0))))
+        sensitivity_legacy = max(-128, sensitivity)
+        sensitivity_mag = -sensitivity
 
         def _coerce_timing(raw, default, lo, hi):
             try:
@@ -214,7 +217,7 @@ def serialize(record, structure_name):
         p4_reset = _coerce_timing(record.get("timing_p4_reset", [6, 6, 6, 6, 6]), [6, 6, 6, 6, 6], 1, 15)
         timing_blob = p1_score + p1_reset + p2_score + p2_reset + p3_score + p3_reset + p4_score + p4_reset
 
-        packed = struct.pack("<40sBBI64s32sIIIIb40s", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob)
+        packed = struct.pack("<40sBBI64s32sIIIIb40sB", name, players, digits, multiplier, fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity_legacy, timing_blob, sensitivity_mag)
         # pad to on-flash record size to avoid leaving old bytes from previous writes
         record_size = memory_map["EMData"]["size"]
         if len(packed) < record_size:
@@ -332,8 +335,11 @@ def deserialize(data, structure_name):
                     out.append(int(n))
                 return out
 
-            fmt_new = "<40sBBI64s32sIIIIb40s"
-            name, players, digits, multiplier, _stored_fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob = struct.unpack_from(fmt_new, data)
+            fmt_new = "<40sBBI64s32sIIIIb40sB"
+            name, players, digits, multiplier, _stored_fm_bytes, ct_bytes, s0, s1, startpause, endpause, sensitivity, timing_blob, sensitivity_mag = struct.unpack_from(fmt_new, data)
+            # magnitude byte holds the full -200..0 range; 0 means an older record (or 0) - use legacy b field
+            if sensitivity_mag:
+                sensitivity = -min(200, int(sensitivity_mag))
             timing_blob = bytes(timing_blob)
 
             p1_score_raw = list(timing_blob[0:5])
@@ -379,7 +385,7 @@ def deserialize(data, structure_name):
                 "sensorlevels": [int(s0), int(s1)],
                 "startpause": int(startpause),
                 "endpause": int(endpause),
-                "sensitivity": max(-200, min(20, int(sensitivity))),
+                "sensitivity": max(-200, min(0, int(sensitivity))),
                 "timing_p1_score": p1_score,
                 "timing_p1_reset": p1_reset,
                 "timing_p2_score": p2_score,

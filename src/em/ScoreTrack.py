@@ -753,8 +753,10 @@ def processAndRun(track_player_up=True):
         log.log(f"SCORE: WARN no samples found cleared at {zero_sample_streak}")
         zero_sample_streak = 0
 
-    # stamp SharedState for web indicator lamp
+    # stamp SharedState for web indicator lamp - level 1 = one channel (green), 2 = more than one (red)
+    # only updated on activity; /api/em/sensor_activity ages it out via sensor_last_hit_ms
     if maskedActivesChannels:
+        S.sensor_activity_level = 1 if _count_set_bits(maskedActivesChannels) == 1 else 2
         S.sensor_last_hit_ms = time.ticks_ms()
 
     # 10->0 truncate, except let last one acculmulate
