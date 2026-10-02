@@ -30,7 +30,7 @@ Pick your system to find quick starts, installation manuals, and ROM handling no
 
 ### Data East
 
-Owner's documentation coming soon.
+- [Installation & use manual](guides/data_east/manual.md)
 
 ### Classic Bally / Stern
 
@@ -39,7 +39,7 @@ Owner's documentation coming soon.
 
 ### Electromechanical (EM)
 
-Owner's documentation coming soon.
+- [Installation & use manual](guides/em/manual.md)
 
 ## Origin hub
 
