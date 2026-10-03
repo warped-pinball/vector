@@ -2,6 +2,7 @@
 
 ## Summary
 
+
 The web UI (especially the Admin page) sometimes failed to load and did not
 recover. The browser showed the header menu and the footer logo, but none of the
 page's controls. Clicking the nav link again did nothing. Only a full page
