@@ -1,0 +1,86 @@
+{
+    "GameInfo": {
+        "GameName": "Bram Stokers Dracula",
+        "System": "WPC",
+        "FileVer": 1
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 944,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+    "DisplayMessage": {
+        "Type": 10,
+        "AddressS1": 7734,
+        "AddressS2": 7799,
+        "AddressS3": 7864,
+        "Length": 32,
+        "ChecksumStartAdr": 7734,
+        "ChecksumEndAdr": 7926,
+        "ChecksumResultAdr": 7927
+    },
+    "Adjustments": {
+        "Type": 10,
+        "CustomMessageOn": 7084,
+        "ChecksumStartAdr": 7043,
+        "ChecksumEndAdr": 7342,
+        "ChecksumResultAdr": 7343
+    },
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7450,
+        "BytesInScore": 5,
+        "ScoreSpacing": 8,
+        "InitialAdr": 7447,
+        "InitialSpacing": 8,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7484,
+        "GrandChampInitAdr": 7481,
+        "ChecksumStartAdr": 7447,
+        "ChecksumEndAdr": 7478,
+        "ChecksumResultAdr": 7479,
+        "GCChecksumStartAdr": 7481,
+        "GCChecksumEndAdr": 7488,
+        "GCChecksumResultAdr": 7489
+    },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
+        "DisableByte": 0
+    },
+    "Switches": {
+        "Type": 0,
+        "Address": 0,
+        "Length": 0
+    },
+    "CoinDrop": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 143,
+        "GameActiveValue": 0,
+        "Players": 5877,
+        "Playerup": 943,
+        "ScoreAdr": 5759,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    }
+}
