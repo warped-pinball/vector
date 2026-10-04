@@ -43,14 +43,14 @@ safe_defaults = {
     "startpause": 8,
     "endpause": 5,
     "sensitivity": 0,
-    "timing_p1_score": [5, 5, 5, 3, 3],
-    "timing_p1_reset": [8, 8, 8, 4, 4],
-    "timing_p2_score": [5, 5, 5, 3, 3],
-    "timing_p2_reset": [8, 8, 8, 4, 4],
-    "timing_p3_score": [5, 5, 5, 3, 3],
-    "timing_p3_reset": [8, 8, 8, 4, 4],
-    "timing_p4_score": [5, 5, 5, 3, 3],
-    "timing_p4_reset": [8, 8, 8, 4, 4],
+    "timing_p1_score": [1, 1, 1, 1, 1],
+    "timing_p1_reset": [6, 6, 6, 6, 6],
+    "timing_p2_score": [1, 1, 1, 1, 1],
+    "timing_p2_reset": [6, 6, 6, 6, 6],
+    "timing_p3_score": [1, 1, 1, 1, 1],
+    "timing_p3_reset": [6, 6, 6, 6, 6],
+    "timing_p4_score": [1, 1, 1, 1, 1],
+    "timing_p4_reset": [6, 6, 6, 6, 6],
 }
 
 _LIST_KEYS = (
