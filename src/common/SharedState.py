@@ -1,4 +1,4 @@
-VectorVersion = "1.12.11"
+VectorVersion = "1.12.12"
 
 
 # counts game start cycles
