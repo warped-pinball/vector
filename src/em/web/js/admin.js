@@ -259,8 +259,8 @@ const SENSITIVITY_DEFAULT = 0;
 // Timing sensitivity: 5 decade columns in descending order.
 // Score range: 1–10, Reset range: 1–15
 const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
-const TIMING_ADJ_DEFAULT_SCORE = 8;
-const TIMING_ADJ_DEFAULT_RESET = 8;
+const TIMING_ADJ_DEFAULT_SCORE = 1;
+const TIMING_ADJ_DEFAULT_RESET = 6;
 const TIMING_ADJ_MIN = 1;
 const TIMING_ADJ_SCORE_MAX = 10;
 const TIMING_ADJ_RESET_MAX = 15;
@@ -331,9 +331,14 @@ function coerceTimingArray(raw, fallback, clampFn) {
 
 // Build an adjuster group element (label, up button, value display, down button)
 // colorClass: "score" (red), "reset" (blue), or "" for plain
-function buildAdjGroup(label, value, colorClass, onUp, onDown) {
+// context: e.g. "Player 2 1000s" - gives screen readers a unique name for each control
+function buildAdjGroup(label, value, colorClass, onUp, onDown, context) {
+  const name = (context ? context + " " : "") + label.toLowerCase() + " depth";
+
   const group = document.createElement("div");
   group.className = "adj-group";
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", name);
 
   const lbl = document.createElement("div");
   lbl.className = "adj-group-label";
@@ -344,16 +349,21 @@ function buildAdjGroup(label, value, colorClass, onUp, onDown) {
 
   const upBtn = document.createElement("button");
   upBtn.className = btnClass;
+  upBtn.type = "button";
   upBtn.textContent = "\u25b2";
+  upBtn.setAttribute("aria-label", "Increase " + name);
   upBtn.addEventListener("click", onUp);
 
   const valDisplay = document.createElement("div");
   valDisplay.className = valClass;
   valDisplay.textContent = String(value);
+  valDisplay.setAttribute("aria-live", "polite");
 
   const downBtn = document.createElement("button");
   downBtn.className = btnClass;
+  downBtn.type = "button";
   downBtn.textContent = "\u25bc";
+  downBtn.setAttribute("aria-label", "Decrease " + name);
   downBtn.addEventListener("click", onDown);
 
   group.appendChild(lbl);
@@ -364,7 +374,7 @@ function buildAdjGroup(label, value, colorClass, onUp, onDown) {
   return { group, valDisplay };
 }
 
-// Global sensitivity (-80 to +50%)
+// Global sensitivity (-200 to 0%)
 async function initSensitivityUI() {
   let value = SENSITIVITY_DEFAULT;
 
@@ -516,7 +526,7 @@ async function initTimingSensitivityUI() {
     }
   }
 
-  function buildPlayerRow(containerId, scoreArr, resetArr, labels) {
+  function buildPlayerRow(containerId, playerNum, scoreArr, resetArr, labels) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = "";
@@ -529,6 +539,7 @@ async function initTimingSensitivityUI() {
       colLbl.className = "decade-col-label";
       colLbl.textContent = label;
       col.appendChild(colLbl);
+      const context = "Player " + playerNum + " " + label;
 
       // Red adjuster — score (detection) depth
       const { group: sg, valDisplay: sv } = buildAdjGroup(
@@ -546,7 +557,8 @@ async function initTimingSensitivityUI() {
             sv.textContent = String(scoreArr[i]);
             await saveTimingSensitivity();
           }
-        }
+        },
+        context
       );
       col.appendChild(sg);
 
@@ -566,7 +578,8 @@ async function initTimingSensitivityUI() {
             rv.textContent = String(resetArr[i]);
             await saveTimingSensitivity();
           }
-        }
+        },
+        context
       );
       col.appendChild(rg);
 
@@ -576,10 +589,10 @@ async function initTimingSensitivityUI() {
 
   function renderTimingRows() {
     const labels = getTimingAdjLabels(getConfiguredDummyReels());
-    buildPlayerRow("timing-adj-p1", p1_score, p1_reset, labels);
-    buildPlayerRow("timing-adj-p2", p2_score, p2_reset, labels);
-    buildPlayerRow("timing-adj-p3", p3_score, p3_reset, labels);
-    buildPlayerRow("timing-adj-p4", p4_score, p4_reset, labels);
+    buildPlayerRow("timing-adj-p1", 1, p1_score, p1_reset, labels);
+    buildPlayerRow("timing-adj-p2", 2, p2_score, p2_reset, labels);
+    buildPlayerRow("timing-adj-p3", 3, p3_score, p3_reset, labels);
+    buildPlayerRow("timing-adj-p4", 4, p4_score, p4_reset, labels);
     applyHardwareVersionVisibility();
   }
 
