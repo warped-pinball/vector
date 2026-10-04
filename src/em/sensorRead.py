@@ -25,6 +25,8 @@ log = logger_instance
 # Pin assignments
 PIO_MISO_PIN = 12  
 PIO_SCK_PIN  = 10  
+DIAG_OUTPUT_PIN = 1
+GPIO11_OUTPUT_PIN = 11
 PIO_CS_PIN   = 13  # CS (or Load...)
 ANALOG_HI_GPIO = 19
 ANALOG_LOW_GPIO = 18
@@ -32,64 +34,34 @@ ANALOG_LOW_GPIO = 18
 #MISO data pin init
 machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
+#GPIO11 output init
+machine.Pin(GPIO11_OUTPUT_PIN, machine.Pin.OUT, value=1)
+
+#GPIO1 diagnostic output init
+machine.Pin(DIAG_OUTPUT_PIN, machine.Pin.OUT, value=0)
+
 #analog thresholds PWMs
 hiPwm = machine.PWM(machine.Pin(19))
 lowPwm = machine.PWM(machine.Pin(18))
 
 
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
-def spi_master_16bit():
-    set(x, 15)                          #init first transfer bit length
-
-    wrap_target()
-    set(pins, 1)             [7]        #set load pin high
-
-    label("bitloop")         
-
-    nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]
-    
-    jmp(x_dec, "bitloop")    .side(0)
-
-    set(pins, 0)             .side(0)
-    set(x, 15)               .side(0) #bit length (-1)
-
-    push(noblock)
-
-    #Delay loop for pause between reads - set up for 1mS cycle
-    set(y, 2)   # set(y, 19)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [7]
-
-    #nop()                   .side(0)   [3]
-    wrap()
-
-
-
-
-
-
-
-
-@rp2.asm_pio(sideset_init=rp2.PIO.OUT_HIGH, set_init=rp2.PIO.OUT_HIGH) 
+#read sebsors
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH) 
 def spi_master_16bit_invert():
    
     wrap_target()
 
-    mov(isr,invert(null))
+    mov(isr,invert(null))   .side(0)
 
-    set(x, 7)                          #init first transfer bit length
-    set(pins, 1)             [7]        #set load pin high
+    set(pins, 1)                [3]     #set load pin (CS) high
+    set(x, 7)                   [3]       #init first transfer bit length   
+    nop()                       [3]
 
     label("MSbitloop")         
-    nop()                    .side(0)  [1]
-    in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
-    jmp(x_dec, "MSbitloop")    .side(0)
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]  #side set happnens and then delay cycles
+    jmp(x_dec, "MSbitloop")     .side(0)
 
     mov(isr,invert(isr))
     set(x, 7) 
@@ -97,19 +69,18 @@ def spi_master_16bit_invert():
     label("LSbitloop")         
     nop()                    .side(0)  [1]
     in_(pins, 1)             .side(0)  [1]  #data in pin changes on rising edge of clock
-    nop()                    .side(1)   
-    nop()                    .side(1)  [1]    
+    nop()                    .side(1)  [3]    
     jmp(x_dec, "LSbitloop")    .side(0)
 
-    set(pins, 0)             .side(0)
-    
+    set(pins, 0)             .side(0)       #CS off (load pin)    
     push(noblock)
 
     #Delay loop for pause between reads - set up for 0.775mS cycle
-    set(y, 11)     # set(y, 19)
-    label("delay")
-    nop()                   [1]
-    jmp(y_dec, "delay")     [7]
+    set(y, 11)    .side(2)   # set(y, 11)    
+    label("delay2")
+    nop()                   [3]
+    nop()                   [2]
+    jmp(y_dec, "delay2")    [3]
 
     wrap()
 
@@ -117,9 +88,83 @@ def spi_master_16bit_invert():
 
 
 
+@rp2.asm_pio(sideset_init=(rp2.PIO.OUT_HIGH, rp2.PIO.OUT_HIGH), set_init=rp2.PIO.OUT_HIGH)
+def spi_master_32bit_invert():
+    """
+    4-player variant of spi_master_16bit_invert(): clocks in 32 bits per
+    sample as four 8-bit sensor-register groups, shifted in order
+    P4,P3,P2,P1, and pushes the full 32-bit ISR to the RX FIFO.
+
+    The real 4-player board hardware-inverts the 1st and 3rd bytes (P4,
+    P2) but not the 2nd and 4th (P3, P1) -- an alternating pattern. A
+    single mov(isr, invert(isr)) flips the *entire* ISR (every bit shifted
+    in so far, not just the newest group), so it looks like one invert
+    can't isolate just one group -- but applying it after EVERY group
+    (not just once) works out correctly: each already-placed group picks
+    up one more inversion for every later group's invert, and the
+    resulting parity alternates exactly right. Verified by simulation:
+    group 1 (P4) ends up inverted, group 2 (P3) ends up raw, group 3 (P2)
+    inverted, group 4 (P1) raw -- matching the real hardware exactly, no
+    software-side byte inversion needed for this board.
+    """
+
+    wrap_target()
+
+    mov(isr, invert(null))   .side(0)
+
+    set(pins, 1)                [3]     #set load pin (CS) high
+    set(x, 7)                   [3]     #8 bits per group
+    nop()                       [3]
+
+    label("p4loop")                     # group 1: P4 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]  #data in pin changes on rising edge of clock
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p4loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p3loop")                     # group 2: P3 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p3loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p2loop")                     # group 3: P2 -> ends up inverted
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p2loop")        .side(0)
+
+    mov(isr, invert(isr))
+    set(x, 7)
+
+    label("p1loop")                     # group 4: P1 -> ends up raw
+    nop()                       .side(0)  [1]
+    in_(pins, 1)                .side(0)  [1]
+    nop()                       .side(1)  [3]
+    jmp(x_dec, "p1loop")        .side(0)
+
+    set(pins, 0)             .side(0)       #CS off (load pin)
+    push(noblock)
+
+    #Delay loop for pause between reads
+    set(y, 11)    .side(2)
+    label("delay2")
+    nop()                   [3]
+    nop()                   [2]
+    jmp(y_dec, "delay2")    [3]
+
+    wrap()
 
 
-# GAME active detector - - - first level filering
+
+
+# GAME active detector - - - first level filtering
 INPUT_PIN = 21  # Input to sample  <- changed to gpio21 for version 2 pcb (switched with Aux input)
 OUTPUT_PIN = 17 # Output to set/clear
 machine.Pin(INPUT_PIN, machine.Pin.IN)
@@ -190,7 +235,11 @@ def initialize():
     dma_start()
 
     #state machine - for SPI read of coil sensors
-    smSpi = rp2.StateMachine(4, spi_master_16bit_invert, freq=340000,
+    #  2player board: 16 bits/sample (P1,P2), alternating invert baked into the PIO.
+    #  4player board: 32 bits/sample (P4,P3,P2,P1), same alternating invert
+    #  baked in too (see spi_master_32bit_invert() for how).
+    sensor_pio_program = spi_master_32bit_invert if S.hardware_version == "4player" else spi_master_16bit_invert
+    smSpi = rp2.StateMachine(4, sensor_pio_program, freq=340000,
         in_base=machine.Pin(PIO_MISO_PIN),
         sideset_base=machine.Pin(PIO_SCK_PIN),
         set_base=machine.Pin(PIO_CS_PIN)
@@ -202,6 +251,9 @@ def initialize():
     lowPwm.freq(1000)
     hiPwm.duty_u16(int(65535 * 0.55))   # 80% duty cycle
     lowPwm.duty_u16(int(65535 * 0.45))  # 20% duty cycle
+
+    # Restore persisted calibration/sensitivity thresholds on boot and write PWM regs.
+    _restore_sensor_thresholds_from_store()
 
     # Set up state machine for the game active detection
     sma = rp2.StateMachine(
@@ -223,6 +275,12 @@ def initialize():
 
 dma_sensor = None
 
+# rp2.DMA() wrapper for the channel dma_sensor points at - kept alive (rather
+# than a dma_start()-local var) so the channel isn't reallocated and leaked
+# every time dma_start() re-runs (initialize() calls it on every zero-sample
+# recovery attempt, not just at boot).
+_dma_obj = None
+
 def dma_diag():
     global dma_sensor
     if dma_sensor is not None:
@@ -231,14 +289,15 @@ def dma_diag():
 
 
 def dma_start():
-    global dma_sensor    
+    global dma_sensor, _dma_obj
     #**************************************************
     # DMA Setup for bus memory access, read and writes
     #**************************************************
-    a=rp2.DMA()
-   
-    # DMA channel assignment (we can use any channel in this case)
-    DMA_SENSOR = a.channel 
+    if _dma_obj is None:
+        _dma_obj = rp2.DMA()
+
+    # DMA channel assignment (reused across calls - see _dma_obj above)
+    DMA_SENSOR = _dma_obj.channel
     log.log(f"SENSOR: using DMA channel: {DMA_SENSOR}")
 
     #uctypes struct for registers
@@ -295,50 +354,147 @@ def gameActive():
     return game_active_pin.value()
 
 
-lowCalThres=32000
-highCalThres=32000
+# Calibration record - set only by calibrate() (or restored from flash on
+# boot). Sensitivity is applied live, on top of this record, every time
+# thresholds are written to the PWM registers - the record itself never
+# changes just because sensitivity changes, so a recalibrate cycle always
+# starts from a clean hardware reading.
+calLow = 32000
+calHigh = 32000
+sensitivity = 0              # percent, SENSITIVITY_MIN..SENSITIVITY_MAX; 0 = as-calibrated
+
+SENSITIVITY_MIN = -200
+SENSITIVITY_MAX = 0
+COUNTS_PER_PERCENT = 200     # total threshold spread change (both thresholds combined) per 1% sensitivity
+CAL_MIN_GAP = 40             # calibration record's threshold spread (raw PWM counts); also the restore sanity-check floor
+
+
+def _setThresholds(pct, persist=True):
+    """Single point of control for sensor thresholds: clamps/stores the
+    sensitivity percent, computes (low, high) PWM counts live from the
+    calibration record, writes them to the analog PWM registers, and
+    (unless persist=False) saves the result to EMData.
+
+    Every function that changes sensitivity or thresholds must go through
+    here so the PWM outputs, S.gdata, and persisted state can never drift
+    apart from one another."""
+    global sensitivity
+
+    pct = max(SENSITIVITY_MIN, min(SENSITIVITY_MAX, int(pct)))
+    sensitivity = pct
+
+    delta = (COUNTS_PER_PERCENT * pct)   # counts each threshold moves toward/away from midpoint
+    low = max(0, min(65535, int(calLow + delta)))
+    high = max(0, min(65535, int(calHigh - delta)))
+    if high < low:
+        low = high = (low + high) // 2
+
+    lowPwm.duty_u16(low)
+    hiPwm.duty_u16(high)
+    print(f"SENSOR: PWM thresholds low={low} high={high} (cal low={calLow} high={calHigh}, sensitivity={sensitivity}%)")
+
+    S.gdata["sensitivity"] = pct
+
+    if persist:
+        try:
+            from ScoreTrack import saveState
+
+            saveState()
+        except Exception as e:
+            log.log(f"SENSOR: failed to persist thresholds: {e}")
+
+    return pct, low, high
+
+
+def _restore_sensor_thresholds_from_store():
+    """Restore the persisted calibration record + sensitivity and apply to PWM."""
+    global calLow, calHigh
+
+    sensor_levels = S.gdata.get("sensorlevels")
+    if not isinstance(sensor_levels, (list, tuple)) or len(sensor_levels) < 2:
+        return False
+
+    try:
+        cal_low = int(sensor_levels[0])
+        cal_high = int(sensor_levels[1])
+    except Exception:
+        return False
+
+    # Sanity checks: keep in valid register range and ensure a useful spread.
+    # calibrate() pulls calLow/calHigh in tight around the midpoint (only
+    # CAL_MIN_GAP counts apart) rather than scaling them outward, so that is
+    # the real floor here - anything smaller means corrupt/uninitialized data.
+    if cal_low < 0 or cal_low > 65535 or cal_high < 0 or cal_high > 65535:
+        return False
+    if (cal_high - cal_low) < CAL_MIN_GAP:
+        return False
+
+    calLow = cal_low
+    calHigh = cal_high
+    pct = int(S.gdata.get("sensitivity", 0))
+
+    # Restoring reapplies exactly what was already persisted, so there's
+    # nothing new to save back to EMData.
+    pct, low, high = _setThresholds(pct, persist=False)
+    log.log(f"SENSOR: sensor calibration restored: cal_low={cal_low}, cal_high={cal_high}, sensitivity={pct}%, applied low={low} high={high}")
+    return True
 
 def calibrate():
     '''calibrate the analog output pwms - sensors need to be idleing for this'''
-    global smSpi,lowPwm,hiPwm,lowCalThres,highCalThres
 
-    #check existing cal from spi datastore
-    cal_high = S.gdata.get("sensorlevels")[1]
-    cal_low = S.gdata.get("sensorlevels")[0]
-    if (cal_high>20000  and   cal_low<(65535-20000) ):
-        log.log(f"SENSOR: sensor calibration restored:  cal_low={cal_low}, cal_high={cal_high}")
-        lowPwm.duty_u16(cal_low)
-        lowCalThres=cal_low
-        hiPwm.duty_u16(cal_high)
-        highCalThres=cal_high
-        return
+    # calibrate() blocks the scheduler for several seconds (time.sleep() in
+    # the sweep loop below), so displayUpdate() never runs meanwhile - a
+    # one-shot direct write is the only way to get a 'C' on the digit display
+    # here. It stays until the next displayUpdate() tick overwrites it once
+    # this function returns.
+    import displayMessage
+    displayMessage.showCalibratingDigit()
+
+    # phew's scheduler can't run at all while we're blocked below, so every
+    # scheduled task's next_run falls behind - left alone, they all fire in
+    # a rapid back-to-back burst once we return, trying to catch up (that's
+    # the fast-flickering display after calibration). Halting now and
+    # calling restart_schedule() in finally resets everyone's next_run to
+    # now+phase instead, so they just resume on their normal cadence with
+    # no burst. Same pattern as LowMemoryMode in common/update.py.
+    import phew.server
+    phew.server._halt_schedule = True
+
+    try:
+        return _calibrate_sweep()
+    finally:
+        phew.server._halt_schedule = False
+        phew.server.restart_schedule()
+
+
+def _calibrate_sweep():
+    global calLow, calHigh
 
     print("SENSOR: Calibrate sensor circuit")
     lowPwm.duty_u16(20000)
     hiPwm.duty_u16(65535-20000)
-    time.sleep(0.4)  
+    time.sleep(0.4)
     clearSensorRx()
-    time.sleep(0.1)  
-    v = readSensorRx()   
+    time.sleep(0.1)
+    v = readSensorRx()
     if (v&0x03) != 0:
         log.log("SENSOR: sensor cal fault")
 
-    for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed        
+    lowCal = 0
+    highCal = 0
+    for duty in range(20000, 65536-20000, 256):  # Ramp in steps of 256 for speed
         print(".",end="")
         lowPwm.duty_u16(duty)
         clearSensorRx()
-        time.sleep(0.1)  
-      
-        lowCal=0
-        highCal=0
+        time.sleep(0.1)
 
         # Check buffer for two LSBs clear
-        v = readSensorRx()               
+        v = readSensorRx()
         if v is not None:
             if (v & 3) == 3:  # Two LSBs
-                print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")  
+                print(f"\nSENSOR: Low PWM calibration found at duty: {duty} ({duty/65535:.2%})")
                 lowCal=duty
-                break        
+                break
 
 
     lowPwm.duty_u16(int(0))
@@ -346,50 +502,72 @@ def calibrate():
     for duty in range(65535-20000, 19999, -256):
         print(".",end="")
         hiPwm.duty_u16(duty)
-        clearSensorRx()        
-        time.sleep(0.08)  
+        clearSensorRx()
+        time.sleep(0.08)
 
         # Check buffer for two LSBs clear
-        v = readSensorRx()   
-        if v is not None:        
-            if (v & 3) == 3:  # Two LSBs               
-                print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")                
+        v = readSensorRx()
+        if v is not None:
+            if (v & 3) == 3:  # Two LSBs
+                print(f"\nSENSOR: High PWM calibration found at duty: {duty} ({duty/65535:.2%})")
                 highCal=duty
                 break
 
 
-    #print("\nSENSOR: calibration complete:",lowCal,highCal)
-    lowCalThres = int(lowCal*0.88)   #0.9
-    lowPwm.duty_u16(lowCalThres)
-    highCalThres = int(highCal*1.12)  #1.1
-    hiPwm.duty_u16(highCalThres)
-    log.log(f"SENSOR: calibration thresholds, low={lowCalThres} high={highCalThres}")
-    print("SENSOR: thresholds as percentage: Low = {:.2%}, High = {:.2%}".format(lowCalThres/65535, highCalThres/65535))
+    print("\nSENSOR: calibration complete:",lowCal,highCal)
+    # calLow/calHigh define the calibration record's threshold spread - pull
+    # them in tight around the midpoint instead of scaling lowCal/highCal
+    # outward, so they land close together regardless of how far apart the
+    # sweep's found crossing points are. CAL_MIN_GAP is the smallest allowed
+    # spread (raw PWM counts) and also guarantees calHigh > calLow.
+    midpoint = (lowCal + highCal) // 2
+    calLow = max(0, min(65535, midpoint - CAL_MIN_GAP // 2))
+    calHigh = max(calLow + 1, min(65535, midpoint + CAL_MIN_GAP // 2))
+    S.gdata["sensorlevels"] = [calLow, calHigh]
+    log.log(f"SENSOR: calibration record, low={calLow} high={calHigh}")
+    print("SENSOR: calibration record as percentage: Low = {:.2%}, High = {:.2%}".format(calLow/65535, calHigh/65535))
 
+    # A fresh calibration applies this starting sensitivity on top of the
+    # newly-calibrated record before returning.
+    return _setThresholds(-10)
+
+
+def setSensitivityPercent(percent):
+    """Set sensitivity percent (SENSITIVITY_MIN..SENSITIVITY_MAX) and apply it
+    live against the calibration record, writing the result to the PWM
+    registers.
+
+    0% keeps the full calibrated threshold spread.
+    Negative % = less sensitive (thresholds move further apart), down to
+    SENSITIVITY_MIN.
+    """
+    try:
+        pct = int(percent)
+    except Exception:
+        pct = 0
+
+    pct, low, high = _setThresholds(pct)
+    log.log(f"SENSOR: sensitivity, Cal low={calLow} high={calHigh} to {pct}% -> low={low} high={high}")
+    return pct, low, high
 
 
 def sensitivityChange(dir):
-    '''sensitivy adjust - up=1 so more sensitive'''
-    global lowCalThres,highCalThres
-    if dir==1:
-        if int(highCalThres*0.98) > int(lowCalThres*1.02):
-            highCalThres=int(highCalThres*0.98)
-            lowCalThres=int(lowCalThres*1.02)
-    else:
-        if int(highCalThres*1.02) < 55000 :
-            highCalThres=int(highCalThres*1.02)
-            lowCalThres=int(lowCalThres*0.98)
+    '''sensitivity adjust via physical buttons - dir=1 so more sensitive.
 
-    lowPwm.duty_u16(lowCalThres)
-    hiPwm.duty_u16(highCalThres)
-    log.log(f"SENSOR: set thresholds low={lowCalThres} high={highCalThres}")
+    Routes through setSensitivityPercent() (same path as the web admin
+    +/- buttons) so thresholds are always derived live from the calibration
+    record instead of drifting relative to themselves.
+    '''
+    pct = int(S.gdata.get("sensitivity", 0))
+    step = 1 if dir == 1 else -1
+    pct = max(SENSITIVITY_MIN, min(SENSITIVITY_MAX, pct + step))
+    result = setSensitivityPercent(pct)
 
-    #import SPI_DataStore as DataStore
-    S.gdata.get("sensorlevels")[1] = highCalThres
-    S.gdata.get("sensorlevels")[0] = lowCalThres
-    #DataStore.write_record("EMData", S.gdata)
+    # Persist to FRAM, same as the web admin +/- buttons (em_routes.set_sensitivity).
     from ScoreTrack import saveState
     saveState()
+
+    return result
 
 #test
 if __name__ == "__main__":

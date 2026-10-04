@@ -43,17 +43,10 @@ def _get_machine_score(player):
     return ScoreTrack.getPlayerScore(player)
 
 
-def _get_ball_in_play():
-    """Get the ball in play number. 0 if game over."""
-    return 1
-
-
 def game_report():
     """Generate a report of the current game status, return dict"""
     data = {}
     try:
-        # data["BallInPlay"] = _get_ball_in_play()
-
         data["GameActive"] = S.game_status["game_active"]
 
         data["Scores"] = [
@@ -62,6 +55,24 @@ def game_report():
             _get_machine_score(2),
             _get_machine_score(3),
         ]
+
+        # detected from scoring streaks in ScoreTrack - all 0 when no game active,
+        # BallInPlay stays 0 until a second player is seen (1 player games never report it)
+        data["PlayerUp"], data["PlayersInGame"], data["BallInPlay"] = ScoreTrack.get_in_play()
+
+        configured_players = (
+            S.gdata.get("players")
+            if S.gdata.get("players") is not None
+            else S.gdata.get("total_players", S.gdata.get("number_of_players", 1))
+        )
+        try:
+            configured_players = int(configured_players)
+        except Exception:
+            configured_players = 1
+        configured_players = max(1, min(4, configured_players))
+
+        # player count the machine is set up for (reels installed), not players in this game
+        data["configured_number_of_players"] = configured_players
 
         active_format = getattr(S, "active_format", {})
         data["ActiveFormatName"] = active_format.get("Name", "Standard")
@@ -73,22 +84,25 @@ def game_report():
 
 
 def poll_fast():
-    """Poll for game start and end time."""
-    ps = S.game_status["poll_state"]
-    if ps == 0:
-        S.game_status["game_active"] = False
-        if _get_ball_in_play() != 0:
-            S.game_status["time_game_start"] = time.ticks_ms()
-            S.game_status["game_active"] = True
-            print("GSTAT: start game @ time=", S.game_status["time_game_start"])
-            S.game_status["poll_state"] = 1
-    elif ps == 1:
-        if _get_ball_in_play() == 0:
-            S.game_status["time_game_end"] = time.ticks_ms()
-            print("GSTAT: end game @ time=", S.game_status["time_game_end"])
-            S.game_status["game_active"] = False
-            S.game_status["poll_state"] = 2
-    else:
+    """Watch for game start/end and push the updated status to origin.
+
+    EM has no machine ball-in-play register to poll - ScoreTrack.py already
+    maintains the authoritative S.game_status["game_active"] flag from real
+    sensor activity (see CheckForNewScores), and infers player up / ball in
+    play from scoring streaks (see ScoreTrack.get_in_play). This just edge-detects changes
+    in that flag to timestamp start/end; poll_state tracks the *previously
+    seen* active state (0=inactive, 1=active), not a machine ball number.
+    """
+    active = S.game_status["game_active"]
+    was_active = S.game_status["poll_state"] == 1
+
+    if active and not was_active:
+        S.game_status["time_game_start"] = time.ticks_ms()
+        print("GSTAT: start game @ time=", S.game_status["time_game_start"])
+        S.game_status["poll_state"] = 1
+    elif was_active and not active:
+        S.game_status["time_game_end"] = time.ticks_ms()
+        print("GSTAT: end game @ time=", S.game_status["time_game_end"])
         S.game_status["poll_state"] = 0
 
     global _last_report

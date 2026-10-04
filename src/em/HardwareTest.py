@@ -11,6 +11,11 @@ sensorRead.initialize()
 SPI_CLK_PIN = 6   # GP6 for SPI0 SCK
 SPI_MOSI_PIN = 7  # GP7 for SPI0 MOSI
 LOAD_PIN = 8      # GP8 for LOAD (GPIO)
+LED_ENABLE_PIN = 9  # GP9 for LED driver output-enable
+
+# LED enable - low to enable the LED driver outputs for testing
+led_enable = Pin(LED_ENABLE_PIN, Pin.OUT)
+led_enable.value(0)
 
 # Second SPI port pins (SPI1)
 SPI1_SCK_PIN = 10   # GP10 for SPI1 SCK
@@ -25,6 +30,43 @@ spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=P
 # Initialize LOAD pin
 load = Pin(LOAD_PIN, Pin.OUT)
 load.value(0)
+
+# ---- Board variant (2player vs 4player) ----
+# Same GPIO14 strap main.py's detect_hardware_version() reads: LOW=2player,
+# HIGH=4player. The 2player board has 2 shift registers (5 bits each, one
+# per player) followed by a 3rd register driving the 7-segment digit (all
+# 8 bits used). The 4player board has 4 player registers (5 bits each)
+# followed by the same kind of digit register -- one extra register, same
+# per-register layout.
+HW_VERSION_PIN = Pin(14, Pin.IN)
+
+def _detect_num_players(checks=10, interval_ms=5):
+    """Read GPIO14 until stable across `checks` consecutive reads."""
+    last = HW_VERSION_PIN.value()
+    stable_count = 1
+    while stable_count < checks:
+        time.sleep_ms(interval_ms)
+        current = HW_VERSION_PIN.value()
+        if current == last:
+            stable_count += 1
+        else:
+            last = current
+            stable_count = 1
+    return 4 if last else 2
+
+NUM_PLAYERS = _detect_num_players()
+NUM_SHIFT_BYTES = NUM_PLAYERS + 1  # one register per player + one for the 7-seg digit
+ALL_BITS_MASK = (1 << (NUM_SHIFT_BYTES * 8)) - 1
+print(f"HWTEST: detected {NUM_PLAYERS}-player board ({NUM_SHIFT_BYTES} shift registers)")
+
+# Game Over and Aux LEDs live on the player-2 shift register, bits 6/7.
+# P2's byte always sits at bit-offset 8 within the full frame (see
+# build_frame()), so within the frame these land at bits 14/15 -- same
+# physical register on both board variants, independent of NUM_PLAYERS.
+GAME_OVER_BIT = 1 << 6
+AUX_BIT = 1 << 7
+GAME_OVER_FRAME_BIT = GAME_OVER_BIT << 8  # bit 14 of the full frame
+AUX_FRAME_BIT = AUX_BIT << 8              # bit 15 of the full frame
 
 
 # Configure PWM on GPIO18 ("HI") and GPIO19 ("LOW")
@@ -186,35 +228,66 @@ def process_spi1_buffer():
 
 def send_led_data(data):
     """
-    Send 16 bits of data to the LED driver via SPI0 and pulse the LOAD pin.
-    :param data: 16-bit integer to send
+    Send data to the LED driver shift-register chain via SPI0 and pulse LOAD.
+    Frame width adapts to the detected board: NUM_SHIFT_BYTES bytes (3 for
+    2player, 5 for 4player). Build the value with build_frame() rather than
+    hand-packing bytes so patterns stay correct across both board variants.
+    :param data: integer to send, MSB first
     """
-    # Convert to 2 bytes, MSB first
-    buf = data.to_bytes(3, 'big')
+    buf = data.to_bytes(NUM_SHIFT_BYTES, 'big')
     spi.write(buf)
     # Pulse LOAD pin
     load.value(1)
     time.sleep_us(100)
     load.value(0)
 
+
+def build_frame(digit_code=0, player_bits=None):
+    """
+    Build the MSB-first shift-register frame value for send_led_data().
+
+    Chain wiring, closest to the Pico's MOSI first: P1[5 bits] register ->
+    P2[5 bits] register -> ... -> Pn[5 bits] register -> 7-segment[8 bits]
+    register (last in the chain). Because whatever is shifted in first ends
+    up furthest down the chain once LOAD latches, the frame must be sent
+    digit-byte first, followed by player bytes in reverse (Pn .. P1) order.
+
+    digit_code: 8-bit 7-segment code (all bits significant)
+    player_bits: list of NUM_PLAYERS ints in player order [P1, P2, ...];
+                 only the low 5 bits of each are wired. Defaults to all off.
+    """
+    if player_bits is None:
+        player_bits = [0] * NUM_PLAYERS
+    frame = digit_code & 0xFF
+    for p in reversed(player_bits):
+        frame = (frame << 8) | (p & 0xFF)
+    return frame
+
+
+def blink_all_leds_test(cycles=3, interval_s=1.0):
+    """
+    Diagnostic: drive all SPI output bits low, then all high, alternating
+    every `interval_s` seconds, `cycles` times. Frame width adapts to the
+    detected 2player/4player board via ALL_BITS_MASK.
+    """
+    print(f"Running all-outputs blink test: {cycles} cycle(s) at {interval_s}s ({NUM_PLAYERS}-player board)")
+    for _ in range(cycles):
+        send_led_data(0)
+        time.sleep(interval_s)
+        send_led_data(ALL_BITS_MASK)
+        time.sleep(interval_s)
+    # all off when done
+    send_led_data(0)
+    print("All-outputs blink test complete.")
+
+
 def slow_pattern():
     """
-    Send some slow patterns to the LEDs.
+    Send some slow patterns to the LEDs: walk a single lit LED through each
+    player's 5 bits in turn (cycling the 7-seg digit along with it), then
+    finish with Game Over and Aux. Adapts to the detected 2player/4player
+    board via NUM_PLAYERS.
     """
-
-
-
-    # Initialize SPI0
-    spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
-
-    # Initialize LOAD pin
-    load = Pin(LOAD_PIN, Pin.OUT)
-    load.value(0)
-
-    # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
-    spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
-            sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
-
     SEGMENTS = [
         0x3F,  # 0
         0x06,  # 1
@@ -227,16 +300,24 @@ def slow_pattern():
         0x7F,  # 8
         0x6F,  # 9
     ]
+    SEG_g = 0x80  # decimal point (Game Over)
+    SEG_A = 0x77  # 'A' (Aux)
 
-    patterns = [
-        (SEGMENTS[0]<<16)|0x0001, (SEGMENTS[1]<<16)|0x0002, (SEGMENTS[2]<<16)|0x0004, (SEGMENTS[3]<<16)|0x0008,
-        (SEGMENTS[4]<<16)|0x0010, (SEGMENTS[5]<<16)|0x0020, (SEGMENTS[6]<<16)|0x0040, (SEGMENTS[7]<<16)|0x0080,
-        (SEGMENTS[8]<<16)|0x0100, (SEGMENTS[9]<<16)|0x0200, (SEGMENTS[0]<<16)|0x800400, (SEGMENTS[1]<<16)|0x800800,
-        (SEGMENTS[2]<<16)|0x801000, (SEGMENTS[3]<<16)|0x802000, (SEGMENTS[4]<<16)|0x804000, (SEGMENTS[5]<<16)|0x808000,
-        (SEGMENTS[6]<<16)|0x80FFFF, (SEGMENTS[7]<<16)|0x800000
-    ]
+    patterns = []
+    for player in range(NUM_PLAYERS):
+        for bit in range(5):
+            digit = (player * 5 + bit) % 10
+            player_bits = [0] * NUM_PLAYERS
+            player_bits[player] = 1 << bit
+            patterns.append(build_frame(SEGMENTS[digit], player_bits))
 
+    game_over_bits = [0] * NUM_PLAYERS
+    game_over_bits[1] = GAME_OVER_BIT
+    patterns.append(build_frame(SEG_g, game_over_bits))
 
+    aux_bits = [0] * NUM_PLAYERS
+    aux_bits[1] = AUX_BIT
+    patterns.append(build_frame(SEG_A, aux_bits))
 
     while True:
         for pat in patterns:
@@ -244,45 +325,49 @@ def slow_pattern():
             #print(pat)
             time.sleep(1.2)
 
-def read_spi1_16bit_loop():
+def sensor_read_loop():
+    """
+    Continuously read raw sensor data over SPI1 and print it: the raw value
+    in hex, followed by a 5-bit binary field per player (channel bits are
+    byte-aligned per player, low 5 bits of each byte). Also mirrors the
+    read value out to the LEDs via send_led_data() for a visual check.
 
+    The sensor board has a hardware inversion built into part of the chain:
+      - 2player board: 16-bit read (2 bytes); MSByte (1st byte) inverted.
+      - 4player board: 32-bit read (4 bytes); 1st and 3rd bytes inverted.
+    Adapts automatically based on NUM_PLAYERS (detected from GPIO14).
+    """
+    nbytes = 4 if NUM_PLAYERS == 4 else 2
+    hex_width = nbytes * 2
 
+    spi1 = setup_spi1()
 
-
-    # Initialize SPI0
-    spi = SPI(0, baudrate=1000000, polarity=0, phase=0, sck=Pin(SPI_CLK_PIN), mosi=Pin(SPI_MOSI_PIN))
-    # Initialize LOAD pin
-    load = Pin(LOAD_PIN, Pin.OUT)
-    load.value(0)
-    # Initialize SPI1 (no output clock, just reading 16-bit words from MISO)
-    spi1 = SPI(1, baudrate=1000000, polarity=0, phase=0,
-            sck=Pin(SPI1_SCK_PIN), mosi=Pin(SPI1_MOSI_PIN), miso=Pin(SPI1_MISO_PIN))
-
-
-
-
-
-    spi1=setup_spi1()
+    print(f"Sensor Read Loop: {NUM_PLAYERS}-player board, {nbytes}-byte reads. Press Ctrl+C to stop.")
     while True:
-
         SPI1_load_Pin.value(1)
         time.sleep_us(100)
 
-        # Read 2 bytes (16 bits) from SPI1
-        buf = bytearray(2)
+        buf = bytearray(nbytes)
         spi1.readinto(buf)
-        #print("b->  ",buf)
-        time.sleep_us(100)        
+        time.sleep_us(100)
         SPI1_load_Pin.value(0)
 
-        buf[0] = ~buf[0] & 0xFF   # invert only MSB, mask to 8 bits
+        if nbytes == 2:
+            buf[0] = ~buf[0] & 0xFF  # MSByte inverted (hardware inversion)
+        else:
+            buf[0] = ~buf[0] & 0xFF  # 1st byte inverted
+            buf[2] = ~buf[2] & 0xFF  # 3rd byte inverted
+
         value = int.from_bytes(buf, 'big')
-        print(f"Inverted MSB only SPI read: 0x{value:04X}")
 
+        fields = " ".join(
+            f"P{p + 1}: {(value >> (8 * p)) & 0x1F:05b}" for p in range(NUM_PLAYERS)
+        )
+        print(f"RAW: 0x{value:0{hex_width}X}  {fields}")
 
-        #value = int.from_bytes(buf, 'big')
-        #print(f"SPI1 read: 0x{value:04X}")
-        send_led_data(value)
+        # Sensor bits can alias onto the Game Over/Aux LED positions; force
+        # those off when mirroring raw sensor data to the LEDs.
+        send_led_data(value & (0xFFFFFFFF ^ GAME_OVER_FRAME_BIT ^ AUX_FRAME_BIT))
         time.sleep(1)
 
 def test_switches():
@@ -339,18 +424,49 @@ def calibrate_pwm_hi_low():
     Calibrate HI and LOW PWM outputs separately.
     First, HI ramps down from 100% to 0% with LOW fixed at 0%.
     Then, LOW ramps up from 0% to 100% with HI fixed at 100%.
-    As PWM changes, read SPI1 16-bit input. When the LSB changes, print the duty for HI or LOW.
-    At the end, set HI to discovered value +5% and LOW to discovered value +5%.
+    As PWM changes, read SPI1 16-bit input; when the LSB changes, that
+    marks the found threshold duty for HI or LOW. Prints a live status
+    line with the current PWM values while each ramp runs, then a
+    formatted summary of the calibration results at the end.
     """
     steps = 100
     delay = 20 / steps  # ~20 seconds for full travel
 
-    spi1=setup_spi1()
+    spi1 = setup_spi1()
+
+    def pct(duty):
+        return duty / 65535 * 100
+
+    # P1 always ends up in the least-significant byte of the assembled
+    # value (see build_frame()/sensor_read_loop()), so bit 0 is always
+    # Player 1 channel 0 (sensor 1) -- on BOTH board variants -- as long as
+    # the full frame width is read and the matching hardware inversion is
+    # undone. A fixed 2-byte read on a 4player board would instead capture
+    # P4/P3 (the first bytes shifted out), never reaching P1 at all.
+    read_nbytes = 4 if NUM_PLAYERS == 4 else 2
+
+    def read_lsb():
+        SPI1_load_Pin.value(1)
+        time.sleep_us(2)
+        buf = bytearray(read_nbytes)
+        spi1.readinto(buf)
+        SPI1_load_Pin.value(0)
+
+        if read_nbytes == 2:
+            buf[0] = ~buf[0] & 0xFF  # MSByte inverted (hardware inversion)
+        else:
+            buf[0] = ~buf[0] & 0xFF  # 1st byte inverted
+            buf[2] = ~buf[2] & 0xFF  # 3rd byte inverted
+
+        value = int.from_bytes(buf, 'big')
+        return value & 0x01  # Player 1, channel 0 (sensor 1)
+
+    print("\n=== PWM HI/LOW Calibration ===")
+    print("\n=Uses sensor 1 of player 1 - sensor must be plugged in=")
 
     # --- HI calibration ---
-    print("Starting HI calibration (LOW fixed at 0%)")
+    print("\n-- HI ramp: 100% -> 0% (LOW fixed at 0%) --")
     last_lsb = None
-    hi_found = False
     hi_duty_found = None
     HI.duty_u16(65535)
     LOW.duty_u16(0)
@@ -358,31 +474,21 @@ def calibrate_pwm_hi_low():
     for i in range(steps + 1):
         hi_duty = int(65535 * (1 - i / steps))
         HI.duty_u16(hi_duty)
-        print(".",end='')
 
-        # Read SPI1 16-bit value
-        SPI1_load_Pin.value(1)
-        time.sleep_us(2)
-        buf = bytearray(2)
-        spi1.readinto(buf)
-        SPI1_load_Pin.value(0)
-        value = int.from_bytes(buf, 'big')
-        #reversed_value = reverse_bits_16(value)
-        #lsb = reversed_value & 0x01
-        lsb = value & 0x01
+        lsb = read_lsb()
+        print(f"\r  HI: {hi_duty:5d} ({pct(hi_duty):5.1f}%)  LOW: {0:5d} (  0.0%)  P1 S1: {lsb}", end='')
 
-        if last_lsb is not None and lsb != last_lsb and not hi_found:
-            print(f"HI calibration found at duty: {hi_duty} ({hi_duty/65535:.2%})")
+        if last_lsb is not None and lsb != last_lsb and hi_duty_found is None:
             hi_duty_found = hi_duty
-            hi_found = True
+            print(f"\n  -> HI threshold found at duty {hi_duty} ({pct(hi_duty):.1f}%)")
             break
         last_lsb = lsb
         time.sleep(delay)
+    print()
 
     # --- LOW calibration ---
-    print("Starting LOW calibration (HI fixed at 100%)")
+    print("\n-- LOW ramp: 0% -> 100% (HI fixed at 100%) --")
     last_lsb = None
-    low_found = False
     low_duty_found = None
     HI.duty_u16(65535)
     time.sleep(2)
@@ -390,38 +496,37 @@ def calibrate_pwm_hi_low():
         low_duty = int(65535 * (i / steps))
         LOW.duty_u16(low_duty)
 
-        print(".",end='')
+        lsb = read_lsb()
+        print(f"\r  HI: {65535:5d} (100.0%)  LOW: {low_duty:5d} ({pct(low_duty):5.1f}%)  P1 S1: {lsb}", end='')
 
-        # Read SPI1 16-bit value
-        SPI1_load_Pin.value(1)
-        time.sleep_us(2)
-        buf = bytearray(2)
-        spi1.readinto(buf)
-        SPI1_load_Pin.value(0)
-        value = int.from_bytes(buf, 'big')
-        #reversed_value = reverse_bits_16(value)
-        #lsb = reversed_value & 0x01
-        lsb = value & 0x01
-
-        if last_lsb is not None and lsb != last_lsb and not low_found:
-            print(f"LOW calibration found at duty: {low_duty} ({low_duty/65535:.2%})")
+        if last_lsb is not None and lsb != last_lsb and low_duty_found is None:
             low_duty_found = low_duty
-            low_found = True
+            print(f"\n  -> LOW threshold found at duty {low_duty} ({pct(low_duty):.1f}%)")
             break
         last_lsb = lsb
         time.sleep(delay)
+    print()
 
-    # Set HI and LOW to discovered value +5%
+    # Set HI and LOW to discovered value +/-10%
+    hi_final = None
+    low_final = None
     if hi_duty_found is not None:
-        hi_plus_5 = min(int(hi_duty_found * 1.1), 65535)
-        HI.duty_u16(hi_plus_5)
-        print(f"HI PWM set to {hi_plus_5} ({hi_plus_5/65535:.2%})")
+        hi_final = min(int(hi_duty_found * 1.1), 65535)
+        HI.duty_u16(hi_final)
     if low_duty_found is not None:
-        low_plus_5 = min(int(low_duty_found * 0.9), 65535)
-        LOW.duty_u16(low_plus_5)
-        print(f"LOW PWM set to {low_plus_5} ({low_plus_5/65535:.2%})")
+        low_final = min(int(low_duty_found * 0.9), 65535)
+        LOW.duty_u16(low_final)
 
-    print("Calibration complete. HI and LOW duties are now set.")
+    print("\n=== Calibration Results ===")
+    hi_found_str = f"{hi_duty_found} ({pct(hi_duty_found):.1f}%)" if hi_duty_found is not None else "NOT FOUND"
+    low_found_str = f"{low_duty_found} ({pct(low_duty_found):.1f}%)" if low_duty_found is not None else "NOT FOUND"
+    print(f"  HI  threshold found: {hi_found_str}")
+    print(f"  LOW threshold found: {low_found_str}")
+    if hi_final is not None:
+        print(f"  HI  PWM set to:      {hi_final} ({pct(hi_final):.1f}%)")
+    if low_final is not None:
+        print(f"  LOW PWM set to:      {low_final} ({pct(low_final):.1f}%)")
+    print("Calibration complete.\n")
 
 
 def hardware_spi0_eeprom_test():
@@ -535,13 +640,28 @@ def hardware_spi0_eeprom_test():
         return mem_read(spi, cs, address, nbytes)
 
 
-    # Example: Write then read address 0x0000
-    print("Writing 0xA5 to EEPROM address 0x0000...")
-    data = [1,2,3]
-    mem_write(spi, cs, 0, data)
-    print("Reading from EEPROM address 0x0000...")
-    value =  mem_read(spi, cs, 0, 4)
-    print("EEPROM[0] =", value)
+    # Alternate between two complementary patterns (0xA5/0x5A) each run,
+    # based on what's currently stored -- no random source needed, and the
+    # bit-inverted pair is good at catching stuck-at bits.
+    test_len = 16
+    pattern_a = bytearray([0xA5] * test_len)
+    pattern_b = bytearray([0x5A] * test_len)
+    current = mem_read(spi, cs, 0, 1)
+    pattern = pattern_b if current[0] == pattern_a[0] else pattern_a
+
+    print(f"Writing {test_len}-byte pattern 0x{pattern[0]:02X} to EEPROM address 0x0000...")
+    mem_write(spi, cs, 0, pattern)
+    print("Reading back from EEPROM address 0x0000...")
+    readback = mem_read(spi, cs, 0, test_len)
+    print("Readback:", list(readback))
+
+    if bytes(readback) == bytes(pattern):
+        print("FRAM TEST PASSED: readback matches written pattern.")
+    else:
+        print("FRAM TEST FAILED: readback does not match written pattern.")
+        for i, (w, r) in enumerate(zip(pattern, readback)):
+            if w != r:
+                print(f"  byte {i}: wrote 0x{w:02X}, read 0x{r:02X}")
 
     # Clean up
     spi.deinit()
@@ -551,14 +671,20 @@ def hardware_spi0_eeprom_test():
 def main():
     global score, scoreDig
 
+    # Quick visual sanity check on power-up: all outputs off/on, 3 times,
+    # before dropping into the test menu.
+
+    blink_all_leds_test(cycles=3, interval_s=1.0)
+
     def menu():
         print("\nSelect a test:")
         print("1 - Test Switches")
         print("2 - Calibrate PWM HI/LOW")
         print("3 - PWM Ramp Test")
         print("4 - Slow LED Pattern")
-        print("5 - SPI1 16-bit Read Loop")
+        print("5 - Sensor Read Loop")
         print("6 - FRAM")
+        print("7 - Blink All LEDs Test")
         print("0 - Exit")
         return input("Enter choice: ")
 
@@ -593,11 +719,11 @@ def main():
             except KeyboardInterrupt:
                 print("\nSlow LED Pattern stopped.")
         elif choice == '5':
-            print("Running SPI1 16-bit Read Loop. Press Ctrl+C to stop.")
+            print("Running Sensor Read Loop. Press Ctrl+C to stop.")
             try:
-                read_spi1_16bit_loop()
+                sensor_read_loop()
             except KeyboardInterrupt:
-                print("\nSPI1 16-bit Read Loop stopped.")
+                print("\nSensor Read Loop stopped.")
 
 
 
@@ -606,6 +732,9 @@ def main():
             hardware_spi0_eeprom_test()
             input("Press Enter to return to menu...")
 
+        elif choice == '7':
+            print("Running Blink All LEDs Test.")
+            blink_all_leds_test(cycles=3, interval_s=1.0)
 
         elif choice == '0':
             print("Exiting.")
