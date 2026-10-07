@@ -144,7 +144,8 @@ def recalibrate_sensors(request):
 
 
 _TIMING_ADJ_COUNT = 5
-_TIMING_ADJ_DEFAULT = [8, 8, 8, 8, 8]
+_TIMING_ADJ_DEFAULT_SCORE = [1, 1, 1, 1, 1]
+_TIMING_ADJ_DEFAULT_RESET = [6, 6, 6, 6, 6]
 _TIMING_ADJ_MIN = 1
 _TIMING_ADJ_SCORE_MAX = 10
 _TIMING_ADJ_RESET_MAX = 15
@@ -157,15 +158,16 @@ def get_timing_sensitivity(request):
     Keys: p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset.
     """
     def _get(key, value_max):
-        v = list(S.gdata.get(key, _TIMING_ADJ_DEFAULT))
+        default = _TIMING_ADJ_DEFAULT_SCORE if value_max == _TIMING_ADJ_SCORE_MAX else _TIMING_ADJ_DEFAULT_RESET
+        v = list(S.gdata.get(key, default))
         if len(v) != _TIMING_ADJ_COUNT:
-            v = _TIMING_ADJ_DEFAULT[:]
+            v = default[:]
         out = []
         for item in v:
             try:
                 num = int(item)
             except Exception:
-                num = _TIMING_ADJ_DEFAULT[len(out)]
+                num = default[len(out)]
             num = max(_TIMING_ADJ_MIN, min(value_max, num))
             out.append(num)
         return out
@@ -196,23 +198,24 @@ def set_timing_sensitivity(request):
     #print(f"EMSEN: set_timing_sensitivity raw request data: {request.data}")
 
     def _coerce(raw, value_max):
+        default = _TIMING_ADJ_DEFAULT_SCORE if value_max == _TIMING_ADJ_SCORE_MAX else _TIMING_ADJ_DEFAULT_RESET
         try:
             out = [max(_TIMING_ADJ_MIN, min(value_max, int(v))) for v in raw]
         except Exception:
-            out = _TIMING_ADJ_DEFAULT[:]
+            out = default[:]
         if len(out) != _TIMING_ADJ_COUNT:
-            out = _TIMING_ADJ_DEFAULT[:]
+            out = default[:]
         return out
 
     d = request.data or {}
-    p1_score = _coerce(d.get("p1_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
-    p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
-    p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
-    p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
-    p3_score = _coerce(d.get("p3_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
-    p3_reset = _coerce(d.get("p3_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
-    p4_score = _coerce(d.get("p4_score", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_SCORE_MAX)
-    p4_reset = _coerce(d.get("p4_reset", _TIMING_ADJ_DEFAULT), _TIMING_ADJ_RESET_MAX)
+    p1_score = _coerce(d.get("p1_score", _TIMING_ADJ_DEFAULT_SCORE), _TIMING_ADJ_SCORE_MAX)
+    p1_reset = _coerce(d.get("p1_reset", _TIMING_ADJ_DEFAULT_RESET), _TIMING_ADJ_RESET_MAX)
+    p2_score = _coerce(d.get("p2_score", _TIMING_ADJ_DEFAULT_SCORE), _TIMING_ADJ_SCORE_MAX)
+    p2_reset = _coerce(d.get("p2_reset", _TIMING_ADJ_DEFAULT_RESET), _TIMING_ADJ_RESET_MAX)
+    p3_score = _coerce(d.get("p3_score", _TIMING_ADJ_DEFAULT_SCORE), _TIMING_ADJ_SCORE_MAX)
+    p3_reset = _coerce(d.get("p3_reset", _TIMING_ADJ_DEFAULT_RESET), _TIMING_ADJ_RESET_MAX)
+    p4_score = _coerce(d.get("p4_score", _TIMING_ADJ_DEFAULT_SCORE), _TIMING_ADJ_SCORE_MAX)
+    p4_reset = _coerce(d.get("p4_reset", _TIMING_ADJ_DEFAULT_RESET), _TIMING_ADJ_RESET_MAX)
 
     S.gdata["timing_p1_score"] = p1_score
     S.gdata["timing_p1_reset"] = p1_reset

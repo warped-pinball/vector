@@ -3,6 +3,7 @@ import time
 import faults
 import ntptime
 import uasyncio
+from micropython import const
 from ScoreTrack import (
     CheckForNewScores,
     check_for_machine_high_scores,
@@ -80,6 +81,39 @@ async def _parse_json_body(reader, headers):
     return body_str, json.loads(body_str)
 
 
+# Time allowed for a client to deliver the request line, headers and body.
+# Without a bound, a client that goes quiet mid-request (dropped WiFi packets,
+# a sleeping phone, an unused browser preconnect) holds its socket/PCB forever.
+_REQUEST_READ_TIMEOUT_MS = const(10000)
+# Time allowed for each chunk of the response to drain to a slow/vanished client.
+_RESPONSE_DRAIN_TIMEOUT_MS = const(10000)
+
+
+async def _read_request(reader):
+    """Read the request line, headers and JSON body. Returns None for an empty
+    or malformed request line (e.g. a preconnect socket closed by the client)."""
+    request_line = await reader.readline()
+    if not request_line:
+        return None
+    try:
+        method, uri, protocol = request_line.decode().split()
+    except Exception as e:
+        logging.error(e)
+        return None
+
+    request = Request(method, uri, protocol)
+
+    # TODO make parsing json and headers lazy
+    request.headers = await _parse_headers(reader)
+    if "content-length" in request.headers and "content-type" in request.headers:
+        if request.headers["content-type"].startswith("application/json"):
+            raw_body, parsed_data = await _parse_json_body(reader, request.headers)
+            request.raw_data = raw_body
+            request.data = parsed_data
+
+    return request
+
+
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
     try:
@@ -87,14 +121,10 @@ async def _handle_request(reader, writer):
 
         request_start_time = time.ticks_ms()
 
-        request_line = await reader.readline()
-        try:
-            method, uri, protocol = request_line.decode().split()
-        except Exception as e:
-            logging.error(e)
+        request = await uasyncio.wait_for_ms(_read_request(reader), _REQUEST_READ_TIMEOUT_MS)
+        if request is None:
             return
 
-        request = Request(method, uri, protocol)
         try:
             peername = writer.get_extra_info("peername")
             if peername:
@@ -107,14 +137,6 @@ async def _handle_request(reader, writer):
             handler = _routes[request.path]
         except KeyError:
             logging.info(f"Route not found: {request.path}")
-
-        # TODO make parsing json and headers lazy
-        request.headers = await _parse_headers(reader)
-        if "content-length" in request.headers and "content-type" in request.headers:
-            if request.headers["content-type"].startswith("application/json"):
-                raw_body, parsed_data = await _parse_json_body(reader, request.headers)
-                request.raw_data = raw_body
-                request.data = parsed_data
 
         response = handler(request)
 
@@ -145,47 +167,47 @@ async def _handle_request(reader, writer):
             if hasattr(body, "__len__"):
                 response.add_header("Content-Length", len(body))
 
-        try:
-            # write status line
-            writer.write(f"HTTP/1.1 {response.status} {response.status}\r\n".encode("ascii"))
+        # write status line
+        writer.write(f"HTTP/1.1 {response.status} {response.status}\r\n".encode("ascii"))
 
-            # write headers
-            for key, value in response.headers.items():
-                writer.write(f"{key}: {value}\r\n".encode("ascii"))
+        # write headers
+        for key, value in response.headers.items():
+            writer.write(f"{key}: {value}\r\n".encode("ascii"))
 
-            # blank line to denote end of headers
-            writer.write("\r\n".encode("ascii"))
+        # blank line to denote end of headers
+        writer.write("\r\n".encode("ascii"))
 
-            if type(response.body).__name__ == "generator":
-                # generator
-                try:
-                    for chunk in response.body:
-                        writer.write(chunk)
-                        await writer.drain()
-                except Exception as e:
-                    # Connection dropped mid-stream (e.g. WiFi/power blip). Log
-                    # the path so truncated asset transfers are identifiable,
-                    # then re-raise; the finally below still closes the socket.
-                    logging.error(f"Truncated streamed response for {request.path}: {e}")
-                    raise
-            else:
-                # string/bytes
-                writer.write(response.body)
-                await writer.drain()
-        finally:
-            # Always close the writer, even on a mid-stream exception, so we
-            # don't leak the client socket/PCB after a truncated response.
+        if type(response.body).__name__ == "generator":
+            # generator
             try:
-                writer.close()
-                await writer.wait_closed()
-            except Exception:
-                pass
+                for chunk in response.body:
+                    writer.write(chunk)
+                    await uasyncio.wait_for_ms(writer.drain(), _RESPONSE_DRAIN_TIMEOUT_MS)
+            except Exception as e:
+                # Connection dropped mid-stream (e.g. WiFi/power blip). Log
+                # the path so truncated asset transfers are identifiable,
+                # then re-raise; the finally below still closes the socket.
+                logging.error(f"Truncated streamed response for {request.path}: {e}")
+                raise
+        else:
+            # string/bytes
+            writer.write(response.body)
+            await uasyncio.wait_for_ms(writer.drain(), _RESPONSE_DRAIN_TIMEOUT_MS)
 
         processing_time = time.ticks_ms() - request_start_time
         logging.info(f"> {request.method} {request.path} ({response.status}) [{processing_time}ms]")
     except Exception as e:
         # last line of defense to keep server from crashing
         logging.error(f"Error handling request: {e}")
+    finally:
+        # Always close the writer on every path (empty/malformed request, read
+        # timeout, handler exception, mid-stream drop) so we don't leak the
+        # client socket/PCB.
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
 
 
 # adds a new route to the routing table

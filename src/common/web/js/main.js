@@ -64,73 +64,98 @@ let previousResourceIds = [];
 let isNavigating = false;
 let currentPageKey = null;
 
-async function fetchAndApply(url, targetId) {
+async function fetchPageResource(url) {
+  const response = await window.fetchWithTimeout(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
+  }
+  return await response.text();
+}
+
+function applyResource(url, targetId, text) {
   const placeholder = document.getElementById(targetId);
   if (!placeholder) {
     console.warn(`Target ${targetId} not found`);
-    return;
+    return false;
   }
   if (url.endsWith(".js")) {
-    // Resolve only once the script has actually downloaded and run its
-    // top-level code (not just been inserted into the DOM) - otherwise
-    // callers think navigation is complete before e.g. admin.js has
-    // registered its cleanup_admin hook, and a quick further navigation
-    // can leave this script to execute later against a page it no longer
-    // belongs to.
-    await new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = url;
-      script.id = targetId;
-      script.async = false;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load script ${url}`));
-      placeholder.replaceWith(script);
-    });
+    // The source was already downloaded (with timeout/retry), so inline it:
+    // it runs synchronously on insertion, before navigation is reported
+    // complete. sourceURL keeps the original file name in DevTools.
+    const script = document.createElement("script");
+    script.id = targetId;
+    script.textContent = text + "\n//# sourceURL=" + url;
+    placeholder.replaceWith(script);
   } else {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status}`);
-    }
-    const text = await response.text();
     placeholder.style.display = "";
     placeholder.innerHTML = text;
   }
+  return true;
+}
+
+// Download every resource for a page before touching the DOM, so a failed
+// or stalled request leaves the current page intact instead of a blank shell.
+// HTML first, then JS, one at a time to avoid overwhelming the Pico server.
+async function fetchPageResources(pageKey) {
+  const config = pageConfig[pageKey];
+  const htmlResources = config.resources.filter((r) => !r.url.endsWith(".js"));
+  const jsResources = config.resources.filter((r) => r.url.endsWith(".js"));
+  const fetched = [];
+  for (const resource of [...htmlResources, ...jsResources]) {
+    const text = await fetchPageResource(resource.url);
+    console.log(`Fetched resource: ${resource.url}`);
+    fetched.push({ ...resource, text });
+  }
+  return fetched;
+}
+
+// Swap the fetched resources into the page. HTML is applied before JS so
+// the DOM is ready when scripts execute.
+function applyPageResources(fetched) {
+  clearPreviousResources(previousResourceIds);
+  const loadedIds = [];
+  for (const resource of fetched) {
+    if (applyResource(resource.url, resource.targetId, resource.text)) {
+      console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
+      loadedIds.push(resource.targetId);
+    }
+  }
+  previousResourceIds = loadedIds;
 }
 
 async function loadPageResources(pageKey) {
-  const config = pageConfig[pageKey];
-  if (!config) {
-    console.warn(`No config found for page: ${pageKey}`);
-    return;
-  }
-  clearPreviousResources(previousResourceIds);
+  applyPageResources(await fetchPageResources(pageKey));
+}
 
-  // Load HTML first, then JS — guarantees DOM is ready when scripts execute
-  // and avoids overwhelming the Pico server with concurrent requests.
-  const htmlResources = config.resources.filter((r) => !r.url.endsWith(".js"));
-  const jsResources = config.resources.filter((r) => r.url.endsWith(".js"));
-  const loadedIds = [];
-
-  for (const resource of htmlResources) {
-    try {
-      await fetchAndApply(resource.url, resource.targetId);
-      console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
-      loadedIds.push(resource.targetId);
-    } catch (error) {
-      console.error(`Error loading resource: ${resource.url}`, error);
-    }
+function showPageLoadError(title, retry) {
+  let banner = document.getElementById("page_error");
+  if (!banner) {
+    banner = document.createElement("article");
+    banner.id = "page_error";
+    const pageHtml = document.getElementById("page_html");
+    pageHtml.parentNode.insertBefore(banner, pageHtml);
   }
-  for (const resource of jsResources) {
-    try {
-      await fetchAndApply(resource.url, resource.targetId);
-      console.log(`Loaded resource: ${resource.url} into ${resource.targetId}`);
-      loadedIds.push(resource.targetId);
-    } catch (error) {
-      console.error(`Error loading resource: ${resource.url}`, error);
-    }
-  }
+  banner.innerHTML = "";
 
-  previousResourceIds = loadedIds;
+  const message = document.createElement("p");
+  message.textContent = `Couldn't load ${title}. Check your connection to the machine and try again.`;
+
+  const retryButton = document.createElement("button");
+  retryButton.textContent = "Retry";
+  retryButton.addEventListener("click", () => {
+    retryButton.disabled = true;
+    retryButton.setAttribute("aria-busy", "true");
+    retry();
+  });
+
+  banner.append(message, retryButton);
+}
+
+function clearPageLoadError() {
+  const banner = document.getElementById("page_error");
+  if (banner) {
+    banner.remove();
+  }
 }
 
 async function handleNavigation(
@@ -145,10 +170,24 @@ async function handleNavigation(
     console.log(
       `Navigation skipped. isNavigating: ${isNavigating}, currentPageKey: ${currentPageKey}`,
     );
+    if (!isNavigating) {
+      // back on the page that is showing; drop any error from another page
+      clearPageLoadError();
+    }
     return;
   }
+
+  const config = pageConfig[pageKey];
+  if (!config) {
+    console.warn(`No configuration found for page: ${pageKey}`);
+    return;
+  }
+
   isNavigating = true;
   try {
+    const resources = await fetchPageResources(pageKey);
+
+    // Everything downloaded - only now tear down the current page.
     if (currentPageKey) {
       const cleanupFunction = window[`cleanup_${currentPageKey}`];
       if (typeof cleanupFunction === "function") {
@@ -156,14 +195,6 @@ async function handleNavigation(
         cleanupFunction();
       }
     }
-
-    const config = pageConfig[pageKey];
-    if (!config) {
-      console.warn(`No configuration found for page: ${pageKey}`);
-      return;
-    }
-
-    set_game_name();
 
     if (updateHistory) {
       const url = `/?page=${pageKey}`;
@@ -175,13 +206,23 @@ async function handleNavigation(
         console.log(`History pushed with: ${url}`);
       }
     }
-    await loadPageResources(pageKey);
+
+    clearPageLoadError();
+    applyPageResources(resources);
     currentPageKey = pageKey;
     console.log(`Navigation to ${pageKey} completed.`);
   } catch (error) {
+    // currentPageKey is left unchanged so navigating here again (or Retry)
+    // makes a fresh attempt.
     console.error(`Error during navigation to ${pageKey}:`, error);
+    showPageLoadError(config.title, () =>
+      handleNavigation(pageKey, replace, updateHistory),
+    );
   } finally {
     isNavigating = false;
+    set_game_name().catch((error) =>
+      console.error("Failed to set game name:", error),
+    );
   }
 }
 

@@ -56,6 +56,10 @@ def game_report():
             _get_machine_score(3),
         ]
 
+        # detected from scoring streaks in ScoreTrack - all 0 when no game active,
+        # BallInPlay stays 0 until a second player is seen (1 player games never report it)
+        data["PlayerUp"], data["PlayersInGame"], data["BallInPlay"] = ScoreTrack.get_in_play()
+
         configured_players = (
             S.gdata.get("players")
             if S.gdata.get("players") is not None
@@ -67,9 +71,8 @@ def game_report():
             configured_players = 1
         configured_players = max(1, min(4, configured_players))
 
-        # Keep both field names for compatibility with existing frontends.
-        data["NumberOfPlayers"] = configured_players
-        data["number_of_players"] = configured_players
+        # player count the machine is set up for (reels installed), not players in this game
+        data["configured_number_of_players"] = configured_players
 
         active_format = getattr(S, "active_format", {})
         data["ActiveFormatName"] = active_format.get("Name", "Standard")
@@ -85,7 +88,8 @@ def poll_fast():
 
     EM has no machine ball-in-play register to poll - ScoreTrack.py already
     maintains the authoritative S.game_status["game_active"] flag from real
-    sensor activity (see CheckForNewScores). This just edge-detects changes
+    sensor activity (see CheckForNewScores), and infers player up / ball in
+    play from scoring streaks (see ScoreTrack.get_in_play). This just edge-detects changes
     in that flag to timestamp start/end; poll_state tracks the *previously
     seen* active state (0=inactive, 1=active), not a machine ball number.
     """
