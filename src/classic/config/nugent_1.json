@@ -1,0 +1,33 @@
+{
+    "GameInfo": {
+        "GameName": "Nugent",
+        "System": "MPU100"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 19
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 572,
+        "Length": 6,
+        "Spacing": 6
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 30,
+        "GameActiveAdr": 20,
+        "Players": 20,
+        "PlayerUp": 21,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 572,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    },
+    "HighScores": {
+        "Type": 30,
+        "ScoreAdr": 719
+    }
+}
