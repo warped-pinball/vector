@@ -77,7 +77,7 @@ def init(ipAddress):
 
         for idx, octet in enumerate(octets):
             base_adr = disp["Address"] + idx * disp["Spacing"]
-            log.log(f"MSG: init writing octet {octet} at address {base_adr}")
+            #log.log(f"MSG: init writing octet {octet} at address {base_adr}")
             if disp["Type"] == 32:
                 _write_bcd_number(base_adr, disp["Length"], int(octet))
             else:

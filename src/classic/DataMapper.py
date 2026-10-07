@@ -203,6 +203,9 @@ def get_live_scores(use_format=True):
     32 with ActiveScoreAdr configured, the currently up player's score (per
     PlayerUp) is instead read from ActiveScoreAdr, since that machine keeps a
     live copy of the up player's score there separate from the ScoreAdr block.
+    If BlinkSaveAdr is configured and the up player's score bytes read back as
+    all 0xFF (blanked while blinking), the score is read from BlinkSaveAdr +
+    ScoreSpacing * (PlayerUp - 1) instead.
     If no game is active, shadow RAM is no
     longer reliable, so the last cached reading is returned instead - unless
     a read from InPlay.LastScoreAdr (the display digits, which still hold
@@ -256,8 +259,18 @@ def get_live_scores(use_format=True):
 
         if in_play["Type"] == 32:
             player_up = get_player_up()
-            if "ActiveScoreAdr" in in_play and 1 <= player_up <= 4:
-                scores[player_up - 1] = _read_score(in_play["ActiveScoreAdr"], in_play)
+            if 1 <= player_up <= 4:
+                if "ActiveScoreAdr" in in_play:
+                    up_adr = in_play["ActiveScoreAdr"]
+                    scores[player_up - 1] = _read_score(up_adr, in_play)
+                else:
+                    up_adr = in_play["ScoreAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
+
+                # Up player's score blanked (all 0xFF, display blinking) - use
+                # the saved copy at BlinkSaveAdr, same width/spacing as ScoreAdr
+                if "BlinkSaveAdr" in in_play and all(b == 0xFF for b in shadowRam[up_adr : up_adr + 4]):
+                    blink_adr = in_play["BlinkSaveAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
+                    scores[player_up - 1] = _read_score(blink_adr, in_play)
             print(f"DATAMAPPER: Type32 live scores={scores} player_up={player_up}")
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
