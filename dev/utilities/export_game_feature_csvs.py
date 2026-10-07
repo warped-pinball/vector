@@ -32,7 +32,7 @@ KNOWN_FORMATS = {
     "LowBall",
     "Golf",
     "Practice",
-    "HalfLife",
+    "Decay",
     "LongestBall",
 }
 
