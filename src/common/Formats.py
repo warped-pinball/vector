@@ -157,7 +157,8 @@ def get_available_formats():
     Retrieve available game formats from the current game configuration,
     overlaying config data onto defaults.
     """
-    game_formats_config = S.gdata.get("Formats", {})
+    # Configs without a Formats section still support Standard
+    game_formats_config = S.gdata.get("Formats") or {"Standard": {"Id": MODE_ID_STANDARD}}
     result_formats = {}
 
     for name, config in game_formats_config.items():
@@ -206,7 +207,8 @@ def set_active_format(format_name, options=None):
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
-    game_formats_config = S.gdata.get("Formats", {})
+    # Configs without a Formats section still support Standard
+    game_formats_config = S.gdata.get("Formats") or {"Standard": {"Id": MODE_ID_STANDARD}}
     selected_name = format_name
 
     if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:

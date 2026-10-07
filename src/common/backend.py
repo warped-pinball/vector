@@ -56,6 +56,11 @@ def route_wrapper(func):
                 response = json_dumps(response), 200
 
             if isinstance(response, tuple):
+                # dict/list bodies (e.g. `return {"error": ...}, 400`) must be
+                # serialized; the socket writer only accepts str/bytes
+                if isinstance(response[0], (dict, list)):
+                    response = (json_dumps(response[0]),) + response[1:]
+
                 if len(response) == 2:
                     response = response[0], response[1], default_headers
 

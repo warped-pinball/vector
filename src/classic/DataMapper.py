@@ -107,9 +107,10 @@ def read_high_scores():
 
     Classics Type 30 high score:
     - Only 1 high score available, no initials
-    - 5 decimal digits, each BCD coded in the upper nibble of one byte
-    - Most significant digit at ScoreAdr, each next digit at ScoreAdr-1, -2, ...
-    - Result is multiplied by 10
+    - Same format as InPlay Type 30 scores: one decimal digit per byte in
+      the upper nibble, least-significant digit first (ones digit at
+      ScoreAdr, tens at ScoreAdr+1, ...), 0xF blank = 0
+    - Digit count from HighScores.ScoreBytes, else InPlay.ScoreBytes, else 6
 
     Classics Type 32 high score:
     - Only 1 high score available, no initials
@@ -135,16 +136,11 @@ def read_high_scores():
         score_adr = S.gdata["HighScores"]["ScoreAdr"]
 
         if high_score_type == 30:
-            # Score is 5 decimal digits, each BCD coded in the upper nibble
-            # of one byte, most significant digit at ScoreAdr and each
-            # following digit at the next lower address.
-            score = 0
-            for i in range(5):
-                digit = (shadowRam[score_adr - i] >> 4) & 0x0F
-                if digit > 9:
-                    digit = 0
-                score = score * 10 + digit
-            high_scores[0][1] = score * 10
+            # Same layout as InPlay Type 30 scores: one digit per byte (upper
+            # nibble), ones digit at ScoreAdr, 0xF blank = 0.
+            num_digits = S.gdata["HighScores"].get(
+                "ScoreBytes", S.gdata.get("InPlay", {}).get("ScoreBytes", 6))
+            high_scores[0][1] = _reversed_digit_score(score_adr, num_digits)
 
         elif high_score_type == 32:
             # 7 decimal digits, packed BCD across 4 bytes, most-significant
