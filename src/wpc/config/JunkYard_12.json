@@ -134,5 +134,28 @@
   "Flippers": {
       "Type": 10,
       "Address": 170
+  },
+  "Formats": {
+      "Standard": {
+          "Id": 0
+      },
+      "Limbo": {
+          "Id": 1
+      },
+      "LowBall": {
+          "Id": 2
+      },
+      "Practice": {
+          "Id": 4
+      },
+      "Decay": {
+          "Id": 5
+      },
+      "LongestBall": {
+          "Id": 6
+      },
+      "OneBall": {
+          "Id": 7
+      }
   }
 }

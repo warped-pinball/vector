@@ -118,7 +118,7 @@ DEFAULT_FORMATS = {
                     "Low": 1,
                     "High": 20                   
                 },
-                "Value": 2
+                "Value": 15
             },
             "GetPlayerID": {
                 "Value": True
@@ -465,13 +465,13 @@ def limbo_run():
 # ============================================================================
 # Half Life Mode Handlers
 # ============================================================================
-score_half_life_percent = 2  # Default value, will be overridden from config
+#score_half_life_percent = 2  # Default value, will be overridden from config
 def half_life_init():
     """Initialize half life mode - pull scoreDecay value from config"""
     global score_half_life_percent, player_scores
     
     # Get the decay percentage from format options
-    config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 2)
+    config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 15)
     # Normalize to actual call rate: convert from "per 2000ms" to "per CALL_TIMER ms"
     # If CALL_TIMER=1200ms, we want (1200/2000) of the configured percent per call
     score_half_life_percent = max(2, (config_percent * CALL_TIMER) // 2000 )
