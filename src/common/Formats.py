@@ -151,24 +151,13 @@ DEFAULT_FORMATS = {
     }
 }
 
-# Former format names, still accepted from callers and game configs
-LEGACY_FORMAT_NAMES = {
-    "HalfLife": "Decay",
-}
-
-
-def _game_formats_config():
-    """Formats from the game configuration, with legacy names mapped to current ones."""
-    game_formats_config = S.gdata.get("Formats", {})
-    return {LEGACY_FORMAT_NAMES.get(name, name): config for name, config in game_formats_config.items()}
-
 
 def get_available_formats():
     """
     Retrieve available game formats from the current game configuration,
     overlaying config data onto defaults.
     """
-    game_formats_config = _game_formats_config()
+    game_formats_config = S.gdata.get("Formats", {})
     result_formats = {}
 
     for name, config in game_formats_config.items():
@@ -217,8 +206,8 @@ def set_active_format(format_name, options=None):
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
-    game_formats_config = _game_formats_config()
-    selected_name = LEGACY_FORMAT_NAMES.get(format_name, format_name)
+    game_formats_config = S.gdata.get("Formats", {})
+    selected_name = format_name
 
     if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
         # Fallback: if caller passed a numeric format id (int or numeric string), resolve to a configured format name
