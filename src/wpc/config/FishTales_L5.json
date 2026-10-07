@@ -204,7 +204,7 @@
               }
           }
       },
-      "HalfLife": {
+      "Decay": {
           "Id": 5,
           "Options": {
               "ScoreDecay": {

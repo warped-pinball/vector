@@ -40,7 +40,7 @@ MODE_ID_LIMBO = 1
 MODE_ID_LOWBALL = 2
 MODE_ID_GOLF = 3
 MODE_ID_PRACTICE = 4
-MODE_ID_HALF_LIFE = 5
+MODE_ID_DECAY = 5
 MODE_ID_LONGESTBALL = 6
 MODE_ID_ONEBALL = 7
 
@@ -107,12 +107,12 @@ DEFAULT_FORMATS = {
             }
         }    
     },
-    "HalfLife": {
-        "Id": MODE_ID_HALF_LIFE,
+    "Decay": {
+        "Id": MODE_ID_DECAY,
         "Description": "Score decreases over time",
         "Options": {
             "ScoreDecay": {
-                "Name": "Half Life percent per 2 seconds",
+                "Name": "Decay percent per 2 seconds",
                 "type": "NumberRange",
                 "Range": {
                     "Low": 1,
@@ -151,13 +151,24 @@ DEFAULT_FORMATS = {
     }
 }
 
+# Former format names, still accepted from callers and game configs
+LEGACY_FORMAT_NAMES = {
+    "HalfLife": "Decay",
+}
+
+
+def _game_formats_config():
+    """Formats from the game configuration, with legacy names mapped to current ones."""
+    game_formats_config = S.gdata.get("Formats", {})
+    return {LEGACY_FORMAT_NAMES.get(name, name): config for name, config in game_formats_config.items()}
+
 
 def get_available_formats():
     """
     Retrieve available game formats from the current game configuration,
     overlaying config data onto defaults.
     """
-    game_formats_config = S.gdata.get("Formats", {})
+    game_formats_config = _game_formats_config()
     result_formats = {}
 
     for name, config in game_formats_config.items():
@@ -206,8 +217,8 @@ def set_active_format(format_name, options=None):
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
-    game_formats_config = S.gdata.get("Formats", {})
-    selected_name = format_name
+    game_formats_config = _game_formats_config()
+    selected_name = LEGACY_FORMAT_NAMES.get(format_name, format_name)
 
     if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
         # Fallback: if caller passed a numeric format id (int or numeric string), resolve to a configured format name
@@ -461,24 +472,24 @@ def limbo_run():
 
 
 # ============================================================================
-# Half Life Mode Handlers
+# Decay Mode Handlers
 # ============================================================================
-score_half_life_percent = 2  # Default value, will be overridden from config
-def half_life_init():
-    """Initialize half life mode - pull scoreDecay value from config"""
-    global score_half_life_percent, player_scores
+score_decay_percent = 2  # Default value, will be overridden from config
+def decay_init():
+    """Initialize decay mode - pull scoreDecay value from config"""
+    global score_decay_percent, player_scores
     
     # Get the decay percentage from format options
     config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 2)
     # Normalize to actual call rate: convert from "per 2000ms" to "per CALL_TIMER ms"
     # If CALL_TIMER=1200ms, we want (1200/2000) of the configured percent per call
-    score_half_life_percent = max(2, (config_percent * CALL_TIMER) // 2000 )
+    score_decay_percent = max(2, (config_percent * CALL_TIMER) // 2000 )
 
     player_scores = [0, 0, 0, 0]
-    print(f"FORMAT: Half Life initialized with {score_half_life_percent}%")
+    print(f"FORMAT: Decay initialized with {score_decay_percent}%")
 
-def half_life_run():
-    """Half Life run handler - reduce scores by percentage if above 10000"""
+def decay_run():
+    """Decay run handler - reduce scores by percentage if above 10000"""
     global player_scores
 
     current_scores = DataMapper.get_live_scores(use_format=False)
@@ -486,7 +497,7 @@ def half_life_run():
     if DataMapper.get_game_active() is True:
         player_up = DataMapper.get_player_up()-1
         if current_scores[player_up] > 10000:           
-            decay_amount = (current_scores[player_up] * score_half_life_percent) // 100
+            decay_amount = (current_scores[player_up] * score_decay_percent) // 100
             current_scores[player_up] -= decay_amount
 
             # Write the decayed scores back to shadow RAM and player_scores
@@ -757,8 +768,8 @@ FORMAT_HANDLERS = [
     [golf_init, golf_run, golf_close],
     # 4: Practice
     [empty_init, practice_run, empty_close],
-    # 5: Half Life
-    [half_life_init, half_life_run, empty_close],
+    # 5: Decay
+    [decay_init, decay_run, empty_close],
     # 6: Longest Ball
     [longest_ball_init, longest_ball_run, empty_close],
     # 7: One Ball
