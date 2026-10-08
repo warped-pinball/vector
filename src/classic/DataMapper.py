@@ -107,9 +107,10 @@ def read_high_scores():
 
     Classics Type 30 high score:
     - Only 1 high score available, no initials
-    - 5 decimal digits, each BCD coded in the upper nibble of one byte
-    - Most significant digit at ScoreAdr, each next digit at ScoreAdr-1, -2, ...
-    - Result is multiplied by 10
+    - Same format as InPlay Type 30 scores: one decimal digit per byte in
+      the upper nibble, least-significant digit first (ones digit at
+      ScoreAdr, tens at ScoreAdr+1, ...), 0xF blank = 0
+    - Digit count from HighScores.ScoreBytes, else InPlay.ScoreBytes, else 6
 
     Classics Type 32 high score:
     - Only 1 high score available, no initials
@@ -135,16 +136,11 @@ def read_high_scores():
         score_adr = S.gdata["HighScores"]["ScoreAdr"]
 
         if high_score_type == 30:
-            # Score is 5 decimal digits, each BCD coded in the upper nibble
-            # of one byte, most significant digit at ScoreAdr and each
-            # following digit at the next lower address.
-            score = 0
-            for i in range(5):
-                digit = (shadowRam[score_adr - i] >> 4) & 0x0F
-                if digit > 9:
-                    digit = 0
-                score = score * 10 + digit
-            high_scores[0][1] = score * 10
+            # Same layout as InPlay Type 30 scores: one digit per byte (upper
+            # nibble), ones digit at ScoreAdr, 0xF blank = 0.
+            num_digits = S.gdata["HighScores"].get(
+                "ScoreBytes", S.gdata.get("InPlay", {}).get("ScoreBytes", 6))
+            high_scores[0][1] = _reversed_digit_score(score_adr, num_digits)
 
         elif high_score_type == 32:
             # 7 decimal digits, packed BCD across 4 bytes, most-significant
@@ -207,6 +203,9 @@ def get_live_scores(use_format=True):
     32 with ActiveScoreAdr configured, the currently up player's score (per
     PlayerUp) is instead read from ActiveScoreAdr, since that machine keeps a
     live copy of the up player's score there separate from the ScoreAdr block.
+    If BlinkSaveAdr is configured and the up player's score bytes read back as
+    all 0xFF (blanked while blinking), the score is read from BlinkSaveAdr +
+    ScoreSpacing * (PlayerUp - 1) instead.
     If no game is active, shadow RAM is no
     longer reliable, so the last cached reading is returned instead - unless
     a read from InPlay.LastScoreAdr (the display digits, which still hold
@@ -260,8 +259,18 @@ def get_live_scores(use_format=True):
 
         if in_play["Type"] == 32:
             player_up = get_player_up()
-            if "ActiveScoreAdr" in in_play and 1 <= player_up <= 4:
-                scores[player_up - 1] = _read_score(in_play["ActiveScoreAdr"], in_play)
+            if 1 <= player_up <= 4:
+                if "ActiveScoreAdr" in in_play:
+                    up_adr = in_play["ActiveScoreAdr"]
+                    scores[player_up - 1] = _read_score(up_adr, in_play)
+                else:
+                    up_adr = in_play["ScoreAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
+
+                # Up player's score blanked (all 0xFF, display blinking) - use
+                # the saved copy at BlinkSaveAdr, same width/spacing as ScoreAdr
+                if "BlinkSaveAdr" in in_play and all(b == 0xFF for b in shadowRam[up_adr : up_adr + 4]):
+                    blink_adr = in_play["BlinkSaveAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
+                    scores[player_up - 1] = _read_score(blink_adr, in_play)
             print(f"DATAMAPPER: Type32 live scores={scores} player_up={player_up}")
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")

@@ -118,7 +118,7 @@ DEFAULT_FORMATS = {
                     "Low": 1,
                     "High": 20                   
                 },
-                "Value": 2
+                "Value": 15
             },
             "GetPlayerID": {
                 "Value": True
@@ -157,7 +157,8 @@ def get_available_formats():
     Retrieve available game formats from the current game configuration,
     overlaying config data onto defaults.
     """
-    game_formats_config = S.gdata.get("Formats", {})
+    # Configs without a Formats section still support Standard
+    game_formats_config = S.gdata.get("Formats") or {"Standard": {"Id": MODE_ID_STANDARD}}
     result_formats = {}
 
     for name, config in game_formats_config.items():
@@ -206,7 +207,8 @@ def set_active_format(format_name, options=None):
     global next_format
 
     # Get formats from game configuration - only formats included in S.gdata can be used
-    game_formats_config = S.gdata.get("Formats", {})
+    # Configs without a Formats section still support Standard
+    game_formats_config = S.gdata.get("Formats") or {"Standard": {"Id": MODE_ID_STANDARD}}
     selected_name = format_name
 
     if selected_name not in game_formats_config or selected_name not in DEFAULT_FORMATS:
@@ -463,13 +465,13 @@ def limbo_run():
 # ============================================================================
 # Decay Mode Handlers
 # ============================================================================
-score_decay_percent = 2  # Default value, will be overridden from config
-def decay_init():
-    """Initialize decay mode - pull scoreDecay value from config"""
-    global score_decay_percent, player_scores
+#score_half_life_percent = 2  # Default value, will be overridden from config
+def half_life_init():
+    """Initialize half life mode - pull scoreDecay value from config"""
+    global score_half_life_percent, player_scores
     
     # Get the decay percentage from format options
-    config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 2)
+    config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 15)
     # Normalize to actual call rate: convert from "per 2000ms" to "per CALL_TIMER ms"
     # If CALL_TIMER=1200ms, we want (1200/2000) of the configured percent per call
     score_decay_percent = max(2, (config_percent * CALL_TIMER) // 2000 )

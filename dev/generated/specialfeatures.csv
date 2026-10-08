@@ -1,5 +1,8 @@
 game_name,mpu,rom_versions,live_scores,switch_diagnostics,special_formats,formats
+Kiss,BALLY35,1,no,no,no,
+Star Trek,BALLY35,1;201,no,no,no,
 Supersonic,BALLY35,1,no,no,no,
+strikesandspares,CLASSIC,1,no,no,no,
 Generic,CLASSICBALLY,,no,no,no,
 Back to the Future,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Batman,DATA_EAST,106,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -21,7 +24,7 @@ Playboy,DATA_EAST,A24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 RoboCop,DATA_EAST,A34,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Rocky and Bulwinkle,DATA_EAST,320,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Secret Service,DATA_EAST,a26,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Star Trek,DATA_EAST,201,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Star Trek,DATA_EAST,1;201,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Star Wars,DATA_EAST,102,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Tales from the Crypt,DATA_EAST,500,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Teenage Mutant Ninja Turtles,DATA_EAST,104,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -30,6 +33,7 @@ Time Machine,DATA_EAST,a24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standar
 Tommy Pinball Wizard,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Torpedo Alley,DATA_EAST,21,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 EM machine,EM,,yes,no,no,
+Nugent,MPU100,1,no,no,no,
 Generic,MPU200,,no,no,no,
 Split Second,MPU200,1,no,no,no,
 Bad Cats,SYS11,LA5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
@@ -90,7 +94,7 @@ Indianapolis 500,WPC,11R,yes,yes,no,
 Jack Bot,WPC,04A;10R,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Johnny Mnemonic,WPC,11R;12R,yes,yes,no,
 Judge Dredd,WPC,L7,yes,yes,no,
-Junk Yard,WPC,10;12,yes,yes,no,
+Junk Yard,WPC,10;12,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Machine Bride of Pinbot,WPC,L5;L7;L8,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Medieval Madness,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Monster Bash,WPC,10,yes,yes,no,
