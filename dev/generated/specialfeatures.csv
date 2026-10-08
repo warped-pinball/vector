@@ -36,67 +36,67 @@ EM machine,EM,,yes,no,no,
 Nugent,MPU100,1,no,no,no,
 Generic,MPU200,,no,no,no,
 Split Second,MPU200,1,no,no,no,
-Bad Cats,SYS11,LA5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Banzai Run,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Big Guns,SYS11,L8;LA,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Black Knight 2000,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Bad Cats,SYS11,LA5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Banzai Run,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Big Guns,SYS11,L8;LA,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Black Knight 2000,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Comet,SYS11,,yes,no,no,
-Cyclone,SYS11,L5,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Cyclone,SYS11,L5,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Diner,SYS11,L4,yes,yes,no,
 Dr Dude,SYS11,L1,yes,yes,no,
-Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Elvira,SYS11,LA2,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-F-14 Tomcat,SYS11,L1,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Fire!,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Elvira,SYS11,LA2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
+F-14 Tomcat,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Fire!,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System 11,SYS11,,no,no,no,
 Grand Lizard,SYS11,L4,no,no,no,
-High Speed,SYS11,L3;L4,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Jokerz!,SYS11,L6,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Millionaire,SYS11,L3,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+High Speed,SYS11,L3;L4,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
+Jokerz!,SYS11,L6,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
+Millionaire,SYS11,L3,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Mousin' Around,SYS11,L4,yes,yes,no,
-Pinbot,SYS11,V2,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Pinbot,SYS11,V2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Police Force,SYS11,,yes,yes,no,
 Pool Sharks,SYS11,LA7,no,no,no,
-Radical!,SYS11,L1,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Road Kings,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Roller Games,SYS11,,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Radical!,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Road Kings,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Roller Games,SYS11,,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Scorcerer,SYS11,L2,yes,no,no,
 Space Shuttle,SYS11,L7,yes,no,no,
-Space Station,SYS11,L5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Swords of Fury,SYS11,L2,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Taxi,SYS11,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Transporter the Rescue,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Whirlwind,SYS11,L3,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Addams Family,WPC,H2;H4;L2;L5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Attack from Mars,WPC,10;11,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Black Rose,WPC,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Space Station,SYS11,L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Swords of Fury,SYS11,L2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Taxi,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Transporter the Rescue,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Whirlwind,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Addams Family,WPC,H2;H4;L2;L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Attack from Mars,WPC,10;11,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
+Black Rose,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bram Stokers Dracula,WPC,L1,yes,yes,no,
-Cactus Canyon,WPC,13,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Cactus Canyon,WPC,13,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Champion Pub,WPC,16,yes,yes,no,
 Cirqus Voltaire,WPC,10,yes,yes,no,
-Congo,WPC,21,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Congo,WPC,21,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Corvette,WPC,LX1,yes,yes,no,
 Creature from the Black Lagoon,WPC,l4,yes,yes,no,
 Demolition Man,WPC,H6;LX4,yes,yes,no,
 Dirty Harry,WPC,L2;LX2,yes,yes,no,
 Doctor Who,WPC,L2,yes,yes,no,
-Fish Tales,WPC,L4;L5,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Fun House,WPC,L9;PA1,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Fish Tales,WPC,L4;L5,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
+Fun House,WPC,L9;PA1,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System WPC,WPC,WPC,no,no,no,
 Gilligan's Island,WPC,L9,yes,yes,no,
 Harley Davidson,WPC,L3,yes,yes,no,
-Hurricane,WPC,L2,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Hurricane,WPC,L2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Indiana Jones,WPC,L7,yes,yes,no,
 Indianapolis 500,WPC,11R,yes,yes,no,
-Jack Bot,WPC,04A;10R,yes,yes,yes,Golf;HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Jack Bot,WPC,04A;10R,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Johnny Mnemonic,WPC,11R;12R,yes,yes,no,
 Judge Dredd,WPC,L7,yes,yes,no,
-Junk Yard,WPC,10;12,yes,yes,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Machine Bride of Pinbot,WPC,L5;L7;L8,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
-Medieval Madness,WPC,L4,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+Junk Yard,WPC,10;12,yes,yes,no,
+Machine Bride of Pinbot,WPC,L5;L7;L8,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Medieval Madness,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Monster Bash,WPC,10,yes,yes,no,
 No Fear Dangerous Sports,WPC,23x,yes,yes,no,
 No Good Gofers,WPC,13,yes,yes,no,
@@ -108,11 +108,11 @@ Scared Stiff,WPC,15,yes,yes,no,
 Star Trek: TNG,WPC,LX7;LX8,yes,yes,no,
 Tales of the Arabian Nights,WPC,14,yes,yes,no,
 Terminator 2,WPC,L8;L84,yes,yes,no,
-The Flintstones,WPC,LX5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+The Flintstones,WPC,LX5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 The Getaway: High Speed II,WPC,L2,yes,no,no,
 The Shadow,WPC,LX5,yes,yes,no,
 Theatre of Magic,WPC,13;14HB;20,yes,yes,no,
 Twilight Zone,WPC,92,yes,yes,no,
-White Water,WPC,L5,yes,yes,yes,HalfLife;Limbo;LongestBall;LowBall;Practice;Standard
+White Water,WPC,L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Who Dunnit,WPC,12,yes,yes,no,
 World Cup Soccer,WPC,LX2,yes,yes,no,

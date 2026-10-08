@@ -151,7 +151,7 @@
       "Practice": {
           "Id": 4
       },
-      "HalfLife": {
+      "Decay": {
           "Id": 5
       },
       "LongestBall": {
