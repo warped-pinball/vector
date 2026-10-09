@@ -11,7 +11,8 @@
         "Type": 32,
         "Address": 640,
         "Length": 4,
-        "Spacing": 17
+        "Spacing": 17,
+        "PlayersAdr": 747
     },
     "Adjustments": {
         "Type": 0
