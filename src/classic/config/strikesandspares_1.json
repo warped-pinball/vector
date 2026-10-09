@@ -1,41 +1,33 @@
 {
     "GameInfo": {
-        "GameName": "strikesandspares",
-        "System": "Classic",
-        "FileVer": 1
-    },
-    "Memory": {
-        "Start": 0,
-        "Length": 512,
-        "NvStart": 256,
-        "NvLength": 256
+        "GameName": "Strikes and Spares",
+        "System": "Bally17"
     },
     "BallInPlay": {
         "Type": 30,
-        "Address": "0x013"
+        "Address": 19
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 572,
+        "Length": 6,
+        "Spacing": 6
+    },
+    "Adjustments": {
+        "Type": 0
     },
     "InPlay": {
         "Type": 30,
-        "Players": "0x000",
-        "PlayerUp": "0x015",
-        "ScoreAdr": "0x11E",
-        "ScoreSpacing": 6,
-        "Multiplier": 1
+        "GameActiveAdr": 33,
+        "Players": 20,
+        "PlayerUp": 21,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 572,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
     },
     "HighScores": {
         "Type": 30,
-        "ScoreAdr": "0x1CF",
-        "ScoreSpacing": 6,
-        "Multiplier": 1
-    },
-    "Credits": {
-        "Type": 30,
-        "Address": "0x13A"
-    },
-    "Flippers": {
-        "Type": 30,
-        "LeftAddress": null,
-        "RightAddress": null,
-        "BothAddress": null
+        "ScoreAdr": 719
     }
 }

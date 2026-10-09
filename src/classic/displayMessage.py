@@ -13,7 +13,7 @@ from Shadow_Ram_Definitions import shadowRam
 from logger import logger_instance
 log = logger_instance
 
-ip=""
+_ip_written = False  # the IP (and PlayersAdr) is only ever written once, at power-up boot
 
 def fixAdjustmentChecksum():
     pass
@@ -58,16 +58,32 @@ def init(ipAddress):
     layout DataMapper.get_live_scores() reads player scores from. Type 30
     writes one digit per byte (Bally / MPU-100), Type 32 packed BCD over
     Length bytes (MPU-200).
+
+    DisplayMessage.PlayersAdr (optional): the player-count byte (plain 1-4,
+    same byte as InPlay.Players). Its value is saved and 4 is written so all
+    four score displays show an octet. Scores are not restored afterwards, so
+    neither is this byte - the next game start overwrites it.
+
+    Classics write all of this once only, on the first call after power-up.
+    Later calls (wifi reconnect, refresh, admin show-IP toggle) do nothing,
+    and nothing is written if a game is in progress.
     """
-    global ip
+    global _ip_written
 
     try:
-        ip=ipAddress
+        if _ip_written:
+            return
+        _ip_written = True
         log.log(f"MSG: init ip address {ipAddress}")
 
         disp = S.gdata["DisplayMessage"]
         if disp["Type"] not in (30, 32):
             log.log(f"MSG: init skipped, DisplayMessage Type is {disp['Type']} not 30/32")
+            return
+
+        from DataMapper import get_game_active
+        if get_game_active():
+            log.log("MSG: init skipped, game in progress")
             return
 
         octets = ipAddress.split(".")
@@ -82,13 +98,17 @@ def init(ipAddress):
                 _write_bcd_number(base_adr, disp["Length"], int(octet))
             else:
                 _write_reversed_digit_number(base_adr, disp["Length"], int(octet))
+
+        if "PlayersAdr" in disp:
+            players_saved = shadowRam[disp["PlayersAdr"]]
+            shadowRam[disp["PlayersAdr"]] = 4
+            log.log(f"MSG: PlayersAdr {disp['PlayersAdr']} was {players_saved}, set to 4")
     except Exception as e:
         log.log(f"MSG: error in init: {e}")
 
 
 def refresh():
-    global ip
-    init(ip)
+    # classics write the IP once at power-up only (see init)
     pass
 
 
