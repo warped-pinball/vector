@@ -188,17 +188,31 @@ def rom_version_from_path(path: Path) -> str:
     return ""
 
 
-def collect_rom_versions(config_glob: str) -> dict[str, set[str]]:
-    """Scan all config files (including LinkTo) and collect ROM versions by game name."""
-    versions: dict[str, set[str]] = {}
+def resolve_system_raw(path: Path, data: dict[str, Any]) -> str:
+    """Return GameInfo.System, following LinkTo aliases (which omit System) to their target."""
+    system_raw = get_path(data, "GameInfo.System", "")
+    if system_raw or not is_linkto_config(data):
+        return system_raw
+
+    target = path.parent / f"{data['GameInfo']['LinkTo']}.json"
+    if not target.exists():
+        return ""
+    with target.open("r", encoding="utf-8") as f:
+        return get_path(json.load(f), "GameInfo.System", "")
+
+
+def collect_rom_versions(config_glob: str) -> dict[tuple[str, str], set[str]]:
+    """Scan all config files (including LinkTo) and collect ROM versions by (game name, system family)."""
+    versions: dict[tuple[str, str], set[str]] = {}
     for raw_path in sorted(glob.glob(config_glob)):
         path = Path(raw_path)
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         game_name = get_path(data, "GameInfo.GameName", path.stem)
+        system_family = normalize_system(resolve_system_raw(path, data))
         rom_ver = rom_version_from_path(path)
         if rom_ver:
-            versions.setdefault(game_name, set()).add(rom_ver)
+            versions.setdefault((game_name, system_family), set()).add(rom_ver)
     return versions
 
 
@@ -231,7 +245,7 @@ def load_records(config_glob: str) -> list[ConfigRecord]:
 # =============================================================================
 
 
-def write_consolidated_csv(path: Path, records: list[ConfigRecord], rom_versions: dict[str, set[str]] | None = None) -> None:
+def write_consolidated_csv(path: Path, records: list[ConfigRecord], rom_versions: dict[tuple[str, str], set[str]] | None = None) -> None:
     """Write one large CSV with each title + MPU and all features as columns.
 
     Dedupe key is (game_name, system_family), so multiple ROM revisions collapse
@@ -274,7 +288,7 @@ def write_consolidated_csv(path: Path, records: list[ConfigRecord], rom_versions
 
         sorted_rows = sorted(rows.values(), key=lambda r: (str(r["mpu"]).casefold(), str(r["game_name"]).casefold()))
         for row in sorted_rows:
-            game_roms = rom_versions.get(row["game_name"], set()) if rom_versions is not None else set()
+            game_roms = rom_versions.get((row["game_name"], row["mpu"]), set()) if rom_versions is not None else set()
             writer.writerow(
                 [
                     row["game_name"],
