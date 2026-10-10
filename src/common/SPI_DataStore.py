@@ -237,6 +237,8 @@ def deserialize(data, structure_name):
 
 
 def blankStruct(structure_name):
+    from systemConfig import vectorSystem
+
     fake_entry = {
         "initials": "",
         "full_name": "",
@@ -250,7 +252,7 @@ def blankStruct(structure_name):
         "ssid": "",
         "password": "",
         "Gpassword": "",
-        "gamename": "GenericSystem11_",
+        "gamename": "Generic_" if vectorSystem == "classic" else "GenericSystem11_",
         "other": 1,
         "switches": [0] * 72,
     }
