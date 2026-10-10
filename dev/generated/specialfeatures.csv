@@ -1,8 +1,8 @@
 game_name,mpu,rom_versions,live_scores,switch_diagnostics,special_formats,formats
+Strikes and Spares,BALLY17,1,no,no,no,
 Kiss,BALLY35,1,no,no,no,
 Star Trek,BALLY35,1,no,no,no,
 Supersonic,BALLY35,1,no,no,no,
-strikesandspares,CLASSIC,1,no,no,no,
 Generic,CLASSICBALLY,,no,no,no,
 Back to the Future,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Batman,DATA_EAST,106,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard

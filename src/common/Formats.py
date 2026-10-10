@@ -465,10 +465,10 @@ def limbo_run():
 # ============================================================================
 # Decay Mode Handlers
 # ============================================================================
-#score_half_life_percent = 2  # Default value, will be overridden from config
-def half_life_init():
-    """Initialize half life mode - pull scoreDecay value from config"""
-    global score_half_life_percent, player_scores
+score_decay_percent = 2  # Default value, will be overridden from config
+def decay_init():
+    """Initialize decay mode - pull scoreDecay value from config"""
+    global score_decay_percent, player_scores
     
     # Get the decay percentage from format options
     config_percent = S.active_format.get("Options", {}).get("ScoreDecay", {}).get("Value", 15)
