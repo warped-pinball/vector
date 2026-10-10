@@ -1,7 +1,7 @@
 game_name,mpu,rom_versions,live_scores,switch_diagnostics,special_formats,formats
 Strikes and Spares,BALLY17,1,no,no,no,
 Kiss,BALLY35,1,no,no,no,
-Star Trek,BALLY35,1;201,no,no,no,
+Star Trek,BALLY35,1,no,no,no,
 Supersonic,BALLY35,1,no,no,no,
 Generic,CLASSICBALLY,,no,no,no,
 Back to the Future,DATA_EAST,27,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -24,7 +24,7 @@ Playboy,DATA_EAST,A24,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 RoboCop,DATA_EAST,A34,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Rocky and Bulwinkle,DATA_EAST,320,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Secret Service,DATA_EAST,a26,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
-Star Trek,DATA_EAST,1;201,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Star Trek,DATA_EAST,201,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Star Wars,DATA_EAST,102,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Tales from the Crypt,DATA_EAST,500,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Teenage Mutant Ninja Turtles,DATA_EAST,104,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
