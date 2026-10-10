@@ -1,0 +1,86 @@
+{
+    "GameInfo": {
+        "GameName": "Twilight Zone",
+        "System": "WPC",
+        "FileVer": 1
+    },
+    "Definition": {
+        "version": 1
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 2048,
+        "NvLength": 2048
+    },
+    "BallInPlay": {
+        "Type": 1,
+        "Address": 947,
+        "Ball1": 1,
+        "Ball2": 2,
+        "Ball3": 3,
+        "Ball4": 4,
+        "Ball5": 5
+    },
+    "DisplayMessage": {
+        "Type": 10,
+        "AddressS1": 7789,
+        "AddressS2": 7854,
+        "AddressS3": 7919,
+        "Length": 32,
+        "ChecksumStartAdr": 7789,
+        "ChecksumEndAdr": 7981,
+        "ChecksumResultAdr": 7982
+    },
+    "Adjustments": {
+        "Type": 10,
+        "CustomMessageOn": 7174,
+        "ChecksumStartAdr": 7133,
+        "ChecksumEndAdr": 7392,
+        "ChecksumResultAdr": 7393
+    },
+    "HighScores": {
+        "Type": 10,
+        "ScoreAdr": 7500,
+        "BytesInScore": 6,
+        "ScoreSpacing": 9,
+        "InitialAdr": 7497,
+        "InitialSpacing": 9,
+        "NumberOfScores": 4,
+        "GrandChampScoreAdr": 7538,
+        "GrandChampInitAdr": 7535,
+        "ChecksumStartAdr": 7497,
+        "ChecksumEndAdr": 7532,
+        "ChecksumResultAdr": 7533,
+        "GCChecksumStartAdr": 7535,
+        "GCChecksumEndAdr": 7543,
+        "GCChecksumResultAdr": 7544
+    },
+    "HSRewards": {
+        "Type": 0,
+        "HS1": 0,
+        "HS2": 0,
+        "HS3": 0,
+        "HS4": 0,
+        "HS5": 0,
+        "DisableByte": 0
+    },
+    "Switches": {
+        "Type": 0,
+        "Address": 0,
+        "Length": 0
+    },
+    "CoinDrop": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 10,
+        "GameActiveAdr": 141,
+        "GameActiveValue": 0,
+        "Players": 5913,
+        "Playerup": 946,
+        "ScoreAdr": 5791,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
+    }
+}
