@@ -484,8 +484,13 @@ def decay_run():
     global player_scores
 
     current_scores = DataMapper.get_live_scores(use_format=False)
-    
-    if DataMapper.get_game_active() is True:
+
+    # Only decay while a ball is actually in play.  System 11 keeps the game
+    # active while the player enters initials (ball in play reads 0x0F), and by
+    # then the machine has already copied the score into its high score table.
+    # Decaying past that point leaves the in-play score lower than the high
+    # score, so the initials never match and the score goes out unclaimed.
+    if DataMapper.get_game_active() is True and 1 <= DataMapper.get_ball_in_play() <= 5:
         player_up = DataMapper.get_player_up()-1
         if current_scores[player_up] > 10000:           
             decay_amount = (current_scores[player_up] * score_decay_percent) // 100
