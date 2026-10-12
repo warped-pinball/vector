@@ -11,7 +11,7 @@ Fast-path instructions for installing the Warped Pinball System 11 WiFi board.
 
 ## Steps
 
-Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com). For System 9 installs, use the dedicated guide on the site.
+Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com/#resources). For System 9 installs, use the dedicated guide on the site.
 
 1. Power off the pinball machine.
 2. Remove the main processor chip from the System 11 board. Place it into the Warped Pinball System 11 WiFi board’s 40-pin socket, matching pin #1 and checking for bent pins.
