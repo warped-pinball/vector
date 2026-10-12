@@ -189,6 +189,16 @@ def read_in_play_scores():
 
 _last_live_scores = [0, 0, 0, 0]
 
+# After a game the display digits hold the final score only until attract
+# mode starts. From then on they cycle through high score to date, credits
+# and blanks, and after a one player game players 2-4 read 0 throughout, so
+# the 3 of 4 agreement test below passes on whatever display 1 shows. Only
+# listen to the displays for this long after the game ends: long enough for
+# ScoreTrack's 5 second ticks to notice the end and confirm the final score
+# (up to 10 seconds). After that the score stays put until the next game.
+_LAST_SCORE_WINDOW_MS = 15000
+_scores_inactive_since = None
+
 
 def get_live_scores(use_format=True):
     """
@@ -211,13 +221,19 @@ def get_live_scores(use_format=True):
     a read from InPlay.LastScoreAdr (the display digits, which still hold
     the final score after the game ends) agrees with the cache on at least
     3 of 4 players, in which case that reading is accepted as the new cache.
+    That read is only trusted for _LAST_SCORE_WINDOW_MS after the game ends;
+    after that attract mode owns the displays and the cache is kept as is.
 
     Returns:
         list: List of 4 integer scores [score1, score2, score3, score4]
     """
-    global _last_live_scores
+    global _last_live_scores, _scores_inactive_since
 
     if not get_game_active():
+        if _scores_inactive_since is None:
+            _scores_inactive_since = time.ticks_ms()
+        if time.ticks_diff(time.ticks_ms(), _scores_inactive_since) > _LAST_SCORE_WINDOW_MS:
+            return list(_last_live_scores)
         try:
             in_play = S.gdata["InPlay"]
             if in_play["Type"] in (30, 31, 32) and "LastScoreAdr" in in_play:
@@ -234,6 +250,7 @@ def get_live_scores(use_format=True):
 
         return list(_last_live_scores)
 
+    _scores_inactive_since = None
     scores = [0, 0, 0, 0]
 
     # Check if a Format is active
