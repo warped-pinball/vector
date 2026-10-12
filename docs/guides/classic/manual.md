@@ -206,10 +206,10 @@ power-up and release when the LED blinks rapidly.
 
 - Your router assigns an IP address to each machine (for example `192.168.1.239`).
 - Enter that address in a browser on the same network and bookmark it.
-- **Read it from the game.** Most games show the IP address on the score
-  displays after power-up. It takes 30–45 seconds to appear and typically
-  cycles with the high scores. The IP address is only displayed until the
-  first game starts — after that it's gone until the next power-up.
+- **Read it from the game when supported by the selected profile.** The IP
+  address appears on the score displays 30–45 seconds after power-up and
+  typically cycles with the high scores. It remains only until the first game
+  starts, then returns after the next power-up.
 
   ![Supersonic showing IP address 192.168.16.116 on its score displays](../../img/classic/ip_address_display.jpg)
 
