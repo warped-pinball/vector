@@ -8,17 +8,23 @@
 
 Origin is a small computer that sits on your local network and pulls together
 high scores and live game action from every Vector-enabled pinball machine you
-own. Its output looks great on a big-screen TV or any computer monitor. Origin
-also runs tournaments, tracks players by name, and runs games in special
-competition "modes".
-
-Origin can even log scores from games that do not have a Vector product
-installed yet.
+own. Its output looks great on a big-screen TV or any computer monitor. Games
+without a Vector installed aren't left out — players can snap a picture of
+their score and submit it. Origin tracks players by name, and players simply
+scan a QR code to check in and play. It runs tournaments, special events, and
+competition "modes", and can schedule them to start and run automatically.
+Origin also helps you manage game issues, with automatic switch failure
+reporting on many games and player-reported issue logging on every game. And
+with integrations, Origin can pull in scores from many other modern games.
 
 A full reference manual — configuration, remote access, backups, and day-to-day
 operation — is [coming soon](manual.md).
 
 ![The Origin box](../../img/origin/Origin_Box.png)
+
+A typical Origin display:
+
+![Typical Origin leaderboard view](../../img/origin/Origin_typical_view.png)
 
 ## What you need
 
@@ -69,6 +75,12 @@ cable. That's all.
 
     ![Origin label](../../img/origin/origin_label.png)
 
+    **Want a custom web address?** Your address doesn't have to stay
+    `Origin3.warpedpinball.com` — it can be almost anything, like your name or
+    location (for example `SmithArcade.warpedpinball.com` or
+    `Denver.warpedpinball.com`). Just let Warped Pinball know what you'd like it
+    changed to.
+
     Open this page shortly after powering up and sign in — the first login
     automatically becomes the Administrator.
 
@@ -93,14 +105,23 @@ cable. That's all.
     many panels appear, and the tournament filters. Then open the big-screen
     leaderboard in a browser or smart TV.
 
-Play a game. Within a few seconds the score should appear live in the web UI and
-on the big screen, and the finished game lands on the leaderboard.
+    Play a game. Within a few seconds the score should appear live in the web UI
+    and on the big screen, and the finished game lands on the leaderboard.
+
+8.  **Customize, integrate, and admin — make it your own!**
+
+    The **Admin Only** section of the menu is where you tailor Origin to your
+    arcade.
+
+    | | |
+    | --- | --- |
+    | ![Origin admin menu](../../img/origin/origin_admin_menu.png) | <span style="font-size: 0.8rem; line-height: 1.6;">**Arcade** — check the status of all your games: fault reports, software versions, and more.<br><br>**QR Codes** — list all your QR/NFC tag-enabled games and add more.<br><br>**Events** — see all events in a calendar view and set up new ones.<br><br>**System** — set up email and monitor system performance.<br><br>**Integrations** — add your Insider Connected URL.<br><br>**Appearance** — choose your color scheme.<br><br>**Users** — manage users and how new users get added (open sign-up or by invitation only).<br><br>**Big Screen** — configure how the big screen view works.<br><br>**Score Management** — correct score issues. Someone play with the glass off? Fix it here.</span> |
 
 ## Next steps
 
-For quick access from a computer monitor, use the `Origin3.local:8000` address
+For quick access from a computer monitor, use the `Origin3.local` address
 shown on your label. Many smart TVs do not accept the `.local` address and need a
-full IP instead, such as `192.168.1.123:8000`.
+full IP instead, such as `192.168.1.123`.
 
 ## Frequently asked questions
 
@@ -116,7 +137,7 @@ current with as little effort from you as possible.
 
 No. The connection to warpedpinball.com happens over the internet, but all of
 your data is processed and stored locally in the Origin box. The local address
-(`Origin3.local:8000`) works on your network even when the internet is down.
+(`Origin3.local`) works on your network even when the internet is down.
 
 ## Terms of use and consent to remote monitoring
 
