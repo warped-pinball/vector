@@ -485,7 +485,10 @@ def decay_run():
 
     current_scores = DataMapper.get_live_scores(use_format=False)
     
-    if DataMapper.get_game_active() is True:
+    # sys11: stop decay as soon as the machine flags game over (other platforms lack this)
+    game_over_flag = hasattr(DataMapper, "get_game_over_flag") and DataMapper.get_game_over_flag()
+
+    if DataMapper.get_game_active() is True and not game_over_flag:
         player_up = DataMapper.get_player_up()-1
         if current_scores[player_up] > 10000:           
             decay_amount = (current_scores[player_up] * score_decay_percent) // 100
