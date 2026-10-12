@@ -9,7 +9,8 @@
 
 Fast-path instructions for installing the Warped Pinball Vector board on a classic
 solid-state Bally or Stern machine (Bally AS-2518-17 / AS-2518-35 MPU, Stern
-MPU-100 / MPU-200).
+MPU-100 / MPU-200). For complete details, see the full manual at
+[docs.warpedpinball.com/guides/classic/manual](https://docs.warpedpinball.com/guides/classic/manual/).
 
 ## Steps
 
@@ -23,13 +24,8 @@ Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com).
 
 ![Pin strip Photo](../../img/sys11/pin_strip.jpg)
 
-4. Insert the round-pin chip carrier into the socket strips. In some kits this socket
-   is pre-installed onto the Vector circuit board, you may skip this step.
-
-![Socket Photo](../../img/sys11/socket.jpg)
-
-5. (Optional) Attach the sticky standoff and screw to the Vector board and peel the backing.
-6. Place the board into the MPU-board socket, confirm all pins are seated, and make
+4. (Optional) Attach the sticky standoff and screw to the Vector board and peel the backing.
+5. Place the board into the MPU-board socket, confirm all pins are seated, and make
    sure the processor orientation matches the original.
 <br><br>
 Installed on a Bally MPU board:<br>
@@ -39,7 +35,7 @@ Installed on a Stern MPU board:<br>
 ![Installed on a Stern board](../../img/classic/classic_stern.png)
 <br><br>
 
-7. Clip the white wire to the reset point shown below. This same location is present
+6. Clip the white wire to the reset point shown below. This same location is present
    on every Bally AS-2518 and Stern MPU-100/200 board.
 <br><br>
 Clip-to location:<br>
@@ -49,15 +45,19 @@ Clip-to location:<br>
 [Alltek Systems replacement MPU board](#alltek-systems-replacement-mpu-board) at the
 end of this guide.
 
-8. Power on the game and connect a smartphone to the **Warped Pinball** WiFi network.
-   Click **Sign In** if prompted.
-9. Review the configuration page that appears.
-10. Select your home WiFi SSID and password. Choose your game and software version
+7. Power on the game and connect a smartphone to the **Warped Pinball** WiFi network.
+   When prompted, click **Sign In** to open the configuration page.
+8. Review the configuration page that appears.
+9. Select your home WiFi SSID and password. Choose your game and software version
     from the dropdown. If not listed, select **Generic** (Bally or
     Stern MPU-100) or **Generic MPU-200** (Stern MPU-200) and contact Warped Pinball.
-11. Set a Pinball Admin password to protect the Admin/Service page
-12. Click **Save**, wait for direction to power off the game.
-13. Power on and wait for the IP address to appear on the display. Enter the IP on any
+
+    **Note:** We add ROM versions continuously. If the existing ROM selection does
+    not work with your game, please contact us at
+    [roms@WarpedPinball.com](mailto:roms@WarpedPinball.com) for help.
+10. Set a Pinball Admin password to protect the Admin/Service page
+11. Click **Save**, wait for direction to power off the game.
+12. Power on and wait for the IP address to appear on the display. Enter the IP on any
     device on the same WiFi—for example `192.168.1.189`. Note - not all games show the
     IP address on the front displays. If it is not shown on the display, find it in 
     your router's device list or re-enter WiFi setup and read it
@@ -69,7 +69,7 @@ everyone gets an individual best-score board.
 ## Alltek Systems replacement MPU board
 
 If your game has an **Alltek Systems "Ultimate MPU"** board in place of the original
-Bally or Stern MPU, change **step 7**:
+Bally or Stern MPU, change **step 6**:
 
 - Do **not** use the white wire clip. You may clip the white wire on the extra board 
 test point to keep it out of the way.
