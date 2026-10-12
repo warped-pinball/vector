@@ -198,6 +198,9 @@ _last_live_scores = [0, 0, 0, 0]
 # (up to 10 seconds). After that the score stays put until the next game.
 _LAST_SCORE_WINDOW_MS = 15000
 _scores_inactive_since = None
+# Latched once the window has passed: ticks_diff wraps after a few days, so
+# comparing against the old timestamp forever would reopen the window.
+_last_score_window_closed = False
 
 
 def get_live_scores(use_format=True):
@@ -227,12 +230,15 @@ def get_live_scores(use_format=True):
     Returns:
         list: List of 4 integer scores [score1, score2, score3, score4]
     """
-    global _last_live_scores, _scores_inactive_since
+    global _last_live_scores, _scores_inactive_since, _last_score_window_closed
 
     if not get_game_active():
+        if _last_score_window_closed:
+            return list(_last_live_scores)
         if _scores_inactive_since is None:
             _scores_inactive_since = time.ticks_ms()
         if time.ticks_diff(time.ticks_ms(), _scores_inactive_since) > _LAST_SCORE_WINDOW_MS:
+            _last_score_window_closed = True
             return list(_last_live_scores)
         try:
             in_play = S.gdata["InPlay"]
@@ -251,6 +257,7 @@ def get_live_scores(use_format=True):
         return list(_last_live_scores)
 
     _scores_inactive_since = None
+    _last_score_window_closed = False
     scores = [0, 0, 0, 0]
 
     # Check if a Format is active
