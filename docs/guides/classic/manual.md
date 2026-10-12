@@ -123,16 +123,11 @@ identify your game and choose the right profile during WiFi setup.
 
    ![Pin strip Photo](../../img/sys11/pin_strip.jpg)
 
-4. **Add the round-pin chip carrier.** Place the 40-pin carrier onto the headers and
-   press down all the way around. Some kits ship with this carrier pre-attached to
-   the Vector board — if so, skip this step.
-
-   ![Socket Photo](../../img/sys11/socket.jpg)
-5. **Mount the standoff.** (optional, placement varies) Attach the adhesive standoff to the Vector board with the
+4. **Mount the standoff.** (optional, placement varies) Attach the adhesive standoff to the Vector board with the
    plastic screw and remove the backing.
-6. **Seat the Vector board.** Align it with the socket, keeping pin #1 oriented the
+5. **Seat the Vector board.** Align it with the socket, keeping pin #1 oriented the
    same as the original processor, and press until every corner is seated.
-7. **Make the reset connection.**
+6. **Make the reset connection.**
    - **Original Bally / Stern MPU board:** attach the white micro-clip to the point
      shown below. This synchronizes Vector's reset with the game's reset on
      power-up, so expect a few extra seconds at startup. This same location is
@@ -211,13 +206,22 @@ power-up and release when the LED blinks rapidly.
 
 - Your router assigns an IP address to each machine (for example `192.168.1.239`).
 - Enter that address in a browser on the same network and bookmark it.
-- Router DHCP assignments can change. Find the current address in your router's
-  connected-devices list, or re-enter WiFi setup and read it at the bottom of the
-  configuration page.
+- **Read it from the game.** Most games show the IP address on the score
+  displays after power-up. It takes 30–45 seconds to appear and typically
+  cycles with the high scores. The IP address is only displayed until the
+  first game starts — after that it's gone until the next power-up.
+
+  ![Supersonic showing IP address 192.168.16.116 on its score displays](../../img/classic/ip_address_display.jpg)
+
+  *Bally Supersonic showing IP address `192.168.16.116` across the four player
+  displays.*
+- **Read it in AP mode.** You can always boot Vector into AP mode (hold the
+  button on the board while applying power) and read the address at the bottom
+  of the configuration page.
+- Router DHCP assignments can change. You can also find the current address in
+  your router's connected-devices list.
 - For stability, set a static IP for the device in your router once it appears in
   the device list.
-- Titles that have a profiled display-message area can and will show
-  the IP address on the score displays during attract mode.
 
 ## Web interface
 
