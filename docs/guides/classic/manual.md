@@ -206,18 +206,18 @@ power-up and release when the LED blinks rapidly.
 
 - Your router assigns an IP address to each machine (for example `192.168.1.239`).
 - Enter that address in a browser on the same network and bookmark it.
-- **Read it from the game.** Most games show the IP address on the score
-  displays after power-up. It takes 30–45 seconds to appear and typically
-  cycles with the high scores. The IP address is only displayed until the
-  first game starts — after that it's gone until the next power-up.
+- **Read it from the game when supported by the selected profile.** The IP
+  address appears on the score displays 30–45 seconds after power-up and
+  typically cycles with the high scores. It remains only until the first game
+  starts, then returns after the next power-up.
 
   ![Supersonic showing IP address 192.168.16.116 on its score displays](../../img/classic/ip_address_display.jpg)
 
   *Bally Supersonic showing IP address `192.168.16.116` across the four player
   displays.*
-- **Read it in AP mode.** You can always boot Vector into AP mode (hold the
-  button on the board while applying power) and read the address at the bottom
-  of the configuration page.
+- **Read the last known address in AP mode.** Boot Vector into AP mode (hold
+  the button on the board while applying power) and read its previously
+  assigned address at the bottom of the configuration page.
 - Router DHCP assignments can change. You can also find the current address in
   your router's connected-devices list.
 - For stability, set a static IP for the device in your router once it appears in
