@@ -608,6 +608,34 @@ in_play_scores_hold = [["", 0], ["", 0], ["", 0], ["", 0]]
 push_game_count = 0
 last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
 
+def _assign_leftover_initials(scores_by_player, high_scores):
+    """
+    Give initials from fresh high score entries the exact score match missed.
+
+    Only the last 4 entries count (WPC puts its Grand Champion first), and an
+    entry is fresh when it has 3 letters and beats the placeholder scores.
+    """
+    table = high_scores[-4:] if len(high_scores) >= 5 else high_scores
+    taken = [p[0] for p in scores_by_player if p[0]]
+    leftover = []
+    for entry in table:
+        if entry[1] > 100 and sum(1 for c in entry[0] if c.isalpha()) > 2:
+            if entry[0] in taken:
+                taken.remove(entry[0])
+            else:
+                leftover.append(entry)
+    waiting = [p for p in scores_by_player if not p[0] and p[1] > 0]
+    if not leftover or not waiting:
+        return scores_by_player
+
+    leftover.sort(key=lambda e: e[1], reverse=True)
+    waiting.sort(key=lambda p: p[1], reverse=True)
+    for player, entry in zip(waiting, leftover):
+        log.log(f"FORMAT: initials {entry[0]} by rank, saved {entry[1]} vs in-play {player[1]}")
+        player[0] = entry[0]
+    return scores_by_player
+
+
 def formats_run():
     """
     periodic tasks related to game formats.   
@@ -719,7 +747,15 @@ def formats_run():
 
         # Match in-play scores with high score initials to preserve player order
         final_scores_by_player = DataMapper.match_in_play_with_high_score_initials(in_play_scores, high_scores)
-        
+
+        # A format that rewrites scores (Decay) can leave the in-play score
+        # different from what the machine saved with the initials, so the exact
+        # match above misses.  The table was wiped at game start, so every real
+        # entry left in it is from this game: hand the leftover ones to the
+        # players still without initials, highest score to highest score.
+        if S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False):
+            final_scores_by_player = _assign_leftover_initials(final_scores_by_player, high_scores)
+
         # Replace scores in final_scores_by_player with format-adjusted scores from player_scores
         for player_idx in range(len(final_scores_by_player)):
             if player_idx < len(player_scores):
