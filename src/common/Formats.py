@@ -529,12 +529,14 @@ def longest_ball_run():
     player_up = DataMapper.get_player_up()
     ball_in_play = DataMapper.get_ball_in_play()
 
-    # flipper held?
-    left,right = DataMapper.get_flipper_state()
+    # flipper held? - only when flippers are in the game config, otherwise never pause on flippers
+    left,right = (False, False)
+    if "Flippers" in S.gdata:
+        left,right = DataMapper.get_flipper_state()
     if left is True or right is True:
         flipper_up_counter +=1
     else:
-        flipper_up_counter=0   
+        flipper_up_counter=0
 
     # game score incrementing?
     score_now = DataMapper.get_live_scores(use_format=False)
