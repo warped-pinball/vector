@@ -14,7 +14,7 @@ MPU-100 / MPU-200). For complete details, see the full manual at
 
 ## Steps
 
-Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com).
+Check out installation videos at [WarpedPinball.com](https://WarpedPinball.com/#resources).
 
 1. Power off the pinball machine.
 2. Remove the main processor chip (`MC6800`) from the MPU board. Place it into the
