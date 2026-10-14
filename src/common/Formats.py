@@ -9,6 +9,7 @@ This module provides functions to retrieve and manage different game formats
 """
 import SharedState as S
 import DataMapper
+import SPI_DataStore as DataStore
 import Switches
 from logger import logger_instance
 log = logger_instance
@@ -605,14 +606,19 @@ last_high_score_count =0
 in_play_scores_hold = [["", 0], ["", 0], ["", 0], ["", 0]]
 push_game_count = 0
 last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
+collect_initials_this_game = False
+
+def _on_machine_initials_enabled():
+    """on-machine initials enabled in admin settings (format GetPlayerID option ignored for now)"""
+    return bool(DataStore.read_record("extras", 0)["enter_initials_on_game"])
 
 def formats_run():
     """
     periodic tasks related to game formats.   
         call rate CALL_TIMER milli-seconds
     """
-    global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game
-       
+    global next_format, game_state, GameEndCount, player_scores, saved_high_scores, last_high_score_count, in_play_scores_hold, push_game_count, last_pushed_game, collect_initials_this_game
+
     #push multiple copies of game end for reliability   
     if push_game_count>0:
         from origin import push_end_of_game
@@ -639,12 +645,15 @@ def formats_run():
             game_state=1
             #S.gameCounter = (S.gameCounter + 1) % 100
             
-            #remove machine high scores?
-            get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
-            if get_player_id:
+            #remove machine high scores? - decided once per game so a mid-game settings change can't split start/end
+            collect_initials_this_game = _on_machine_initials_enabled()
+            if collect_initials_this_game:
                 # prep for intials capture on game
+                log.log("FORMAT: forcing initials entry, machine high scores removed")
                 saved_high_scores = DataMapper.read_high_scores()
-                DataMapper.remove_machine_scores()             
+                DataMapper.remove_machine_scores()
+            else:
+                log.log("FORMAT: no initials entry (on-machine setting off)")
 
             #Run init function at each game start
             handlers = FORMAT_HANDLERS[active_id]                
@@ -670,9 +679,8 @@ def formats_run():
 
              
     # Game over wait for initials
-    elif game_state == 2:    
-        get_player_id = S.active_format.get("Options", {}).get("GetPlayerID", {}).get("Value", False)
-        if get_player_id:
+    elif game_state == 2:
+        if collect_initials_this_game:
             GameEndCount -= 1    #wait for intials   
             if DataMapper.get_game_active() is True:
                    game_state = 3  
@@ -681,7 +689,8 @@ def formats_run():
                 in_play_scores_hold = DataMapper.read_in_play_scores()
 
         else:
-            game_state = 3  
+            in_play_scores_hold = DataMapper.read_in_play_scores()
+            game_state = 3
             print("FORMAT: Do not wait for intiials")
 
         if GameEndCount <= 0:    
