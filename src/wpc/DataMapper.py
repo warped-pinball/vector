@@ -764,7 +764,7 @@ def get_flipper_state():
     Returns the byte value at the configured flipper address if Type 10 is configured.
     
     Returns:
-        int: Flipper state byte value, or 0 if not configured
+        tuple: (left, right) boolean values, or (False, False) if not configured
     """
     try:
         if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in  [10,11]:
@@ -780,8 +780,8 @@ def get_flipper_state():
 
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
-    
-    return 0
+
+    return False, False
 
 
 
