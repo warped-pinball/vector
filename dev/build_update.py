@@ -14,6 +14,9 @@ from cryptography.hazmat.primitives.asymmetric import padding
 BUILD_DIR = "build"
 SOURCE_DIR = "src"
 OUTPUT_FILE = "update.json"
+# Files the board writes itself that an update must not delete.
+# webhook.json holds the owner's webhook registration (src/common/webhook.py).
+PRESERVED_FILES = ["/webhook.json"]
 
 
 def all_combos(pico_list, micropython_list):
@@ -173,6 +176,7 @@ def build_remove_extra_files_code(build_dir: str) -> bytes:
             file_path = Path(root) / file_name
             relative_path = os.path.relpath(file_path, build_dir)
             known_files.append("/" + relative_path.replace("\\", "/"))
+    known_files.extend(PRESERVED_FILES)
 
     removal_code = "\n".join(
         [

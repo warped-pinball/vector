@@ -1418,6 +1418,7 @@ def app_factoryReset(request):
     from machine import reset
     from SPI_DataStore import blankAll as D_blank
     from SPI_Store import write_16_fram
+    from webhook import clear_target as webhook_clear
 
     Log = logger_instance
 
@@ -1426,6 +1427,7 @@ def app_factoryReset(request):
     Log.delete_log()
     D_blank()
     A_blank()
+    webhook_clear()
     Log.log("BKD: Factory Reset")
 
     # corrupt adjustments to force game factory reset on next boot
@@ -1878,6 +1880,88 @@ def app_origin_target(request):
 
     origin.set_target(str(ip), secret)
     return
+
+
+@add_route("/api/webhook/target", auth=True)
+def app_webhook_target(request):
+    """
+    @api
+    summary: Register an HTTPS URL this board POSTs its rare events to
+    auth: true
+    request:
+      body:
+        - name: enable
+          type: boolean
+          required: false
+          description: True to register a webhook (default), false to stop sending and forget it
+        - name: url
+          type: string
+          required: false
+          description: https:// URL to POST events to; required when enabling
+        - name: secret
+          type: string
+          required: false
+          description: Shared secret every request body is signed with; required when enabling
+    response:
+      status_codes:
+        - code: 200
+          description: Webhook updated
+        - code: 400
+          description: Missing or invalid url, or a missing/oversized secret
+    @end
+
+    Off unless registered.  Sends only the end of a game, a fault raised or
+    cleared, and a reset after boot -- never the live game state.  Each
+    request carries X-Vector-Signature: hex HMAC-SHA256(secret, body).  The
+    registration is saved to flash, so it survives reboots and updates.
+    """
+    import origin
+    import webhook
+
+    data = request.data
+    if not data.get("enable", True):
+        webhook.clear_target()
+        return
+
+    url = data.get("url")
+    if not url or not isinstance(url, str) or len(url) > webhook.MAX_URL_LENGTH:
+        return '{"error":"an https url of up to %d characters is required"}' % webhook.MAX_URL_LENGTH, 400
+    try:
+        url.encode("ascii")
+        webhook.parse_url(url)
+    except Exception:
+        return '{"error":"an https url of up to %d characters is required"}' % webhook.MAX_URL_LENGTH, 400
+
+    secret = data.get("secret")
+    if not secret or not isinstance(secret, str) or len(secret) > origin.MAX_SECRET_LENGTH:
+        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+    try:
+        secret.encode("ascii")
+    except Exception:
+        return '{"error":"secret must be ASCII"}', 400
+
+    webhook.set_target(url, secret)
+    return
+
+
+@add_route("/api/webhook/status", auth=True)
+def app_webhook_status(request):
+    """
+    @api
+    summary: Show the registered webhook URL and how delivery is going
+    auth: true
+    response:
+      status_codes:
+        - code: 200
+          description: Webhook status returned
+      body:
+        description: The registered URL (null when none), events waiting, and the last attempt's HTTP status or error
+        example: {"url": "https://example.com/hook", "queued": 0, "last_status": 200, "last_error": null}
+    @end
+    """
+    import webhook
+
+    return webhook.get_status()
 
 
 #

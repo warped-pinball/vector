@@ -28,3 +28,17 @@ def test_build_update_uses_resolved_dir(tmp_path):
     )
 
     assert "foo.txt" in output.read_text()
+
+
+def test_remove_extra_files_keeps_preserved_files(tmp_path):
+    import base64
+
+    from dev.build_update import build_remove_extra_files_code
+
+    (tmp_path / "main.py").write_text("", encoding="utf-8")
+
+    line = build_remove_extra_files_code(str(tmp_path))
+    code = base64.b64decode(line.split("}", 1)[1]).decode("utf-8")
+
+    assert "'/main.py'" in code
+    assert "'/webhook.json'" in code

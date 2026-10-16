@@ -36,6 +36,7 @@ nav:
       - Network access: network.md
       - USB transport: usb.md
       - Peer discovery: discovery.md
+      - Webhooks: webhooks.md
 
 markdown_extensions:
     - attr_list
