@@ -392,6 +392,57 @@
       </label>
     </fieldset>
   </section>
+  <section>
+    <h3>Webhook</h3>
+    <p>
+      Send the end of each game, faults, and startups to an HTTPS address of
+      your choice. Off unless you set it. Each request is signed with your
+      secret.
+      <a href="https://docs.warpedpinball.com/webhooks/" target="_blank"
+        >How webhooks work</a
+      >
+    </p>
+    <form id="webhook-form">
+      <label>
+        URL
+        <input
+          id="webhook-url"
+          type="url"
+          name="webhook-url"
+          placeholder="https://example.com/hook"
+          maxlength="160"
+          required
+        />
+      </label>
+      <label>
+        Secret
+        <input
+          id="webhook-secret"
+          type="password"
+          name="webhook-secret"
+          maxlength="64"
+          autocomplete="off"
+          required
+        />
+      </label>
+      <div class="grid">
+        <button id="webhook-save" type="submit">Save Webhook</button>
+        <button id="webhook-clear" type="button" class="secondary">
+          Turn Off Webhook
+        </button>
+      </div>
+    </form>
+    <div class="grid">
+      <div>
+        <button id="webhook-status-button" class="secondary">
+          Check Status
+        </button>
+      </div>
+      <div>
+        <p id="webhook-status">Status not checked yet.</p>
+      </div>
+    </div>
+  </section>
 
   <h2>Actions</h2>
   <hr />

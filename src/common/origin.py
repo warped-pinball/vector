@@ -132,6 +132,16 @@ def push_end_of_game(game, try_count):
 
     send_origin_message("end_of_game", {"plays": plays, "try": try_count, "game_num": game[0]})
 
+    # Origin's UDP needs the retransmits; a webhook gets the game once and retries on its own
+    if try_count == 1:
+        from webhook import send as webhook_send
+
+        webhook_send("end_of_game", {"plays": plays, "game_num": game[0]})
+
 
 def push_reset():
     send_origin_message("reset")
+
+    from webhook import send as webhook_send
+
+    webhook_send("reset")

@@ -740,6 +740,7 @@ async function initializeAdminPage() {
 
   checkForUpdates();
   loadConfiguredSsidSignal();
+  window.initWebhook();
 }
 
 initializeAdminPage();

@@ -461,6 +461,7 @@ if (typeof window !== "undefined") {
   getScoreClaimMethods();
   getShowIP();
   initMidnightMadness();
+  initWebhook();
   loadSwitchDiagnostics();
 
   window

@@ -306,9 +306,7 @@ def unschedule_by_name(name):
     creation) without keeping a reference to them anywhere.
     """
     global _scheduled_tasks
-    _scheduled_tasks = [
-        t for t in _scheduled_tasks if getattr(t[0], "__name__", None) != name
-    ]
+    _scheduled_tasks = [t for t in _scheduled_tasks if getattr(t[0], "__name__", None) != name]
 
 
 async def run_scheduled():
@@ -418,6 +416,11 @@ def run(ap_mode: bool, host="0.0.0.0", port=80):
     loop.create_task(uasyncio.start_server(_handle_request, host, port, backlog=5))
     create_schedule(ap_mode)
     loop.create_task(run_scheduled())
+    if not ap_mode:
+        from webhook import run as webhook_run
+
+        # delivers queued webhook events; idle unless a webhook is registered
+        loop.create_task(webhook_run())
 
     print("Server: Loop Forever")
     loop.run_forever()

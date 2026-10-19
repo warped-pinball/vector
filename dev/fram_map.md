@@ -1,6 +1,6 @@
 # FRAM & Serial Flash Memory Map
 
-Hardware: 32 KB FRAM (`0x0000`–`0x7FFF`) + 32 MB Serial Flash  
+Hardware: 32 KB FRAM (`0x0000`–`0x7FFF`) + 32 MB Serial Flash
 All values little-endian. FRAM fills from the **top down** for the SPI Data Store; fixed regions occupy the **bottom**.
 
 ---
@@ -18,7 +18,7 @@ These regions are the same physical chip but managed outside the SPI Data Store.
 | Game adjustments | `0x2100` | `0x2340` | 576 B | 4 profiles × (128 B data + 16 B name) |
 | Last profile byte | `0x2344` | `0x2344` | 1 B | Index 0–3 of last loaded adjustment profile |
 | Logger | `0x2400` | `0x43FF` | 8 KB | Circular log buffer |
-| *(reserved)* | `0x4400` | `0x5482` | ~4.2 KB | Expansion space |
+| *(reserved)* | `0x4400` | `0x53A1` | ~3.9 KB | Expansion space |
 
 ### WPC
 
@@ -28,7 +28,7 @@ These regions are the same physical chip but managed outside the SPI Data Store.
 | Game adjustments | `0x2000` | `0x25FF` | 1.5 KB | 4 profiles × (305 B data + 16 B name); expanded from Sys11 |
 | Last profile byte | `0x2344` | `0x2344` | 1 B | Index 0–3 of last loaded adjustment profile |
 | Logger | `0x2600` | `0x45FF` | 8 KB | Shifted up vs. Sys11 to make room for larger adjustments |
-| *(reserved)* | `0x4600` | `0x4A1E` | ~1 KB | Expansion space |
+| *(reserved)* | `0x4600` | `0x493D` | ~830 B | Expansion space |
 
 > WPC removed the serial flash UpdateStore status region.
 
@@ -40,7 +40,7 @@ Same fixed layout as WPC.
 
 ## FRAM — SPI Data Store (Top of Address Space, fills downward)
 
-`top_mem = 32767 (0x7FFF)` is the reference anchor. Records are allocated downward from there.  
+`top_mem = 32767 (0x7FFF)` is the reference anchor. Records are allocated downward from there.
 All three systems share the same record names and ordering; differences are in record sizes and which records exist.
 
 ### System 11 — Map Version 1.0
@@ -55,8 +55,9 @@ All three systems share the same record names and ordering; differences are in r
 | configuration | `0x54FB` (21755) | `0x555A` (21850) | 96 B | 1 | 96 B |
 | extras | `0x54CB` (21707) | `0x54FA` (21754) | 48 B | 1 | 48 B |
 | switches | `0x5483` (21635) | `0x54CA` (21706) | 72 B | 1 | 72 B |
+| webhook | `0x53A2` (21410) | `0x5482` (21634) | 225 B | 1 | 225 B |
 
-**Bottom of used space: `0x5483` (21635)**
+**Bottom of used space: `0x53A2` (21410)**
 
 ### WPC — Map Version 2.0
 
@@ -72,8 +73,9 @@ Scores expanded from 4-byte `uint32` to 8-byte `uint64` throughout.
 | configuration | `0x4A97` (19095) | `0x4AF6` (19190) | 96 B | 1 | 96 B |
 | extras | `0x4A67` (19047) | `0x4A96` (19094) | 48 B | 1 | 48 B |
 | switches | `0x4A1F` (18975) | `0x4A66` (19046) | 72 B | 1 | 72 B |
+| webhook | `0x493E` (18750) | `0x4A1E` (18974) | 225 B | 1 | 225 B |
 
-**Bottom of used space: `0x4A1F` (18975)**
+**Bottom of used space: `0x493E` (18750)**
 
 ### Data East — Map Version 2.0
 
@@ -88,8 +90,9 @@ Identical to WPC except the `switches` record does not exist.
 | individual | `0x4AF7` (19191) | `0x7526` (29990) | 18 B | 20 scores × 30 players | 10,800 B |
 | configuration | `0x4A97` (19095) | `0x4AF6` (19190) | 96 B | 1 | 96 B |
 | extras | `0x4A67` (19047) | `0x4A96` (19094) | 48 B | 1 | 48 B |
+| webhook | `0x4986` (18822) | `0x4A66` (19046) | 225 B | 1 | 225 B |
 
-**Bottom of used space: `0x4A67` (19047)**
+**Bottom of used space: `0x4986` (18822)**
 
 ---
 
@@ -176,12 +179,22 @@ Addressed as a 2D array: `set` = player number (0–29), `index` = score slot (0
 |-------|------|------|-------|
 | switches | `72B` | 72 B | Per-switch activity counts (72 switch slots) |
 
+### webhook — 225 bytes (all systems)
+
+| Field | Type | Size | Notes |
+|-------|------|------|-------|
+| marker | `B` | 1 B | `0x57` when a webhook is registered. Any other value means no webhook |
+| url | `160s` | 160 B | `https://` URL, null padded |
+| secret | `64s` | 64 B | Signing secret, null padded |
+
+Read and written by `src/common/webhook.py`. EM boards put this record directly below `EMData`.
+
 ---
 
 ## Serial Flash — 32 MB (all systems, shared layout)
 
-Address range: `0x000 0000`–`0x1FF FFFF`  
-Erase granularity: 64 KB chunks (erase to `0xFF`).  
+Address range: `0x000 0000`–`0x1FF FFFF`
+Erase granularity: 64 KB chunks (erase to `0xFF`).
 First and last 64 KB are protectable in 4 KB chunks; middle sections in 64 KB chunks.
 
 ### Software Update Store — three 6 MB slots

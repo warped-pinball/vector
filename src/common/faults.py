@@ -63,6 +63,10 @@ def raise_fault(fault, msg=None):
     Log.log(f"Fault raised: {full_fault}")
     update_led_sequence()
 
+    from webhook import send as webhook_send
+
+    webhook_send("fault", {"fault": full_fault})
+
 
 def fault_is_raised(fault):
     if isinstance(fault, str):
@@ -87,12 +91,20 @@ def clear_fault(fault):
 
     fault_code = fault.split(":", 1)[0]
 
-    S.faults = [f for f in S.faults if f.split(":", 1)[0] != fault_code]
+    remaining = [f for f in S.faults if f.split(":", 1)[0] != fault_code]
+    was_raised = len(remaining) != len(S.faults)
+    S.faults = remaining
 
     from logger import logger_instance as Log
 
     Log.log(f"Fault cleared: {fault}")
     update_led_sequence()
+
+    # clear_fault runs on every WiFi check; only report a fault that was actually up
+    if was_raised:
+        from webhook import send as webhook_send
+
+        webhook_send("fault_cleared", {"fault": fault_code})
 
 
 #
