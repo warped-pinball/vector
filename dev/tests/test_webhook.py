@@ -20,6 +20,8 @@ def webhook(monkeypatch, tmp_path):
 
     monkeypatch.setitem(sys.modules, "ujson", __import__("json"))
     monkeypatch.syspath_prepend(COMMON_SRC)
+    # Importing from src/ must not leave a __pycache__ there for the build to copy onto the board
+    monkeypatch.setattr(sys, "dont_write_bytecode", True)
     monkeypatch.chdir(tmp_path)
     sys.modules.pop("webhook", None)
     import webhook as module
