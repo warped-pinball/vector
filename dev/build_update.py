@@ -307,7 +307,9 @@ def build_update_file(
     # Final output: top line is metadata, then all file lines, then signature line
     final_output = "\n".join(file_lines + [signature_line]) + "\n"
 
-    with open(output_file, "w", encoding="utf-8") as f:
+    # Write LF only: text mode on Windows would turn each "\n" into "\r\n" and
+    # break the sha256 the board checks
+    with open(output_file, "w", encoding="utf-8", newline="\n") as f:
         f.write(final_output)
 
 
