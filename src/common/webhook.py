@@ -22,9 +22,10 @@
 # after every boot ("reset" is usually the first), so a receiver
 # can spot a gap or a replay.
 #
-# Unlike Origin's target, the registration is saved to flash: a listener on
-# the internet cannot notice a reboot and re-register the way Origin does.
-# build_update.py keeps the file across updates; a factory reset removes it.
+# Unlike Origin's target, the registration is saved in FRAM (the "webhook"
+# record of SPI_DataStore): a listener on the internet cannot notice a reboot
+# and re-register the way Origin does.  FRAM survives updates; a factory reset
+# blanks the record.
 #
 # Delivery is best effort.  Events wait in a short RAM queue and are sent by
 # a background task, never from the code that raised them, so a slow or
@@ -33,12 +34,17 @@
 
 from micropython import const
 
-# File the registration is saved in
-CONFIG_FILE = "webhook.json"
-# Keep the URL short enough that a caller can't park a large allocation on the board
-MAX_URL_LENGTH = const(200)
-# Events waiting to be sent; the oldest is dropped when a new one arrives on a full queue
-_MAX_QUEUE = const(8)
+# The FRAM record is a marker byte, the URL and the secret, both null padded
+_RECORD_FORMAT = "<B160s64s"
+# Marker byte of a saved registration.  Anything else, including FRAM that has
+# never held this record, reads as "no webhook".
+_REGISTERED = const(0x57)
+# Longest URL and secret the record holds, in bytes
+MAX_URL_LENGTH = const(160)
+MAX_SECRET_LENGTH = const(64)
+# Events waiting to be sent; the oldest is dropped when a new one arrives on a full queue.
+# A boot sends three (fault, fault_cleared, reset) and a game sends one.
+_MAX_QUEUE = const(4)
 # Attempts per event before it is dropped
 _MAX_ATTEMPTS = const(2)
 # Wait before retrying a failed send
@@ -55,19 +61,42 @@ _last_status = None
 _last_error = None
 
 
+def _write_record(url, secret):
+    """Save the registration to FRAM, or blank the record when ``url`` is None."""
+    from struct import pack
+
+    import SPI_Store as fram
+    from SPI_DataStore import memory_map
+
+    if url is None:
+        data = pack(_RECORD_FORMAT, 0, b"", b"")
+    else:
+        data = pack(_RECORD_FORMAT, _REGISTERED, url.encode("utf-8"), secret.encode("utf-8"))
+    fram.write(memory_map["webhook"]["start"], data)
+
+
 def _load():
     """Read the saved registration once, on first use."""
     global _url, _secret, _loaded
     if _loaded:
         return
     _loaded = True
+    _url = None
+    _secret = None
     try:
-        from ujson import load
+        from struct import unpack
 
-        with open(CONFIG_FILE) as f:
-            saved = load(f)
-        _url = saved["url"]
-        _secret = saved["secret"].encode("utf-8")
+        import SPI_Store as fram
+        from SPI_DataStore import memory_map
+
+        record = memory_map["webhook"]
+        marker, url, secret = unpack(_RECORD_FORMAT, fram.read(record["start"], record["size"]))
+        if marker != _REGISTERED:
+            return
+        url = url.rstrip(b"\0").decode("utf-8")
+        parse_url(url)
+        _url = url
+        _secret = secret.rstrip(b"\0")
     except Exception:
         _url = None
         _secret = None
@@ -96,11 +125,11 @@ def parse_url(url):
 def set_target(url, secret):
     """Send webhook messages to ``url``, signed with ``secret``, and save the registration."""
     global _url, _secret, _loaded, _counter, _last_status, _last_error
-    from ujson import dump
 
     parse_url(url)
-    with open(CONFIG_FILE, "w") as f:
-        dump({"url": url, "secret": secret}, f)
+    if len(url.encode("utf-8")) > MAX_URL_LENGTH or len(secret.encode("utf-8")) > MAX_SECRET_LENGTH:
+        raise ValueError("url or secret is too long")
+    _write_record(url, secret)
     _url = url
     _secret = secret.encode("utf-8")
     _loaded = True
@@ -113,16 +142,17 @@ def set_target(url, secret):
 def clear_target():
     """Stop sending webhook messages and forget the saved registration."""
     global _url, _secret, _loaded, _counter
-    from os import remove
 
-    try:
-        remove(CONFIG_FILE)
-    except OSError:
-        pass
+    _write_record(None, None)
     _url = None
     _secret = None
     _loaded = True
     _counter = 0
+    _queue.clear()
+
+
+def release_memory():
+    """Drop the waiting events.  LowMemoryMode calls this before an update, which ends in a reboot."""
     _queue.clear()
 
 

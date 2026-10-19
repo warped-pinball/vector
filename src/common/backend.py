@@ -1913,9 +1913,8 @@ def app_webhook_target(request):
     Off unless registered.  Sends only the end of a game, a fault raised or
     cleared, and a reset after boot -- never the live game state.  Each
     request carries X-Vector-Signature: hex HMAC-SHA256(secret, body).  The
-    registration is saved to flash, so it survives reboots and updates.
+    registration is saved in FRAM, so it survives reboots and updates.
     """
-    import origin
     import webhook
 
     data = request.data
@@ -1933,8 +1932,8 @@ def app_webhook_target(request):
         return '{"error":"an https url of up to %d characters is required"}' % webhook.MAX_URL_LENGTH, 400
 
     secret = data.get("secret")
-    if not secret or not isinstance(secret, str) or len(secret) > origin.MAX_SECRET_LENGTH:
-        return '{"error":"a secret of 1-%d characters is required"}' % origin.MAX_SECRET_LENGTH, 400
+    if not secret or not isinstance(secret, str) or len(secret) > webhook.MAX_SECRET_LENGTH:
+        return '{"error":"a secret of 1-%d characters is required"}' % webhook.MAX_SECRET_LENGTH, 400
     try:
         secret.encode("ascii")
     except Exception:

@@ -7,8 +7,17 @@ import pytest
 COMMON_SRC = str(Path(__file__).resolve().parents[2] / "src" / "common")
 
 
+_RECORD_START = 100
+
+
 @pytest.fixture
-def webhook(monkeypatch, tmp_path):
+def fram():
+    """A blank 1 KB FRAM.  The webhook record starts at _RECORD_START."""
+    return bytearray(1024)
+
+
+@pytest.fixture
+def webhook(monkeypatch, tmp_path, fram):
     """Import src/common/webhook.py under CPython with the MicroPython bits stubbed."""
     micropython = types.ModuleType("micropython")
     micropython.const = lambda value: value
@@ -17,6 +26,15 @@ def webhook(monkeypatch, tmp_path):
     origin = types.ModuleType("origin")
     origin.get_machine_id = lambda: "deadbeef"
     monkeypatch.setitem(sys.modules, "origin", origin)
+
+    spi_store = types.ModuleType("SPI_Store")
+    spi_store.read = lambda address, nbytes: bytes(fram[address : address + nbytes])
+    spi_store.write = lambda address, data: fram.__setitem__(slice(address, address + len(data)), data)
+    monkeypatch.setitem(sys.modules, "SPI_Store", spi_store)
+
+    data_store = types.ModuleType("SPI_DataStore")
+    data_store.memory_map = {"webhook": {"start": _RECORD_START, "size": 225, "count": 1}}
+    monkeypatch.setitem(sys.modules, "SPI_DataStore", data_store)
 
     monkeypatch.setitem(sys.modules, "ujson", __import__("json"))
     monkeypatch.syspath_prepend(COMMON_SRC)
@@ -43,6 +61,42 @@ def test_parse_url_rejects_non_https(webhook, url):
 
 def test_send_does_nothing_without_a_target(webhook):
     webhook.send("reset")
+    assert webhook.get_status()["queued"] == 0
+
+
+def test_record_fits_its_fram_slot(webhook):
+    from struct import calcsize
+
+    assert calcsize(webhook._RECORD_FORMAT) == 225
+
+
+@pytest.mark.parametrize("fill", [0x00, 0xFF, 0x57])
+def test_fram_that_never_held_a_webhook_reads_as_none(webhook, fram, fill):
+    fram[:] = bytes([fill]) * len(fram)
+    assert webhook.get_status()["url"] is None
+
+
+def test_too_long_url_or_secret_is_refused(webhook):
+    with pytest.raises(ValueError):
+        webhook.set_target("https://example.com/" + "a" * webhook.MAX_URL_LENGTH, "s3cret")
+    with pytest.raises(ValueError):
+        webhook.set_target("https://example.com/hook", "s" * (webhook.MAX_SECRET_LENGTH + 1))
+    assert webhook.get_status()["url"] is None
+
+
+def test_longest_url_and_secret_round_trip(webhook):
+    url = "https://example.com/" + "a" * (webhook.MAX_URL_LENGTH - len("https://example.com/"))
+    webhook.set_target(url, "s" * webhook.MAX_SECRET_LENGTH)
+
+    webhook._loaded = False
+    assert webhook.get_status()["url"] == url
+    assert webhook._secret == b"s" * webhook.MAX_SECRET_LENGTH
+
+
+def test_release_memory_empties_the_queue(webhook):
+    webhook.set_target("https://example.com/hook", "s3cret")
+    webhook.send("reset")
+    webhook.release_memory()
     assert webhook.get_status()["queued"] == 0
 
 

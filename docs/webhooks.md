@@ -14,10 +14,10 @@ To set it up from a script instead, call the authenticated [`/api/webhook/target
 {"url": "https://example.com/hooks/vector", "secret": "a-long-random-string"}
 ```
 
-- `url` must start with `https://` and be at most 200 characters.
+- `url` must start with `https://` and be at most 160 characters.
 - `secret` is 1-64 ASCII characters. The board never sends it; it only signs with it.
 
-The registration is saved on the board, so it survives reboots and software updates. To stop sending and forget the registration, send `{"enable": false}`. A factory reset also removes it.
+The registration is saved in the board's FRAM, so it survives reboots and software updates. To stop sending and forget the registration, send `{"enable": false}`. A factory reset also removes it.
 
 [`/api/webhook/status`](routes.md) (authenticated) shows the registered URL, how many events are waiting, and the result of the last attempt. That's useful while you are setting up a receiver:
 
@@ -71,6 +71,6 @@ Because the board does not check the certificate, a device that controls the net
 
 ## Delivery
 
-Delivery is best effort. Events wait in a short queue on the board (8 events; the oldest is dropped when it is full) and are sent one at a time in the background, so a slow server never holds up the game. If a request fails or returns anything other than a 2xx status, the board retries it once about 30 seconds later and then drops it. While the board is off WiFi, events wait in that same queue.
+Delivery is best effort. Events wait in a short queue on the board (4 events; the oldest is dropped when it is full) and are sent one at a time in the background, so a slow server never holds up the game. If a request fails or returns anything other than a 2xx status, the board retries it once about 30 seconds later and then drops it. While the board is off WiFi, events wait in that same queue. A software update drops the events that are waiting.
 
 Reply quickly with any 2xx status; the board ignores the response body.

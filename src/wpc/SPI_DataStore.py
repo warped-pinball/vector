@@ -47,6 +47,11 @@ memory_map = {
         "size": 72,
         "count": 1,
     },
+    "webhook": {
+        "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100) - (18 * 20 * 30) - (96 * 1) - (48 * 1) - (72 * 1) - 225,
+        "size": 225,
+        "count": 1,
+    },
 }
 
 
@@ -60,6 +65,7 @@ def show_mem_map():
     memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
     memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
     memory_map["switches"]["start"] = memory_map["extras"]["start"] - (memory_map["switches"]["size"] * memory_map["switches"]["count"])
+    memory_map["webhook"]["start"] = memory_map["switches"]["start"] - (memory_map["webhook"]["size"] * memory_map["webhook"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
