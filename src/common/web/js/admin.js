@@ -456,11 +456,86 @@ async function initMidnightMadness() {
   await getMidnightMadness();
 }
 
+// Webhook
+function describeWebhookStatus(data) {
+  if (!data.url) {
+    return "Off: no webhook is set.";
+  }
+  let text = `Sending to ${data.url}.`;
+  if (data.last_error) {
+    text += ` Last attempt failed: ${data.last_error}.`;
+  } else if (data.last_status !== null) {
+    text += ` Last attempt: HTTP ${data.last_status}.`;
+  } else {
+    text += " Nothing sent yet.";
+  }
+  if (data.queued > 0) {
+    text += ` ${data.queued} waiting.`;
+  }
+  return text;
+}
+
+async function initWebhook() {
+  const form = await window.waitForElementById("webhook-form");
+  const urlInput = await window.waitForElementById("webhook-url");
+  const secretInput = await window.waitForElementById("webhook-secret");
+  const clearButton = await window.waitForElementById("webhook-clear");
+  const statusButton = await window.waitForElementById("webhook-status-button");
+  const statusText = await window.waitForElementById("webhook-status");
+
+  // The status route needs the password, so it runs on request rather than
+  // prompting for a password as soon as the page opens
+  async function refreshStatus() {
+    statusText.textContent = "Checking...";
+    const response = await window.smartFetch("/api/webhook/status", null, true);
+    if (!response.ok) {
+      statusText.textContent = "Could not read the webhook status.";
+      return;
+    }
+    const data = await response.json();
+    statusText.textContent = describeWebhookStatus(data);
+    if (data.url && !urlInput.value) {
+      urlInput.value = data.url;
+    }
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const response = await window.smartFetch(
+      "/api/webhook/target",
+      { url: urlInput.value.trim(), secret: secretInput.value },
+      true,
+    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      alert(body.error || "Could not save the webhook.");
+      return;
+    }
+    secretInput.value = "";
+    await refreshStatus();
+  });
+
+  clearButton.addEventListener("click", async () => {
+    await confirmAction(
+      "stop sending webhook events and forget the URL and secret",
+      async () => {
+        await window.smartFetch("/api/webhook/target", { enable: false }, true);
+        urlInput.value = "";
+        secretInput.value = "";
+        await refreshStatus();
+      },
+    );
+  });
+
+  statusButton.addEventListener("click", refreshStatus);
+}
+
 if (typeof window !== "undefined") {
   tournamentModeToggle();
   getScoreClaimMethods();
   getShowIP();
   initMidnightMadness();
+  initWebhook();
   loadSwitchDiagnostics();
 
   window

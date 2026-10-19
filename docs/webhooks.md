@@ -6,7 +6,9 @@ Webhooks are **off unless you turn them on**. With no webhook registered the boa
 
 ## Registering a webhook
 
-Call the authenticated [`/api/webhook/target`](routes.md) route (see [Authentication](authentication.md) for signing the request):
+On the board's **Admin** page, go to **Settings > Webhook**. Enter the URL and secret, then select **Save Webhook**. **Check Status** shows where events go and the result of the last attempt. **Turn Off Webhook** stops sending and forgets the URL and secret.
+
+To set it up from a script instead, call the authenticated [`/api/webhook/target`](routes.md) route (see [Authentication](authentication.md) for signing the request):
 
 ```json
 {"url": "https://example.com/hooks/vector", "secret": "a-long-random-string"}
