@@ -67,6 +67,8 @@ def is_from_my_board(raw_body: bytes, signature: str, secret: str) -> bool:
 
 The connection is encrypted, but the board has no certificate store to check your server's certificate against. The signature is what proves a request came from your board.
 
+Because the board does not check the certificate, a device that controls the network path can act as your server. It can read events or stop them. It cannot make or change an event without the secret, and the board never sends the secret. The board also ignores the response body, so a false server cannot control the board.
+
 ## Delivery
 
 Delivery is best effort. Events wait in a short queue on the board (8 events; the oldest is dropped when it is full) and are sent one at a time in the background, so a slow server never holds up the game. If a request fails or returns anything other than a 2xx status, the board retries it once about 30 seconds later and then drops it. While the board is off WiFi, events wait in that same queue.
