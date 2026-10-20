@@ -90,7 +90,7 @@ def _reversed_digit_score(base_adr, num_digits):
 def _read_score(base_adr, in_play):
     """
     Decode a score at base_adr according to InPlay.Type:
-    - Type 30 or 33: one decimal digit per byte, upper nibble, least-significant
+    - Type 30, 33, 35, 36 or 37: one decimal digit per byte, upper nibble, least-significant
       digit first (see _reversed_digit_score).
     - Type 31 or 32: packed BCD, 7 decimal digits across 4 bytes (upper and
       lower nibbles of each byte), most-significant byte first (see
@@ -178,7 +178,7 @@ def read_in_play_scores():
     """
     Read the current in-play scores for all 4 players (Classics).
 
-    InPlay.Type 30/33: one decimal digit per byte, upper nibble,
+    InPlay.Type 30/33/35/36: one decimal digit per byte, upper nibble,
     least-significant digit first; Type 31/32: packed BCD, 7 digits in
     4 bytes; Type 34: packed BCD, 6 digits in 3 bytes. ScoreSpacing bytes between each player's block.
 
@@ -201,7 +201,7 @@ def get_live_scores(use_format=True):
 
     If a game is active (get_game_active()), reads the current scores - from
     Formats.player_scores if a Format is active, otherwise from Classics shadow
-    RAM (InPlay.Type 30/33: one decimal digit per byte, upper nibble,
+    RAM (InPlay.Type 30/33/35/36: one decimal digit per byte, upper nibble,
     least-significant digit first; or InPlay.Type 31/32: packed BCD, 7
     decimal digits across 4 bytes, upper and lower nibbles; or InPlay.Type 34:
     packed BCD, 6 digits across 3 bytes; ScoreSpacing
@@ -226,7 +226,7 @@ def get_live_scores(use_format=True):
     if not get_game_active():
         try:
             in_play = S.gdata["InPlay"]
-            if in_play["Type"] in (30, 31, 32, 33, 34) and "LastScoreAdr" in in_play:
+            if in_play["Type"] in (30, 31, 32, 33, 34, 35, 36, 37) and "LastScoreAdr" in in_play:
                 last_scores = [0, 0, 0, 0]
                 for idx in range(4):
                     base_adr = in_play["LastScoreAdr"] + idx * in_play["ScoreSpacing"]
@@ -256,7 +256,7 @@ def get_live_scores(use_format=True):
     # No active format - read from shadow RAM
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] not in (30, 31, 32, 33, 34):
+        if in_play["Type"] not in (30, 31, 32, 33, 34, 35, 36, 37):
             return scores
 
         for idx in range(4):
@@ -351,15 +351,18 @@ def get_player_up():
     Get the current player number (whose turn it is).
 
     Classics store player-up as the 1-4 player number directly at the
-    configured address (not 0-based).
+    configured address (not 0-based). Vector tracks 4 players, so a player
+    number above 4 (Six Million Dollar Man allows 6 players) is reported as
+    0 - no tracked player is up while players 5 / 6 play.
 
     Returns:
         int: Player number (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30, 32, 33, 34) and "PlayerUp" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30, 32, 33, 34, 35, 36, 37) and "PlayerUp" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["PlayerUp"]
-            return shadowRam[adr]
+            player_up = shadowRam[adr]
+            return player_up if player_up <= 4 else 0
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_player_up: {e}")
 
@@ -371,17 +374,21 @@ def get_players_in_game():
     Get the number of players in the current game.
     
     Classics store the player count at InPlay.Players - the whole byte,
-    except Type 33 (Bally -35 7-digit OS) where it is the low nibble
-    (the high nibble is the ball in play, BallInPlay Type 31).
+    except Types 33 / 36 / 37 (Bally -35 7-digit OS) where it is the low nibble
+    (the high nibble is the ball in play, BallInPlay Type 31). Capped at 4,
+    the number of players Vector tracks (Six Million Dollar Man allows 6;
+    only the first 4 scores are used).
 
     Returns:
         int: Number of players (1-4) or 0 if not available
     """
     try:
         in_play_type = S.gdata.get("InPlay", {}).get("Type")
-        if in_play_type in (30, 32, 33, 34) and "Players" in S.gdata["InPlay"]:
+        if in_play_type in (30, 32, 33, 34, 35, 36, 37) and "Players" in S.gdata["InPlay"]:
             players = shadowRam[S.gdata["InPlay"]["Players"]]
-            return players & 0x0F if in_play_type == 33 else players
+            if in_play_type in (33, 36, 37):
+                players &= 0x0F
+            return min(players, 4)
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
 
@@ -392,7 +399,14 @@ def get_game_active():
     """
     Check if a game is currently active 
 
-    Reads InPlay.GameActiveAdr from shadow RAM. 0 = inactive, non-zero = active.
+    Reads InPlay.GameActiveAdr from shadow RAM:
+    - Types 30 / 32 / 33 / 34: 0 = inactive, non-zero = active.
+    - Types 35 / 36: GameActiveAdr is the Game Over lamp byte (0x20C on
+      Bally -17 / -35 and Stern MPU-100); bit 6 is 0 while the lamp is lit,
+      so the game is active when bit 6 is 1. This works whether or not the
+      match feature is enabled.
+    - Type 37: as 36, but the Game Over lamp is bit 7 of GameActiveAdr
+      (0x200 on Gold Ball / Grand Slam).
     If GameActiveAdr isn't configured, falls back to BallInPlay and treats
     a ball number of 1-5 as an active game.
 
@@ -401,10 +415,15 @@ def get_game_active():
     """
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] in (30, 32, 33, 34):
+        if in_play["Type"] in (30, 32, 33, 34, 35, 36, 37):
 
             if "GameActiveAdr" not in in_play:
                 return 1 <= get_ball_in_play() <= 5
+
+            if in_play["Type"] in (35, 36):
+                return (shadowRam[in_play["GameActiveAdr"]] & 0x40) != 0
+            if in_play["Type"] == 37:
+                return (shadowRam[in_play["GameActiveAdr"]] & 0x80) != 0
 
             return shadowRam[in_play["GameActiveAdr"]] != 0
 

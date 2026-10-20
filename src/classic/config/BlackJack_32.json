@@ -17,8 +17,8 @@
         "Type": 0
     },
     "InPlay": {
-        "Type": 30,
-        "GameActiveAdr": 20,
+        "Type": 35,
+        "GameActiveAdr": 524,
         "Players": 20,
         "PlayerUp": 21,
         "ScoreAdr": 542,
