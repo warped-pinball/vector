@@ -1,0 +1,32 @@
+{
+    "GameInfo": {
+        "GameName": "Cheetah",
+        "System": "MPU200"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 19
+    },
+    "DisplayMessage": {
+        "Type": 32,
+        "Address": 640,
+        "Length": 4,
+        "Spacing": 17,
+        "PlayersAdr": 750
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 32,
+        "ScoreAdr": 640,
+        "ScoreSpacing": 17,
+        "PlayerUp": 56,
+        "Players": 750,
+        "ActiveScoreAdr": 21
+    },
+    "HighScores": {
+        "Type": 32,
+        "ScoreAdr": 714
+    }
+}

@@ -28,7 +28,6 @@
     },
     "HighScores": {
         "Type": 30,
-        "ScoreAdr": 615,
-        "ScoreAdr2": 719
+        "ScoreAdr": 719
     }
 }

@@ -1,0 +1,33 @@
+{
+    "GameInfo": {
+        "GameName": "Eight Ball Deluxe",
+        "System": "Bally35"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 11
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 584,
+        "Length": 7,
+        "Spacing": 7
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 30,
+        "GameActiveAdr": 12,
+        "Players": 12,
+        "PlayerUp": 13,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 584,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
+    },
+    "HighScores": {
+        "Type": 30,
+        "ScoreAdr": 678
+    }
+}
