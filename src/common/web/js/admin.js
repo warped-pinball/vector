@@ -390,6 +390,73 @@ async function loadConfiguredSsidSignal() {
   }
 }
 
+// Vector clock: /api/set_date expects [year, month, day, hour, minute, second]
+function localDatePayload(now = new Date()) {
+  return [
+    now.getFullYear(),
+    now.getMonth() + 1,
+    now.getDate(),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+  ];
+}
+
+function formatRtcDate(dateList) {
+  if (!Array.isArray(dateList) || dateList.length < 7) {
+    return "Unknown";
+  }
+  const [year, month, day, , hour, minute, second] = dateList;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(
+    second,
+  )}`;
+}
+
+async function refreshVectorClockDisplay() {
+  const display = await window.waitForElementById("vector-clock-display");
+  try {
+    const response = await window.smartFetch("/api/get_date", null, false);
+    if (!response.ok) {
+      display.innerText = "Unavailable";
+      return;
+    }
+    const data = await response.json();
+    display.innerText = formatRtcDate(data["date"]);
+  } catch (error) {
+    console.error("Failed to load Vector clock", error);
+    display.innerText = "Unavailable";
+  }
+}
+
+async function initVectorClock() {
+  const button = await window.waitForElementById(
+    "set-clock-from-browser-button",
+  );
+  const status = await window.waitForElementById("vector-clock-status");
+
+  await refreshVectorClockDisplay();
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    status.innerText = "Setting clock...";
+    try {
+      const payload = { date: localDatePayload() };
+      const response = await window.smartFetch("/api/set_date", payload, true);
+      if (!response.ok) {
+        throw new Error(`set_date failed with status ${response.status}`);
+      }
+      status.innerText = "Clock updated from this computer.";
+      await refreshVectorClockDisplay();
+    } catch (error) {
+      console.error("Failed to set Vector clock", error);
+      status.innerText = "Failed to set clock. Please try again.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 // Midnight Madness settings
 async function getMidnightMadness() {
   const response = await window.smartFetch(
@@ -460,6 +527,7 @@ if (typeof window !== "undefined") {
   tournamentModeToggle();
   getScoreClaimMethods();
   getShowIP();
+  initVectorClock();
   initMidnightMadness();
   loadSwitchDiagnostics();
 
