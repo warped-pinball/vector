@@ -32,7 +32,7 @@ def _fixDisplayMessageChecksum():
         chk = 0
         for adr in range(S.gdata["DisplayMessage"]["ChecksumStartAdr"], S.gdata["DisplayMessage"]["ChecksumEndAdr"] + 1):
             chk = chk + shadowRam[adr]
-        chk =0xFFFF - chk
+        chk = (0xFFFF - chk) & 0xFFFF
         # Store MSByte and LSByte
         msb = (chk >> 8) & 0xFF
         lsb = chk & 0xFF
@@ -73,11 +73,9 @@ def _set(ipAddress):
 
         print("MSG: set display message ", padded_ip)
 
-        message_adr = S.gdata["Adjustments"].get("CustomMessageOn")
-        if message_adr is not None:
-            shadowRam[message_adr] = 1
-        
         _fixDisplayMessageChecksum()
+        from Adjustments import set_message_state
+        set_message_state(True)
 
 
 
@@ -120,11 +118,10 @@ def refresh():
     #just turned off 
     if show_ip_last_state==1 and DataStore.read_record("extras", 0)["show_ip_address"]==0:
         # turn off custom message                
-        _blank()        
-        message_adr = S.gdata["Adjustments"].get("CustomMessageOn")
-        if message_adr is not None:
-            shadowRam[message_adr] = 0
+        _blank()
         _fixDisplayMessageChecksum()
+        from Adjustments import set_message_state
+        set_message_state(False)
         print("MSG: turned off")
         
     #refresh message    
