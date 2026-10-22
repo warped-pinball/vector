@@ -272,15 +272,17 @@ def get_live_scores(use_format=True):
             else:
                 up_adr = in_play["ScoreAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
 
-            # Up player's score blanked (all 0xFF, display blinking) - use
-            # the saved copy at BlinkSaveAdr, same width/spacing as ScoreAdr
-            if in_play["Type"] == 34:
-                score_len = 3
-            elif in_play["Type"] in (31, 32):
-                score_len = 4
+            # Up player's score blanked (display blinking) - use the saved
+            # copy at BlinkSaveAdr, same width/spacing as ScoreAdr. Packed BCD
+            # (31/32/34) blanks as whole 0xFF bytes; digit-per-byte types only
+            # use the upper nibble, so any 0xF? byte is a blank digit
+            if in_play["Type"] in (31, 32, 34):
+                score_len = 3 if in_play["Type"] == 34 else 4
+                blank_mask = 0xFF
             else:
                 score_len = in_play["ScoreBytes"]
-            if "BlinkSaveAdr" in in_play and all(b == 0xFF for b in shadowRam[up_adr : up_adr + score_len]):
+                blank_mask = 0xF0
+            if "BlinkSaveAdr" in in_play and all((b & blank_mask) == blank_mask for b in shadowRam[up_adr : up_adr + score_len]):
                 blink_adr = in_play["BlinkSaveAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
                 scores[player_up - 1] = _read_score(blink_adr, in_play)
     except Exception as e:
