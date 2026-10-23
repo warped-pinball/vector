@@ -1,0 +1,34 @@
+{
+    "GameInfo": {
+        "GameName": "Future Spa",
+        "System": "Bally35"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 18
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 573,
+        "Length": 6,
+        "Spacing": 6
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 35,
+        "GameActiveAdr": 524,
+        "Players": 19,
+        "PlayerUp": 20,
+        "ScoreAdr": 542,
+        "BlinkSaveAdr": 573,
+        "LastScoreAdr": 573,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    },
+    "HighScores": {
+        "Type": 30,
+        "ScoreAdr": 683
+    }
+}

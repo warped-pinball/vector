@@ -1,11 +1,11 @@
 {
     "GameInfo": {
-        "GameName": "Supersonic",
-        "System": "Bally35"
+        "GameName": "Stingray",
+        "System": "MPU100"
     },
     "BallInPlay": {
         "Type": 30,
-        "Address": 18
+        "Address": 19
     },
     "DisplayMessage": {
         "Type": 30,
@@ -17,10 +17,10 @@
         "Type": 0
     },
     "InPlay": {
-        "Type": 30,
-        "GameActiveAdr": 19,
-        "Players": 19,
-        "PlayerUp": 20,
+        "Type": 35,
+        "GameActiveAdr": 524,
+        "Players": 20,
+        "PlayerUp": 21,
         "ScoreAdr": 542,
         "LastScoreAdr": 572,
         "ScoreBytes": 6,
@@ -28,7 +28,6 @@
     },
     "HighScores": {
         "Type": 30,
-        "ScoreAdr": 615,
-        "ScoreAdr2": 719
+        "ScoreAdr": 719
     }
 }
