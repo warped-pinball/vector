@@ -151,7 +151,7 @@ Black Rose,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bram Stokers Dracula,WPC,L1,yes,yes,no,
 Cactus Canyon,WPC,13,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Champion Pub,WPC,16,yes,yes,no,
-Cirqus Voltaire,WPC,10,yes,yes,no,
+Cirqus Voltaire,WPC,10;20,yes,yes,no,
 Congo,WPC,21,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Corvette,WPC,LX1,yes,yes,no,
 Creature from the Black Lagoon,WPC,l4,yes,yes,no,
@@ -188,7 +188,7 @@ The Flintstones,WPC,LX5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Sta
 The Getaway: High Speed II,WPC,L2,yes,yes,no,
 The Shadow,WPC,LX5,yes,yes,no,
 Theatre of Magic,WPC,13;14HB;20,yes,yes,no,
-Twilight Zone,WPC,92,yes,yes,no,
+Twilight Zone,WPC,92;94H,yes,yes,no,
 White Water,WPC,L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Who Dunnit,WPC,12,yes,yes,no,
 World Cup Soccer,WPC,LX2,yes,yes,no,
