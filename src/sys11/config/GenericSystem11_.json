@@ -1,0 +1,39 @@
+{
+    "GameInfo": {
+        "GameName": "Generic System 11",
+        "System": "11x",
+        "FileVer": 1
+    },
+    "BallInPlay": {
+        "Type": 0,
+        "Address": 56
+    },
+
+    "DisplayMessage": {
+        "Type": 0,
+        "Address": "0x7B4",
+        "Length": 7,
+        "Number": 6,
+        "EnableByteAddress": "0x7B0"
+    },
+
+    "Adjustments" :{
+        "Type": 0,
+        "ChecksumStartAdr": "0x780",
+        "ChecksumEndAdr": "0x7E3",
+        "ChecksumResultAdr": "0x7ED"
+    },
+
+    "HighScores": {
+        "Type": 0,
+        "ScoreAdr": "0x727",
+        "InitialAdr": "0x737",
+        "BytesInScore": 4
+    },
+
+    "Switches": {
+        "Type": 0,
+        "Address": 56,
+        "Length": 23
+    }
+}

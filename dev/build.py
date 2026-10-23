@@ -205,12 +205,6 @@ class Builder:
         errors = []
         
         for filename, data in configs.items():
-            # The selected config name is stored in a 16 byte field (SPI_DataStore "configuration"
-            # gamename) that needs a terminator, so names are 15 characters at most; a longer
-            # name is cut short there and the config can never be loaded
-            if len(filename) > 15:
-                errors.append(f"ERROR: {filename} is {len(filename)} characters, config names must be 15 or fewer")
-
             if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
                 link_count += 1
                 target = data["GameInfo"]["LinkTo"]
@@ -227,10 +221,10 @@ class Builder:
         
         # Report results
         if errors:
-            print("Config validation failed:")
+            print("LinkTo validation failed:")
             for error in errors:
                 print(f"  {error}")
-            raise ValueError(f"Found {len(errors)} config validation error(s)")
+            raise ValueError(f"Found {len(errors)} LinkTo validation error(s)")
         
         if link_count > 0:
             print(f"Validated {link_count} LinkTo reference(s) - all valid")

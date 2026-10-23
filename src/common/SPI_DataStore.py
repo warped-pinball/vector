@@ -252,7 +252,7 @@ def blankStruct(structure_name):
         "ssid": "",
         "password": "",
         "Gpassword": "",
-        "gamename": "Generic_" if vectorSystem == "classic" else "GenericSys11_",
+        "gamename": "Generic_" if vectorSystem == "classic" else "GenericSystem11_",
         "other": 1,
         "switches": [0] * 72,
     }

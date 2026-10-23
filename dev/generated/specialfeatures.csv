@@ -58,6 +58,7 @@ Checkpoint,DATA_EAST,a17,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Generic Data East,DATA_EAST,,no,no,no,
 Guns N Roses,DATA_EAST,400,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Hook,DATA_EAST,501,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
+Jurassic Park,DATA_EAST,513,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Laser War,DATA_EAST,a83,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Last Action Hero,DATA_EAST,113,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
 Lethal Weapon III,DATA_EAST,208,yes,no,yes,Limbo;LongestBall;LowBall;Practice;Standard
@@ -124,6 +125,7 @@ Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;
 Elvira,SYS11,LA2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 F-14 Tomcat,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Fire!,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Generic System 11,SYS11,,no,no,no,
 Grand Lizard,SYS11,L4,no,no,no,
 High Speed,SYS11,L3;L4,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Jokerz!,SYS11,L6,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
