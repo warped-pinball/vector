@@ -280,7 +280,7 @@ def CheckForNewScores(nState=[0]):
     if nState[0] == 0:  # power up init        
         nState[0] = 1
 
-    if S.gdata["BallInPlay"]["Type"] in (30, 31):
+    if S.gdata["BallInPlay"]["Type"] in (30, 31, 32):
 
         if nState[0] == 1:  # waiting for a game to start
 

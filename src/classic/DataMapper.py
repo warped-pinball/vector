@@ -272,15 +272,17 @@ def get_live_scores(use_format=True):
             else:
                 up_adr = in_play["ScoreAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
 
-            # Up player's score blanked (all 0xFF, display blinking) - use
-            # the saved copy at BlinkSaveAdr, same width/spacing as ScoreAdr
-            if in_play["Type"] == 34:
-                score_len = 3
-            elif in_play["Type"] in (31, 32):
-                score_len = 4
+            # Up player's score blanked (display blinking) - use the saved
+            # copy at BlinkSaveAdr, same width/spacing as ScoreAdr. Packed BCD
+            # (31/32/34) blanks as whole 0xFF bytes; digit-per-byte types only
+            # use the upper nibble, so any 0xF? byte is a blank digit
+            if in_play["Type"] in (31, 32, 34):
+                score_len = 3 if in_play["Type"] == 34 else 4
+                blank_mask = 0xFF
             else:
                 score_len = in_play["ScoreBytes"]
-            if "BlinkSaveAdr" in in_play and all(b == 0xFF for b in shadowRam[up_adr : up_adr + score_len]):
+                blank_mask = 0xF0
+            if "BlinkSaveAdr" in in_play and all((b & blank_mask) == blank_mask for b in shadowRam[up_adr : up_adr + score_len]):
                 blink_adr = in_play["BlinkSaveAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
                 scores[player_up - 1] = _read_score(blink_adr, in_play)
     except Exception as e:
@@ -299,6 +301,9 @@ def get_ball_in_play():
     - Type 30: low nibble of the byte
     - Type 31: high nibble of the byte (Bally -35 7-digit OS; the low
       nibble holds the number of players, see InPlay Type 33)
+    - Type 32: Stern MPU-200 ball display byte, written by the game as
+      $F0 | ball in play. Self test leaves its step counter (01, 02, ...)
+      there, so the ball only counts when the upper nibble is F
 
     Returns:
         int: Ball number in play, or 0 if unavailable
@@ -309,6 +314,9 @@ def get_ball_in_play():
             return shadowRam[S.gdata["BallInPlay"]["Address"]] & 0x0F
         if ball_type == 31:
             return shadowRam[S.gdata["BallInPlay"]["Address"]] >> 4
+        if ball_type == 32:
+            ball = shadowRam[S.gdata["BallInPlay"]["Address"]]
+            return ball & 0x0F if (ball & 0xF0) == 0xF0 else 0
         return 0
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_ball_in_play: {e}")
@@ -321,7 +329,10 @@ def write_ball_in_play(ball_number):
     Write the current ball number in play to shadow RAM.
 
     Type 30 writes the whole byte. Type 31 writes the high nibble and
-    keeps the low nibble (number of players).
+    keeps the low nibble (number of players). Type 32 (MPU-200) writes the
+    game's real ball counter at BallAdr ($37, or $31 on the early OS) and
+    $F0 | ball to the ball display byte at Address; without BallAdr only the
+    display changes and the game keeps its own ball count.
 
     Args:
         ball_number: int - Ball number to write (0-5)
@@ -338,6 +349,11 @@ def write_ball_in_play(ball_number):
         if ball_type == 31:
             adr = ball_config["Address"]
             shadowRam[adr] = ((ball_number & 0x0F) << 4) | (shadowRam[adr] & 0x0F)
+            return True
+        if ball_type == 32:
+            if "BallAdr" in ball_config:
+                shadowRam[ball_config["BallAdr"]] = ball_number
+            shadowRam[ball_config["Address"]] = 0xF0 | (ball_number & 0x0F)
             return True
         return False
     except Exception as e:
