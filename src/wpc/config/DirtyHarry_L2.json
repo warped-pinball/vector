@@ -2,7 +2,6 @@
   "GameInfo": {
       "GameName": "Dirty Harry",
       "System": "WPC",
-      "FileVer": 1,
       "Clock": "MM"
   },
   "BallInPlay": {

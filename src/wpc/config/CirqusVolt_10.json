@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Cirqus Voltaire",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

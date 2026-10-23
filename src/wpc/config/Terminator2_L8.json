@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Terminator 2",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

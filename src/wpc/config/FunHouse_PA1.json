@@ -1,26 +1,11 @@
 {
     "GameInfo": {
         "GameName": "Fun House",
-        "System": "WPC",
-        "FileVer": 1
-    },
-    "Definition": {
-        "version": 1
-    },
-    "Memory": {
-        "Start": 1,
-        "Length": 8192,
-        "NvStart": 2048,
-        "NvLength": 2048
+        "System": "WPC"
     },
     "BallInPlay": {
         "Type": 1,
-        "Address": 1033,
-        "Ball1": 1,
-        "Ball2": 2,
-        "Ball3": 3,
-        "Ball4": 4,
-        "Ball5": 5
+        "Address": 1033
     },
     "DisplayMessage": {
         "Type": 10,
@@ -33,11 +18,11 @@
         "ChecksumResultAdr": 7738
     },
     "Adjustments": {
-        "Type": 0,
-        "CustomMessageOn": 0,
-        "ChecksumStartAdr": 0,
-        "ChecksumEndAdr": 0,
-        "ChecksumResultAdr": 0
+        "Type": 10,
+        "CustomMessageOn": 6982,
+        "ChecksumStartAdr": 6941,
+        "ChecksumEndAdr": 7140,
+        "ChecksumResultAdr": 7141
     },
     "HighScores": {
         "Type": 10,

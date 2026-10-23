@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Attack from Mars",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

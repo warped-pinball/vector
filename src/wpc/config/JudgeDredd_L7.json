@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Judge Dredd",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
