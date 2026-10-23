@@ -359,6 +359,23 @@ def get_players_in_game():
     return 0
 
 
+def get_game_over_flag():
+    """
+    Raw InPlay GameActive flag (non-zero = machine says game is over).
+    Responds immediately at game end, unlike get_game_active() which also
+    waits for ball in play to clear (after initials entry).
+
+    Returns:
+        bool: True if flag is set, False if not set or not configured
+    """
+    try:
+        if "InPlay" in S.gdata and "GameActive" in S.gdata["InPlay"]:
+            return shadowRam[S.gdata["InPlay"]["GameActive"]] != 0
+    except Exception as e:
+        log.log(f"DATAMAPPER: error get_game_over_flag {e}")
+    return False
+
+
 #for system 11 we must track the state and detect changes!
 game_active_state = False
 def get_game_active():
