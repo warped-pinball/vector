@@ -65,14 +65,82 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "InPlay": {
+  "InPlay": {
         "Type": 10,
-        "GameActiveAdr": 132,
+        "GameActiveAdr": 135,
         "GameActiveValue": 0,
         "Players": 6051,
         "PlayerUp": 1032,
         "ScoreAdr": 5952,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
-    }
+    },
+  "Switches": {
+    "Type": 10,
+    "Address": 5991,
+    "Length": 55,
+    "Names": [
+      ["Right Flipper", 60],
+      ["Left Flipper", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Steps Lights Frenzy", 60],
+      ["Upper Ramp Switch", 60],
+      ["S Of Step Lower Left", 60],
+      ["Upper Left Jet Bumper", 60],
+
+      ["Slam Tilt", 0],
+      ["Front Door", 60],
+      [],
+      ["Test Position Always Closed", 0],
+      ["Lock Mech Right", 200],
+      ["Steps Lights Extra Ball", 60],
+      ["Lock Mech Center", 60],
+      ["Lock Mech Left", 60],
+
+      ["P Of Step Lower Right", 60],
+      ["Top Superdog Standup Target", 60],
+      ["Upper Left Gangway Rollunder", 60],
+      ["Bottom Superdog Standup Target", 60],
+      ["Steps Track Lower", 60],
+      ["Steps 500000", 200],
+      ["Center Superdog Standup Target", 60],
+      ["Steps Track Upper", 60],
+
+      ["Left Slingshot Kicker", 60],
+      ["Left Flipper Return Lane", 60],
+      ["Left Outlane", 60],
+      ["Wind Tunnel Hole", 60],
+      ["Trap Door", 120],
+      ["Rudys Hideout Kickbig", 200],
+      ["Left Ball Shooter", 60],
+      ["Ramp Exit Track", 200],
+
+      ["Dummy Jaw Opto", 60],
+      ["Right Outlane", 60],
+      ["Right Slingshot Kicker", 60],
+      ["T Of Step Upper Left", 60],
+      ["Steps Superdog Opto", 60],
+      ["Ramp Entrance", 60],
+      ["Jet Bumper Lane", 60],
+      ["Tunnel Kickout", 60],
+
+      ["Right Inside Flipper Return Lane", 60],
+      ["Right Ball Shooter", 60],
+      ["Right Trough", 60],
+      ["E Of Step Upper Center", 60],
+      ["Dummy Eject Hole", 60],
+      ["Upper Right Gangway Lane", 60],
+      ["Lower Right Drop Hole", 60],
+      ["Lower Jet Bumper", 60],
+
+      ["Right Outside Flipper Return Lane", 60],
+      ["Left Trough", 60],
+      ["Outhole", 60],
+      ["Center Trough", 60],
+      ["Upper Right Loop Switch", 60],
+      ["Trap Door Closed", 60],
+      ["Upper Right Jet Bumper", 60]
+    ]
+  }
 }

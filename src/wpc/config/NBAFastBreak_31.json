@@ -64,7 +64,7 @@
   },
   "Switches": {
     "Type": 10,
-    "Address": 5840,
+    "Address": 5831,
     "Length": 48,
     "Names": [
       ["Ball Launch", 60],

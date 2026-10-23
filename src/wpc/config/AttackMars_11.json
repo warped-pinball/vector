@@ -51,6 +51,10 @@
       "HS5": 0,
       "DisableByte": 0
   },
+  "Flippers": {
+      "Type": 10,
+      "Address": 170
+  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 135,

@@ -6,7 +6,7 @@
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 951
+      "Address": 1043
   },
   "DisplayMessage": {
       "Type": 10,
@@ -27,17 +27,17 @@
   },
   "HighScores": {
       "Type": 10,
-      "ScoreAdr": 8038,
+      "ScoreAdr": 7408,
       "BytesInScore": 6,
       "ScoreSpacing": 9,
-      "InitialAdr": 8035,
+      "InitialAdr": 7405,
       "InitialSpacing": 9,
       "NumberOfScores": 4,
       "GrandChampScoreAdr": 7446,
       "GrandChampInitAdr": 7443,
-      "ChecksumStartAdr": 8035,
-      "ChecksumEndAdr": 8073,
-      "ChecksumResultAdr": 8074,
+      "ChecksumStartAdr": 7405,
+      "ChecksumEndAdr": 7440,
+      "ChecksumResultAdr": 7441,
       "GCChecksumStartAdr": 7443,
       "GCChecksumEndAdr": 7451,
       "GCChecksumResultAdr": 7452
