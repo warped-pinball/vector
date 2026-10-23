@@ -45,7 +45,7 @@ BENCH_WARN_FAULTS = {"HDWR01"}
 
 # Config key is the config filename without .json (dev/build.py:253).
 DEFAULT_GAMENAME = {
-    "sys11": "GenericSystem11_",
+    "sys11": "GenericSys11_",
     "wpc": "Generic_WPC",
     "data_east": "GenericDE_",
     "em": "EM_machine_",

@@ -206,9 +206,10 @@ class Builder:
         
         for filename, data in configs.items():
             # The selected config name is stored in a 16 byte field (SPI_DataStore "configuration"
-            # gamename); a longer name is cut short there and the config can never be loaded
-            if len(filename) > 16:
-                errors.append(f"ERROR: {filename} is {len(filename)} characters, config names must be 16 or fewer")
+            # gamename) that needs a terminator, so names are 15 characters at most; a longer
+            # name is cut short there and the config can never be loaded
+            if len(filename) > 15:
+                errors.append(f"ERROR: {filename} is {len(filename)} characters, config names must be 15 or fewer")
 
             if isinstance(data.get("GameInfo"), dict) and "LinkTo" in data["GameInfo"]:
                 link_count += 1
