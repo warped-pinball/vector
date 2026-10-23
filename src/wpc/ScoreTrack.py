@@ -39,11 +39,11 @@ def reset_scores():
 
     print(" RESET Leader scores")
     blankStruct("leaders")
-    if "MinScore" in S.gdata["GameInfo"]:  # low scoring game (NBA Fastbreak): placeholders 40-10 and GC 40 stay at/below MinScore, no 99s
+    if "MinScore" in S.gdata["GameInfo"]:  # low scoring game (NBA Fastbreak): placeholders 4-1 and GC 5 stay at/below MinScore, no 99s
         DataMapper.prepare_initials_capture()
         gc = S.gdata["HighScores"]["GrandChampScoreAdr"]
         n = S.gdata["HighScores"]["BytesInScore"]
-        shadowRam[gc : gc + n] = bytes(n - 1) + bytes([0x40])  # GC = 40
+        shadowRam[gc : gc + n] = bytes(n - 1) + bytes([0x05])  # GC = 5
         fix_high_score_checksum()
     else:
         _remove_machine_scores(GrandChamp="Zero")

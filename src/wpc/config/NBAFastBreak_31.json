@@ -2,7 +2,7 @@
   "GameInfo": {
       "GameName": "NBA Fastbreak",
       "System": "WPC",
-      "MinScore": 40
+      "MinScore": 5
   },
   "BallInPlay": {
       "Type": 1,

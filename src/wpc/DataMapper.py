@@ -644,15 +644,16 @@ def remove_machine_scores():
         for i in range(S.gdata["HighScores"]["BytesInScore"]):
             shadowRam[score_start + i] = 0
         
-        # Set placeholder score (60, 50, 40, 30)
-        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = 0x10 * (4 - index)
+        # Set placeholder score (40, 30, 20, 10; 4, 3, 2, 1 for a low scoring game with MinScore)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = (4 - index) if "MinScore" in S.gdata["GameInfo"] else 0x10 * (4 - index)
         
         # Set initials to '   ' 
         for i in range(3):
             shadowRam[initial_start + i] = 0x20
     
-    # Handle Grand Champion score
-    if "GrandChampScoreAdr" in S.gdata["HighScores"]:
+    # Handle Grand Champion score - left alone for a low scoring game (MinScore):
+    # some of those games show the GC during play, so never all 99s
+    if "GrandChampScoreAdr" in S.gdata["HighScores"] and "MinScore" not in S.gdata["GameInfo"]:
         score_start = S.gdata["HighScores"]["GrandChampScoreAdr"]
         
         if grand_champ_mode == "Max":
@@ -715,8 +716,8 @@ def prepare_initials_capture():
         for i in range(S.gdata["HighScores"]["BytesInScore"]):
             shadowRam[score_start + i] = 0
         
-        # Set placeholder score (60, 50, 40, 30)
-        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 1] = 0x10 * (4 - index)
+        # Set placeholder score (40, 30, 20, 10; 4, 3, 2, 1 for a low scoring game with MinScore)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 1] = (4 - index) if "MinScore" in S.gdata["GameInfo"] else 0x10 * (4 - index)
         
         # Set initials to '   '
         for i in range(3):
