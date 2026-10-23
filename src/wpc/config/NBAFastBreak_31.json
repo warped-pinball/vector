@@ -1,0 +1,132 @@
+{
+  "GameInfo": {
+      "GameName": "NBA Fastbreak",
+      "System": "WPC",
+      "FileVer": 1,
+      "MinScore": 40
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 944
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7557,
+      "AddressS2": 7622,
+      "AddressS3": 7687,
+      "Length": 32,
+      "ChecksumStartAdr": 7557,
+      "ChecksumEndAdr": 7749,
+      "ChecksumResultAdr": 7750
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 6976,
+      "ChecksumStartAdr": 6935,
+      "ChecksumEndAdr": 7164,
+      "ChecksumResultAdr": 7165
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7272,
+      "BytesInScore": 5,
+      "ScoreSpacing": 8,
+      "InitialAdr": 7269,
+      "InitialSpacing": 8,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7306,
+      "GrandChampInitAdr": 7303,
+      "ChecksumStartAdr": 7269,
+      "ChecksumEndAdr": 7300,
+      "ChecksumResultAdr": 7301,
+      "GCChecksumStartAdr": 7303,
+      "GCChecksumEndAdr": 7310,
+      "GCChecksumResultAdr": 7311
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "Credits": {
+      "Type": 10,
+      "Address": 7319,
+      "ChecksumStartAdr": 7319,
+      "ChecksumEndAdr": 7326,
+      "ChecksumResultAdr": 7327
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 130,
+      "GameActiveValue": 0,
+      "Players": 5893,
+      "PlayerUp": 943,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 5,
+      "ScoreSpacing": 6
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5840,
+    "Length": 48,
+    "Names": [
+      ["Ball Launch", 60],
+      ["Backbox Basket", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Shooter Lane", 60],
+      ["Left Return Lane", 60],
+      ["Right Return Lane", 60],
+      ["Lower Right Standup Target", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Right Jet Bumper", 60],
+      ["Always Closed", 0],
+      ["Eject Hole", 60],
+      ["Left Outlane", 60],
+      ["Right Outlane", 60],
+      ["Upper Right Standup Target", 60],
+
+      ["Trough Eject", 60],
+      ["Trough Ball 1", 60],
+      ["Trough Ball 2", 60],
+      ["Trough Ball 3", 60],
+      ["Trough Ball 4", 60],
+      ["Center Ramp Opto", 60],
+      ["Right Loop Enter Opto", 60],
+      ["Right Loop Exit", 60],
+
+      ["Standup Target 3", 60],
+      ["Standup Target P", 60],
+      ["Standup Target T", 60],
+      ["Right Ramp Enter", 60],
+      ["Left Ramp Enter", 60],
+      ["Left Ramp Made", 60],
+      ["Left Loop Enter", 60],
+      ["Left Loop Made", 60],
+
+      ["Defender Position 4", 60],
+      ["Defender Position 3", 60],
+      ["Defender Lock Position", 60],
+      ["Defender Position 2", 60],
+      ["Defender Position 1", 60],
+      ["Jets Ball Drain", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+
+      ["Left Jet Bumper", 60],
+      ["Middle Jet Bumper", 60],
+      ["Left Loop Ramp Exit", 60],
+      ["Right Ramp Made", 60],
+      ["In The Paint 4", 60],
+      ["In The Paint 3", 60],
+      ["In The Paint 2", 60],
+      ["In The Paint 1", 60]
+    ]
+  }
+}

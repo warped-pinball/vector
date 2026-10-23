@@ -232,7 +232,7 @@ def get_initials_entered():
         # Check if this is a new entry:
         # 1. Score must be > 1000 (not a placeholder like 60, 50, 40, 30)
         # 2. Score must NOT match the stored grand champion (that's not new)
-        if score > 1000 and score != stored_grand_champion["score"]:
+        if score > S.gdata["GameInfo"].get("MinScore", 1000) and score != stored_grand_champion["score"]:
             new_entries[i] = [initials, score]
             i = i + 1
     
