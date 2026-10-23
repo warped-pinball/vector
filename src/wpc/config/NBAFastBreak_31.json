@@ -52,13 +52,6 @@
       "HS5": 0,
       "DisableByte": 0
   },
-  "Credits": {
-      "Type": 10,
-      "Address": 7319,
-      "ChecksumStartAdr": 7319,
-      "ChecksumEndAdr": 7326,
-      "ChecksumResultAdr": 7327
-  },
   "InPlay": {
       "Type": 10,
       "GameActiveAdr": 130,
