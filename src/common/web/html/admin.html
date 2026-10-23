@@ -252,6 +252,23 @@
       </label>
     </fieldset>
   </section>
+  <section id="vector-clock-section">
+    <h3>Vector Clock</h3>
+    <fieldset id="vector-clock-controls">
+      <p>
+        <b>Board time:</b>
+        <span id="vector-clock-display">Loading...</span>
+      </p>
+      <p>
+        Use this when the board cannot reach a time server. It sets Vector's
+        clock from this computer's local time.
+      </p>
+      <button id="set-clock-from-browser-button" type="button">
+        Set Clock from This Computer
+      </button>
+      <p id="vector-clock-status" aria-live="polite"></p>
+    </fieldset>
+  </section>
   <section id="midnight-madness-section" class="hide">
     <h3>Midnight Madness</h3>
     <fieldset id="midnight-madness-controls">
