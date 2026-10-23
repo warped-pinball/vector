@@ -1,6 +1,6 @@
 {
     "GameInfo": {
-        "GameName": "Star Trek",
+        "GameName": "Mystic",
         "System": "Bally35"
     },
     "BallInPlay": {
@@ -9,7 +9,7 @@
     },
     "DisplayMessage": {
         "Type": 30,
-        "Address": 572,
+        "Address": 573,
         "Length": 6,
         "Spacing": 6
     },
@@ -17,17 +17,18 @@
         "Type": 0
     },
     "InPlay": {
-        "Type": 30,
-        "GameActiveAdr": 19,
+        "Type": 35,
+        "GameActiveAdr": 524,
         "Players": 19,
         "PlayerUp": 20,
         "ScoreAdr": 542,
-        "LastScoreAdr": 572,
+        "BlinkSaveAdr": 573,
+        "LastScoreAdr": 573,
         "ScoreBytes": 6,
         "ScoreSpacing": 6
     },
     "HighScores": {
         "Type": 30,
-        "ScoreAdr": 719
+        "ScoreAdr": 683
     }
 }
