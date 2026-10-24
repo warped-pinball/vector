@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Black Knight 2000",
-        "System": "11B",
-        "FileVer": 1
+        "System": "11B"
     },
     "BallInPlay": {
         "Type": 3,
@@ -12,7 +11,6 @@
         "Type": 2,
         "Address": 1972,
         "Length": 16,
-        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {

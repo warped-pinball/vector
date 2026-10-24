@@ -115,7 +115,7 @@ Bad Cats,SYS11,LA5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Banzai Run,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Big Guns,SYS11,L8;LA,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
-Black Knight 2000,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Black Knight 2000,SYS11,L4;LA2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Comet,SYS11,,yes,no,no,
 Cyclone,SYS11,L5,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
@@ -126,14 +126,14 @@ Elvira,SYS11,LA2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Stand
 F-14 Tomcat,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Fire!,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System 11,SYS11,,no,no,no,
-Grand Lizard,SYS11,L4,no,no,no,
+Grand Lizard,SYS11,L4,yes,yes,no,
 High Speed,SYS11,L3;L4,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Jokerz!,SYS11,L6,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Millionaire,SYS11,L3,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Mousin' Around,SYS11,L4,yes,yes,no,
 Pinbot,SYS11,V2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Police Force,SYS11,,yes,yes,no,
-Pool Sharks,SYS11,LA7,no,no,no,
+Pool Sharks,SYS11,LA7,yes,yes,no,
 Radical!,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Road Kings,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
