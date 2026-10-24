@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Sorcerer",
-        "System": "9",
-        "FileVer": 1
+        "System": "9"
     },
     "BallInPlay": {
         "Type": 3,
@@ -12,11 +11,11 @@
         "Type": 9,
         "Address": "0x734"
     },
-    "Adjustments" :{
-        "Type": 0,
-        "ChecksumStartAdr": 0,
-        "ChecksumEndAdr": 0,
-        "ChecksumResultAdr": 0
+    "Adjustments": {
+        "Type": 9,
+        "ChecksumStartAdr": "0x77F",
+        "ChecksumEndAdr": "0x7A2",
+        "ChecksumResultAdr": "0x7A2"
     },
     "HighScores": {
         "Type": 9,
@@ -27,6 +26,9 @@
         "Type": 1,
         "ScoreAdr": "0x38",
         "ZeroNibble": 15,
-        "BytesInScore": 4
+        "BytesInScore": 4,
+        "Players": "0xCD",
+        "PlayerUp": "0xCE",
+        "GameActive": "0xCA"
     }
 }
