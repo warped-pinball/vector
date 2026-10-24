@@ -25,8 +25,6 @@
     "InPlay": {
         "Type": 1,
         "ScoreAdr": "0x38",
-        "ZeroNibble": 15,
-        "BytesInScore": 4,
         "Players": "0xCD",
         "PlayerUp": "0xCE",
         "GameActive": "0xCA"
