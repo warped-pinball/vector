@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Creature from the Black Lagoon",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
