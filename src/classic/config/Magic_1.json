@@ -1,7 +1,7 @@
 {
     "GameInfo": {
-        "GameName": "Strikes and Spares",
-        "System": "Bally17"
+        "GameName": "Magic",
+        "System": "MPU100"
     },
     "BallInPlay": {
         "Type": 30,
@@ -17,8 +17,8 @@
         "Type": 0
     },
     "InPlay": {
-        "Type": 30,
-        "GameActiveAdr": 33,
+        "Type": 35,
+        "GameActiveAdr": 524,
         "Players": 20,
         "PlayerUp": 21,
         "ScoreAdr": 542,

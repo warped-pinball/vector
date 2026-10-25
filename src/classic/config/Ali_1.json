@@ -1,0 +1,33 @@
+{
+    "GameInfo": {
+        "GameName": "Ali",
+        "System": "MPU200"
+    },
+    "BallInPlay": {
+        "Type": 32,
+        "Address": 14,
+        "BallAdr": 49
+    },
+    "DisplayMessage": {
+        "Type": 32,
+        "Address": 640,
+        "Length": 3,
+        "Spacing": 16,
+        "PlayersAdr": 751
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 34,
+        "ScoreAdr": 640,
+        "ScoreSpacing": 16,
+        "PlayerUp": 50,
+        "Players": 751,
+        "ActiveScoreAdr": 16
+    },
+    "HighScores": {
+        "Type": 31,
+        "ScoreAdr": 713
+    }
+}

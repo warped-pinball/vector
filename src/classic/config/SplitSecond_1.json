@@ -4,8 +4,9 @@
         "System": "MPU200"
     },
     "BallInPlay": {
-        "Type": 30,
-        "Address": 19
+        "Type": 32,
+        "Address": 19,
+        "BallAdr": 55
     },
     "DisplayMessage": {
         "Type": 32,
