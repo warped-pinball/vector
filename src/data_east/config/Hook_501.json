@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Hook",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -23,7 +22,9 @@
         "CustomMessageOn": 7774,
         "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7783,
-        "ChecksumResultAdr": 7898
+        "ChecksumResultAdr": 7898,
+        "ExtraStartAdr": 8064,
+        "ExtraEndAdr": 8069
     },
     "HighScores": {
         "Type": 24,

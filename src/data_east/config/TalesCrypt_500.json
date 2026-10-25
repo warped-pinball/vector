@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Tales from the Crypt",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -23,7 +22,9 @@
         "CustomMessageOn": 7757,
         "ChecksumStartAdr": 7678,
         "ChecksumEndAdr": 7807,
-        "ChecksumResultAdr": 8157
+        "ChecksumResultAdr": 8157,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7812
     },
     "HighScores": {
         "Type": 24,

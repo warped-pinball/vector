@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "RoboCop",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,

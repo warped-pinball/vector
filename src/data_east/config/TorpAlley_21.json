@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Torpedo Alley",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -21,8 +20,8 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 8114,
-        "ChecksumStartAdr": 8060,
-        "ChecksumEndAdr": 8185,
+        "ChecksumStartAdr": 8064,
+        "ChecksumEndAdr": 8189,
         "ChecksumResultAdr": 8190
     },
     "HighScores": {

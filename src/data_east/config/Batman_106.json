@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Batman",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -23,7 +22,9 @@
         "CustomMessageOn": 7742,
         "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7751,
-        "ChecksumResultAdr": 7934
+        "ChecksumResultAdr": 7934,
+        "ExtraStartAdr": 7780,
+        "ExtraEndAdr": 7791
     },
     "HighScores": {
         "Type": 20,

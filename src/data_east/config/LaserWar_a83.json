@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Laser War",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -21,8 +20,8 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 0,
-        "ChecksumStartAdr": 1922,
-        "ChecksumEndAdr": 2033,
+        "ChecksumStartAdr": 1920,
+        "ChecksumEndAdr": 2046,
         "ChecksumResultAdr": 2047
     },
     "HighScores": {
