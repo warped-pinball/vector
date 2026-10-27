@@ -439,7 +439,7 @@ async function getMidnightMadness() {
 
   nowButton.addEventListener("click", async () => {
     // not retried: this GET has a side effect
-    await window.smartFetch("/api/time/trigger_midnight_madness", null, false, {
+    await window.smartFetch("/api/time/trigger_midnight_madness", null, true, {
       retries: 0,
     });
   });

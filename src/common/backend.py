@@ -921,7 +921,7 @@ def app_getScores(request):
     data = request.data
     player_id = int(data["id"])
     if player_id < 0 or player_id >= ds_memory_map["names"]["count"]:
-        return json_dumps({"error": "Invalid player id"}), 400 and name
+        return json_dumps({"error": "Invalid player id"}), 400
     player_record = ds_read_record("names", player_id)
 
     scores = []
