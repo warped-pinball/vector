@@ -1133,7 +1133,13 @@
         }
 
         if (data["notes"]) {
-          releaseNotes.textContent = data["notes"];
+          // notes are HTML from an unsigned source: parse inertly and keep only the text
+          const parsedNotes = new DOMParser().parseFromString(
+            data["notes"],
+            "text/html",
+          );
+          releaseNotes.textContent = parsedNotes.body.textContent.trim();
+          releaseNotes.style.whiteSpace = "pre-line";
           releaseNotes.classList.remove("hide");
         } else {
           releaseNotes.classList.add("hide");

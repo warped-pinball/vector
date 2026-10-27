@@ -23,6 +23,7 @@ from ujson import dumps as json_dumps
 #
 _WIFI_MAX_ATTEMPTS = const(2)
 _AP_NAME = const("Warped Pinball")
+_RELEASE_PAGE_PREFIX = const("https://github.com/warped-pinball/")
 # Authentication variables
 challenges = {}
 _CHALLENGE_EXPIRATION_SECONDS = const(60)
@@ -2176,7 +2177,7 @@ def app_updates_available(request):
         - code: 200
           description: Update metadata returned
       body:
-        description: JSON payload describing available updates. ``notes``, ``release_page`` and ``sha256`` are only returned when the release metadata carries a valid RSA signature, in which case ``verified`` is true.
+        description: JSON payload describing available updates. ``release_page`` is dropped unless it points at the Warped Pinball GitHub. ``notes`` is untrusted and must be shown as text.
         example:
             {
                 "release_page": "https://github.com/...",
@@ -2184,32 +2185,28 @@ def app_updates_available(request):
                 "published_at": "2025-12-30T17:54:49+00:00",
                 "url": "https://github.com/...",
                 "version": "1.9.0",
-                "sha256": "<hex digest of the update file contents>",
-                "verified": true
+                "sha256": "<hex digest of the update file contents>"
             }
     @end
     """
-    from mrequests.mrequests import get
-    from systemConfig import updatesURL
-    from update import verify_release_info
+    data = _fetch_latest_release()
 
-    resp = get(updatesURL, timeout=10)
-
-    try:
-        data = resp.json()
-    finally:
-        resp.close()
-
-    # The release notes, page link and checksum come over plain HTTP; only pass them on when RSA-signed
-    verified = verify_release_info(data)
-    if not verified:
-        data.pop("notes", None)
+    # This comes over plain HTTP, so only link to our own releases
+    if not str(data.get("release_page", "")).startswith(_RELEASE_PAGE_PREFIX):
         data.pop("release_page", None)
-        data.pop("sha256", None)
-    data.pop("signature", None)
-    data["verified"] = verified
 
     return data
+
+
+def _fetch_latest_release():
+    from mrequests.mrequests import get
+    from systemConfig import updatesURL
+
+    resp = get(updatesURL, timeout=10)
+    try:
+        return resp.json()
+    finally:
+        resp.close()
 
 
 @add_route("/api/update/apply", auth=True)
@@ -2227,11 +2224,11 @@ def app_apply_update(request):
         - name: sha256
           type: string
           required: false
-          description: Expected hex SHA-256 of the update file (from the update check). Required unless skip_signature_check is set
+          description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release
         - name: skip_signature_check
           type: bool
           required: false
-          description: Bypass signature and checksum validation (for developer builds)
+          description: Bypass signature, checksum and downgrade checks (for developer builds)
     response:
       status_codes:
         - code: 200
@@ -2250,8 +2247,19 @@ def app_apply_update(request):
 
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
+    skip_signature_check = data.get("skip_signature_check", False)
+    expected_sha256 = data.get("sha256")
+    # Callers like Origin only send the url; pin the checksum ourselves when it is the latest release
+    if not expected_sha256 and not skip_signature_check:
+        try:
+            latest = _fetch_latest_release()
+            if latest.get("url") == data["url"]:
+                expected_sha256 = latest.get("sha256")
+        except Exception as e:
+            Log.log(f"BKD: Could not look up update checksum: {e}")
+        gc_collect()
     try:
-        for response in apply_update(data["url"], skip_signature_check=data.get("skip_signature_check", False), expected_sha256=data.get("sha256")):
+        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")

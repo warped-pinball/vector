@@ -105,23 +105,37 @@ def _public_key():
     )
 
 
-def verify_release_info(info):
-    """Return True if the release metadata's RSA signature (SHA-256, PKCS#1 v1.5) is valid.
+def _version_key(version):
+    """Sortable key for "1.7.20", "1.7.20-beta57" or "1.7.20-dev434"; a release sorts above its betas, betas above dev builds"""
+    base, _, suffix = str(version).strip().partition("-")
+    numbers = tuple(int(part) for part in base.split("."))
+    if not suffix:
+        return numbers + (2, 0)
+    for rank, name in ((1, "beta"), (0, "dev")):
+        if suffix.startswith(name):
+            build = suffix[len(name) :]
+            return numbers + (rank, int(build) if build.isdigit() else 0)
+    raise ValueError(f"unrecognised version {version}")
 
-    The signed message is "vector-release-v1\\n<version>\\n<release_page>\\n<notes>\\n<sha256>" (empty string for missing fields).
-    sha256 is the hex digest of the update file contents, so the checksum can't be swapped by a man in the middle.
-    """
+
+def check_not_downgrade(path="update.json"):
+    """Refuse a signed update whose own version is older than the running one, so an old signed file can't be replayed"""
+    from json import loads as json_loads
+
+    from systemConfig import SystemVersion
+
+    with open(path, "rb") as f:
+        new_version = json_loads(f.readline())["version"]
+
     try:
-        from binascii import a2b_base64
+        is_older = _version_key(new_version) < _version_key(SystemVersion)
+    except ValueError as e:
+        # versions come from CI; never strand a board over a format we did not expect
+        print(f"Skipping downgrade check: {e}")
+        return
 
-        from rsa.pkcs1 import verify
-
-        message = "\n".join(("vector-release-v1", str(info.get("version") or ""), str(info.get("release_page") or ""), str(info.get("notes") or ""), str(info.get("sha256") or "")))
-        result = verify(message.encode("utf-8"), a2b_base64(info.get("signature", "")), _public_key())
-        return result == "SHA-256"
-    except Exception as e:
-        print(f"Release info signature check failed: {e}")
-        return False
+    if is_older:
+        raise Exception(f"Update {new_version} is older than the installed {SystemVersion}")
 
 
 def validate_signature(skip_signature_check=False, expected_sha256=None):
@@ -133,8 +147,8 @@ def validate_signature(skip_signature_check=False, expected_sha256=None):
         print("Skipping signature and checksum check")
         return
 
-    # Confirm this is the update we meant to download, not an older (validly signed) one
-    if not expected_sha256 or hash_bytes.hex() != str(expected_sha256).lower():
+    # Confirm this is the file the update check pointed at
+    if expected_sha256 and hash_bytes.hex() != str(expected_sha256).lower():
         raise Exception("Update checksum does not match the requested update")
 
     from rsa.pkcs1 import verify
@@ -144,6 +158,8 @@ def validate_signature(skip_signature_check=False, expected_sha256=None):
     result = verify(hash_bytes, signature, pub_key)
     if result != "SHA-256":
         raise Exception(f"Signature invalid! {result}")
+
+    check_not_downgrade()
 
 
 def download_update(url):
