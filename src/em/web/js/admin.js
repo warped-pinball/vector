@@ -1,1101 +1,1275 @@
 ﻿// Wrap in IIFE so const/let declarations don't collide when
 // the SPA reloads this script on repeated navigation.
 (function () {
-"use strict";
-// ------------------ Setup / Sensitivity Helpers ------------------
+  "use strict";
+  // ------------------ Setup / Sensitivity Helpers ------------------
 
-// Hardware variant detected by main.py at boot: "2player" or "4player" (or
-// null before it's known). Player 3/4 timing controls only show for 4player.
-let emHardwareVersion = null;
+  // Hardware variant detected by main.py at boot: "2player" or "4player" (or
+  // null before it's known). Player 3/4 timing controls only show for 4player.
+  let emHardwareVersion = null;
 
-// Per-script-load generation token. The SPA can re-execute this whole file
-// (see the IIFE comment above) before an earlier load's in-flight fetches
-// resolve - e.g. the user leaves Admin and comes back before a suspended
-// initializeAdminPage() continuation resumes. window.adminGeneration is
-// bumped on every load and on cleanup; each load captures its own number
-// into this module-scoped variable so isCurrentGeneration() can tell a
-// stale continuation from the live one, even though a plain "is polling
-// active" boolean can't (a newer load re-sets it true and the stale one
-// reads that as itself still being current).
-let myGeneration = 0;
-function isCurrentGeneration() {
-  return myGeneration === window.adminGeneration;
-}
-
-function applyHardwareVersionVisibility() {
-  const show = emHardwareVersion === "4player";
-  const p3 = document.getElementById("timing-section-p3");
-  const p4 = document.getElementById("timing-section-p4");
-  if (p3) p3.style.display = show ? "" : "none";
-  if (p4) p4.style.display = show ? "" : "none";
-}
-
-// Helper: show modal by id
-async function showModal(id) {
-  const modal = document.getElementById(id);
-  if (!modal) return null;
-  if (typeof modal.showModal === "function") modal.showModal();
-  return modal;
-}
-
-// Initialize Setup UI values and listeners
-async function initSetupUI() {
-  // load existing settings if the API exists
-  let serverCfgLoaded = false;
-  try {
-    const resp = await window.smartFetch("/api/em/get_config", null, false);
-    if (resp.ok) {
-      const cfg = await resp.json();
-      const name = document.getElementById("game-name");
-      const players = document.getElementById("total-players");
-      const reels = document.getElementById("score-reels");
-      const dummy = document.getElementById("dummy-reels");
-      const startPause = document.getElementById("start-pause");
-      const endPause = document.getElementById("end-pause");
-      // support both server field names
-      if (name && (cfg.name || cfg.game_name)) {
-        name.value = cfg.name || cfg.game_name || "";
-      }
-      if (players && (cfg.total_players != null || cfg.players != null)) {
-        // server may return 'players' or 'total_players'
-        players.value = clampTotalPlayers(cfg.total_players ?? cfg.players);
-      }
-      if (reels && (cfg.score_reels != null || cfg.reels_per_player != null)) {
-        reels.value = clampScoreReels(cfg.score_reels ?? cfg.reels_per_player);
-      }
-      if (dummy && cfg.dummy_reels != null)
-        dummy.value = clampDummyReels(cfg.dummy_reels);
-      if (startPause && cfg.startpause != null)
-        startPause.value = clampPause(cfg.startpause);
-      if (endPause && cfg.endpause != null)
-        endPause.value = clampPause(cfg.endpause);
-      if (cfg.hardware_version != null) {
-        emHardwareVersion = cfg.hardware_version;
-        applyHardwareVersionVisibility();
-      }
-      serverCfgLoaded = true;
-    }
-  } catch (e) {
-    // ignore if endpoint not available
+  // Per-script-load generation token. The SPA can re-execute this whole file
+  // (see the IIFE comment above) before an earlier load's in-flight fetches
+  // resolve - e.g. the user leaves Admin and comes back before a suspended
+  // initializeAdminPage() continuation resumes. window.adminGeneration is
+  // bumped on every load and on cleanup; each load captures its own number
+  // into this module-scoped variable so isCurrentGeneration() can tell a
+  // stale continuation from the live one, even though a plain "is polling
+  // active" boolean can't (a newer load re-sets it true and the stale one
+  // reads that as itself still being current).
+  let myGeneration = 0;
+  function isCurrentGeneration() {
+    return myGeneration === window.adminGeneration;
   }
 
-  // add listeners to inputs to save locally (guarded for idempotent retry)
-  const inputs = ["game-name", "total-players", "score-reels", "dummy-reels", "start-pause", "end-pause"];
-  inputs.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el || el.dataset.bound) return;
-    el.dataset.bound = "1";
-    el.addEventListener("change", () => {
-      const playersInput = document.getElementById("total-players");
-      const clampedTotalPlayers = clampTotalPlayers(playersInput ? playersInput.value : 1);
-      if (playersInput) {
-        playersInput.value = String(clampedTotalPlayers);
-      }
+  function applyHardwareVersionVisibility() {
+    const show = emHardwareVersion === "4player";
+    const p3 = document.getElementById("timing-section-p3");
+    const p4 = document.getElementById("timing-section-p4");
+    if (p3) p3.style.display = show ? "" : "none";
+    if (p4) p4.style.display = show ? "" : "none";
+  }
 
-      const reelsInput = document.getElementById("score-reels");
-      const clampedScoreReels = clampScoreReels(reelsInput ? reelsInput.value : 1);
-      if (reelsInput) {
-        reelsInput.value = String(clampedScoreReels);
-      }
+  // Helper: show modal by id
+  async function showModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return null;
+    if (typeof modal.showModal === "function") modal.showModal();
+    return modal;
+  }
 
-      const dummyInput = document.getElementById("dummy-reels");
-      const clampedDummyReels = clampDummyReels(dummyInput ? dummyInput.value : 0);
-      if (dummyInput) {
-        dummyInput.value = String(clampedDummyReels);
+  // Initialize Setup UI values and listeners
+  async function initSetupUI() {
+    // load existing settings if the API exists
+    let serverCfgLoaded = false;
+    try {
+      const resp = await window.smartFetch("/api/em/get_config", null, false);
+      if (resp.ok) {
+        const cfg = await resp.json();
+        const name = document.getElementById("game-name");
+        const players = document.getElementById("total-players");
+        const reels = document.getElementById("score-reels");
+        const dummy = document.getElementById("dummy-reels");
+        const startPause = document.getElementById("start-pause");
+        const endPause = document.getElementById("end-pause");
+        // support both server field names
+        if (name && (cfg.name || cfg.game_name)) {
+          name.value = cfg.name || cfg.game_name || "";
+        }
+        if (players && (cfg.total_players != null || cfg.players != null)) {
+          // server may return 'players' or 'total_players'
+          players.value = clampTotalPlayers(cfg.total_players ?? cfg.players);
+        }
+        if (
+          reels &&
+          (cfg.score_reels != null || cfg.reels_per_player != null)
+        ) {
+          reels.value = clampScoreReels(
+            cfg.score_reels ?? cfg.reels_per_player,
+          );
+        }
+        if (dummy && cfg.dummy_reels != null)
+          dummy.value = clampDummyReels(cfg.dummy_reels);
+        if (startPause && cfg.startpause != null)
+          startPause.value = clampPause(cfg.startpause);
+        if (endPause && cfg.endpause != null)
+          endPause.value = clampPause(cfg.endpause);
+        if (cfg.hardware_version != null) {
+          emHardwareVersion = cfg.hardware_version;
+          applyHardwareVersionVisibility();
+        }
+        serverCfgLoaded = true;
       }
+    } catch (e) {
+      // ignore if endpoint not available
+    }
 
-      const startPauseInput = document.getElementById("start-pause");
-      const clampedStartPause = clampPause(startPauseInput ? startPauseInput.value : 9);
-      if (startPauseInput) {
-        startPauseInput.value = String(clampedStartPause);
-      }
+    // add listeners to inputs to save locally (guarded for idempotent retry)
+    const inputs = [
+      "game-name",
+      "total-players",
+      "score-reels",
+      "dummy-reels",
+      "start-pause",
+      "end-pause",
+    ];
+    inputs.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.bound) return;
+      el.dataset.bound = "1";
+      el.addEventListener("change", () => {
+        const playersInput = document.getElementById("total-players");
+        const clampedTotalPlayers = clampTotalPlayers(
+          playersInput ? playersInput.value : 1,
+        );
+        if (playersInput) {
+          playersInput.value = String(clampedTotalPlayers);
+        }
 
-      const endPauseInput = document.getElementById("end-pause");
-      const clampedEndPause = clampPause(endPauseInput ? endPauseInput.value : 5);
-      if (endPauseInput) {
-        endPauseInput.value = String(clampedEndPause);
-      }
+        const reelsInput = document.getElementById("score-reels");
+        const clampedScoreReels = clampScoreReels(
+          reelsInput ? reelsInput.value : 1,
+        );
+        if (reelsInput) {
+          reelsInput.value = String(clampedScoreReels);
+        }
 
-      const data = {
-        name: document.getElementById("game-name").value,
-        total_players: clampedTotalPlayers,
-        score_reels: clampedScoreReels,
-        dummy_reels: clampedDummyReels,
-        startpause: clampedStartPause,
-        endpause: clampedEndPause,
-      };
-      try {
-        localStorage.setItem("game_config", JSON.stringify(data));
-      } catch (e) {}
-      // show save button when user changes any config input
-      const saveBtn = document.getElementById("save-game-config");
-      if (saveBtn) saveBtn.style.display = "";
+        const dummyInput = document.getElementById("dummy-reels");
+        const clampedDummyReels = clampDummyReels(
+          dummyInput ? dummyInput.value : 0,
+        );
+        if (dummyInput) {
+          dummyInput.value = String(clampedDummyReels);
+        }
+
+        const startPauseInput = document.getElementById("start-pause");
+        const clampedStartPause = clampPause(
+          startPauseInput ? startPauseInput.value : 9,
+        );
+        if (startPauseInput) {
+          startPauseInput.value = String(clampedStartPause);
+        }
+
+        const endPauseInput = document.getElementById("end-pause");
+        const clampedEndPause = clampPause(
+          endPauseInput ? endPauseInput.value : 5,
+        );
+        if (endPauseInput) {
+          endPauseInput.value = String(clampedEndPause);
+        }
+
+        const data = {
+          name: document.getElementById("game-name").value,
+          total_players: clampedTotalPlayers,
+          score_reels: clampedScoreReels,
+          dummy_reels: clampedDummyReels,
+          startpause: clampedStartPause,
+          endpause: clampedEndPause,
+        };
+        try {
+          localStorage.setItem("game_config", JSON.stringify(data));
+        } catch (e) {}
+        // show save button when user changes any config input
+        const saveBtn = document.getElementById("save-game-config");
+        if (saveBtn) saveBtn.style.display = "";
+      });
     });
-  });
 
-  // populate from localStorage if available and server did not provide config
-  try {
-    const stored = JSON.parse(localStorage.getItem("game_config") || "null");
-    if (stored && !serverCfgLoaded) {
-      document.getElementById("game-name").value = stored.name || "";
-      document.getElementById("total-players").value = clampTotalPlayers(stored.total_players || 1);
-      document.getElementById("score-reels").value = clampScoreReels(stored.score_reels || 1);
-      document.getElementById("dummy-reels").value = clampDummyReels(stored.dummy_reels || 0);
-      if (stored.startpause != null)
-        document.getElementById("start-pause").value = clampPause(stored.startpause);
-      if (stored.endpause != null)
-        document.getElementById("end-pause").value = clampPause(stored.endpause);
-    }
-  } catch (e) {}
-}
-
-
-async function loadConfiguredSsidSignal() {
-  const nameElement = document.getElementById("configured-ssid-name");
-  const rssiElement = document.getElementById("configured-ssid-rssi");
-  const qualityElement = document.getElementById("configured-ssid-quality");
-
-  if (!nameElement || !rssiElement || !qualityElement) {
-    return;
+    // populate from localStorage if available and server did not provide config
+    try {
+      const stored = JSON.parse(localStorage.getItem("game_config") || "null");
+      if (stored && !serverCfgLoaded) {
+        document.getElementById("game-name").value = stored.name || "";
+        document.getElementById("total-players").value = clampTotalPlayers(
+          stored.total_players || 1,
+        );
+        document.getElementById("score-reels").value = clampScoreReels(
+          stored.score_reels || 1,
+        );
+        document.getElementById("dummy-reels").value = clampDummyReels(
+          stored.dummy_reels || 0,
+        );
+        if (stored.startpause != null)
+          document.getElementById("start-pause").value = clampPause(
+            stored.startpause,
+          );
+        if (stored.endpause != null)
+          document.getElementById("end-pause").value = clampPause(
+            stored.endpause,
+          );
+      }
+    } catch (e) {}
   }
 
-  try {
-    const response = await window.smartFetch("/api/wifi/status", null, false);
-    if (!response.ok) {
-      throw new Error(`ssid fetch failed: ${response.status}`);
+  async function loadConfiguredSsidSignal() {
+    const nameElement = document.getElementById("configured-ssid-name");
+    const rssiElement = document.getElementById("configured-ssid-rssi");
+    const qualityElement = document.getElementById("configured-ssid-quality");
+
+    if (!nameElement || !rssiElement || !qualityElement) {
+      return;
     }
-    const data = await response.json();
-    if (!data.connected) {
-      nameElement.innerText = "Not connected";
+
+    try {
+      const response = await window.smartFetch("/api/wifi/status", null, false);
+      if (!response.ok) {
+        throw new Error(`ssid fetch failed: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.connected) {
+        nameElement.innerText = "Not connected";
+        rssiElement.innerText = "Unavailable";
+        qualityElement.innerText = "Unavailable";
+        return;
+      }
+
+      nameElement.innerText = data.ssid ?? "Unknown SSID";
+      if (typeof data.rssi === "number") {
+        rssiElement.innerText = `${data.rssi} dBm`;
+        if (data.rssi >= -60) {
+          qualityElement.innerText = "Excellent";
+        } else if (data.rssi >= -70) {
+          qualityElement.innerText = "Good";
+        } else if (data.rssi >= -80) {
+          qualityElement.innerText = "Fair";
+        } else {
+          qualityElement.innerText = "Poor";
+        }
+      } else {
+        rssiElement.innerText = "Unknown";
+        qualityElement.innerText = "Unknown";
+      }
+    } catch (error) {
+      console.error("Failed to load configured SSID signal strength", error);
+      nameElement.innerText = "Unavailable";
       rssiElement.innerText = "Unavailable";
       qualityElement.innerText = "Unavailable";
-      return;
-    }
-
-    nameElement.innerText = data.ssid ?? "Unknown SSID";
-    if (typeof data.rssi === "number") {
-      rssiElement.innerText = `${data.rssi} dBm`;
-      if (data.rssi >= -60) {
-        qualityElement.innerText = "Excellent";
-      } else if (data.rssi >= -70) {
-        qualityElement.innerText = "Good";
-      } else if (data.rssi >= -80) {
-        qualityElement.innerText = "Fair";
-      } else {
-        qualityElement.innerText = "Poor";
-      }
-    } else {
-      rssiElement.innerText = "Unknown";
-      qualityElement.innerText = "Unknown";
-    }
-  } catch (error) {
-    console.error("Failed to load configured SSID signal strength", error);
-    nameElement.innerText = "Unavailable";
-    rssiElement.innerText = "Unavailable";
-    qualityElement.innerText = "Unavailable";
-  }
-}
-
-// Save game configuration to server (calls existing endpoint if available)
-async function saveGameConfig() {
-  const totalPlayers = clampTotalPlayers(document.getElementById("total-players").value);
-  const playersInput = document.getElementById("total-players");
-  if (playersInput) {
-    playersInput.value = String(totalPlayers);
-  }
-
-  const scoreReels = clampScoreReels(document.getElementById("score-reels").value);
-  const reelsInput = document.getElementById("score-reels");
-  if (reelsInput) {
-    reelsInput.value = String(scoreReels);
-  }
-
-  const dummyReels = clampDummyReels(document.getElementById("dummy-reels").value);
-  const dummyInput = document.getElementById("dummy-reels");
-  if (dummyInput) {
-    dummyInput.value = String(dummyReels);
-  }
-
-  const startPause = clampPause(document.getElementById("start-pause").value);
-  const startPauseInput = document.getElementById("start-pause");
-  if (startPauseInput) {
-    startPauseInput.value = String(startPause);
-  }
-
-  const endPause = clampPause(document.getElementById("end-pause").value);
-  const endPauseInput = document.getElementById("end-pause");
-  if (endPauseInput) {
-    endPauseInput.value = String(endPause);
-  }
-
-  const data = {
-    name: document.getElementById("game-name").value,
-    players: totalPlayers,
-    reels_per_player: scoreReels,
-    dummy_reels: dummyReels,
-    startpause: startPause,
-    endpause: endPause,
-  };
-
-  try {
-    const resp = await window.smartFetch("/api/em/set_config", data, true);
-    if (!resp.ok) throw new Error("save failed");
-    const saveBtn = document.getElementById("save-game-config");
-    if (saveBtn) saveBtn.style.display = "none";
-  } catch (e) {
-    console.error("Failed to save game configuration", e);
-    alert("Failed to save game configuration");
-  }
-}
-
-// ------------------ Sensitivity Controls ------------------
-
-// Sensitivity: -200 to 0%, 0 = as-calibrated
-const SENSITIVITY_MIN = -200;
-const SENSITIVITY_MAX = 0;
-const SENSITIVITY_STEP = 1;
-const SENSITIVITY_DEFAULT = 0;
-
-// Timing sensitivity: 5 decade columns in descending order.
-// Score range: 1–10, Reset range: 1–15
-const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
-const TIMING_ADJ_DEFAULT_SCORE = 1;
-const TIMING_ADJ_DEFAULT_RESET = 6;
-const TIMING_ADJ_MIN = 1;
-const TIMING_ADJ_SCORE_MAX = 10;
-const TIMING_ADJ_RESET_MAX = 15;
-const TIMING_ADJ_COLUMN_COUNT = TIMING_ADJ_BASE_LABELS.length;
-const TOTAL_PLAYERS_MIN = 1;
-const TOTAL_PLAYERS_MAX = 4;
-const SCORE_REELS_MIN = 1;
-const SCORE_REELS_MAX = 5;
-const DUMMY_REELS_MIN = 0;
-const DUMMY_REELS_MAX = 4;
-const PAUSE_MIN = 2;
-const PAUSE_MAX = 30;
-const PAUSE_DEFAULT = 9;
-
-function clampTotalPlayers(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return TOTAL_PLAYERS_MIN;
-  return Math.min(TOTAL_PLAYERS_MAX, Math.max(TOTAL_PLAYERS_MIN, parsed));
-}
-
-function clampScoreReels(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return SCORE_REELS_MIN;
-  return Math.min(SCORE_REELS_MAX, Math.max(SCORE_REELS_MIN, parsed));
-}
-
-function clampDummyReels(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return DUMMY_REELS_MIN;
-  return Math.min(DUMMY_REELS_MAX, Math.max(DUMMY_REELS_MIN, parsed));
-}
-
-function clampPause(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return PAUSE_DEFAULT;
-  return Math.min(PAUSE_MAX, Math.max(PAUSE_MIN, parsed));
-}
-
-function getConfiguredDummyReels() {
-  const dummyInput = document.getElementById("dummy-reels");
-  if (!dummyInput) return DUMMY_REELS_MIN;
-  return clampDummyReels(dummyInput.value);
-}
-
-function getTimingAdjLabels(dummyReels) {
-  const zeros = "0".repeat(Math.max(0, Number(dummyReels) || 0));
-  return TIMING_ADJ_BASE_LABELS.map((base) => base + zeros + "s");
-}
-
-function clampTimingAdjScore(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_SCORE;
-  return Math.min(TIMING_ADJ_SCORE_MAX, Math.max(TIMING_ADJ_MIN, Math.trunc(n)));
-}
-
-function clampTimingAdjReset(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_RESET;
-  return Math.min(TIMING_ADJ_RESET_MAX, Math.max(TIMING_ADJ_MIN, Math.trunc(n)));
-}
-
-function coerceTimingArray(raw, fallback, clampFn) {
-  if (!Array.isArray(raw) || raw.length !== TIMING_ADJ_COLUMN_COUNT) {
-    return fallback.slice();
-  }
-  return raw.map((v) => clampFn(v));
-}
-
-// Build an adjuster group element (label, up button, value display, down button)
-// colorClass: "score" (red), "reset" (blue), or "" for plain
-// context: e.g. "Player 2 1000s" - gives screen readers a unique name for each control
-function buildAdjGroup(label, value, colorClass, onUp, onDown, context) {
-  const name = (context ? context + " " : "") + label.toLowerCase() + " depth";
-
-  const group = document.createElement("div");
-  group.className = "adj-group";
-  group.setAttribute("role", "group");
-  group.setAttribute("aria-label", name);
-
-  const lbl = document.createElement("div");
-  lbl.className = "adj-group-label";
-  lbl.textContent = label;
-
-  const btnClass = "secondary outline adj-btn" + (colorClass ? " adj-btn-" + colorClass : "");
-  const valClass = "adj-value" + (colorClass ? " adj-val-" + colorClass : "");
-
-  const upBtn = document.createElement("button");
-  upBtn.className = btnClass;
-  upBtn.type = "button";
-  upBtn.textContent = "\u25b2";
-  upBtn.setAttribute("aria-label", "Increase " + name);
-  upBtn.addEventListener("click", onUp);
-
-  const valDisplay = document.createElement("div");
-  valDisplay.className = valClass;
-  valDisplay.textContent = String(value);
-  valDisplay.setAttribute("aria-live", "polite");
-
-  const downBtn = document.createElement("button");
-  downBtn.className = btnClass;
-  downBtn.type = "button";
-  downBtn.textContent = "\u25bc";
-  downBtn.setAttribute("aria-label", "Decrease " + name);
-  downBtn.addEventListener("click", onDown);
-
-  group.appendChild(lbl);
-  group.appendChild(upBtn);
-  group.appendChild(valDisplay);
-  group.appendChild(downBtn);
-
-  return { group, valDisplay };
-}
-
-// Global sensitivity (-200 to 0%)
-async function initSensitivityUI() {
-  let value = SENSITIVITY_DEFAULT;
-
-  try {
-    const resp = await window.smartFetch("/api/em/get_sensitivity", null, false);
-    if (resp && resp.ok) {
-      const data = await resp.json();
-      if (data.sensitivity != null) value = Math.min(SENSITIVITY_MAX, Math.max(SENSITIVITY_MIN, Number(data.sensitivity)));
-    }
-  } catch (e) {
-    // use default
-  }
-
-  const display = document.getElementById("sensitivity-value");
-  const upBtn = document.getElementById("sensitivity-up");
-  const downBtn = document.getElementById("sensitivity-down");
-  const recalBtn = document.getElementById("sensitivity-recalibrate");
-
-  function updateDisplay() {
-    if (display) display.textContent = (value > 0 ? "+" : "") + value + "%";
-  }
-
-  async function saveSensitivity() {
-    try {
-      await window.smartFetch("/api/em/set_sensitivity", { sensitivity: value }, true);
-    } catch (e) {
-      console.error("Failed to save sensitivity", e);
     }
   }
 
-  if (upBtn && !upBtn.dataset.bound) {
-    upBtn.dataset.bound = "1";
-    upBtn.addEventListener("click", async () => {
-      if (value < SENSITIVITY_MAX) {
-        value = Math.min(SENSITIVITY_MAX, value + SENSITIVITY_STEP);
-        updateDisplay();
-        await saveSensitivity();
-      }
-    });
-  }
-
-  if (downBtn && !downBtn.dataset.bound) {
-    downBtn.dataset.bound = "1";
-    downBtn.addEventListener("click", async () => {
-      if (value > SENSITIVITY_MIN) {
-        value = Math.max(SENSITIVITY_MIN, value - SENSITIVITY_STEP);
-        updateDisplay();
-        await saveSensitivity();
-      }
-    });
-  }
-
-  if (recalBtn && !recalBtn.dataset.bound) {
-    recalBtn.dataset.bound = "1";
-    recalBtn.addEventListener("click", async () => {
-      const prevText = recalBtn.textContent;
-      recalBtn.disabled = true;
-      recalBtn.textContent = "Calibrating...";
-      try {
-        const resp = await window.smartFetch("/api/em/recalibrate_sensors", {}, true);
-        if (!resp || !resp.ok) {
-          throw new Error(`recalibrate failed: ${resp ? resp.status : "no response"}`);
-        }
-        // Recalibrating resets sensitivity back to 0% on the device - reflect that here.
-        value = 0;
-        updateDisplay();
-        recalBtn.textContent = "Done";
-      } catch (e) {
-        console.error("Failed to recalibrate sensors", e);
-        recalBtn.textContent = "Failed";
-      } finally {
-        setTimeout(() => {
-          recalBtn.textContent = prevText || "Recalibrate";
-          recalBtn.disabled = false;
-        }, 1200);
-      }
-    });
-  }
-
-  updateDisplay();
-
-  // Poll so sensitivity changes made from the cabinet's physical up/down
-  // buttons show up here without a page reload. Guarded so a retry of
-  // initSensitivityUI() (see _runAdminDataInit) doesn't start a second loop.
-  if (display && !display.dataset.polling) {
-    display.dataset.polling = "1";
-    const SENSITIVITY_POLL_MS = 1300;
-    (async function pollSensitivity() {
-      if (!isCurrentGeneration()) return;
-      try {
-        const resp = await window.smartFetch("/api/em/get_sensitivity", null, false);
-        if (resp && resp.ok) {
-          const data = await resp.json();
-          if (data.sensitivity != null) {
-            const serverValue = Math.min(SENSITIVITY_MAX, Math.max(SENSITIVITY_MIN, Number(data.sensitivity)));
-            if (serverValue !== value) {
-              value = serverValue;
-              updateDisplay();
-            }
-          }
-        }
-      } catch (e) {
-        // keep last displayed value on transient errors
-      }
-      if (isCurrentGeneration()) {
-        setTimeout(pollSensitivity, SENSITIVITY_POLL_MS);
-      }
-    })();
-  }
-}
-
-// Timing filter: per-decade score (red) and reset (blue) depth adjusters
-// p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths;
-// p3/p4 depths only apply (and are shown) on 4player hardware.
-async function initTimingSensitivityUI() {
-  const N = TIMING_ADJ_COLUMN_COUNT;
-  let p1_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
-  let p1_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
-  let p2_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
-  let p2_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
-  let p3_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
-  let p3_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
-  let p4_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
-  let p4_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
-
-  try {
-    const resp = await window.smartFetch("/api/em/get_timing_sensitivity", null, false);
-    if (resp && resp.ok) {
-      const data = await resp.json();
-      p1_score = coerceTimingArray(data.p1_score, p1_score, clampTimingAdjScore);
-      p1_reset = coerceTimingArray(data.p1_reset, p1_reset, clampTimingAdjReset);
-      p2_score = coerceTimingArray(data.p2_score, p2_score, clampTimingAdjScore);
-      p2_reset = coerceTimingArray(data.p2_reset, p2_reset, clampTimingAdjReset);
-      p3_score = coerceTimingArray(data.p3_score, p3_score, clampTimingAdjScore);
-      p3_reset = coerceTimingArray(data.p3_reset, p3_reset, clampTimingAdjReset);
-      p4_score = coerceTimingArray(data.p4_score, p4_score, clampTimingAdjScore);
-      p4_reset = coerceTimingArray(data.p4_reset, p4_reset, clampTimingAdjReset);
-    }
-  } catch (e) {
-    // use defaults
-  }
-
-  async function saveTimingSensitivity() {
-    try {
-      await window.smartFetch("/api/em/set_timing_sensitivity",
-        { p1_score, p1_reset, p2_score, p2_reset, p3_score, p3_reset, p4_score, p4_reset }, true);
-    } catch (e) {
-      console.error("Failed to save timing sensitivity", e);
-    }
-  }
-
-  function buildPlayerRow(containerId, playerNum, scoreArr, resetArr, labels) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = "";
-
-    labels.forEach((label, i) => {
-      const col = document.createElement("div");
-      col.className = "decade-col";
-
-      const colLbl = document.createElement("div");
-      colLbl.className = "decade-col-label";
-      colLbl.textContent = label;
-      col.appendChild(colLbl);
-      const context = "Player " + playerNum + " " + label;
-
-      // Red adjuster — score (detection) depth
-      const { group: sg, valDisplay: sv } = buildAdjGroup(
-        "Score", scoreArr[i], "score",
-        async () => {
-          if (scoreArr[i] < TIMING_ADJ_SCORE_MAX) {
-            scoreArr[i] = Math.min(TIMING_ADJ_SCORE_MAX, scoreArr[i] + 1);
-            sv.textContent = String(scoreArr[i]);
-            await saveTimingSensitivity();
-          }
-        },
-        async () => {
-          if (scoreArr[i] > TIMING_ADJ_MIN) {
-            scoreArr[i] = Math.max(TIMING_ADJ_MIN, scoreArr[i] - 1);
-            sv.textContent = String(scoreArr[i]);
-            await saveTimingSensitivity();
-          }
-        },
-        context
-      );
-      col.appendChild(sg);
-
-      // Blue adjuster — reset (hold-off) depth
-      const { group: rg, valDisplay: rv } = buildAdjGroup(
-        "Reset", resetArr[i], "reset",
-        async () => {
-          if (resetArr[i] < TIMING_ADJ_RESET_MAX) {
-            resetArr[i] = Math.min(TIMING_ADJ_RESET_MAX, resetArr[i] + 1);
-            rv.textContent = String(resetArr[i]);
-            await saveTimingSensitivity();
-          }
-        },
-        async () => {
-          if (resetArr[i] > TIMING_ADJ_MIN) {
-            resetArr[i] = Math.max(TIMING_ADJ_MIN, resetArr[i] - 1);
-            rv.textContent = String(resetArr[i]);
-            await saveTimingSensitivity();
-          }
-        },
-        context
-      );
-      col.appendChild(rg);
-
-      container.appendChild(col);
-    });
-  }
-
-  function renderTimingRows() {
-    const labels = getTimingAdjLabels(getConfiguredDummyReels());
-    buildPlayerRow("timing-adj-p1", 1, p1_score, p1_reset, labels);
-    buildPlayerRow("timing-adj-p2", 2, p2_score, p2_reset, labels);
-    buildPlayerRow("timing-adj-p3", 3, p3_score, p3_reset, labels);
-    buildPlayerRow("timing-adj-p4", 4, p4_score, p4_reset, labels);
-    applyHardwareVersionVisibility();
-  }
-
-  renderTimingRows();
-
-  const dummyInput = document.getElementById("dummy-reels");
-  if (dummyInput && !dummyInput.dataset.timingLabelsBound) {
-    dummyInput.addEventListener("input", renderTimingRows);
-    dummyInput.addEventListener("change", renderTimingRows);
-    dummyInput.dataset.timingLabelsBound = "1";
-  }
-}
-
-
-//
-// Settings
-//
-
-// Tournament Mode
-async function tournamentModeToggle() {
-  let data;
-  try {
-    const response = await window.smartFetch(
-      "/api/settings/get_tournament_mode",
-      null,
-      false,
+  // Save game configuration to server (calls existing endpoint if available)
+  async function saveGameConfig() {
+    const totalPlayers = clampTotalPlayers(
+      document.getElementById("total-players").value,
     );
-    data = await response.json();
-  } catch (e) {
-    console.warn("tournamentModeToggle: fetch failed", e);
-    return;
-  }
+    const playersInput = document.getElementById("total-players");
+    if (playersInput) {
+      playersInput.value = String(totalPlayers);
+    }
 
-  const tmToggle = document.getElementById("tournament-mode-toggle");
-  if (!tmToggle) return;
-
-  tmToggle.checked = data["tournament_mode"];
-  tmToggle.disabled = false;
-
-  // add event listener to update the setting when the checkbox is changed
-  if (!tmToggle.dataset.bound) {
-    tmToggle.dataset.bound = "1";
-    tmToggle.addEventListener("change", async () => {
-      const data = { tournament_mode: tmToggle.checked ? 1 : 0 };
-      await window.smartFetch("/api/settings/set_tournament_mode", data, true);
-    });
-  }
-}
-
-// Score claim methods
-async function getScoreClaimMethods() {
-  let data;
-  try {
-    const response = await window.smartFetch(
-      "/api/settings/get_claim_methods",
-      null,
-      false,
+    const scoreReels = clampScoreReels(
+      document.getElementById("score-reels").value,
     );
-    data = await response.json();
-  } catch (e) {
-    console.warn("getScoreClaimMethods: fetch failed", e);
-    return;
+    const reelsInput = document.getElementById("score-reels");
+    if (reelsInput) {
+      reelsInput.value = String(scoreReels);
+    }
+
+    const dummyReels = clampDummyReels(
+      document.getElementById("dummy-reels").value,
+    );
+    const dummyInput = document.getElementById("dummy-reels");
+    if (dummyInput) {
+      dummyInput.value = String(dummyReels);
+    }
+
+    const startPause = clampPause(document.getElementById("start-pause").value);
+    const startPauseInput = document.getElementById("start-pause");
+    if (startPauseInput) {
+      startPauseInput.value = String(startPause);
+    }
+
+    const endPause = clampPause(document.getElementById("end-pause").value);
+    const endPauseInput = document.getElementById("end-pause");
+    if (endPauseInput) {
+      endPauseInput.value = String(endPause);
+    }
+
+    const data = {
+      name: document.getElementById("game-name").value,
+      players: totalPlayers,
+      reels_per_player: scoreReels,
+      dummy_reels: dummyReels,
+      startpause: startPause,
+      endpause: endPause,
+    };
+
+    try {
+      const resp = await window.smartFetch("/api/em/set_config", data, true);
+      if (!resp.ok) throw new Error("save failed");
+      const saveBtn = document.getElementById("save-game-config");
+      if (saveBtn) saveBtn.style.display = "none";
+    } catch (e) {
+      console.error("Failed to save game configuration", e);
+      alert("Failed to save game configuration");
+    }
   }
 
-  const webUIToggle = document.getElementById("web-ui-toggle");
-  if (!webUIToggle) return;
+  // ------------------ Sensitivity Controls ------------------
 
-  webUIToggle.checked = data["web-ui"];
-  webUIToggle.disabled = false;
+  // Sensitivity: -200 to 0%, 0 = as-calibrated
+  const SENSITIVITY_MIN = -200;
+  const SENSITIVITY_MAX = 0;
+  const SENSITIVITY_STEP = 1;
+  const SENSITIVITY_DEFAULT = 0;
 
-  if (!webUIToggle.dataset.bound) {
-    webUIToggle.dataset.bound = "1";
-    webUIToggle.addEventListener("change", async () => {
-      const data = {
-        "web-ui": webUIToggle.checked ? 1 : 0,
-      };
-      await window.smartFetch("/api/settings/set_claim_methods", data, true);
-    });
-  }
-}
+  // Timing sensitivity: 5 decade columns in descending order.
+  // Score range: 1–10, Reset range: 1–15
+  const TIMING_ADJ_BASE_LABELS = ["10000", "1000", "100", "10", "1"];
+  const TIMING_ADJ_DEFAULT_SCORE = 1;
+  const TIMING_ADJ_DEFAULT_RESET = 6;
+  const TIMING_ADJ_MIN = 1;
+  const TIMING_ADJ_SCORE_MAX = 10;
+  const TIMING_ADJ_RESET_MAX = 15;
+  const TIMING_ADJ_COLUMN_COUNT = TIMING_ADJ_BASE_LABELS.length;
+  const TOTAL_PLAYERS_MIN = 1;
+  const TOTAL_PLAYERS_MAX = 4;
+  const SCORE_REELS_MIN = 1;
+  const SCORE_REELS_MAX = 5;
+  const DUMMY_REELS_MIN = 0;
+  const DUMMY_REELS_MAX = 4;
+  const PAUSE_MIN = 2;
+  const PAUSE_MAX = 30;
+  const PAUSE_DEFAULT = 9;
 
-// Run all admin API fetches sequentially and populate UI.
-// All init functions are idempotent (guarded listeners) so safe to re-run.
-async function _runAdminDataInit() {
-  try { await initSetupUI(); } catch (e) { console.warn("initSetupUI failed", e); }
-  try { await initSensitivityUI(); } catch (e) { console.warn("initSensitivityUI failed", e); }
-  try { await initTimingSensitivityUI(); } catch (e) { console.warn("initTimingSensitivityUI failed", e); }
-  try { await tournamentModeToggle(); } catch (e) { console.warn("tournamentModeToggle failed", e); }
-  try { await getScoreClaimMethods(); } catch (e) { console.warn("getScoreClaimMethods failed", e); }
-}
-
-// Check whether the timing controls actually rendered (proxy for "data loaded").
-function _adminInitOk() {
-  const p1 = document.getElementById("timing-adj-p1");
-  return p1 && p1.children.length > 0;
-}
-
-async function initializeAdminPage() {
-  window.adminGeneration = (window.adminGeneration || 0) + 1;
-  myGeneration = window.adminGeneration;
-  window.cleanup_admin = function () {
-    // Bump (rather than just flip a boolean) so this generation is
-    // invalidated even if the user never navigates back to Admin - a
-    // continuation suspended mid-await still needs to notice it's stale.
-    window.adminGeneration = (window.adminGeneration || 0) + 1;
-  };
-
-  // First attempt
-  await _runAdminDataInit();
-  if (!isCurrentGeneration()) return; // a newer Admin load has since started
-
-  // If data didn't load, schedule retries (server may have been busy with
-  // stale requests from the previous page).
-  var _retries = 0;
-  var _MAX_RETRIES = 2;
-  var _RETRY_MS = 2000;
-  function _scheduleRetry() {
-    if (_retries >= _MAX_RETRIES) return;
-    _retries++;
-    setTimeout(async () => {
-      if (!isCurrentGeneration()) return; // navigated away, or a newer load took over
-      if (_adminInitOk()) return;             // already loaded
-      console.warn("ADMIN: data incomplete, retry " + _retries + "/" + _MAX_RETRIES);
-      await _runAdminDataInit();
-      if (!isCurrentGeneration()) return;
-      _scheduleRetry();
-    }, _RETRY_MS);
-  }
-  if (!_adminInitOk()) {
-    _scheduleRetry();
+  function clampTotalPlayers(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return TOTAL_PLAYERS_MIN;
+    return Math.min(TOTAL_PLAYERS_MAX, Math.max(TOTAL_PLAYERS_MIN, parsed));
   }
 
-  startLivePlayerScorePolling();
-
-  // wire save button
-  const saveGameConfigBtn = document.getElementById("save-game-config");
-  if (saveGameConfigBtn && !saveGameConfigBtn.dataset.bound) {
-    saveGameConfigBtn.style.display = "none";
-    saveGameConfigBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      await saveGameConfig();
-    });
-    saveGameConfigBtn.dataset.bound = "1";
+  function clampScoreReels(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return SCORE_REELS_MIN;
+    return Math.min(SCORE_REELS_MAX, Math.max(SCORE_REELS_MIN, parsed));
   }
 
-  checkForUpdates();
-  loadConfiguredSsidSignal();
-}
+  function clampDummyReels(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return DUMMY_REELS_MIN;
+    return Math.min(DUMMY_REELS_MAX, Math.max(DUMMY_REELS_MIN, parsed));
+  }
 
-initializeAdminPage();
+  function clampPause(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return PAUSE_DEFAULT;
+    return Math.min(PAUSE_MAX, Math.max(PAUSE_MIN, parsed));
+  }
 
-// Live player score indicators beside timing filter controls
-function startLivePlayerScorePolling() {
-  const p1El = document.getElementById("live-score-p1");
-  const p2El = document.getElementById("live-score-p2");
-  const p3El = document.getElementById("live-score-p3");
-  const p4El = document.getElementById("live-score-p4");
-  if (!p1El && !p2El && !p3El && !p4El) return;
+  function getConfiguredDummyReels() {
+    const dummyInput = document.getElementById("dummy-reels");
+    if (!dummyInput) return DUMMY_REELS_MIN;
+    return clampDummyReels(dummyInput.value);
+  }
 
-  const POLL_MS = 1000;
+  function getTimingAdjLabels(dummyReels) {
+    const zeros = "0".repeat(Math.max(0, Number(dummyReels) || 0));
+    return TIMING_ADJ_BASE_LABELS.map((base) => base + zeros + "s");
+  }
 
-  function formatScore(value) {
+  function clampTimingAdjScore(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return "0";
-    return Math.trunc(n).toLocaleString();
+    if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_SCORE;
+    return Math.min(
+      TIMING_ADJ_SCORE_MAX,
+      Math.max(TIMING_ADJ_MIN, Math.trunc(n)),
+    );
   }
 
-  async function poll() {
-    if (!isCurrentGeneration()) {
-      return;
+  function clampTimingAdjReset(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return TIMING_ADJ_DEFAULT_RESET;
+    return Math.min(
+      TIMING_ADJ_RESET_MAX,
+      Math.max(TIMING_ADJ_MIN, Math.trunc(n)),
+    );
+  }
+
+  function coerceTimingArray(raw, fallback, clampFn) {
+    if (!Array.isArray(raw) || raw.length !== TIMING_ADJ_COLUMN_COUNT) {
+      return fallback.slice();
     }
+    return raw.map((v) => clampFn(v));
+  }
+
+  // Build an adjuster group element (label, up button, value display, down button)
+  // colorClass: "score" (red), "reset" (blue), or "" for plain
+  // context: e.g. "Player 2 1000s" - gives screen readers a unique name for each control
+  function buildAdjGroup(label, value, colorClass, onUp, onDown, context) {
+    const name =
+      (context ? context + " " : "") + label.toLowerCase() + " depth";
+
+    const group = document.createElement("div");
+    group.className = "adj-group";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", name);
+
+    const lbl = document.createElement("div");
+    lbl.className = "adj-group-label";
+    lbl.textContent = label;
+
+    const btnClass =
+      "secondary outline adj-btn" +
+      (colorClass ? " adj-btn-" + colorClass : "");
+    const valClass = "adj-value" + (colorClass ? " adj-val-" + colorClass : "");
+
+    const upBtn = document.createElement("button");
+    upBtn.className = btnClass;
+    upBtn.type = "button";
+    upBtn.textContent = "\u25b2";
+    upBtn.setAttribute("aria-label", "Increase " + name);
+    upBtn.addEventListener("click", onUp);
+
+    const valDisplay = document.createElement("div");
+    valDisplay.className = valClass;
+    valDisplay.textContent = String(value);
+    valDisplay.setAttribute("aria-live", "polite");
+
+    const downBtn = document.createElement("button");
+    downBtn.className = btnClass;
+    downBtn.type = "button";
+    downBtn.textContent = "\u25bc";
+    downBtn.setAttribute("aria-label", "Decrease " + name);
+    downBtn.addEventListener("click", onDown);
+
+    group.appendChild(lbl);
+    group.appendChild(upBtn);
+    group.appendChild(valDisplay);
+    group.appendChild(downBtn);
+
+    return { group, valDisplay };
+  }
+
+  // Global sensitivity (-200 to 0%)
+  async function initSensitivityUI() {
+    let value = SENSITIVITY_DEFAULT;
+
     try {
-      const resp = await window.smartFetch("/api/game/status", null, false);
+      const resp = await window.smartFetch(
+        "/api/em/get_sensitivity",
+        null,
+        false,
+      );
       if (resp && resp.ok) {
         const data = await resp.json();
-        const scores = Array.isArray(data.Scores) ? data.Scores : [];
-        if (p1El) p1El.textContent = formatScore(scores[0] ?? 0);
-        if (p2El) p2El.textContent = formatScore(scores[1] ?? 0);
-        if (p3El) p3El.textContent = formatScore(scores[2] ?? 0);
-        if (p4El) p4El.textContent = formatScore(scores[3] ?? 0);
+        if (data.sensitivity != null)
+          value = Math.min(
+            SENSITIVITY_MAX,
+            Math.max(SENSITIVITY_MIN, Number(data.sensitivity)),
+          );
       }
     } catch (e) {
-      // keep last displayed values on transient errors
-    }
-    if (isCurrentGeneration()) {
-      setTimeout(poll, POLL_MS);
-    }
-  }
-
-  poll();
-}
-
-//
-// Actions
-//
-
-// Download Logs
-window.downloadLogs = async function () {
-  console.log("Downloading logs...");
-
-  // Perform the fetch (no auth needed if your endpoint doesn't require it)
-  const response = await window.smartFetch("/api/logs", null, true);
-
-  if (!response.ok) {
-    console.error(
-      "Failed to download logs:",
-      response.status,
-      response.statusText,
-    );
-    alert("Failed to download logs.");
-    return;
-  }
-
-  // Get the response as a blob
-  const blob = await response.blob();
-
-  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
-  let filename = document.getElementById("game_name").innerText;
-  filename += "_log_";
-  filename += new Date().toISOString().split("T")[0];
-  filename += ".txt";
-
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, "_");
-
-  // Create a temporary link to trigger the download
-  const url = window.URL.createObjectURL(blob);
-  const element = document.createElement("a");
-  element.href = url;
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
-
-  // Clean up
-  document.body.removeChild(element);
-  window.URL.revokeObjectURL(url);
-
-  console.log("Logs download initiated.");
-};
-
-// Download Memory Snapshot
-window.downloadMemorySnapshot = async function () {
-  console.log("Downloading memory snapshot...");
-
-  // Perform the fetch (no auth needed if your endpoint doesn't require it)
-  const response = await window.smartFetch("/api/memory-snapshot", null, false);
-
-  if (!response.ok) {
-    console.error(
-      "Failed to fetch memory snapshot:",
-      response.status,
-      response.statusText,
-    );
-    alert("Failed to download memory snapshot.");
-    return;
-  }
-
-  // Get the response as text
-  const content = await response.text();
-
-  // Generate a filename similar to how you do CSVs
-  let filename = document.getElementById("game_name").innerText;
-  filename += "_memory_";
-  filename += new Date().toISOString().split("T")[0];
-  filename += ".txt";
-
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, "_");
-
-  // Create a temporary link to trigger the download
-  const element = document.createElement("a");
-  element.href = "data:text/plain;charset=utf-8," + encodeURIComponent(content);
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
-
-  // Clean up
-  document.body.removeChild(element);
-
-  console.log("Memory snapshot download initiated.");
-};
-
-// Download Scores
-window.downloadScores = async function () {
-  console.log("Downloading scores...");
-
-  const response = await window.smartFetch("/api/export/scores", null, false);
-
-  if (!response.ok) {
-    console.error(
-      "Failed to download scores:",
-      response.status,
-      response.statusText,
-    );
-    alert("Failed to download scores.");
-    return;
-  }
-
-  // Get the response
-  const data = await response.json();
-
-  // Generate a filename similar to how you do CSVs (with game name, date, etc.)
-  let filename = document.getElementById("game_name").innerText;
-  filename += "_scores_";
-  filename += new Date().toISOString().split("T")[0];
-  filename += ".json";
-
-  // Replace spaces with underscores
-  filename = filename.replace(/ /g, "_");
-
-  // Create a temporary link to trigger the download
-  const element = document.createElement("a");
-  element.href =
-    "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
-
-  // Clean up
-  document.body.removeChild(element);
-
-  console.log("Scores download initiated.");
-};
-
-//
-// Updates
-//
-
-async function checkForUpdates() {
-  // wait 1 second before checking for updates
-  // this lets us prioritize loading the page and settings
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  try {
-    const response = await window.smartFetch("/api/update/check", null, false);
-    if (!response.ok) {
-      throw new Error(`update check failed: ${response.status}`);
+      // use default
     }
 
-    let data;
-    try {
-      data = await response.json();
-    } catch (jsonError) {
-      console.error("Invalid JSON in update check response", jsonError);
-      throw jsonError;
+    const display = document.getElementById("sensitivity-value");
+    const upBtn = document.getElementById("sensitivity-up");
+    const downBtn = document.getElementById("sensitivity-down");
+    const recalBtn = document.getElementById("sensitivity-recalibrate");
+
+    function updateDisplay() {
+      if (display) display.textContent = (value > 0 ? "+" : "") + value + "%";
     }
 
-    console.debug("Update check response data:", data);
-
-    const updateButton = document.getElementById("update-button");
-
-    if (!updateButton) {
-      console.log("No update button found, must have left page");
-      return;
-    }
-
-    // get the current version from the page
-    const current = document
-      .getElementById("version")
-      .textContent.split(" ")[1];
-
-    // link to release notes in text
-    const releaseNotes = document.getElementById("release-notes");
-    const releaseLink = document.getElementById("release-link");
-    if (releaseNotes) {
-      if (data["release_page"]) {
-        releaseLink.href = data["release_page"];
-        releaseLink.textContent = `GitHub release for ${
-          data["version"] || "unknown version"
-        }`;
-        releaseLink.classList.remove("hide");
-      } else {
-        releaseLink.classList.add("hide");
-      }
-
-      if (data["notes"]) {
-        releaseNotes.innerHTML = data["notes"];
-        releaseNotes.classList.remove("hide");
-      } else {
-        releaseNotes.classList.add("hide");
+    async function saveSensitivity() {
+      try {
+        await window.smartFetch(
+          "/api/em/set_sensitivity",
+          { sensitivity: value },
+          true,
+        );
+      } catch (e) {
+        console.error("Failed to save sensitivity", e);
       }
     }
 
-    // if the latest is equal to the current version we are up to date
-    if (data["version"] === current) {
-      updateButton.classList.remove("golden-button");
-      updateButton.textContent = "Already up to date";
-      updateButton.disabled = true;
-    } else {
-      // there is an update with an update.json asset
-
-      // update available
-      updateButton.disabled = false;
-      updateButton.classList.add("golden-button");
-      updateButton.textContent = `Update to ${data["version"]}`;
-
-      // get the url for the update.json asset and add an event listener to the button
-      const update_url = data["url"];
-
-      // define the call back function to apply the update
-      const callback = async () => {
-        await applyUpdate(update_url);
-      };
-
-      updateButton.addEventListener("click", async () => {
-        await confirmAction("update to version: " + data["version"], callback);
+    if (upBtn && !upBtn.dataset.bound) {
+      upBtn.dataset.bound = "1";
+      upBtn.addEventListener("click", async () => {
+        if (value < SENSITIVITY_MAX) {
+          value = Math.min(SENSITIVITY_MAX, value + SENSITIVITY_STEP);
+          updateDisplay();
+          await saveSensitivity();
+        }
       });
     }
-  } catch (e) {
-    console.error("Failed to check for updates:", e);
-    const updateButton = document.getElementById("update-button");
-    if (updateButton) {
-      updateButton.textContent = "Could not get updates";
-      updateButton.disabled = true;
-      updateButton.title = e.message || e.toString();
+
+    if (downBtn && !downBtn.dataset.bound) {
+      downBtn.dataset.bound = "1";
+      downBtn.addEventListener("click", async () => {
+        if (value > SENSITIVITY_MIN) {
+          value = Math.max(SENSITIVITY_MIN, value - SENSITIVITY_STEP);
+          updateDisplay();
+          await saveSensitivity();
+        }
+      });
+    }
+
+    if (recalBtn && !recalBtn.dataset.bound) {
+      recalBtn.dataset.bound = "1";
+      recalBtn.addEventListener("click", async () => {
+        const prevText = recalBtn.textContent;
+        recalBtn.disabled = true;
+        recalBtn.textContent = "Calibrating...";
+        try {
+          const resp = await window.smartFetch(
+            "/api/em/recalibrate_sensors",
+            {},
+            true,
+          );
+          if (!resp || !resp.ok) {
+            throw new Error(
+              `recalibrate failed: ${resp ? resp.status : "no response"}`,
+            );
+          }
+          // Recalibrating resets sensitivity back to 0% on the device - reflect that here.
+          value = 0;
+          updateDisplay();
+          recalBtn.textContent = "Done";
+        } catch (e) {
+          console.error("Failed to recalibrate sensors", e);
+          recalBtn.textContent = "Failed";
+        } finally {
+          setTimeout(() => {
+            recalBtn.textContent = prevText || "Recalibrate";
+            recalBtn.disabled = false;
+          }, 1200);
+        }
+      });
+    }
+
+    updateDisplay();
+
+    // Poll so sensitivity changes made from the cabinet's physical up/down
+    // buttons show up here without a page reload. Guarded so a retry of
+    // initSensitivityUI() (see _runAdminDataInit) doesn't start a second loop.
+    if (display && !display.dataset.polling) {
+      display.dataset.polling = "1";
+      const SENSITIVITY_POLL_MS = 1300;
+      (async function pollSensitivity() {
+        if (!isCurrentGeneration()) return;
+        try {
+          const resp = await window.smartFetch(
+            "/api/em/get_sensitivity",
+            null,
+            false,
+          );
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            if (data.sensitivity != null) {
+              const serverValue = Math.min(
+                SENSITIVITY_MAX,
+                Math.max(SENSITIVITY_MIN, Number(data.sensitivity)),
+              );
+              if (serverValue !== value) {
+                value = serverValue;
+                updateDisplay();
+              }
+            }
+          }
+        } catch (e) {
+          // keep last displayed value on transient errors
+        }
+        if (isCurrentGeneration()) {
+          setTimeout(pollSensitivity, SENSITIVITY_POLL_MS);
+        }
+      })();
     }
   }
-}
 
-async function applyUpdate(url, skip_signature_check = false) {
-  const req_data = { url: url, skip_signature_check: skip_signature_check };
-  const response = await window.smartFetch("/api/update/apply", req_data, true);
-  if (!response.ok) {
-    throw new Error("Failed to start update");
+  // Timing filter: per-decade score (red) and reset (blue) depth adjusters
+  // p1_score/p1_reset = Player 1 depths; p2_score/p2_reset = Player 2 depths;
+  // p3/p4 depths only apply (and are shown) on 4player hardware.
+  async function initTimingSensitivityUI() {
+    const N = TIMING_ADJ_COLUMN_COUNT;
+    let p1_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+    let p1_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+    let p2_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+    let p2_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+    let p3_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+    let p3_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+    let p4_score = Array(N).fill(TIMING_ADJ_DEFAULT_SCORE);
+    let p4_reset = Array(N).fill(TIMING_ADJ_DEFAULT_RESET);
+
+    try {
+      const resp = await window.smartFetch(
+        "/api/em/get_timing_sensitivity",
+        null,
+        false,
+      );
+      if (resp && resp.ok) {
+        const data = await resp.json();
+        p1_score = coerceTimingArray(
+          data.p1_score,
+          p1_score,
+          clampTimingAdjScore,
+        );
+        p1_reset = coerceTimingArray(
+          data.p1_reset,
+          p1_reset,
+          clampTimingAdjReset,
+        );
+        p2_score = coerceTimingArray(
+          data.p2_score,
+          p2_score,
+          clampTimingAdjScore,
+        );
+        p2_reset = coerceTimingArray(
+          data.p2_reset,
+          p2_reset,
+          clampTimingAdjReset,
+        );
+        p3_score = coerceTimingArray(
+          data.p3_score,
+          p3_score,
+          clampTimingAdjScore,
+        );
+        p3_reset = coerceTimingArray(
+          data.p3_reset,
+          p3_reset,
+          clampTimingAdjReset,
+        );
+        p4_score = coerceTimingArray(
+          data.p4_score,
+          p4_score,
+          clampTimingAdjScore,
+        );
+        p4_reset = coerceTimingArray(
+          data.p4_reset,
+          p4_reset,
+          clampTimingAdjReset,
+        );
+      }
+    } catch (e) {
+      // use defaults
+    }
+
+    async function saveTimingSensitivity() {
+      try {
+        await window.smartFetch(
+          "/api/em/set_timing_sensitivity",
+          {
+            p1_score,
+            p1_reset,
+            p2_score,
+            p2_reset,
+            p3_score,
+            p3_reset,
+            p4_score,
+            p4_reset,
+          },
+          true,
+        );
+      } catch (e) {
+        console.error("Failed to save timing sensitivity", e);
+      }
+    }
+
+    function buildPlayerRow(
+      containerId,
+      playerNum,
+      scoreArr,
+      resetArr,
+      labels,
+    ) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = "";
+
+      labels.forEach((label, i) => {
+        const col = document.createElement("div");
+        col.className = "decade-col";
+
+        const colLbl = document.createElement("div");
+        colLbl.className = "decade-col-label";
+        colLbl.textContent = label;
+        col.appendChild(colLbl);
+        const context = "Player " + playerNum + " " + label;
+
+        // Red adjuster — score (detection) depth
+        const { group: sg, valDisplay: sv } = buildAdjGroup(
+          "Score",
+          scoreArr[i],
+          "score",
+          async () => {
+            if (scoreArr[i] < TIMING_ADJ_SCORE_MAX) {
+              scoreArr[i] = Math.min(TIMING_ADJ_SCORE_MAX, scoreArr[i] + 1);
+              sv.textContent = String(scoreArr[i]);
+              await saveTimingSensitivity();
+            }
+          },
+          async () => {
+            if (scoreArr[i] > TIMING_ADJ_MIN) {
+              scoreArr[i] = Math.max(TIMING_ADJ_MIN, scoreArr[i] - 1);
+              sv.textContent = String(scoreArr[i]);
+              await saveTimingSensitivity();
+            }
+          },
+          context,
+        );
+        col.appendChild(sg);
+
+        // Blue adjuster — reset (hold-off) depth
+        const { group: rg, valDisplay: rv } = buildAdjGroup(
+          "Reset",
+          resetArr[i],
+          "reset",
+          async () => {
+            if (resetArr[i] < TIMING_ADJ_RESET_MAX) {
+              resetArr[i] = Math.min(TIMING_ADJ_RESET_MAX, resetArr[i] + 1);
+              rv.textContent = String(resetArr[i]);
+              await saveTimingSensitivity();
+            }
+          },
+          async () => {
+            if (resetArr[i] > TIMING_ADJ_MIN) {
+              resetArr[i] = Math.max(TIMING_ADJ_MIN, resetArr[i] - 1);
+              rv.textContent = String(resetArr[i]);
+              await saveTimingSensitivity();
+            }
+          },
+          context,
+        );
+        col.appendChild(rg);
+
+        container.appendChild(col);
+      });
+    }
+
+    function renderTimingRows() {
+      const labels = getTimingAdjLabels(getConfiguredDummyReels());
+      buildPlayerRow("timing-adj-p1", 1, p1_score, p1_reset, labels);
+      buildPlayerRow("timing-adj-p2", 2, p2_score, p2_reset, labels);
+      buildPlayerRow("timing-adj-p3", 3, p3_score, p3_reset, labels);
+      buildPlayerRow("timing-adj-p4", 4, p4_score, p4_reset, labels);
+      applyHardwareVersionVisibility();
+    }
+
+    renderTimingRows();
+
+    const dummyInput = document.getElementById("dummy-reels");
+    if (dummyInput && !dummyInput.dataset.timingLabelsBound) {
+      dummyInput.addEventListener("input", renderTimingRows);
+      dummyInput.addEventListener("change", renderTimingRows);
+      dummyInput.dataset.timingLabelsBound = "1";
+    }
   }
 
-  const updateModal = document.getElementById("update-progress-modal");
-  updateModal.showModal();
+  //
+  // Settings
+  //
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  const progressBar = document.getElementById("update-progress-bar");
-  const updateProgressLog = document.getElementById("update-progress-log");
-
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      let msg = decoder.decode(value, { stream: true });
-
-      msg = msg.split("}{");
-      for (let i = 0; i < msg.length; i++) {
-        if (i !== 0) {
-          msg[i] = "{" + msg[i];
-        }
-        if (i !== msg.length - 1) {
-          msg[i] = msg[i] + "}";
-        }
-      }
-
-      for (let i = 0; i < msg.length; i++) {
-        const msg_obj = JSON.parse(msg[i]);
-
-        if (msg_obj.log) {
-          updateProgressLog.textContent += msg_obj.log + "\n";
-        }
-        if (msg_obj.percent) {
-          progressBar.value = msg_obj.percent;
-        }
-      }
-
-      // scroll to the bottom of the log
-      updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
-    }
-  } catch (e) {
-    // if progress bar is at 100% then the update was successful and the server has just rebooted
-    if (progressBar.value === 100) {
-      // refresh the page
-      window.location.reload();
-    } else {
-      updateProgressLog.textContent += "Connection lost.\n";
-      updateProgressLog.textContent += "Refresh the page and Try again.\n";
-      progressBar.value = 0;
+  // Tournament Mode
+  async function tournamentModeToggle() {
+    let data;
+    try {
+      const response = await window.smartFetch(
+        "/api/settings/get_tournament_mode",
+        null,
+        false,
+      );
+      data = await response.json();
+    } catch (e) {
+      console.warn("tournamentModeToggle: fetch failed", e);
       return;
     }
+
+    const tmToggle = document.getElementById("tournament-mode-toggle");
+    if (!tmToggle) return;
+
+    tmToggle.checked = data["tournament_mode"];
+    tmToggle.disabled = false;
+
+    // add event listener to update the setting when the checkbox is changed
+    if (!tmToggle.dataset.bound) {
+      tmToggle.dataset.bound = "1";
+      tmToggle.addEventListener("change", async () => {
+        const data = { tournament_mode: tmToggle.checked ? 1 : 0 };
+        await window.smartFetch(
+          "/api/settings/set_tournament_mode",
+          data,
+          true,
+        );
+      });
+    }
   }
 
-  if (response.status !== 200) {
-    updateProgressLog.textContent += "Failed to apply update.\n";
-    updateProgressLog.textContent += "Status: " + response.status + "\n";
-    updateProgressLog.textContent +=
-      "Status Text: " + response.statusText + "\n";
+  // Score claim methods
+  async function getScoreClaimMethods() {
+    let data;
+    try {
+      const response = await window.smartFetch(
+        "/api/settings/get_claim_methods",
+        null,
+        false,
+      );
+      data = await response.json();
+    } catch (e) {
+      console.warn("getScoreClaimMethods: fetch failed", e);
+      return;
+    }
+
+    const webUIToggle = document.getElementById("web-ui-toggle");
+    if (!webUIToggle) return;
+
+    webUIToggle.checked = data["web-ui"];
+    webUIToggle.disabled = false;
+
+    if (!webUIToggle.dataset.bound) {
+      webUIToggle.dataset.bound = "1";
+      webUIToggle.addEventListener("change", async () => {
+        const data = {
+          "web-ui": webUIToggle.checked ? 1 : 0,
+        };
+        await window.smartFetch("/api/settings/set_claim_methods", data, true);
+      });
+    }
   }
-}
 
-window.applyUpdate = applyUpdate;
-
-// custom update function
-window.customUpdate = async function () {
-  // prompt the user for the update url
-  const url = prompt("Enter the URL for the update");
-  if (url === null) {
-    return;
+  // Run all admin API fetches sequentially and populate UI.
+  // All init functions are idempotent (guarded listeners) so safe to re-run.
+  async function _runAdminDataInit() {
+    try {
+      await initSetupUI();
+    } catch (e) {
+      console.warn("initSetupUI failed", e);
+    }
+    try {
+      await initSensitivityUI();
+    } catch (e) {
+      console.warn("initSensitivityUI failed", e);
+    }
+    try {
+      await initTimingSensitivityUI();
+    } catch (e) {
+      console.warn("initTimingSensitivityUI failed", e);
+    }
+    try {
+      await tournamentModeToggle();
+    } catch (e) {
+      console.warn("tournamentModeToggle failed", e);
+    }
+    try {
+      await getScoreClaimMethods();
+    } catch (e) {
+      console.warn("getScoreClaimMethods failed", e);
+    }
   }
-  // confirm url
-  await confirmAction(
-    "Do you trust the source of this update and want to apply the update file at the url: " +
-      url,
-    async () => {
-      await window.applyUpdate(url, true);
-    },
-  );
-};
 
+  // Check whether the timing controls actually rendered (proxy for "data loaded").
+  function _adminInitOk() {
+    const p1 = document.getElementById("timing-adj-p1");
+    return p1 && p1.children.length > 0;
+  }
+
+  async function initializeAdminPage() {
+    window.adminGeneration = (window.adminGeneration || 0) + 1;
+    myGeneration = window.adminGeneration;
+    window.cleanup_admin = function () {
+      // Bump (rather than just flip a boolean) so this generation is
+      // invalidated even if the user never navigates back to Admin - a
+      // continuation suspended mid-await still needs to notice it's stale.
+      window.adminGeneration = (window.adminGeneration || 0) + 1;
+    };
+
+    // First attempt
+    await _runAdminDataInit();
+    if (!isCurrentGeneration()) return; // a newer Admin load has since started
+
+    // If data didn't load, schedule retries (server may have been busy with
+    // stale requests from the previous page).
+    var _retries = 0;
+    var _MAX_RETRIES = 2;
+    var _RETRY_MS = 2000;
+    function _scheduleRetry() {
+      if (_retries >= _MAX_RETRIES) return;
+      _retries++;
+      setTimeout(async () => {
+        if (!isCurrentGeneration()) return; // navigated away, or a newer load took over
+        if (_adminInitOk()) return; // already loaded
+        console.warn(
+          "ADMIN: data incomplete, retry " + _retries + "/" + _MAX_RETRIES,
+        );
+        await _runAdminDataInit();
+        if (!isCurrentGeneration()) return;
+        _scheduleRetry();
+      }, _RETRY_MS);
+    }
+    if (!_adminInitOk()) {
+      _scheduleRetry();
+    }
+
+    startLivePlayerScorePolling();
+
+    // wire save button
+    const saveGameConfigBtn = document.getElementById("save-game-config");
+    if (saveGameConfigBtn && !saveGameConfigBtn.dataset.bound) {
+      saveGameConfigBtn.style.display = "none";
+      saveGameConfigBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await saveGameConfig();
+      });
+      saveGameConfigBtn.dataset.bound = "1";
+    }
+
+    checkForUpdates();
+    loadConfiguredSsidSignal();
+  }
+
+  initializeAdminPage();
+
+  // Live player score indicators beside timing filter controls
+  function startLivePlayerScorePolling() {
+    const p1El = document.getElementById("live-score-p1");
+    const p2El = document.getElementById("live-score-p2");
+    const p3El = document.getElementById("live-score-p3");
+    const p4El = document.getElementById("live-score-p4");
+    if (!p1El && !p2El && !p3El && !p4El) return;
+
+    const POLL_MS = 1000;
+
+    function formatScore(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "0";
+      return Math.trunc(n).toLocaleString();
+    }
+
+    async function poll() {
+      if (!isCurrentGeneration()) {
+        return;
+      }
+      try {
+        const resp = await window.smartFetch("/api/game/status", null, false);
+        if (resp && resp.ok) {
+          const data = await resp.json();
+          const scores = Array.isArray(data.Scores) ? data.Scores : [];
+          if (p1El) p1El.textContent = formatScore(scores[0] ?? 0);
+          if (p2El) p2El.textContent = formatScore(scores[1] ?? 0);
+          if (p3El) p3El.textContent = formatScore(scores[2] ?? 0);
+          if (p4El) p4El.textContent = formatScore(scores[3] ?? 0);
+        }
+      } catch (e) {
+        // keep last displayed values on transient errors
+      }
+      if (isCurrentGeneration()) {
+        setTimeout(poll, POLL_MS);
+      }
+    }
+
+    poll();
+  }
+
+  //
+  // Actions
+  //
+
+  // Download Logs
+  window.downloadLogs = async function () {
+    console.log("Downloading logs...");
+
+    // Perform the fetch (no auth needed if your endpoint doesn't require it)
+    const response = await window.smartFetch("/api/logs", null, true);
+
+    if (!response.ok) {
+      console.error(
+        "Failed to download logs:",
+        response.status,
+        response.statusText,
+      );
+      alert("Failed to download logs.");
+      return;
+    }
+
+    // Get the response as a blob
+    const blob = await response.blob();
+
+    // Generate a filename similar to how you do CSVs (with game name, date, etc.)
+    let filename = document.getElementById("game_name").innerText;
+    filename += "_log_";
+    filename += new Date().toISOString().split("T")[0];
+    filename += ".txt";
+
+    // Replace spaces with underscores
+    filename = filename.replace(/ /g, "_");
+
+    // Create a temporary link to trigger the download
+    const url = window.URL.createObjectURL(blob);
+    const element = document.createElement("a");
+    element.href = url;
+    element.download = filename;
+    document.body.appendChild(element);
+    element.click();
+
+    // Clean up
+    document.body.removeChild(element);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Logs download initiated.");
+  };
+
+  // Download Memory Snapshot
+  window.downloadMemorySnapshot = async function () {
+    console.log("Downloading memory snapshot...");
+
+    // Perform the fetch (no auth needed if your endpoint doesn't require it)
+    const response = await window.smartFetch(
+      "/api/memory-snapshot",
+      null,
+      false,
+    );
+
+    if (!response.ok) {
+      console.error(
+        "Failed to fetch memory snapshot:",
+        response.status,
+        response.statusText,
+      );
+      alert("Failed to download memory snapshot.");
+      return;
+    }
+
+    // Get the response as text
+    const content = await response.text();
+
+    // Generate a filename similar to how you do CSVs
+    let filename = document.getElementById("game_name").innerText;
+    filename += "_memory_";
+    filename += new Date().toISOString().split("T")[0];
+    filename += ".txt";
+
+    // Replace spaces with underscores
+    filename = filename.replace(/ /g, "_");
+
+    // Create a temporary link to trigger the download
+    const element = document.createElement("a");
+    element.href =
+      "data:text/plain;charset=utf-8," + encodeURIComponent(content);
+    element.download = filename;
+    document.body.appendChild(element);
+    element.click();
+
+    // Clean up
+    document.body.removeChild(element);
+
+    console.log("Memory snapshot download initiated.");
+  };
+
+  // Download Scores
+  window.downloadScores = async function () {
+    console.log("Downloading scores...");
+
+    const response = await window.smartFetch("/api/export/scores", null, false);
+
+    if (!response.ok) {
+      console.error(
+        "Failed to download scores:",
+        response.status,
+        response.statusText,
+      );
+      alert("Failed to download scores.");
+      return;
+    }
+
+    // Get the response
+    const data = await response.json();
+
+    // Generate a filename similar to how you do CSVs (with game name, date, etc.)
+    let filename = document.getElementById("game_name").innerText;
+    filename += "_scores_";
+    filename += new Date().toISOString().split("T")[0];
+    filename += ".json";
+
+    // Replace spaces with underscores
+    filename = filename.replace(/ /g, "_");
+
+    // Create a temporary link to trigger the download
+    const element = document.createElement("a");
+    element.href =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(data));
+    element.download = filename;
+    document.body.appendChild(element);
+    element.click();
+
+    // Clean up
+    document.body.removeChild(element);
+
+    console.log("Scores download initiated.");
+  };
+
+  //
+  // Updates
+  //
+
+  async function checkForUpdates() {
+    // wait 1 second before checking for updates
+    // this lets us prioritize loading the page and settings
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    try {
+      const response = await window.smartFetch(
+        "/api/update/check",
+        null,
+        false,
+      );
+      if (!response.ok) {
+        throw new Error(`update check failed: ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Invalid JSON in update check response", jsonError);
+        throw jsonError;
+      }
+
+      console.debug("Update check response data:", data);
+
+      const updateButton = document.getElementById("update-button");
+
+      if (!updateButton) {
+        console.log("No update button found, must have left page");
+        return;
+      }
+
+      // get the current version from the page
+      const current = document
+        .getElementById("version")
+        .textContent.split(" ")[1];
+
+      // link to release notes in text
+      const releaseNotes = document.getElementById("release-notes");
+      const releaseLink = document.getElementById("release-link");
+      if (releaseNotes) {
+        if (data["release_page"]) {
+          releaseLink.href = data["release_page"];
+          releaseLink.textContent = `GitHub release for ${
+            data["version"] || "unknown version"
+          }`;
+          releaseLink.classList.remove("hide");
+        } else {
+          releaseLink.classList.add("hide");
+        }
+
+        if (data["notes"]) {
+          releaseNotes.textContent = data["notes"];
+          releaseNotes.classList.remove("hide");
+        } else {
+          releaseNotes.classList.add("hide");
+        }
+      }
+
+      // if the latest is equal to the current version we are up to date
+      if (data["version"] === current) {
+        updateButton.classList.remove("golden-button");
+        updateButton.textContent = "Already up to date";
+        updateButton.disabled = true;
+      } else {
+        // there is an update with an update.json asset
+
+        // update available
+        updateButton.disabled = false;
+        updateButton.classList.add("golden-button");
+        updateButton.textContent = `Update to ${data["version"]}`;
+
+        // get the url for the update.json asset and add an event listener to the button
+        const update_url = data["url"];
+        const update_sha256 = data["sha256"];
+
+        // define the call back function to apply the update
+        const callback = async () => {
+          await applyUpdate(update_url, false, update_sha256);
+        };
+
+        updateButton.addEventListener("click", async () => {
+          await confirmAction(
+            "update to version: " + data["version"],
+            callback,
+          );
+        });
+      }
+    } catch (e) {
+      console.error("Failed to check for updates:", e);
+      const updateButton = document.getElementById("update-button");
+      if (updateButton) {
+        updateButton.textContent = "Could not get updates";
+        updateButton.disabled = true;
+        updateButton.title = e.message || e.toString();
+      }
+    }
+  }
+
+  async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
+    const req_data = {
+      url: url,
+      skip_signature_check: skip_signature_check,
+      sha256: sha256,
+    };
+    const response = await window.smartFetch(
+      "/api/update/apply",
+      req_data,
+      true,
+    );
+    if (!response.ok) {
+      throw new Error("Failed to start update");
+    }
+
+    const updateModal = document.getElementById("update-progress-modal");
+    updateModal.showModal();
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const progressBar = document.getElementById("update-progress-bar");
+    const updateProgressLog = document.getElementById("update-progress-log");
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        let msg = decoder.decode(value, { stream: true });
+
+        msg = msg.split("}{");
+        for (let i = 0; i < msg.length; i++) {
+          if (i !== 0) {
+            msg[i] = "{" + msg[i];
+          }
+          if (i !== msg.length - 1) {
+            msg[i] = msg[i] + "}";
+          }
+        }
+
+        for (let i = 0; i < msg.length; i++) {
+          const msg_obj = JSON.parse(msg[i]);
+
+          if (msg_obj.log) {
+            updateProgressLog.textContent += msg_obj.log + "\n";
+          }
+          if (msg_obj.percent) {
+            progressBar.value = msg_obj.percent;
+          }
+        }
+
+        // scroll to the bottom of the log
+        updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
+      }
+    } catch (e) {
+      // if progress bar is at 100% then the update was successful and the server has just rebooted
+      if (progressBar.value === 100) {
+        // refresh the page
+        window.location.reload();
+      } else {
+        updateProgressLog.textContent += "Connection lost.\n";
+        updateProgressLog.textContent += "Refresh the page and Try again.\n";
+        progressBar.value = 0;
+        return;
+      }
+    }
+
+    if (response.status !== 200) {
+      updateProgressLog.textContent += "Failed to apply update.\n";
+      updateProgressLog.textContent += "Status: " + response.status + "\n";
+      updateProgressLog.textContent +=
+        "Status Text: " + response.statusText + "\n";
+    }
+  }
+
+  window.applyUpdate = applyUpdate;
+
+  // custom update function
+  window.customUpdate = async function () {
+    // prompt the user for the update url
+    const url = prompt("Enter the URL for the update");
+    if (url === null) {
+      return;
+    }
+    // confirm url
+    await confirmAction(
+      "Do you trust the source of this update and want to apply the update file at the url: " +
+        url,
+      async () => {
+        await window.applyUpdate(url, true);
+      },
+    );
+  };
 })(); // end IIFE
-

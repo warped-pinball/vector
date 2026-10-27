@@ -96,22 +96,50 @@ def get_check_data(path="update.json"):
     return calculated_hash, expected_hash, signature
 
 
-def validate_signature(skip_signature_check=False):
+def _public_key():
+    from rsa.key import PublicKey
+
+    return PublicKey(
+        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
+        e=65537,
+    )
+
+
+def verify_release_info(info):
+    """Return True if the release metadata's RSA signature (SHA-256, PKCS#1 v1.5) is valid.
+
+    The signed message is "vector-release-v1\\n<version>\\n<release_page>\\n<notes>\\n<sha256>" (empty string for missing fields).
+    sha256 is the hex digest of the update file contents, so the checksum can't be swapped by a man in the middle.
+    """
+    try:
+        from binascii import a2b_base64
+
+        from rsa.pkcs1 import verify
+
+        message = "\n".join(("vector-release-v1", str(info.get("version") or ""), str(info.get("release_page") or ""), str(info.get("notes") or ""), str(info.get("sha256") or "")))
+        result = verify(message.encode("utf-8"), a2b_base64(info.get("signature", "")), _public_key())
+        return result == "SHA-256"
+    except Exception as e:
+        print(f"Release info signature check failed: {e}")
+        return False
+
+
+def validate_signature(skip_signature_check=False, expected_sha256=None):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
 
     if skip_signature_check:
-        print("Skipping signature check")
+        print("Skipping signature and checksum check")
         return
 
-    from rsa.key import PublicKey
+    # Confirm this is the update we meant to download, not an older (validly signed) one
+    if not expected_sha256 or hash_bytes.hex() != str(expected_sha256).lower():
+        raise Exception("Update checksum does not match the requested update")
+
     from rsa.pkcs1 import verify
 
-    pub_key = PublicKey(
-        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
-        e=65537,
-    )
+    pub_key = _public_key()
 
     result = verify(hash_bytes, signature, pub_key)
     if result != "SHA-256":
@@ -202,7 +230,7 @@ class LowMemoryMode:
         return False  # don't suppress exceptions
 
 
-def apply_update(url, skip_signature_check=False):
+def apply_update(url, skip_signature_check=False, expected_sha256=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
@@ -212,8 +240,8 @@ def apply_update(url, skip_signature_check=False):
         yield from download_update(url)
         gc_collect()
 
-        yield {"log": "Validating signature", "percent": 30}
-        validate_signature(skip_signature_check=skip_signature_check)
+        yield {"log": "Validating signature and checksum", "percent": 30}
+        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
         gc_collect()
 
         yield {"log": "Writing files to board", "percent": 40}

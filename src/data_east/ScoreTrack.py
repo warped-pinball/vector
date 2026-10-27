@@ -20,7 +20,7 @@ rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 push_game_count = 0
-last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
+last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus initials
@@ -64,6 +64,11 @@ def claim_score(initials, player_index, score):
     """
     global recent_scores
 
+    if not isinstance(initials, str):
+        raise ValueError("SCORE: invalid initials")
+    if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
+        raise ValueError("SCORE: invalid score")
+
     # condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
     i_initials = ""
@@ -96,7 +101,7 @@ def _place_game_in_claim_list(game):
     recent_scores.insert(0, game)
     recent_scores.pop()
     print("SCORE: add to claims list: ", recent_scores)
-   
+
 
 def find_player_by_initials(new_entry):
     """find players name from list of intials with names from storage"""
@@ -237,9 +242,9 @@ def check_for_machine_high_scores(report=True):
 def place_machine_scores():
     """Write top scores from storage back to machine memory"""
     global top_scores
-    
+
     print("SCORE: Place DataEast machine scores")
-    
+
     # Convert top_scores format to the format expected by write_high_scores
     # write_high_scores expects [[initials, score], [initials, score], ...]
     # Only take top 6 scores
@@ -247,10 +252,10 @@ def place_machine_scores():
     for index, entry in enumerate(top_scores[:6]):
         initials = entry.get("initials", "   ")
         score = entry.get("score", 0)
-       
+
         machine_scores.append([initials, score])
         # print(f"  [{index}] {initials}: {score}")
-    
+
     DataMapper.write_high_scores(machine_scores)
 
 
@@ -311,12 +316,13 @@ def CheckForNewScores():
     """Called by scheduler every 5 seconds. Tracks game state and updates scores."""
     global nGameIdleCounter, GameEndCount, _game_state, push_game_count, last_pushed_game
 
-    if push_game_count>0:
+    if push_game_count > 0:
         from origin import push_end_of_game
-        push_game_count+=1
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+
+        push_game_count += 1
+        push_end_of_game(last_pushed_game, push_game_count)
+        if push_game_count > 5:
+            push_game_count = 0
 
     print(f"SCORE: CheckForNewScores - State={_game_state}, GameEndCount={GameEndCount}, IdleCounter={nGameIdleCounter}")
 
@@ -348,12 +354,11 @@ def CheckForNewScores():
 
         # waiting for a game to start
         if _game_state == STATE_WAITING:
-
             # Check if active_format is non-zero; if so, return early
             # Allows game in progress to finish in normal mode when format is activated
             if S.active_format.get("Id", 0) != 0:
                 return
-            
+
             print(f"SCORE: State WAITING - Waiting for game start, IdleCounter={nGameIdleCounter}")
 
             nGameIdleCounter += 1  # claim score list expiration timer
@@ -375,7 +380,6 @@ def CheckForNewScores():
                     print("SCORE: Removing machine scores (enter_initials_on_game=True)")
                     highScores = [["aaa", 900], ["aaa", 800], ["aaa", 700], ["aaa", 600]]
                     DataMapper.write_high_scores(highScores)
-         
 
         # waiting for game to end
         elif _game_state == STATE_PLAYING:
@@ -446,6 +450,7 @@ def CheckForNewScores():
                     _place_game_in_claim_list(game)
 
                     from origin import push_end_of_game
+
                     push_game_count = 1
                     last_pushed_game = game
                     push_end_of_game(last_pushed_game, push_game_count)
