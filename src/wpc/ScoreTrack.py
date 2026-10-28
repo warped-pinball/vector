@@ -111,8 +111,7 @@ def claim_score(initials, player_index, score):
                     update_leaderboard(new_score)
                 return
 
-    # required for case where user resets high scores on the machine
-    update_leaderboard({"initials": initials, "full_name": None, "score": score, "game": 0})
+    raise ValueError("SCORE: Score not found in claim list")
 
 
 def _place_game_in_claim_list(game):

@@ -105,23 +105,47 @@ def _public_key():
     )
 
 
-def verify_release_info(info):
-    """Return True if the release metadata's RSA signature (SHA-256, PKCS#1 v1.5) is valid.
+def verify_release(latest):
+    """Return the release record from latest.json once its signature checks out, otherwise raise.
 
-    The signed message is "vector-release-v1\\n<version>\\n<release_page>\\n<notes>\\n<sha256>" (empty string for missing fields).
-    sha256 is the hex digest of the update file contents, so the checksum can't be swapped by a man in the middle.
+    latest["signed"]["payload"] is the record as a JSON string, signed (PKCS#1 v1.5, SHA-256) with the
+    same Warped Pinball key as the update files; nothing outside it is trusted.
     """
+    from binascii import a2b_base64
+    from json import loads as json_loads
+
+    from rsa.pkcs1 import verify
+    from systemConfig import vectorSystem
+
+    signed = latest.get("signed") or {}
+    payload = signed.get("payload")
+    if not payload or not signed.get("signature"):
+        raise Exception("Release information is not signed")
+
     try:
-        from binascii import a2b_base64
-
-        from rsa.pkcs1 import verify
-
-        message = "\n".join(("vector-release-v1", str(info.get("version") or ""), str(info.get("release_page") or ""), str(info.get("notes") or ""), str(info.get("sha256") or "")))
-        result = verify(message.encode("utf-8"), a2b_base64(info.get("signature", "")), _public_key())
-        return result == "SHA-256"
+        result = verify(payload.encode("utf-8"), a2b_base64(signed["signature"]), _public_key())
     except Exception as e:
-        print(f"Release info signature check failed: {e}")
-        return False
+        raise Exception(f"Release signature invalid: {e}")
+    if result != "SHA-256":
+        raise Exception(f"Release signature invalid: {result}")
+
+    release = json_loads(payload)
+    if release.pop("product", None) != vectorSystem:
+        raise Exception("Release is for a different system")
+    return release
+
+
+def fetch_latest_release():
+    """latest.json comes over plain HTTP; only its signed release record is used"""
+    from mrequests.mrequests import get
+    from systemConfig import updatesURL
+
+    resp = get(updatesURL, timeout=10)
+    try:
+        latest = resp.json()
+    finally:
+        resp.close()
+    return verify_release(latest)
 
 
 def validate_signature(skip_signature_check=False, expected_sha256=None):
@@ -129,19 +153,21 @@ def validate_signature(skip_signature_check=False, expected_sha256=None):
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
 
+    # Confirm this is the file we were told to expect; optional for developer builds
+    if expected_sha256 and hash_bytes.hex() != str(expected_sha256).strip().lower():
+        raise Exception("Update checksum does not match the expected checksum")
+
     if skip_signature_check:
-        print("Skipping signature and checksum check")
+        print("Skipping signature check")
         return
 
-    # Confirm this is the update we meant to download, not an older (validly signed) one
-    if not expected_sha256 or hash_bytes.hex() != str(expected_sha256).lower():
-        raise Exception("Update checksum does not match the requested update")
+    # A release update must be the exact file the signed release record named
+    if not expected_sha256:
+        raise Exception("No checksum for this update")
 
     from rsa.pkcs1 import verify
 
-    pub_key = _public_key()
-
-    result = verify(hash_bytes, signature, pub_key)
+    result = verify(hash_bytes, signature, _public_key())
     if result != "SHA-256":
         raise Exception(f"Signature invalid! {result}")
 

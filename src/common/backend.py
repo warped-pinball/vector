@@ -921,7 +921,7 @@ def app_getScores(request):
     data = request.data
     player_id = int(data["id"])
     if player_id < 0 or player_id >= ds_memory_map["names"]["count"]:
-        return json_dumps({"error": "Invalid player id"}), 400 and name
+        return json_dumps({"error": "Invalid player id"}), 400
     player_record = ds_read_record("names", player_id)
 
     scores = []
@@ -2175,8 +2175,10 @@ def app_updates_available(request):
       status_codes:
         - code: 200
           description: Update metadata returned
+        - code: 502
+          description: The update information could not be fetched or its signature did not check out
       body:
-        description: JSON payload describing available updates. ``notes``, ``release_page`` and ``sha256`` are only returned when the release metadata carries a valid RSA signature, in which case ``verified`` is true.
+        description: The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` is passed to the apply route. ``notes`` is untrusted and must be shown as text.
         example:
             {
                 "release_page": "https://github.com/...",
@@ -2185,31 +2187,16 @@ def app_updates_available(request):
                 "url": "https://github.com/...",
                 "version": "1.9.0",
                 "sha256": "<hex digest of the update file contents>",
-                "verified": true
+                "signature": "<base64 RSA signature of that digest>"
             }
     @end
     """
-    from mrequests.mrequests import get
-    from systemConfig import updatesURL
-    from update import verify_release_info
-
-    resp = get(updatesURL, timeout=10)
+    from update import fetch_latest_release
 
     try:
-        data = resp.json()
-    finally:
-        resp.close()
-
-    # The release notes, page link and checksum come over plain HTTP; only pass them on when RSA-signed
-    verified = verify_release_info(data)
-    if not verified:
-        data.pop("notes", None)
-        data.pop("release_page", None)
-        data.pop("sha256", None)
-    data.pop("signature", None)
-    data["verified"] = verified
-
-    return data
+        return fetch_latest_release()
+    except Exception as e:
+        return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
 
 
 @add_route("/api/update/apply", auth=True)
@@ -2227,11 +2214,11 @@ def app_apply_update(request):
         - name: sha256
           type: string
           required: false
-          description: Expected hex SHA-256 of the update file (from the update check). Required unless skip_signature_check is set
+          description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
         - name: skip_signature_check
           type: bool
           required: false
-          description: Bypass signature and checksum validation (for developer builds)
+          description: Bypass signature validation (for developer builds)
     response:
       status_codes:
         - code: 200
@@ -2246,12 +2233,23 @@ def app_apply_update(request):
     @end
     """
     from logger import logger_instance as Log
-    from update import apply_update
+    from update import apply_update, fetch_latest_release
 
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
+    skip_signature_check = data.get("skip_signature_check", False)
+    expected_sha256 = data.get("sha256")
+    # Callers like Origin only send the url; take the checksum from the signed release record when it is the latest release
+    if not skip_signature_check and not expected_sha256:
+        try:
+            latest = fetch_latest_release()
+            if latest.get("url") == data["url"]:
+                expected_sha256 = latest.get("sha256")
+        except Exception as e:
+            Log.log(f"BKD: Could not look up update checksum: {e}")
+        gc_collect()
     try:
-        for response in apply_update(data["url"], skip_signature_check=data.get("skip_signature_check", False), expected_sha256=data.get("sha256")):
+        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")

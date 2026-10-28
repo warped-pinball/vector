@@ -1556,8 +1556,9 @@ No parameters inferred.
 #### Status codes
 
 - `200` - Update metadata returned
+- `502` - The update information could not be fetched or its signature did not check out
 
-**Response body:** JSON payload describing available updates. ``notes``, ``release_page`` and ``sha256`` are only returned when the release metadata carries a valid RSA signature, in which case ``verified`` is true.
+**Response body:** The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` is passed to the apply route. ``notes`` is untrusted and must be shown as text.
 
 ```
 {
@@ -1567,14 +1568,14 @@ No parameters inferred.
     "url": "https://github.com/...",
     "version": "1.9.0",
     "sha256": "<hex digest of the update file contents>",
-    "verified": true
+    "signature": "<base64 RSA signature of that digest>"
 }
 ```
 
 <a id="api-update-apply"></a>
 ## `/api/update/apply`
 
-- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2216)
+- **Handler:** [`app_apply_update`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2203)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Download and apply a software update from the provided URL.
@@ -1584,8 +1585,8 @@ Download and apply a software update from the provided URL.
 #### Body parameters
 
 - `url` string required - Signed update package URL
-- `sha256` string optional - Expected hex SHA-256 of the update file (from the update check). Required unless skip_signature_check is set
-- `skip_signature_check` bool optional - Bypass signature and checksum validation (for developer builds)
+- `sha256` string optional - Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
+- `skip_signature_check` bool optional - Bypass signature validation (for developer builds)
 
 ### Response
 
@@ -1605,7 +1606,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2273)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2271)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1629,7 +1630,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2296)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2294)
 
 
 No description provided.
@@ -1645,7 +1646,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2301)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2299)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
@@ -1673,7 +1674,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2365)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2363)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks

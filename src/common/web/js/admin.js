@@ -439,7 +439,7 @@ async function getMidnightMadness() {
 
   nowButton.addEventListener("click", async () => {
     // not retried: this GET has a side effect
-    await window.smartFetch("/api/time/trigger_midnight_madness", null, false, {
+    await window.smartFetch("/api/time/trigger_midnight_madness", null, true, {
       retries: 0,
     });
   });
@@ -873,7 +873,8 @@ if (typeof window !== "undefined") {
         }
 
         if (data["notes"]) {
-          releaseNotes.textContent = data["notes"];
+          // the board only returns notes from a release record it verified, so they are ours
+          releaseNotes.innerHTML = data["notes"];
           accordion.removeAttribute("disabled");
         }
       }
@@ -1002,12 +1003,19 @@ if (typeof window !== "undefined") {
     if (url === null) {
       return;
     }
+    // optional checksum, e.g. the sha256 listed with the build on its PR
+    const checksum = prompt(
+      "Optional: enter the build's sha256 checksum to verify it (leave blank to skip)",
+    );
+    if (checksum === null) {
+      return;
+    }
     // confirm url
     await confirmAction(
       "Do you trust the source of this update and want to apply the update file at the url:" +
         url,
       async () => {
-        await window.applyUpdate(url, true);
+        await window.applyUpdate(url, true, checksum.trim() || null);
       },
     );
   };
