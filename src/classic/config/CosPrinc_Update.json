@@ -1,0 +1,35 @@
+{
+    "GameInfo": {
+        "GameName": "Cosmic Princess",
+        "System": "MPU100"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 19
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 672,
+        "Length": 7,
+        "Spacing": 7
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 35,
+        "GameActiveAdr": 524,
+        "Players": 20,
+        "PlayerUp": 21,
+        "ScoreAdr": 538,
+        "LastScoreAdr": 672,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7,
+        "BlinkSaveAdr": 672
+    },
+    "HighScores": {
+        "Type": 33,
+        "ScoreAdr": 718,
+        "ScoreBytes": 6
+    }
+}

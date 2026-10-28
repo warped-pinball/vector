@@ -1,0 +1,33 @@
+{
+    "GameInfo": {
+        "GameName": "Six Million Dollar Man",
+        "System": "Bally35"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 18
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 585,
+        "Length": 6,
+        "Spacing": 6
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 38,
+        "GameActiveAdr": 524,
+        "Players": 19,
+        "PlayerUp": 20,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 585,
+        "ScoreBytes": 6,
+        "ScoreSpacing": 6
+    },
+    "HighScores": {
+        "Type": 33,
+        "ScoreAdr": 719
+    }
+}

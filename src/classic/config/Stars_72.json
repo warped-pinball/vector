@@ -1,0 +1,34 @@
+{
+    "GameInfo": {
+        "GameName": "Stars",
+        "System": "MPU100"
+    },
+    "BallInPlay": {
+        "Type": 30,
+        "Address": 21
+    },
+    "DisplayMessage": {
+        "Type": 30,
+        "Address": 577,
+        "Length": 7,
+        "Spacing": 7
+    },
+    "Adjustments": {
+        "Type": 0
+    },
+    "InPlay": {
+        "Type": 35,
+        "GameActiveAdr": 524,
+        "Players": 22,
+        "PlayerUp": 23,
+        "ScoreAdr": 542,
+        "LastScoreAdr": 577,
+        "ScoreBytes": 7,
+        "ScoreSpacing": 7
+    },
+    "HighScores": {
+        "Type": 30,
+        "ScoreAdr": 704,
+        "ScoreBytes": 7
+    }
+}

@@ -24,7 +24,8 @@
         "ScoreAdr": 542,
         "LastScoreAdr": 573,
         "ScoreBytes": 6,
-        "ScoreSpacing": 6
+        "ScoreSpacing": 6,
+        "SevenDigitAdr": 743
     },
     "HighScores": {
         "Type": 30,

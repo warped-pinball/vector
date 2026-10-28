@@ -87,11 +87,29 @@ def _reversed_digit_score(base_adr, num_digits):
     return score
 
 
+def _seven_digit_mode():
+    """
+    True while a DIP-21-selectable 7-digit Bally -35 ROM (Weebly "7D"
+    images of Dolly Parton, Viking, ...) runs in 7-digit mode, where the
+    displays add a constant 0 as the 7th digit and every score reads x10.
+
+    InPlay.SevenDigitAdr (optional) is that 7th-digit byte, written $0F at
+    boot; the next byte is DIP 21, written $10 (on) or $00 (off). The stock
+    ROMs keep an audit there, but their digit writer always leaves the low
+    nibble of SevenDigitAdr at 0, so stock games never match.
+    """
+    adr = S.gdata.get("InPlay", {}).get("SevenDigitAdr")
+    return adr is not None and (shadowRam[adr] & 0x0F) == 0x0F and shadowRam[adr + 1] == 0x10
+
+
 def _read_score(base_adr, in_play):
     """
     Decode a score at base_adr according to InPlay.Type:
     - Type 30, 33, 35, 36 or 37: one decimal digit per byte, upper nibble, least-significant
       digit first (see _reversed_digit_score).
+    - Type 38: as Type 35, times 10 (7-digit display hacks whose 7th digit is
+      a constant 0 not stored with the score). Types 30 / 35 are also x10
+      while _seven_digit_mode() (InPlay.SevenDigitAdr) says so.
     - Type 31 or 32: packed BCD, 7 decimal digits across 4 bytes (upper and
       lower nibbles of each byte), most-significant byte first (see
       _bcd_to_int).
@@ -100,7 +118,8 @@ def _read_score(base_adr, in_play):
     """
     if in_play["Type"] in (31, 32, 34):
         return _bcd_to_int(shadowRam[base_adr : base_adr + (3 if in_play["Type"] == 34 else 4)])
-    return _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+    score = _reversed_digit_score(base_adr, in_play["ScoreBytes"])
+    return score * 10 if in_play["Type"] == 38 or _seven_digit_mode() else score
 
 
 def read_high_scores():
@@ -124,6 +143,10 @@ def read_high_scores():
     Classics Type 31 high score (early MPU-200 OS: Meteor, Galaxy, Ali):
     - Same as Type 32, but 6 digits packed BCD in 3 bytes (ScoreAdr..ScoreAdr+2)
 
+    Classics Type 33 high score:
+    - Same as Type 30, times 10 (the ones digit is an implied 0 not stored
+      in RAM: 7-digit display hacks and the 7-digit MPU-100 update OS)
+
     Returns:
         list: List of [initials, score] pairs
             Index 0-3: High scores 1-4 (only index 0 is populated)
@@ -140,12 +163,13 @@ def read_high_scores():
         high_score_type = S.gdata["HighScores"]["Type"]
         score_adr = S.gdata["HighScores"]["ScoreAdr"]
 
-        if high_score_type == 30:
+        if high_score_type in (30, 33):
             # Same layout as InPlay Type 30 scores: one digit per byte (upper
-            # nibble), ones digit at ScoreAdr, 0xF blank = 0.
+            # nibble), ones digit at ScoreAdr, 0xF blank = 0. Type 33, or a
+            # DIP-21 7-digit ROM in 7-digit mode: x10.
             num_digits = S.gdata["HighScores"].get(
                 "ScoreBytes", S.gdata.get("InPlay", {}).get("ScoreBytes", 6))
-            high_scores[0][1] = _reversed_digit_score(score_adr, num_digits)
+            high_scores[0][1] = _reversed_digit_score(score_adr, num_digits) * (10 if high_score_type == 33 or _seven_digit_mode() else 1)
 
         elif high_score_type in (31, 32):
             # Packed BCD, most-significant byte first: Type 32 = 7 digits in
@@ -178,7 +202,7 @@ def read_in_play_scores():
     """
     Read the current in-play scores for all 4 players (Classics).
 
-    InPlay.Type 30/33/35/36: one decimal digit per byte, upper nibble,
+    InPlay.Type 30/33/35/36/37/38 (38: x10): one decimal digit per byte, upper nibble,
     least-significant digit first; Type 31/32: packed BCD, 7 digits in
     4 bytes; Type 34: packed BCD, 6 digits in 3 bytes. ScoreSpacing bytes between each player's block.
 
@@ -201,7 +225,7 @@ def get_live_scores(use_format=True):
 
     If a game is active (get_game_active()), reads the current scores - from
     Formats.player_scores if a Format is active, otherwise from Classics shadow
-    RAM (InPlay.Type 30/33/35/36: one decimal digit per byte, upper nibble,
+    RAM (InPlay.Type 30/33/35/36/37/38 (38: x10): one decimal digit per byte, upper nibble,
     least-significant digit first; or InPlay.Type 31/32: packed BCD, 7
     decimal digits across 4 bytes, upper and lower nibbles; or InPlay.Type 34:
     packed BCD, 6 digits across 3 bytes; ScoreSpacing
@@ -226,7 +250,7 @@ def get_live_scores(use_format=True):
     if not get_game_active():
         try:
             in_play = S.gdata["InPlay"]
-            if in_play["Type"] in (30, 31, 32, 33, 34, 35, 36, 37) and "LastScoreAdr" in in_play:
+            if in_play["Type"] in (30, 31, 32, 33, 34, 35, 36, 37, 38) and "LastScoreAdr" in in_play:
                 last_scores = [0, 0, 0, 0]
                 for idx in range(4):
                     base_adr = in_play["LastScoreAdr"] + idx * in_play["ScoreSpacing"]
@@ -256,7 +280,7 @@ def get_live_scores(use_format=True):
     # No active format - read from shadow RAM
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] not in (30, 31, 32, 33, 34, 35, 36, 37):
+        if in_play["Type"] not in (30, 31, 32, 33, 34, 35, 36, 37, 38):
             return scores
 
         for idx in range(4):
@@ -275,14 +299,15 @@ def get_live_scores(use_format=True):
             # Up player's score blanked (display blinking) - use the saved
             # copy at BlinkSaveAdr, same width/spacing as ScoreAdr. Packed BCD
             # (31/32/34) blanks as whole 0xFF bytes; digit-per-byte types only
-            # use the upper nibble, so any 0xF? byte is a blank digit
+            # use the upper nibble, so any 0xA?-0xF? byte is a blank digit
+            # (stock OS blanks with 0xF?, the 7-digit MPU-100 update OS with 0xBF)
             if in_play["Type"] in (31, 32, 34):
                 score_len = 3 if in_play["Type"] == 34 else 4
-                blank_mask = 0xFF
+                blank_min = 0xFF
             else:
                 score_len = in_play["ScoreBytes"]
-                blank_mask = 0xF0
-            if "BlinkSaveAdr" in in_play and all((b & blank_mask) == blank_mask for b in shadowRam[up_adr : up_adr + score_len]):
+                blank_min = 0xA0
+            if "BlinkSaveAdr" in in_play and all(b >= blank_min for b in shadowRam[up_adr : up_adr + score_len]):
                 blink_adr = in_play["BlinkSaveAdr"] + (player_up - 1) * in_play["ScoreSpacing"]
                 scores[player_up - 1] = _read_score(blink_adr, in_play)
     except Exception as e:
@@ -375,7 +400,7 @@ def get_player_up():
         int: Player number (1-4) or 0 if not available
     """
     try:
-        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30, 32, 33, 34, 35, 36, 37) and "PlayerUp" in S.gdata["InPlay"]:
+        if "InPlay" in S.gdata and S.gdata["InPlay"].get("Type") in (30, 32, 33, 34, 35, 36, 37, 38) and "PlayerUp" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["PlayerUp"]
             player_up = shadowRam[adr]
             return player_up if player_up <= 4 else 0
@@ -400,7 +425,7 @@ def get_players_in_game():
     """
     try:
         in_play_type = S.gdata.get("InPlay", {}).get("Type")
-        if in_play_type in (30, 32, 33, 34, 35, 36, 37) and "Players" in S.gdata["InPlay"]:
+        if in_play_type in (30, 32, 33, 34, 35, 36, 37, 38) and "Players" in S.gdata["InPlay"]:
             players = shadowRam[S.gdata["InPlay"]["Players"]]
             if in_play_type in (33, 36, 37):
                 players &= 0x0F
@@ -417,7 +442,7 @@ def get_game_active():
 
     Reads InPlay.GameActiveAdr from shadow RAM:
     - Types 30 / 32 / 33 / 34: 0 = inactive, non-zero = active.
-    - Types 35 / 36: GameActiveAdr is the Game Over lamp byte (0x20C on
+    - Types 35 / 36 / 38: GameActiveAdr is the Game Over lamp byte (0x20C on
       Bally -17 / -35 and Stern MPU-100); bit 6 is 0 while the lamp is lit,
       so the game is active when bit 6 is 1. This works whether or not the
       match feature is enabled.
@@ -431,12 +456,12 @@ def get_game_active():
     """
     try:
         in_play = S.gdata["InPlay"]
-        if in_play["Type"] in (30, 32, 33, 34, 35, 36, 37):
+        if in_play["Type"] in (30, 32, 33, 34, 35, 36, 37, 38):
 
             if "GameActiveAdr" not in in_play:
                 return 1 <= get_ball_in_play() <= 5
 
-            if in_play["Type"] in (35, 36):
+            if in_play["Type"] in (35, 36, 38):
                 return (shadowRam[in_play["GameActiveAdr"]] & 0x40) != 0
             if in_play["Type"] == 37:
                 return (shadowRam[in_play["GameActiveAdr"]] & 0x80) != 0
