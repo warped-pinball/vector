@@ -79,8 +79,11 @@ def get_claim_score_list():
     return result
 
 
-def claim_score(initials, player_index, score):
-    """claim a score from the recent scores list - do not require a player index, search all"""
+def claim_score(initials, player_index, score, from_machine=False):
+    """claim a score from the recent scores list - do not require a player index, search all
+
+    from_machine: the score came from the machine's own high score table, so it is placed even when
+    it is not in the claim list (the case where the high scores were reset on the machine)"""
     global recent_scores
 
     if not isinstance(initials, str):
@@ -110,6 +113,10 @@ def claim_score(initials, player_index, score):
                 else:
                     update_leaderboard(new_score)
                 return
+
+    if from_machine:
+        update_leaderboard({"initials": initials, "full_name": None, "score": score, "game": 0})
+        return
 
     raise ValueError("SCORE: Score not found in claim list")
 
@@ -463,7 +470,7 @@ def check_for_machine_high_scores(report=True):
             if idx >= len(top_scores) or scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:
                 if report:
                     print(f"SCORE: place game score into vector {new_score}")
-                claim_score(new_score["initials"], 0, new_score["score"])
+                claim_score(new_score["initials"], 0, new_score["score"], from_machine=True)
 
 
 def update_tournament(new_entry):
