@@ -1558,7 +1558,7 @@ No parameters inferred.
 - `200` - Update metadata returned
 - `502` - The update information could not be fetched or its signature did not check out
 
-**Response body:** The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
+**Response body:** The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` is passed to the apply route. ``notes`` is untrusted and must be shown as text.
 
 ```
 {
@@ -1586,7 +1586,6 @@ Download and apply a software update from the provided URL.
 
 - `url` string required - Signed update package URL
 - `sha256` string optional - Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
-- `signature` string optional - Base64 RSA signature of ``sha256`` (from the update check). When omitted the device looks it up with ``sha256``
 - `skip_signature_check` bool optional - Bypass signature validation (for developer builds)
 
 ### Response
@@ -1607,7 +1606,7 @@ Download and apply a software update from the provided URL.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2289)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2283)
 
 
 Indicates if Vector is running in AP or app mode
@@ -1631,7 +1630,7 @@ No parameters inferred.
 <a id="api-in_ap_mode"></a>
 ## `/api/in_ap_mode`
 
-- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2312)
+- **Handler:** [`app_inAPMode`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2306)
 
 
 No description provided.
@@ -1647,7 +1646,7 @@ No structured response documented.
 <a id="api-settings-set_vector_config"></a>
 ## `/api/settings/set_vector_config`
 
-- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2317)
+- **Handler:** [`app_setWifi`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2311)
 
 
 [AP Mode Only] Configure Wi-Fi credentials and default game
@@ -1675,7 +1674,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2381)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2375)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks
