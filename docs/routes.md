@@ -1558,7 +1558,7 @@ No parameters inferred.
 - `200` - Update metadata returned
 - `502` - The update information could not be fetched or its signature did not check out
 
-**Response body:** The release record from latest.json, returned only once the update server's signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
+**Response body:** The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
 
 ```
 {

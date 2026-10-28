@@ -2178,7 +2178,7 @@ def app_updates_available(request):
         - code: 502
           description: The update information could not be fetched or its signature did not check out
       body:
-        description: The release record from latest.json, returned only once the update server's signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
+        description: The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
         example:
             {
                 "release_page": "https://github.com/...",

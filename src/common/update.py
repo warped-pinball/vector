@@ -105,28 +105,17 @@ def _public_key():
     )
 
 
-# Public half of software.warpedpinball.com's release signing key, which signs each latest.json.
-# RELEASE_KEY_PLACEHOLDER: replace None with the n printed by that repo's scripts/make_signing_key.py.
-# Release CI refuses to sign a build while this marker is here, since no board on it could update.
-_RELEASE_KEY_N = None
-_RELEASE_KEY_E = 65537
-
-
 def verify_release(latest):
     """Return the release record from latest.json once its signature checks out, otherwise raise.
 
-    latest["signed"]["payload"] is the record as a JSON string, signed (PKCS#1 v1.5, SHA-256) by the
-    update server's key; nothing outside it is trusted.
+    latest["signed"]["payload"] is the record as a JSON string, signed (PKCS#1 v1.5, SHA-256) with the
+    same Warped Pinball key as the update files; nothing outside it is trusted.
     """
     from binascii import a2b_base64
     from json import loads as json_loads
 
-    from rsa.key import PublicKey
     from rsa.pkcs1 import verify
     from systemConfig import vectorSystem
-
-    if _RELEASE_KEY_N is None:
-        raise Exception("Release signing key not set")
 
     signed = latest.get("signed") or {}
     payload = signed.get("payload")
@@ -134,7 +123,7 @@ def verify_release(latest):
         raise Exception("Release information is not signed")
 
     try:
-        result = verify(payload.encode("utf-8"), a2b_base64(signed["signature"]), PublicKey(n=_RELEASE_KEY_N, e=_RELEASE_KEY_E))
+        result = verify(payload.encode("utf-8"), a2b_base64(signed["signature"]), _public_key())
     except Exception as e:
         raise Exception(f"Release signature invalid: {e}")
     if result != "SHA-256":

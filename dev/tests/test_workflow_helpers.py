@@ -4,8 +4,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 from dev.ci import workflow_helpers as wh
 
 
@@ -147,12 +145,3 @@ def test_main_emit_output_skips_targets(monkeypatch, tmp_path: Path) -> None:
 
     assert output_file.read_text() == "body<<DELIM\nvalue\nDELIM\n"
 
-
-def test_ensure_release_key_set_refuses_placeholder(tmp_path: Path) -> None:
-    source = tmp_path / "update.py"
-    source.write_text("# RELEASE_KEY_PLACEHOLDER: replace\n_RELEASE_KEY_N = None\n")
-    with pytest.raises(RuntimeError):
-        wh.ensure_release_key_set(source)
-
-    source.write_text("_RELEASE_KEY_N = 1234\n")
-    wh.ensure_release_key_set(source)

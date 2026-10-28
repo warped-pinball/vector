@@ -123,16 +123,6 @@ def _run_command(command: List[str]) -> None:
     subprocess.run(command, check=True)
 
 
-RELEASE_KEY_SOURCE = Path("src/common/update.py")
-RELEASE_KEY_PLACEHOLDER = "RELEASE_KEY_PLACEHOLDER"
-
-
-def ensure_release_key_set(source: Path = RELEASE_KEY_SOURCE) -> None:
-    """Refuse to sign a release whose firmware still has the placeholder release key: no board on it could update again."""
-    if RELEASE_KEY_PLACEHOLDER in source.read_text():
-        raise RuntimeError(f"{source} still has the placeholder release signing key; set _RELEASE_KEY_N before signing a release")
-
-
 def build_updates(
     targets: Iterable[Dict[str, Any]],
     *,
@@ -163,7 +153,6 @@ def build_updates(
             base_command.append("--tiny")
 
         if sign and private_key:
-            ensure_release_key_set()
             with tempfile.NamedTemporaryFile("w", delete=False) as key_file:
                 key_file.write(private_key)
                 key_path = Path(key_file.name)
