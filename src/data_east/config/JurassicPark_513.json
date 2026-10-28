@@ -11,7 +11,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 426
+        "Address": 426,
+        "BallsPerGameAdr": 7692
     },
     "DisplayMessage": {
         "Type": 20,

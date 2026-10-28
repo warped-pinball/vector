@@ -11,7 +11,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 202
+        "Address": 202,
+        "BallsPerGameAdr": 7693
     },
     "DisplayMessage": {
         "Type": 23,
@@ -28,13 +29,14 @@
     },
     "HighScores": {
         "Type": 20,
-        "ScoreAdr": 7588,
+        "ScoreAdr": 7584,
         "BytesInScore": 4,
         "ScoreSpacing": 4,
         "Multiplier": 1,
-        "InitialAdr": 7631,
+        "InitialAdr": 7628,
         "InitialSpacing": 3,
-        "NumberOfScores": 5
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7709
     },
     "InPlay": {
         "Type": 20,

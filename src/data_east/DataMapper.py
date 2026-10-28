@@ -264,7 +264,8 @@ def write_high_scores(highScores):
                 scoreBytes = _int_to_bcd(score, 4)
                 shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes
 
-                #second storage location in NV ram area? (same layout, inside the adjustment checksum)
+                #backup high score adjustments (same layout, inside the adjustment checksum)
+                #  game resets the table to these at game over if live #1 is lower - keep them equal
                 if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
                     scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
                     shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes
@@ -282,7 +283,7 @@ def write_high_scores(highScores):
                 shadowRam[scoreAddressMSB] = scoreBytes[0]
                 shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes[1:5]
 
-                #second storage location in NV ram area?
+                #backup high score adjustments (game resets the table to these at game over if live #1 is lower)
                 if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
                     scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
                     scoreAddressMSB = S.gdata["HighScores"]["ScoreAdrNV"] + 24 + idx
@@ -306,7 +307,7 @@ def write_high_scores(highScores):
                 scoreBytes = _int_to_bcd(score, 5)
                 shadowRam[scoreAddress : scoreAddress + 5] = scoreBytes
 
-                #second storage location in NV ram area? (same layout, inside the adjustment checksum)
+                #backup high score adjustments (same layout, inside the adjustment checksum)
                 if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
                     scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
                     shadowRam[scoreAddress : scoreAddress + 5] = scoreBytes
@@ -411,6 +412,9 @@ def write_ball_in_play(ball_number):
     try:
         if S.gdata.get("BallInPlay", {}).get("Type") == 20:
             ball_adr = S.gdata["BallInPlay"]["Address"]
+            # 5 = "last ball": use the game's balls per game setting (alpha games end only at ball == balls per game + 1)
+            if ball_number == 5 and S.gdata["BallInPlay"].get("BallsPerGameAdr", 0) != 0:
+                ball_number = shadowRam[S.gdata["BallInPlay"]["BallsPerGameAdr"]]
             shadowRam[ball_adr] = ball_number
             return True
     except Exception as e:
@@ -450,7 +454,7 @@ def get_players_in_game():
     try:
         if "Players" in S.gdata.get("InPlay", {}):
             adr = S.gdata["InPlay"]["Players"]
-            return shadowRam[adr]
+            return shadowRam[adr] & 0x7F   # alpha games set bit 7 at game over
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
     
@@ -760,7 +764,7 @@ def get_in_play_data():
     try:
         if "Players" in S.gdata.get("InPlay", {}):
             adr = S.gdata["InPlay"]["Players"]
-            data["PlayersInGame"] = shadowRam[adr]
+            data["PlayersInGame"] = shadowRam[adr] & 0x7F   # alpha games set bit 7 at game over
     except Exception as e:
         log.log(f"DATAMAP: error getting players in game: {e}")
     
