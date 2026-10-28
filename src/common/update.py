@@ -135,6 +135,19 @@ def verify_release(latest):
     return release
 
 
+def fetch_latest_release():
+    """latest.json comes over plain HTTP; only its signed release record is used"""
+    from mrequests.mrequests import get
+    from systemConfig import updatesURL
+
+    resp = get(updatesURL, timeout=10)
+    try:
+        latest = resp.json()
+    finally:
+        resp.close()
+    return verify_release(latest)
+
+
 def validate_signature(skip_signature_check=False, expected_sha256=None):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:

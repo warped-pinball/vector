@@ -2191,24 +2191,12 @@ def app_updates_available(request):
             }
     @end
     """
+    from update import fetch_latest_release
+
     try:
-        return _verified_latest_release()
+        return fetch_latest_release()
     except Exception as e:
         return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
-
-
-def _verified_latest_release():
-    """latest.json comes over plain HTTP; only its signed release record is used"""
-    from mrequests.mrequests import get
-    from systemConfig import updatesURL
-    from update import verify_release
-
-    resp = get(updatesURL, timeout=10)
-    try:
-        latest = resp.json()
-    finally:
-        resp.close()
-    return verify_release(latest)
 
 
 @add_route("/api/update/apply", auth=True)
@@ -2245,7 +2233,7 @@ def app_apply_update(request):
     @end
     """
     from logger import logger_instance as Log
-    from update import apply_update
+    from update import apply_update, fetch_latest_release
 
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
@@ -2254,7 +2242,7 @@ def app_apply_update(request):
     # Callers like Origin only send the url; take the checksum from the signed release record when it is the latest release
     if not skip_signature_check and not expected_sha256:
         try:
-            latest = _verified_latest_release()
+            latest = fetch_latest_release()
             if latest.get("url") == data["url"]:
                 expected_sha256 = latest.get("sha256")
         except Exception as e:
