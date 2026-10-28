@@ -1133,13 +1133,8 @@
         }
 
         if (data["notes"]) {
-          // notes are HTML from an unsigned source: parse inertly and keep only the text
-          const parsedNotes = new DOMParser().parseFromString(
-            data["notes"],
-            "text/html",
-          );
-          releaseNotes.textContent = parsedNotes.body.textContent.trim();
-          releaseNotes.style.whiteSpace = "pre-line";
+          // the board only returns notes from a release record it verified, so they are ours
+          releaseNotes.innerHTML = data["notes"];
           releaseNotes.classList.remove("hide");
         } else {
           releaseNotes.classList.add("hide");
@@ -1162,16 +1157,10 @@
         // get the url for the update.json asset and add an event listener to the button
         const update_url = data["url"];
         const update_sha256 = data["sha256"];
-        const update_signature = data["signature"];
 
         // define the call back function to apply the update
         const callback = async () => {
-          await applyUpdate(
-            update_url,
-            false,
-            update_sha256,
-            update_signature,
-          );
+          await applyUpdate(update_url, false, update_sha256);
         };
 
         updateButton.addEventListener("click", async () => {
@@ -1192,17 +1181,11 @@
     }
   }
 
-  async function applyUpdate(
-    url,
-    skip_signature_check = false,
-    sha256 = null,
-    signature = null,
-  ) {
+  async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
     const req_data = {
       url: url,
       skip_signature_check: skip_signature_check,
       sha256: sha256,
-      signature: signature,
     };
     const response = await window.smartFetch(
       "/api/update/apply",

@@ -2178,7 +2178,7 @@ def app_updates_available(request):
         - code: 502
           description: The update information could not be fetched or its signature did not check out
       body:
-        description: The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
+        description: The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` is passed to the apply route. ``notes`` is untrusted and must be shown as text.
         example:
             {
                 "release_page": "https://github.com/...",
@@ -2227,10 +2227,6 @@ def app_apply_update(request):
           type: string
           required: false
           description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
-        - name: signature
-          type: string
-          required: false
-          description: Base64 RSA signature of ``sha256`` (from the update check). When omitted the device looks it up with ``sha256``
         - name: skip_signature_check
           type: bool
           required: false
@@ -2255,19 +2251,17 @@ def app_apply_update(request):
     data = request.data
     skip_signature_check = data.get("skip_signature_check", False)
     expected_sha256 = data.get("sha256")
-    expected_signature = data.get("signature")
-    # Callers like Origin only send the url; get the signed checksum from the update server when it is the latest release
-    if not skip_signature_check and not (expected_sha256 and expected_signature):
+    # Callers like Origin only send the url; take the checksum from the signed release record when it is the latest release
+    if not skip_signature_check and not expected_sha256:
         try:
             latest = _verified_latest_release()
             if latest.get("url") == data["url"]:
                 expected_sha256 = latest.get("sha256")
-                expected_signature = latest.get("signature")
         except Exception as e:
             Log.log(f"BKD: Could not look up update checksum: {e}")
         gc_collect()
     try:
-        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256, expected_signature=expected_signature):
+        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")

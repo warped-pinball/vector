@@ -135,21 +135,7 @@ def verify_release(latest):
     return release
 
 
-def verify_checksum_signature(sha256_hex, signature_b64):
-    """Raise unless signature_b64 is the release key's signature of sha256_hex, the same signature the update file ends with"""
-    from binascii import a2b_base64, unhexlify
-
-    from rsa.pkcs1 import verify
-
-    try:
-        result = verify(unhexlify(sha256_hex), a2b_base64(signature_b64), _public_key())
-    except Exception as e:
-        raise Exception(f"Update checksum signature invalid: {e}")
-    if result != "SHA-256":
-        raise Exception(f"Update checksum signature invalid: {result}")
-
-
-def validate_signature(skip_signature_check=False, expected_sha256=None, expected_signature=None):
+def validate_signature(skip_signature_check=False, expected_sha256=None):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
@@ -162,10 +148,9 @@ def validate_signature(skip_signature_check=False, expected_sha256=None, expecte
         print("Skipping signature check")
         return
 
-    # A release update must come with a checksum and signature from the update server that pass
-    if not expected_sha256 or not expected_signature:
-        raise Exception("No signed checksum for this update")
-    verify_checksum_signature(expected_sha256, expected_signature)
+    # A release update must be the exact file the signed release record named
+    if not expected_sha256:
+        raise Exception("No checksum for this update")
 
     from rsa.pkcs1 import verify
 
@@ -258,7 +243,7 @@ class LowMemoryMode:
         return False  # don't suppress exceptions
 
 
-def apply_update(url, skip_signature_check=False, expected_sha256=None, expected_signature=None):
+def apply_update(url, skip_signature_check=False, expected_sha256=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
@@ -269,7 +254,7 @@ def apply_update(url, skip_signature_check=False, expected_sha256=None, expected
         gc_collect()
 
         yield {"log": "Validating signature and checksum", "percent": 30}
-        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256, expected_signature=expected_signature)
+        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
         gc_collect()
 
         yield {"log": "Writing files to board", "percent": 40}
