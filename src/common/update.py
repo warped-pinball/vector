@@ -105,61 +105,84 @@ def _public_key():
     )
 
 
-def _version_key(version):
-    """Sortable key for "1.7.20", "1.7.20-beta57" or "1.7.20-dev434"; a release sorts above its betas, betas above dev builds"""
-    base, _, suffix = str(version).strip().partition("-")
-    numbers = tuple(int(part) for part in base.split("."))
-    if not suffix:
-        return numbers + (2, 0)
-    for rank, name in ((1, "beta"), (0, "dev")):
-        if suffix.startswith(name):
-            build = suffix[len(name) :]
-            return numbers + (rank, int(build) if build.isdigit() else 0)
-    raise ValueError(f"unrecognised version {version}")
+# Public half of software.warpedpinball.com's release signing key, which signs each latest.json.
+# RELEASE_KEY_PLACEHOLDER: replace None with the n printed by that repo's scripts/make_signing_key.py.
+# Release CI refuses to sign a build while this marker is here, since no board on it could update.
+_RELEASE_KEY_N = None
+_RELEASE_KEY_E = 65537
 
 
-def check_not_downgrade(path="update.json"):
-    """Refuse a signed update whose own version is older than the running one, so an old signed file can't be replayed"""
+def verify_release(latest):
+    """Return the release record from latest.json once its signature checks out, otherwise raise.
+
+    latest["signed"]["payload"] is the record as a JSON string, signed (PKCS#1 v1.5, SHA-256) by the
+    update server's key; nothing outside it is trusted.
+    """
+    from binascii import a2b_base64
     from json import loads as json_loads
 
-    from systemConfig import SystemVersion
+    from rsa.key import PublicKey
+    from rsa.pkcs1 import verify
+    from systemConfig import vectorSystem
 
-    with open(path, "rb") as f:
-        new_version = json_loads(f.readline())["version"]
+    if _RELEASE_KEY_N is None:
+        raise Exception("Release signing key not set")
+
+    signed = latest.get("signed") or {}
+    payload = signed.get("payload")
+    if not payload or not signed.get("signature"):
+        raise Exception("Release information is not signed")
 
     try:
-        is_older = _version_key(new_version) < _version_key(SystemVersion)
-    except ValueError as e:
-        # versions come from CI; never strand a board over a format we did not expect
-        print(f"Skipping downgrade check: {e}")
-        return
+        result = verify(payload.encode("utf-8"), a2b_base64(signed["signature"]), PublicKey(n=_RELEASE_KEY_N, e=_RELEASE_KEY_E))
+    except Exception as e:
+        raise Exception(f"Release signature invalid: {e}")
+    if result != "SHA-256":
+        raise Exception(f"Release signature invalid: {result}")
 
-    if is_older:
-        raise Exception(f"Update {new_version} is older than the installed {SystemVersion}")
+    release = json_loads(payload)
+    if release.pop("product", None) != vectorSystem:
+        raise Exception("Release is for a different system")
+    return release
 
 
-def validate_signature(skip_signature_check=False, expected_sha256=None):
+def verify_checksum_signature(sha256_hex, signature_b64):
+    """Raise unless signature_b64 is the release key's signature of sha256_hex, the same signature the update file ends with"""
+    from binascii import a2b_base64, unhexlify
+
+    from rsa.pkcs1 import verify
+
+    try:
+        result = verify(unhexlify(sha256_hex), a2b_base64(signature_b64), _public_key())
+    except Exception as e:
+        raise Exception(f"Update checksum signature invalid: {e}")
+    if result != "SHA-256":
+        raise Exception(f"Update checksum signature invalid: {result}")
+
+
+def validate_signature(skip_signature_check=False, expected_sha256=None, expected_signature=None):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
 
+    # Confirm this is the file we were told to expect; optional for developer builds
+    if expected_sha256 and hash_bytes.hex() != str(expected_sha256).strip().lower():
+        raise Exception("Update checksum does not match the expected checksum")
+
     if skip_signature_check:
-        print("Skipping signature and checksum check")
+        print("Skipping signature check")
         return
 
-    # Confirm this is the file the update check pointed at
-    if expected_sha256 and hash_bytes.hex() != str(expected_sha256).lower():
-        raise Exception("Update checksum does not match the requested update")
+    # A release update must come with a checksum and signature from the update server that pass
+    if not expected_sha256 or not expected_signature:
+        raise Exception("No signed checksum for this update")
+    verify_checksum_signature(expected_sha256, expected_signature)
 
     from rsa.pkcs1 import verify
 
-    pub_key = _public_key()
-
-    result = verify(hash_bytes, signature, pub_key)
+    result = verify(hash_bytes, signature, _public_key())
     if result != "SHA-256":
         raise Exception(f"Signature invalid! {result}")
-
-    check_not_downgrade()
 
 
 def download_update(url):
@@ -246,7 +269,7 @@ class LowMemoryMode:
         return False  # don't suppress exceptions
 
 
-def apply_update(url, skip_signature_check=False, expected_sha256=None):
+def apply_update(url, skip_signature_check=False, expected_sha256=None, expected_signature=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
@@ -257,7 +280,7 @@ def apply_update(url, skip_signature_check=False, expected_sha256=None):
         gc_collect()
 
         yield {"log": "Validating signature and checksum", "percent": 30}
-        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
+        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256, expected_signature=expected_signature)
         gc_collect()
 
         yield {"log": "Writing files to board", "percent": 40}

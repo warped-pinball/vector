@@ -900,10 +900,16 @@ if (typeof window !== "undefined") {
         // get the url for the update.json asset and add an event listener to the button
         update_url = data["url"];
         const update_sha256 = data["sha256"];
+        const update_signature = data["signature"];
 
         // define the call back function to apply the update
         const callback = async () => {
-          await applyUpdate(update_url, false, update_sha256);
+          await applyUpdate(
+            update_url,
+            false,
+            update_sha256,
+            update_signature,
+          );
         };
 
         updateButton.addEventListener("click", async () => {
@@ -924,11 +930,17 @@ if (typeof window !== "undefined") {
     }
   }
 
-  async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
+  async function applyUpdate(
+    url,
+    skip_signature_check = false,
+    sha256 = null,
+    signature = null,
+  ) {
     const req_data = {
       url: url,
       skip_signature_check: skip_signature_check,
       sha256: sha256,
+      signature: signature,
     };
     const response = await window.smartFetch(
       "/api/update/apply",
@@ -1008,12 +1020,19 @@ if (typeof window !== "undefined") {
     if (url === null) {
       return;
     }
+    // optional checksum, e.g. the sha256 listed with the build on its PR
+    const checksum = prompt(
+      "Optional: enter the build's sha256 checksum to verify it (leave blank to skip)",
+    );
+    if (checksum === null) {
+      return;
+    }
     // confirm url
     await confirmAction(
       "Do you trust the source of this update and want to apply the update file at the url:" +
         url,
       async () => {
-        await window.applyUpdate(url, true);
+        await window.applyUpdate(url, true, checksum.trim() || null);
       },
     );
   };

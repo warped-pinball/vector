@@ -23,7 +23,6 @@ from ujson import dumps as json_dumps
 #
 _WIFI_MAX_ATTEMPTS = const(2)
 _AP_NAME = const("Warped Pinball")
-_RELEASE_PAGE_PREFIX = const("https://github.com/warped-pinball/")
 # Authentication variables
 challenges = {}
 _CHALLENGE_EXPIRATION_SECONDS = const(60)
@@ -2176,8 +2175,10 @@ def app_updates_available(request):
       status_codes:
         - code: 200
           description: Update metadata returned
+        - code: 502
+          description: The update information could not be fetched or its signature did not check out
       body:
-        description: JSON payload describing available updates. ``release_page`` is dropped unless it points at the Warped Pinball GitHub. ``notes`` is untrusted and must be shown as text.
+        description: The release record from latest.json, returned only once the update server's signature on it checks out. ``sha256`` and ``signature`` are passed to the apply route. ``notes`` is untrusted and must be shown as text.
         example:
             {
                 "release_page": "https://github.com/...",
@@ -2185,28 +2186,29 @@ def app_updates_available(request):
                 "published_at": "2025-12-30T17:54:49+00:00",
                 "url": "https://github.com/...",
                 "version": "1.9.0",
-                "sha256": "<hex digest of the update file contents>"
+                "sha256": "<hex digest of the update file contents>",
+                "signature": "<base64 RSA signature of that digest>"
             }
     @end
     """
-    data = _fetch_latest_release()
-
-    # This comes over plain HTTP, so only link to our own releases
-    if not str(data.get("release_page", "")).startswith(_RELEASE_PAGE_PREFIX):
-        data.pop("release_page", None)
-
-    return data
+    try:
+        return _verified_latest_release()
+    except Exception as e:
+        return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
 
 
-def _fetch_latest_release():
+def _verified_latest_release():
+    """latest.json comes over plain HTTP; only its signed release record is used"""
     from mrequests.mrequests import get
     from systemConfig import updatesURL
+    from update import verify_release
 
     resp = get(updatesURL, timeout=10)
     try:
-        return resp.json()
+        latest = resp.json()
     finally:
         resp.close()
+    return verify_release(latest)
 
 
 @add_route("/api/update/apply", auth=True)
@@ -2224,11 +2226,15 @@ def app_apply_update(request):
         - name: sha256
           type: string
           required: false
-          description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release
+          description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
+        - name: signature
+          type: string
+          required: false
+          description: Base64 RSA signature of ``sha256`` (from the update check). When omitted the device looks it up with ``sha256``
         - name: skip_signature_check
           type: bool
           required: false
-          description: Bypass signature, checksum and downgrade checks (for developer builds)
+          description: Bypass signature validation (for developer builds)
     response:
       status_codes:
         - code: 200
@@ -2249,17 +2255,19 @@ def app_apply_update(request):
     data = request.data
     skip_signature_check = data.get("skip_signature_check", False)
     expected_sha256 = data.get("sha256")
-    # Callers like Origin only send the url; pin the checksum ourselves when it is the latest release
-    if not expected_sha256 and not skip_signature_check:
+    expected_signature = data.get("signature")
+    # Callers like Origin only send the url; get the signed checksum from the update server when it is the latest release
+    if not skip_signature_check and not (expected_sha256 and expected_signature):
         try:
-            latest = _fetch_latest_release()
+            latest = _verified_latest_release()
             if latest.get("url") == data["url"]:
                 expected_sha256 = latest.get("sha256")
+                expected_signature = latest.get("signature")
         except Exception as e:
             Log.log(f"BKD: Could not look up update checksum: {e}")
         gc_collect()
     try:
-        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256):
+        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256, expected_signature=expected_signature):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
