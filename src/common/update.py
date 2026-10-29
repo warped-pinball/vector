@@ -256,18 +256,32 @@ class LowMemoryMode:
         return False  # don't suppress exceptions
 
 
+def _remove_update_file():
+    from os import remove
+
+    try:
+        remove("update.json")
+    except OSError:
+        pass
+
+
 def apply_update(url, skip_signature_check=False, expected_sha256=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
 
         yield {"log": f"Downloading update from {url}", "percent": 2}
-        # will yield percent updates as it downloads
-        yield from download_update(url)
-        gc_collect()
+        try:
+            # will yield percent updates as it downloads
+            yield from download_update(url)
+            gc_collect()
 
-        yield {"log": "Validating signature and checksum", "percent": 30}
-        validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
+            yield {"log": "Validating signature and checksum", "percent": 30}
+            validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
+        except Exception:
+            # a refused or partial download is never used, so don't leave it taking up flash
+            _remove_update_file()
+            raise
         gc_collect()
 
         yield {"log": "Writing files to board", "percent": 40}
