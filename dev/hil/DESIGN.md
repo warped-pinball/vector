@@ -27,7 +27,7 @@ Non-goals for v1: gameplay/bus-level correctness (bare boards, no machine attach
 | Harness location | All in `warped-pinball/vector`. Bench topology and credentials live on the Pi, not in git. |
 | Bench hardware | Bare boards, no machine or bus emulator attached. |
 | Board networking | Dedicated VLAN on the existing LAN. |
-| Trigger policy | Every PR queues automatically (`workflow_run`, every push); a maintainer approves the run via the `hardware-lab` environment before the bench touches hardware. Same-repo and fork PRs go through the identical gate. |
+| Trigger policy | `pull_request` on PRs that are ready for review (drafts skipped), forks included. Every run waits for a maintainer to approve it through the `hardware-lab` environment before the Pi is touched. See §4. |
 | Board recovery | Software reset only (`machine.reset()` over `mpremote`). |
 | Update signing | `skip_signature_check: true` for the upgrade path, plus negative tests that the signature gate still rejects bad packages. |
 | Initial inventory | `sys11`, `wpc`, `data_east`. More systems added later. |
@@ -60,6 +60,8 @@ The mitigation is a single rule, and everything else follows from it:
 
 > **The Pi never checks out or executes PR-authored files. It executes harness code from a trusted ref, and consumes only build *artifacts* from the PR.**
 
+> **Revised (Oct 2026):** the bench now runs on `pull_request` and does execute the PR's own harness, but only after a maintainer has approved that run (and, for a fork, read its diff). The trusted-ref design below kept forks safe, but it cost a check that GitHub filed under other workflows' names, a full-history git fetch the Zero 2 W kept hanging on, and a bench-wide concurrency group that cancelled waiting runs. See §4.
+
 **(b) Board-side code execution.** Intentional — that's the test. `update.py:write_files()` honors `"execute": true` per file and `__import__`s it, so an update package is arbitrary code by design. Contained by assuming every board on the bench is fully compromised at all times, and isolating it accordingly.
 
 **(c) Runner persistence between jobs.** A compromised job leaves something behind for the next one. Mitigated with ephemeral runners and job hooks that wipe state.
@@ -87,47 +89,38 @@ This already exists: `.github/workflows/build_release.yml` runs on `pull_request
 
 No secrets, no self-hosted labels, unchanged trust posture.
 
-### Stage B — hardware (trusted, self-hosted)
+### Stage B — hardware (self-hosted)
 
-A new `.github/workflows/hil.yml`, triggered by **`workflow_run`** on completion of "Build and Deploy".
-
-`workflow_run` is the key primitive. GitHub always runs a `workflow_run` workflow *from the default branch, using the default branch's code*, regardless of what the triggering PR contains. A PR therefore cannot modify `hil.yml`, `dev/hil/**`, `conftest.py`, or the pinned dependency set that the Pi will execute. It gets to supply exactly one thing: the artifact bytes.
+`.github/workflows/hil.yml`, a plain `pull_request` workflow with one job on the Pi.
 
 ```
-pull_request (fork or branch)
+pull_request (opened, pushed, ready for review)
         │
+        ├─ skipped if the PR is a draft
         ▼
-  Build and Deploy  ── GitHub-hosted, untrusted code, no secrets
-        │  artifact: update packages + build trees + pr_meta.json
+  Approve bench run (environment: hardware-lab)  ← "Waiting" until a maintainer
+        │                                           clicks Review deployments
         ▼
-  workflow_run: completed
-        │
-        ├─ gate job (ubuntu-latest): build succeeded? → queue; else stop
-        │     posts a "queued, waiting for approval" check immediately
-        ▼
-  approve job (ubuntu-latest, environment: hardware-lab)
-        │  required reviewers on the environment → job sits "Waiting"
-        │  until a maintainer clicks Review deployments → Approve
-        │  (no concurrency group: any number of PRs can queue here)
-        ▼
-  bench job (runs-on: [self-hosted, vector-hil])
-        │  workflow + harness from default branch  ← trusted
-        │  artifact downloaded from the build run   ← untrusted payload only
-        │  concurrency: hil-bench                   ← the physical lease
+  Bench (runs-on: [self-hosted, vector-hil])     ← this PR's "HIL / Bench" check
+        │  shallow checkout of the PR
+        │  recover → flash + health check → config matrix
         ▼
   boards on isolated VLAN
-        │
-        ▼
-  check run posted against the PR head SHA
+
+  Bench pickup watchdog (ubuntu-latest)          ← runs alongside
+        cancels the run if the Pi has not started the bench job in 15
+        minutes; stops watching early if another PR's bench job is running
 ```
 
-**Gating.** A human approves every run before hardware is touched — same-repo branches and forks alike, no special-casing by repo. The mechanism is a `hardware-lab` GitHub Environment with required reviewers (Settings → Environments → New environment, name it `hardware-lab`, add required reviewers): the `bench` job's `needs` chain runs through an `approve` job that references it, so the job literally pauses with status "Waiting" until a maintainer approves, and the approval is logged on the run. This is not a repository setting the workflow file can create — a repo admin has to add it once (see `README` note below).
+**Who runs.** A person presses run, every time. Each push to a non-draft PR, fork or not, queues a run whose `approve` job references the `hardware-lab` environment. That environment has required reviewers (a repo setting: Settings → Environments → `hardware-lab` → Required reviewers), so the job waits, using no runner time, until a maintainer clicks **Review deployments** on the run page. `workflow_dispatch` is already a person pressing run and skips the approval.
 
-Because the check is scoped to the workflow run for one specific commit, a fresh push gets a fresh, unapproved check — there is no window where an approval granted for one diff silently carries over to a later, different one. `workflow_dispatch` (a maintainer already choosing to run this by hand) is exempted via a second, unprotected environment name so it still runs immediately — see the comment on the `approve` job in `hil.yml`.
+A `pull_request` run executes the PR's own copy of the workflow and `dev/hil/**`, so for a fork the approval is also the security review: read its diff, `.github/` and `dev/hil/` especially, before approving. A fork could edit the gate out of its copy of `hil.yml`, which is why the repo's *Require approval for all outside collaborators* setting matters: it holds every fork run until a maintainer approves it, whatever the workflow says. A fork's token is read-only, so the watchdog cannot cancel a fork run; it fails with a message instead.
 
-**Why this is also a scheduling win, not just security.** The `approve` job carries no `concurrency:` group, only `bench` does. So a PR mid-iteration can sit "queued, waiting for approval" indefinitely without spending any bench time or blocking any other PR's queue — a contributor (or reviewer) triggers the actual hardware run only when the PR is ready, and it stays attached to that PR's check list as proof the change doesn't break the boards.
+**Queueing.** There is one runner with the `vector-hil` label and it takes one job at a time, so runs from different PRs simply wait their turn. The concurrency group is per PR (`hil-<pr number>`, `cancel-in-progress: true`): a new push replaces that PR's older run and never touches another PR's. There is deliberately no bench-wide group. GitHub keeps only one *pending* run per group, so the old shared `hil-bench` group silently cancelled every waiting run but the newest (91 of ~200 runs before this change).
 
-**Reporting.** `workflow_run` jobs have write permissions, so the result is posted as a check run keyed to the PR's head SHA via the Checks API. That's what makes it eligible to be a required check later.
+**Pickup timeout.** GitHub has no queue timeout for self-hosted jobs; a job waits up to 24 hours for a runner that is offline. The watchdog job stands in for one, from a GitHub-hosted runner, starting once the run is approved. `PICKUP_TIMEOUT_MINUTES` in `hil.yml` sets it. If another PR's bench job is running, the Pi is evidently online, so the watchdog stops there rather than spending runner time waiting in line.
+
+**Reporting.** None needed: it is an ordinary job, so its result is the PR's check. The previous design posted a check through the Checks API from a `workflow_run`, and GitHub files API-created checks under whichever Actions check suite already exists on the commit, which is why it showed up as "Generate API docs / HIL".
 
 ---
 
@@ -223,11 +216,11 @@ the loser silently cancelled. One workflow takes one lease and runs:
 | config matrix | G3, every config on every board | ~45 min | 70 min |
 
 The caps are per step, under a 90-minute cap on the job as a whole, and they
-exist because this job holds the `hil-bench` lease while it runs. At the
-original 180 minutes one wedged job — a hung `actions/checkout`, on a runner
-that had stopped acknowledging — blocked every run behind it for three hours.
-`cancel-in-progress` stays `false` regardless: cancelling a live bench job can
-stop it mid-flash and leave a board half-written, which is worse than a queue.
+exist because the bench is a singleton: one wedged job holds up every PR behind
+it. At the original 180 minutes a hung `actions/checkout` blocked every run for
+three hours. A new push to the same PR cancels its running job; the next run
+starts with the recover stage and reflashes every board, so a board left
+half-written is repaired before anything is measured.
 
 Every stage runs even when an earlier one fails, and the verdict is taken at the
 end: one broken board should not cost the signal from the others. Running
@@ -273,19 +266,7 @@ waiting on USB, so the stage costs about what one board costs instead of three.
 The failure output travels with the exception rather than being printed by the
 worker, so a failing board's log is still that board's log.
 
-**Trigger: `workflow_run` on "Build and Deploy" completion**, which is every
-push to a PR. Not `pull_request`, and the distinction is the security model:
-`workflow_run` workflows always run *from the default branch, using the default
-branch's code*, so a PR cannot change the workflow, `dev/hil/**`, or the pinned
-dependencies that the Pi executes. The bench job checks out the default branch
-and then takes **only `src/`** from the commit under test, so the firmware is
-the PR's and the harness is not.
-
-Every push queues, but nothing runs the bench without a maintainer approving
-it first — see "Gating" in §4. That applies identically to same-repo branches
-and fork PRs; there is no separate fork code path to keep in sync. The
-`hardware-lab` Environment with required reviewers is a repository setting,
-not something the workflow can create — see the README's runner setup notes.
+**Trigger:** `pull_request` on non-draft PRs, each run approved by a maintainer. See §4.
 
 What exists today:
 
@@ -654,7 +635,7 @@ before WiFi comes up), times config count:
 
 Boards run in parallel, so wall clock ≈ the WPC leg, **~16–26 min per PR**. That's a real cost and the bench is a singleton. Recommended mitigations:
 
-- `concurrency: { group: hil-bench, cancel-in-progress: false }` — queue, don't interleave. Two jobs sharing one bench will corrupt each other's state.
+- One runner with the `vector-hil` label: jobs queue for it and never interleave. Two jobs sharing one bench would corrupt each other's state. (Not a shared concurrency group, which cancels waiting runs; see §4.)
 - Path filters so docs-only and workflow-only PRs skip HIL entirely.
 - Order the loop so configs touched by the diff run first — fail fast on the likely culprit.
 - Poll readiness over **USB rather than HTTP**; the USB bridge is answering well before WiFi associates, which shaves seconds off every one of 130 iterations.
@@ -745,13 +726,13 @@ So expect **roughly 30–50 minutes of bench occupancy per PR**, on a singleton 
 - **Ephemeral runner** (`--ephemeral`), registered at repo scope, label `vector-hil` — *not yet
   done; the bench currently runs a persistent runner. Ephemeral registration needs a PAT with
   `administration: write` stored on the Pi to mint a token per job, which is a worse secret to
-  hold than the runner's own credentials. Acceptable only because `workflow_run` means the Pi
-  never executes PR-authored code; see RUNNER_SETUP.md for the full reasoning.*
+  hold than the runner's own credentials. Acceptable because nothing runs on the Pi until a
+  maintainer has approved that run; see RUNNER_SETUP.md for the full reasoning.*
 - Unprivileged user, no sudo, no docker socket
 - `ACTIONS_RUNNER_HOOK_JOB_STARTED` / `_COMPLETED`: wipe `_work/`, run a bench-health precheck (all boards enumerate and answer), fail the job immediately if the bench is unhealthy rather than producing a confusing test failure
 - **No secrets on any self-hosted job.** In particular `WARPED_PINBALL_PRIVATE_KEY` must never be referenced by a job with a `self-hosted` label. Move signing into a dedicated environment restricted to `main` and tags so it is structurally unreachable from HIL.
 - Repo setting: Actions → *Require approval for all outside collaborators* at minimum
-- Minimal `permissions:` per job — HIL needs `checks: write`, `actions: read`, `contents: read`, nothing more
+- Minimal `permissions:` per job — the bench job needs `contents: read`, the watchdog `actions: write`, nothing more
 - Egress firewall on the Pi: github.com / api.github.com / objects.githubusercontent.com plus package mirrors; deny lateral movement into the LAN
 - ~~**Pin actions by SHA.**~~ **Done in this PR.** All six workflows now pin every action to a commit SHA with the version in a trailing comment, and `dev/requirements.txt` pins every Python dependency. Previously `deploy_docs.yml`, `docs-on-pr.yml`, `specialfeatures-on-pr.yml`, `validate-json-configs.yml`, and `version-bump-guard.yml` used floating `@v4`/`@v5` tags — a compromised or repointed tag on any of them is a path to the same runner the bench will be attached to. Keep this invariant: **no floating tags, ever**, and consider a CI check that greps for `uses:.*@v[0-9]` to enforce it.
 - `timeout-minutes` on every job, sized just above the measured worst case
@@ -776,7 +757,7 @@ Note that `machine.reset()` is a full MCU reset, so `boot.py` and `main.py` do r
 |---|---|
 | `HDWR01` fires nondeterministically on bare boards | Characterize during bring-up; add a resistor pack if needed (§8, G1) |
 | Bench is a singleton; PRs queue | Concurrency group, path filters, add boards as needed |
-| PR approved clean, then pushes dirty | Not possible by construction: the environment approval is scoped to one `workflow_run` for one commit SHA, so a new push always needs its own fresh approval |
+| Fork PR edits `hil.yml` to reach the Pi | *Require approval for all outside collaborators* holds a fork's run, edited workflow included, until a maintainer approves it; review `.github/` and `dev/hil/` before approving |
 | Harness rots as API changes | Contract tests generated from `@api` docstrings fail when routes drift |
 | Flaky HIL erodes trust in CI | Keep it non-blocking until measured flake rate is under ~1% over a week |
 | `mpy-cross` bytecode version drifts away from shipped firmware | Now pinned; add a post-update HIL assertion that every `.mpy` imports (§8, G4) |
@@ -802,7 +783,7 @@ Note that phases 3 and 4 are deliberately ordered opposite to the goal numbering
 
 1. **What should `mpy-cross` be pinned to?** It's now frozen at `1.28.0.post2` (what CI already resolved), but the shipped UF2s carry MicroPython v1.24.1 for System 11/9 and v1.26.0-preview for WPC and Data East. Ideally the build toolchain matches the target's firmware, which today would mean a per-target `mpy-cross` rather than one for all of them. Needs a hardware decision: standardize the firmware across targets, or make the build toolchain per-target. See §8.
 2. **Bench WiFi credentials** — does the VLAN get its own SSID, or do boards join the existing one with VLAN assignment by MAC?
-3. **Should HIL be a required check?** Recommendation: yes for G1–G4 once the flake rate is measured over a week. With G4 running per-PR by design, making it advisory-only would waste most of its value. Note the approval gate (§4) means "required" would also mean a PR cannot merge until a maintainer has approved and run it — that's the intended quality-gate behavior, not a side effect to work around.
+3. **Should HIL be a required check?** Recommendation: yes for G1–G4 once the flake rate is measured over a week. With G4 running per-PR by design, making it advisory-only would waste most of its value. Note every run needs a maintainer to approve it (§4), so "required" would mean a PR cannot merge until someone has pressed run.
 4. **How many versions back do we actually support?** The design says 5 stable releases; if the real support window is different, that's a one-line change to the matrix.
 5. **Do we want a `latest.json` fixture served from the Pi** to make `/api/update/check` testable, or leave that endpoint untested?
 6. **Is the existing USB hub self-powered?** Three Picos on a Zero 2 W's OTG port wants a powered hub.
