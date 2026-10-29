@@ -1409,30 +1409,6 @@ def app_setMidnightMadness(request):
     ds_write_record("extras", info, 0)
 
 
-@add_route("/api/time/trigger_midnight_madness", auth=True)
-def app_triggerMidnightMadness(request):
-    """
-    @api
-    summary: Immediately trigger Midnight Madness
-    auth: true
-    response:
-      status_codes:
-        - code: 200
-          description: Event triggered
-        - code: 400
-          description: This machine has no Midnight Madness clock
-      body:
-        example: "ok"
-    @end
-    """
-    # Only WPC and EM ship a Time module; on other boards the import would raise
-    if S.gdata["GameInfo"].get("Clock") != "MM":
-        return json_dumps({"error": "Midnight Madness is not supported on this machine"}), 400
-    import Time
-
-    Time.trigger_midnight_madness()
-
-
 @add_route("/api/settings/factory_reset", auth=True)
 def app_factoryReset(request):
     """
@@ -2474,6 +2450,12 @@ try:
 except Exception:
     pass
     # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+
+try:
+    # Only WPC has a Midnight Madness clock; other boards never define the route
+    import wpc_routes  # noqa: F401
+except ImportError:
+    pass
 
 
 def go(ap_mode):

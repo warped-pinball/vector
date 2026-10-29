@@ -13,7 +13,7 @@ is checked in turn:
   F-01  /api/scores/claim refuses a score that is not in the claim list and a
         score that is not a number, and the leaderboard does not change
   F-03  /api/time/trigger_midnight_madness refuses an unsigned request and
-        accepts a signed one (or refuses it with a 400 on a machine without the clock)
+        accepts a signed one on WPC; other boards do not define it (404)
   auth  a correctly signed request is accepted
   F-08  a signed /api/player/scores/reset refuses an out of range player id
   F-02  five bad signatures lock every signed route for 30 seconds
@@ -211,21 +211,19 @@ def check_claims(board):
     log("    ok  F-01 leaderboard unchanged")
 
 
-def check_auth(board):
+def check_auth(board, target):
+    # Only WPC has a Midnight Madness clock, so only WPC defines the route.
+    has_mm = target == "wpc"
     status, body = board.request("/api/time/trigger_midnight_madness")
-    expect("F-03 unsigned trigger_midnight_madness", status, body, 401)
+    expect("F-03 unsigned trigger_midnight_madness", status, body, 401 if has_mm else 404)
 
     # Also clears the failure count the unsigned request just added to.
     status, body = board.signed("/api/auth/password_check")
     expect("signed password_check", status, body, 200)
 
-    # Bare boards on the bench, so firing it has nothing to act on. Only a
-    # machine with the clock can run it; the rest refuse it after auth passes.
-    status, body = board.request("/api/time/midnight_madness_available")
-    expect("midnight_madness_available", status, body, 200)
-    available = json.loads(body).get("available")
+    # Bare boards on the bench, so firing it has nothing to act on.
     status, body = board.signed("/api/time/trigger_midnight_madness")
-    expect("F-03 signed trigger_midnight_madness", status, body, 200 if available else 400)
+    expect("F-03 signed trigger_midnight_madness", status, body, 200 if has_mm else 404)
 
     for player_id in (9999, -1):
         status, body = board.signed("/api/player/scores/reset", {"id": player_id})
@@ -378,7 +376,7 @@ def check_board(b, password, server):
         with SerialTap(connection) as tap:
             check_player_bounds(board)
             check_claims(board)
-            check_auth(board)
+            check_auth(board, b["target"])
             check_update_check(board)
             check_update_refusals(board, ip, server, version)
             # Last, so its 30 s lock cannot turn any check above into a 429.
