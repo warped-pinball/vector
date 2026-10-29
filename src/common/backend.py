@@ -1419,10 +1419,15 @@ def app_triggerMidnightMadness(request):
       status_codes:
         - code: 200
           description: Event triggered
+        - code: 400
+          description: This machine has no Midnight Madness clock
       body:
         example: "ok"
     @end
     """
+    # Only WPC and EM ship a Time module; on other boards the import would raise
+    if S.gdata["GameInfo"].get("Clock") != "MM":
+        return json_dumps({"error": "Midnight Madness is not supported on this machine"}), 400
     import Time
 
     Time.trigger_midnight_madness()

@@ -13,7 +13,7 @@ is checked in turn:
   F-01  /api/scores/claim refuses a score that is not in the claim list and a
         score that is not a number, and the leaderboard does not change
   F-03  /api/time/trigger_midnight_madness refuses an unsigned request and
-        accepts a signed one
+        accepts a signed one (or refuses it with a 400 on a machine without the clock)
   auth  a correctly signed request is accepted
   F-08  a signed /api/player/scores/reset refuses an out of range player id
   F-02  five bad signatures lock every signed route for 30 seconds
@@ -219,9 +219,13 @@ def check_auth(board):
     status, body = board.signed("/api/auth/password_check")
     expect("signed password_check", status, body, 200)
 
-    # Bare boards on the bench, so firing it has nothing to act on.
+    # Bare boards on the bench, so firing it has nothing to act on. Only a
+    # machine with the clock can run it; the rest refuse it after auth passes.
+    status, body = board.request("/api/time/midnight_madness_available")
+    expect("midnight_madness_available", status, body, 200)
+    available = json.loads(body).get("available")
     status, body = board.signed("/api/time/trigger_midnight_madness")
-    expect("F-03 signed trigger_midnight_madness", status, body, 200)
+    expect("F-03 signed trigger_midnight_madness", status, body, 200 if available else 400)
 
     for player_id in (9999, -1):
         status, body = board.signed("/api/player/scores/reset", {"id": player_id})
