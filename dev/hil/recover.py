@@ -224,8 +224,9 @@ def drain(port, seconds=DRAIN_SECONDS):
 
 
 def usb_device_path(port):
-    """Map /dev/ttyACM* to its /dev/bus/usb/BBB/DDD node."""
-    name = os.path.basename(port)
+    """Map a board's serial port to its /dev/bus/usb/BBB/DDD node."""
+    # realpath: port may be a /dev/serial/by-id link (bench.stable_port).
+    name = os.path.basename(os.path.realpath(port))
     link = Path(f"/sys/class/tty/{name}/device")
     try:
         node = link.resolve()
@@ -277,7 +278,8 @@ def hub_location(port):
     every other board on it, which on this bench means killing the two healthy
     boards to recover one. Only a downstream hub port is ours to switch.
     """
-    name = os.path.basename(port)
+    # realpath: port may be a /dev/serial/by-id link (bench.stable_port).
+    name = os.path.basename(os.path.realpath(port))
     try:
         node = Path(f"/sys/class/tty/{name}/device").resolve()
     except OSError:
