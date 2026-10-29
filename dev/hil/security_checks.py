@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import trench_coat  # noqa: E402
 from bench import (  # noqa: E402
+    REPO_ROOT,
     BootCrash,
     CheckFailure,
     UsbApiClient,
@@ -76,6 +77,10 @@ DEFAULT_GAME_PASSWORD = "hiltest"
 # backend.py: _AUTH_MAX_FAILURES and _AUTH_LOCKOUT_SECONDS.
 AUTH_MAX_FAILURES = 5
 AUTH_LOCKOUT_SECONDS = 30
+
+# Compiled files compared between build/<target> and the board to confirm the
+# board runs this run's build: the request handlers and the update path.
+BUILD_FINGERPRINT = ("backend.mpy", "update.mpy")
 
 # An apply that fails fast still waits on the board looking up the latest
 # release over the internet when it is given no checksum, which can take the
@@ -349,8 +354,53 @@ def check_update_refusals(board, ip, server, version):
     log(f"    ok  F-04 board still on {version} after {len(cases)} refused updates")
 
 
+def file_hashes_snippet(names):
+    return (
+        "import hashlib, binascii\n"
+        f"for name in {list(names)!r}:\n"
+        "    h = hashlib.sha256()\n"
+        "    try:\n"
+        "        with open(name, 'rb') as f:\n"
+        "            while True:\n"
+        "                chunk = f.read(1024)\n"
+        "                if not chunk:\n"
+        "                    break\n"
+        "                h.update(chunk)\n"
+        "        print(name, binascii.hexlify(h.digest()).decode())\n"
+        "    except OSError:\n"
+        "        print(name, 'missing')\n"
+    )
+
+
+def check_running_build(b):
+    """Refuse to test a board that is not running the build under test.
+
+    Every release on this branch reports the same version, so /api/version
+    cannot tell this run's firmware from the last one's. When flash-check
+    stopped before flashing (an unmapped board on the bench did exactly that),
+    this stage went on to test stale firmware and reported its old bugs as
+    regressions. dev/build.py clears build/<target> and checkout cleans the
+    workspace, so a build there is this run's.
+    """
+    build_dir = REPO_ROOT / "build" / b["target"]
+    if not build_dir.is_dir():
+        raise CheckFailure(f"no {b['target']} build from this run in {build_dir} - flash-check did not build or flash this board, so there is nothing current to check")
+
+    expected = {name: hashlib.sha256((build_dir / name).read_bytes()).hexdigest() for name in BUILD_FINGERPRINT}
+    answer = _ask_board(b["port"], file_hashes_snippet(BUILD_FINGERPRINT))
+    if answer is None or answer.returncode != 0:
+        raise CheckFailure(f"could not read the board's files to confirm its build: {answer and (answer.stderr or answer.stdout)}")
+    on_board = dict(line.split(None, 1) for line in answer.stdout.splitlines() if line.strip())
+
+    stale = [name for name in BUILD_FINGERPRINT if on_board.get(name) != expected[name]]
+    if stale:
+        raise CheckFailure(f"the board is not running this run's {b['target']} build ({', '.join(stale)} differ) - flash-check did not flash it, so its results would describe old firmware")
+    log(f"    ok  running this run's build ({', '.join(BUILD_FINGERPRINT)} match)")
+
+
 def check_board(b, password, server):
     port = b["port"]
+    check_running_build(b)
     reset_board_with_drain(port)
     for attempt in range(2):
         try:
