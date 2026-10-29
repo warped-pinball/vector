@@ -343,7 +343,7 @@ def CheckForNewScores():
         DataMapper.write_high_scores(machine_scores)
 
     # only run this if ball in play is enabled
-    if S.gdata["BallInPlay"]["Type"] == 20:
+    if S.gdata["BallInPlay"]["Type"] in (20, 21):
         print(f"SCORE: BallInPlay enabled, current state={_game_state}")
 
         # waiting for a game to start

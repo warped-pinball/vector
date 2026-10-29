@@ -66,7 +66,7 @@ def _get_range_from_gamedef():
         get range of adjustments in shadowram from gamedef json
     """
     cpyStart = cpyEnd = chkAdr = extraStart = extraEnd = 0
-    if S.gdata["Adjustments"]["Type"] == 20:
+    if S.gdata["Adjustments"]["Type"] in (20, 21):   # 21 = no checksum, ChecksumResultAdr absent
         cpyStart = S.gdata["Adjustments"].get("ChecksumStartAdr", 0)
         cpyEnd = S.gdata["Adjustments"].get("ChecksumEndAdr", 0)
         chkAdr = S.gdata["Adjustments"].get("ChecksumResultAdr", 0)
@@ -127,7 +127,8 @@ def restore_adjustments(index, reset=True):
 
     # Checksum byte
     checksumOffset = cpyEnd - cpyStart +1
-    shadowRam[chkAdr] = data[checksumOffset]
+    if chkAdr:
+        shadowRam[chkAdr] = data[checksumOffset]
     #print("ADJS: restore checksum ", shadowRam[chkAdr] )
 
     if extraStart!=0 and extraEnd!=0:

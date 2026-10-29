@@ -369,11 +369,14 @@ def write_high_scores(highScores):
 def get_ball_in_play():
     """
         Get the ball in play number (1-5). 0 if game over or no config
-        only accept Data East TYPE 20
+        only accept Data East TYPE 20 / 21
     """
     try:
         ball_in_play = S.gdata["BallInPlay"]
-        if ball_in_play["Type"] == 20:
+        if ball_in_play["Type"] in (20, 21):
+            # Type 21 (RoboCop): ball is left at balls per game + 1 after game over, game over flag is non-zero
+            if ball_in_play["Type"] == 21 and shadowRam[ball_in_play["GameOverAdr"]] != 0:
+                return 0
             ret_value = shadowRam[ball_in_play["Address"]]
             return ret_value
 
@@ -410,7 +413,7 @@ def write_ball_in_play(ball_number):
         bool: True if successful, False otherwise
     """
     try:
-        if S.gdata.get("BallInPlay", {}).get("Type") == 20:
+        if S.gdata.get("BallInPlay", {}).get("Type") in (20, 21):
             ball_adr = S.gdata["BallInPlay"]["Address"]
             # 5 = "last ball": use the game's balls per game setting (alpha games end only at ball == balls per game + 1)
             if ball_number == 5 and S.gdata["BallInPlay"].get("BallsPerGameAdr", 0) != 0:
