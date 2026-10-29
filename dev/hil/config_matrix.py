@@ -609,6 +609,8 @@ def _board_process(b, args, workdir, log_path, result_path):
     with open(log_path, "w") as out:
         os.dup2(out.fileno(), 1)
         os.dup2(out.fileno(), 2)
+    sys.stdout = os.fdopen(1, "w", buffering=1, closefd=False)
+    sys.stderr = os.fdopen(2, "w", buffering=1, closefd=False)
     passed, failures, crashes, flakes = check_board(b, args, workdir)
     with open(result_path, "w") as handle:
         json.dump({"passed": passed, "failures": failures, "crashes": crashes, "flakes": flakes, "timings": _TIMINGS}, handle)

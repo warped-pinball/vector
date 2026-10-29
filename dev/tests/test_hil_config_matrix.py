@@ -1208,7 +1208,7 @@ def test_ensure_connected_leaves_a_live_session_alone(monkeypatch):
 
 def test_boards_run_in_parallel_and_each_log_comes_back_whole(monkeypatch, tmp_path, capsys):
     def fake_check_board(b, args, workdir):
-        time.sleep(1)
+        time.sleep(3)
         print(f"checking {b['target']}", flush=True)
         if b["target"] == "wpc":
             return [], [("Taxi_L4", "booted the wrong game")], [], []
@@ -1219,7 +1219,8 @@ def test_boards_run_in_parallel_and_each_log_comes_back_whole(monkeypatch, tmp_p
 
     started = time.monotonic()
     results = cm.check_boards_in_parallel(boards, Namespace(), tmp_path)
-    assert time.monotonic() - started < 1.9
+    # One after another would take 6s; the parent polls every 2s.
+    assert time.monotonic() - started < 5.5
 
     by_target = {board["target"]: (board, passed, failures) for board, passed, failures in results}
     assert by_target["sys11"][1] == ["Generic"]
