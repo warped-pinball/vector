@@ -40,7 +40,8 @@ instead of curling it — the script uses `~/vector` either way.
 
 ## What it does
 
-1. Installs `git`, `python3-venv`, `curl`; adds you to `dialout` for serial access
+1. Installs `git`, `python3-venv`, `curl`; adds you to `dialout` for serial access; forces the USB
+   port to full speed (`dwc_otg.speed=1`, applies after a reboot)
 2. Clones (or fetches) the repo into `~/vector` and builds a venv from `dev/requirements.txt`
 3. Runs `dev/detect_boards.py` and prints what it found
 4. Downloads the Actions runner into `~/actions-runner`, registers it with the `vector-hil` label
@@ -195,6 +196,10 @@ it rather than being pre-flighted separately.
 
 ## If something breaks
 
+- **Boards drop off USB, or only some show up** — check `dmesg | grep -c 'FSM NP'`. A large
+  count means the Zero 2 W's USB controller is timing out on the hub chain. `setup-runner.sh`
+  adds `dwc_otg.speed=1` to `/boot/firmware/cmdline.txt` to force full speed, which fixed it on
+  the bench; reboot after running it. `cat /proc/cmdline` shows whether it is in effect.
 - **`registration failed`** — almost always an expired token. They last one hour. Get a fresh
   one and re-run.
 - **Jobs get OOM-killed** (`dmesg -T | grep -i oom`) — 512 MB is tight on a Zero 2 W.
