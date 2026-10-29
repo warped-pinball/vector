@@ -2165,7 +2165,7 @@ def app_updates_available(request):
         - code: 502
           description: The update information could not be fetched or its signature did not check out
       body:
-        description: The release record from latest.json, returned only once the Warped Pinball signature on it checks out. ``sha256`` is passed to the apply route. ``notes`` is covered by the signature, so the admin page renders it as HTML.
+        description: The release record from latest.json, once its Warped Pinball signature checks out. ``sha256`` goes to the apply route; ``notes`` is signed, so the admin page renders it as HTML.
         example:
             {
                 "release_page": "https://github.com/...",
@@ -2444,18 +2444,30 @@ def connect_to_wifi():
     return False
 
 
-try:
-    # This import must be after the add_route function is defined at minimum
-    import em_routes  # noqa: F401
-except Exception:
-    pass
-    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+def _import_system_routes():
+    """Load <vectorSystem>_routes (em_routes, wpc_routes, ...) when this system's build has one.
 
-try:
-    # Only WPC has a Midnight Madness clock; other boards never define the route
-    import wpc_routes  # noqa: F401
-except ImportError:
-    pass
+    Routes only one system supports live in that system's src folder, so other
+    boards neither ship nor define them. Must run after add_route is defined.
+    """
+    from os import listdir
+
+    from systemConfig import vectorSystem
+
+    name = vectorSystem + "_routes"
+    files = listdir()
+    if name + ".mpy" not in files and name + ".py" not in files:
+        return
+    try:
+        __import__(name)
+    except Exception as e:
+        # The file is there, so a failure is a real bug: log it, but keep the rest of the server up
+        from logger import logger_instance as Log
+
+        Log.log(f"BKD: Error importing {name}: {e}")
+
+
+_import_system_routes()
 
 
 def go(ap_mode):
