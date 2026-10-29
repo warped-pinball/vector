@@ -604,3 +604,26 @@ def test_repair_does_not_depend_on_the_caller_having_fixed_sys_path(monkeypatch)
 
     assert bench.repair_board("/dev/ttyACM1") == "drain the console"
     assert here in sys.path
+
+
+def test_ports_are_named_by_board_id_so_renumbering_cannot_lose_them(monkeypatch, tmp_path):
+    # A board that reconnects while its old node is still open comes back as
+    # the next ttyACM number; the by-id link follows it.
+    dev = tmp_path / "dev"
+    by_id = dev / "serial" / "by-id"
+    by_id.mkdir(parents=True)
+    (dev / "ttyACM2").touch()
+    (dev / "ttyACM4").touch()
+    link = by_id / "usb-MicroPython_Board_in_FS_mode_e661a4d4179a5b2f-if00"
+    link.symlink_to(dev / "ttyACM2")
+    monkeypatch.setattr(bench, "SERIAL_BY_ID", by_id)
+
+    assert bench.stable_port(str(dev / "ttyACM2")) == str(link)
+    link.unlink()
+    link.symlink_to(dev / "ttyACM4")
+    assert bench.stable_port(str(dev / "ttyACM4")) == str(link)
+
+
+def test_a_port_with_no_by_id_link_is_left_alone(monkeypatch, tmp_path):
+    monkeypatch.setattr(bench, "SERIAL_BY_ID", tmp_path / "missing")
+    assert bench.stable_port("/dev/ttyACM0") == "/dev/ttyACM0"

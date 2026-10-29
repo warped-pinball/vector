@@ -47,6 +47,7 @@ from bench import (  # noqa: E402
     EXPECTED_FAULTS,
     HTTP_TIMEOUT,
     REPO_ROOT,
+    BootCrash,
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
@@ -64,6 +65,7 @@ from bench import (  # noqa: E402
     log,
     parse_board_map,
     prime_usb,
+    reset_board,
     reset_board_with_drain,
     resolve_targets,
     source_version,
@@ -397,6 +399,7 @@ def main():
                 b["skip"] = True
         endgroup()
 
+    recovered_crashes = []
     for b in boards:
         if b.get("skip"):
             continue
@@ -407,7 +410,21 @@ def main():
             if b.get("flashed_at") is not None:
                 wait_out_post_flash_boot(b["port"], b["flashed_at"])
             reset_board_with_drain(b["port"])
-            connection, boot_log = wait_for_server(b["port"])
+            # One retry on a crash at boot, the same rule as the config
+            # matrix (Session.start): the Pico 2 W boards sometimes raise
+            # ImportError/ENOENT on files that are there, and one such boot
+            # should not cost the whole run. Two in a row still fail, and a
+            # crash that a retry got past is still reported below.
+            for attempt in range(2):
+                try:
+                    connection, boot_log = wait_for_server(b["port"])
+                    break
+                except BootCrash as crash:
+                    if attempt:
+                        raise
+                    log(f"::warning::{b['port']} crashed on boot; retrying once. {crash}")
+                    recovered_crashes.append(f"{b['target']}: {crash}")
+                    reset_board(b["port"])
             b["boot_log"] = boot_log
             prime_usb(connection)
             b["client"] = UsbApiClient(connection)
@@ -438,6 +455,12 @@ def main():
                 except Exception:
                     pass
             endgroup()
+
+    if recovered_crashes:
+        log("")
+        log(f"::warning::{len(recovered_crashes)} boot crash(es) recovered by a retry - the firmware raised on the way up:")
+        for crash in recovered_crashes:
+            log(f"  {crash}")
 
     log("")
     log("stage timings (build cost on the Zero 2 W is the number to watch):")
