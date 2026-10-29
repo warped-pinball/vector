@@ -12,9 +12,10 @@ is checked in turn:
   F-08  /api/player/scores refuses an out of range player id
   F-01  /api/scores/claim refuses a score that is not in the claim list and a
         score that is not a number, and the leaderboard does not change
-  F-03  /api/time/trigger_midnight_madness refuses an unsigned request
-        (a signed one is not sent: it would fire Midnight Madness)
+  F-03  /api/time/trigger_midnight_madness refuses an unsigned request and
+        accepts a signed one
   auth  a correctly signed request is accepted
+  F-08  a signed /api/player/scores/reset refuses an out of range player id
   F-02  five bad signatures lock every signed route for 30 seconds
   F-05  /api/update/check returns only a verified release record
   F-04  /api/update/apply refuses a package with no checksum, a wrong
@@ -195,8 +196,16 @@ def check_claims(board):
     # 403 is the same refusal on a board where score claiming is switched off.
     status, body = board.request("/api/scores/claim", {"initials": "HIL", "player_index": 0, "score": 1234567})
     expect("F-01 claim for a score that is not in the claim list", status, body, (400, 403))
-    status, body = board.request("/api/scores/claim", {"initials": "HIL", "player_index": 0, "score": "1234567"})
-    expect("F-01 claim with a score that is not a number", status, body, (400, 403))
+    bad_claims = [
+        ("a score that is not a number", {"initials": "HIL", "player_index": 0, "score": "1234567"}),
+        ("a bool score", {"initials": "HIL", "player_index": 0, "score": True}),
+        ("a negative score", {"initials": "HIL", "player_index": 0, "score": -5}),
+        ("initials that are not a string", {"initials": 123, "player_index": 0, "score": 1234567}),
+        ("player_index 9", {"initials": "HIL", "player_index": 9, "score": 1234567}),
+    ]
+    for name, data in bad_claims:
+        status, body = board.request("/api/scores/claim", data)
+        expect(f"F-01 claim with {name}", status, body, (400, 403))
     if board.request("/api/leaders") != before:
         raise CheckFailure("F-01 the leaderboard changed after two refused claims")
     log("    ok  F-01 leaderboard unchanged")
@@ -209,6 +218,14 @@ def check_auth(board):
     # Also clears the failure count the unsigned request just added to.
     status, body = board.signed("/api/auth/password_check")
     expect("signed password_check", status, body, 200)
+
+    # Bare boards on the bench, so firing it has nothing to act on.
+    status, body = board.signed("/api/time/trigger_midnight_madness")
+    expect("F-03 signed trigger_midnight_madness", status, body, 200)
+
+    for player_id in (9999, -1):
+        status, body = board.signed("/api/player/scores/reset", {"id": player_id})
+        expect(f"F-08 signed score reset for id {player_id}", status, body, 400)
 
 
 def check_lockout(board):

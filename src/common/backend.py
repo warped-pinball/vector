@@ -1041,7 +1041,7 @@ def app_resetIndScores(request):
     summary: Clear all scores for a single player
     auth: true
     request:
-      query:
+      body:
         - name: id
           type: int
           required: true
@@ -1050,13 +1050,19 @@ def app_resetIndScores(request):
       status_codes:
         - code: 200
           description: Scores cleared
+        - code: 400
+          description: Invalid player id
       body:
         example: "ok"
     @end
     """
     from SPI_DataStore import blankIndPlayerScores
 
-    index = int(request.args.get("id"))
+    # In the body, not the query string: the request signature covers the path and body only
+    try:
+        index = int(request.data["id"])
+    except (KeyError, TypeError, ValueError):
+        return json_dumps({"error": "Invalid player id"}), 400
     if index < 0 or index >= ds_memory_map["names"]["count"]:
         return json_dumps({"error": "Invalid player id"}), 400
     blankIndPlayerScores(index)
