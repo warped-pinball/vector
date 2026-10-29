@@ -40,7 +40,8 @@ instead of curling it — the script uses `~/vector` either way.
 
 ## What it does
 
-1. Installs `git`, `python3-venv`, `curl`; adds you to `dialout` for serial access
+1. Installs `git`, `python3-venv`, `curl`; adds you to `dialout` for serial access; forces the USB
+   port to full speed (`dwc_otg.speed=1`, applies after a reboot)
 2. Clones (or fetches) the repo into `~/vector` and builds a venv from `dev/requirements.txt`
 3. Runs `dev/detect_boards.py` and prints what it found
 4. Downloads the Actions runner into `~/actions-runner`, registers it with the `vector-hil` label
@@ -84,11 +85,10 @@ something has to mint a fresh registration token each time — which means stori
 `administration: write` on the Pi, readable by the same user that runs job code. That PAT is a
 much more valuable secret than the runner's own credentials, which only let you receive jobs.
 
-The trade works because of the trust model: under `workflow_run`, the Pi only ever executes
-harness code from a trusted ref (DESIGN.md §4), so the "poison the workspace for the next job"
-attack that ephemeral runners defend against has no foothold. Revisit this if the Pi ever
-starts executing PR-authored code — at that point ephemeral runners via JIT config stop being
-optional.
+The trade works because nothing runs on the Pi until a maintainer approves that run
+(DESIGN.md §4), and for a fork PR that approval includes reading its diff. Revisit this if runs
+ever start without that approval, for example to run fork PRs automatically: at that point
+ephemeral runners via JIT config stop being optional.
 
 To re-register against a different repo or token, remove the registration first — the script
 deliberately won't do this behind your back:
@@ -163,23 +163,22 @@ cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 
 Unset, it defaults to all three. Set to an empty value, the check is off entirely.
 
-## Approving PR runs
+## When it runs
 
-This is a repo setting, not something on the Pi, but it's the other half of getting the bench
-running and easy to miss. Every automatic run (`workflow_run`, on every push to a PR) queues a
-check and then waits — it does not touch a board until a maintainer approves it. That's on
-purpose: see [DESIGN.md §4](DESIGN.md#4-execution-model). Nothing in `hil.yml` can create this
-setting, so it needs doing once, by a repo admin:
+Every push to a PR that is ready for review, fork or not, queues a bench run that waits for a
+person to press run; drafts are skipped (DESIGN.md §4). Two repo settings make that work, and a
+repo admin sets them once:
 
-1. Repo → **Settings → Environments → New environment**.
-2. Name it exactly `hardware-lab` (that's what `hil.yml` references).
-3. Under **Deployment protection rules**, enable **Required reviewers** and add whichever
-   maintainers should be allowed to greenlight a bench run.
+1. **Settings → Environments → `hardware-lab`** (create it if missing) → enable **Required
+   reviewers** and add whoever may start a bench run.
+2. **Settings → Actions → General → Fork pull request workflows** → *Require approval for all
+   outside collaborators*. This is what stops a fork from editing the approval out of its copy
+   of `hil.yml`.
 
-Once that's saved, every queued HIL run shows a **Review deployments** button on the run page
-(Actions tab → the run → the `approve` job) until someone with reviewer access clicks Approve
-(or Reject). Nothing else needs configuring — `workflow_dispatch` (the "Run workflow" button,
-already a deliberate maintainer action) skips this and runs immediately.
+To start a run: the PR's **HIL / Approve bench run** check → the run page → **Review
+deployments** → tick `hardware-lab` → Approve. A new push replaces the waiting run with a new
+one. If the Pi is offline, an approved run is cancelled after 15 minutes instead of waiting a
+day. The Run workflow button (`workflow_dispatch`) starts a run on any branch with no approval.
 
 ## Verify
 
@@ -195,27 +194,12 @@ bench and repairs a wedged board on an unhealthy one.
 workflows don't hardcode paths. A missing one fails at the point of use with a message naming
 it rather than being pre-flighted separately.
 
-### Running it before this PR merges
-
-Neither `workflow_dispatch` nor `workflow_run` does anything until the workflow is on the
-**default branch** — the Run workflow button doesn't appear, and `workflow_run` only ever runs
-default-branch code. The workflow therefore also triggers on pushes to this branch, purely so it
-can be validated pre-merge; push anything to it and the job runs on the bench:
-
-```bash
-git commit --allow-empty -m "trigger hil smoke" && git push
-```
-
-Watch it under the repo's Actions tab, or on the Pi itself:
-
-```bash
-journalctl -u "$(cat ~/actions-runner/.service)" -f
-```
-
-Once this is on `main`, drop the `push:` trigger and use the Run workflow button.
-
 ## If something breaks
 
+- **Boards drop off USB, or only some show up** — check `dmesg | grep -c 'FSM NP'`. A large
+  count means the Zero 2 W's USB controller is timing out on the hub chain. `setup-runner.sh`
+  adds `dwc_otg.speed=1` to `/boot/firmware/cmdline.txt` to force full speed, which fixed it on
+  the bench; reboot after running it. `cat /proc/cmdline` shows whether it is in effect.
 - **`registration failed`** — almost always an expired token. They last one hour. Get a fresh
   one and re-run.
 - **Jobs get OOM-killed** (`dmesg -T | grep -i oom`) — 512 MB is tight on a Zero 2 W.
