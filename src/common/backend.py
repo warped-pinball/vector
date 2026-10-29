@@ -2444,30 +2444,26 @@ def connect_to_wifi():
     return False
 
 
-def _import_system_routes():
-    """Load <vectorSystem>_routes (em_routes, wpc_routes, ...) when this system's build has one.
+# Load <vectorSystem>_routes (em_routes, wpc_routes, ...) when this system's build has one.
+# Routes only one system supports live in that system's src folder, so other boards
+# neither ship nor define them. Must come after add_route is defined. Runs once, and
+# the names are deleted afterwards so they don't stay in memory.
+from os import listdir as _listdir  # noqa: E402
 
-    Routes only one system supports live in that system's src folder, so other
-    boards neither ship nor define them. Must run after add_route is defined.
-    """
-    from os import listdir
+from systemConfig import vectorSystem as _vector_system  # noqa: E402
 
-    from systemConfig import vectorSystem
-
-    name = vectorSystem + "_routes"
-    files = listdir()
-    if name + ".mpy" not in files and name + ".py" not in files:
-        return
+_routes_module = _vector_system + "_routes"
+_files = _listdir()
+if _routes_module + ".mpy" in _files or _routes_module + ".py" in _files:
     try:
-        __import__(name)
+        __import__(_routes_module)
     except Exception as e:
         # The file is there, so a failure is a real bug: log it, but keep the rest of the server up
-        from logger import logger_instance as Log
+        from logger import logger_instance as _Log
 
-        Log.log(f"BKD: Error importing {name}: {e}")
-
-
-_import_system_routes()
+        _Log.log(f"BKD: Error importing {_routes_module}: {e}")
+        del _Log
+del _listdir, _vector_system, _routes_module, _files
 
 
 def go(ap_mode):
