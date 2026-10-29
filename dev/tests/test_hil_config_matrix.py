@@ -1204,3 +1204,40 @@ def test_ensure_connected_leaves_a_live_session_alone(monkeypatch):
     monkeypatch.setattr(cm, "reset_board", fail)
 
     assert session.ensure_connected() is session.client
+
+
+def test_boards_run_in_parallel_and_each_log_comes_back_whole(monkeypatch, tmp_path, capsys):
+    def fake_check_board(b, args, workdir):
+        time.sleep(1)
+        print(f"checking {b['target']}", flush=True)
+        if b["target"] == "wpc":
+            return [], [("Taxi_L4", "booted the wrong game")], [], []
+        return ["Generic"], [], [], [("Flaky_1", "first boot timed out")]
+
+    monkeypatch.setattr(cm, "check_board", fake_check_board)
+    boards = [{"port": "/dev/a", "target": "sys11"}, {"port": "/dev/b", "target": "wpc"}]
+
+    started = time.monotonic()
+    results = cm.check_boards_in_parallel(boards, Namespace(), tmp_path)
+    assert time.monotonic() - started < 1.9
+
+    by_target = {board["target"]: (board, passed, failures) for board, passed, failures in results}
+    assert by_target["sys11"][1] == ["Generic"]
+    assert by_target["sys11"][0]["flakes"] == [("Flaky_1", "first boot timed out")]
+    assert by_target["wpc"][2] == [("Taxi_L4", "booted the wrong game")]
+    out = capsys.readouterr().out
+    assert "checking sys11" in out and "checking wpc" in out
+
+
+def test_a_board_process_that_dies_is_reported_not_lost(monkeypatch, tmp_path):
+    def dies(b, args, workdir):
+        import os
+
+        os._exit(3)
+
+    monkeypatch.setattr(cm, "check_board", dies)
+    results = cm.check_boards_in_parallel([{"port": "/dev/a", "target": "sys11"}, {"port": "/dev/b", "target": "wpc"}], Namespace(), tmp_path)
+    assert len(results) == 2
+    for _board, passed, failures in results:
+        assert passed == []
+        assert "exit code 3" in failures[0][1]
