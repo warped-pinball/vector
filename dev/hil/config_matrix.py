@@ -36,13 +36,15 @@ Stages:
   4. matrix      - per board, per config: set, reset, boot, assert
   5. restore     - put each board back on its generic config
 
-Boards are visited one after another, and a boot cycle is 15-25s, so a full run
-is dominated by whichever target has the most configs (WPC, at 63). Use
---target/--configs/--limit to cut it down while iterating.
+Boards run in parallel, one process each, and a boot cycle is 15-25s, so a full
+run takes about as long as whichever target has the most configs. Each board's
+log is printed in one piece when it finishes. --one-at-a-time runs them in
+turn instead; --target/--configs/--limit cut a run down while iterating.
 """
 
 import argparse
 import json
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -580,6 +582,100 @@ def run_matrix(board, args, just_flashed=False):
     return passed, failures, session.crashes, flakes
 
 
+def check_board(b, args, workdir):
+    """Flash one board and walk its matrix. Returns (passed, failures, crashes, flakes)."""
+    try:
+        just_flashed = not args.skip_flash
+        if just_flashed:
+            flash_before_matrix(b, workdir)
+        return run_matrix(b, args, just_flashed=just_flashed)
+    except Exception as exc:  # noqa: BLE001
+        # A board that cannot even be set up is one board's problem. The
+        # bench is a singleton and a run is expensive, so the other boards
+        # still get their matrix. Deliberately broad: the first bench run
+        # died on a TimeoutExpired escaping teardown, which threw away the
+        # results already in hand and skipped the untouched board entirely.
+        log(f"::error::{b['target']} on {b['port']}: {exc}")
+        return [], [("(board setup)", str(exc))], [], []
+
+
+def _board_process(b, args, workdir, log_path, result_path):
+    """One board's matrix in a child process, its output going to log_path.
+
+    A process rather than a thread because time_limit is SIGALRM, which only
+    the main thread of a process gets. dup2 rather than swapping sys.stdout so
+    that mpremote and anything else this shells out to land in the same file.
+    """
+    with open(log_path, "w") as out:
+        os.dup2(out.fileno(), 1)
+        os.dup2(out.fileno(), 2)
+    sys.stdout = os.fdopen(1, "w", buffering=1, closefd=False)
+    sys.stderr = os.fdopen(2, "w", buffering=1, closefd=False)
+    passed, failures, crashes, flakes = check_board(b, args, workdir)
+    with open(result_path, "w") as handle:
+        json.dump({"passed": passed, "failures": failures, "crashes": crashes, "flakes": flakes, "timings": _TIMINGS}, handle)
+
+
+# How often the parent says which boards are still going, so a long run in
+# the Actions log reads as busy rather than stuck.
+HEARTBEAT_SECONDS = 300
+
+
+def check_boards_in_parallel(boards, args, workdir):
+    """Every board's matrix at once, one process each.
+
+    The boards are independent devices on their own ports, and a config cycle
+    is almost all waiting on the board, so this costs about what the longest
+    board costs instead of the sum. Nothing in the matrix touches another
+    board: recovery inside it is a console drain on its own port, and the
+    power-cycling rungs only run in inventory, before this starts. Each board
+    is still flashed immediately before its own matrix (flash_before_matrix).
+    """
+    workdir_hil = workdir / "hil"
+    workdir_hil.mkdir(parents=True, exist_ok=True)
+    context = multiprocessing.get_context("fork")
+    running = {}
+    for index, b in enumerate(boards):
+        # Keyed by "target (port)": two boards can share a target.
+        name = f"{b['target']} ({b['port']})"
+        log_path = workdir_hil / f"matrix-{index}-{b['target']}.log"
+        result_path = workdir_hil / f"matrix-{index}-{b['target']}.json"
+        result_path.unlink(missing_ok=True)
+        process = context.Process(target=_board_process, args=(b, args, workdir, log_path, result_path))
+        process.start()
+        running[name] = (b, process, log_path, result_path)
+    log(f"running {len(running)} board(s) in parallel: {', '.join(b['target'] for b in boards)}. Each board's log follows when it finishes.")
+
+    results = []
+    started = time.monotonic()
+    next_heartbeat = started + HEARTBEAT_SECONDS
+    while running:
+        finished = [name for name, (_b, process, _l, _r) in running.items() if not process.is_alive()]
+        for name in finished:
+            b, process, log_path, result_path = running.pop(name)
+            process.join()
+            try:
+                sys.stdout.write(log_path.read_text())
+                sys.stdout.flush()
+            except OSError as exc:
+                log(f"::warning::could not read the {name} log: {exc}")
+            try:
+                result = json.loads(result_path.read_text())
+                _TIMINGS.extend(tuple(t) for t in result["timings"])
+                b["crashes"] = result["crashes"]
+                b["flakes"] = [tuple(f) for f in result["flakes"]]
+                results.append((b, result["passed"], [tuple(f) for f in result["failures"]]))
+            except (OSError, ValueError, KeyError):
+                b["crashes"], b["flakes"] = [], []
+                results.append((b, [], [("(board setup)", f"the {name} matrix process died (exit code {process.exitcode}) before reporting")]))
+        if running and time.monotonic() >= next_heartbeat:
+            log(f"still running after {(time.monotonic() - started) / 60:.0f} min: {', '.join(entry[0]['target'] for entry in running.values())}")
+            next_heartbeat += HEARTBEAT_SECONDS
+        if running:
+            time.sleep(2)
+    return results
+
+
 def write_step_summary(results):
     """Render the run as a table in the Actions job summary, when there is one."""
     path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -619,6 +715,7 @@ def main():
     parser.add_argument("--limit", type=int, help="stop after this many configs per board - useful for a quick smoke run")
     parser.add_argument("--changed-since", metavar="REF", help="run configs changed since REF first, so a config-touching PR fails fast")
     parser.add_argument("--skip-flash", action="store_true", help="matrix what is already on the boards instead of building and flashing first")
+    parser.add_argument("--one-at-a-time", action="store_true", help="check boards in turn instead of in parallel, with live output")
     parser.add_argument("--stop-on-first-failure", dest="keep_going", action="store_false", help="stop a board's matrix at its first failing config (default: run them all)")
     # A healthy boot answers in 12-16s on the bench, so the flash harness's
     # 150s is generous here and only makes a dead board expensive.
@@ -683,23 +780,14 @@ def main():
         ({"port": b["port"], "target": "(unknown)", "crashes": [], "flakes": []}, [], [("(board setup)", "board is not answering, and the cheap recovery rungs did not bring it back")])
         for b in unresponsive
     ]
-    for b in boards:
-        try:
-            just_flashed = not args.skip_flash
-            if just_flashed:
-                flash_before_matrix(b, workdir)
-            passed, failures, crashes, flakes = run_matrix(b, args, just_flashed=just_flashed)
-        except Exception as exc:  # noqa: BLE001
-            # A board that cannot even be set up is one board's problem. The
-            # bench is a singleton and a run is expensive, so the other boards
-            # still get their matrix. Deliberately broad: the first bench run
-            # died on a TimeoutExpired escaping teardown, which threw away the
-            # results already in hand and skipped the untouched board entirely.
-            log(f"::error::{b['target']} on {b['port']}: {exc}")
-            passed, failures, crashes, flakes = [], [("(board setup)", str(exc))], [], []
-        b["crashes"] = crashes
-        b["flakes"] = flakes
-        results.append((b, passed, failures))
+    if args.one_at_a_time or len(boards) < 2:
+        for b in boards:
+            passed, failures, crashes, flakes = check_board(b, args, workdir)
+            b["crashes"] = crashes
+            b["flakes"] = flakes
+            results.append((b, passed, failures))
+    else:
+        results += check_boards_in_parallel(boards, args, workdir)
 
     log("")
     log("stage timings:")
