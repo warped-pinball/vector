@@ -5,11 +5,16 @@ name: HIL
 # the config matrix (dev/hil/DESIGN.md §7).
 #
 # A plain pull_request workflow, so the result is this PR's own "HIL / Bench"
-# check. It runs on PRs that are ready for review, from branches in this
-# repo. Drafts and forks are skipped: a pull_request run executes the PR's
-# own copy of this file and dev/hil/**, so only people who can already push
-# here get to run code on the Pi. A maintainer can still run any ref by hand
-# with workflow_dispatch.
+# check. Nothing touches the Pi until a person presses run: every push to a
+# PR that is ready for review (drafts are skipped) queues a run that waits on
+# the `hardware-lab` environment, and a maintainer starts it with "Review
+# deployments" on the run page. Waiting costs no runner time.
+#
+# A pull_request run executes the PR's own copy of this file and dev/hil/**,
+# so read a fork PR's diff, .github/ and dev/hil/ especially, before
+# approving it. The repo's "Require approval for all outside collaborators"
+# setting holds a fork's run until a maintainer approves it, even if the fork
+# edits the gate below away.
 
 on:
   pull_request:
@@ -53,12 +58,26 @@ env:
   PICKUP_TIMEOUT_MINUTES: 15
 
 jobs:
+  # The "press run" button. `hardware-lab` has required reviewers (repo
+  # Settings > Environments), so this sits as "Waiting" until a maintainer
+  # approves it from the run page. workflow_dispatch is already a person
+  # pressing run, so it skips this.
+  approve:
+    name: Approve bench run
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: hardware-lab
+    steps:
+      - run: echo "Bench run approved."
+
   bench:
     name: Bench
+    needs: approve
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (!github.event.pull_request.draft &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      !cancelled() &&
+      (needs.approve.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && needs.approve.result == 'skipped'))
     runs-on: [self-hosted, vector-hil]
 
     # A healthy run is about 50 minutes; this only catches a wedged one.
@@ -154,18 +173,18 @@ jobs:
   # GitHub has no queue timeout for self-hosted jobs, so this stands in for
   # one: it watches the bench job from a GitHub-hosted runner and cancels the
   # run if the Pi has not picked it up in time. The bench check then reads
-  # "cancelled" instead of sitting queued for a day. Waiting behind another
-  # PR's bench run is not a missing Pi, so the clock restarts while one is
-  # running.
+  # "cancelled" instead of sitting queued for a day. A bench job running for
+  # another PR proves the Pi is online, so that also ends the watch: this
+  # run is just waiting its turn.
   pickup-watchdog:
     name: Bench pickup watchdog
+    needs: approve
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (!github.event.pull_request.draft &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      !cancelled() &&
+      (needs.approve.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && needs.approve.result == 'skipped'))
     runs-on: ubuntu-latest
-    # Long enough to wait behind a few other PRs' runs.
-    timeout-minutes: 360
+    timeout-minutes: 30
     permissions:
       actions: write
     steps:
@@ -202,8 +221,10 @@ jobs:
                 ;;
             esac
             if bench_busy_elsewhere; then
-              deadline=$(( $(date +%s) + PICKUP_TIMEOUT_MINUTES * 60 ))
-            elif [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "the Pi is running another HIL job, so it is online; this run is queued behind it"
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
               break
             fi
             sleep 30

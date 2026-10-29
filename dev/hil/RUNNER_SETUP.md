@@ -84,10 +84,10 @@ something has to mint a fresh registration token each time — which means stori
 `administration: write` on the Pi, readable by the same user that runs job code. That PAT is a
 much more valuable secret than the runner's own credentials, which only let you receive jobs.
 
-The trade works because of who can run on the Pi: only non-draft PRs from branches in this
-repo (DESIGN.md §4), whose authors can already push here. Fork PRs never reach it. Revisit
-this if that ever changes, for example to run fork PRs automatically: at that point ephemeral
-runners via JIT config stop being optional.
+The trade works because nothing runs on the Pi until a maintainer approves that run
+(DESIGN.md §4), and for a fork PR that approval includes reading its diff. Revisit this if runs
+ever start without that approval, for example to run fork PRs automatically: at that point
+ephemeral runners via JIT config stop being optional.
 
 To re-register against a different repo or token, remove the registration first — the script
 deliberately won't do this behind your back:
@@ -164,10 +164,20 @@ Unset, it defaults to all three. Set to an empty value, the check is off entirel
 
 ## When it runs
 
-Every push to a PR that is ready for review, from a branch in this repo, queues a bench run;
-drafts and forks are skipped (DESIGN.md §4). Marking a draft ready for review starts one. There
-is no approval step, so nothing needs configuring in the repo. If the Pi is offline, the run is
-cancelled after 15 minutes instead of waiting a day.
+Every push to a PR that is ready for review, fork or not, queues a bench run that waits for a
+person to press run; drafts are skipped (DESIGN.md §4). Two repo settings make that work, and a
+repo admin sets them once:
+
+1. **Settings → Environments → `hardware-lab`** (create it if missing) → enable **Required
+   reviewers** and add whoever may start a bench run.
+2. **Settings → Actions → General → Fork pull request workflows** → *Require approval for all
+   outside collaborators*. This is what stops a fork from editing the approval out of its copy
+   of `hil.yml`.
+
+To start a run: the PR's **HIL / Approve bench run** check → the run page → **Review
+deployments** → tick `hardware-lab` → Approve. A new push replaces the waiting run with a new
+one. If the Pi is offline, an approved run is cancelled after 15 minutes instead of waiting a
+day. The Run workflow button (`workflow_dispatch`) starts a run on any branch with no approval.
 
 ## Verify
 
