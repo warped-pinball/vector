@@ -234,11 +234,34 @@ def mpremote(*args, timeout=60):
     return subprocess.run(["mpremote", *args], capture_output=True, text=True, timeout=timeout)
 
 
+SERIAL_BY_ID = Path("/dev/serial/by-id")
+
+
+def stable_port(port):
+    """The board's /dev/serial/by-id path, or `port` if it has none.
+
+    /dev/ttyACMn is handed out on every (re)enumeration, and a board that
+    reconnects while something still holds its old node open comes back under
+    the next free number. The bench lost a sys11 and a wpc board mid-run that
+    way: both reconnected within a second, as /dev/ttyACM4 and /dev/ttyACM2,
+    while the harness kept talking to /dev/ttyACM2 and /dev/ttyACM3. The by-id
+    link carries the board's unique id and follows it across renumbering.
+    """
+    try:
+        target = os.path.realpath(port)
+        for link in SERIAL_BY_ID.iterdir():
+            if os.path.realpath(link) == target:
+                return str(link)
+    except OSError:
+        pass
+    return port
+
+
 def list_ports():
     result = mpremote("devs", timeout=30)
     if result.returncode != 0:
         raise CheckFailure(f"`mpremote devs` failed: {result.stderr.strip()}")
-    return [line.split()[0] for line in result.stdout.strip().splitlines() if line.strip()]
+    return [stable_port(line.split()[0]) for line in result.stdout.strip().splitlines() if line.strip()]
 
 
 # --------------------------------------------------------------------------

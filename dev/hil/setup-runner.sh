@@ -75,6 +75,18 @@ if ! id -nG | grep -qw dialout; then
     sudo usermod -aG dialout "$(whoami)"
 fi
 
+# The Zero 2 W's USB controller (dwc_otg) times out talking to several
+# full-speed Picos behind chained hubs ("Timed out waiting for FSM NP
+# transfer" in dmesg), and boards silently drop off the bus. Forcing the port
+# to full speed avoids that; the Picos are full speed anyway. Takes effect on
+# the next reboot. Only touches a cmdline.txt that does not set it yet.
+CMDLINE=/boot/firmware/cmdline.txt
+[ -f "$CMDLINE" ] || CMDLINE=/boot/cmdline.txt
+if [ -f "$CMDLINE" ] && ! grep -q 'dwc_otg.speed=' "$CMDLINE"; then
+    log "forcing USB to full speed in $CMDLINE (reboot to apply)"
+    sudo sed -i '1 s/$/ dwc_otg.speed=1/' "$CMDLINE"
+fi
+
 # --- repo and dev pipeline ------------------------------------------------
 
 if [ -d "$REPO_DIR/.git" ]; then

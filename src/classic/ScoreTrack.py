@@ -210,8 +210,8 @@ def initialize_leaderboard():
 
 def check_for_machine_high_scores():
     """check for a high score in the machine that vector doesn't have yet"""
-    # Types 30 and 32 are the machine-high-score encodings DataMapper.read_high_scores() decodes
-    if S.gdata.get("HighScores", {}).get("Type") not in (30, 32):
+    # Types 30, 31 and 32 are the machine-high-score encodings DataMapper.read_high_scores() decodes
+    if S.gdata.get("HighScores", {}).get("Type") not in (30, 31, 32):
         return
 
     score = DataMapper.read_high_scores()[0][1]
@@ -280,7 +280,7 @@ def CheckForNewScores(nState=[0]):
     if nState[0] == 0:  # power up init        
         nState[0] = 1
 
-    if S.gdata["BallInPlay"]["Type"] == 30:
+    if S.gdata["BallInPlay"]["Type"] in (30, 31, 32):
 
         if nState[0] == 1:  # waiting for a game to start
 
