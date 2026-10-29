@@ -176,6 +176,14 @@ class LowMemoryMode:
         except Exception as e:
             print("Unable to shut down discovery sockets:", e)
 
+        # drop queued webhook events; the update ends in a reboot anyway
+        try:
+            from webhook import release_memory
+
+            release_memory()
+        except Exception as e:
+            print("Unable to release webhook memory:", e)
+
         from gc import collect as gc_collect
 
         gc_collect()
