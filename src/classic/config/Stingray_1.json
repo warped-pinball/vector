@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Stingray",
+        "Abbrev": "STR",
         "System": "MPU100"
     },
     "BallInPlay": {

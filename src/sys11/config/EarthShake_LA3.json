@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Earth Shaker",
+        "Abbrev": "ES",
         "System": "11B",
         "FileVer": 1
     },

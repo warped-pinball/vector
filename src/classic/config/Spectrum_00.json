@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Spectrum",
+        "Abbrev": "SPEC",
         "System": "Bally35"
     },
     "BallInPlay": {

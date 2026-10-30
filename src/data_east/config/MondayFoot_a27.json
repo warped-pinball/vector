@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Monday Night Football",
+        "Abbrev": "MNF",
         "System": "DataEast",
         "FileVer": 1
     },

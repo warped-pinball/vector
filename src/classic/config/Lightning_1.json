@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Lightning",
+        "Abbrev": "LTNG",
         "System": "MPU200"
     },
     "BallInPlay": {

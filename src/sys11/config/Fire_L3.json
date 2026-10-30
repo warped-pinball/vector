@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Fire!",
+        "Abbrev": "FIRE",
         "System": "11"
     },
     "BallInPlay": {

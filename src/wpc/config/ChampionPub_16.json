@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Champion Pub",
+      "Abbrev": "CP",
       "System": "WPC",
       "FileVer": 1
   },

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Teenage Mutant Ninja Turtles",
+        "Abbrev": "TMNT",
         "System": "DataEast",
         "FileVer": 1
     },

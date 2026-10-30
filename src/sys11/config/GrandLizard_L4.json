@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Grand Lizard",
+        "Abbrev": "GL",
         "System": "11"
     },
     "BallInPlay": {

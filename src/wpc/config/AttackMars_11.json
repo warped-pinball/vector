@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Attack from Mars",
+      "Abbrev": "AFM",
       "System": "WPC",
       "FileVer": 1
   },

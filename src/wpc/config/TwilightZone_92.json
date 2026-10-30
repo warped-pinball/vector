@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Twilight Zone",
+      "Abbrev": "TZ",
       "System": "WPC",
       "FileVer": 1
   },

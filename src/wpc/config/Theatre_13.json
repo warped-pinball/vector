@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Theatre of Magic",
+      "Abbrev": "TOM",
       "System": "WPC",
       "FileVer": 1
   },

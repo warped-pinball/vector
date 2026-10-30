@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Creature from the Black Lagoon",
+      "Abbrev": "CFTBL",
       "System": "WPC",
       "FileVer": 1
   },

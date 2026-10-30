@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Dirty Harry",
+      "Abbrev": "DH",
       "System": "WPC",
       "FileVer": 1,
       "Clock": "MM"

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Lost World",
+        "Abbrev": "LW",
         "System": "Bally35"
     },
     "BallInPlay": {

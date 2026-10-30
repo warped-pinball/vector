@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Bugs Bunny Birthday Bash",
+        "Abbrev": "BBB",
         "System": "11c"
     },
     "BallInPlay": {

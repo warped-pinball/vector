@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "F-14 Tomcat",
+        "Abbrev": "F14",
         "System": "11"
     },
     "BallInPlay": {

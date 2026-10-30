@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Flight 2000",
+        "Abbrev": "F2K",
         "System": "MPU200"
     },
     "BallInPlay": {

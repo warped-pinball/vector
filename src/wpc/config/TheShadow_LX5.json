@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "The Shadow",
+      "Abbrev": "SHADOW",
       "System": "WPC",
       "FileVer": 1
   },

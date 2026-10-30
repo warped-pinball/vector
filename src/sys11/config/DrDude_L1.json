@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Dr Dude",
+        "Abbrev": "DD",
         "System": "11c"
     },
     "BallInPlay": {

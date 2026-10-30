@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Radical!",
+        "Abbrev": "RAD",
         "System": "11c"
     },
     "BallInPlay": {

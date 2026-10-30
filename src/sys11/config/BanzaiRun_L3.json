@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Banzai Run",
+        "Abbrev": "BANZAI",
         "System": "11B"
     },
     "BallInPlay": {

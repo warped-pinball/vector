@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Fish Tales",
+      "Abbrev": "FT",
       "System": "WPC",
       "FileVer": 1
   },

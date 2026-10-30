@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Dragonfist",
+        "Abbrev": "DF",
         "System": "MPU200"
     },
     "BallInPlay": {

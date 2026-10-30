@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Junk Yard",
+      "Abbrev": "JY",
       "System": "WPC",
       "FileVer": 1,
       "Clock": "MM"

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Police Force",
+        "Abbrev": "PF",
         "System": "11B"
     },
     "BallInPlay": {

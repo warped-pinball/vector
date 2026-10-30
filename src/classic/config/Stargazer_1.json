@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Stargazer",
+        "Abbrev": "SG",
         "System": "MPU200"
     },
     "BallInPlay": {

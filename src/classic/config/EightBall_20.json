@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Eight Ball",
+        "Abbrev": "8B",
         "System": "Bally17"
     },
     "BallInPlay": {

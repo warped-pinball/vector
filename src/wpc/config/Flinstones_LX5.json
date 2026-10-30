@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "The Flintstones",
+      "Abbrev": "FS",
       "System": "WPC",
       "FileVer": 1
   },

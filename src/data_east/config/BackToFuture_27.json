@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Back to the Future",
+        "Abbrev": "BTTF",
         "System": "DataEast",
         "FileVer": 1
     },

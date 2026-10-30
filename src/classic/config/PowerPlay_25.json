@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Power Play",
+        "Abbrev": "PP",
         "System": "Bally17"
     },
     "BallInPlay": {

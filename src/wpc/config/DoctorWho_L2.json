@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Doctor Who",
+      "Abbrev": "DW",
       "System": "WPC",
       "FileVer": 1
   },

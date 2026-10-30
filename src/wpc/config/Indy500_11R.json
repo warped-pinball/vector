@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Indianapolis 500",
+      "Abbrev": "I500",
       "System": "WPC",
       "FileVer": 1
   },

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Sorcerer",
+        "Abbrev": "SOR",
         "System": "9",
         "FileVer": 1
     },

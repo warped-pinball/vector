@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Star Wars",
+        "Abbrev": "SW",
         "System": "DataEast",
         "FileVer": 1
     },

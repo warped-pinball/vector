@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Embryon",
+        "Abbrev": "EMB",
         "System": "Bally35"
     },
     "BallInPlay": {

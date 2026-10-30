@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Pool Sharks",
+        "Abbrev": "PS",
         "System": "11c"
     },
     "BallInPlay": {

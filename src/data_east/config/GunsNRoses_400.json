@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Guns N Roses",
+        "Abbrev": "GNR",
         "System": "DataEast",
         "FileVer": 1
     },

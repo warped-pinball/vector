@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Comet",
+        "Abbrev": "COM",
         "System": "9",
         "FileVer": 1      
     },

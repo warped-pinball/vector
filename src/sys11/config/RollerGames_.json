@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Roller Games",
+        "Abbrev": "RLG",
         "System": "11c",
         "FileVer": 1
     },

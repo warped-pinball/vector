@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Strikes and Spares",
+        "Abbrev": "SAS",
         "System": "Bally17"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Nine Ball",
+        "Abbrev": "9B",
         "System": "MPU200"
     },
     "BallInPlay": {

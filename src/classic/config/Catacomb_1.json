@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Catacomb",
+        "Abbrev": "CAT",
         "System": "MPU200"
     },
     "BallInPlay": {

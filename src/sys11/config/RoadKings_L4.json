@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Road Kings",
+        "Abbrev": "RK",
         "System": "11"
     },
     "BallInPlay": {

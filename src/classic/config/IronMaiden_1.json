@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Iron Maiden",
+        "Abbrev": "IM",
         "System": "MPU200"
     },
     "BallInPlay": {

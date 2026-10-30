@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Bally's Game Show",
+        "Abbrev": "GAME",
         "System": "11c"
     },
     "BallInPlay": {

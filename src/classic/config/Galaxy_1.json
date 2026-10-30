@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Galaxy",
+        "Abbrev": "GAL",
         "System": "MPU200"
     },
     "BallInPlay": {

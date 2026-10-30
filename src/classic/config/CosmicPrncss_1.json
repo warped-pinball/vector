@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Cosmic Princess",
+        "Abbrev": "COSMIC",
         "System": "MPU100"
     },
     "BallInPlay": {

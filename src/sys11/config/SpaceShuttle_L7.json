@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Space Shuttle",
+        "Abbrev": "SHUTTLE",
         "System": "9",
         "FileVer": 1      
     },

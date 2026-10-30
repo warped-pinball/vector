@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Tales of the Arabian Nights",
+      "Abbrev": "TOTAN",
       "System": "WPC",
       "FileVer": 1
   },

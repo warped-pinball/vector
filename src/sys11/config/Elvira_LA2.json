@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Elvira",
+        "Abbrev": "EATPM",
         "System": "11B"
     },
     "BallInPlay": {

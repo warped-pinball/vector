@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Pinball",
+        "Abbrev": "PIN",
         "System": "MPU100"
     },
     "BallInPlay": {

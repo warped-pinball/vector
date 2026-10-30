@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Seawitch",
+        "Abbrev": "SEA",
         "System": "MPU200"
     },
     "BallInPlay": {

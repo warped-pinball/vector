@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Nitro Ground Shaker",
+        "Abbrev": "NGS",
         "System": "Bally35"
     },
     "BallInPlay": {

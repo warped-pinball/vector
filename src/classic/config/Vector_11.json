@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Vector",
+        "Abbrev": "VEC",
         "System": "Bally35"
     },
     "BallInPlay": {

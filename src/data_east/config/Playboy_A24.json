@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Playboy",
+        "Abbrev": "PB35",
         "System": "DataEast",
         "FileVer": 1
     },

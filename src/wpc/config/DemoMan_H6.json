@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Demolition Man",
+      "Abbrev": "DM",
       "System": "WPC",
       "FileVer": 1
   },

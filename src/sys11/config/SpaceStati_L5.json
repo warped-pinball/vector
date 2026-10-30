@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Space Station",
+        "Abbrev": "SST",
         "System": "11B",
         "FileVer": 1
     },

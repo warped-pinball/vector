@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Mata Hari",
+        "Abbrev": "MH",
         "System": "Bally17"
     },
     "BallInPlay": {
