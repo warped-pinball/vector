@@ -55,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bench  # noqa: E402
 import trench_coat  # noqa: E402
+from api_checks import check_switch_diagnostics  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
@@ -124,7 +125,7 @@ def source_configs(target):
             name = data["GameInfo"]["GameName"]
         except (KeyError, TypeError):
             raise CheckFailure(f"{path} has no GameInfo.GameName")
-        configs[path.stem] = {"name": name, "adjustments": "Adjustments" in data}
+        configs[path.stem] = {"name": name, "adjustments": "Adjustments" in data, "switches": "Switches" in data}
 
     if not configs:
         raise CheckFailure(f"no game configs found in {config_dir}")
@@ -415,6 +416,7 @@ def check_booted_config(client, target, config, expected):
     if get(client, "/api/leaders") is None:
         raise CheckFailure("/api/leaders returned no body")
     check_adjustments(client, config, expected["adjustments"])
+    check_switch_diagnostics(get(client, "/api/diagnostics/switches"), require_populated=expected.get("switches", False))
 
     return name
 
