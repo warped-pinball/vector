@@ -425,7 +425,7 @@ def test_trench_coat_is_shown_the_recovered_board_and_no_other(monkeypatch, tmp_
 def test_the_same_finding_reaches_the_summary_once(job_summary, monkeypatch):
     """Three stages, one summary page, one problem."""
     monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
-    boards = boards_for("wpc", "sys11")
+    boards = boards_for("wpc", "sys11", "classic")
 
     for _stage in range(3):
         assert bench.check_bench_complete(boards) == ["data_east"]
@@ -578,7 +578,7 @@ def test_an_incomplete_bench_says_whether_the_board_is_even_plugged_in(job_summa
     root = usb_tree(tmp_path, {"1-1.1": ("2e8a", "0005", "aaaa"), "1-1.2": ("2e8a", "0005", "bbbb")})
     monkeypatch.setattr(bench, "USB_DEVICES", root)
 
-    assert bench.check_bench_complete(boards_for("sys11", "data_east")) == ["wpc"]
+    assert bench.check_bench_complete(boards_for("sys11", "data_east", "classic")) == ["wpc"]
 
     written = job_summary.read_text()
     assert "What is on the USB bus" in written
@@ -589,7 +589,7 @@ def test_a_complete_bench_does_not_print_the_bus(job_summary, monkeypatch):
     monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
     monkeypatch.setattr(bench, "usb_bus_report", lambda: pytest.fail("nothing is missing, so there is nothing to explain"))
 
-    assert bench.check_bench_complete(boards_for("sys11", "wpc", "data_east")) == []
+    assert bench.check_bench_complete(boards_for("sys11", "wpc", "data_east", "classic")) == []
 
 
 # --------------------------------------------------------------------------
