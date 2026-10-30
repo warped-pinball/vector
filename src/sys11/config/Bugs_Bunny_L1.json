@@ -11,7 +11,6 @@
         "Type": 3,
         "Address": 1972,
         "Length": 16,
-        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
@@ -64,8 +63,8 @@
                 "Target": {
                     "Name": "Target Switch Number",
                     "Type": "Fixed",
-                    "Value": 32,
-                    "Text": "Comet Ramp"
+                    "Value": 41,
+                    "Text": "Tazz Ramp"
                 }
             }
         },

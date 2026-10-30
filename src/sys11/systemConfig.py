@@ -2,7 +2,7 @@ vectorSystem = "sys11"
 updatesURL = "http://software.warpedpinball.com/vector/sys11/latest.json"
 
 # Firmware version for the System11 build
-SystemVersion = "2.0.0"
+SystemVersion = "2.0.1"
 
 
 # System specific scheduled tasks
