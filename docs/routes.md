@@ -936,7 +936,7 @@ No parameters inferred.
 <a id="api-settings-set_network_name"></a>
 ## `/api/settings/set_network_name`
 
-- **Handler:** [`app_setNetworkName`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1361)
+- **Handler:** [`app_setNetworkName`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L1362)
 - Authentication: Required (see [Authentication guide](authentication.md)).
 
 Set the name this board gives the router, used from the next boot
