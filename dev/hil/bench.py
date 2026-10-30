@@ -784,12 +784,12 @@ def resolve_targets(boards, board_map):
     return boards
 
 
-# Every system the bench exists to cover. A run that quietly tests two of the
-# three proves nothing about the third while still reporting green, which is
+# Every system the bench exists to cover. A run that quietly tests three of the
+# four proves nothing about the fourth while still reporting green, which is
 # worse than not running: it is a check that has stopped checking. Overridable
 # for a bench that has genuinely lost a board - deliberately, by whoever runs
 # it, and visibly in the log.
-REQUIRED_TARGETS = ("sys11", "wpc", "data_east")
+REQUIRED_TARGETS = ("sys11", "wpc", "data_east", "classic")
 
 
 def required_targets():
@@ -804,8 +804,8 @@ def check_bench_complete(boards):
 
     Returns the missing targets rather than raising: the boards that *are*
     here still have checks worth running, and a run is expensive. The caller
-    keeps the result and fails the run at the end - green on two boards out of
-    three is the outcome this exists to prevent.
+    keeps the result and fails the run at the end - green on three boards out
+    of four is the outcome this exists to prevent.
     """
     wanted = required_targets()
     if not wanted:
@@ -828,7 +828,7 @@ def check_bench_complete(boards):
             f"Missing: **{', '.join(missing)}**. Attached: {have}.",
             "",
             "A run proves nothing about a system that is not on the bench, so this fails the run rather",
-            "than reporting green on two boards out of three. The boards that are here are still checked.",
+            "than reporting green on the boards that happen to be attached. Those are still checked.",
             "",
             "Either put the missing board back (`dev/hil/recover.py`, and check it is in",
             "`VECTOR_HIL_BOARD_MAP`), or set `VECTOR_HIL_REQUIRED_TARGETS` on the runner to the systems",

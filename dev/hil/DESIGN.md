@@ -243,8 +243,8 @@ getting them confused has cost whole runs:
   `VECTOR_HIL_BOARD_MAP` like any other: the harness mounts the drive and writes
   the pinned TrenchCoat UF2 for the mapped target, and the board rejoins the run.
 - **Absent.** Not enumerated either way. This is the state that must fail the
-  run rather than shrink it: two boards out of three passing is a green run that
-  proves nothing about the third. `REQUIRED_TARGETS` names the systems the bench
+  run rather than shrink it: three boards out of four passing is a green run that
+  proves nothing about the fourth. `REQUIRED_TARGETS` names the systems the bench
   is for; `VECTOR_HIL_REQUIRED_TARGETS` on the runner is how a bench that has
   really lost a board says so out loud.
 
