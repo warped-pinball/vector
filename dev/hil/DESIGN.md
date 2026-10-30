@@ -1,6 +1,6 @@
 # Hardware-in-the-Loop (HIL) Testing — Design
 
-**Status:** design proposal; bench bring-up, the flash/health-check harness (G1/G2) and the config matrix (G3) are implemented and running
+**Status:** design proposal; bench bring-up, the flash/health-check harness (G1/G2), the config matrix (G3) and the security checks for the WarpedPinball-1 fixes (`security_checks.py`, which also covers the G4 signature negative tests) are implemented and running
 **Scope:** a self-hosted GitHub Actions runner driving real Vector boards, safely, from a public repository.
 
 ---

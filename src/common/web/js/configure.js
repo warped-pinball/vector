@@ -160,12 +160,18 @@ async function set_vector_config() {
 
   // send a POST with the selected configuration
   // auth is not required because this route is only available in AP mode
-  const response = await window.smartFetch(
-    "/api/settings/set_vector_config",
-    (data = data),
-    (auth = false),
-  );
-  return response;
+  // the device reboots as soon as it saves, so a dropped connection means success
+  try {
+    return await window.smartFetch(
+      "/api/settings/set_vector_config",
+      (data = data),
+      (auth = false),
+      { timeoutMs: 8000 },
+    );
+  } catch (e) {
+    console.log("Connection lost while saving, device is rebooting", e);
+    return { status: 200, rebooted: true };
+  }
 }
 
 // function to  save the configuration  and restart the device
@@ -179,7 +185,7 @@ async function save_configuration() {
   let response_vector = await set_vector_config();
   saveBtn.disabled = false;
   saveBtn.innerHTML = saveText;
-  if (!response_vector.status == 200) {
+  if (response_vector.status !== 200) {
     replyDom.innerHTML =
       "<p style='color:red;'>Error saving vector configuration; Try again</p>";
     return;
@@ -187,7 +193,7 @@ async function save_configuration() {
 
   response_vector = null;
   replyDom.innerHTML =
-    "<p style='color:green;'>Configuration saved. Power cycle your Pinball Machine to apply the changes</p>";
+    "<p style='color:green;'>Configuration saved. Vector is rebooting to apply the changes. Make sure your reset clip is in place.</p>";
 }
 
 window.save_configuration = save_configuration;

@@ -144,3 +144,4 @@ def test_main_emit_output_skips_targets(monkeypatch, tmp_path: Path) -> None:
     wh.main()
 
     assert output_file.read_text() == "body<<DELIM\nvalue\nDELIM\n"
+

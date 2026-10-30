@@ -6,9 +6,9 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score avilability
 """
+import DataMapper
 import displayMessage
 import SharedState as S
-import DataMapper
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
@@ -20,7 +20,7 @@ rtc = RTC()
 top_scores = []
 nGameIdleCounter = 0
 push_game_count = 0
-last_pushed_game = [["" , 0], ["", 0], ["", 0], ["", 0]]
+last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
 # hold the last four (plus two older records) games worth of scores.
 # first number is game counter (game ID), then 4 scores plus intiials
@@ -37,6 +37,7 @@ recent_scores = [
 def reset_scores():
     # reset leader board scores
     from SPI_DataStore import blankStruct
+
     blankStruct("leaders")
 
 
@@ -54,6 +55,14 @@ def get_claim_score_list():
 def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
+
+    if not isinstance(initials, str):
+        raise ValueError("SCORE: invalid initials")
+    # bool is an int subclass, reject it explicitly
+    if isinstance(player_index, bool) or not isinstance(player_index, int) or not 0 <= player_index <= 3:
+        raise ValueError("SCORE: invalid player index")
+    if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
+        raise ValueError("SCORE: invalid score")
 
     # Sanitize initials: 3 uppercase letters only
     initials = ("".join(c for c in initials.upper() if c.isalpha()) + "   ")[:3]
@@ -432,12 +441,13 @@ def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter, push_game_count, last_pushed_game
 
-    if push_game_count>0:
+    if push_game_count > 0:
         from origin import push_end_of_game
-        push_game_count+=1
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+
+        push_game_count += 1
+        push_end_of_game(last_pushed_game, push_game_count)
+        if push_game_count > 5:
+            push_game_count = 0
 
     if nState[0] == 0:  # power up init
         displayMessage.refresh_9()
@@ -445,18 +455,15 @@ def CheckForNewScores(nState=[0]):
             place_machine_scores()
         nState[0] = 1
 
-    if S.gdata["BallInPlay"]["Type"] in [2,3]: 
-
-
-        #print(" BALL IN PLAY:",DataMapper.get_ball_in_play())
+    if S.gdata["BallInPlay"]["Type"] in [2, 3]:
+        # print(" BALL IN PLAY:",DataMapper.get_ball_in_play())
 
         if nState[0] == 1:  # waiting for a game to start
-
             # Check if active_format is non-zero; if so, return early
             # Allows game in progress to finish in normal mode when format is activated
             if S.active_format.get("Id", 0) != 0:
                 return
-                
+
             nGameIdleCounter += 1  # claim score list expiration timer
             if nGameIdleCounter > (3 * 60 // 5):  # 3 min, push empty onto list so old games expire
                 game = [S.gameCounter, ["", 0], ["", 0], ["", 0], ["", 0]]
@@ -465,7 +472,7 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             print("SCORE: game start check ", nGameIdleCounter)
-            if  DataMapper.get_game_active() == True:
+            if DataMapper.get_game_active() == True:
                 nState[0] = 2
                 # Game Started!
                 log.log("SCORE: Game Started")
@@ -474,7 +481,7 @@ def CheckForNewScores(nState=[0]):
 
         elif nState[0] == 2:  # waiting for game to end
             print("SCORE: game end check")
-            if  DataMapper.get_game_active() == False:            
+            if DataMapper.get_game_active() == False:
                 # game over, get new scores
                 nState[0] = 1
                 if (S.gdata["HighScores"]["Type"] == 9) or (DataStore.read_record("extras", 0)["enter_initials_on_game"] is False):
@@ -497,6 +504,7 @@ def CheckForNewScores(nState=[0]):
                 _place_game_in_claim_list(game)
 
                 from origin import push_end_of_game
+
                 push_game_count = 1
                 last_pushed_game = game
                 push_end_of_game(last_pushed_game, push_game_count)
@@ -508,4 +516,3 @@ def CheckForNewScores(nState=[0]):
                 displayMessage.refresh_9()
 
                 S.gameCounter = (S.gameCounter + 1) % 100
-                

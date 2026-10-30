@@ -48,7 +48,6 @@ recent_scores = [
 # gpio1.value(not gpio1.value())
 
 
-
 # default pauses (can be overridden from EMData/S.gdata in _loadState)
 PROCESS_START_PAUSE = 4
 PROCESS_END_PAUSE = 5
@@ -106,6 +105,7 @@ def _carry_window_hit(count, player_idx, digit_idx):
         return False
     return count > carryThresholds[player_idx][digit_idx][0] and count < carryThresholds[player_idx][digit_idx][1]
 
+
 # give a default here - stup in initialize according to configuration / datastore
 sensorBitMask = 0x0000F0F
 digitsPerPlayer = 1
@@ -138,7 +138,7 @@ def initialize():
     """
     from phew.server import schedule
 
-    schedule(processSensorData, 1000, 800)    
+    schedule(processSensorData, 1000, 800)
 
     reset_live_scores_on_boot()
     loadState()
@@ -261,11 +261,9 @@ def loadState():
 
     log.log(f"ScoreTrack initialized: players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X}")
 
-    players_table = [("P1", p1_score_vals, p1_reset_vals), ("P2", p2_score_vals, p2_reset_vals),
-                      ("P3", p3_score_vals, p3_reset_vals), ("P4", p4_score_vals, p4_reset_vals)]
+    players_table = [("P1", p1_score_vals, p1_reset_vals), ("P2", p2_score_vals, p2_reset_vals), ("P3", p3_score_vals, p3_reset_vals), ("P4", p4_score_vals, p4_reset_vals)]
     table = "\n".join(f"  {p}: score={s} reset={r}" for p, s, r in players_table)
-    print(f"SCORE: loaded -> players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X} "
-          f"startpause={PROCESS_START_PAUSE} endpause={PROCESS_END_PAUSE}\n{table}")
+    print(f"SCORE: loaded -> players={players} digits={digitsPerPlayer} sensorMask=0x{sensorBitMask:08X} " f"startpause={PROCESS_START_PAUSE} endpause={PROCESS_END_PAUSE}\n{table}")
 
 
 def updatePauseGlobals():
@@ -274,11 +272,10 @@ def updatePauseGlobals():
     Called when pause values are changed via API.
     """
     global PROCESS_START_PAUSE, PROCESS_END_PAUSE
-    
+
     PROCESS_START_PAUSE = int(S.gdata.get("startpause", PROCESS_START_PAUSE))
     PROCESS_END_PAUSE = int(S.gdata.get("endpause", PROCESS_END_PAUSE))
     print(f"SCORE: Updated pause globals - startpause={PROCESS_START_PAUSE}, endpause={PROCESS_END_PAUSE}")
-
 
 
 def saveState():
@@ -288,7 +285,7 @@ def saveState():
         S.gdata["startpause"] = int(PROCESS_START_PAUSE)
     if "endpause" not in S.gdata:
         S.gdata["endpause"] = int(PROCESS_END_PAUSE)
-    
+
     def _coerce_timing_array(raw, fallback):
         try:
             vals = [int(v) for v in raw]
@@ -376,7 +373,7 @@ def saveState():
         # DataStore.write_record("configuration",0)
 
         DataStore.write_record("EMData", S.gdata)
-        
+
         #  printMasks()
     except Exception as e:
         print("Error writing EMData:", e)
@@ -393,8 +390,7 @@ def setScoreMask(bit, scoreDepth, resetDepth):
     """
     global score_mask, reset_mask, scoreDepths, resetDepths
 
-
-    #print("SCORE: setting score mask",bit,scoreDepth,resetDepth)
+    # print("SCORE: setting score mask",bit,scoreDepth,resetDepth)
 
     if not (0 <= bit < 32):
         log.log("SCORE: bit - out of range 0..31")
@@ -487,7 +483,7 @@ def processSensorData():
 
     if stateVar == PROCESS_IDLE:
         """wait for game to start"""
-        processAndRun(False)  #run so lights blink for user cal
+        processAndRun(False)  # run so lights blink for user cal
         # Leave sensorScores (and the scores.html live display) holding the
         # last finished game's score through this idle/game-over gap - it
         # gets cleared in PROCESS_START below, right as the next game
@@ -498,8 +494,8 @@ def processSensorData():
         # did instead of together.
         if sensorRead.gameActive() == 1:
             stateVar = PROCESS_START
-            stateCount = 0            
-            
+            stateCount = 0
+
     elif stateVar == PROCESS_START:
         """game start delay - wait for score reset to happen
         -make smarter in the future?  wait fro a few seconds and more if signal detected...."""
@@ -719,10 +715,10 @@ def processAndRun(track_player_up=True):
             break  # end of buffer data, drop ougta here
 
         # keep all channels that go active for led display
-        allActivesChannels = allActivesChannels | (d & sensorBitMask) #sc
+        allActivesChannels = allActivesChannels | (d & sensorBitMask)  # sc
 
-        sc = processBitFilter(d & sensorBitMask)       
-        
+        sc = processBitFilter(d & sensorBitMask)
+
         # Detect rising edges on all 32 bits at once
         risingEdge = (~last_sc) & sc
         if risingEdge:
@@ -737,7 +733,7 @@ def processAndRun(track_player_up=True):
     # set SharedState for admin sensitivity indicator: off / green / red
     maskedActivesChannels = allActivesChannels & sensorBitMask
 
-    #print("                                          sensor levels:", hex(maskedActivesChannels), samples_processed)
+    # print("                                          sensor levels:", hex(maskedActivesChannels), samples_processed)
 
     if samples_processed == 0:
         zero_sample_streak += 1
@@ -747,7 +743,7 @@ def processAndRun(track_player_up=True):
             except Exception:
                 fifo_depth = -1
             warn = f"SCORE: WARN no samples found, #cycles={zero_sample_streak} fifo_depth={fifo_depth} game_active={sensorRead.gameActive()} buf_idx={bufferPointerIndex}"
-            #print(warn)
+            # print(warn)
             log.log(warn)
             sensorRead.initialize()
 
@@ -822,6 +818,13 @@ def get_claim_score_list():
 def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
+
+    if not isinstance(initials, str):
+        raise ValueError("SCORE: invalid initials")
+    if isinstance(player_index, bool) or not isinstance(player_index, int) or not 0 <= player_index <= 3:
+        raise ValueError("SCORE: invalid player index")
+    if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
+        raise ValueError("SCORE: invalid score")
 
     # condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
@@ -1130,4 +1133,3 @@ def CheckForNewScores(nState=[0]):
             log.log("SCORE: game end")
             sensorScores = [[0 for _ in range(8)] for _ in range(4)]
             reset_player_up()
-

@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       stages:
-        description: "Which stages to run: all, recover, flash-check, config-matrix"
+        description: "Which stages to run: all, recover, flash-check, security, config-matrix"
         type: string
         default: "all"
       target:
@@ -109,6 +109,16 @@ jobs:
         continue-on-error: true
         run: python dev/hil/flash_and_check.py
 
+      # The WarpedPinball-1 security fixes, over HTTP against the firmware
+      # flash-check just put on the boards. Before the matrix, which changes
+      # each board's game config.
+      - name: Security checks on every board
+        timeout-minutes: 20
+        id: security
+        if: contains(inputs.stages || 'all', 'all') || contains(inputs.stages || '', 'security')
+        continue-on-error: true
+        run: python dev/hil/security_checks.py
+
       - name: Boot every config on every board
         timeout-minutes: 70
         id: config_matrix
@@ -130,7 +140,7 @@ jobs:
 
       - name: Board serial logs on failure
         timeout-minutes: 5
-        if: failure() || steps.flash_check.outcome == 'failure' || steps.config_matrix.outcome == 'failure'
+        if: failure() || steps.flash_check.outcome == 'failure' || steps.security.outcome == 'failure' || steps.config_matrix.outcome == 'failure'
         run: |
           # stty raw -echo first, both under `timeout`: a tty re-echoes once
           # every handle closes, and opening one can block on carrier.
@@ -146,6 +156,7 @@ jobs:
         env:
           RECOVER: ${{ steps.recover.outcome }}
           FLASH_CHECK: ${{ steps.flash_check.outcome }}
+          SECURITY: ${{ steps.security.outcome }}
           CONFIG_MATRIX: ${{ steps.config_matrix.outcome }}
         run: |
           {
@@ -155,17 +166,19 @@ jobs:
             echo "|---|---|"
             echo "| recover | ${RECOVER:-skipped} |"
             echo "| flash + health check | ${FLASH_CHECK:-skipped} |"
+            echo "| security checks | ${SECURITY:-skipped} |"
             echo "| config matrix | ${CONFIG_MATRIX:-skipped} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           echo "recover:       ${RECOVER:-skipped}"
           echo "flash-check:   ${FLASH_CHECK:-skipped}"
+          echo "security:      ${SECURITY:-skipped}"
           echo "config-matrix: ${CONFIG_MATRIX:-skipped}"
 
           # Every stage runs even after an earlier failure, so the verdict is
           # taken here rather than at the first one.
           failed=0
-          for outcome in "$RECOVER" "$FLASH_CHECK" "$CONFIG_MATRIX"; do
+          for outcome in "$RECOVER" "$FLASH_CHECK" "$SECURITY" "$CONFIG_MATRIX"; do
             [ "$outcome" = "failure" ] && failed=1
           done
           exit "$failed"
