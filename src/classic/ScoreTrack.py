@@ -9,9 +9,9 @@ Score Track - Classic
     machine high score with no initials, and per-player in-play scores read
     from shadow RAM via DataMapper.
 """
+import DataMapper
 import displayMessage
 import SharedState as S
-import DataMapper
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
@@ -39,6 +39,7 @@ recent_scores = [
 def reset_scores():
     # reset leader board scores
     from SPI_DataStore import blankStruct
+
     blankStruct("leaders")
 
 
@@ -56,6 +57,13 @@ def get_claim_score_list():
 def claim_score(initials, player_index, score):
     # claim a score from the recent scores list
     global recent_scores
+
+    if not isinstance(initials, str):
+        raise ValueError("SCORE: invalid initials")
+    if isinstance(player_index, bool) or not isinstance(player_index, int) or not 0 <= player_index <= 3:
+        raise ValueError("SCORE: invalid player index")
+    if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
+        raise ValueError("SCORE: invalid score")
 
     # Sanitize initials: 3 uppercase letters only
     initials = ("".join(c for c in initials.upper() if c.isalpha()) + "   ")[:3]
@@ -272,18 +280,17 @@ def CheckForNewScores(nState=[0]):
 
     if push_game_count > 0:
         from origin import push_end_of_game
+
         push_game_count += 1
         push_end_of_game(last_pushed_game, push_game_count)
         if push_game_count > 5:
             push_game_count = 0
 
-    if nState[0] == 0:  # power up init        
+    if nState[0] == 0:  # power up init
         nState[0] = 1
 
     if S.gdata["BallInPlay"]["Type"] in (30, 31, 32):
-
         if nState[0] == 1:  # waiting for a game to start
-
             # Check if active_format is non-zero; if so, return early
             # Allows game in progress to finish in normal mode when format is activated
             if S.active_format.get("Id", 0) != 0:
@@ -326,6 +333,7 @@ def CheckForNewScores(nState=[0]):
             _place_game_in_claim_list(game)
 
             from origin import push_end_of_game
+
             push_game_count = 1
             last_pushed_game = game
             push_end_of_game(last_pushed_game, push_game_count)
