@@ -26,6 +26,10 @@ _AP_NAME = const("Warped Pinball")
 # Authentication variables
 challenges = {}
 _CHALLENGE_EXPIRATION_SECONDS = const(60)
+_AUTH_MAX_FAILURES = const(5)
+_AUTH_LOCKOUT_SECONDS = const(30)
+_auth_failures = 0
+_auth_locked_until = 0
 
 
 #
@@ -290,11 +294,22 @@ def require_auth(handler):
         except Exception:
             pass
 
+        global _auth_failures, _auth_locked_until
+
         def deny_access(reason):
+            global _auth_failures, _auth_locked_until
+            _auth_failures += 1
+            if _auth_failures >= _AUTH_MAX_FAILURES:
+                _auth_failures = 0
+                _auth_locked_until = time() + _AUTH_LOCKOUT_SECONDS
             msg = json_dumps({"error": reason}), 401, "application/json"
             print(msg)
             print(request.headers)
             return msg
+
+        # Global throttle across all authenticated routes
+        if time() < _auth_locked_until:
+            return json_dumps({"error": "Too many failed attempts"}), 429, "application/json"
 
         # Get the HMAC from the request headers
         client_hmac = request.headers.get("x-auth-hmac")
@@ -333,6 +348,7 @@ def require_auth(handler):
         if client_hmac == expected_hmac:
             # remove the challenge from the challenges dict
             del challenges[client_challenge]
+            _auth_failures = 0
             return handler(request, *args, **kwargs)
         else:
             return deny_access("Bad Credentials")
@@ -770,7 +786,12 @@ def app_claimScore(request):
     from ScoreTrack import claim_score
 
     data = request.data
-    claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
+    if ds_read_record("extras", 0)["claim_scores"] is not True:
+        return json_dumps({"error": "Score claiming is disabled"}), 403
+    try:
+        claim_score(initials=data["initials"], player_index=data["player_index"], score=data["score"])
+    except (ValueError, TypeError, KeyError) as e:
+        return json_dumps({"error": str(e)}), 400
 
 
 #
@@ -839,7 +860,7 @@ def app_updatePlayer(request):
     body = request.data
 
     index = int(body["id"])
-    if index < 0 or index > ds_memory_map["names"]["count"]:
+    if index < 0 or index >= ds_memory_map["names"]["count"]:
         raise ValueError(f"Invalid index: {index}")
 
     initials = body["initials"].upper()  # very particular intials conditioning
@@ -899,8 +920,8 @@ def app_getScores(request):
     now_seconds = time()
     data = request.data
     player_id = int(data["id"])
-
-    # get player initials and name
+    if player_id < 0 or player_id >= ds_memory_map["names"]["count"]:
+        return json_dumps({"error": "Invalid player id"}), 400
     player_record = ds_read_record("names", player_id)
 
     scores = []
@@ -1020,7 +1041,7 @@ def app_resetIndScores(request):
     summary: Clear all scores for a single player
     auth: true
     request:
-      query:
+      body:
         - name: id
           type: int
           required: true
@@ -1029,13 +1050,21 @@ def app_resetIndScores(request):
       status_codes:
         - code: 200
           description: Scores cleared
+        - code: 400
+          description: Invalid player id
       body:
         example: "ok"
     @end
     """
     from SPI_DataStore import blankIndPlayerScores
 
-    index = int(request.args.get("id"))
+    # In the body, not the query string: the request signature covers the path and body only
+    try:
+        index = int(request.data["id"])
+    except (KeyError, TypeError, ValueError):
+        return json_dumps({"error": "Invalid player id"}), 400
+    if index < 0 or index >= ds_memory_map["names"]["count"]:
+        return json_dumps({"error": "Invalid player id"}), 400
     blankIndPlayerScores(index)
 
 
@@ -1378,24 +1407,6 @@ def app_setMidnightMadness(request):
     info["MM_Always"] = bool(data["always"])
     info["WPCTimeOn"] = bool(data["enabled"])
     ds_write_record("extras", info, 0)
-
-
-@add_route("/api/time/trigger_midnight_madness")
-def app_triggerMidnightMadness(request):
-    """
-    @api
-    summary: Immediately trigger Midnight Madness
-    response:
-      status_codes:
-        - code: 200
-          description: Event triggered
-      body:
-        example: "ok"
-    @end
-    """
-    import Time
-
-    Time.trigger_midnight_madness()
 
 
 @add_route("/api/settings/factory_reset", auth=True)
@@ -2151,29 +2162,28 @@ def app_updates_available(request):
       status_codes:
         - code: 200
           description: Update metadata returned
+        - code: 502
+          description: The update information could not be fetched or its signature did not check out
       body:
-        description: JSON payload describing available updates
+        description: The release record from latest.json, once its Warped Pinball signature checks out. ``sha256`` goes to the apply route; ``notes`` is signed, so the admin page renders it as HTML.
         example:
             {
                 "release_page": "https://github.com/...",
                 "notes": "Another Great Release! Here's what we changed",
                 "published_at": "2025-12-30T17:54:49+00:00",
                 "url": "https://github.com/...",
-                "version": "1.9.0"
+                "version": "1.9.0",
+                "sha256": "<hex digest of the update file contents>",
+                "signature": "<base64 RSA signature of that digest>"
             }
     @end
     """
-    from mrequests.mrequests import get
-    from systemConfig import updatesURL
-
-    resp = get(updatesURL, timeout=10)
+    from update import fetch_latest_release
 
     try:
-        data = resp.json()
-    finally:
-        resp.close()
-
-    return data
+        return fetch_latest_release()
+    except Exception as e:
+        return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
 
 
 @add_route("/api/update/apply", auth=True)
@@ -2188,6 +2198,10 @@ def app_apply_update(request):
           type: string
           required: true
           description: Signed update package URL
+        - name: sha256
+          type: string
+          required: false
+          description: Expected hex SHA-256 of the update file (from the update check). When omitted the device looks it up for the latest release. Optional for developer builds, checked when given
         - name: skip_signature_check
           type: bool
           required: false
@@ -2206,12 +2220,23 @@ def app_apply_update(request):
     @end
     """
     from logger import logger_instance as Log
-    from update import apply_update
+    from update import apply_update, fetch_latest_release
 
     yield json_dumps({"log": "Starting update", "percent": 0})
     data = request.data
+    skip_signature_check = data.get("skip_signature_check", False)
+    expected_sha256 = data.get("sha256")
+    # Callers like Origin only send the url; take the checksum from the signed release record when it is the latest release
+    if not skip_signature_check and not expected_sha256:
+        try:
+            latest = fetch_latest_release()
+            if latest.get("url") == data["url"]:
+                expected_sha256 = latest.get("sha256")
+        except Exception as e:
+            Log.log(f"BKD: Could not look up update checksum: {e}")
+        gc_collect()
     try:
-        for response in apply_update(data["url"], skip_signature_check=data.get("skip_signature_check", False)):
+        for response in apply_update(data["url"], skip_signature_check=skip_signature_check, expected_sha256=expected_sha256):
             log = response.get("log", None)
             if log:
                 Log.log(f"BKD: {log}")
@@ -2296,6 +2321,12 @@ def add_ap_mode_routes():
         if data["game_config_filename"] not in all_game_configs:
             return f"Invalid game config filename {data['game_config_filename']}", 400
 
+        # Field sizes in the configuration record: ssid 32, wifi password 32, vector password 16
+        for key, max_len in (("ssid", 32), ("wifi_password", 32), ("vector_password", 16)):
+            value = data.get(key)
+            if not isinstance(value, str) or len(value.encode("utf-8")) > max_len:
+                return json_dumps({"error": f"Invalid {key}"}), 400
+
         ds_write_record(
             "configuration",
             {
@@ -2307,6 +2338,13 @@ def add_ap_mode_routes():
         )
 
         Pico_Led.off()
+
+        # Reboot immediately into normal mode so no second write can land; no response is sent
+        import reset_control
+        from machine import reset
+
+        reset_control.reset()
+        reset()
 
     @add_route("/api/available_ssids")
     def app_getAvailableSSIDs(request):
@@ -2406,12 +2444,26 @@ def connect_to_wifi():
     return False
 
 
-try:
-    # This import must be after the add_route function is defined at minimum
-    import em_routes  # noqa: F401
-except Exception:
-    pass
-    # print(f"Error importing em_routes: {e}")  this will run on all boards - so not really fault?
+# Load <vectorSystem>_routes (em_routes, wpc_routes, ...) when this system's build has one.
+# Routes only one system supports live in that system's src folder, so other boards
+# neither ship nor define them. Must come after add_route is defined. Runs once, and
+# the names are deleted afterwards so they don't stay in memory.
+from os import listdir as _listdir  # noqa: E402
+
+from systemConfig import vectorSystem as _vector_system  # noqa: E402
+
+_routes_module = _vector_system + "_routes"
+_files = _listdir()
+if _routes_module + ".mpy" in _files or _routes_module + ".py" in _files:
+    try:
+        __import__(_routes_module)
+    except Exception as e:
+        # The file is there, so a failure is a real bug: log it, but keep the rest of the server up
+        from logger import logger_instance as _Log
+
+        _Log.log(f"BKD: Error importing {_routes_module}: {e}")
+        del _Log
+del _listdir, _vector_system, _routes_module, _files
 
 
 def go(ap_mode):

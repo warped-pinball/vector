@@ -234,7 +234,7 @@ async function loadSwitchDiagnostics() {
         const cell = document.createElement("div");
         cell.classList.add("switch-cell");
         cell.setAttribute("role", "gridcell");
-      
+
         const key = `${row}-${col}`;
         var switchData = switchMap.get(key);
         const hasValue =
@@ -260,8 +260,13 @@ async function loadSwitchDiagnostics() {
           cell.setAttribute("tabindex", "0");
           const value = Number(switchData.val);
           //If we're at zero, just fill the whole box red.
-          const topPercent = value == 0?0:(100-value);
-          cell.innerHTML = '<div class="fill" style="top: '+topPercent+'%;"></div><span class="switch-label">'+`${col}${row}`+'</span>';
+          const topPercent = value == 0 ? 0 : 100 - value;
+          cell.innerHTML =
+            '<div class="fill" style="top: ' +
+            topPercent +
+            '%;"></div><span class="switch-label">' +
+            `${col}${row}` +
+            "</span>";
           let statusClass = "green";
           let statusText = "good";
 
@@ -434,7 +439,7 @@ async function getMidnightMadness() {
 
   nowButton.addEventListener("click", async () => {
     // not retried: this GET has a side effect
-    await window.smartFetch("/api/time/trigger_midnight_madness", null, false, {
+    await window.smartFetch("/api/time/trigger_midnight_madness", null, true, {
       retries: 0,
     });
   });
@@ -868,6 +873,7 @@ if (typeof window !== "undefined") {
         }
 
         if (data["notes"]) {
+          // the board only returns notes from a release record it verified, so they are ours
           releaseNotes.innerHTML = data["notes"];
           accordion.removeAttribute("disabled");
         }
@@ -888,10 +894,11 @@ if (typeof window !== "undefined") {
 
         // get the url for the update.json asset and add an event listener to the button
         update_url = data["url"];
+        const update_sha256 = data["sha256"];
 
         // define the call back function to apply the update
         const callback = async () => {
-          await applyUpdate(update_url);
+          await applyUpdate(update_url, false, update_sha256);
         };
 
         updateButton.addEventListener("click", async () => {
@@ -912,8 +919,12 @@ if (typeof window !== "undefined") {
     }
   }
 
-  async function applyUpdate(url, skip_signature_check = false) {
-    const req_data = { url: url, skip_signature_check: skip_signature_check };
+  async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
+    const req_data = {
+      url: url,
+      skip_signature_check: skip_signature_check,
+      sha256: sha256,
+    };
     const response = await window.smartFetch(
       "/api/update/apply",
       req_data,
@@ -992,12 +1003,19 @@ if (typeof window !== "undefined") {
     if (url === null) {
       return;
     }
+    // optional checksum, e.g. the sha256 listed with the build on its PR
+    const checksum = prompt(
+      "Optional: enter the build's sha256 checksum to verify it (leave blank to skip)",
+    );
+    if (checksum === null) {
+      return;
+    }
     // confirm url
     await confirmAction(
       "Do you trust the source of this update and want to apply the update file at the url:" +
         url,
       async () => {
-        await window.applyUpdate(url, true);
+        await window.applyUpdate(url, true, checksum.trim() || null);
       },
     );
   };
