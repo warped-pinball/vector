@@ -1,0 +1,150 @@
+{
+  "GameInfo": {
+      "GameName": "Twilight Zone",
+      "System": "WPC"
+  },
+  "BallInPlay": {
+      "Type": 1,
+      "Address": 947
+  },
+  "DisplayMessage": {
+      "Type": 10,
+      "AddressS1": 7815,
+      "AddressS2": 7880,
+      "AddressS3": 7945,
+      "Length": 32,
+      "ChecksumStartAdr": 7815,
+      "ChecksumEndAdr": 8007,
+      "ChecksumResultAdr": 8008
+  },
+  "Adjustments": {
+      "Type": 10,
+      "CustomMessageOn": 7174,
+      "ChecksumStartAdr": 7133,
+      "ChecksumEndAdr": 7418,
+      "ChecksumResultAdr": 7419
+  },
+  "HighScores": {
+      "Type": 10,
+      "ScoreAdr": 7526,
+      "BytesInScore": 6,
+      "ScoreSpacing": 9,
+      "InitialAdr": 7523,
+      "InitialSpacing": 9,
+      "NumberOfScores": 4,
+      "GrandChampScoreAdr": 7564,
+      "GrandChampInitAdr": 7561,
+      "ChecksumStartAdr": 7523,
+      "ChecksumEndAdr": 7558,
+      "ChecksumResultAdr": 7559,
+      "GCChecksumStartAdr": 7561,
+      "GCChecksumEndAdr": 7569,
+      "GCChecksumResultAdr": 7570
+  },
+  "HSRewards": {
+      "Type": 0,
+      "HS1": 0,
+      "HS2": 0,
+      "HS3": 0,
+      "HS4": 0,
+      "HS5": 0,
+      "DisableByte": 0
+  },
+  "InPlay": {
+      "Type": 10,
+      "GameActiveAdr": 141,
+      "GameActiveValue": 0,
+      "Players": 5913,
+      "PlayerUp": 946,
+      "ScoreAdr": 5792,
+      "ScoreBytes": 6,
+      "ScoreSpacing": 7
+  },
+  "Switches": {
+    "Type": 10,
+    "Address": 5835,
+    "Length": 72,
+    "Names": [
+      ["Right Inlane", 60],
+      ["Right Outlane", 60],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Right Trough", 60],
+      ["Center Trough", 60],
+      ["Left Trough", 60],
+      ["Outhole", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy-in Button", 60],
+      ["Always Closed", 0],
+      ["Far Left Trough", 60],
+      ["Trough Proximity", 60],
+      ["Ball Shooter", 60],
+      ["Rocket Kicker", 60],
+
+      ["Left Jet Bumper", 60],
+      ["Right Jet Bumper", 60],
+      ["Lower Jet Bumper", 60],
+      ["Left Slingshot", 60],
+      ["Right Slingshot", 60],
+      ["Left Outlane", 60],
+      ["Left Inlane 1", 60],
+      ["Left Inlane 2", 60],
+
+      ["Dead End", 60],
+      ["The Camera", 60],
+      ["Player Piano", 60],
+      ["Mini Playfield Enter", 60],
+      ["Mini Playfield Left 2", 60],
+      ["Mini Playfield Right 2", 60],
+      ["Clock Millions", 60],
+      ["Lower Left 5 Million", 60],
+
+      ["Gumball Popper Lane", 60],
+      ["Hitch Hiker", 60],
+      ["Left Ramp Enter", 60],
+      ["Left Ramp", 60],
+      ["Gumball Geneva", 60],
+      ["Gumball Exit", 60],
+      ["Slot Proximity", 60],
+      ["Slot Kickout", 60],
+
+      ["Lower Side", 60],
+      ["Center Skill", 60],
+      ["Upper Skill", 60],
+      ["Upper Right 5 Million", 60],
+      ["Power Payoff 2", 60],
+      ["Middle Right 5 Million 1", 60],
+      ["Middle Right 5 Million 2", 60],
+      ["Lower Right 5 Million", 60],
+
+      [],
+      ["Auto Fire Kicker", 60],
+      ["Right Ramp", 60],
+      ["Gumball Popper", 60],
+      ["Mini Playfield Top", 60],
+      ["Mini Playfield Exit", 60],
+      ["Middle Left 5 Million", 60],
+      ["Upper Left 5 Million", 60],
+
+      ["Lower Right Magnet", 60],
+      [],
+      ["Left Magnet", 60],
+      ["Center Lock", 60],
+      ["Upper Lock", 60],
+      [],
+      ["Gumball Enter", 60],
+      ["Lock Lower", 60],
+
+      ["Clock 15 Minutes", 60],
+      ["Clock 00 Minutes", 60],
+      ["Clock 45 Minutes", 60],
+      ["Clock 30 Minutes", 60],
+      ["Clock Hour 1", 60],
+      ["Clock Hour 2", 60],
+      ["Clock Hour 3", 60],
+      ["Clock Hour 4", 60]
+    ]
+  }
+}

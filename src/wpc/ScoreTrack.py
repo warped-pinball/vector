@@ -39,7 +39,14 @@ def reset_scores():
 
     print(" RESET Leader scores")
     blankStruct("leaders")
-    _remove_machine_scores(GrandChamp="Zero")
+    if "MinScore" in S.gdata["GameInfo"]:  # low scoring game (NBA Fastbreak): placeholders 4-1 and GC 5 stay at/below MinScore, no 99s
+        DataMapper.prepare_initials_capture()
+        gc = S.gdata["HighScores"]["GrandChampScoreAdr"]
+        n = S.gdata["HighScores"]["BytesInScore"]
+        shadowRam[gc : gc + n] = bytes(n - 1) + bytes([0x05])  # GC = 5
+        fix_high_score_checksum()
+    else:
+        _remove_machine_scores(GrandChamp="Zero")
 
 
 def fix_high_score_checksum():
@@ -152,7 +159,7 @@ def _read_machine_score(UseHighScores=True):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + (idx - 1) * S.gdata["HighScores"]["ScoreSpacing"]
             score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
             high_scores[idx][1] = _bcd_to_int(score_bytes)
-            if high_scores[idx][1] < 1000:
+            if high_scores[idx][1] < S.gdata["GameInfo"].get("MinScore", 1000):
                 high_scores[idx][1] = 0
         # is there a grand champion score also?    put in order, games have GC in 5th place
         if "GrandChampScoreAdr" in S.gdata["HighScores"]:
@@ -162,7 +169,7 @@ def _read_machine_score(UseHighScores=True):
 
             # Calculate the maximum fake score (all BCD bytes set to 0x99)
             max_fake_score = int("".join(["99"] * S.gdata["HighScores"]["BytesInScore"]))
-            if high_scores[0][1] < 1000 or high_scores[0][1] >= max_fake_score:  # if left over max score from reboot - do not keep it
+            if high_scores[0][1] < S.gdata["GameInfo"].get("MinScore", 1000) or high_scores[0][1] >= max_fake_score:  # if left over max score from reboot - do not keep it
                 high_scores[0][1] = 0
 
         # initials
@@ -464,7 +471,7 @@ def check_for_machine_high_scores(report=True):
     scores = _read_machine_score(UseHighScores=True)
     year, month, day, _, _, _, _, _ = rtc.datetime()
     for idx in range(5):  # with WPC could be 5 scores - -
-        if scores[idx][1] > 10000:  # ignore placed fake scores
+        if scores[idx][1] > S.gdata["GameInfo"].get("MinScore", 10000):  # ignore placed fake scores
             new_score = {"initials": scores[idx][0], "full_name": "", "score": scores[idx][1], "date": f"{month:02d}/{day:02d}/{year}", "game_count": S.gameCounter}
 
             if idx >= len(top_scores) or scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:
@@ -480,7 +487,7 @@ def update_tournament(new_entry):
         log.log("SCORE: tournament add bad Initials")
         return False
 
-    if new_entry["score"] < 10000:
+    if new_entry["score"] < S.gdata["GameInfo"].get("MinScore", 10000):
         log.log("SCORE: tournament add bad score")
         return False
 
@@ -616,7 +623,7 @@ def CheckForNewScores(nState=[0]):
             if initials_capture_this_game is True:
                 # waiting for players to input initials
                 high_scores = DataMapper.get_initials_entered()
-                high_score_count = sum(1 for score in high_scores if score[1] > 1000)
+                high_score_count = sum(1 for score in high_scores if score[1] > S.gdata["GameInfo"].get("MinScore", 1000))
                 print("SCORE: waiting for initials, count = ", high_score_count, " players = ", DataMapper.get_players_in_game())
 
                 if high_score_count >= DataMapper.get_players_in_game():
@@ -649,11 +656,11 @@ def CheckForNewScores(nState=[0]):
 
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 for i in range(0, 4):
-                    if scores[i][1] > 10000:
+                    if scores[i][1] > S.gdata["GameInfo"].get("MinScore", 10000):
                         update_tournament({"initials": scores[i][0], "score": scores[i][1]})
             else:
                 for i in range(0, 4):
-                    if scores[i][1] > 10000:
+                    if scores[i][1] > S.gdata["GameInfo"].get("MinScore", 10000):
                         update_leaderboard({"initials": scores[i][0], "score": scores[i][1]})
 
             # Update claim list

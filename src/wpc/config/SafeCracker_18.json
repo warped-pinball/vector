@@ -1,17 +1,11 @@
 {
   "GameInfo": {
       "GameName": "Safe Cracker",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 4063,
-      "Ball1": 1,
-      "Ball2": 2,
-      "Ball3": 3,
-      "Ball4": 4,
-      "Ball5": 5
+      "Address": 4063
   },
   "DisplayMessage": {
       "Type": 10,

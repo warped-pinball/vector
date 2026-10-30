@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Attack from Mars",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -50,6 +49,10 @@
       "HS4": 0,
       "HS5": 0,
       "DisableByte": 0
+  },
+  "Flippers": {
+      "Type": 10,
+      "Address": 170
   },
   "InPlay": {
       "Type": 10,
