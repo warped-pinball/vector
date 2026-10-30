@@ -81,8 +81,23 @@ def set_hostname_override(name):
     return name
 
 
+def _em_abbrev(game_name):
+    """An EM has no config to carry an Abbrev, so use the name its owner typed.
+
+    Initials of a name of several words ("Gottlieb Fireball" -> GF), or a
+    one-word name itself, up to 10 characters ("Fireball" -> FIREBALL). The
+    names an EM board starts with mean nobody has named it, so those get the
+    MAC fallback.
+    """
+    words = "".join(c if "A" <= c <= "Z" or "0" <= c <= "9" else " " for c in str(game_name).upper()).split()
+    if not words or " ".join(words) in ("EM GAME", "EM", "EM MACHINE"):
+        return ""
+    return words[0][:10] if len(words) == 1 else "".join(w[0] for w in words)
+
+
 def default_hostname():
-    """WP-<abbreviation>, e.g. WP-TNG, from the game config's GameInfo "Abbrev".
+    """WP-<abbreviation>, e.g. WP-TNG, from the game config's GameInfo "Abbrev",
+    or for an EM from the game name its owner typed.
 
     A config without one, or no game picked yet, falls back to the last 3
     bytes of the wifi MAC (WP-1A2B3C), which is at least unique on the network.
@@ -92,7 +107,10 @@ def default_hostname():
     import network
     import SharedState
 
-    abbrev = _clean_hostname(SharedState.gdata.get("GameInfo", {}).get("Abbrev", ""))
+    info = SharedState.gdata.get("GameInfo", {})
+    abbrev = _clean_hostname(info.get("Abbrev", ""))
+    if not abbrev and info.get("System") == "EM":
+        abbrev = _em_abbrev(info.get("GameName", ""))
     if abbrev:
         return ("WP-" + abbrev)[:32]
 
