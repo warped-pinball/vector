@@ -183,7 +183,7 @@ def responder(responses):
     return fake_get
 
 
-def healthy(config="AttackMars_11", name="Attack from Mars", hostname="WP-1A2B3C"):
+def healthy(config="AttackMars_11", name="Attack from Mars", hostname="WP-AFM"):
     return {
         # HDWR02 is expected on a bare bench board with nothing driving the bus.
         "/api/fault": ["HDWR02: No Bus Activity"],
@@ -191,7 +191,7 @@ def healthy(config="AttackMars_11", name="Attack from Mars", hostname="WP-1A2B3C
         "/api/game/name": name,
         "/api/leaders": [],
         "/api/adjustments/status": {"profiles": [], "adjustments_support": True},
-        # No config carries an Abbrev yet, so every board is on the MAC fallback.
+        # AttackMars_11.json has Abbrev AFM; a config without one is on the MAC fallback.
         "/api/wifi/status": {"ssid": "bench", "rssi": -50, "connected": True, "hostname": hostname},
     }
 
@@ -227,7 +227,7 @@ def test_check_booted_config_catches_a_board_running_a_different_config(monkeypa
 
 def test_check_booted_config_accepts_the_game_name_as_the_active_config_on_em(monkeypatch):
     # EM answers /api/game/active_config with the game name (backend.py:481).
-    monkeypatch.setattr(cm, "get", responder(healthy(config="EM Machine", name="EM Machine")))
+    monkeypatch.setattr(cm, "get", responder(healthy(config="EM Machine", name="EM Machine", hostname="WP-1A2B3C")))
 
     name = cm.check_booted_config(FakeClient(), "em", "EM_machine_", {"name": "EM Machine", "adjustments": False})
 
