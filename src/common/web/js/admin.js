@@ -351,6 +351,50 @@ async function loadSwitchDiagnostics() {
   }
 }
 
+async function initNetworkName() {
+  const input = document.getElementById("network-name-input");
+  const save = document.getElementById("network-name-save");
+  const note = document.getElementById("network-name-note");
+  if (!input || !save || !note) return;
+
+  try {
+    const response = await window.smartFetch(
+      "/api/settings/get_network_name",
+      null,
+      false,
+    );
+    const data = await response.json();
+    input.value = data.name || "";
+    input.placeholder = data.default || "Automatic";
+  } catch (error) {
+    console.error("Failed to load the network name", error);
+    return;
+  }
+  input.disabled = false;
+  save.disabled = false;
+
+  save.addEventListener("click", async (event) => {
+    event.preventDefault();
+    try {
+      const response = await window.smartFetch(
+        "/api/settings/set_network_name",
+        { name: input.value },
+        true,
+      );
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        input.value = data.name || "";
+        note.innerText = "Saved. Restart Vector to use it.";
+      } else {
+        note.innerText = data.error || "Could not save the network name.";
+      }
+    } catch (error) {
+      console.error("Failed to save the network name", error);
+      note.innerText = "Could not save the network name.";
+    }
+  });
+}
+
 async function loadConfiguredSsidSignal() {
   const nameElement = await window.waitForElementById("configured-ssid-name");
   const rssiElement = await window.waitForElementById("configured-ssid-rssi");
@@ -1025,4 +1069,5 @@ if (typeof window !== "undefined") {
   };
 
   loadConfiguredSsidSignal();
+  initNetworkName();
 }

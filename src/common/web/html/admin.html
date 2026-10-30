@@ -574,6 +574,21 @@
         <b>Network Name:</b>
         <span id="configured-hostname">Loading...</span>
       </div>
+      <label for="network-name-input" style="margin-top: 1rem">
+        <b>Set a network name</b> Shown in your router's device list. Leave it
+        blank for the automatic name. Used from the next restart.
+      </label>
+      <div role="group">
+        <input
+          id="network-name-input"
+          type="text"
+          maxlength="18"
+          placeholder="Automatic"
+          disabled
+        />
+        <button id="network-name-save" class="secondary" disabled>Save</button>
+      </div>
+      <small id="network-name-note"></small>
     </fieldset>
   </section>
   <section>

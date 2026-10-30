@@ -272,6 +272,47 @@ def health_check_http(board):
     log(f"    {len(HTTP_ROUTES)} routes + index + auth checks OK over HTTP")
 
 
+# Letters, digits and hyphens, and short enough for the 18 the board keeps.
+OVERRIDE_NAME = "WP-HIL-OVERRIDE"
+
+
+def check_network_name_override(board):
+    """A name set by hand survives a restart and is the one the board uses.
+
+    Sets it over USB, restarts, checks the board came up under it (and, with
+    HTTP, whether the router learned it), then clears it so later stages see
+    the automatic name again. Clearing is in a finally: a board left on the
+    test name would fail every config in the matrix.
+    """
+    port = board["port"]
+    client = board["client"]
+    try:
+        saved = get(client, "/api/settings/set_network_name", payload={"name": OVERRIDE_NAME.lower()})
+        if not isinstance(saved, dict) or saved.get("name") != OVERRIDE_NAME:
+            raise CheckFailure(f"set_network_name answered {saved!r}, expected the cleaned name {OVERRIDE_NAME!r}")
+
+        client.close()
+        board["client"] = None
+        reset_board_with_drain(port)
+        connection, _boot_log = wait_for_server(port)
+        prime_usb(connection)
+        client = board["client"] = UsbApiClient(connection)
+
+        names = get(client, "/api/settings/get_network_name")
+        log(f"    network name after restart: {names}")
+        hostname = get(client, "/api/wifi/status").get("hostname")
+        if hostname != OVERRIDE_NAME:
+            raise CheckFailure(f"after a restart the board calls itself {hostname!r}, not the {OVERRIDE_NAME!r} set by hand")
+        if board.get("ip"):  # HTTP ran, so the router can be asked too
+            report_router_name(board["ip"], OVERRIDE_NAME)
+        log("    name set by hand survives a restart and is used")
+    finally:
+        if board.get("client"):
+            cleared = get(board["client"], "/api/settings/set_network_name", payload={"name": ""})
+            if not isinstance(cleared, dict) or cleared.get("name") != "":
+                raise CheckFailure(f"clearing the network name answered {cleared!r}")
+
+
 def report_router_name(ip, hostname):
     """Say whether the network learned the board's DHCP host name.
 
@@ -442,6 +483,8 @@ def main():
             else:
                 health_check_http(b)
                 log("    HTTP API OK")
+
+            check_network_name_override(b)
         except CheckFailure as exc:
             log(f"::error::{exc}")
             _dump_boot_log(b)

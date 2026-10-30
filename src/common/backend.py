@@ -1333,6 +1333,62 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/settings/get_network_name")
+def app_getNetworkName(request):
+    """
+    @api
+    summary: Get the name this board gives the router
+    response:
+      status_codes:
+        - code: 200
+          description: Names returned
+      body:
+        description: The name set by hand (blank when automatic), the automatic name, and the name in use since boot
+        example:
+            {
+                "name": "",
+                "default": "WP-TNG",
+                "current": "WP-TNG"
+            }
+    @end
+    """
+    import network
+
+    return {"name": hostname_override(), "default": default_hostname(), "current": network.hostname()}
+
+
+@add_route("/api/settings/set_network_name", auth=True)
+def app_setNetworkName(request):
+    """
+    @api
+    summary: Set the name this board gives the router, used from the next boot
+    auth: true
+    request:
+      body:
+        - name: name
+          type: str
+          required: true
+          description: Letters, digits and hyphens, up to 18. Blank goes back to the automatic name.
+    response:
+      status_codes:
+        - code: 200
+          description: Name saved
+        - code: 400
+          description: Name has nothing usable in it
+      body:
+        example: {"name": "BACKROOM-TNG"}
+    @end
+    """
+    raw = str(request.data.get("name", "")).strip()
+    name = _clean_hostname(raw)[:_NAME_MAX]
+    if raw and not name:
+        return {"error": "Use letters, digits and hyphens"}, 400
+    info = ds_read_record("extras", 0)
+    info["message"] = _NAME_MARK + name if name else ""
+    ds_write_record("extras", info, 0)
+    return {"name": name}
+
+
 @add_route("/api/time/midnight_madness_available")
 def app_midnightMadnessAvailable(request):
     """
@@ -2381,16 +2437,30 @@ def add_ap_mode_routes():
         return available_networks
 
 
-def dhcp_hostname():
-    """The name this board gives the router: WP-<abbreviation>, e.g. WP-TNG.
+# A name set by hand lives in the unused extras "message" field, marked so a
+# board's old "ok"/"none" there is not mistaken for one. 20 bytes, so 18 for the name.
+_NAME_MARK = "H:"
+_NAME_MAX = 18
 
-    The abbreviation is the game config's GameInfo "Abbrev". A config without
-    one, or no game picked yet, falls back to the last 3 bytes of the wifi
-    MAC (WP-1A2B3C), which is at least unique on the network.
+
+def _clean_hostname(name):
+    """A DHCP host name is letters, digits and hyphens only."""
+    return "".join(c for c in str(name).upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
+
+
+def hostname_override():
+    """The name set by hand on the admin page, or "" for the automatic one."""
+    message = ds_read_record("extras", 0).get("message", "")
+    return message[len(_NAME_MARK) :] if message.startswith(_NAME_MARK) else ""
+
+
+def default_hostname():
+    """WP-<abbreviation>, e.g. WP-TNG, from the game config's GameInfo "Abbrev".
+
+    A config without one, or no game picked yet, falls back to the last 3
+    bytes of the wifi MAC (WP-1A2B3C), which is at least unique on the network.
     """
-    abbrev = S.gdata.get("GameInfo", {}).get("Abbrev", "")
-    # A DHCP host name is letters, digits and hyphens only
-    abbrev = "".join(c for c in str(abbrev).upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
+    abbrev = _clean_hostname(S.gdata.get("GameInfo", {}).get("Abbrev", ""))
     if abbrev:
         return ("WP-" + abbrev)[:32]
 
@@ -2399,6 +2469,11 @@ def dhcp_hostname():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)  # the MAC is only read from the chip once it is up
     return "WP-" + hexlify(wlan.config("mac")[3:]).decode().upper()
+
+
+def dhcp_hostname():
+    """The name this board gives the router: one set by hand, else the default."""
+    return hostname_override() or default_hostname()
 
 
 def set_dhcp_hostname():

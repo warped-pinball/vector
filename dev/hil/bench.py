@@ -1356,8 +1356,8 @@ def prime_usb(connection):
         pass
 
 
-def get(client, route, expect=200):
-    response = client.send_and_receive(route=route, payload=None, timeout=15)
+def get(client, route, expect=200, payload=None):
+    response = client.send_and_receive(route=route, payload=payload, timeout=15)
     status = response.get("status")
     if status != expect:
         # The board narrates its own routing failures ("USB REQ: route not
