@@ -183,7 +183,7 @@ def responder(responses):
     return fake_get
 
 
-def healthy(config="AttackMars_11", name="Attack from Mars"):
+def healthy(config="AttackMars_11", name="Attack from Mars", hostname="WP-1A2B3C"):
     return {
         # HDWR02 is expected on a bare bench board with nothing driving the bus.
         "/api/fault": ["HDWR02: No Bus Activity"],
@@ -191,6 +191,8 @@ def healthy(config="AttackMars_11", name="Attack from Mars"):
         "/api/game/name": name,
         "/api/leaders": [],
         "/api/adjustments/status": {"profiles": [], "adjustments_support": True},
+        # No config carries an Abbrev yet, so every board is on the MAC fallback.
+        "/api/wifi/status": {"ssid": "bench", "rssi": -50, "connected": True, "hostname": hostname},
     }
 
 
@@ -230,6 +232,62 @@ def test_check_booted_config_accepts_the_game_name_as_the_active_config_on_em(mo
     name = cm.check_booted_config(FakeClient(), "em", "EM_machine_", {"name": "EM Machine", "adjustments": False})
 
     assert name == "EM Machine"
+
+
+def test_check_booted_config_catches_the_firmware_default_hostname(monkeypatch):
+    """Pico2W means the name was never set before the board asked for a lease."""
+    monkeypatch.setattr(cm, "get", responder(healthy(hostname="Pico2W")))
+
+    with pytest.raises(bench.CheckFailure, match="Pico2W"):
+        cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
+
+
+@pytest.mark.parametrize(
+    "abbrev, hostname",
+    [
+        ("TNG", "WP-TNG"),
+        ("tng", "WP-TNG"),
+        ("G'N'R", "WP-GNR"),
+        ("Rocky & B", "WP-ROCKYB"),
+        ("-T2-", "WP-T2"),
+        ("X" * 40, "WP-" + "X" * 29),
+    ],
+)
+def test_expected_hostname_mirrors_the_firmware(abbrev, hostname):
+    assert bench.expected_hostname(abbrev) == hostname
+
+
+@pytest.mark.parametrize("abbrev", [None, "", "  ", "&!"])
+def test_expected_hostname_falls_back_without_a_usable_abbrev(abbrev):
+    assert bench.expected_hostname(abbrev) is None
+
+
+def test_check_hostname_wants_the_abbrev_when_the_config_has_one():
+    assert bench.check_hostname({"hostname": "WP-TNG"}, "TNG") == "WP-TNG"
+    with pytest.raises(bench.CheckFailure, match="expected 'WP-TNG'"):
+        bench.check_hostname({"hostname": "WP-1A2B3C"}, "TNG")
+
+
+def test_check_hostname_wants_the_mac_fallback_without_one():
+    assert bench.check_hostname({"hostname": "WP-1A2B3C"}, None) == "WP-1A2B3C"
+    with pytest.raises(bench.CheckFailure, match="MAC"):
+        bench.check_hostname({"hostname": "Pico2W"}, None)
+    with pytest.raises(bench.CheckFailure, match="no hostname"):
+        bench.check_hostname({"ssid": "bench"}, None)
+
+
+def test_config_abbrev_follows_linkto(tmp_path, monkeypatch):
+    config_dir = tmp_path / "src" / "sys11" / "config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "Big_Guns_LA.json").write_text('{"GameInfo": {"GameName": "Big Guns", "LinkTo": "Big_Guns_L8"}}')
+    (config_dir / "Big_Guns_L8.json").write_text('{"GameInfo": {"GameName": "Big Guns", "Abbrev": "BG"}}')
+    (config_dir / "Loop_A.json").write_text('{"GameInfo": {"LinkTo": "Loop_B"}}')
+    (config_dir / "Loop_B.json").write_text('{"GameInfo": {"LinkTo": "Loop_A"}}')
+    monkeypatch.setattr(bench, "REPO_ROOT", tmp_path)
+
+    assert bench.config_abbrev("sys11", "Big_Guns_LA") == "BG"
+    assert bench.config_abbrev("sys11", "Loop_A") is None
+    assert bench.config_abbrev("sys11", "Missing") is None
 
 
 @pytest.mark.parametrize(
