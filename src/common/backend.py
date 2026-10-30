@@ -1506,7 +1506,8 @@ def app_getWifiStatus(request):
             {
                 "ssid": "MyNetwork",
                 "rssi": -40,
-                "connected": true
+                "connected": true,
+                "hostname": "WP-TNG"
             }
     @end
     """
@@ -1524,7 +1525,7 @@ def app_getWifiStatus(request):
         except Exception:
             rssi = None
 
-    return {"ssid": ssid, "rssi": rssi, "connected": connected}
+    return {"ssid": ssid, "rssi": rssi, "connected": connected, "hostname": network.hostname()}
 
 
 @add_route("/api/network/peers")
@@ -2380,9 +2381,48 @@ def add_ap_mode_routes():
         return available_networks
 
 
+def dhcp_hostname():
+    """The name this board gives the router: WP-<abbreviation>, e.g. WP-TNG.
+
+    The abbreviation is the game config's GameInfo "Abbrev". A config without
+    one, or no game picked yet, falls back to the last 3 bytes of the wifi
+    MAC (WP-1A2B3C), which is at least unique on the network.
+    """
+    abbrev = S.gdata.get("GameInfo", {}).get("Abbrev", "")
+    # A DHCP host name is letters, digits and hyphens only
+    abbrev = "".join(c for c in str(abbrev).upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
+    if abbrev:
+        return ("WP-" + abbrev)[:32]
+
+    import network
+
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)  # the MAC is only read from the chip once it is up
+    return "WP-" + hexlify(wlan.config("mac")[3:]).decode().upper()
+
+
+def set_dhcp_hostname():
+    """Give the router this board's name rather than the firmware's "Pico2W".
+
+    MicroPython keeps the name in RAM and lwIP reads it every time it builds
+    a DHCP request, so this has to run on every boot, before the first
+    connect: a power cycle puts the firmware default back.
+    """
+    import network
+
+    try:
+        name = dhcp_hostname()
+        network.hostname(name)
+        print(f"DHCP hostname: {name}")
+    except Exception as e:
+        print(f"Could not set the DHCP hostname: {e}")
+
+
 def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
     from phew.server import initialize_timedate, schedule
+
+    set_dhcp_hostname()
 
     if phew_is_connected():
         # Already associated (e.g. after a soft reboot, where the wifi chip

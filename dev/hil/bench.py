@@ -971,6 +971,49 @@ def source_version(target):
     return match.group(1)
 
 
+# What the firmware names itself to the router (backend.dhcp_hostname): WP-
+# and the config's GameInfo.Abbrev, or WP- and the last 3 MAC bytes in hex
+# when the config has none. Anything else, the MicroPython default "Pico2W"
+# above all, means the name was never set before the board asked for a lease.
+HOSTNAME_FALLBACK = re.compile(r"^WP-[0-9A-F]{6}$")
+
+
+def expected_hostname(abbrev):
+    """The DHCP host name a board running a config with this Abbrev must use, or None for the MAC fallback."""
+    cleaned = "".join(c for c in str(abbrev or "").upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
+    return ("WP-" + cleaned)[:32] if cleaned else None
+
+
+def check_hostname(wifi, abbrev):
+    """Assert the board's /api/wifi/status reports the host name its config calls for. Returns it."""
+    hostname = wifi.get("hostname") if isinstance(wifi, dict) else None
+    if not hostname:
+        raise CheckFailure(f"/api/wifi/status has no hostname: {wifi!r}")
+    expected = expected_hostname(abbrev)
+    if expected is None:
+        if not HOSTNAME_FALLBACK.match(hostname):
+            raise CheckFailure(f"DHCP hostname is {hostname!r}, expected WP-<last 3 MAC bytes> for a config with no Abbrev")
+    elif hostname != expected:
+        raise CheckFailure(f"DHCP hostname is {hostname!r}, expected {expected!r} from GameInfo.Abbrev")
+    return hostname
+
+
+def config_abbrev(target, config):
+    """GameInfo.Abbrev of src/<target>/config/<config>.json, following LinkTo the way the firmware does."""
+    config_dir = REPO_ROOT / "src" / target / "config"
+    seen = set()
+    while config not in seen:
+        seen.add(config)
+        try:
+            info = json.loads((config_dir / f"{config}.json").read_text()).get("GameInfo", {})
+        except (OSError, json.JSONDecodeError):
+            return None
+        if "LinkTo" not in info:
+            return info.get("Abbrev")
+        config = info["LinkTo"]
+    return None
+
+
 def build(target):
     build_dir = REPO_ROOT / "build" / target
     result = subprocess.run(

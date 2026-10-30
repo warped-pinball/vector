@@ -31,6 +31,7 @@ import argparse
 import gzip
 import json
 import os
+import socket
 import sys
 import time
 import urllib.error
@@ -55,6 +56,8 @@ from bench import (  # noqa: E402
     board_map_instructions,
     build,
     check_bench_complete,
+    check_hostname,
+    config_abbrev,
     endgroup,
     ensure_tools_on_path,
     flash_boards,
@@ -154,6 +157,11 @@ def health_check_usb(board):
 
     wifi = get(client, "/api/wifi/status")
     log(f"    wifi: {wifi}")
+
+    # In safe mode the config never loaded, so the board is on the MAC fallback.
+    abbrev = None if safe_mode else config_abbrev(target, expected_config)
+    board["hostname"] = check_hostname(wifi, abbrev)
+    log(f"    DHCP hostname: {board['hostname']}")
 
     ip = None
     try:
@@ -256,7 +264,35 @@ def health_check_http(board):
     if json.loads(first).get("challenge") == json.loads(second).get("challenge"):
         raise CheckFailure("/api/auth/challenge issued the same nonce twice")
 
+    http_hostname = payloads["/api/wifi/status"].get("hostname")
+    if http_hostname != board.get("hostname"):
+        raise CheckFailure(f"http reports hostname {http_hostname!r}, USB {board.get('hostname')!r}")
+    report_router_name(ip, http_hostname)
+
     log(f"    {len(HTTP_ROUTES)} routes + index + auth checks OK over HTTP")
+
+
+def report_router_name(ip, hostname):
+    """Say whether the network learned the board's DHCP host name.
+
+    The board's own answer only proves it *set* the name. Whether it reached
+    the router shows up here, on routers that register DHCP clients in their
+    DNS (most home routers and dnsmasq do). Not every network does, so this
+    reports rather than fails.
+    """
+    try:
+        reverse = socket.gethostbyaddr(ip)[0]
+    except OSError as exc:
+        reverse = f"no reverse DNS ({exc})"
+    try:
+        forward = socket.gethostbyname(hostname)
+    except OSError as exc:
+        forward = f"does not resolve ({exc})"
+    log(f"    router DNS: {ip} -> {reverse}; {hostname} -> {forward}")
+    if reverse.split(".")[0].lower() == hostname.lower() or forward == ip:
+        log(f"    the router knows this board as {hostname}")
+    else:
+        log(f"::warning::{ip}: the network's DNS does not show {hostname} - check the router's client list by hand")
 
 
 def _summarise(payload):

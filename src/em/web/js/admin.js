@@ -196,6 +196,8 @@
         throw new Error(`ssid fetch failed: ${response.status}`);
       }
       const data = await response.json();
+      const hostnameElement = document.getElementById("configured-hostname");
+      if (hostnameElement) hostnameElement.innerText = data.hostname || "Unknown";
       if (!data.connected) {
         nameElement.innerText = "Not connected";
         rssiElement.innerText = "Unavailable";
@@ -224,6 +226,8 @@
       nameElement.innerText = "Unavailable";
       rssiElement.innerText = "Unavailable";
       qualityElement.innerText = "Unavailable";
+      const hostnameElement = document.getElementById("configured-hostname");
+      if (hostnameElement) hostnameElement.innerText = "Unavailable";
     }
   }
 
