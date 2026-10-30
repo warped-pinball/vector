@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "The Getaway: High Speed II",
-        "System": "WPC",
-        "FileVer": 1
+        "System": "WPC"
     },
     "BallInPlay": {
         "Type": 1,
@@ -21,7 +20,7 @@
     "Adjustments": {
         "Type": 10,
         "CustomMessageOn": 6982,
-        "ChecksumStartAdr": 6899,
+        "ChecksumStartAdr": 6941,
         "ChecksumEndAdr": 7140,
         "ChecksumResultAdr": 7141
     },
@@ -60,5 +59,83 @@
         "ScoreAdr": 5936,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
-    }
+    },
+  "Switches": {
+    "Type": 10,
+    "Address": 5975,
+    "Length": 64,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Left Freeway Bottom", 60],
+      ["Left Freeway Top", 60],
+      ["Right Freeway Bottom", 60],
+      ["Right Freeway Top", 60],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Ticket Opto", 0],
+      ["Always Closed", 0],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["Right Return Lane", 60],
+      ["Right Outlane", 60],
+
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Gear Shifter Low", 60],
+      ["Gear Shifter High", 60],
+      [],
+      ["Top Red", 60],
+      ["Middle Red", 60],
+      ["Bottom Red", 60],
+
+      ["Top Yellow", 60],
+      ["Middle Yellow", 60],
+      ["Bottom Yellow", 60],
+      ["Right Bank Bottom", 60],
+      ["Right Bank Middle", 60],
+      ["Right Bank Bottom", 60],
+      [],
+      [],
+
+      ["Top Green", 60],
+      ["Middle Green", 60],
+      ["Bottom Green", 60],
+      ["Ramp Down", 60],
+      ["Outhole", 60],
+      ["Left Trough", 60],
+      ["Center Trough", 60],
+      ["Right Trough", 60],
+
+      ["Top Jet", 60],
+      ["Left Jet", 60],
+      ["Bottom Jet", 60],
+      [],
+      ["Made Up Down Ramp", 60],
+      [],
+      ["Made Left Ramp", 60],
+      [],
+
+      ["Top Loop", 60],
+      ["Middle Loop", 60],
+      ["Bottom Loop", 60],
+      ["Top Lock", 60],
+      ["Middle Lock", 60],
+      ["Bottom Lock", 60],
+      ["Eject Hole", 60],
+      ["Shooter", 60],
+
+      ["Opto 1", 60],
+      ["Opto 2", 60],
+      ["Opto 3", 60],
+      ["Opto Made Loop", 60],
+      ["Enter Left Ramp", 60],
+      ["Left Bank Bottom", 60],
+      ["Left Bank Middle", 60],
+      ["Left Bank Top", 60]
+    ]
+  }
 }

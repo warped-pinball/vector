@@ -149,8 +149,8 @@ def read_high_scores():
             log.log(f"DataMapper: Unsupported HighScores Type {S.gdata['HighScores']['Type']}")
             return high_scores
         
-        # Read 4 regular high scores (index 1-4)
-        for idx in range(1, 5):
+        # Read the regular high scores (index 1-4, NumberOfScores of them)
+        for idx in range(1, min(S.gdata["HighScores"].get("NumberOfScores", 4), 4) + 1):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + (idx - 1) * S.gdata["HighScores"]["ScoreSpacing"]
             score_bytes = shadowRam[score_start : score_start + S.gdata["HighScores"]["BytesInScore"]]
             high_scores[idx][1] = _bcd_to_int(score_bytes)
@@ -163,7 +163,7 @@ def read_high_scores():
         
         # Read initials for regular high scores
         if "InitialAdr" in S.gdata["HighScores"]:
-            for idx in range(1, 5):
+            for idx in range(1, min(S.gdata["HighScores"].get("NumberOfScores", 4), 4) + 1):
                 initial_start = S.gdata["HighScores"]["InitialAdr"] + (idx - 1) * S.gdata["HighScores"]["InitialSpacing"]
                 initials_bytes = shadowRam[initial_start : initial_start + 3]
                 
@@ -232,7 +232,7 @@ def get_initials_entered():
         # Check if this is a new entry:
         # 1. Score must be > 1000 (not a placeholder like 60, 50, 40, 30)
         # 2. Score must NOT match the stored grand champion (that's not new)
-        if score > 1000 and score != stored_grand_champion["score"]:
+        if score > S.gdata["GameInfo"].get("MinScore", 1000) and score != stored_grand_champion["score"]:
             new_entries[i] = [initials, score]
             i = i + 1
     
@@ -294,8 +294,8 @@ def write_high_scores(high_scores):
                     # Write placeholder (AAA = '@@@' in ASCII 64)
                     shadowRam[initial_start : initial_start + 3] = bytearray([64, 64, 64])
         
-        # Write 4 regular high scores
-        for index in range(4):
+        # Write the regular high scores (NumberOfScores of them)
+        for index in range(min(S.gdata["HighScores"].get("NumberOfScores", 4), 4)):
             score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
             
             try:
@@ -342,7 +342,7 @@ def fix_high_score_checksum():
         chk = 0
         for adr in range(start_adr, end_adr + 1):
             chk += shadowRam[adr]
-        chk = 0xFFFF - chk
+        chk = (0xFFFF - chk) & 0xFFFF
         msb = (chk >> 8) & 0xFF
         lsb = chk & 0xFF
         return msb, lsb
@@ -635,8 +635,8 @@ def remove_machine_scores():
     
     log.log("DATAMAPPER: Remove machine scores type 10")
     
-    # Reset 4 regular high scores
-    for index in range(4):
+    # Reset the regular high scores (NumberOfScores of them)
+    for index in range(min(S.gdata["HighScores"].get("NumberOfScores", 4), 4)):
         score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
         initial_start = S.gdata["HighScores"]["InitialAdr"] + index * S.gdata["HighScores"]["InitialSpacing"]
         
@@ -644,15 +644,16 @@ def remove_machine_scores():
         for i in range(S.gdata["HighScores"]["BytesInScore"]):
             shadowRam[score_start + i] = 0
         
-        # Set placeholder score (60, 50, 40, 30)
-        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = 0x10 * (4 - index)
+        # Set placeholder score (40, 30, 20, 10; 4, 3, 2, 1 for a low scoring game with MinScore)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] -1 ] = (4 - index) if "MinScore" in S.gdata["GameInfo"] else 0x10 * (4 - index)
         
         # Set initials to '   ' 
         for i in range(3):
             shadowRam[initial_start + i] = 0x20
     
-    # Handle Grand Champion score
-    if "GrandChampScoreAdr" in S.gdata["HighScores"]:
+    # Handle Grand Champion score - left alone for a low scoring game (MinScore):
+    # some of those games show the GC during play, so never all 99s
+    if "GrandChampScoreAdr" in S.gdata["HighScores"] and "MinScore" not in S.gdata["GameInfo"]:
         score_start = S.gdata["HighScores"]["GrandChampScoreAdr"]
         
         if grand_champ_mode == "Max":
@@ -706,8 +707,8 @@ def prepare_initials_capture():
         
         log.log(f"DATAMAPPER: Stored GC: {stored_grand_champion['initials']}, Score: {stored_grand_champion['score']}")
     
-    # Reset 4 regular high scores (same as remove_machine_scores)
-    for index in range(4):
+    # Reset the regular high scores (same as remove_machine_scores)
+    for index in range(min(S.gdata["HighScores"].get("NumberOfScores", 4), 4)):
         score_start = S.gdata["HighScores"]["ScoreAdr"] + index * S.gdata["HighScores"]["ScoreSpacing"]
         initial_start = S.gdata["HighScores"]["InitialAdr"] + index * S.gdata["HighScores"]["InitialSpacing"]
         
@@ -715,8 +716,8 @@ def prepare_initials_capture():
         for i in range(S.gdata["HighScores"]["BytesInScore"]):
             shadowRam[score_start + i] = 0
         
-        # Set placeholder score (60, 50, 40, 30)
-        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 1] = 0x10 * (4 - index)
+        # Set placeholder score (40, 30, 20, 10; 4, 3, 2, 1 for a low scoring game with MinScore)
+        shadowRam[score_start + S.gdata["HighScores"]["BytesInScore"] - 1] = (4 - index) if "MinScore" in S.gdata["GameInfo"] else 0x10 * (4 - index)
         
         # Set initials to '   '
         for i in range(3):
@@ -761,8 +762,9 @@ def get_flipper_state():
     """
     Read the flipper state from WPC shadow RAM.
     
-    Returns the byte value at the configured flipper address if Type 10 is configured.
-    
+    Type 10: left = bit 0x80, right = bit 0x20
+    Type 11: left = bit 0x02, right = bit 0x01
+
     Returns:
         tuple: (left, right) boolean values, or (False, False) if not configured
     """
@@ -780,98 +782,8 @@ def get_flipper_state():
 
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_flipper_state: {e}")
-
+    
     return False, False
-
-
-
-
-
-
-def get_modes():
-    """
-    Read game mode data from shadow RAM.
-    
-    Reads mode-specific data (like mission progress, fish caught, etc.)
-    based on configuration in S.gdata["Modes"]. Each mode can have:
-    - Address: Memory address (hex string "0x515" or integer)
-    - Length: Number of bytes to read
-    - Format: Data format ("u8", "BCD", etc.)
-    - OffValue: Value threshold - mode excluded if value <= OffValue (optional)
-    - Multiplier: Multiply result by this value (optional)
-    
-    Returns:
-        dict: Dictionary with mode names as keys and their values
-              Only includes modes where value > OffValue
-              Returns empty dict if no modes configured
-              Example: {"Fish Caught": 5, "Monster Fish": 1234}
-    """
-    modes_data = {}
-    
-    # Check if Modes configuration exists
-    if "Modes" not in S.gdata:
-        return modes_data
-    
-    try:
-        for mode_name, mode_config in S.gdata["Modes"].items():
-            # Parse address (could be hex string like "0x515" or integer)
-            address = mode_config.get("Address", 0)
-            if isinstance(address, str):
-                # Convert hex string to integer
-                address = int(address, 16) if address.startswith("0x") else int(address)
-            
-            # Get configuration parameters
-            length = mode_config.get("Length", 1)
-            data_format = mode_config.get("Format", "u8")
-            multiplier = mode_config.get("Multiplier", 1)
-            off_value = mode_config.get("OffValue", None)
-            
-            # Read bytes from shadow RAM
-            mode_bytes = shadowRam[address : address + length]
-            
-            # Convert based on format
-            if data_format == "u8":
-                # Unsigned 8-bit integer
-                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
-            elif data_format == "BCD":
-                # BCD encoded
-                value = _bcd_to_int(mode_bytes)
-            elif data_format == "u16":
-                # Unsigned 16-bit integer (little-endian)
-                if len(mode_bytes) >= 2:
-                    value = mode_bytes[0] | (mode_bytes[1] << 8)
-                elif len(mode_bytes) == 1:
-                    value = mode_bytes[0]
-                else:
-                    value = 0
-            elif data_format == "u16be":
-                # Unsigned 16-bit integer (big-endian)
-                if len(mode_bytes) >= 2:
-                    value = (mode_bytes[0] << 8) | mode_bytes[1]
-                elif len(mode_bytes) == 1:
-                    value = mode_bytes[0]
-                else:
-                    value = 0
-            else:
-                # Unknown format, treat as raw byte value
-                log.log(f"DATAMAPPER: Unknown format '{data_format}' for mode '{mode_name}'")
-                value = mode_bytes[0] if len(mode_bytes) > 0 else 0
-            
-            # Only include mode if value > OffValue (if OffValue is specified)
-            if off_value is not None:
-                if value > off_value:
-                    modes_data[mode_name] = value * multiplier
-            else:
-                # No OffValue specified, always include
-                modes_data[mode_name] = value * multiplier
-    
-    except Exception as e:
-        log.log(f"DATAMAPPER: Error reading modes: {e}")
-    
-    return modes_data
-
-
-
 
 
 def get_switches_tripped():
