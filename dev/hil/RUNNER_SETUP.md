@@ -149,19 +149,20 @@ ever turns up under two different ids, map both — a spare entry costs nothing.
 
 ## Every system, every run
 
-The bench exists to cover `sys11`, `wpc` and `data_east`, and a run that quietly tests two of
-them still reports green about the third. So a missing board fails the run: the boards that are
+The bench exists to cover `sys11`, `wpc`, `data_east` and `classic`, and a run that quietly
+tests three of them still reports green about the fourth. So a missing board fails the run: the boards that are
 present are still flashed and checked, and the verdict at the end says which system was absent.
 
 If the bench has genuinely lost a board for a while, say so deliberately rather than letting the
 check rot:
 
 ```bash
-echo 'VECTOR_HIL_REQUIRED_TARGETS=sys11,wpc' >> ~/actions-runner/.env
+echo 'VECTOR_HIL_REQUIRED_TARGETS=sys11,wpc,data_east' >> ~/actions-runner/.env
 cd ~/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
-Unset, it defaults to all three. Set to an empty value, the check is off entirely.
+Unset, it defaults to all four. `em` is not required yet; add it to `REQUIRED_TARGETS` in
+`bench.py` once the bench has an EM board. Set to an empty value, the check is off entirely.
 
 ## When it runs
 
