@@ -177,18 +177,23 @@ def boards_for(*targets):
 def test_a_missing_system_fails_the_run(job_summary, monkeypatch):
     monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
 
-    missing = bench.check_bench_complete(boards_for("wpc", "sys11"))
+    missing = bench.check_bench_complete(boards_for("wpc", "sys11", "data_east"))
 
-    assert missing == ["data_east"]
+    assert missing == ["classic"]
     written = job_summary.read_text()
     assert "Incomplete bench" in written
-    assert "data_east" in written
+    assert "classic" in written
+
+
+def test_every_bench_system_is_required_but_em_is_not_yet(monkeypatch):
+    monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
+    assert sorted(bench.required_targets()) == ["classic", "data_east", "sys11", "wpc"]
 
 
 def test_a_complete_bench_says_nothing_to_the_summary(job_summary, monkeypatch):
     monkeypatch.delenv("VECTOR_HIL_REQUIRED_TARGETS", raising=False)
 
-    assert bench.check_bench_complete(boards_for("wpc", "sys11", "data_east")) == []
+    assert bench.check_bench_complete(boards_for("wpc", "sys11", "data_east", "classic")) == []
     assert not job_summary.exists()
 
 
