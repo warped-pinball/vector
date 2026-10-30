@@ -96,24 +96,78 @@ def get_check_data(path="update.json"):
     return calculated_hash, expected_hash, signature
 
 
-def validate_signature(skip_signature_check=False):
+def _public_key():
+    from rsa.key import PublicKey
+
+    return PublicKey(
+        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
+        e=65537,
+    )
+
+
+def verify_release(latest):
+    """Return the release record from latest.json once its signature checks out, otherwise raise.
+
+    latest["signed"]["payload"] is the record as a JSON string, signed (PKCS#1 v1.5, SHA-256) with the
+    same Warped Pinball key as the update files; nothing outside it is trusted.
+    """
+    from binascii import a2b_base64
+    from json import loads as json_loads
+
+    from rsa.pkcs1 import verify
+    from systemConfig import vectorSystem
+
+    signed = latest.get("signed") or {}
+    payload = signed.get("payload")
+    if not payload or not signed.get("signature"):
+        raise Exception("Release information is not signed")
+
+    try:
+        result = verify(payload.encode("utf-8"), a2b_base64(signed["signature"]), _public_key())
+    except Exception as e:
+        raise Exception(f"Release signature invalid: {e}")
+    if result != "SHA-256":
+        raise Exception(f"Release signature invalid: {result}")
+
+    release = json_loads(payload)
+    if release.pop("product", None) != vectorSystem:
+        raise Exception("Release is for a different system")
+    return release
+
+
+def fetch_latest_release():
+    """latest.json comes over plain HTTP; only its signed release record is used"""
+    from mrequests.mrequests import get
+    from systemConfig import updatesURL
+
+    resp = get(updatesURL, timeout=10)
+    try:
+        latest = resp.json()
+    finally:
+        resp.close()
+    return verify_release(latest)
+
+
+def validate_signature(skip_signature_check=False, expected_sha256=None):
     hash_bytes, expected_hash, signature = get_check_data("update.json")
     if hash_bytes != expected_hash:
         raise Exception(f"Hash mismatch - expected {expected_hash.hex()}, got {hash_bytes.hex()}")
+
+    # Confirm this is the file we were told to expect; optional for developer builds
+    if expected_sha256 and hash_bytes.hex() != str(expected_sha256).strip().lower():
+        raise Exception("Update checksum does not match the expected checksum")
 
     if skip_signature_check:
         print("Skipping signature check")
         return
 
-    from rsa.key import PublicKey
+    # A release update must be the exact file the signed release record named
+    if not expected_sha256:
+        raise Exception("No checksum for this update")
+
     from rsa.pkcs1 import verify
 
-    pub_key = PublicKey(
-        n=25850530073502007505073398889935110756716032251132404339199218781380059422255360862345198138544675141546256513054332184373517438166092251410172963421556299077069195099284810366900994760048877561951388981897823462231871242380041390062269561386306787290618184745309059687916294069920586099425145107624115989895718851520436900326103985313232359151478484869518361685407610217568258949817227423076176730822354946128428713951948845035016003414197978601744938802692314180897355778380777214605494482082206918793349659727959426652897923672356221305760483911989683767700269466619761018439625757662776289786038860327614755771099,  # noqa
-        e=65537,
-    )
-
-    result = verify(hash_bytes, signature, pub_key)
+    result = verify(hash_bytes, signature, _public_key())
     if result != "SHA-256":
         raise Exception(f"Signature invalid! {result}")
 
@@ -203,18 +257,32 @@ class LowMemoryMode:
         return False  # don't suppress exceptions
 
 
-def apply_update(url, skip_signature_check=False):
+def _remove_update_file():
+    from os import remove
+
+    try:
+        remove("update.json")
+    except OSError:
+        pass
+
+
+def apply_update(url, skip_signature_check=False, expected_sha256=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
 
         yield {"log": f"Downloading update from {url}", "percent": 2}
-        # will yield percent updates as it downloads
-        yield from download_update(url)
-        gc_collect()
+        try:
+            # will yield percent updates as it downloads
+            yield from download_update(url)
+            gc_collect()
 
-        yield {"log": "Validating signature", "percent": 30}
-        validate_signature(skip_signature_check=skip_signature_check)
+            yield {"log": "Validating signature and checksum", "percent": 30}
+            validate_signature(skip_signature_check=skip_signature_check, expected_sha256=expected_sha256)
+        except Exception:
+            # a refused or partial download is never used, so don't leave it taking up flash
+            _remove_update_file()
+            raise
         gc_collect()
 
         yield {"log": "Writing files to board", "percent": 40}

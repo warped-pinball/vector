@@ -6,10 +6,9 @@ Customize this for EM - needs game data store class
 """
 import struct
 
-from micropython import const
-
 import SPI_Store as fram
 from logger import logger_instance
+from micropython import const
 
 Log = logger_instance
 
@@ -45,7 +44,7 @@ memory_map = {
         "start": top_mem - 16 - (20 * 30) - (35 * 20) - (12 * 100) - (14 * 20 * 30) - (96 * 1) - (48 * 1) - 200,
         "size": 200,
         "count": 1,
-    }
+    },
 }
 
 
@@ -68,11 +67,23 @@ def show_mem_map():
         print(f"{key}: start={value['start']}, end={value['end']}, size={value['size']}, count={value['count']}")
 
 
+def _record_address(structure_name, index, set):
+    """Validated FRAM start address of a record; raises ValueError when index/set fall outside the structure"""
+    structure = memory_map[structure_name]
+    if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < structure["count"]:
+        raise ValueError(f"index {index} out of range for {structure_name}")
+    sets = structure.get("sets")
+    if sets is None:
+        set = 0
+    elif isinstance(set, bool) or not isinstance(set, int) or not 0 <= set < sets:
+        raise ValueError(f"set {set} out of range for {structure_name}")
+    return structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
+
+
 def write_record(structure_name, record, index=0, set=0):
     try:
-        structure = memory_map[structure_name]
-        start_address = structure["start"] + index * structure["size"] + structure["size"] * structure["count"] * set
-        #print(structure,"R",  record)
+        start_address = _record_address(structure_name, index, set)
+        # print(structure,"R",  record)
         data = serialize(record, structure_name)
         fram.write(start_address, data)
 
@@ -131,7 +142,7 @@ def serialize(record, structure_name):
         else:
             enable = record["enable"]
         return struct.pack("<II20s20s", enable, record["other"], record["lastIP"].encode(), record["message"].encode())
-    
+
     elif structure_name == "EMData":
         # filtermasks are runtime-generated from timing arrays and are not persisted.
         # carrythresholds remain persisted.
@@ -229,10 +240,7 @@ def serialize(record, structure_name):
 
 def read_record(structure_name, index=0, set=0):
     structure = memory_map[structure_name]
-    if "sets" in structure:
-        start_address = structure["start"] + index * structure["size"] + set * structure["size"] * structure["count"]
-    else:
-        start_address = structure["start"] + index * structure["size"]
+    start_address = _record_address(structure_name, index, set)
     data = fram.read(start_address, structure["size"])
     return deserialize(data, structure_name)
 
@@ -319,6 +327,7 @@ def deserialize(data, structure_name):
             }
     elif structure_name == "EMData":
         try:
+
             def _coerce_loaded_timing(values, default, lo, hi):
                 out = []
                 if len(values) != 5:

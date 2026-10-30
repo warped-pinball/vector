@@ -8,12 +8,12 @@ Score Track
     This module is responsible for tracking scores and updating the leaderboard.
     Must account for highscores and in play score avilability
 """
+import DataMapper
 import SharedState as S
 import SPI_DataStore as DataStore
 from logger import logger_instance
 from machine import RTC
 from Shadow_Ram_Definitions import shadowRam
-import DataMapper
 
 log = logger_instance
 
@@ -79,9 +79,17 @@ def get_claim_score_list():
     return result
 
 
-def claim_score(initials, player_index, score):
-    """claim a score from the recent scores list - do not require a player index, search all"""
+def claim_score(initials, player_index, score, from_machine=False):
+    """claim a score from the recent scores list - do not require a player index, search all
+
+    from_machine: the score came from the machine's own high score table, so it is placed even when
+    it is not in the claim list (the case where the high scores were reset on the machine)"""
     global recent_scores
+
+    if not isinstance(initials, str):
+        raise ValueError("SCORE: invalid initials")
+    if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
+        raise ValueError("SCORE: invalid score")
 
     # condition the initials - more important than one would think.  machines freak if non printables get in
     initials = initials.upper()
@@ -106,8 +114,11 @@ def claim_score(initials, player_index, score):
                     update_leaderboard(new_score)
                 return
 
-    # required for case where user resets high scores on the machine
-    update_leaderboard({"initials": initials, "full_name": None, "score": score, "game": 0})
+    if from_machine:
+        update_leaderboard({"initials": initials, "full_name": None, "score": score, "game": 0})
+        return
+
+    raise ValueError("SCORE: Score not found in claim list")
 
 
 def _place_game_in_claim_list(game):
@@ -459,7 +470,7 @@ def check_for_machine_high_scores(report=True):
             if idx >= len(top_scores) or scores[idx][1] != top_scores[idx]["score"] or scores[idx][0] != top_scores[idx]["initials"]:
                 if report:
                     print(f"SCORE: place game score into vector {new_score}")
-                claim_score(new_score["initials"], 0, new_score["score"])
+                claim_score(new_score["initials"], 0, new_score["score"], from_machine=True)
 
 
 def update_tournament(new_entry):
@@ -507,21 +518,23 @@ def update_tournament(new_entry):
 
 
 GameEndCount = 0
-initials_capture_this_game=False
+initials_capture_this_game = False
 live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
 push_game_count = 0
 last_pushed_game = [["", 0], ["", 0], ["", 0], ["", 0]]
 
+
 def CheckForNewScores(nState=[0]):
     """called by scheduler every 5 seconds"""
-    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game  
+    global nGameIdleCounter, GameEndCount, initials_capture_this_game, live_scores, push_game_count, last_pushed_game
 
-    if push_game_count>0:
+    if push_game_count > 0:
         from origin import push_end_of_game
-        push_game_count+=1        
-        push_end_of_game(last_pushed_game,push_game_count)
-        if push_game_count>5:
-            push_game_count =0
+
+        push_game_count += 1
+        push_end_of_game(last_pushed_game, push_game_count)
+        if push_game_count > 5:
+            push_game_count = 0
 
     # power up init state - only runs once
     if nState[0] == 0:
@@ -538,13 +551,13 @@ def CheckForNewScores(nState=[0]):
                 if key.startswith("HS"):  # Check if the key starts with 'HS'
                     shadowRam[value] = S.gdata["HSRewards"]["DisableByte"]
         from Adjustments import _fixChecksum
+
         _fixChecksum()
 
     # only run this if ball in play is enabled
-    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking       
+    if S.gdata["BallInPlay"]["Type"] == 1:  # 0 disables score tracking
         # waiting for a game to start
-        if nState[0] == 1:      
-
+        if nState[0] == 1:
             # Check if active_format is non-zero; if so, return early
             # Allows game in progress to finish in normal mode when format is activated
             if S.active_format.get("Id", 0) != 0:
@@ -559,32 +572,31 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game list 10 minute expire")
 
             # players could be putting in initials from last game in the event of top 5 score, always check here
-            check_for_machine_high_scores(True)           
+            check_for_machine_high_scores(True)
             # only call if new score or initials?
             place_machine_scores()
 
             print("SCORE: game start check ", nGameIdleCounter)
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] == S.gdata["InPlay"]["GameActiveValue"]:
                 nState[0] = 2
-                #Game Started!
+                # Game Started!
                 log.log("SCORE: Game Started")
                 nGameIdleCounter = 0
 
                 if DataStore.read_record("extras", 0)["enter_initials_on_game"] is True:
-                    #_remove_machine_scores()
+                    # _remove_machine_scores()
                     DataMapper.prepare_initials_capture()
                     initials_capture_this_game = True
                 else:
                     initials_capture_this_game = False
-                #S.gameCounter = (S.gameCounter + 1) % 100       
-        
+                # S.gameCounter = (S.gameCounter + 1) % 100
 
         # waiting for game to end
         elif nState[0] == 2:
             print("SCORE: game end check ")
-            #print(_read_machine_score(UseHighScores=True))
+            # print(_read_machine_score(UseHighScores=True))
             if shadowRam[S.gdata["InPlay"]["GameActiveAdr"]] != S.gdata["InPlay"]["GameActiveValue"]:
-                #get and store player scores - convert to [[initials, score], ...] format
+                # get and store player scores - convert to [[initials, score], ...] format
                 score_values = DataMapper.get_live_scores()
                 live_scores = [["", score_values[i]] for i in range(4)]
                 nState[0] = 3
@@ -602,14 +614,14 @@ def CheckForNewScores(nState=[0]):
                 nState[0] = 4
 
             if initials_capture_this_game is True:
-                #waiting for players to input initials
+                # waiting for players to input initials
                 high_scores = DataMapper.get_initials_entered()
                 high_score_count = sum(1 for score in high_scores if score[1] > 1000)
                 print("SCORE: waiting for initials, count = ", high_score_count, " players = ", DataMapper.get_players_in_game())
 
                 if high_score_count >= DataMapper.get_players_in_game():
                     print("SCORE: done - got all players initials")
-                    #all scores in - wrap up
+                    # all scores in - wrap up
                     nState[0] = 4
 
             else:
@@ -617,14 +629,12 @@ def CheckForNewScores(nState=[0]):
                 print("SCORE: game over, not waiting for initials")
                 nState[0] = 4
 
-
         # game over clean up process - dont wait so no elif...
         if nState[0] == 4:
             # game over - back to top state
             nState[0] = 1
 
             if initials_capture_this_game == False:
-
                 # in play scores
                 log.log("SCORE: end, use in-play scores")
                 scores = live_scores
@@ -635,7 +645,7 @@ def CheckForNewScores(nState=[0]):
                 high_scores = DataMapper.get_initials_entered()
                 # Match the in-play scores with newly entered initials
                 scores = DataMapper.match_in_play_with_high_score_initials(live_scores, high_scores)
-                #scores = _read_machine_score(UseHighScores=True)[1:]  # remove grand champ
+                # scores = _read_machine_score(UseHighScores=True)[1:]  # remove grand champ
 
             if DataStore.read_record("extras", 0)["tournament_mode"]:
                 for i in range(0, 4):
@@ -650,14 +660,14 @@ def CheckForNewScores(nState=[0]):
             game = [S.gameCounter] + [tuple(scores[i]) for i in range(4)]
 
             from origin import push_end_of_game
-            push_game_count=1
+
+            push_game_count = 1
             last_pushed_game = game
-            push_end_of_game(last_pushed_game,push_game_count)
+            push_end_of_game(last_pushed_game, push_game_count)
             _place_game_in_claim_list(game)
 
             # put high scores back in machine memory
             if DataStore.read_record("extras", 0)["enter_initials_on_game"]:
                 place_machine_scores()
 
-            S.gameCounter = (S.gameCounter + 1) % 100  
-            
+            S.gameCounter = (S.gameCounter + 1) % 100

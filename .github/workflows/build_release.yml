@@ -175,6 +175,15 @@ jobs:
 
                 const repoPath = `${basePath}/${file.filename}`;
 
+                // the checksum the board checks, from the file's last line
+                let sha256 = null;
+                try {
+                  const lastLine = contents.trimEnd().split('\n').pop();
+                  sha256 = JSON.parse(lastLine).sha256 || null;
+                } catch (error) {
+                  core.warning(`Could not read the checksum of ${file.source}.`);
+                }
+
                 treeEntries.push({
                   path: repoPath,
                   mode: '100644',
@@ -185,6 +194,7 @@ jobs:
                 links.push({
                   name: file.label,
                   url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${repoPath}`,
+                  sha256,
                 });
               }
 
@@ -286,6 +296,12 @@ jobs:
                 bodyLines.push('```text');
                 bodyLines.push(link.url);
                 bodyLines.push('```');
+                if (link.sha256) {
+                  bodyLines.push('sha256 (optional when uploading):');
+                  bodyLines.push('```text');
+                  bodyLines.push(link.sha256);
+                  bodyLines.push('```');
+                }
                 bodyLines.push('');
               }
 

@@ -1156,8 +1156,11 @@ window.enterScoreEdit = async function () {
   //Switch to checkboxes
   header.innerHTML = "🗑️";
   rows.forEach(function (row) {
-    var number = row.innerHTML;
-    row.innerHTML = '<input type="checkbox" name="' + number + '" />';
+    var number = row.textContent;
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = number;
+    row.replaceChildren(checkbox);
   });
 
   window.scoreEditMode = true;
@@ -1179,7 +1182,7 @@ window.exitScoreEdit = function () {
   header.innerHTML = "#";
   rows.forEach(function (row) {
     var checkbox = row.children[0];
-    row.innerHTML = checkbox.name;
+    row.textContent = checkbox.name;
   });
 
   window.scoreEditMode = false;
@@ -1196,7 +1199,9 @@ window._scoresPollingIds.push(setInterval(window.getClaimableScores, 4000));
 window.cleanup_scores = function () {
   // Stop game status and claimable scores polling
   if (window._scoresPollingIds) {
-    window._scoresPollingIds.forEach(function (id) { clearInterval(id); });
+    window._scoresPollingIds.forEach(function (id) {
+      clearInterval(id);
+    });
     window._scoresPollingIds = [];
   }
   // Stop tab auto-refresh
