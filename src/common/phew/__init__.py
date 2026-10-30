@@ -51,6 +51,78 @@ def reconnect_to_wifi():
         logging.error(f"Failed to reconnect to wifi: {e}")
 
 
+# A name set by hand lives in the unused extras "message" field, marked so a
+# board's old "ok"/"none" there is not mistaken for one. 20 bytes, so 18 for the name.
+_NAME_MARK = "H:"
+_NAME_MAX = 18
+
+
+def _clean_hostname(name):
+    """A DHCP host name is letters, digits and hyphens only."""
+    return "".join(c for c in str(name).upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
+
+
+def hostname_override():
+    """The name set by hand on the admin page, or "" for the automatic one."""
+    from SPI_DataStore import read_record
+
+    message = read_record("extras", 0).get("message", "")
+    return message[len(_NAME_MARK) :] if message.startswith(_NAME_MARK) else ""
+
+
+def set_hostname_override(name):
+    """Store a name set by hand, cleaned; blank (or nothing usable) goes back to automatic. Returns what was stored."""
+    from SPI_DataStore import read_record, write_record
+
+    name = _clean_hostname(name)[:_NAME_MAX]
+    info = read_record("extras", 0)
+    info["message"] = _NAME_MARK + name if name else ""
+    write_record("extras", info, 0)
+    return name
+
+
+def default_hostname():
+    """WP-<abbreviation>, e.g. WP-TNG, from the game config's GameInfo "Abbrev".
+
+    A config without one, or no game picked yet, falls back to the last 3
+    bytes of the wifi MAC (WP-1A2B3C), which is at least unique on the network.
+    """
+    from binascii import hexlify
+
+    import network
+    import SharedState
+
+    abbrev = _clean_hostname(SharedState.gdata.get("GameInfo", {}).get("Abbrev", ""))
+    if abbrev:
+        return ("WP-" + abbrev)[:32]
+
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)  # the MAC is only read from the chip once it is up
+    return "WP-" + hexlify(wlan.config("mac")[3:]).decode().upper()
+
+
+def dhcp_hostname():
+    """The name this board gives the router: one set by hand, else the default."""
+    return hostname_override() or default_hostname()
+
+
+def set_dhcp_hostname():
+    """Give the router this board's name rather than the firmware's "Pico2W".
+
+    MicroPython keeps the name in RAM and lwIP reads it every time it builds
+    a DHCP request, so this has to run on every boot, before the first
+    connect: a power cycle puts the firmware default back.
+    """
+    import network
+
+    try:
+        name = dhcp_hostname()
+        network.hostname(name)
+        print(f"DHCP hostname: {name}")
+    except Exception as e:
+        print(f"Could not set the DHCP hostname: {e}")
+
+
 # helper method to quickly get connected to wifi
 def connect_to_wifi(ssid, password, timeout_seconds=30):
     import time

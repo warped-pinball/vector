@@ -1353,6 +1353,7 @@ def app_getNetworkName(request):
     @end
     """
     import network
+    from phew import default_hostname, hostname_override
 
     return {"name": hostname_override(), "default": default_hostname(), "current": network.hostname()}
 
@@ -1379,13 +1380,12 @@ def app_setNetworkName(request):
         example: {"name": "BACKROOM-TNG"}
     @end
     """
+    from phew import set_hostname_override
+
     raw = str(request.data.get("name", "")).strip()
-    name = _clean_hostname(raw)[:_NAME_MAX]
+    name = set_hostname_override(raw)
     if raw and not name:
         return {"error": "Use letters, digits and hyphens"}, 400
-    info = ds_read_record("extras", 0)
-    info["message"] = _NAME_MARK + name if name else ""
-    ds_write_record("extras", info, 0)
     return {"name": name}
 
 
@@ -2437,64 +2437,9 @@ def add_ap_mode_routes():
         return available_networks
 
 
-# A name set by hand lives in the unused extras "message" field, marked so a
-# board's old "ok"/"none" there is not mistaken for one. 20 bytes, so 18 for the name.
-_NAME_MARK = "H:"
-_NAME_MAX = 18
-
-
-def _clean_hostname(name):
-    """A DHCP host name is letters, digits and hyphens only."""
-    return "".join(c for c in str(name).upper() if "A" <= c <= "Z" or "0" <= c <= "9" or c == "-").strip("-")
-
-
-def hostname_override():
-    """The name set by hand on the admin page, or "" for the automatic one."""
-    message = ds_read_record("extras", 0).get("message", "")
-    return message[len(_NAME_MARK) :] if message.startswith(_NAME_MARK) else ""
-
-
-def default_hostname():
-    """WP-<abbreviation>, e.g. WP-TNG, from the game config's GameInfo "Abbrev".
-
-    A config without one, or no game picked yet, falls back to the last 3
-    bytes of the wifi MAC (WP-1A2B3C), which is at least unique on the network.
-    """
-    abbrev = _clean_hostname(S.gdata.get("GameInfo", {}).get("Abbrev", ""))
-    if abbrev:
-        return ("WP-" + abbrev)[:32]
-
-    import network
-
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)  # the MAC is only read from the chip once it is up
-    return "WP-" + hexlify(wlan.config("mac")[3:]).decode().upper()
-
-
-def dhcp_hostname():
-    """The name this board gives the router: one set by hand, else the default."""
-    return hostname_override() or default_hostname()
-
-
-def set_dhcp_hostname():
-    """Give the router this board's name rather than the firmware's "Pico2W".
-
-    MicroPython keeps the name in RAM and lwIP reads it every time it builds
-    a DHCP request, so this has to run on every boot, before the first
-    connect: a power cycle puts the firmware default back.
-    """
-    import network
-
-    try:
-        name = dhcp_hostname()
-        network.hostname(name)
-        print(f"DHCP hostname: {name}")
-    except Exception as e:
-        print(f"Could not set the DHCP hostname: {e}")
-
-
 def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
+    from phew import set_dhcp_hostname
     from phew.server import initialize_timedate, schedule
 
     set_dhcp_hostname()
