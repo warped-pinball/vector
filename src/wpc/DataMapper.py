@@ -766,7 +766,7 @@ def get_flipper_state():
     Type 11: left = bit 0x02, right = bit 0x01
 
     Returns:
-        tuple: (left, right) booleans, or (False, False) if not configured
+        tuple: (left, right) boolean values, or (False, False) if not configured
     """
     try:
         if "Flippers" in S.gdata and S.gdata["Flippers"].get("Type") in  [10,11]:
