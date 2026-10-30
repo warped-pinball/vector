@@ -85,7 +85,8 @@ Removing classic game chips carries risk. Work with the game powered off but sti
 | ![Williams/Bally WPC install photo](../../img/wpc/manual/WPC_installed.jpg) | Williams/Bally WPC | Black Rose<br>Bram Stoker's Dracula<br>Creature from the Black Lagoon<br>Demolition Man<br>Doctor Who<br>Fish Tales<br>Funhouse<br>Gilligan's Island<br>Harley-Davidson<br>Hurricane<br>Indiana Jones<br>Judge Dredd<br>Machine: Bride of Pinbot<br>Party Zone<br>Popeye Saves the Earth<br>Star Trek: TNG<br>Terminator 2<br>The Addams Family I/II<br>The Getaway: High Speed II<br>Twilight Zone<br>White Water |
 | ![Williams/Bally WPC S install photo](../../img/wpc/manual/WPC_S_installed.jpg) | Williams/Bally WPC-S | Corvette<br>Dirty Harry<br>Indianapolis 500<br>JackBot<br>Johnny Mnemonic<br>No Fear: Dangerous Sports<br>Red and Ted's Road Show<br>The Flintstones<br>The Shadow<br>Theatre of Magic<br>WHO Dunnit<br>World Cup Soccer |
 | ![Williams/Bally WPC 95 install photo](../../img/wpc/manual/WPC_95_installed.jpg) | Midway/Williams WPC-95 | Attack from Mars<br>Cactus Canyon<br>Cirqus Voltaire<br>Congo<br>Junk Yard<br>Medieval Madness<br>Monster Bash<br>NBA Fastbreak<br>No Good Gofers<br>Safe Cracker<br>Scared Stiff<br>Tales of the Arabian Nights<br>The Champion Pub |
-| ![Williams/Bally WPC RD install photo](../../img/wpc/manual/WPC_RD_installed.jpg) | WPC | Rotten Dog<br>aftermarket<br>Board<br>Installation |
+| ![Williams/Bally WPC-89 RD install photo](../../img/wpc/manual/WPC_RD_installed.jpg) | WPC-89 | Rotten Dog<br>aftermarket<br>Board<br>Installation |
+| ![Midway/Williams WPC-95 RD install photo](../../img/wpc/manual/WPC_95_RD_installed.jpg) | WPC-95 | Rotten Dog<br>aftermarket<br>Board<br>Installation |
 
 ## Hardware installation
 
@@ -123,9 +124,13 @@ Throughout the installation pay attention to pin #1 alignment:
 | :---: | :---: |
 | ![WPC Clip](../../img/wpc/manual/WPC_clip.jpg)<br>WPC | ![WPC-S Clip](../../img/wpc/manual/WPC_S_clip.jpg)<br>WPC-S |
 
-| WPC-95 Clip Location | Rotten Dog Clip Location |
+| WPC-95 Clip Location | Rotten Dog WPC-89 Clip Location |
 | :---: | :---: |
-| ![WPC-95 Clip](../../img/wpc/manual/WPC_95_clip.jpg)<br>WPC-95 | ![Rotten Dog Clip](../../img/wpc/manual/WPC_RD_clip.jpg)<br>Rotten Dog |
+| ![WPC-95 Clip](../../img/wpc/manual/WPC_95_clip.jpg)<br>WPC-95 | ![Rotten Dog WPC-89 Clip](../../img/wpc/manual/WPC_RD_clip.jpg)<br>Rotten Dog WPC-89 |
+
+| Rotten Dog WPC-95 Clip Location |
+| :---: |
+| ![Rotten Dog WPC-95 Clip](../../img/wpc/manual/WPC_95_RD_clip.jpg)<br>Rotten Dog WPC-95 |
 
 
 After connection the game operates normally while the Vector board provides NVRAM service. Configure WiFi to access advanced scoring, tournament, and other features.

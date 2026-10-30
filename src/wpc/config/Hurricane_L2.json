@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Hurricane",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -21,9 +20,9 @@
   "Adjustments": {
       "Type": 10,
       "CustomMessageOn": 6982,
-      "ChecksumStartAdr": 7318,
-      "ChecksumEndAdr": 7529,
-      "ChecksumResultAdr": 7530
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7140,
+      "ChecksumResultAdr": 7141
   },
   "HighScores": {
       "Type": 10,

@@ -1,12 +1,11 @@
 {
   "GameInfo": {
       "GameName": "Judge Dredd",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 950
+      "Address": 1040
   },
   "DisplayMessage": {
       "Type": 10,
@@ -53,7 +52,7 @@
   },
   "InPlay": {
       "Type": 10,
-      "GameActiveAdr": 158,
+      "GameActiveAdr": 141,
       "GameActiveValue": 0,
       "Players": 6053,
       "PlayerUp": 1039,

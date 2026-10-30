@@ -1,8 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Addams Family",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -21,9 +20,9 @@
   "Adjustments": {
       "Type": 10,
       "CustomMessageOn": 6982,
-      "ChecksumStartAdr": 7326,
-      "ChecksumEndAdr": 7537,
-      "ChecksumResultAdr": 7538
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7148,
+      "ChecksumResultAdr": 7149
   },
   "HighScores": {
       "Type": 10,
