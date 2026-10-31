@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Mary Shelley's Frankenstein",
+        "Abbrev": "MSF",
         "System": "DataEast",
         "FileVer": 1
     },

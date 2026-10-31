@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Machine Bride of Pinbot",
+      "Abbrev": "BOP",
       "System": "WPC"
   },
   "BallInPlay": {

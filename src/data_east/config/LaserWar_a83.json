@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Laser War",
+        "Abbrev": "LWAR",
         "System": "DataEast",
         "FileVer": 1
     },

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Taxi",
+        "Abbrev": "TAXI",
         "System": "11B"
     },
     "BallInPlay": {

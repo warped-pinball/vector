@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Fathom",
+        "Abbrev": "FAT",
         "System": "Bally35"
     },
     "BallInPlay": {

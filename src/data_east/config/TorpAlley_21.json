@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Torpedo Alley",
+        "Abbrev": "TA",
         "System": "DataEast",
         "FileVer": 1
     },

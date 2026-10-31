@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Meteor",
+        "Abbrev": "MET",
         "System": "MPU200"
     },
     "BallInPlay": {

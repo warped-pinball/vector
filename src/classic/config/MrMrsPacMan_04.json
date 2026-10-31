@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Mr. & Mrs. Pac-Man",
+        "Abbrev": "MMPM",
         "System": "Bally35"
     },
     "BallInPlay": {

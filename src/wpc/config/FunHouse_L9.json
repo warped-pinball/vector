@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Fun House",
+      "Abbrev": "FH",
       "System": "WPC"
   },
   "BallInPlay": {

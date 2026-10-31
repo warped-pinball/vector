@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Harley Davidson",
+      "Abbrev": "HD",
       "System": "WPC"
   },
   "BallInPlay": {

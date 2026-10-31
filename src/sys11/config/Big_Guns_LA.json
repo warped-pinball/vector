@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Big Guns",
+        "Abbrev": "BGUN",
         "System": "11B"
     },
     "BallInPlay": {

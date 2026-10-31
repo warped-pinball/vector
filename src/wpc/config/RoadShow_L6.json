@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Red and Ted Road Show",
+      "Abbrev": "RS",
       "System": "WPC"
   },
   "BallInPlay": {

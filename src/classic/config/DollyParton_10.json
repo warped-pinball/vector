@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Dolly Parton",
+        "Abbrev": "DP",
         "System": "Bally35"
     },
     "BallInPlay": {

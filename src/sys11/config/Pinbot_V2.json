@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Pinbot",
+        "Abbrev": "PBOT",
         "System": "11A"
     },
     "BallInPlay": {

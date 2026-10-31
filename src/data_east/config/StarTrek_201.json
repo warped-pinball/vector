@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Star Trek",
+        "Abbrev": "ST25",
         "System": "DataEast",
         "FileVer": 1
     },

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Tales from the Crypt",
+        "Abbrev": "TFTC",
         "System": "DataEast",
         "FileVer": 1
     },

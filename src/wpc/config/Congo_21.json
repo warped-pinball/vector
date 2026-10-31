@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Congo",
+      "Abbrev": "CONGO",
       "System": "WPC",
       "Clock": "MM"
   },

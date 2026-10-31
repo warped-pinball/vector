@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Party Zone",
+      "Abbrev": "PZ",
       "System": "WPC"
   },
   "BallInPlay": {

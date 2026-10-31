@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Kings of Steel",
+        "Abbrev": "KOS",
         "System": "Bally35"
     },
     "BallInPlay": {

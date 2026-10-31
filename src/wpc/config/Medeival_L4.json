@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Medieval Madness",
+      "Abbrev": "MM",
       "System": "WPC"
   },
   "BallInPlay": {

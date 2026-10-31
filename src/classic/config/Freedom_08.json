@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Freedom",
+        "Abbrev": "FREE",
         "System": "Bally17"
     },
     "BallInPlay": {

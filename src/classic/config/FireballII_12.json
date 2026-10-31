@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Fireball II",
+        "Abbrev": "FB2",
         "System": "Bally35"
     },
     "BallInPlay": {

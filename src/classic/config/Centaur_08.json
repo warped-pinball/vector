@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Centaur",
+        "Abbrev": "CEN",
         "System": "Bally35"
     },
     "BallInPlay": {

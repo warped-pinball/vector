@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "RoboCop",
+        "Abbrev": "RC",
         "System": "DataEast",
         "FileVer": 1
     },

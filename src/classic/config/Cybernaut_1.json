@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Cybernaut",
+        "Abbrev": "CYB",
         "System": "Bally35"
     },
     "BallInPlay": {

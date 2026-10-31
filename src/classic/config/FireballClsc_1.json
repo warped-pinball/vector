@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Fireball Classic",
+        "Abbrev": "FBC",
         "System": "Bally35"
     },
     "BallInPlay": {

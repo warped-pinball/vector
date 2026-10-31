@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Lethal Weapon III",
+        "Abbrev": "LW3",
         "System": "DataEast",
         "FileVer": 1
     },

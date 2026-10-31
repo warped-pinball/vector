@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Xenon",
+        "Abbrev": "XEN",
         "System": "Bally35"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "X's & O's",
+        "Abbrev": "XO",
         "System": "Bally35"
     },
     "BallInPlay": {

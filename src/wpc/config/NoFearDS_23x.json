@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "No Fear Dangerous Sports",
+      "Abbrev": "NF",
       "System": "WPC"
   },
   "BallInPlay": {

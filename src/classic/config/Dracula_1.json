@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Dracula",
+        "Abbrev": "DRAC",
         "System": "MPU100"
     },
     "BallInPlay": {

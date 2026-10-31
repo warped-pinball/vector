@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Jurassic Park",
+        "Abbrev": "JP",
         "System": "DataEast",
         "FileVer": 1
     },

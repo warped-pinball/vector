@@ -5,7 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dev.ci.validate_json_configs import is_linkto_config, rule_for_path, validate_linkto_config, validate_required_fields
+import pytest
+
+from dev.ci.validate_json_configs import (
+    is_linkto_config,
+    rule_for_path,
+    validate_abbrev,
+    validate_linkto_config,
+    validate_required_fields,
+)
 
 
 class TestRuleForPath:
@@ -379,3 +387,17 @@ class TestEndToEndLinkTo:
 
         exit_code = main()
         assert exit_code == 1
+
+
+@pytest.mark.parametrize("abbrev", ["TNG", "BK2K", "8B", "HS2", "A-B"])
+def test_abbrev_accepts_what_the_firmware_keeps(abbrev):
+    assert validate_abbrev({"GameInfo": {"Abbrev": abbrev}}) == []
+
+
+@pytest.mark.parametrize("abbrev", ["tng", "G'N'R", "-TNG", "", "X" * 30, "T N G"])
+def test_abbrev_rejects_what_the_firmware_would_change(abbrev):
+    assert validate_abbrev({"GameInfo": {"Abbrev": abbrev}})
+
+
+def test_abbrev_is_optional():
+    assert validate_abbrev({"GameInfo": {"GameName": "Generic"}}) == []

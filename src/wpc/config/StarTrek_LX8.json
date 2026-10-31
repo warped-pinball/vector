@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Star Trek: TNG",
+      "Abbrev": "TNG",
       "System": "WPC"
   },
   "BallInPlay": {

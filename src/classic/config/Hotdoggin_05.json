@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Hotdoggin'",
+        "Abbrev": "HOT",
         "System": "Bally35"
     },
     "BallInPlay": {

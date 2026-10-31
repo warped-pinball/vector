@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Mousin' Around",
+        "Abbrev": "MA",
         "System": "11B"
     },
     "BallInPlay": {

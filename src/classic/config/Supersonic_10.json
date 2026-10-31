@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Supersonic",
+        "Abbrev": "SUP",
         "System": "Bally35"
     },
     "BallInPlay": {

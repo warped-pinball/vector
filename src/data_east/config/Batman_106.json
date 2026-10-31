@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Batman",
+        "Abbrev": "BAT",
         "System": "DataEast",
         "FileVer": 1
     },

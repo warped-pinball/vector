@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Tommy Pinball Wizard",
+        "Abbrev": "TOMMY",
         "System": "DataEast",
         "FileVer": 1
     },

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Hot Hand",
+        "Abbrev": "HH",
         "System": "MPU100"
     },
     "BallInPlay": {

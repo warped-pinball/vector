@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Space Shuttle",
+        "Abbrev": "SHUTTLE",
         "System": "9"
     },
     "BallInPlay": {

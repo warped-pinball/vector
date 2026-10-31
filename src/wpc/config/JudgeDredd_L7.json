@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Judge Dredd",
+      "Abbrev": "JD",
       "System": "WPC"
   },
   "BallInPlay": {

@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "World Cup Soccer",
+      "Abbrev": "WCS",
       "System": "WPC"
   },
   "BallInPlay": {

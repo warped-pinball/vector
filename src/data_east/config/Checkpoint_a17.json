@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Checkpoint",
+        "Abbrev": "CHK",
         "System": "DataEast",
         "FileVer": 1
     },

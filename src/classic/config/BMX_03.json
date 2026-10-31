@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "BMX",
+        "Abbrev": "BMX",
         "System": "Bally35"
     },
     "BallInPlay": {

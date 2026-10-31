@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Voltan",
+        "Abbrev": "VOL",
         "System": "Bally35"
     },
     "BallInPlay": {

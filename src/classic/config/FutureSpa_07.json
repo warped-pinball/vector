@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Future Spa",
+        "Abbrev": "FSPA",
         "System": "Bally35"
     },
     "BallInPlay": {

@@ -31,6 +31,7 @@ import argparse
 import gzip
 import json
 import os
+import socket
 import sys
 import time
 import urllib.error
@@ -55,6 +56,8 @@ from bench import (  # noqa: E402
     board_map_instructions,
     build,
     check_bench_complete,
+    check_hostname,
+    config_abbrev,
     endgroup,
     ensure_tools_on_path,
     flash_boards,
@@ -154,6 +157,11 @@ def health_check_usb(board):
 
     wifi = get(client, "/api/wifi/status")
     log(f"    wifi: {wifi}")
+
+    # In safe mode the config never loaded, so the board is on the MAC fallback.
+    abbrev = None if safe_mode else config_abbrev(target, expected_config)
+    board["hostname"] = check_hostname(wifi, abbrev)
+    log(f"    DHCP hostname: {board['hostname']}")
 
     ip = None
     try:
@@ -256,7 +264,76 @@ def health_check_http(board):
     if json.loads(first).get("challenge") == json.loads(second).get("challenge"):
         raise CheckFailure("/api/auth/challenge issued the same nonce twice")
 
+    http_hostname = payloads["/api/wifi/status"].get("hostname")
+    if http_hostname != board.get("hostname"):
+        raise CheckFailure(f"http reports hostname {http_hostname!r}, USB {board.get('hostname')!r}")
+    report_router_name(ip, http_hostname)
+
     log(f"    {len(HTTP_ROUTES)} routes + index + auth checks OK over HTTP")
+
+
+# Letters, digits and hyphens, and short enough for the 18 the board keeps.
+OVERRIDE_NAME = "WP-HIL-OVERRIDE"
+
+
+def check_network_name_override(board):
+    """A name set by hand survives a restart and is the one the board uses.
+
+    Sets it over USB, restarts, checks the board came up under it (and, with
+    HTTP, whether the router learned it), then clears it so later stages see
+    the automatic name again. Clearing is in a finally: a board left on the
+    test name would fail every config in the matrix.
+    """
+    port = board["port"]
+    client = board["client"]
+    try:
+        saved = get(client, "/api/settings/set_network_name", payload={"name": OVERRIDE_NAME.lower()})
+        if not isinstance(saved, dict) or saved.get("name") != OVERRIDE_NAME:
+            raise CheckFailure(f"set_network_name answered {saved!r}, expected the cleaned name {OVERRIDE_NAME!r}")
+
+        client.close()
+        board["client"] = None
+        reset_board_with_drain(port)
+        connection, _boot_log = wait_for_server(port)
+        prime_usb(connection)
+        client = board["client"] = UsbApiClient(connection)
+
+        names = get(client, "/api/settings/get_network_name")
+        log(f"    network name after restart: {names}")
+        hostname = get(client, "/api/wifi/status").get("hostname")
+        if hostname != OVERRIDE_NAME:
+            raise CheckFailure(f"after a restart the board calls itself {hostname!r}, not the {OVERRIDE_NAME!r} set by hand")
+        if board.get("ip"):  # HTTP ran, so the router can be asked too
+            report_router_name(board["ip"], OVERRIDE_NAME)
+        log("    name set by hand survives a restart and is used")
+    finally:
+        if board.get("client"):
+            cleared = get(board["client"], "/api/settings/set_network_name", payload={"name": ""})
+            if not isinstance(cleared, dict) or cleared.get("name") != "":
+                raise CheckFailure(f"clearing the network name answered {cleared!r}")
+
+
+def report_router_name(ip, hostname):
+    """Say whether the network learned the board's DHCP host name.
+
+    The board's own answer only proves it *set* the name. Whether it reached
+    the router shows up here, on routers that register DHCP clients in their
+    DNS (most home routers and dnsmasq do). Not every network does, so this
+    reports rather than fails.
+    """
+    try:
+        reverse = socket.gethostbyaddr(ip)[0]
+    except OSError as exc:
+        reverse = f"no reverse DNS ({exc})"
+    try:
+        forward = socket.gethostbyname(hostname)
+    except OSError as exc:
+        forward = f"does not resolve ({exc})"
+    log(f"    router DNS: {ip} -> {reverse}; {hostname} -> {forward}")
+    if reverse.split(".")[0].lower() == hostname.lower() or forward == ip:
+        log(f"    the router knows this board as {hostname}")
+    else:
+        log(f"::warning::{ip}: the network's DNS does not show {hostname} - check the router's client list by hand")
 
 
 def _summarise(payload):
@@ -406,6 +483,8 @@ def main():
             else:
                 health_check_http(b)
                 log("    HTTP API OK")
+
+            check_network_name_override(b)
         except CheckFailure as exc:
             log(f"::error::{exc}")
             _dump_boot_log(b)

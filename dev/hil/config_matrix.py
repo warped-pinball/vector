@@ -66,6 +66,8 @@ from bench import (  # noqa: E402
     CheckFailure,
     UsbApiClient,
     _dump_boot_log,
+    check_hostname,
+    config_abbrev,
     drain_port,
     endgroup,
     get,
@@ -415,6 +417,9 @@ def check_booted_config(client, target, config, expected):
     if get(client, "/api/leaders") is None:
         raise CheckFailure("/api/leaders returned no body")
     check_adjustments(client, config, expected["adjustments"])
+
+    # The name the board gives the router comes from the config it loaded.
+    check_hostname(get(client, "/api/wifi/status"), config_abbrev(target, config))
 
     return name
 

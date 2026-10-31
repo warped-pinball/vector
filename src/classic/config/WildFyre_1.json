@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Wild Fyre",
+        "Abbrev": "WF",
         "System": "MPU100"
     },
     "BallInPlay": {
