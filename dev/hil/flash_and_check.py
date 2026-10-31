@@ -40,6 +40,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import trench_coat  # noqa: E402
+from api_checks import check_switch_diagnostics  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
@@ -85,6 +86,7 @@ HTTP_ROUTES = (
     ("/api/game/status", "json"),
     ("/api/game/active_config", "json"),
     ("/api/game/configs_list", "json"),
+    ("/api/diagnostics/switches", "json"),
     ("/api/leaders", "json"),
     ("/api/players", "json"),
     ("/api/machine_id", "json"),
@@ -135,6 +137,9 @@ def health_check_usb(board):
         raise CheckFailure("/api/game/configs_list is empty - config bundle missing from the build")
     log(f"    configs available: {len(configs)}")
     board["usb_config_count"] = len(configs)
+
+    diagnostics = check_switch_diagnostics(get(client, "/api/diagnostics/switches"))
+    log(f"    switch diagnostics: {len(diagnostics)} records")
 
     expected_config = DEFAULT_GAMENAME[target]
     if safe_mode:
@@ -256,6 +261,8 @@ def health_check_http(board):
                 payloads[route] = json.loads(body)
             except json.JSONDecodeError:
                 raise CheckFailure(f"http {route} did not return JSON: {body[:120]!r}")
+            if route == "/api/diagnostics/switches":
+                check_switch_diagnostics(payloads[route])
             rendered = _summarise(payloads[route])
         else:
             if not body.strip():

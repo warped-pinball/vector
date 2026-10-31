@@ -55,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bench  # noqa: E402
 import trench_coat  # noqa: E402
+from api_checks import check_switch_diagnostics  # noqa: E402
 from bench import (  # noqa: E402
     _TIMINGS,
     BENCH_WARN_FAULTS,
@@ -124,7 +125,11 @@ def source_configs(target):
             name = data["GameInfo"]["GameName"]
         except (KeyError, TypeError):
             raise CheckFailure(f"{path} has no GameInfo.GameName")
-        configs[path.stem] = {"name": name, "adjustments": "Adjustments" in data}
+        configs[path.stem] = {
+            "name": name,
+            "adjustments": "Adjustments" in data,
+            "switches": has_switch_diagnostics(data.get("Switches", {})),
+        }
 
     if not configs:
         raise CheckFailure(f"no game configs found in {config_dir}")
@@ -147,6 +152,20 @@ def changed_configs(target, ref):
         log(f"::warning::could not diff against {ref}: {result.stderr.strip()}")
         return []
     return [Path(line).stem for line in result.stdout.split()]
+
+
+def has_switch_diagnostics(switches):
+    """Whether a config has supported switch diagnostics with named/defined entries."""
+    if not isinstance(switches, dict):
+        return False
+    if switches.get("Type") not in (1, 10, 20):
+        return False
+
+    definitions = switches.get("Names") or switches.get("Sensitivity") or []
+    return any(
+        (isinstance(entry, list) and bool(entry) and bool(entry[0])) or (type(entry) is int and entry != -1)
+        for entry in definitions
+    )
 
 
 def order_configs(names, first):
@@ -415,6 +434,7 @@ def check_booted_config(client, target, config, expected):
     if get(client, "/api/leaders") is None:
         raise CheckFailure("/api/leaders returned no body")
     check_adjustments(client, config, expected["adjustments"])
+    check_switch_diagnostics(get(client, "/api/diagnostics/switches"), require_populated=expected.get("switches", False))
 
     return name
 
