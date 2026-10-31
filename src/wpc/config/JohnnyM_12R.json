@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Johnny Mnemonic",
+      "Abbrev": "JM",
       "System": "WPC",
       "Clock": "MM"
   },

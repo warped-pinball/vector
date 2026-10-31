@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Safe Cracker",
+      "Abbrev": "SC",
       "System": "WPC"
   },
   "BallInPlay": {

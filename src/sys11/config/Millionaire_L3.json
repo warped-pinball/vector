@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Millionaire",
+        "Abbrev": "MIL",
         "System": "11"
     },
     "BallInPlay": {

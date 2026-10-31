@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "The Getaway: High Speed II",
+        "Abbrev": "HS2",
         "System": "WPC"
     },
     "BallInPlay": {

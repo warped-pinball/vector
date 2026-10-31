@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Mystic",
+        "Abbrev": "MYS",
         "System": "Bally35"
     },
     "BallInPlay": {

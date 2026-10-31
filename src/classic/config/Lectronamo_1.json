@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Lectronamo",
+        "Abbrev": "LEC",
         "System": "MPU100"
     },
     "BallInPlay": {

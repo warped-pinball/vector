@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Riverboat Gambler",
+        "Abbrev": "RG",
         "System": "11c"
     },
     "BallInPlay": {

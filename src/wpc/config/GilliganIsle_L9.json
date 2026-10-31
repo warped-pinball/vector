@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Gilligan's Island",
+      "Abbrev": "GI",
       "System": "WPC"
   },
   "BallInPlay": {

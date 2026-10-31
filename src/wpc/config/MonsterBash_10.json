@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Monster Bash",
+      "Abbrev": "MB",
       "System": "WPC"
   },
   "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Rocky and Bulwinkle",
+        "Abbrev": "RNB",
         "System": "DataEast"
     },
     "Memory": {

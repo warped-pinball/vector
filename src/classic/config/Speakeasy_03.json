@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Speakeasy",
+        "Abbrev": "SPK",
         "System": "Bally35"
     },
     "BallInPlay": {

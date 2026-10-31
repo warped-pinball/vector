@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Baywatch",
+        "Abbrev": "BW",
         "System": "DataEast"
     },
     "Memory": {

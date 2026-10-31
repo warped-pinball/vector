@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Black Jack",
+        "Abbrev": "BJ",
         "System": "Bally17"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Magic",
+        "Abbrev": "MAG",
         "System": "MPU100"
     },
     "BallInPlay": {

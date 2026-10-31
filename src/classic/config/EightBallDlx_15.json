@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Eight Ball Deluxe",
+        "Abbrev": "EBD",
         "System": "Bally35"
     },
     "BallInPlay": {

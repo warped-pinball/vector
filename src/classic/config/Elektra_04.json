@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Elektra",
+        "Abbrev": "ELK",
         "System": "Bally35"
     },
     "BallInPlay": {

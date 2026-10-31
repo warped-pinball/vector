@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Grand Slam",
+        "Abbrev": "GSLAM",
         "System": "Bally35"
     },
     "BallInPlay": {

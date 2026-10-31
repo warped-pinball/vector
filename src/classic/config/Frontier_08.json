@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Frontier",
+        "Abbrev": "FRO",
         "System": "Bally35"
     },
     "BallInPlay": {

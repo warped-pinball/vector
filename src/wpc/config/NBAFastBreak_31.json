@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "NBA Fastbreak",
+      "Abbrev": "NBAFB",
       "System": "WPC",
       "MinScore": 5
   },

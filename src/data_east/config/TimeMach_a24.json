@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Time Machine",
+        "Abbrev": "TM",
         "System": "DataEast"
     },
     "Memory": {

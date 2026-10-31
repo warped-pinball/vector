@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Big Game",
+        "Abbrev": "BG",
         "System": "MPU200"
     },
     "BallInPlay": {

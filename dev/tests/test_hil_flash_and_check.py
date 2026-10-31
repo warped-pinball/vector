@@ -175,3 +175,63 @@ def test_reset_board_never_raises_an_empty_reason(monkeypatch):
 
     with pytest.raises(bench.CheckFailure, match="without saying why"):
         bench.reset_board("/dev/ttyFAKE")
+
+
+class FakeBoardApi:
+    """Just enough of a board for check_network_name_override: a stored name that a restart applies."""
+
+    def __init__(self, applies_on_restart=True):
+        self.stored = ""
+        self.hostname = "WP-1A2B3C"
+        self.applies_on_restart = applies_on_restart
+
+    def restart(self):
+        if self.applies_on_restart and self.stored:
+            self.hostname = self.stored
+
+    def get(self, _client, route, expect=200, payload=None):
+        if route == "/api/settings/set_network_name":
+            self.stored = "".join(c for c in payload["name"].upper() if c.isalnum() or c == "-")[:18]
+            return {"name": self.stored}
+        if route == "/api/settings/get_network_name":
+            return {"name": self.stored, "default": "WP-1A2B3C", "current": self.hostname}
+        if route == "/api/wifi/status":
+            return {"connected": True, "hostname": self.hostname}
+        raise AssertionError(route)
+
+
+class FakeClient:
+    def __init__(self, *_args):
+        pass
+
+    def close(self):
+        pass
+
+
+def _wire(monkeypatch, api):
+    monkeypatch.setattr(fac, "get", api.get)
+    monkeypatch.setattr(fac, "reset_board_with_drain", lambda _port: api.restart())
+    monkeypatch.setattr(fac, "wait_for_server", lambda _port: (object(), ""))
+    monkeypatch.setattr(fac, "prime_usb", lambda _connection: None)
+    monkeypatch.setattr(fac, "UsbApiClient", FakeClient)
+    monkeypatch.setattr(fac, "report_router_name", lambda *_args: None)
+
+
+def test_network_name_override_is_used_after_a_restart_and_then_cleared(monkeypatch):
+    api = FakeBoardApi()
+    _wire(monkeypatch, api)
+
+    fac.check_network_name_override({"port": "/dev/ttyACM0", "client": FakeClient(), "ip": "10.0.0.5"})
+
+    assert api.hostname == fac.OVERRIDE_NAME
+    assert api.stored == ""
+
+
+def test_network_name_override_that_does_not_apply_fails_and_is_still_cleared(monkeypatch):
+    api = FakeBoardApi(applies_on_restart=False)
+    _wire(monkeypatch, api)
+
+    with pytest.raises(bench.CheckFailure, match="not the 'WP-HIL-OVERRIDE' set by hand"):
+        fac.check_network_name_override({"port": "/dev/ttyACM0", "client": FakeClient(), "ip": None})
+
+    assert api.stored == ""

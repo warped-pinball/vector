@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Evel Knievel",
+        "Abbrev": "EK",
         "System": "Bally17"
     },
     "BallInPlay": {

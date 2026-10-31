@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -81,8 +82,21 @@ def validate_required_fields(path: str, payload: dict, rule: dict) -> list[str]:
     return errors
 
 
+# GameInfo.Abbrev becomes the board's DHCP host name, WP-<Abbrev>, which the
+# firmware caps at 32 characters and strips to letters, digits and hyphens.
+ABBREV_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,28}$")
+
+
+def validate_abbrev(payload: dict) -> list[str]:
+    abbrev = payload.get("GameInfo", {}).get("Abbrev")
+    if abbrev is None or ABBREV_PATTERN.match(str(abbrev)):
+        return []
+    return [f"'GameInfo.Abbrev' {abbrev!r} must be 1-29 capital letters, digits or hyphens, starting with a letter or digit"]
+
+
 def main() -> int:
     errors: list[str] = []
+    abbrev_owners: dict[str, dict[str, str]] = {}
 
     for relative_path in tracked_json_files():
         file_path = REPO_ROOT / relative_path
@@ -109,8 +123,18 @@ def main() -> int:
             continue
 
         field_errors = validate_required_fields(relative_path.as_posix(), payload, rule)
+        field_errors += validate_abbrev(payload)
         for field_error in field_errors:
             errors.append(f"{relative_path.as_posix()} [{rule['name']}]: {field_error}")
+
+        game_info = payload.get("GameInfo", {})
+        if game_info.get("Abbrev"):
+            abbrev_owners.setdefault(game_info["Abbrev"], {}).setdefault(game_info.get("GameName", ""), relative_path.as_posix())
+
+    # Two games with one abbreviation would give two different machines the same network name
+    for abbrev, owners in sorted(abbrev_owners.items()):
+        if len(owners) > 1:
+            errors.append(f"'GameInfo.Abbrev' {abbrev!r} is used by different games: {', '.join(sorted(owners.values()))}")
 
     if errors:
         print("JSON validation failed:")

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Skateball",
+        "Abbrev": "SKB",
         "System": "Bally35"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Black Pyramid",
+        "Abbrev": "BP",
         "System": "Bally35"
     },
     "BallInPlay": {

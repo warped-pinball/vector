@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Spy Hunter",
+        "Abbrev": "SH",
         "System": "Bally35"
     },
     "BallInPlay": {

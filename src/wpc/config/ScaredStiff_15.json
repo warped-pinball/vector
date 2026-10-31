@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Scared Stiff",
+      "Abbrev": "SS",
       "System": "WPC"
   },
   "BallInPlay": {

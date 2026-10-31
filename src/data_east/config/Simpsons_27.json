@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "The Simpsons",
+        "Abbrev": "SIMP",
         "System": "DataEast"
     },
     "Memory": {

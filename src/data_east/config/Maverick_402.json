@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Maverick",
+        "Abbrev": "MAV",
         "System": "DataEast"
     },
     "Memory": {

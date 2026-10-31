@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Cyclone",
+        "Abbrev": "CYC",
         "System": "11B"
     },
     "BallInPlay": {

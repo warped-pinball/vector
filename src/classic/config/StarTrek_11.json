@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Star Trek",
+        "Abbrev": "ST79",
         "System": "Bally35"
     },
     "BallInPlay": {

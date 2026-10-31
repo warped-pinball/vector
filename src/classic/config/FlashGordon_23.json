@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Flash Gordon",
+        "Abbrev": "FG",
         "System": "Bally35"
     },
     "BallInPlay": {

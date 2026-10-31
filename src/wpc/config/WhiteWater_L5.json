@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "White Water",
+      "Abbrev": "WW",
       "System": "WPC"
   },
   "BallInPlay": {

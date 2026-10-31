@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Cheetah",
+        "Abbrev": "CHE",
         "System": "MPU200"
     },
     "BallInPlay": {

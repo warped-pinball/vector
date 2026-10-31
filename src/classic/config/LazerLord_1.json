@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Lazer Lord",
+        "Abbrev": "LL",
         "System": "MPU200"
     },
     "BallInPlay": {

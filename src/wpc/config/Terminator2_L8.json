@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Terminator 2",
+      "Abbrev": "T2",
       "System": "WPC"
   },
   "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Rolling Stones",
+        "Abbrev": "STONES",
         "System": "Bally35"
     },
     "BallInPlay": {

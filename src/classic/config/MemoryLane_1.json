@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Memory Lane",
+        "Abbrev": "ML",
         "System": "MPU100"
     },
     "BallInPlay": {

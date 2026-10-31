@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Cactus Canyon",
+      "Abbrev": "CC",
       "System": "WPC"
   },
   "BallInPlay": {

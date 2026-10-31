@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Popeye Saves the Earth",
+      "Abbrev": "POP",
       "System": "WPC"
   },
   "BallInPlay": {

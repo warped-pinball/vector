@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "High Speed",
+        "Abbrev": "HS",
         "System": "11"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Last Action Hero",
+        "Abbrev": "LAH",
         "System": "DataEast"
     },
     "Memory": {

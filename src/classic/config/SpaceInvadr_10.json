@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Space Invaders",
+        "Abbrev": "SI",
         "System": "Bally35"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Bad Cats",
+        "Abbrev": "BC",
         "System": "11B"
     },
     "BallInPlay": {

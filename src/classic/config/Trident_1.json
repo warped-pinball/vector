@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Trident",
+        "Abbrev": "TRI",
         "System": "MPU100"
     },
     "BallInPlay": {

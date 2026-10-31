@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Orbitor 1",
+        "Abbrev": "ORB",
         "System": "MPU200"
     },
     "BallInPlay": {

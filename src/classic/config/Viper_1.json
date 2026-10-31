@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Viper",
+        "Abbrev": "VIP",
         "System": "MPU200"
     },
     "BallInPlay": {

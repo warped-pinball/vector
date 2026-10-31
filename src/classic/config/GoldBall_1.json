@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Gold Ball",
+        "Abbrev": "GB",
         "System": "Bally35"
     },
     "BallInPlay": {

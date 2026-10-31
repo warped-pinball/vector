@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Harlem Globetrotters On Tour",
+        "Abbrev": "HGT",
         "System": "Bally35"
     },
     "BallInPlay": {

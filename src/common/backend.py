@@ -1333,6 +1333,62 @@ def app_setShowIP(request):
     displayMessage.refresh()
 
 
+@add_route("/api/settings/get_network_name")
+def app_getNetworkName(request):
+    """
+    @api
+    summary: Get the name this board gives the router
+    response:
+      status_codes:
+        - code: 200
+          description: Names returned
+      body:
+        description: The name set by hand (blank when automatic), the automatic name, and the name in use since boot
+        example:
+            {
+                "name": "",
+                "default": "WP-TNG",
+                "current": "WP-TNG"
+            }
+    @end
+    """
+    import network
+    from phew import default_hostname, hostname_override
+
+    return {"name": hostname_override(), "default": default_hostname(), "current": network.hostname()}
+
+
+@add_route("/api/settings/set_network_name", auth=True)
+def app_setNetworkName(request):
+    """
+    @api
+    summary: Set the name this board gives the router, used from the next boot
+    auth: true
+    request:
+      body:
+        - name: name
+          type: str
+          required: true
+          description: Letters, digits and hyphens, up to 18. Blank goes back to the automatic name.
+    response:
+      status_codes:
+        - code: 200
+          description: Name saved
+        - code: 400
+          description: Name has nothing usable in it
+      body:
+        example: {"name": "BACKROOM-TNG"}
+    @end
+    """
+    from phew import set_hostname_override
+
+    raw = str(request.data.get("name", "")).strip()
+    name = set_hostname_override(raw)
+    if raw and not name:
+        return {"error": "Use letters, digits and hyphens"}, 400
+    return {"name": name}
+
+
 @add_route("/api/time/midnight_madness_available")
 def app_midnightMadnessAvailable(request):
     """
@@ -1506,7 +1562,8 @@ def app_getWifiStatus(request):
             {
                 "ssid": "MyNetwork",
                 "rssi": -40,
-                "connected": true
+                "connected": true,
+                "hostname": "WP-TNG"
             }
     @end
     """
@@ -1524,7 +1581,7 @@ def app_getWifiStatus(request):
         except Exception:
             rssi = None
 
-    return {"ssid": ssid, "rssi": rssi, "connected": connected}
+    return {"ssid": ssid, "rssi": rssi, "connected": connected, "hostname": network.hostname()}
 
 
 @add_route("/api/network/peers")
@@ -2382,7 +2439,10 @@ def add_ap_mode_routes():
 
 def connect_to_wifi():
     from phew import is_connected_to_wifi as phew_is_connected
+    from phew import set_dhcp_hostname
     from phew.server import initialize_timedate, schedule
+
+    set_dhcp_hostname()
 
     if phew_is_connected():
         # Already associated (e.g. after a soft reboot, where the wifi chip

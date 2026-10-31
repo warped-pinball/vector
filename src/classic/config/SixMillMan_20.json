@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Six Million Dollar Man",
+        "Abbrev": "SMDM",
         "System": "Bally35"
     },
     "BallInPlay": {

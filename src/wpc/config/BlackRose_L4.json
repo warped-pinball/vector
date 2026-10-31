@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Black Rose",
+      "Abbrev": "BR",
       "System": "WPC"
   },
   "BallInPlay": {

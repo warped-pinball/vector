@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Batman Forever",
+        "Abbrev": "BMF",
         "System": "DataEast"
     },
     "Memory": {

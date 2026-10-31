@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Night Rider",
+        "Abbrev": "NR",
         "System": "Bally17"
     },
     "BallInPlay": {

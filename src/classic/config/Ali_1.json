@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Ali",
+        "Abbrev": "ALI",
         "System": "MPU200"
     },
     "BallInPlay": {

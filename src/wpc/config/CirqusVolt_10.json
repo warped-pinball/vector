@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Cirqus Voltaire",
+      "Abbrev": "CV",
       "System": "WPC"
   },
   "BallInPlay": {

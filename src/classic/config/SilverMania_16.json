@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Silverball Mania",
+        "Abbrev": "SBM",
         "System": "Bally35"
     },
     "BallInPlay": {

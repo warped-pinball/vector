@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Stars",
+        "Abbrev": "STARS",
         "System": "MPU100"
     },
     "BallInPlay": {

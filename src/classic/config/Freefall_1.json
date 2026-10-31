@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Freefall",
+        "Abbrev": "FF",
         "System": "MPU200"
     },
     "BallInPlay": {

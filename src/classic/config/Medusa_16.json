@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Medusa",
+        "Abbrev": "MED",
         "System": "Bally35"
     },
     "BallInPlay": {

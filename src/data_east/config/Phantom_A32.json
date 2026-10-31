@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Phantom of the Opera",
+        "Abbrev": "POTO",
         "System": "DataEast"
     },
     "Memory": {

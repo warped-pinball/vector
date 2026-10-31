@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Nugent",
+        "Abbrev": "NUG",
         "System": "MPU100"
     },
     "BallInPlay": {

@@ -1,6 +1,7 @@
 {
   "GameInfo": {
       "GameName": "Corvette",
+      "Abbrev": "VETTE",
       "System": "WPC"
   },
   "BallInPlay": {

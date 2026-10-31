@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Paragon",
+        "Abbrev": "PAR",
         "System": "Bally35"
     },
     "BallInPlay": {

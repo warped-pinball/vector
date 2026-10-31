@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Quicksilver",
+        "Abbrev": "QS",
         "System": "MPU200"
     },
     "BallInPlay": {

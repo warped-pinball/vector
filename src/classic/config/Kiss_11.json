@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Kiss",
+        "Abbrev": "KISS",
         "System": "Bally35"
     },
     "BallInPlay": {

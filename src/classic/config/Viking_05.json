@@ -1,6 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Viking",
+        "Abbrev": "VIK",
         "System": "Bally35"
     },
     "BallInPlay": {
