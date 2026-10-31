@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Addams Family",
       "Abbrev": "TAF",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

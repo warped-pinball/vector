@@ -2,12 +2,11 @@
   "GameInfo": {
       "GameName": "Gilligan's Island",
       "Abbrev": "GI",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
-      "Address": 950
+      "Address": 1040
   },
   "DisplayMessage": {
       "Type": 10,

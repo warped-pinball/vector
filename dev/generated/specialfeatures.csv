@@ -115,7 +115,7 @@ Bad Cats,SYS11,LA5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bally's Game Show,SYS11,LA3;LU4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Banzai Run,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Big Guns,SYS11,L8;LA,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
-Black Knight 2000,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Black Knight 2000,SYS11,L4;LA2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Comet,SYS11,,yes,no,no,
 Cyclone,SYS11,L5,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
@@ -126,14 +126,14 @@ Elvira,SYS11,LA2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Stand
 F-14 Tomcat,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Fire!,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System 11,SYS11,,no,no,no,
-Grand Lizard,SYS11,L4,no,no,no,
+Grand Lizard,SYS11,L4,yes,yes,no,
 High Speed,SYS11,L3;L4,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Jokerz!,SYS11,L6,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Millionaire,SYS11,L3,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Mousin' Around,SYS11,L4,yes,yes,no,
 Pinbot,SYS11,V2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Police Force,SYS11,,yes,yes,no,
-Pool Sharks,SYS11,LA7,no,no,no,
+Pool Sharks,SYS11,LA7,yes,yes,no,
 Radical!,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Road Kings,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
@@ -151,7 +151,7 @@ Black Rose,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Bram Stokers Dracula,WPC,L1,yes,yes,no,
 Cactus Canyon,WPC,13,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Champion Pub,WPC,16,yes,yes,no,
-Cirqus Voltaire,WPC,10,yes,yes,no,
+Cirqus Voltaire,WPC,10;20,yes,yes,no,
 Congo,WPC,21,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Corvette,WPC,LX1,yes,yes,no,
 Creature from the Black Lagoon,WPC,l4,yes,yes,no,
@@ -173,6 +173,7 @@ Junk Yard,WPC,10;12,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standar
 Machine Bride of Pinbot,WPC,L5;L7;L8,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Medieval Madness,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Monster Bash,WPC,10,yes,yes,no,
+NBA Fastbreak,WPC,31,yes,yes,no,
 No Fear Dangerous Sports,WPC,23x,yes,yes,no,
 No Good Gofers,WPC,13,yes,yes,no,
 Party Zone,WPC,F4,yes,yes,no,
@@ -184,10 +185,10 @@ Star Trek: TNG,WPC,LX7;LX8,yes,yes,no,
 Tales of the Arabian Nights,WPC,14,yes,yes,no,
 Terminator 2,WPC,L8;L84,yes,yes,no,
 The Flintstones,WPC,LX5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
-The Getaway: High Speed II,WPC,L2,yes,no,no,
+The Getaway: High Speed II,WPC,L2,yes,yes,no,
 The Shadow,WPC,LX5,yes,yes,no,
 Theatre of Magic,WPC,13;14HB;20,yes,yes,no,
-Twilight Zone,WPC,92,yes,yes,no,
+Twilight Zone,WPC,92;94H,yes,yes,no,
 White Water,WPC,L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Who Dunnit,WPC,12,yes,yes,no,
 World Cup Soccer,WPC,LX2,yes,yes,no,

@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Harley Davidson",
       "Abbrev": "HD",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -22,9 +21,9 @@
   "Adjustments": {
       "Type": 10,
       "CustomMessageOn": 6982,
-      "ChecksumStartAdr": 7338,
-      "ChecksumEndAdr": 7549,
-      "ChecksumResultAdr": 7550
+      "ChecksumStartAdr": 6941,
+      "ChecksumEndAdr": 7140,
+      "ChecksumResultAdr": 7141
   },
   "HighScores": {
       "Type": 10,

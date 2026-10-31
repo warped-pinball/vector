@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Bram Stokers Dracula",
       "Abbrev": "BSD",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

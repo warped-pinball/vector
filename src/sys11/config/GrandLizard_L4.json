@@ -12,7 +12,6 @@
         "Type": 1,
         "Address": 1972,
         "Length": 7,
-        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
@@ -27,9 +26,26 @@
         "InitialAdr": 1847,
         "BytesInScore": 4
     },
+    "InPlay": {
+        "Type": 1,
+        "ScoreAdr": 512,
+        "Players": 172,
+        "PlayerUp": 173,
+        "GameActive": 169
+    },
     "Switches": {
-        "Type": 0,
-        "Address": 56,
-        "Length": 23
+        "Type": 1,
+        "Address": 1632,
+        "Length": 64,
+        "Sensitivity": [
+                    240, 60, 60, 60, 60, 60, -1, -1,
+                    -1, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1,
+                    -1, 60, 60, 60, 60, -1, -1, -1,
+                    60, 60, 60, 60, 60, 60, -1, -1
+                ]
     }
 }

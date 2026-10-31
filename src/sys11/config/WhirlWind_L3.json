@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "Whirlwind",
         "Abbrev": "WHIRL",
-        "System": "11B",
-        "FileVer": 2
+        "System": "11B"
     },
     "BallInPlay": {
         "Type": 2,
@@ -13,7 +12,6 @@
         "Type": 3,
         "Address": 1972,
         "Length": 16,
-        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {

@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Tales of the Arabian Nights",
       "Abbrev": "TOTAN",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -34,7 +33,7 @@
       "InitialAdr": 7519,
       "InitialSpacing": 9,
       "NumberOfScores": 4,
-      "GrandChampScoreAdr": 7561,
+      "GrandChampScoreAdr": 7560,
       "GrandChampInitAdr": 7557,
       "ChecksumStartAdr": 7519,
       "ChecksumEndAdr": 7554,

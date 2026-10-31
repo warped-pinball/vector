@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Jack Bot",
       "Abbrev": "JB",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

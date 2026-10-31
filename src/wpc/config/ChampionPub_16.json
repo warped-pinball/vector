@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Champion Pub",
       "Abbrev": "CP",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -34,7 +33,7 @@
       "InitialAdr": 7445,
       "InitialSpacing": 9,
       "NumberOfScores": 4,
-      "GrandChampScoreAdr": 7487,
+      "GrandChampScoreAdr": 7486,
       "GrandChampInitAdr": 7483,
       "ChecksumStartAdr": 7445,
       "ChecksumEndAdr": 7480,
@@ -54,7 +53,7 @@
   },
   "InPlay": {
       "Type": 10,
-      "GameActiveAdr": 155,
+      "GameActiveAdr": 135,
       "GameActiveValue": 0,
       "Players": 5905,
       "PlayerUp": 946,

@@ -12,7 +12,6 @@
         "Type": 1,
         "Address": 1972,
         "Length": 7,
-        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
@@ -65,8 +64,8 @@
                 "Target": {
                     "Name": "Target Switch Number",
                     "Type": "Fixed",
-                    "Value": 32,
-                    "Text": "Comet Ramp"
+                    "Value": 42,
+                    "Text": "Right Ramp"
                 }
             }
         },

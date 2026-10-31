@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Star Trek: TNG",
       "Abbrev": "TNG",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

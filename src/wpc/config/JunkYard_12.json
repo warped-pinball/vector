@@ -3,7 +3,6 @@
       "GameName": "Junk Yard",
       "Abbrev": "JY",
       "System": "WPC",
-      "FileVer": 1,
       "Clock": "MM"
   },
   "BallInPlay": {
@@ -35,7 +34,7 @@
       "InitialAdr": 7385,
       "InitialSpacing": 9,
       "NumberOfScores": 4,
-      "GrandChampScoreAdr": 7427,
+      "GrandChampScoreAdr": 7426,
       "GrandChampInitAdr": 7423,
       "ChecksumStartAdr": 7385,
       "ChecksumEndAdr": 7420,

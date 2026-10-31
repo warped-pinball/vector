@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Indiana Jones",
       "Abbrev": "IJ",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "Theatre of Magic",
         "Abbrev": "TOM",
-        "System": "WPC",
-        "FileVer": 1
+        "System": "WPC"
     },
     "BallInPlay": {
         "Type": 1,
@@ -52,7 +51,7 @@
         "HS5": 0,
         "DisableByte": 0
     },
-    "InPlay": {
+  "InPlay": {
         "Type": 10,
         "GameActiveAdr": 141,
         "GameActiveValue": 0,
@@ -61,5 +60,82 @@
         "ScoreAdr": 5792,
         "ScoreBytes": 5,
         "ScoreSpacing": 6
-    }
+    },
+  "Switches": {
+    "Type": 10,
+    "Address": 5831,
+    "Length": 63,
+    "Names": [
+      [],
+      [],
+      ["Start Button", 60],
+      ["Plumb Bob Tilt", 250],
+      ["Shooter Lane", 60],
+      [],
+      [],
+      [],
+
+      ["Slam Tilt", 0],
+      ["Coin Door Closed", 60],
+      ["Buy In", 60],
+      ["Always Closed", 0],
+      ["Left Outlane", 60],
+      ["Left Return Lane", 60],
+      ["Right Return Lane", 60],
+      ["Right Outlane", 60],
+
+      ["Trough Jam", 60],
+      ["Trough 1", 60],
+      ["Trough 2", 60],
+      ["Trough 3", 60],
+      ["Trough 4", 60],
+      ["Subway Opto", 60],
+      ["Spinner", 60],
+      ["Right Lower Target", 60],
+
+      ["Lock 1", 60],
+      ["Lock 2", 60],
+      ["Lock 3", 60],
+      ["Popper", 60],
+      ["Left Drain Eddy", 60],
+      [],
+      ["Subway Micro", 60],
+      ["Right Drain Eddy", 60],
+
+      ["Left Bank Target", 60],
+      ["Captive Ball Rest", 60],
+      ["Right Lane Enter", 60],
+      ["Left Lane Enter", 60],
+      ["Cube Position 4", 60],
+      ["Cube Position 1", 60],
+      ["Cube Position 2", 60],
+      ["Cube Position 3", 60],
+
+      ["Left Sling", 60],
+      ["Right Sling", 60],
+      ["Bottom Jet", 60],
+      ["Middle Jet", 60],
+      ["Top Jet", 60],
+      ["Top Lane 1", 60],
+      ["Top Lane 2", 60],
+      [],
+
+      ["Center Ramp Exit", 60],
+      [],
+      ["Right Ramp Exit", 60],
+      ["Right Ramp Exit 2", 60],
+      ["Center Ramp Enter", 60],
+      ["Right Ramp Enter", 60],
+      ["Captive Ball Top", 60],
+      ["Loop Left", 60],
+
+      ["Loop Right", 60],
+      ["Center Ramp Targets", 60],
+      ["Vanish Lock 1", 60],
+      ["Vanish Lock 2", 60],
+      ["Trunk Hit", 60],
+      ["Right Lane Exit", 60],
+      ["Left Lane Exit", 60]
+    ]
+  }
 }

@@ -3,7 +3,6 @@
       "GameName": "Who Dunnit",
       "Abbrev": "WD",
       "System": "WPC",
-      "FileVer": 1,
       "Clock": "MM"
   },
   "BallInPlay": {

@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "No Good Gofers",
       "Abbrev": "NGG",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,
@@ -34,7 +33,7 @@
       "InitialAdr": 7363,
       "InitialSpacing": 9,
       "NumberOfScores": 4,
-      "GrandChampScoreAdr": 7405,
+      "GrandChampScoreAdr": 7404,
       "GrandChampInitAdr": 7401,
       "ChecksumStartAdr": 7363,
       "ChecksumEndAdr": 7398,

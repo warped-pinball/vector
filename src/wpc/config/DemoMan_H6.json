@@ -2,8 +2,7 @@
   "GameInfo": {
       "GameName": "Demolition Man",
       "Abbrev": "DM",
-      "System": "WPC",
-      "FileVer": 1
+      "System": "WPC"
   },
   "BallInPlay": {
       "Type": 1,

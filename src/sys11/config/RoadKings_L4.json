@@ -12,13 +12,12 @@
         "Type": 1,
         "Address": 1972,
         "Length": 7,
-        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
         "Type": 1,
         "ChecksumStartAdr": 1920,
-        "ChecksumEndAdr": 2013,
+        "ChecksumEndAdr": 2014,
         "ChecksumResultAdr": 2022
     },
     "HighScores": {
