@@ -11,7 +11,6 @@
         "Type": 3,
         "Address": 1972,
         "Length": 16,
-        "Number": 3,
         "EnableByteAddress": 1968
     },
     "Adjustments": {
@@ -51,17 +50,5 @@
     "Flippers": {
         "Type": 1,
         "Address": 69
-    },
-    "InPlayScores": {
-        "Type": 1,
-        "ScoreAdr": 512,
-        "ZeroNibble": 0,
-        "BytesInScore": 4
-    },
-    "InPlayInfo": {
-        "Type": 1,
-        "PlayersInGame": 169,
-        "PlayerUP": 170,
-        "Warnings": 176
     }
 }

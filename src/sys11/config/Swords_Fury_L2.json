@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Swords of Fury",
-        "System": "11B",
-        "FileVer": 1
+        "System": "11B"
     },
     "BallInPlay": {
         "Type": 2,
@@ -12,7 +11,6 @@
         "Type": 1,
         "Address": 1972,
         "Length": 7,
-        "Number": 6,
         "EnableByteAddress": 1968
     },
     "Adjustments": {

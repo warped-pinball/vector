@@ -84,6 +84,17 @@ Warped Pinball offers email support and will assist when possible, but cannot be
 
 After installation the game operates normally and the board provides NVRAM service. Configure WiFi to enable advanced features.
 
+### Victor's System 9 board
+
+SYS9.WiFi also works on Victor's red replacement System 9 CPU board. Install it the same way, in the MC6802 processor socket (`U17`).
+
+On this board, attach the white reset clip to either of these points (both are marked in the photo):
+
+- **Option 1 (preferred):** the bottom lead of resistor `R170`, near the upper left of the board.
+- **Option 2:** the **RESET** test point hole (`TP6`), just to the left of the processor. This is where the clip is in the photo.
+
+![SYS9.WiFi installed on Victor's System 9 board, with both reset clip points marked](../../img/sys11/sys9_victor_board_reset.jpg)
+
 
 ## Connecting to local WiFi
 

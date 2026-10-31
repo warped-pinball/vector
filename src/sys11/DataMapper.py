@@ -352,7 +352,10 @@ def get_players_in_game():
     try:
         if "InPlay" in S.gdata and "Players" in S.gdata["InPlay"]:
             adr = S.gdata["InPlay"]["Players"]
-            return shadowRam[adr]+1
+            players = shadowRam[adr]
+            # System 9 leaves 0xFF here in attract after a game
+            if players <= 3:
+                return players + 1
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
     
