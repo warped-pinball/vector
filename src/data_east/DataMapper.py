@@ -52,7 +52,21 @@ def _int_to_bcd(value, num_bytes):
     return result
 
 
-def _initials_validate(initials):   
+def _digits_to_int(digit_bytes):
+    """
+    Convert one-digit-per-byte data (lower nibble, most significant first) to integer.
+    Used by Type 27 (RoboCop): 0 6 2 5 1 0 0 = 625100
+    """
+    result = 0
+    for byte in digit_bytes:
+        digit = byte & 0x0F
+        if digit > 9:
+            digit = 0
+        result = result * 10 + digit
+    return result
+
+
+def _initials_validate(initials):
     """
        ASCII encoded with limited character set
        @ = ' ' in many cases...
@@ -148,15 +162,7 @@ def read_high_scores():
             for idx in range(NumberOfScores):
                 scoreAddress = S.gdata["HighScores"]["ScoreAdr"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
                 # Each byte contains only one digit (0-9) in lower nibble
-                rawBytes = shadowRam[scoreAddress : scoreAddress + 7]            
-                # Pack pairs of digits into BCD bytes
-                packedBytes = bytearray()
-                for i in range(0, len(rawBytes), 2):
-                    high_digit = rawBytes[i] & 0x0F
-                    low_digit = rawBytes[i + 1] & 0x0F if (i + 1) < len(rawBytes) else 0
-                    packedBytes.append((high_digit << 4) | low_digit)
-                
-                highScores[idx][1] = _bcd_to_int(packedBytes)
+                highScores[idx][1] = _digits_to_int(shadowRam[scoreAddress : scoreAddress + 7])
         else:
             log.log(f"Unknown HighScores Type: {S.gdata['HighScores']['Type']}")
         
@@ -258,6 +264,12 @@ def write_high_scores(highScores):
                 scoreBytes = _int_to_bcd(score, 4)
                 shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes
 
+                #backup high score adjustments (same layout, inside the adjustment checksum)
+                #  game resets the table to these at game over if live #1 is lower - keep them equal
+                if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
+                    scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
+                    shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes
+
         elif S.gdata["HighScores"]["Type"] == 24:
             # Type 24: 5-byte BCD (1 MSB + 4 bytes)
             for idx in range(entries_to_write):
@@ -271,7 +283,7 @@ def write_high_scores(highScores):
                 shadowRam[scoreAddressMSB] = scoreBytes[0]
                 shadowRam[scoreAddress : scoreAddress + 4] = scoreBytes[1:5]
 
-                #second storage location in NV ram area?
+                #backup high score adjustments (game resets the table to these at game over if live #1 is lower)
                 if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
                     scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
                     scoreAddressMSB = S.gdata["HighScores"]["ScoreAdrNV"] + 24 + idx
@@ -294,7 +306,12 @@ def write_high_scores(highScores):
                 # Convert to 5-byte BCD
                 scoreBytes = _int_to_bcd(score, 5)
                 shadowRam[scoreAddress : scoreAddress + 5] = scoreBytes
-                
+
+                #backup high score adjustments (same layout, inside the adjustment checksum)
+                if S.gdata["HighScores"].get("ScoreAdrNV",0) != 0:
+                    scoreAddress = S.gdata["HighScores"]["ScoreAdrNV"] + idx * S.gdata["HighScores"]["ScoreSpacing"]
+                    shadowRam[scoreAddress : scoreAddress + 5] = scoreBytes
+
         elif S.gdata["HighScores"]["Type"] == 27:
             # Type 27: 7 bytes, one digit per byte in lower nibble
             for idx in range(entries_to_write):
@@ -352,11 +369,14 @@ def write_high_scores(highScores):
 def get_ball_in_play():
     """
         Get the ball in play number (1-5). 0 if game over or no config
-        only accept Data East TYPE 20
+        only accept Data East TYPE 20 / 21
     """
     try:
         ball_in_play = S.gdata["BallInPlay"]
-        if ball_in_play["Type"] == 20:
+        if ball_in_play["Type"] in (20, 21):
+            # Type 21 (RoboCop): ball is left at balls per game + 1 after game over, game over flag is non-zero
+            if ball_in_play["Type"] == 21 and shadowRam[ball_in_play["GameOverAdr"]] != 0:
+                return 0
             ret_value = shadowRam[ball_in_play["Address"]]
             return ret_value
 
@@ -393,8 +413,11 @@ def write_ball_in_play(ball_number):
         bool: True if successful, False otherwise
     """
     try:
-        if S.gdata.get("BallInPlay", {}).get("Type") == 20:
+        if S.gdata.get("BallInPlay", {}).get("Type") in (20, 21):
             ball_adr = S.gdata["BallInPlay"]["Address"]
+            # 5 = "last ball": use the game's balls per game setting (alpha games end only at ball == balls per game + 1)
+            if ball_number == 5 and S.gdata["BallInPlay"].get("BallsPerGameAdr", 0) != 0:
+                ball_number = shadowRam[S.gdata["BallInPlay"]["BallsPerGameAdr"]]
             shadowRam[ball_adr] = ball_number
             return True
     except Exception as e:
@@ -434,7 +457,7 @@ def get_players_in_game():
     try:
         if "Players" in S.gdata.get("InPlay", {}):
             adr = S.gdata["InPlay"]["Players"]
-            return shadowRam[adr]
+            return shadowRam[adr] & 0x7F   # alpha games set bit 7 at game over
     except Exception as e:
         log.log(f"DATAMAPPER: error in get_players_in_game: {e}")
     
@@ -518,6 +541,42 @@ def get_flipper_state():
     return False, False
 
 
+def get_switch_counts():
+    """
+    Read the game's own switch-health tables (Switches Type 20, read-only)
+    and return a count per switch in the form Switches.get_diagnostics() expects.
+
+    Tables at Address, 8 bytes each, one byte per column, bit = row:
+      +0 not closed yet, +8 not opened yet (current period)
+      +16 never closed, +24 stuck closed (previous 50 game period)
+      +96 games played in current period (BCD)
+
+    Returns:
+        list: per switch, 50 if flagged in the previous period, games in the
+              current period if flagged in the current period, else 0
+    """
+    switches_cfg = S.gdata.get("Switches")
+    if not switches_cfg or switches_cfg.get("Type") != 20:
+        return []
+
+    address = switches_cfg.get("Address", 0)
+    length = switches_cfg.get("Length", 0)
+    try:
+        games = _bcd_to_int([shadowRam[address + 96]])
+        counts = [0] * length
+        for idx in range(length):
+            col, bit = divmod(idx, 8)
+            mask = 1 << bit
+            if (shadowRam[address + 16 + col] | shadowRam[address + 24 + col]) & mask:
+                counts[idx] = 50
+            elif (shadowRam[address + col] | shadowRam[address + 8 + col]) & mask:
+                counts[idx] = games
+        return counts
+    except Exception as e:
+        log.log(f"DATAMAPPER: Error reading switches: {e}")
+        return []
+
+
 def read_in_play_scores():
     """
     Read the current in-play scores for all 4 players.
@@ -564,14 +623,7 @@ def read_in_play_scores():
             # Type 27: Each byte contains only one digit (0-9) in lower nibble
             for idx in range(4):
                 scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
-                rawBytes = shadowRam[scoreAddress : scoreAddress + 7]
-                packedBytes = bytearray()
-                for i in range(0, len(rawBytes), 2):
-                    high_digit = rawBytes[i] & 0x0F
-                    low_digit = rawBytes[i + 1] & 0x0F if (i + 1) < len(rawBytes) else 0
-                    packedBytes.append((high_digit << 4) | low_digit)
-                
-                in_play_scores[idx][1] = _bcd_to_int(packedBytes)
+                in_play_scores[idx][1] = _digits_to_int(shadowRam[scoreAddress : scoreAddress + 7])
                 
     except Exception as e:
         log.log(f"In-play scores read error: {e}")
@@ -661,15 +713,7 @@ def get_live_scores(use_format=True):
             for idx in range(4):
                 scoreAddress = S.gdata["InPlay"]["ScoreAdr"] + idx * S.gdata["InPlay"]["ScoreSpacing"]
                 # Each byte contains only one digit (0-9) in lower nibble
-                rawBytes = shadowRam[scoreAddress : scoreAddress + 7]            
-                # Pack pairs of digits into BCD bytes
-                packedBytes = bytearray()
-                for i in range(0, len(rawBytes), 2):
-                    high_digit = rawBytes[i] & 0x0F
-                    low_digit = rawBytes[i + 1] & 0x0F if (i + 1) < len(rawBytes) else 0
-                    packedBytes.append((high_digit << 4) | low_digit)
-                
-                scores[idx] = _bcd_to_int(packedBytes)
+                scores[idx] = _digits_to_int(shadowRam[scoreAddress : scoreAddress + 7])
     except Exception as e:
         log.log(f"DATAMAPPER: error getting in-play scores: {e}")
 
@@ -723,7 +767,7 @@ def get_in_play_data():
     try:
         if "Players" in S.gdata.get("InPlay", {}):
             adr = S.gdata["InPlay"]["Players"]
-            data["PlayersInGame"] = shadowRam[adr]
+            data["PlayersInGame"] = shadowRam[adr] & 0x7F   # alpha games set bit 7 at game over
     except Exception as e:
         log.log(f"DATAMAP: error getting players in game: {e}")
     
