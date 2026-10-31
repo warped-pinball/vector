@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Checkpoint",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -12,7 +11,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 78
+        "Address": 78,
+        "BallsPerGameAdr": 7693
     },
     "DisplayMessage": {
         "Type": 0,
@@ -22,8 +22,10 @@
         "Type": 20,
         "CustomMessageOn": 0,
         "ChecksumStartAdr": 7680,
-        "ChecksumEndAdr": 7749,
-        "ChecksumResultAdr": 7934
+        "ChecksumEndAdr": 7750,
+        "ChecksumResultAdr": 7934,
+        "ExtraStartAdr": 7780,
+        "ExtraEndAdr": 7792
     },
     "HighScores": {
         "Type": 20,
