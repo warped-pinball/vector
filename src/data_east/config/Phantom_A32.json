@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "Phantom of the Opera",
         "Abbrev": "POTO",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -13,7 +12,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 237
+        "Address": 237,
+        "BallsPerGameAdr": 8084
     },
     "DisplayMessage": {
         "Type": 23,
@@ -22,8 +22,8 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 8114,
-        "ChecksumStartAdr": 8031,
-        "ChecksumEndAdr": 8183,
+        "ChecksumStartAdr": 8064,
+        "ChecksumEndAdr": 8189,
         "ChecksumResultAdr": 8190
     },
     "HighScores": {

@@ -64,10 +64,31 @@ def args(**overrides) -> Namespace:
 def test_source_configs_reads_names_and_adjustments(fake_repo):
     configs = cm.source_configs("wpc")
 
-    assert configs["AttackMars_11"] == {"name": "Attack from Mars", "adjustments": True}
+    assert configs["AttackMars_11"] == {"name": "Attack from Mars", "adjustments": True, "switches": False}
     # Taxi_L4 declares no Adjustments section, which is what decides whether
     # /api/adjustments/status is held to 200 on the bench.
-    assert configs["Taxi_L4"] == {"name": "Taxi", "adjustments": False}
+    assert configs["Taxi_L4"] == {"name": "Taxi", "adjustments": False, "switches": False}
+
+
+def test_source_configs_records_switch_definitions(fake_repo):
+    write_config(
+        fake_repo / "src" / "wpc" / "config",
+        "SwitchGame",
+        "Switch Game",
+        Switches={"Type": 20, "Names": [["Start button", 50]]},
+    )
+
+    assert cm.source_configs("wpc")["SwitchGame"]["switches"] is True
+
+
+def test_source_configs_does_not_require_diagnostics_for_unsupported_or_undefined_switches(fake_repo):
+    write_config(fake_repo / "src" / "wpc" / "config", "NoSwitchSupport", "No Switch Support", Switches={"Type": 0, "Length": 23})
+    write_config(fake_repo / "src" / "wpc" / "config", "NoSwitchNames", "No Switch Names", Switches={"Type": 10, "Length": 72})
+
+    configs = cm.source_configs("wpc")
+
+    assert configs["NoSwitchSupport"]["switches"] is False
+    assert configs["NoSwitchNames"]["switches"] is False
 
 
 def test_source_configs_rejects_a_config_with_no_game_name(fake_repo):
@@ -191,6 +212,7 @@ def healthy(config="AttackMars_11", name="Attack from Mars", hostname="WP-AFM"):
         "/api/game/name": name,
         "/api/leaders": [],
         "/api/adjustments/status": {"profiles": [], "adjustments_support": True},
+        "/api/diagnostics/switches": [],
         # AttackMars_11.json has Abbrev AFM; a config without one is on the MAC fallback.
         "/api/wifi/status": {"ssid": "bench", "rssi": -50, "connected": True, "hostname": hostname},
     }
@@ -202,6 +224,21 @@ def test_check_booted_config_passes_when_the_board_reports_the_configured_game(m
     name = cm.check_booted_config(FakeClient(), "wpc", "AttackMars_11", {"name": "Attack from Mars", "adjustments": True})
 
     assert name == "Attack from Mars"
+
+
+def test_check_booted_config_requires_switch_records_when_config_declares_switches(monkeypatch):
+    monkeypatch.setattr(cm, "get", responder(healthy(config="Hook_501", name="Hook")))
+
+    with pytest.raises(bench.CheckFailure, match="no switch records"):
+        cm.check_booted_config(FakeClient(), "data_east", "Hook_501", {"name": "Hook", "adjustments": True, "switches": True})
+
+
+def test_check_booted_config_accepts_valid_switch_records_for_configured_switches(monkeypatch):
+    responses = healthy(config="StarTrek_201", name="Star Trek")
+    responses["/api/diagnostics/switches"] = [{"row": 3, "col": 2, "val": 100, "label": "Switch 18"}]
+    monkeypatch.setattr(cm, "get", responder(responses))
+
+    assert cm.check_booted_config(FakeClient(), "data_east", "StarTrek_201", {"name": "Star Trek", "adjustments": True, "switches": True}) == "Star Trek"
 
 
 def test_check_booted_config_catches_a_silent_fallback_to_the_generic_config(monkeypatch):

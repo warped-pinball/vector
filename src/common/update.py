@@ -247,9 +247,10 @@ class LowMemoryMode:
 
         # resume the task schedule
         try:
-            from phew.server import restart_schedule
+            import phew.server
 
-            restart_schedule()
+            phew.server._halt_schedule = False
+            phew.server.restart_schedule()
         except Exception as e:
             print("Unable to restart task schedule:", e)
 

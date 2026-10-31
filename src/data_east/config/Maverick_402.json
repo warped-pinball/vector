@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "Maverick",
         "Abbrev": "MAV",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -13,7 +12,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 443
+        "Address": 443,
+        "BallsPerGameAdr": 7693
     },
     "DisplayMessage": {
         "Type": 20,
@@ -24,7 +24,9 @@
         "CustomMessageOn": 7755,
         "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7771,
-        "ChecksumResultAdr": 8157
+        "ChecksumResultAdr": 8157,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7815
     },
     "HighScores": {
         "Type": 24,
@@ -45,6 +47,21 @@
         "BytesInScore": 5,
         "ScoreSpacing": 4,
         "Multiplier": 1
+    },
+    "Switches": {
+        "Type": 20,
+        "Address": 5632,
+        "Length": 64,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], ["Switch 30", 50], ["Switch 31", 50], ["Switch 32", 50],
+            [], [], [], [], ["Switch 37", 50], ["Switch 38", 50], ["Switch 39", 50], ["Switch 40", 50],
+            ["Switch 41", 50], ["Switch 42", 50], ["Switch 43", 50], ["Switch 44", 50], ["Switch 45", 50], ["Switch 46", 50], ["Switch 47", 50], [],
+            ["Switch 49", 50], ["Switch 50", 50], ["Switch 51", 50], ["Switch 52", 50], ["Switch 53", 50], ["Switch 54", 50], ["Switch 55", 50], ["Switch 56", 50],
+            ["Switch 57", 50], ["Switch 58", 50], ["Switch 59", 50], ["Switch 60", 50], ["Switch 61", 50], ["Switch 62", 50], ["Switch 63", 50], ["Switch 64", 50]
+        ]
     },
     "Formats": {
         "Standard": {

@@ -1,8 +1,7 @@
 {
     "GameInfo": {
         "GameName": "Generic Data East",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
 
     "Memory" : {

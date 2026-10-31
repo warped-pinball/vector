@@ -45,10 +45,16 @@ def initialize():
     """
     global switch_counts, last_ball_in_play, last_player_up, switch_system_on
     
-    if S.gdata.get("Switches", {}).get("Type") not in (1, 10):
+    switch_type = S.gdata.get("Switches", {}).get("Type")
+    if switch_type not in (1, 10, 20):
         log.log("SWITCHES: Invalid or missing 'Switches'")
         switch_system_on = False
         return False
+
+    # Type 20 (Data East) is read-only: counts come from the game's own tables, no FRAM or polling
+    if switch_type == 20:
+        switch_system_on = True
+        return True
 
     try:
         record = SPI_DataStore.read_record("switches")     #read from fram switch counts
@@ -276,6 +282,7 @@ def get_diagnostics():
     Returns:
         list: List of dicts with keys: row, col, val, label
     """   
+    global switch_counts
     if not switch_system_on:
         return []
     
@@ -291,6 +298,10 @@ def get_diagnostics():
         use_names = "Names" in switches_data
         diagnostics = []
         
+        # Type 20 (Data East): read counts from the game's own tables
+        if switches_data.get("Type") == 20:
+            switch_counts = DataMapper.get_switch_counts()
+
         n = min(len(switch_defs), len(switch_counts))
         is_type1 = switches_data.get("Type") == 1
 

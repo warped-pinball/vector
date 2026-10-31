@@ -29,7 +29,38 @@ if "usb_coms_demo" not in sys.modules:
 sys.path.insert(0, str(REPO_ROOT / "dev" / "hil"))
 
 import bench  # noqa: E402
+import api_checks  # noqa: E402
 import flash_and_check as fac  # noqa: E402
+
+
+def test_switch_diagnostics_response_is_validated():
+    response = [{"row": 1, "col": 9, "val": 0, "label": "Switch 72"}]
+
+    assert api_checks.check_switch_diagnostics(response, require_populated=True) is response
+
+
+def test_switch_diagnostics_rejects_columns_beyond_the_72_switch_layout():
+    with pytest.raises(bench.CheckFailure, match="invalid column"):
+        api_checks.check_switch_diagnostics([{"row": 1, "col": 10, "val": 100, "label": "Switch"}])
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {},
+        [{"row": 0, "col": 1, "val": 100, "label": "Switch"}],
+        [{"row": 1, "col": 1, "val": 101, "label": "Switch"}],
+        [{"row": 1, "col": 1, "val": 100, "label": ""}],
+    ],
+)
+def test_switch_diagnostics_rejects_invalid_responses(response):
+    with pytest.raises(bench.CheckFailure, match="switch"):
+        api_checks.check_switch_diagnostics(response)
+
+
+def test_switch_diagnostics_requires_records_for_switch_configurations():
+    with pytest.raises(bench.CheckFailure, match="no switch records"):
+        api_checks.check_switch_diagnostics([], require_populated=True)
 
 
 def test_write_step_summary_renders_a_table_and_the_failures(tmp_path, monkeypatch):

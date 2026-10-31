@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "The Simpsons",
         "Abbrev": "SIMP",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -13,7 +12,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 202
+        "Address": 202,
+        "BallsPerGameAdr": 7693
     },
     "DisplayMessage": {
         "Type": 24,
@@ -22,9 +22,11 @@
     "Adjustments": {
         "Type": 20,
         "CustomMessageOn": 7742,
-        "ChecksumStartAdr": 7678,
+        "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7748,
-        "ChecksumResultAdr": 7902
+        "ChecksumResultAdr": 7902,
+        "ExtraStartAdr": 7780,
+        "ExtraEndAdr": 7791
     },
     "HighScores": {
         "Type": 20,

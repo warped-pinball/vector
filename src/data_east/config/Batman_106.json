@@ -2,8 +2,7 @@
     "GameInfo": {
         "GameName": "Batman",
         "Abbrev": "BAT",
-        "System": "DataEast",
-        "FileVer": 1
+        "System": "DataEast"
     },
     "Memory": {
         "Start": 1,
@@ -13,7 +12,8 @@
     },
     "BallInPlay": {
         "Type": 20,
-        "Address": 78
+        "Address": 78,
+        "BallsPerGameAdr": 7693
     },
     "DisplayMessage": {
         "Type": 24,
@@ -24,7 +24,9 @@
         "CustomMessageOn": 7742,
         "ChecksumStartAdr": 7680,
         "ChecksumEndAdr": 7751,
-        "ChecksumResultAdr": 7934
+        "ChecksumResultAdr": 7934,
+        "ExtraStartAdr": 7780,
+        "ExtraEndAdr": 7791
     },
     "HighScores": {
         "Type": 20,
