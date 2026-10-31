@@ -234,7 +234,7 @@ def test_check_booted_config_requires_switch_records_when_config_declares_switch
 
 
 def test_check_booted_config_accepts_valid_switch_records_for_configured_switches(monkeypatch):
-    responses = healthy(config="StarTrek_201", name="Star Trek")
+    responses = healthy(config="StarTrek_201", name="Star Trek", hostname="WP-ST25")
     responses["/api/diagnostics/switches"] = [{"row": 3, "col": 2, "val": 100, "label": "Switch 18"}]
     monkeypatch.setattr(cm, "get", responder(responses))
 
