@@ -35,7 +35,7 @@ def _build_payload(route, status, headers, body):
 def _render_response(response, route):
     body = response.body
     if type(body).__name__ == "generator":
-        body = b"".join(body)
+        body = b"".join(c.encode() if isinstance(c, str) else c for c in body)
 
     if isinstance(body, str):
         body_bytes = body.encode()

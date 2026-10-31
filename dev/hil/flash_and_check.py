@@ -164,6 +164,38 @@ def health_check_usb(board):
     return ip, wifi
 
 
+def check_usb_streamed_response(board):
+    """Prove the USB API renders a streamed (generator) response, and the board
+    keeps answering afterwards.
+
+    /api/update/apply is the route that streams str chunks. The url has a
+    scheme mrequests refuses before opening a socket, so the update fails
+    straight away and nothing is downloaded or written. A sha256 is passed so
+    a build that looks up the signed release record skips that network call.
+    """
+    client = board["client"]
+    payload = {"url": "hil://not-a-real-update", "sha256": "0" * 64}
+    try:
+        response = client.send_and_receive(route="/api/update/apply", payload=payload, timeout=30)
+    except TimeoutError:
+        raise CheckFailure("/api/update/apply sent no response over USB - the streamed body was not rendered")
+
+    if response.get("status") != 200:
+        raise CheckFailure(f"/api/update/apply returned {response.get('status')}, expected 200")
+    body = response.get("body")
+    if not isinstance(body, str) or "Starting update" not in body or "Error applying update" not in body:
+        raise CheckFailure(f"/api/update/apply streamed an unexpected body: {body!r}")
+    log("    streamed response OK")
+
+    # A failed update must hand the task schedule back, or every scheduled
+    # task, the USB API included, stops until the board is reset.
+    try:
+        get(client, "/api/version")
+    except TimeoutError:
+        raise CheckFailure("the board stopped answering USB requests after a failed update")
+    log("    still answering after a failed update")
+
+
 def http_get(url, attempts=3):
     """GET a URL, decompressing gzip and retrying transient failures.
 
@@ -397,6 +429,7 @@ def main():
             prime_usb(connection)
             b["client"] = UsbApiClient(connection)
             ip, _wifi = health_check_usb(b)
+            check_usb_streamed_response(b)
             b["ip"] = ip
             b["usb_version"] = source_version(b["target"])
             log("    USB API OK")
