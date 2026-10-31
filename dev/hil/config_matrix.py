@@ -125,7 +125,11 @@ def source_configs(target):
             name = data["GameInfo"]["GameName"]
         except (KeyError, TypeError):
             raise CheckFailure(f"{path} has no GameInfo.GameName")
-        configs[path.stem] = {"name": name, "adjustments": "Adjustments" in data, "switches": "Switches" in data}
+        configs[path.stem] = {
+            "name": name,
+            "adjustments": "Adjustments" in data,
+            "switches": has_switch_diagnostics(data.get("Switches", {})),
+        }
 
     if not configs:
         raise CheckFailure(f"no game configs found in {config_dir}")
@@ -148,6 +152,20 @@ def changed_configs(target, ref):
         log(f"::warning::could not diff against {ref}: {result.stderr.strip()}")
         return []
     return [Path(line).stem for line in result.stdout.split()]
+
+
+def has_switch_diagnostics(switches):
+    """Whether a config has supported switch diagnostics with named/defined entries."""
+    if not isinstance(switches, dict):
+        return False
+    if switches.get("Type") not in (1, 10, 20):
+        return False
+
+    definitions = switches.get("Names") or switches.get("Sensitivity") or []
+    return any(
+        (isinstance(entry, list) and bool(entry) and bool(entry[0])) or (type(entry) is int and entry != -1)
+        for entry in definitions
+    )
 
 
 def order_configs(names, first):

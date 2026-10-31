@@ -17,7 +17,7 @@ def check_switch_diagnostics(payload, require_populated=False):
             raise CheckFailure(f"/api/diagnostics/switches item {index} is missing required fields")
         if type(switch["row"]) is not int or not 1 <= switch["row"] <= 8:
             raise CheckFailure(f"/api/diagnostics/switches item {index} has an invalid row")
-        if type(switch["col"]) is not int or not 1 <= switch["col"] <= 8:
+        if type(switch["col"]) is not int or not 1 <= switch["col"] <= 9:
             raise CheckFailure(f"/api/diagnostics/switches item {index} has an invalid column")
         if type(switch["val"]) is not int or not 0 <= switch["val"] <= 100:
             raise CheckFailure(f"/api/diagnostics/switches item {index} has an invalid value")

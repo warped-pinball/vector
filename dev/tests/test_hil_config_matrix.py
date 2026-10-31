@@ -71,9 +71,24 @@ def test_source_configs_reads_names_and_adjustments(fake_repo):
 
 
 def test_source_configs_records_switch_definitions(fake_repo):
-    write_config(fake_repo / "src" / "wpc" / "config", "SwitchGame", "Switch Game", Switches={"Type": 20})
+    write_config(
+        fake_repo / "src" / "wpc" / "config",
+        "SwitchGame",
+        "Switch Game",
+        Switches={"Type": 20, "Names": [["Start button", 50]]},
+    )
 
     assert cm.source_configs("wpc")["SwitchGame"]["switches"] is True
+
+
+def test_source_configs_does_not_require_diagnostics_for_unsupported_or_undefined_switches(fake_repo):
+    write_config(fake_repo / "src" / "wpc" / "config", "NoSwitchSupport", "No Switch Support", Switches={"Type": 0, "Length": 23})
+    write_config(fake_repo / "src" / "wpc" / "config", "NoSwitchNames", "No Switch Names", Switches={"Type": 10, "Length": 72})
+
+    configs = cm.source_configs("wpc")
+
+    assert configs["NoSwitchSupport"]["switches"] is False
+    assert configs["NoSwitchNames"]["switches"] is False
 
 
 def test_source_configs_rejects_a_config_with_no_game_name(fake_repo):
