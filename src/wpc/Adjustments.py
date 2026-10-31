@@ -100,7 +100,9 @@ def _get_range_from_gamedef():
 def _fixChecksum():
     cpyStart, cpyEnd, chkAdr = _get_range_from_gamedef()
     if (cpyStart == 0 or cpyEnd == 0):
-        raise ValueError("No valid range found in game data - fix checksum")
+        # Configs without a checksum range (Generic_WPC) have nothing to fix
+        print("ADJS: No valid range found in game data - fix checksum")
+        return
 
     chk = 0
     for adr in range(cpyStart, cpyEnd + 1):
