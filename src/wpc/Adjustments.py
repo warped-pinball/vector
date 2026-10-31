@@ -107,7 +107,7 @@ def _fixChecksum():
     chk = 0
     for adr in range(cpyStart, cpyEnd + 1):
         chk = chk + shadowRam[adr]
-    chk =0xFFFF - chk
+    chk = (0xFFFF - chk) & 0xFFFF
 
     # Store MSByte and LSByte
     msb = (chk >> 8) & 0xFF
@@ -119,16 +119,24 @@ def _fixChecksum():
 
 
 def set_message_state(on=True):
-    """set the message state for adjustments"""
+    """set the custom message on/off adjustment and fix the adjustments checksum
+
+    CustomMessageOn sits inside the adjustments checksum range, so a wrong
+    checksum here can make the game restore factory settings on the next boot.
+    Nothing is written if the setting already has the requested value.
+    """
     message_adr = S.gdata["Adjustments"].get("CustomMessageOn")
     if message_adr is not None:
-        if on:
-            shadowRam[message_adr] = 1
-        else:
-            shadowRam[message_adr] = 0
+        value = 1 if on else 0
+        if shadowRam[message_adr] == value:
+            return
 
+        shadowRam[message_adr] = value
         Log.log(f"ADJS: Message State set to {on}")
-        _fixChecksum()
+        try:
+            _fixChecksum()
+        except ValueError as e:
+            Log.log(f"ADJS: Message State checksum not fixed: {e}")
         #fram.write_all_fram_now()
 
 

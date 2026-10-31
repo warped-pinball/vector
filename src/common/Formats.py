@@ -708,7 +708,7 @@ def formats_run():
             high_score_count = 0
             for x in range(0, len(scores)):
                 alpha_count = sum(1 for c in scores[x][0] if c.isalpha())
-                if scores[x][1] > 100 and alpha_count > 2:  #score and three initials are in 
+                if scores[x][1] > S.gdata["GameInfo"].get("MinScore", 100) and alpha_count > 2:  #score and three initials are in 
                     high_score_count += 1
 
             if high_score_count >= DataMapper.get_players_in_game():                
