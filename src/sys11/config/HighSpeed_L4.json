@@ -4,7 +4,7 @@
         "System": "11"
     },
     "BallInPlay": {
-        "Type": 2,
+        "Type": 3,
         "Address": 56
     },
     "DisplayMessage": {
@@ -81,6 +81,9 @@
         },
         "LongestBall": {
             "Id": 6
+        },
+        "OneBall": {
+            "Id": 7
         }
     }
 }
