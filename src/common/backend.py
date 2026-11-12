@@ -29,6 +29,7 @@ _CHALLENGE_EXPIRATION_SECONDS = const(60)
 _AUTH_MAX_FAILURES = const(5)
 _AUTH_LOCKOUT_SECONDS = const(30)
 _auth_failures = 0
+_boot_id = 0
 _auth_locked_until = 0
 
 
@@ -1625,12 +1626,19 @@ def app_version(request):
           description: Version returned
       body:
         description: Current firmware version string
-        example: {"version": "1.0.0"}
+        example: {"version": "1.0.0", "boot_id": 123456789}
     @end
     """
     from systemConfig import SystemVersion
 
-    return {"version": SystemVersion}
+    # boot_id changes on every restart, so a page can tell the board rebooted even when the version did not change
+    global _boot_id
+    if not _boot_id:
+        from urandom import getrandbits
+
+        _boot_id = getrandbits(30) + 1
+
+    return {"version": SystemVersion, "boot_id": _boot_id}
 
 
 @add_route("/api/machine_id")

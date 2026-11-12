@@ -133,9 +133,11 @@ async def _settle_abandoned_stream(path, body, writer):
     runs now.
     """
     if path in _finish_on_disconnect:
-        # give the dead socket back first, the rest of the job may need the memory
+        # give the dead socket back first, the rest of the job may need the memory.
+        # The stream only lets go of it in wait_closed(), close() alone is not enough.
         try:
             writer.close()
+            await uasyncio.wait_for_ms(writer.wait_closed(), _RESPONSE_DRAIN_TIMEOUT_MS)
         except Exception:
             pass
         logging.info(f"Client left {path}, finishing without it")
