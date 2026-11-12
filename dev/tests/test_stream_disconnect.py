@@ -61,6 +61,13 @@ def server(monkeypatch):
     monkeypatch.syspath_prepend(str(REPO_ROOT / "src" / "common"))
     monkeypatch.setitem(__builtins__ if isinstance(__builtins__, dict) else vars(__builtins__), "const", lambda value: value)
 
+    import gc
+    import time
+
+    # MicroPython only calls the server makes at import or per request
+    monkeypatch.setattr(gc, "threshold", lambda *_: None, raising=False)
+    monkeypatch.setattr(time, "ticks_ms", lambda: 0, raising=False)
+
     import phew.server as phew_server
 
     yield phew_server
