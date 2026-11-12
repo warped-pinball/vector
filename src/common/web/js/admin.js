@@ -832,7 +832,14 @@ if (typeof window !== "undefined") {
         { timeoutMs: 30000, retries: 0 },
       );
       if (!response.ok) {
-        throw new Error(`update check failed: ${response.status}`);
+        // the board says why in the body when it can
+        let reason = "";
+        try {
+          reason = (await response.text()).slice(0, 200);
+        } catch (bodyError) {
+          // no body to show
+        }
+        throw new Error(`update check failed: ${response.status} ${reason}`);
       }
 
       let data;
@@ -919,6 +926,46 @@ if (typeof window !== "undefined") {
     }
   }
 
+  // The progress stream dropped, but the board finishes an update on its own.
+  // Watch the version it reports until it restarts on the new one.
+  async function waitForUpdateToFinish(updateProgressLog) {
+    const say = (line) => {
+      updateProgressLog.textContent += line + "\n";
+      updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
+    };
+    const startVersion = document
+      .getElementById("version")
+      .textContent.split(" ")[1];
+
+    say("Lost the connection to the board.");
+    say("The update keeps running on the board. Leave the machine on.");
+    say("Waiting for the board to restart...");
+
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      try {
+        const response = await window.fetchWithTimeout(
+          "/api/version",
+          {},
+          { timeoutMs: 5000, retries: 0 },
+        );
+        if (!response.ok) continue;
+        const { version } = await response.json();
+        if (version && version !== startVersion) {
+          say(`The board is now on version ${version}. Reloading.`);
+          window.location.reload();
+          return;
+        }
+      } catch (e) {
+        // busy writing files or restarting, keep waiting
+      }
+    }
+
+    say(`The board is still on version ${startVersion}.`);
+    say("The update did not finish. Refresh the page and try again.");
+  }
+
   async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
     const req_data = {
       url: url,
@@ -978,9 +1025,7 @@ if (typeof window !== "undefined") {
         // refresh the page
         window.location.reload();
       } else {
-        updateProgressLog.textContent += "Connection lost.\n";
-        updateProgressLog.textContent += "Refresh the page and Try again.\n";
-        progressBar.value = 0;
+        await waitForUpdateToFinish(updateProgressLog);
         return;
       }
     }

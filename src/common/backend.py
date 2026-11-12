@@ -94,8 +94,11 @@ def route_wrapper(func):
     return wrapped_route
 
 
-def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
-    """Decorator to add a route to the server with gc_collect() and error handling"""
+def add_route(path, auth=False, cool_down_seconds=0, single_instance=False, finish_on_disconnect=False):
+    """Decorator to add a route to the server with gc_collect() and error handling
+
+    finish_on_disconnect: the route streams progress for a job that has to run to its end even if the client stops listening
+    """
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
         single_instance = True
@@ -112,6 +115,11 @@ def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
         from phew.server import add_route as phew_add_route
 
         phew_add_route(path, wrapped)
+
+        if finish_on_disconnect:
+            from phew.server import finish_on_disconnect as phew_finish_on_disconnect
+
+            phew_finish_on_disconnect(path)
 
         # return route
 
@@ -2186,11 +2194,11 @@ def app_updates_available(request):
         return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
 
 
-@add_route("/api/update/apply", auth=True)
+@add_route("/api/update/apply", auth=True, finish_on_disconnect=True)
 def app_apply_update(request):
     """
     @api
-    summary: Download and apply a software update from the provided URL.
+    summary: Download and apply a software update from the provided URL. Once started the update runs to its end on the device, even if the client stops reading the progress stream.
     auth: true
     request:
       body:

@@ -137,9 +137,13 @@ def verify_release(latest):
 
 def fetch_latest_release():
     """latest.json comes over plain HTTP; only its signed release record is used"""
+    from gc import collect as gc_collect
+
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
+    # the site redirects to HTTPS, and the TLS handshake needs a large free block of RAM
+    gc_collect()
     resp = get(updatesURL, timeout=10)
     try:
         latest = resp.json()

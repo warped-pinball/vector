@@ -114,6 +114,44 @@ async def _read_request(reader):
     return request
 
 
+# Routes whose streamed response is real work (applying an update) rather
+# than a transfer. That work must reach its end even when nobody is left
+# reading the progress, or a WiFi blip leaves the job half done.
+_finish_on_disconnect = set()
+
+
+def finish_on_disconnect(path):
+    _finish_on_disconnect.add(path)
+
+
+async def _settle_abandoned_stream(path, body, writer):
+    """The client is gone part way through a streamed response.
+
+    MicroPython never runs a generator's pending finally/with blocks when it
+    is simply dropped, so do one of two things on purpose: run the generator
+    to its end (routes in _finish_on_disconnect), or close it so its cleanup
+    runs now.
+    """
+    if path in _finish_on_disconnect:
+        # give the dead socket back first, the rest of the job may need the memory
+        try:
+            writer.close()
+        except Exception:
+            pass
+        logging.info(f"Client left {path}, finishing without it")
+        try:
+            for _ in body:
+                await uasyncio.sleep_ms(0)
+        except Exception as e:
+            logging.error(f"{path} failed after the client left: {e}")
+        return
+
+    try:
+        body.close()
+    except Exception as e:
+        logging.error(f"Cleanup after truncated {path} failed: {e}")
+
+
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
     try:
@@ -188,6 +226,7 @@ async def _handle_request(reader, writer):
                 # the path so truncated asset transfers are identifiable,
                 # then re-raise; the finally below still closes the socket.
                 logging.error(f"Truncated streamed response for {request.path}: {e}")
+                await _settle_abandoned_stream(request.path, response.body, writer)
                 raise
         else:
             # string/bytes
