@@ -2259,7 +2259,11 @@ def app_apply_update(request):
             yield json_dumps(response)
             gc_collect()
     except Exception as e:
-        Log.log(f"BKD: Error applying update: {e}")
+        from gc import mem_free
+
+        gc_collect()
+        # free RAM goes in the log, most update failures on the Pico are memory
+        Log.log(f"BKD: Error applying update: {e} (free RAM {mem_free()})")
         yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
         yield json_dumps({"log": "Try again in a moment", "percent": 100})
 
