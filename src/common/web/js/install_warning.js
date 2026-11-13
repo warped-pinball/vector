@@ -20,6 +20,11 @@ const RESET_CLIP_DOCS = {
       label: "Bally / Stern reset clip location",
       url: "classic/manual/#reset-clip",
     },
+    // Alltek MPUs take the kit jumper instead of the clip
+    {
+      label: "the jumper used on Alltek MPUs",
+      url: "classic/manual/#alltek-systems-replacement-mpu",
+    },
   ],
   data_east: [
     {
