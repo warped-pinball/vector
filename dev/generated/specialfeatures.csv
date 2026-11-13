@@ -119,21 +119,21 @@ Black Knight 2000,SYS11,L4;LA2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Pract
 Bugs Bunny Birthday Bash,SYS11,L1,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Comet,SYS11,,yes,no,no,
 Cyclone,SYS11,L5,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
-Diner,SYS11,L4,yes,yes,no,
-Dr Dude,SYS11,L1,yes,yes,no,
+Diner,SYS11,L4,yes,yes,yes,Standard
+Dr Dude,SYS11,L1,yes,yes,yes,Standard
 Earth Shaker,SYS11,LA1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Elvira,SYS11,LA2,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 F-14 Tomcat,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Fire!,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Generic System 11,SYS11,,no,no,no,
-Grand Lizard,SYS11,L4,yes,yes,no,
+Grand Lizard,SYS11,L4,yes,yes,yes,Standard
 High Speed,SYS11,L3;L4,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Jokerz!,SYS11,L6,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Millionaire,SYS11,L3,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
-Mousin' Around,SYS11,L4,yes,yes,no,
+Mousin' Around,SYS11,L4,yes,yes,yes,Standard
 Pinbot,SYS11,V2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
-Police Force,SYS11,,yes,yes,no,
-Pool Sharks,SYS11,LA7,yes,yes,no,
+Police Force,SYS11,,yes,yes,yes,Standard
+Pool Sharks,SYS11,LA7,yes,yes,yes,Standard
 Radical!,SYS11,L1,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Riverboat Gambler,SYS11,L1;LA3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Road Kings,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
