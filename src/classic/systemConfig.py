@@ -1,6 +1,9 @@
 vectorSystem = "classic"
 updatesURL = "http://software.warpedpinball.com/vector/classic/latest.json"
 
+# Where the reset clip goes on this board, linked from the HDWR01 fault
+resetClipDocsURL = "https://docs.warpedpinball.com/guides/classic/manual/#reset-clip"
+
 # Firmware version for the Classic build
 SystemVersion = "2.0.2"
 
