@@ -2346,6 +2346,10 @@ def add_ap_mode_routes():
             value = data.get(key)
             if not isinstance(value, str) or len(value.encode("utf-8")) > max_len:
                 return json_dumps({"error": f"Invalid {key}"}), 400
+        # Any SSID is accepted, including one the scan never saw: hidden networks
+        # don't broadcast their name, and the board finds them by asking for it
+        if not data["ssid"]:
+            return json_dumps({"error": "Invalid ssid"}), 400
 
         ds_write_record(
             "configuration",
@@ -2376,13 +2380,19 @@ def add_ap_mode_routes():
             - code: 200
               description: Networks listed
           body:
-            description: Array of SSID records with signal quality and configuration flag
+            description: Array of SSID records with signal quality and configuration flag. When the scan did not see the saved network (hidden, or out of range) it is listed last with hidden true and rssi null.
             example:
                 [
                     {
                         "ssid": "MyNetwork",
                         "rssi": -40,
                         "configured": true
+                    },
+                    {
+                        "ssid": "MyHiddenNetwork",
+                        "rssi": null,
+                        "configured": true,
+                        "hidden": true
                     }
                 ]
         @end
@@ -2396,6 +2406,9 @@ def add_ap_mode_routes():
             if network["ssid"] == ssid:
                 network["configured"] = True
                 break
+        else:
+            if ssid:
+                available_networks.append({"ssid": ssid, "rssi": None, "configured": True, "hidden": True})
 
         return available_networks
 
@@ -2450,6 +2463,15 @@ def connect_to_wifi():
             schedule(initialize_timedate, 5000, log="Server: Initialize time & date")
             Pico_Led.on()
             return True
+
+    # The radio reports a rejected password directly. Check that before scanning,
+    # because a hidden network never shows up in a scan and would otherwise be
+    # reported as having no signal.
+    import network as _network
+
+    if _network.WLAN(_network.STA_IF).status() == _network.STAT_WRONG_PASSWORD:
+        raise_fault(WIFI01, f"Invalid wifi credentials for ssid: {ssid}")
+        return False
 
     # If there's signal that means the credentials are wrong
     import scanwifi

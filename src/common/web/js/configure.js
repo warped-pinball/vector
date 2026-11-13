@@ -64,6 +64,17 @@ async function build_game_config_select() {
   }
 }
 
+// Dropdown value for "join a network that is not in the list"; can't collide with a
+// real SSID because those are at most 32 bytes
+const HIDDEN_NETWORK_OPTION = "__hidden_network_option_not_an_ssid__";
+
+function show_hidden_ssid_input(show) {
+  const input = document.querySelector('input[name="hidden_ssid"]');
+  if (!input) return;
+  input.hidden = !show;
+  if (show) input.focus();
+}
+
 async function build_ssid_select() {
   // get list of wifi networks
   const response = await fetch("/api/available_ssids");
@@ -71,14 +82,25 @@ async function build_ssid_select() {
 
   // create mapping of ssid to "ssid + configured"
   const ssid_to_name = {};
+  let configured_ssid = null;
+  let configured_hidden = false;
   for (const ssid of data) {
+    if (ssid.configured) {
+      configured_ssid = ssid.ssid;
+      // Saved network that the scan did not see (hidden, or out of range):
+      // offer it in the manual field rather than as a scanned network
+      if (ssid.hidden) {
+        configured_hidden = true;
+        continue;
+      }
+    }
     let name = ssid.ssid;
     if (ssid.configured) {
       name = `${name} (Current Setting)`;
-      configured_ssid = ssid.ssid;
     }
     ssid_to_name[ssid.ssid] = name;
   }
+  ssid_to_name[HIDDEN_NETWORK_OPTION] = "Other (hidden network)...";
 
   const ssid_select = await window.createDropDownElement(
     "ssid_select",
@@ -86,18 +108,39 @@ async function build_ssid_select() {
     ssid_to_name,
     (defaultValue = null),
     (sortOptions = false),
+    (optionsCallback = (value) =>
+      show_hidden_ssid_input(value === HIDDEN_NETWORK_OPTION)),
   );
 
   document.getElementById("ssid_select_placeholder").replaceWith(ssid_select);
 
   // set configured ssid as default
-  if (configured_ssid) {
+  if (configured_hidden) {
+    window.setDropDownValue(
+      "ssid_select",
+      HIDDEN_NETWORK_OPTION,
+      ssid_to_name[HIDDEN_NETWORK_OPTION],
+    );
+    document.querySelector('input[name="hidden_ssid"]').value = configured_ssid;
+    show_hidden_ssid_input(true);
+  } else if (configured_ssid) {
     window.setDropDownValue(
       "ssid_select",
       configured_ssid,
       `${configured_ssid} (Current Setting)`,
     );
   }
+}
+
+// The SSID to save: the scanned network picked in the dropdown, or the name
+// typed in for a hidden network. SSIDs can legally start or end with spaces,
+// so the typed name is kept exactly as entered.
+function selected_ssid() {
+  const selected = window.getDropDownValue("ssid_select");
+  if (selected === HIDDEN_NETWORK_OPTION) {
+    return document.querySelector('input[name="hidden_ssid"]').value;
+  }
+  return selected;
 }
 
 async function populate_previous_ip() {
@@ -141,8 +184,7 @@ configure_check();
 
 async function set_vector_config() {
   // save the other configuration options
-  // ssid select
-  const ssid = window.getDropDownValue("ssid_select");
+  const ssid = selected_ssid();
   const wifi_password = document.querySelector(
     'input[name="wifi_password"]',
   ).value;
@@ -181,6 +223,12 @@ async function save_configuration() {
   var saveBtn = document.querySelector("#config-save-btn");
   saveBtn.disabled = true;
   var saveText = saveBtn.innerHTML;
+  if (!selected_ssid()) {
+    replyDom.innerHTML =
+      "<p style='color:red;'>Select a WiFi network, or type in the name of a hidden one</p>";
+    saveBtn.disabled = false;
+    return;
+  }
   saveBtn.innerHTML = "⏳ Saving...";
   let response_vector = await set_vector_config();
   saveBtn.disabled = false;
