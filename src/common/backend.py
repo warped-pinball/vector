@@ -2380,7 +2380,7 @@ def add_ap_mode_routes():
             - code: 200
               description: Networks listed
           body:
-            description: Array of SSID records with signal quality and configuration flag. When the scan did not see the saved network (hidden, or out of range) it is listed last with hidden true and rssi null.
+            description: SSID records with signal quality and configuration flag; a saved network the scan missed (hidden, or out of range) is last, with hidden true
             example:
                 [
                     {
