@@ -1,0 +1,134 @@
+name: Build and Deploy
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  release:
+    types: [published]
+
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dev/requirements.txt
+
+      - name: Determine build environment and version
+        id: determine_version
+        run: |
+          BASE_VERSION=$(grep VectorVersion src/common/SharedState.py | awk -F '"' '{print $2}')
+          SYS11_BASE=$(grep SystemVersion src/sys11/systemConfig.py | awk -F '"' '{print $2}')
+          WPC_BASE=$(grep SystemVersion src/wpc/systemConfig.py | awk -F '"' '{print $2}')
+          EM_BASE=$(grep SystemVersion src/em/systemConfig.py | awk -F '"' '{print $2}')
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SUFFIX="-dev${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            SUFFIX="-beta${{ github.run_number }}"
+          else
+            SUFFIX=""
+          fi
+          VERSION="$BASE_VERSION$SUFFIX"
+          SYS11_VERSION="$SYS11_BASE$SUFFIX"
+          WPC_VERSION="$WPC_BASE$SUFFIX"
+          EM_VERSION="$EM_BASE$SUFFIX"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "SYS11_VERSION=$SYS11_VERSION" >> $GITHUB_ENV
+          echo "WPC_VERSION=$WPC_VERSION" >> $GITHUB_ENV
+          echo "EM_VERSION=$EM_VERSION" >> $GITHUB_ENV
+
+      - name: Update version files
+        run: |
+          sed -i "s/VectorVersion = .*/VectorVersion = \"${{ env.VERSION }}\"/" src/common/SharedState.py
+          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.SYS11_VERSION }}\"/" src/sys11/systemConfig.py
+          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.WPC_VERSION }}\"/" src/wpc/systemConfig.py
+          sed -i "s/SystemVersion = .*/SystemVersion = \"${{ env.EM_VERSION }}\"/" src/em/systemConfig.py
+
+      - name: Build and generate update files
+        run: |
+          for target in sys11 wpc em; do
+            python dev/build.py --build-dir build --target_hardware $target
+            output_file="update_${target}.json"
+            version_var="${target^^}_VERSION"
+            if [ "$target" = "sys11" ]; then
+              output_file="update.json"
+            fi
+            VERSION_TO_USE=$(eval echo \$$version_var)
+            if [ -n "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" ]; then
+              echo "${{ secrets.WARPED_PINBALL_PRIVATE_KEY }}" > private_key.pem
+              python dev/build_update.py \
+                --build-dir build \
+                --output "$output_file" \
+                --version "$VERSION_TO_USE" \
+                --target_hardware $target \
+                --private-key private_key.pem
+              rm -f private_key.pem
+            else
+              python dev/build_update.py \
+                --build-dir build \
+                --output "$output_file" \
+                --version "$VERSION_TO_USE" \
+                --target_hardware $target
+            fi
+          done
+
+      - name: Prepare release body
+        id: prepare_body
+        run: |
+          VERSION_SECTION='## Versions
+          **Vector**: `${{ env.VERSION }}`
+          **Sys11**: `${{ env.SYS11_VERSION }}`
+          **WPC**: `${{ env.WPC_VERSION }}`
+          **EM**: `${{ env.EM_VERSION }}`
+          <!-- END VERSIONS SECTION -->'
+
+          # Fetch existing release body if it exists
+          EXISTING_BODY=""
+          if gh release view "${{ env.VERSION }}" --json body -q .body > body.txt 2>/dev/null; then
+          EXISTING_BODY=$(cat body.txt)
+          fi
+
+          # Remove any existing versions section
+          CLEANED_BODY=$(echo "$EXISTING_BODY" | awk '/## Versions/{flag=1} /<!-- END VERSIONS SECTION -->/{flag=0;next} !flag')
+
+          # Compose new body
+          if [ -n "$CLEANED_BODY" ]; then
+          echo -e "$VERSION_SECTION\n\n$CLEANED_BODY" > new_body.txt
+          else
+          echo -e "$VERSION_SECTION" > new_body.txt
+          fi
+
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          cat new_body.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or update GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          body: ${{ steps.prepare_body.outputs.body }}
+          draft: false
+          prerelease: ${{ github.event_name != 'release' }}
+          files: |
+            update.json
+            update_wpc.json
+            update_em.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
