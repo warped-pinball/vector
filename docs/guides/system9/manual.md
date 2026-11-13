@@ -74,7 +74,7 @@ Warped Pinball offers email support and will assist when possible, but cannot be
 
 ![Socket Photo](../../img/sys11/sys9_board_installed.png)
 
-6. **Connect the reset wire**
+6. <a id="reset-clip"></a>**Connect the reset wire**
    - Attach the white micro clip to the junction of `R5` and `R4` (location varies by board orientation).
    - This synchronizes resets during power-up; expect a few extra seconds at startup.
    - This connection is mandatory for proper operation.

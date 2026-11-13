@@ -1626,10 +1626,10 @@ def app_version(request):
           description: Version returned
       body:
         description: Current firmware version string
-        example: {"version": "1.0.0", "boot_id": 123456789}
+        example: {"version": "1.0.0", "boot_id": 123456789, "system": "wpc"}
     @end
     """
-    from systemConfig import SystemVersion
+    from systemConfig import SystemVersion, vectorSystem
 
     # boot_id changes on every restart, so a page can tell the board rebooted even when the version did not change
     global _boot_id
@@ -1638,7 +1638,8 @@ def app_version(request):
 
         _boot_id = getrandbits(30) + 1
 
-    return {"version": SystemVersion, "boot_id": _boot_id}
+    # system tells the page which board family this is (wpc, sys11, classic, ...), e.g. to link the right install guide
+    return {"version": SystemVersion, "boot_id": _boot_id, "system": vectorSystem}
 
 
 @add_route("/api/machine_id")

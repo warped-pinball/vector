@@ -102,11 +102,11 @@ Throughout the installation pay attention to pin #1 alignment:
 
 ![Pin one Photo](../../img/wpc/manual/pin_one.png)
 
-2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated. 
+2. To improve mounting and connection reliability, insert the pin-strip headers into each side of the main-board processor socket. Press 3–4 pins at a time until fully seated.
 
 ![Pin strip Photo](../../img/wpc/manual/pin_strip.jpg)
 
-3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step) 
+3. Place the 40 pin socket into the pin strip headers (on some kit this header is already attached to the circuit board, you can skip this step)
 
 
 ![socket Photo](../../img/wpc/manual/socket.jpg)
@@ -117,8 +117,7 @@ Throughout the installation pay attention to pin #1 alignment:
 
 5. Insert the Vector board into the socket on the main board. Align all pins, press, and confirm each corner is seated. Pay attention to pin #1 alignment throughout this installation.
 
-
-
+6. <a id="reset-clip"></a>Clip the white reset wire to the point shown below for your board. This synchronizes Vector's reset with the game's reset on power-up. If the clip is loose or on the wrong point, Vector reports `HDWR01: Early Bus Activity`.
 
 | WPC Clip Location | WPC-S Clip Location |
 | :---: | :---: |
