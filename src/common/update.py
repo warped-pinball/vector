@@ -137,15 +137,39 @@ def verify_release(latest):
 
 def fetch_latest_release():
     """latest.json comes over plain HTTP; only its signed release record is used"""
+    from gc import collect as gc_collect
+
     from mrequests.mrequests import get
     from systemConfig import updatesURL
 
+    # the site may redirect to HTTPS, and a TLS handshake needs a large free block of RAM
+    gc_collect()
     resp = get(updatesURL, timeout=10)
     try:
         latest = resp.json()
     finally:
         resp.close()
-    return verify_release(latest)
+    try:
+        return verify_release(latest)
+    finally:
+        _unload_signature_code()
+
+
+def _unload_signature_code():
+    """Drop the RSA modules from RAM once a signature has been checked.
+
+    The admin page checks for updates (and so verifies a signature) before any
+    update is applied. Left loaded, that code takes the room the HTTPS download
+    of the update file needs for its TLS handshake. It is imported again when
+    the downloaded file is validated.
+    """
+    import sys
+    from gc import collect as gc_collect
+
+    for name in list(sys.modules):
+        if name == "rsa" or name.startswith("rsa."):
+            del sys.modules[name]
+    gc_collect()
 
 
 def validate_signature(skip_signature_check=False, expected_sha256=None):
@@ -270,6 +294,9 @@ def apply_update(url, skip_signature_check=False, expected_sha256=None):
     with LowMemoryMode():
         from gc import collect as gc_collect
         from time import sleep
+
+        # the download is the hungriest step (TLS), so start it with as much free RAM as possible
+        _unload_signature_code()
 
         yield {"log": f"Downloading update from {url}", "percent": 2}
         try:

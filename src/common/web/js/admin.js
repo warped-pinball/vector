@@ -832,7 +832,14 @@ if (typeof window !== "undefined") {
         { timeoutMs: 30000, retries: 0 },
       );
       if (!response.ok) {
-        throw new Error(`update check failed: ${response.status}`);
+        // the board says why in the body when it can
+        let reason = "";
+        try {
+          reason = (await response.text()).slice(0, 200);
+        } catch (bodyError) {
+          // no body to show
+        }
+        throw new Error(`update check failed: ${response.status} ${reason}`);
       }
 
       let data;
@@ -919,12 +926,71 @@ if (typeof window !== "undefined") {
     }
   }
 
+  // The progress stream dropped, but the board finishes an update on its own.
+  // Watch the version it reports until it restarts on the new one.
+  // What the board says it is running: {version, boot_id}, or null when it
+  // does not answer. One timer covers the headers and the body, so a
+  // connection that goes quiet part way cannot hang the caller.
+  async function readBoardIdentity(timeoutMs = 5000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch("/api/version", {
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (e) {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // `before` is the board's identity from before the update started. A new
+  // boot_id means it restarted, which also covers an update to the same
+  // version. Boards without boot_id are judged on the version alone.
+  async function waitForUpdateToFinish(updateProgressLog, before) {
+    const say = (line) => {
+      updateProgressLog.textContent += line + "\n";
+      updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
+    };
+    const startVersion =
+      (before && before.version) ||
+      document.getElementById("version").textContent.split(" ")[1];
+    const startBoot = before ? before.boot_id : undefined;
+
+    say("Lost the connection to the board.");
+    say("The update keeps running on the board. Leave the machine on.");
+    say("Waiting for the board to restart...");
+
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // null while the board is busy writing files or restarting
+      const now = await readBoardIdentity();
+      if (!now || !now.version) continue;
+      const restarted = startBoot !== undefined && now.boot_id !== startBoot;
+      if (restarted || now.version !== startVersion) {
+        say(`The board restarted on version ${now.version}. Reloading.`);
+        window.location.reload();
+        return;
+      }
+    }
+
+    say(`The board has not restarted and is still on ${startVersion}.`);
+    say("The update did not finish. Refresh the page and try again.");
+  }
+
   async function applyUpdate(url, skip_signature_check = false, sha256 = null) {
     const req_data = {
       url: url,
       skip_signature_check: skip_signature_check,
       sha256: sha256,
     };
+    // taken before the update starts, to recognise the restart afterwards
+    const before = await readBoardIdentity();
     const response = await window.smartFetch(
       "/api/update/apply",
       req_data,
@@ -978,11 +1044,16 @@ if (typeof window !== "undefined") {
         // refresh the page
         window.location.reload();
       } else {
-        updateProgressLog.textContent += "Connection lost.\n";
-        updateProgressLog.textContent += "Refresh the page and Try again.\n";
-        progressBar.value = 0;
+        await waitForUpdateToFinish(updateProgressLog, before);
         return;
       }
+    }
+
+    // The stream has no length or framing, so a dropped connection can also
+    // look like a normal end. Every real ending reports 100 percent.
+    if (response.status === 200 && progressBar.value < 100) {
+      await waitForUpdateToFinish(updateProgressLog, before);
+      return;
     }
 
     if (response.status !== 200) {
