@@ -14,7 +14,16 @@ from phew import is_connected_to_wifi
 
 # Hardware Faults
 HDWR00 = const("HDWR00: Unknown Hardware Error")
-HDWR01 = const("HDWR01: Early Bus Activity")
+# Early bus activity almost always means the white reset clip is loose or on the
+# wrong point, so the fault points at this board's reset clip pictures
+try:
+    from systemConfig import resetClipDocsURL
+except ImportError:
+    resetClipDocsURL = None
+if resetClipDocsURL:
+    HDWR01 = "HDWR01: Early Bus Activity (likely due to reset clip placement. See: " + resetClipDocsURL + ")"
+else:
+    HDWR01 = "HDWR01: Early Bus Activity (likely due to reset clip placement)"
 HDWR02 = const("HDWR02: No Bus Activity")
 
 ALL_HDWR = [code[:6] for code in [HDWR00, HDWR01, HDWR02]]

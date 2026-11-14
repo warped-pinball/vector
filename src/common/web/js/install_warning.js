@@ -16,7 +16,19 @@ async function fault_check() {
     // Create a list item for each fault and append it to the fault_list
     data.forEach((fault) => {
       const fault_item = document.createElement("div");
-      fault_item.textContent = fault;
+      // Faults can carry a docs link (e.g. HDWR01); make it clickable
+      fault.split(/(https?:\/\/[^\s)]+)/).forEach((part, i) => {
+        if (i % 2 === 0) {
+          fault_item.append(part);
+        } else {
+          const link = document.createElement("a");
+          link.href = part;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = part;
+          fault_item.appendChild(link);
+        }
+      });
       fault_list.appendChild(fault_item);
     });
 

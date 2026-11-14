@@ -1,9 +1,11 @@
 vectorSystem = "data_east"
 updatesURL = "http://software.warpedpinball.com/vector/data_east/latest.json"
 
-# Firmware version for the Data East build
-SystemVersion = "2.0.3"
+# Where the reset clip goes on this board, linked from the HDWR01 fault
+resetClipDocsURL = "https://docs.warpedpinball.com/guides/data_east/manual/#hardware-installation"
 
+# Firmware version for the Data East build
+SystemVersion = "2.0.4"
 
 
 # System specific scheduled tasks
