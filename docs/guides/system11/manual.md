@@ -53,7 +53,7 @@ Removing and reseating chips carries risk. Work with the game powered off but gr
 
 ![Standoff Photo](../../img/sys11/standoff.png)
 
-5. Clip the white wire with the micro clip to the junction of `R55` and `R56` (either component on the correct side). This synchronizes resets on power-up.
+5. <a id="reset-clip"></a>Clip the white wire with the micro clip to the junction of `R55` and `R56` (either component on the correct side). This synchronizes resets on power-up.
 
 <br><br>
 Clip to location at R56 and R55:<br>
