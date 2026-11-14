@@ -216,32 +216,100 @@ async function set_vector_config() {
   }
 }
 
-// function to  save the configuration  and restart the device
-async function save_configuration() {
-  // save the vector configuration
-  var replyDom = document.querySelector("#config-reply");
-  var saveBtn = document.querySelector("#config-save-btn");
-  saveBtn.disabled = true;
-  var saveText = saveBtn.innerHTML;
-  if (!selected_ssid()) {
-    replyDom.innerHTML =
-      "<p style='color:red;'>Select a WiFi network, or type in the name of a hidden one</p>";
-    saveBtn.disabled = false;
-    return;
+// Field sizes in the board's configuration record, in bytes (see set_vector_config)
+const SSID_MAX_BYTES = 32;
+const WIFI_PASSWORD_MAX_BYTES = 32;
+const ADMIN_PASSWORD_MAX_BYTES = 16;
+
+function byte_length(text) {
+  return new TextEncoder().encode(text).length;
+}
+
+// Returns what the user has to fix before saving, or null when the form is complete
+function config_form_problem() {
+  const ssid = selected_ssid();
+  const wifi_password = document.querySelector(
+    'input[name="wifi_password"]',
+  ).value;
+  const vector_password = document.querySelector(
+    'input[name="vector_password"]',
+  ).value;
+
+  if (!ssid) {
+    return "Select a WiFi network, or type in the name of a hidden one.";
   }
+  if (byte_length(ssid) > SSID_MAX_BYTES) {
+    return `The WiFi network name is too long. Vector supports up to ${SSID_MAX_BYTES} characters.`;
+  }
+  if (byte_length(wifi_password) > WIFI_PASSWORD_MAX_BYTES) {
+    return `The WiFi password is too long. Vector supports up to ${WIFI_PASSWORD_MAX_BYTES} characters.`;
+  }
+  if (!window.getDropDownValue("game_config_select")) {
+    return "Select your game and ROM version.";
+  }
+  if (byte_length(vector_password) > ADMIN_PASSWORD_MAX_BYTES) {
+    return `The admin password is too long. Use ${ADMIN_PASSWORD_MAX_BYTES} characters or fewer.`;
+  }
+  return null;
+}
+
+function show_config_error(message) {
+  const replyDom = document.querySelector("#config-reply");
+  replyDom.replaceChildren();
+  if (!message) return;
+  const p = document.createElement("p");
+  p.style.color = "red";
+  p.textContent = message;
+  replyDom.appendChild(p);
+}
+
+// The board answers a rejected save with a 400 whose body names the field
+async function describe_save_error(response) {
+  let body = "";
+  try {
+    body = await response.text();
+  } catch (e) {
+    // fall through to the generic message
+  }
+  if (/game config/i.test(body)) {
+    return "The board did not recognise that game. Select your game and ROM version again.";
+  }
+  const field = /Invalid (\w+)/.exec(body);
+  const names = {
+    ssid: "WiFi network name",
+    wifi_password: "WiFi password",
+    vector_password: "admin password",
+  };
+  if (field && names[field[1]]) {
+    return `The board rejected the ${
+      names[field[1]]
+    }. Check it and save again.`;
+  }
+  return "Vector could not save the configuration. Try again.";
+}
+
+// function to save the configuration and restart the device
+async function save_configuration() {
+  const saveBtn = document.querySelector("#config-save-btn");
+
+  const problem = config_form_problem();
+  show_config_error(problem);
+  if (problem) return;
+
+  const saveText = saveBtn.innerHTML;
+  saveBtn.disabled = true;
   saveBtn.innerHTML = "⏳ Saving...";
-  let response_vector = await set_vector_config();
+  const response_vector = await set_vector_config();
   saveBtn.disabled = false;
   saveBtn.innerHTML = saveText;
   if (response_vector.status !== 200) {
-    replyDom.innerHTML =
-      "<p style='color:red;'>Error saving vector configuration; Try again</p>";
+    show_config_error(await describe_save_error(response_vector));
     return;
   }
 
-  response_vector = null;
-  replyDom.innerHTML =
-    "<p style='color:green;'>Configuration saved. Vector is rebooting to apply the changes. Make sure your reset clip is in place.</p>";
+  document.getElementById("config-saved-ssid").textContent = selected_ssid();
+  document.getElementById("configure_modal").removeAttribute("open");
+  document.getElementById("config_saved_modal").setAttribute("open", "");
 }
 
 window.save_configuration = save_configuration;
