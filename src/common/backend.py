@@ -339,9 +339,10 @@ def require_auth(handler):
             del challenges[client_challenge]
             return deny_access("Challenge expired")
 
-        # Retrieve stored password
-        credentials = ds_read_record("configuration", 0)
-        stored_password = credentials["Gpassword"].encode("utf-8")
+        # Retrieve stored password (usually one; see Passwords.passwords_to_try)
+        from Passwords import passwords_to_try
+
+        stored_passwords = passwords_to_try("admin")
 
         # Construct the message string
         path = request.path
@@ -349,18 +350,18 @@ def require_auth(handler):
         message_str = client_challenge + path + body_str
         message_bytes = message_str.encode("utf-8")
 
-        # Compute expected HMAC
-        expected_digest = hmac_sha256(stored_password, message_bytes)
-        expected_hmac = hexlify(expected_digest).decode()
+        for stored_password in stored_passwords:
+            # Compute expected HMAC
+            expected_digest = hmac_sha256(stored_password.encode("utf-8"), message_bytes)
+            expected_hmac = hexlify(expected_digest).decode()
 
-        # If authentication is successful
-        if client_hmac == expected_hmac:
-            # remove the challenge from the challenges dict
-            del challenges[client_challenge]
-            _auth_failures = 0
-            return handler(request, *args, **kwargs)
-        else:
-            return deny_access("Bad Credentials")
+            # If authentication is successful
+            if client_hmac == expected_hmac:
+                # remove the challenge from the challenges dict
+                del challenges[client_challenge]
+                _auth_failures = 0
+                return handler(request, *args, **kwargs)
+        return deny_access("Bad Credentials")
 
     return auth_wrapper
 
@@ -2320,7 +2321,7 @@ def add_ap_mode_routes():
             - name: vector_password
               type: string
               required: true
-              description: Password for authenticated API access
+              description: Password for authenticated API access, up to 64 bytes
             - name: game_config_filename
               type: string
               required: true
@@ -2341,12 +2342,12 @@ def add_ap_mode_routes():
         if data["game_config_filename"] not in all_game_configs:
             return f"Invalid game config filename {data['game_config_filename']}", 400
 
-        from WifiPassword import MAX_BYTES as WIFI_PASSWORD_MAX_BYTES
-        from WifiPassword import save_configuration
+        from Passwords import MAX_BYTES as PASSWORD_MAX_BYTES
+        from Passwords import save_configuration
 
-        # Field sizes: ssid 32 and vector password 16 in the configuration record;
-        # the wifi password has its own record (see WifiPassword.py)
-        for key, max_len in (("ssid", 32), ("wifi_password", WIFI_PASSWORD_MAX_BYTES), ("vector_password", 16)):
+        # Field sizes: ssid 32 in the configuration record; both passwords
+        # can be longer than their fields there (see Passwords.py)
+        for key, max_len in (("ssid", 32), ("wifi_password", PASSWORD_MAX_BYTES), ("vector_password", PASSWORD_MAX_BYTES)):
             value = data.get(key)
             if not isinstance(value, str) or len(value.encode("utf-8")) > max_len:
                 return json_dumps({"error": f"Invalid {key}"}), 400
@@ -2438,11 +2439,11 @@ def connect_to_wifi():
     )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
-    from WifiPassword import passwords_to_try
+    from Passwords import passwords_to_try
 
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
-    passwords = passwords_to_try(wifi_credentials)
+    passwords = passwords_to_try("wifi", wifi_credentials)
     print(f"Connecting to SSID: {ssid}")
 
     if not ssid:

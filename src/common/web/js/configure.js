@@ -216,11 +216,11 @@ async function set_vector_config() {
   }
 }
 
-// Field sizes on the board, in bytes (see set_vector_config). The WiFi password
-// has its own 64 byte record: 63 characters, or a 64 digit hex key.
+// Field sizes on the board, in bytes (see set_vector_config). Each password
+// has its own 64 byte record; for WiFi that is 63 characters, or a 64 digit hex key.
 const SSID_MAX_BYTES = 32;
 const WIFI_PASSWORD_MAX_BYTES = 64;
-const ADMIN_PASSWORD_MAX_BYTES = 16;
+const ADMIN_PASSWORD_MAX_BYTES = 64;
 
 function byte_length(text) {
   return new TextEncoder().encode(text).length;
