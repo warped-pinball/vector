@@ -55,10 +55,12 @@ def board(request, monkeypatch):
     }
     for name, module in stubs.items():
         monkeypatch.setitem(sys.modules, name, module)
-    for name in ("SPI_DataStore", "WifiPassword"):
+    for name in ("SPI_DataStore", "WifiPassword", "systemConfig"):
         monkeypatch.delitem(sys.modules, name, raising=False)
     monkeypatch.syspath_prepend(str(REPO_ROOT / "src" / "common"))
     monkeypatch.syspath_prepend(str(REPO_ROOT / "src" / system))
+    # the common data store is System 11's; its systemConfig comes from src/sys11
+    monkeypatch.syspath_prepend(str(REPO_ROOT / "src" / ("sys11" if system == "common" else system)))
     datastore = importlib.import_module("SPI_DataStore")
     wifi = importlib.import_module("WifiPassword")
     assert Path(datastore.__file__).parent.name == system
@@ -111,7 +113,7 @@ def test_short_password_needs_no_long_record(board):
 def test_board_from_before_the_record_keeps_its_password(board):
     # FRAM below the data store was never written, so it can hold anything
     record = board.ds.memory_map["wifi_password"]
-    board.fram.mem[record["start"] : record["start"] + record["size"]] = bytes(range(200, 200 + 72))
+    board.fram.mem[record["start"] : record["start"] + record["size"]] = bytes((200 + i) % 256 for i in range(72))
     _old_firmware_save(board, "Arcade", "old-password")
     assert board.wifi.read_password() == "old-password"
 
