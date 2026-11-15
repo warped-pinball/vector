@@ -233,17 +233,37 @@
           </footer>
         </article>
       </dialog>
-      <dialog id="config_saved_modal">
+      <dialog id="config_confirm_modal">
         <article>
-          <h2>Configuration Saved</h2>
+          <h2>Save and Restart?</h2>
           <p>
-            Vector is restarting to join
-            <strong id="config-saved-ssid"></strong>. Make sure your reset clip
-            is in place.
+            Vector will restart and join
+            <strong class="config-target-ssid"></strong>. The "Warped Pinball"
+            setup WiFi goes away when it does, so this page will stop
+            responding. That is expected.
           </p>
           <p>
-            Then reconnect your phone or computer to that network and open
-            Vector at its new address.
+            Afterwards, reconnect your phone or computer to your regular WiFi
+            and open Vector at its new address. There is nothing else to do
+            here.
+          </p>
+          <footer>
+            <button class="secondary" onclick="window.cancel_save()">
+              Cancel
+            </button>
+            <button id="config-confirm-btn" onclick="window.confirm_save()">
+              Save and restart
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="config_saved_modal">
+        <article>
+          <h2>Saved, Vector Is Restarting</h2>
+          <p>
+            The setup WiFi is going away. Reconnect to your regular WiFi and
+            open Vector at its new address once it has joined
+            <strong class="config-target-ssid"></strong>.
           </p>
         </article>
       </dialog>

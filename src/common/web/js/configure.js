@@ -288,28 +288,52 @@ async function describe_save_error(response) {
   return "Vector could not save the configuration. Try again.";
 }
 
-// function to save the configuration and restart the device
-async function save_configuration() {
-  const saveBtn = document.querySelector("#config-save-btn");
+function show_modal(id, show) {
+  const modal = document.getElementById(id);
+  if (show) modal.setAttribute("open", "");
+  else modal.removeAttribute("open");
+}
 
+// Save button: check the form, then explain the restart before anything is sent.
+// The explanation comes first because once the board restarts the setup WiFi is
+// gone, and a phone's captive portal window may close along with it.
+async function save_configuration() {
   const problem = config_form_problem();
   show_config_error(problem);
   if (problem) return;
 
-  const saveText = saveBtn.innerHTML;
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = "⏳ Saving...";
+  for (const el of document.querySelectorAll(".config-target-ssid")) {
+    el.textContent = selected_ssid();
+  }
+  show_modal("configure_modal", false);
+  show_modal("config_confirm_modal", true);
+}
+
+// "Cancel" in the confirmation dialog: back to the form, nothing sent
+function cancel_save() {
+  show_modal("config_confirm_modal", false);
+  show_modal("configure_modal", true);
+}
+
+// "Save and restart" in the confirmation dialog
+async function confirm_save() {
+  const confirmBtn = document.querySelector("#config-confirm-btn");
+  const confirmText = confirmBtn.innerHTML;
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = "⏳ Saving...";
   const response_vector = await set_vector_config();
-  saveBtn.disabled = false;
-  saveBtn.innerHTML = saveText;
+  confirmBtn.disabled = false;
+  confirmBtn.innerHTML = confirmText;
+
+  show_modal("config_confirm_modal", false);
   if (response_vector.status !== 200) {
+    show_modal("configure_modal", true);
     show_config_error(await describe_save_error(response_vector));
     return;
   }
-
-  document.getElementById("config-saved-ssid").textContent = selected_ssid();
-  document.getElementById("configure_modal").removeAttribute("open");
-  document.getElementById("config_saved_modal").setAttribute("open", "");
+  show_modal("config_saved_modal", true);
 }
 
 window.save_configuration = save_configuration;
+window.confirm_save = confirm_save;
+window.cancel_save = cancel_save;
