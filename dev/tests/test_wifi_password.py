@@ -143,3 +143,40 @@ def test_factory_reset_clears_the_long_record(board):
     record = board.ds.memory_map["wifi_password"]
     assert board.fram.read(record["start"], record["size"]) == bytes(record["size"])
     assert board.wifi.read_password() == ""
+
+
+def test_same_network_saved_by_older_firmware_with_the_long_prefix_still_connects(board):
+    # older firmware saves exactly the first 32 bytes of the long password: the
+    # long record still matches, so the short password has to be tried too
+    long_password = "Q" * 40
+    board.wifi.save_configuration("Arcade", long_password, "game", "admin")
+    _old_firmware_save(board, "Arcade", "Q" * 32)
+    assert board.wifi.passwords_to_try() == [long_password, "Q" * 32]
+
+
+def test_one_password_to_try_when_there_is_no_long_record(board):
+    board.wifi.save_configuration("Arcade", "short-one", "game", "admin")
+    assert board.wifi.passwords_to_try() == ["short-one"]
+
+
+def test_a_failed_long_record_write_changes_nothing_and_raises(board, monkeypatch):
+    board.wifi.save_configuration("Arcade", "previous", "game", "admin")
+    real_write = board.ds.write_record
+
+    def failing_write(structure_name, record, index=0, set=0):
+        if structure_name == "wifi_password":
+            return {"status": "error", "message": "FRAM write failed"}
+        return real_write(structure_name, record, index, set)
+
+    monkeypatch.setattr(board.ds, "write_record", failing_write)
+    with pytest.raises(OSError):
+        board.wifi.save_configuration("Other", "N" * 50, "game", "admin")
+    monkeypatch.setattr(board.ds, "write_record", real_write)
+    config = board.ds.read_record("configuration", 0)
+    assert (config["ssid"], board.wifi.read_password(config)) == ("Arcade", "previous")
+
+
+def test_a_failed_configuration_write_raises(board, monkeypatch):
+    monkeypatch.setattr(board.ds, "write_record", lambda *a, **k: {"status": "error", "message": "FRAM write failed"})
+    with pytest.raises(OSError):
+        board.wifi.save_configuration("Arcade", "short-one", "game", "admin")

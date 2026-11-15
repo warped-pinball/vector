@@ -2355,7 +2355,11 @@ def add_ap_mode_routes():
         if not data["ssid"]:
             return json_dumps({"error": "Invalid ssid"}), 400
 
-        save_configuration(data["ssid"], data["wifi_password"], data["game_config_filename"], data["vector_password"])
+        try:
+            save_configuration(data["ssid"], data["wifi_password"], data["game_config_filename"], data["vector_password"])
+        except OSError as e:
+            # nothing is rebooted, so the page can say so and the user can try again
+            return json_dumps({"error": f"Could not save settings: {e}"}), 500
 
         Pico_Led.off()
 
@@ -2434,19 +2438,19 @@ def connect_to_wifi():
     )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
-    from WifiPassword import read_password
+    from WifiPassword import passwords_to_try
 
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
-    password = read_password(wifi_credentials)
+    passwords = passwords_to_try(wifi_credentials)
     print(f"Connecting to SSID: {ssid}")
 
     if not ssid:
         return False
 
-    # Try a few times before raising a fault
-    for i in range(_WIFI_MAX_ATTEMPTS):
-        ip_address = phew_connect(ssid, password, timeout_seconds=10)
+    # Try a few times before raising a fault (each password, when there are two)
+    for i in range(_WIFI_MAX_ATTEMPTS * len(passwords)):
+        ip_address = phew_connect(ssid, passwords[i // _WIFI_MAX_ATTEMPTS], timeout_seconds=10)
         if phew_is_connected():
             # TODO remove ip address args and move to scheduler
             writeIP(ip_address)

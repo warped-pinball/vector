@@ -45,10 +45,26 @@ def short_password(password):
     return data[:cut].decode()
 
 
+def _write(structure_name, record):
+    # write_record reports a FRAM failure by returning an error instead of raising
+    result = DataStore.write_record(structure_name, record)
+    if result is not None:
+        raise OSError(result.get("message", f"could not write {structure_name}"))
+
+
 def save_configuration(ssid, password, gamename, admin_password):
-    """Write the configuration record, and the long password record when the password needs it"""
+    """Write the configuration record, and the long password record when the password needs it.
+
+    Raises OSError when a write fails, so setup can say so instead of rebooting.
+    """
     short = short_password(password)
-    DataStore.write_record(
+    # the long record first: if it fails, nothing has changed yet
+    if short == password:
+        # fits the old field: clear the long record so a stale one can never apply
+        _write("wifi_password", {"marker": b"", "check": b"", "password": b""})
+    else:
+        _write("wifi_password", {"marker": _MARKER, "check": _check(ssid, short, password), "password": password.encode()})
+    _write(
         "configuration",
         {
             "ssid": ssid,
@@ -57,14 +73,6 @@ def save_configuration(ssid, password, gamename, admin_password):
             "gamename": gamename,
         },
     )
-    if short == password:
-        # fits the old field: clear the long record so a stale one can never apply
-        DataStore.write_record("wifi_password", {"marker": b"", "check": b"", "password": b""})
-    else:
-        DataStore.write_record(
-            "wifi_password",
-            {"marker": _MARKER, "check": _check(ssid, short, password), "password": password.encode()},
-        )
 
 
 def read_password(configuration=None):
@@ -82,3 +90,19 @@ def read_password(configuration=None):
     except Exception:
         pass
     return short
+
+
+def passwords_to_try(configuration=None):
+    """The passwords to connect with, best first.
+
+    Usually just one. When the long record applies, the configuration record's own
+    password follows it: older firmware saving the same network with a password
+    that happens to equal the long one's first 32 bytes leaves a record that still
+    matches, and only trying both tells those apart.
+    """
+    if configuration is None:
+        configuration = DataStore.read_record("configuration", 0)
+    password = read_password(configuration)
+    if password == configuration["password"]:
+        return [password]
+    return [password, configuration["password"]]
