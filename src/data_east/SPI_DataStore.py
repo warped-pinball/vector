@@ -41,6 +41,13 @@ memory_map = {
         "size": 48,
         "count": 1,
     },
+    # Whole WiFi password (up to 64 bytes), see WifiPassword.py. Below everything
+    # else so no existing record moves: marker 4 B, check 4 B, password 64 B
+    "wifi_password": {
+        "start": top_mem - 16 - (20 * 30) - (38 * 20) - (14 * 100) - (18 * 20 * 30) - (96 * 1) - (48 * 1) - 72,
+        "size": 72,
+        "count": 1,
+    },
 }
 
 
@@ -53,6 +60,7 @@ def show_mem_map():
     memory_map["individual"]["start"] = memory_map["tournament"]["start"] - (memory_map["individual"]["size"] * memory_map["individual"]["count"] * memory_map["individual"]["sets"])
     memory_map["configuration"]["start"] = memory_map["individual"]["start"] - (memory_map["configuration"]["size"] * memory_map["configuration"]["count"])
     memory_map["extras"]["start"] = memory_map["configuration"]["start"] - (memory_map["extras"]["size"] * memory_map["extras"]["count"])
+    memory_map["wifi_password"]["start"] = memory_map["extras"]["start"] - (memory_map["wifi_password"]["size"] * memory_map["wifi_password"]["count"])
     # Calculate the end addresses
     for key, value in memory_map.items():
         value["end"] = value["start"] + (value["size"] * value["count"]) - 1
@@ -117,6 +125,11 @@ def serialize(record, structure_name):
             record["gamename"].encode(),
             record["Gpassword"].encode(),
         )
+    elif structure_name == "wifi_password":
+        password = record["password"]
+        if isinstance(password, str):
+            password = password.encode()
+        return struct.pack("<4s4s64s", record.get("marker", b""), record.get("check", b""), password)
     elif structure_name == "extras":
         if record.get("enable") is None:
             enable = 0
@@ -197,6 +210,9 @@ def deserialize(data, structure_name):
             "Gpassword": gpassword.decode().strip("\0"),
         }
 
+    elif structure_name == "wifi_password":
+        marker, check, password = struct.unpack("<4s4s64s", data)
+        return {"marker": marker, "check": check, "password": password.rstrip(b"\0")}
     elif structure_name == "extras":
         # print (data,"length= ",len(data))  #,"s-> ",data.strip('\00'))
         try:
@@ -272,6 +288,7 @@ def blankAll():
     blankStruct("individual")
     blankStruct("configuration")
     blankStruct("extras")
+    blankStruct("wifi_password")
     record1 = {"version": "Map Ver: 2.0"}
     write_record("MapVersion", record1, index=0)
 

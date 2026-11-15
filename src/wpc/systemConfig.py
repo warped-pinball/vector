@@ -5,7 +5,7 @@ updatesURL = "http://software.warpedpinball.com/vector/wpc/latest.json"
 resetClipDocsURL = "https://docs.warpedpinball.com/guides/wpc/manual/#reset-clip"
 
 # Firmware version for the WPC build
-SystemVersion = "2.0.5"
+SystemVersion = "2.0.6"
 
 
 # System specific scheduled tasks

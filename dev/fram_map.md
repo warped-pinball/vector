@@ -18,7 +18,7 @@ These regions are the same physical chip but managed outside the SPI Data Store.
 | Game adjustments | `0x2100` | `0x2340` | 576 B | 4 profiles × (128 B data + 16 B name) |
 | Last profile byte | `0x2344` | `0x2344` | 1 B | Index 0–3 of last loaded adjustment profile |
 | Logger | `0x2400` | `0x43FF` | 8 KB | Circular log buffer |
-| *(reserved)* | `0x4400` | `0x5482` | ~4.2 KB | Expansion space |
+| *(reserved)* | `0x4400` | `0x543A` | ~4.1 KB | Expansion space |
 
 ### WPC
 
@@ -28,7 +28,7 @@ These regions are the same physical chip but managed outside the SPI Data Store.
 | Game adjustments | `0x2000` | `0x25FF` | 1.5 KB | 4 profiles × (305 B data + 16 B name); expanded from Sys11 |
 | Last profile byte | `0x2344` | `0x2344` | 1 B | Index 0–3 of last loaded adjustment profile |
 | Logger | `0x2600` | `0x45FF` | 8 KB | Shifted up vs. Sys11 to make room for larger adjustments |
-| *(reserved)* | `0x4600` | `0x4A1E` | ~1 KB | Expansion space |
+| *(reserved)* | `0x4600` | `0x49D6` | ~1 KB | Expansion space (Data East: to `0x4A1E`) |
 
 > WPC removed the serial flash UpdateStore status region.
 
@@ -55,8 +55,11 @@ All three systems share the same record names and ordering; differences are in r
 | configuration | `0x54FB` (21755) | `0x555A` (21850) | 96 B | 1 | 96 B |
 | extras | `0x54CB` (21707) | `0x54FA` (21754) | 48 B | 1 | 48 B |
 | switches | `0x5483` (21635) | `0x54CA` (21706) | 72 B | 1 | 72 B |
+| wifi_password | `0x543B` (21563) | `0x5482` (21634) | 72 B | 1 | 72 B |
 
-**Bottom of used space: `0x5483` (21635)**
+**Bottom of used space: `0x543B` (21563)**
+
+Classic and Whitestar use this same data store.
 
 ### WPC — Map Version 2.0
 
@@ -72,8 +75,9 @@ Scores expanded from 4-byte `uint32` to 8-byte `uint64` throughout.
 | configuration | `0x4A97` (19095) | `0x4AF6` (19190) | 96 B | 1 | 96 B |
 | extras | `0x4A67` (19047) | `0x4A96` (19094) | 48 B | 1 | 48 B |
 | switches | `0x4A1F` (18975) | `0x4A66` (19046) | 72 B | 1 | 72 B |
+| wifi_password | `0x49D7` (18903) | `0x4A1E` (18974) | 72 B | 1 | 72 B |
 
-**Bottom of used space: `0x4A1F` (18975)**
+**Bottom of used space: `0x49D7` (18903)**
 
 ### Data East — Map Version 2.0
 
@@ -88,8 +92,20 @@ Identical to WPC except the `switches` record does not exist.
 | individual | `0x4AF7` (19191) | `0x7526` (29990) | 18 B | 20 scores × 30 players | 10,800 B |
 | configuration | `0x4A97` (19095) | `0x4AF6` (19190) | 96 B | 1 | 96 B |
 | extras | `0x4A67` (19047) | `0x4A96` (19094) | 48 B | 1 | 48 B |
+| wifi_password | `0x4A1F` (18975) | `0x4A66` (19046) | 72 B | 1 | 72 B |
 
-**Bottom of used space: `0x4A67` (19047)**
+**Bottom of used space: `0x4A1F` (18975)**
+
+### EM — Map Version EM1.0
+
+Same records and sizes as System 11 down to `extras`, then:
+
+| Record | Start | End | Record Size | Count | Total |
+|--------|-------|-----|-------------|-------|-------|
+| EMData | `0x5403` (21507) | `0x54CA` (21706) | 200 B | 1 | 200 B |
+| wifi_password | `0x53BB` (21435) | `0x5402` (21506) | 72 B | 1 | 72 B |
+
+**Bottom of used space: `0x53BB` (21435)**
 
 ---
 
@@ -149,6 +165,18 @@ Addressed as a 2D array: `set` = player number (0–29), `index` = score slot (0
 | password | `32s` | 32 B |
 | gamename | `16s` | 16 B |
 | Gpassword | `16s` | 16 B |
+
+### wifi_password — 72 bytes (all systems)
+
+The configuration record only has room for 32 bytes of WiFi password; WPA allows 63 characters or a 64 digit hex key. This record holds the whole password. It was added below every other record so nothing existing moved, and boards need no migration (`src/common/WifiPassword.py`).
+
+| Field | Type | Size | Notes |
+|-------|------|------|-------|
+| marker | `4s` | 4 B | `WPL1` when the record is in use |
+| check | `4s` | 4 B | First 4 bytes of sha256(ssid + `\0` + configuration password + `\0` + full password) |
+| password | `64s` | 64 B | The whole WiFi password |
+
+The configuration record's `password` always holds the first 32 bytes (cut on a character boundary), so firmware without this record still works with short passwords. The long record is used only when the marker is there, the check matches the configuration record, and the full password starts with the short one. Otherwise (a board that never had the record, settings saved since by older firmware) the configuration password is used. A password that fits in 32 bytes clears the record. Factory reset clears it.
 
 ### extras — 48 bytes (all systems)
 

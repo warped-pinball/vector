@@ -2316,7 +2316,7 @@ def add_ap_mode_routes():
             - name: wifi_password
               type: string
               required: true
-              description: Wi-Fi network password
+              description: Wi-Fi network password, up to 64 bytes (63 characters, or a 64 digit hex key)
             - name: vector_password
               type: string
               required: true
@@ -2341,8 +2341,12 @@ def add_ap_mode_routes():
         if data["game_config_filename"] not in all_game_configs:
             return f"Invalid game config filename {data['game_config_filename']}", 400
 
-        # Field sizes in the configuration record: ssid 32, wifi password 32, vector password 16
-        for key, max_len in (("ssid", 32), ("wifi_password", 32), ("vector_password", 16)):
+        from WifiPassword import MAX_BYTES as WIFI_PASSWORD_MAX_BYTES
+        from WifiPassword import save_configuration
+
+        # Field sizes: ssid 32 and vector password 16 in the configuration record;
+        # the wifi password has its own record (see WifiPassword.py)
+        for key, max_len in (("ssid", 32), ("wifi_password", WIFI_PASSWORD_MAX_BYTES), ("vector_password", 16)):
             value = data.get(key)
             if not isinstance(value, str) or len(value.encode("utf-8")) > max_len:
                 return json_dumps({"error": f"Invalid {key}"}), 400
@@ -2351,15 +2355,7 @@ def add_ap_mode_routes():
         if not data["ssid"]:
             return json_dumps({"error": "Invalid ssid"}), 400
 
-        ds_write_record(
-            "configuration",
-            {
-                "ssid": data["ssid"],
-                "password": data["wifi_password"],
-                "Gpassword": data["vector_password"],
-                "gamename": data["game_config_filename"],
-            },
-        )
+        save_configuration(data["ssid"], data["wifi_password"], data["game_config_filename"], data["vector_password"])
 
         Pico_Led.off()
 
@@ -2438,10 +2434,11 @@ def connect_to_wifi():
     )
     from phew import connect_to_wifi as phew_connect
     from SPI_DataStore import writeIP
+    from WifiPassword import read_password
 
     wifi_credentials = ds_read_record("configuration", 0)
     ssid = wifi_credentials["ssid"]
-    password = wifi_credentials["password"]
+    password = read_password(wifi_credentials)
     print(f"Connecting to SSID: {ssid}")
 
     if not ssid:

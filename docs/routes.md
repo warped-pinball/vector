@@ -1633,7 +1633,7 @@ No structured response documented.
 #### Body parameters
 
 - `ssid` string required - Wi-Fi network name
-- `wifi_password` string required - Wi-Fi network password
+- `wifi_password` string required - Wi-Fi network password, up to 64 bytes (63 characters, or a 64 digit hex key)
 - `vector_password` string required - Password for authenticated API access
 - `game_config_filename` string required - Game configuration filename to load
 
@@ -1651,7 +1651,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2374)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2370)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks

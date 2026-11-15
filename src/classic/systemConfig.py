@@ -5,7 +5,7 @@ updatesURL = "http://software.warpedpinball.com/vector/classic/latest.json"
 resetClipDocsURL = "https://docs.warpedpinball.com/guides/classic/manual/#reset-clip"
 
 # Firmware version for the Classic build
-SystemVersion = "2.0.3"
+SystemVersion = "2.0.4"
 
 
 # System specific scheduled tasks
