@@ -3,7 +3,7 @@ async function fault_check() {
   if (response.status !== 200) {
     // Use strict equality check
     alert(
-      "Something has gone wrong while checking for installation issues. Refresh the page and if the issue persists please contact inventingfun@gmail.com",
+      "Something has gone wrong while checking for installation issues. Refresh the page and if the issue persists please contact support@warpedpinball.com",
     );
   }
   const data = await response.json(); // list of faults as ["fault1", "fault2", ...]

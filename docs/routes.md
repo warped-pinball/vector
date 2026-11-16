@@ -1651,7 +1651,7 @@ No structured response documented.
 <a id="api-available_ssids"></a>
 ## `/api/available_ssids`
 
-- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2370)
+- **Handler:** [`app_getAvailableSSIDs`](https://github.com/warped-pinball/vector/blob/main/src/common/backend.py#L2374)
 
 
 [AP Mode Only] Scan for nearby Wi-Fi networks
@@ -1666,7 +1666,7 @@ No parameters inferred.
 
 - `200` - Networks listed
 
-**Response body:** Array of SSID records with signal quality and configuration flag
+**Response body:** SSID records with signal quality and configuration flag; a saved network the scan missed (hidden, or out of range) is last, with hidden true
 
 ```
 [
@@ -1674,6 +1674,12 @@ No parameters inferred.
         "ssid": "MyNetwork",
         "rssi": -40,
         "configured": true
+    },
+    {
+        "ssid": "MyHiddenNetwork",
+        "rssi": null,
+        "configured": true,
+        "hidden": true
     }
 ]
 ```

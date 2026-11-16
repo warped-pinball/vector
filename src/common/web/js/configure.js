@@ -64,6 +64,17 @@ async function build_game_config_select() {
   }
 }
 
+// Dropdown value for "join a network that is not in the list"; can't collide with a
+// real SSID because those are at most 32 bytes
+const HIDDEN_NETWORK_OPTION = "__hidden_network_option_not_an_ssid__";
+
+function show_hidden_ssid_input(show) {
+  const input = document.querySelector('input[name="hidden_ssid"]');
+  if (!input) return;
+  input.hidden = !show;
+  if (show) input.focus();
+}
+
 async function build_ssid_select() {
   // get list of wifi networks
   const response = await fetch("/api/available_ssids");
@@ -71,14 +82,25 @@ async function build_ssid_select() {
 
   // create mapping of ssid to "ssid + configured"
   const ssid_to_name = {};
+  let configured_ssid = null;
+  let configured_hidden = false;
   for (const ssid of data) {
+    if (ssid.configured) {
+      configured_ssid = ssid.ssid;
+      // Saved network that the scan did not see (hidden, or out of range):
+      // offer it in the manual field rather than as a scanned network
+      if (ssid.hidden) {
+        configured_hidden = true;
+        continue;
+      }
+    }
     let name = ssid.ssid;
     if (ssid.configured) {
       name = `${name} (Current Setting)`;
-      configured_ssid = ssid.ssid;
     }
     ssid_to_name[ssid.ssid] = name;
   }
+  ssid_to_name[HIDDEN_NETWORK_OPTION] = "Other (hidden network)...";
 
   const ssid_select = await window.createDropDownElement(
     "ssid_select",
@@ -86,18 +108,39 @@ async function build_ssid_select() {
     ssid_to_name,
     (defaultValue = null),
     (sortOptions = false),
+    (optionsCallback = (value) =>
+      show_hidden_ssid_input(value === HIDDEN_NETWORK_OPTION)),
   );
 
   document.getElementById("ssid_select_placeholder").replaceWith(ssid_select);
 
   // set configured ssid as default
-  if (configured_ssid) {
+  if (configured_hidden) {
+    window.setDropDownValue(
+      "ssid_select",
+      HIDDEN_NETWORK_OPTION,
+      ssid_to_name[HIDDEN_NETWORK_OPTION],
+    );
+    document.querySelector('input[name="hidden_ssid"]').value = configured_ssid;
+    show_hidden_ssid_input(true);
+  } else if (configured_ssid) {
     window.setDropDownValue(
       "ssid_select",
       configured_ssid,
       `${configured_ssid} (Current Setting)`,
     );
   }
+}
+
+// The SSID to save: the scanned network picked in the dropdown, or the name
+// typed in for a hidden network. SSIDs can legally start or end with spaces,
+// so the typed name is kept exactly as entered.
+function selected_ssid() {
+  const selected = window.getDropDownValue("ssid_select");
+  if (selected === HIDDEN_NETWORK_OPTION) {
+    return document.querySelector('input[name="hidden_ssid"]').value;
+  }
+  return selected;
 }
 
 async function populate_previous_ip() {
@@ -141,8 +184,7 @@ configure_check();
 
 async function set_vector_config() {
   // save the other configuration options
-  // ssid select
-  const ssid = window.getDropDownValue("ssid_select");
+  const ssid = selected_ssid();
   const wifi_password = document.querySelector(
     'input[name="wifi_password"]',
   ).value;
@@ -174,26 +216,124 @@ async function set_vector_config() {
   }
 }
 
-// function to  save the configuration  and restart the device
+// Field sizes in the board's configuration record, in bytes (see set_vector_config)
+const SSID_MAX_BYTES = 32;
+const WIFI_PASSWORD_MAX_BYTES = 32;
+const ADMIN_PASSWORD_MAX_BYTES = 16;
+
+function byte_length(text) {
+  return new TextEncoder().encode(text).length;
+}
+
+// Returns what the user has to fix before saving, or null when the form is complete
+function config_form_problem() {
+  const ssid = selected_ssid();
+  const wifi_password = document.querySelector(
+    'input[name="wifi_password"]',
+  ).value;
+  const vector_password = document.querySelector(
+    'input[name="vector_password"]',
+  ).value;
+
+  if (!ssid) {
+    return "Select a WiFi network, or type in the name of a hidden one.";
+  }
+  if (byte_length(ssid) > SSID_MAX_BYTES) {
+    return `The WiFi network name is too long. Vector supports up to ${SSID_MAX_BYTES} characters.`;
+  }
+  if (byte_length(wifi_password) > WIFI_PASSWORD_MAX_BYTES) {
+    return `The WiFi password is too long. Vector supports up to ${WIFI_PASSWORD_MAX_BYTES} characters.`;
+  }
+  if (!window.getDropDownValue("game_config_select")) {
+    return "Select your game and ROM version.";
+  }
+  if (byte_length(vector_password) > ADMIN_PASSWORD_MAX_BYTES) {
+    return `The admin password is too long. Use ${ADMIN_PASSWORD_MAX_BYTES} characters or fewer.`;
+  }
+  return null;
+}
+
+function show_config_error(message) {
+  const replyDom = document.querySelector("#config-reply");
+  replyDom.replaceChildren();
+  if (!message) return;
+  const p = document.createElement("p");
+  p.style.color = "red";
+  p.textContent = message;
+  replyDom.appendChild(p);
+}
+
+// The board answers a rejected save with a 400 whose body names the field
+async function describe_save_error(response) {
+  let body = "";
+  try {
+    body = await response.text();
+  } catch (e) {
+    // fall through to the generic message
+  }
+  if (/game config/i.test(body)) {
+    return "The board did not recognise that game. Select your game and ROM version again.";
+  }
+  const field = /Invalid (\w+)/.exec(body);
+  const names = {
+    ssid: "WiFi network name",
+    wifi_password: "WiFi password",
+    vector_password: "admin password",
+  };
+  if (field && names[field[1]]) {
+    return `The board rejected the ${
+      names[field[1]]
+    }. Check it and save again.`;
+  }
+  return "Vector could not save the configuration. Try again.";
+}
+
+function show_modal(id, show) {
+  const modal = document.getElementById(id);
+  if (show) modal.setAttribute("open", "");
+  else modal.removeAttribute("open");
+}
+
+// Save button: check the form, then explain the restart before anything is sent.
+// The explanation comes first because once the board restarts the setup WiFi is
+// gone, and a phone's captive portal window may close along with it.
 async function save_configuration() {
-  // save the vector configuration
-  var replyDom = document.querySelector("#config-reply");
-  var saveBtn = document.querySelector("#config-save-btn");
-  saveBtn.disabled = true;
-  var saveText = saveBtn.innerHTML;
-  saveBtn.innerHTML = "⏳ Saving...";
-  let response_vector = await set_vector_config();
-  saveBtn.disabled = false;
-  saveBtn.innerHTML = saveText;
+  const problem = config_form_problem();
+  show_config_error(problem);
+  if (problem) return;
+
+  for (const el of document.querySelectorAll(".config-target-ssid")) {
+    el.textContent = selected_ssid();
+  }
+  show_modal("configure_modal", false);
+  show_modal("config_confirm_modal", true);
+}
+
+// "Cancel" in the confirmation dialog: back to the form, nothing sent
+function cancel_save() {
+  show_modal("config_confirm_modal", false);
+  show_modal("configure_modal", true);
+}
+
+// "Save and restart" in the confirmation dialog
+async function confirm_save() {
+  const confirmBtn = document.querySelector("#config-confirm-btn");
+  const confirmText = confirmBtn.innerHTML;
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = "⏳ Saving...";
+  const response_vector = await set_vector_config();
+  confirmBtn.disabled = false;
+  confirmBtn.innerHTML = confirmText;
+
+  show_modal("config_confirm_modal", false);
   if (response_vector.status !== 200) {
-    replyDom.innerHTML =
-      "<p style='color:red;'>Error saving vector configuration; Try again</p>";
+    show_modal("configure_modal", true);
+    show_config_error(await describe_save_error(response_vector));
     return;
   }
-
-  response_vector = null;
-  replyDom.innerHTML =
-    "<p style='color:green;'>Configuration saved. Vector is rebooting to apply the changes. Make sure your reset clip is in place.</p>";
+  show_modal("config_saved_modal", true);
 }
 
 window.save_configuration = save_configuration;
+window.confirm_save = confirm_save;
+window.cancel_save = cancel_save;

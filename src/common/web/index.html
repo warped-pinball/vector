@@ -170,6 +170,17 @@
             <summary>Scanning for WiFi networks</summary>
           </details>
           <input
+            type="text"
+            name="hidden_ssid"
+            placeholder="Network name (SSID)"
+            aria-label="Hidden network name"
+            maxlength="32"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            hidden
+          />
+          <input
             type="password"
             name="wifi_password"
             placeholder="WiFi password"
@@ -193,12 +204,9 @@
             may be able to add it for you.
           </p>
 
-          <a href="mailto:inventingfun@gmail.com">inventingfun@gmail.com</a>
-
-          <p>
-            Once you have saved, please power cycle your pinball machine and
-            connect to your selected WiFi network.
-          </p>
+          <a href="mailto:support@warpedpinball.com"
+            >support@warpedpinball.com</a
+          >
 
           <footer style="position: relative">
             <div style="text-align: center" id="config-reply"></div>
@@ -223,6 +231,32 @@
               </button>
             </div>
           </footer>
+        </article>
+      </dialog>
+      <dialog id="config_confirm_modal">
+        <article>
+          <h2>Save and Restart?</h2>
+          <p>
+            Your game will restart. Then connect this device to
+            <strong class="config-target-ssid"></strong> to use Vector.
+          </p>
+          <footer>
+            <button class="secondary" onclick="window.cancel_save()">
+              Cancel
+            </button>
+            <button id="config-confirm-btn" onclick="window.confirm_save()">
+              Save and restart
+            </button>
+          </footer>
+        </article>
+      </dialog>
+      <dialog id="config_saved_modal">
+        <article>
+          <h2>Saved</h2>
+          <p>
+            Your game is restarting. Connect this device to
+            <strong class="config-target-ssid"></strong> to use Vector.
+          </p>
         </article>
       </dialog>
       <dialog id="install_warning_modal">

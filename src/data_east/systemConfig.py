@@ -5,7 +5,7 @@ updatesURL = "http://software.warpedpinball.com/vector/data_east/latest.json"
 resetClipDocsURL = "https://docs.warpedpinball.com/guides/data_east/manual/#hardware-installation"
 
 # Firmware version for the Data East build
-SystemVersion = "2.0.4"
+SystemVersion = "2.0.5"
 
 
 # System specific scheduled tasks
