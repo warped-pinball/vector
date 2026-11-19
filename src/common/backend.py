@@ -1584,7 +1584,7 @@ def app_setDateTime(request):
         example: "ok"
     @end
     """
-    date = [int(e) for e in request.json["date"]]
+    date = [int(e) for e in request.data["date"]]
     from machine import RTC
 
     rtc = RTC()

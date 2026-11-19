@@ -1257,6 +1257,41 @@
 
   window.applyUpdate = applyUpdate;
 
+  // Send the browser's local time to the board. /api/set_date expects
+  // [year, month, day, hour, minute, second] with month in 1-12.
+  window.setClockFromBrowser = async function () {
+    const button = document.getElementById("set-clock-button");
+    if (button) {
+      button.disabled = true;
+    }
+    const now = new Date();
+    const data = {
+      date: [
+        now.getFullYear(),
+        now.getMonth() + 1,
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+      ],
+    };
+    try {
+      const response = await window.smartFetch("/api/set_date", data, true);
+      if (response.status === 200) {
+        alert("Clock set to " + now.toLocaleString() + ".");
+      } else if (response.status !== 401) {
+        alert("Failed to set clock.");
+      }
+    } catch (e) {
+      console.error("Failed to set clock:", e);
+      alert("Failed to set clock.");
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  };
+
   // custom update function
   window.customUpdate = async function () {
     // prompt the user for the update url
