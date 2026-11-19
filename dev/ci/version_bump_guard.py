@@ -298,7 +298,8 @@ def main() -> int:
                 and not touches_scope(changed, rule.scope_prefixes)
                 and common_non_vector_changed
             ):
-                rule_changed = [*changed, rule.scope_prefixes[0]]
+                # a path inside the scope; the bare prefix loses its trailing slash in touches_scope and never matches
+                rule_changed = [*changed, rule.version_file]
 
             outcomes.append(analyze_rule(rule, rule_changed, args.base, args.head))
         except subprocess.CalledProcessError as exc:

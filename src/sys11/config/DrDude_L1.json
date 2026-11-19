@@ -50,5 +50,13 @@
     "Flippers": {
         "Type": 1,
         "Address": 69
+    },
+    "Formats": {
+        "Standard": {
+            "Id": 0
+        },
+        "OneBall": {
+            "Id": 7
+        }
     }
 }

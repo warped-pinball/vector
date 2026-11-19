@@ -29,6 +29,7 @@ _CHALLENGE_EXPIRATION_SECONDS = const(60)
 _AUTH_MAX_FAILURES = const(5)
 _AUTH_LOCKOUT_SECONDS = const(30)
 _auth_failures = 0
+_boot_id = 0
 _auth_locked_until = 0
 
 
@@ -94,8 +95,11 @@ def route_wrapper(func):
     return wrapped_route
 
 
-def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
-    """Decorator to add a route to the server with gc_collect() and error handling"""
+def add_route(path, auth=False, cool_down_seconds=0, single_instance=False, finish_on_disconnect=False):
+    """Decorator to add a route to the server with gc_collect() and error handling
+
+    finish_on_disconnect: the route streams progress for a job that has to run to its end even if the client stops listening
+    """
     # If auth is True only allow a single instance of the route to run at a time
     if auth:
         single_instance = True
@@ -112,6 +116,11 @@ def add_route(path, auth=False, cool_down_seconds=0, single_instance=False):
         from phew.server import add_route as phew_add_route
 
         phew_add_route(path, wrapped)
+
+        if finish_on_disconnect:
+            from phew.server import finish_on_disconnect as phew_finish_on_disconnect
+
+            phew_finish_on_disconnect(path)
 
         # return route
 
@@ -1617,12 +1626,19 @@ def app_version(request):
           description: Version returned
       body:
         description: Current firmware version string
-        example: {"version": "1.0.0"}
+        example: {"version": "1.0.0", "boot_id": 123456789}
     @end
     """
     from systemConfig import SystemVersion
 
-    return {"version": SystemVersion}
+    # boot_id changes on every restart, so a page can tell the board rebooted even when the version did not change
+    global _boot_id
+    if not _boot_id:
+        from urandom import getrandbits
+
+        _boot_id = getrandbits(30) + 1
+
+    return {"version": SystemVersion, "boot_id": _boot_id}
 
 
 @add_route("/api/machine_id")
@@ -2186,11 +2202,11 @@ def app_updates_available(request):
         return json_dumps({"error": f"Could not verify update information: {e}"}), 502, "application/json"
 
 
-@add_route("/api/update/apply", auth=True)
+@add_route("/api/update/apply", auth=True, finish_on_disconnect=True)
 def app_apply_update(request):
     """
     @api
-    summary: Download and apply a software update from the provided URL.
+    summary: Download and apply a software update from the provided URL. Once started the update runs to its end on the device, even if the client stops reading the progress stream.
     auth: true
     request:
       body:
@@ -2243,7 +2259,11 @@ def app_apply_update(request):
             yield json_dumps(response)
             gc_collect()
     except Exception as e:
-        Log.log(f"BKD: Error applying update: {e}")
+        from gc import mem_free
+
+        gc_collect()
+        # free RAM goes in the log, most update failures on the Pico are memory
+        Log.log(f"BKD: Error applying update: {e} (free RAM {mem_free()})")
         yield json_dumps({"log": f"Error applying update: {e}", "percent": 100})
         yield json_dumps({"log": "Try again in a moment", "percent": 100})
 
