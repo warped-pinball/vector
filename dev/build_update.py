@@ -21,7 +21,7 @@ def all_combos(pico_list, micropython_list):
 
 
 compatible_configurations = {
-    "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0."]),
+    "sys11": all_combos(["1w"], ["1.24.1.", "1.23.0.preview"]) + all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "em": all_combos(["2w"], ["1.26.0.preview"]),
     "data_east": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
