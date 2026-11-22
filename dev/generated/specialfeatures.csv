@@ -145,6 +145,37 @@ Swords of Fury,SYS11,L2,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Sta
 Taxi,SYS11,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Transporter the Rescue,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Whirlwind,SYS11,L3,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
+Apollo 13,WHITESTAR,501,no,no,no,
+Austin Powers,WHITESTAR,302,no,no,no,
+Elvis,WHITESTAR,302,no,no,no,
+Generic Whitestar,WHITESTAR,,no,no,no,
+Godzilla,WHITESTAR,205,no,no,no,
+GoldenEye,WHITESTAR,404,no,no,no,
+Grand Prix,WHITESTAR,400,no,no,no,
+Harley-Davidson,WHITESTAR,300,no,no,no,
+High Roller Casino,WHITESTAR,300,no,no,no,
+ID4: Independence Day,WHITESTAR,202,no,no,no,
+Lost in Space,WHITESTAR,101,no,no,no,
+Monopoly,WHITESTAR,303;320,no,no,no,
+NASCAR,WHITESTAR,301,no,no,no,
+NFL,WHITESTAR,101,no,no,no,
+Playboy,WHITESTAR,401,no,no,no,
+Ripley's Believe It or Not!,WHITESTAR,320,no,no,no,
+RollerCoaster Tycoon,WHITESTAR,701,no,no,no,
+Sharkey's Shootout,WHITESTAR,211,no,no,no,
+South Park,WHITESTAR,103,no,no,no,
+Space Jam,WHITESTAR,300,no,no,no,
+Star Wars Trilogy Special Edition,WHITESTAR,300,no,no,no,
+Starship Troopers,WHITESTAR,201,no,no,no,
+Striker Xtreme,WHITESTAR,102,no,no,no,
+Terminator 3: Rise of the Machines,WHITESTAR,400,no,no,no,
+The Lord of the Rings,WHITESTAR,1000;800,no,no,no,
+The Lost World: Jurassic Park,WHITESTAR,202,no,no,no,
+The Simpsons Pinball Party,WHITESTAR,500,no,no,no,
+The Sopranos,WHITESTAR,500,no,no,no,
+The X-Files,WHITESTAR,303,no,no,no,
+Twister,WHITESTAR,405,no,no,no,
+Viper Night Drivin',WHITESTAR,201,no,no,no,
 Addams Family,WPC,H2;H4;L2;L5,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
 Attack from Mars,WPC,10;11;113b,yes,yes,yes,Decay;Golf;Limbo;LongestBall;LowBall;Practice;Standard
 Black Rose,WPC,L4,yes,yes,yes,Decay;Limbo;LongestBall;LowBall;Practice;Standard
