@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "Grand Prix",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 871,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7777,
+        "ChecksumResultAdr": 8129,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7843,
+        "Extra2StartAdr": 7844,
+        "Extra2EndAdr": 7886,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5596,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5661,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 872,
+        "PlayerUp": 870,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5718,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5528,
+        "Length": 64,
+        "CounterAdr": 5560,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            [], [], [], [], [], [], [], ["Shooter Lane", 50],
+            ["Top Drop Target", 50], ["Middle Drop Target", 50], ["Bottom Drop Target", 50], ["Windmill Motor Opto", 50], ["Left Ramp Make Opto", 50], [], ["Truck Ramp Kicker", 50], ["Right Ramp Diverter", 50],
+            ["Right Orbit", 50], ["Left Orbit", 50], ["Pit Lock Middle", 50], ["Pit Lock Top", 50], ["Midway Eject", 50], ["Track Exit Popper", 50], [], ["Pit Lock Bottom (Opto)", 50],
+            ["Left Spinner", 50], ["Lower Accel Right (Opto)", 50], ["Lower Accel Middle (Opto)", 50], ["Test Car Standup X2", 50], ["Lower Accel Left (Opto)", 50], ["Captive Ball Standup", 50], ["Car Mech Down", 50], ["Test Car", 50],
+            [], ["Right Spinner", 50], ["Right Standup", 50], ["Center Standup", 50], ["Left Standup", 50], [], ["Upper Accel Top (Opto)", 50], ["Upper Accel Bottom (Opto)", 50],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], ["Garage VUK", 50], ["Slam Tilt (Opt)", 50], ["Start Button", 50], ["Tournament Start", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

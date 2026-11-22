@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "RollerCoaster Tycoon",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 731,
+        "BallsPerGameAdr": 7701
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7763,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7832,
+        "Extra2StartAdr": 7833,
+        "Extra2EndAdr": 7864,
+        "CustomMessageOn": 7740
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5700,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5765,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 732,
+        "PlayerUp": 730,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5822,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5632,
+        "Length": 64,
+        "CounterAdr": 5664,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            [], [], [], [], [], [], [], ["Shooter Lane", 50],
+            ["(R)&D Standup", 50], ["R(&)D Standup", 50], ["R&(D) Standup", 50], [], ["Mini Flipper Feed", 50], ["Mini Flipper Standup", 50], ["Chicago Loop", 50], ["Left Orbit", 50],
+            ["Left Top Lane (A)", 50], ["Middle Top Lane (B)", 50], ["Right Top Lane (C)", 50], ["Dummy Left", 50], ["Dummy Right", 50], [], [], [],
+            ["Left Ramp Return", 50], ["Center Ramp Made", 50], ["Right Ramp Made", 50], [], ["Right Orbit", 50], ["Sweeper Opto", 50], [], ["Ghost Standup", 50],
+            [], ["Lockup 1 (Top)", 50], ["Lockup 2 (Bottom)", 50], ["(E)at Standup", 50], ["E(A)t Standup", 50], ["Ea(T) Standup", 50], ["Kiosk Scoop", 50], ["Kiosk Tunnel", 50],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], ["Rocket", 50], ["Tournament Button", 50], ["Start Button", 50], [], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

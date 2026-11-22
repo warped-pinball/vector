@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "The Simpsons Pinball Party",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 778,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7774,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7843,
+        "Extra2StartAdr": 7844,
+        "Extra2EndAdr": 7875,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5596,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5661,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 779,
+        "PlayerUp": 777,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5718,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5528,
+        "Length": 64,
+        "CounterAdr": 5560,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Comic Book Guy Standup", 50], [], [], [], [], [], [], ["Shooter Lane", 50],
+            [], [], [], ["Itchy & Scratchy Saucer", 50], ["Spinner", 50], ["Bart Skateboard Top", 50], [], ["Upper Right Saucer", 50],
+            ["Upper Playfield Exit", 50], ["Garage Ramp Enter", 50], [], [], ["Kwik-E-Mart Loop", 50], ["Kwik-E-Mart Standup", 50], ["Adv. Pops Standup", 50], ["Light Otto Standup", 50],
+            ["UPF Light Standup", 50], ["UPF Lock Standup", 50], ["UPF Top Standup", 50], ["Couch Enter", 50], ["TV Lockup", 50], ["Couch Lock (Bot)", 50], ["Couch Lock (Mid)", 50], ["Couch Lock (Top)", 50],
+            ["Bully 3-Bank (Top)", 50], ["Bully 3-Bank (Mid)", 50], ["Bully 3-Bank (Bot)", 50], ["Up Right Saucer Backup", 50], ["Right Ramp Enter", 50], ["Right Ramp Made", 50], ["Left Ramp Enter", 50], ["Garage Door", 50],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], ["Pop Side Standup", 50], ["Tournament Start", 50], ["Start Button", 50], ["Upper Left VUK", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], ["Left Orbit", 50], ["Right Orbit", 50]
+        ]
+    }
+}

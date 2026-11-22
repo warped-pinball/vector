@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Austin Powers",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 634,
+        "BallsPerGameAdr": 7691
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7769,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7823,
+        "CustomMessageOn": 7748
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 6012,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 6069,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7709
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 635,
+        "PlayerUp": 633,
+        "MaxPlayers": 4,
+        "ScoreAdr": 6125,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5888,
+        "Length": 64,
+        "CounterAdr": 5984,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], ["Shooter Lane", 50],
+            [], ["Center Ramp Enter", 50], [], [], ["Toilet", 50], [], [], ["Dr. Evil (Target)", 50],
+            ["(M)ojo Standup", 50], ["M(O)jo Standup", 50], ["Mo(J)o Standup", 50], ["Moj(O) Standup", 50], ["Austin Standup", 50], ["Powers Standup", 50], ["Dr. Evil Left Standup", 50], ["Dr. Evil Right Standup", 50],
+            ["Left Orbit", 50], ["Spinner (Opto)", 50], ["Center Ramp Enter (Opto)", 50], [], ["Right Ramp Enter", 50], ["Right Ramp Exit", 50], ["Right Orbit", 50], [],
+            ["Left Ramp Enter", 50], ["Left Ramp Exit", 50], [], [], ["Laser Beam Loaded", 50], ["Scoop", 50], ["Left Top Lane", 50], ["Right Top Lane", 50],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], [], ["Fire Button", 50], ["Start Button", 50], ["Slam Tilt", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

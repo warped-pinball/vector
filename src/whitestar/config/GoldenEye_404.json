@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "GoldenEye",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 473,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7778,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7815,
+        "CustomMessageOn": 7755
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5244,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5306,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 475,
+        "PlayerUp": 472,
+        "MaxPlayers": 6,
+        "ScoreAdr": 5330,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            ["Gun Trigger", 50], [], [], [], [], [], [], [],
+            ["Right Ramp Exit", 50], ["Center Ramp Exit", 50], ["Right Ramp Enter", 50], ["Satellite Home", 50], [], [], ["Satellite Magnet Board", 50], ["Flipper Magnet Board", 50],
+            ["4-Bank S-U Bot", 50], ["4-Bank S-U B/M", 50], ["4-Bank S-U T/M", 50], ["4-Bank S-U Top", 50], [], ["Center Ramp S-U Left", 50], ["Center Ramp S-U Right", 50], ["Left Ramp Exit", 50],
+            ["2-Bank S-U Bot", 50], ["2-Bank S-U Top", 50], [], [], [], [], ["Center Stand Up", 50], ["Left Ramp Enter", 50],
+            ["Left Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Right Turbo Bumper", 50], ["5-Bank S-U Top", 50], ["5-Bank S-U T/M", 50], ["5-Bank S-U Mid", 50], ["5-Bank S-U B/M", 50], ["5-Bank S-U Bot", 50],
+            ["Left Return Lane Lower", 50], ["Scoop", 50], ["Right Top Lane", 50], ["Middle Top Lane", 50], ["Left Top Lane", 50], ["Center Ramp Enter", 50], ["Shooter Lane Exit", 50], ["Tank Kickbig", 50],
+            ["Left Outlane", 50], ["Right Outlane", 50], ["Left Return Lane Upper", 50], ["Right Return Lane", 50], ["Left Slingshot", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Twister",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 482,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7778,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7811,
+        "CustomMessageOn": 7755
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5264,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5326,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 484,
+        "PlayerUp": 481,
+        "MaxPlayers": 6,
+        "ScoreAdr": 5350,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], [],
+            ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50], ["Left Spinner", 50], ["Left Orbit", 50], ["Right Spinner", 50], ["Right Orbit", 50], ["Right Ramp Enter", 50],
+            ["Disc Magnet-Q2 Mag. Bd.", 50], ["West Stand-Up", 50], ["NW Stand-Up", 50], ["North Stand-Up", 50], ["NE Stand-Up", 50], ["East Stand-Up", 50], ["SE Stand-Up", 50], [" Diverter Magnet-Q1 M. Bd.", 50],
+            ["3-Bank S-U (T)wi", 50], ["3-Bank S-U T(W)i", 50], ["3-Bank S-U Tw(I)", 50], ["S-U Top Twi(S)ter", 50], ["3-Bank S-U (T)er", 50], ["3-Bank S-U T(E)r", 50], ["3-Bank S-U Te(R)", 50], ["Right Ramp Exit", 50],
+            ["5-Ball Lock #1 (Bottom)", 50], ["5-Ball Lock #2", 50], ["5-Ball Lock #3", 50], ["5-Ball Lock #4", 50], ["5-Ball Lock VUK", 50], [], [], [],
+            ["Left Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Right Turbo Bumper", 50], [], [], [], [], [],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

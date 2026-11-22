@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "High Roller Casino",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 713,
+        "BallsPerGameAdr": 7691
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7762,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7833,
+        "CustomMessageOn": 7748
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 6032,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 6089,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7709
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 714,
+        "PlayerUp": 712,
+        "MaxPlayers": 4,
+        "ScoreAdr": 6145,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5888,
+        "Length": 64,
+        "CounterAdr": 5984,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Left Chip", 50], ["Roll Dice", 50], [], [], [], [], [], ["Shooter Lane", 50],
+            [], [], [], [], ["A/Diamonds Standup", 50], ["Joker Standup", 50], ["3/Diamonds Standup", 50], ["Spinner", 50],
+            [], [], [], ["Left 21 Hit Standup", 50], ["Right 21 Hit Standup", 50], ["Upper Right Standup", 50], ["Right Chip", 50], ["Bumpers Entry Opto", 50],
+            ["Top Slot Opto: Top Entry", 50], [], ["Bot. Slot Opto: R. Entry", 50], ["Middle Ramp Left Entry", 50], ["Middle Ramp Right Entry", 50], [], ["Left Orbit Gate", 50], ["Left Ramp Exit", 50],
+            [], [], [], [], ["Left Orbit", 50], ["Right Orbit", 50], ["Top Left Slingshot", 50], ["Top Right Slingshot", 50],
+            ["Left Turbo Bumper", 50], ["Right Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], [], ["Roulette Spin", 50], ["Start Button", 50], ["Slam Tilt", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

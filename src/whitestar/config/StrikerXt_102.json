@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Striker Xtreme",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 500,
+        "BallsPerGameAdr": 7697
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7806,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7811,
+        "CustomMessageOn": 7779
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5264,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5346,
+        "InitialSpacing": 10,
+        "NumberOfScores": 10,
+        "ScoreAdrNV": 7715
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 502,
+        "PlayerUp": 499,
+        "MaxPlayers": 6,
+        "ScoreAdr": 5452,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            ["Spinner (LT Orbit)", 50], [], [], [], [], [], [], [],
+            [], [], [], [], ["4-Ball Lock #1 (Top)", 50], ["4-Ball Lock #2", 50], ["4-Ball Lock #3", 50], ["4-Ball Lock #4 (Bottom)", 50],
+            ["Goalie Opto", 50], ["Ball S-U (Pops)", 50], ["Ball 2-Bank S-U Top", 50], ["Ball 2-Bank S-U Bot", 50], ["Ball S-U (RT Ramp)", 50], [], ["Skill Shot", 50], ["Right Orbit", 50],
+            ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50], [], [], ["Right Ramp Enter", 50], ["Right Ramp Exit", 50], [],
+            ["Goalie Motor (LT)", 50], ["Goalie Motor (RT)", 50], ["Goalie Magnet", 50], ["Goalie Undertrough", 50], ["Left VUK", 50], ["Top Super VUK", 50], ["Goalie Motor (Ctr)", 50], ["Right Inner Return", 50],
+            ["Left Turbo Bumper", 50], ["Right Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Kicker Target", 50], [], ["Start Button", 50], ["Slam Tilt", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Outer Return", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

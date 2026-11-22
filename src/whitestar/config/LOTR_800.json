@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "The Lord of the Rings",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 875,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7778,
+        "ChecksumResultAdr": 8129,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7842,
+        "Extra2StartAdr": 7843,
+        "Extra2EndAdr": 7881,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5596,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5661,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 876,
+        "PlayerUp": 874,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5723,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5528,
+        "Length": 64,
+        "CounterAdr": 5560,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Left VUK", 50], [], [], [], [], [], [], ["Shooter Lane", 50],
+            [], [], [], ["Right Orbit Low", 50], ["Right Orbit Hi", 50], ["Rail Ramp Exit", 50], [], ["Right Ramp Made", 50],
+            ["Right Ramp Enter", 50], [], [], ["Balrog Hit", 50], ["Palantir", 50], ["Right VUK", 50], ["Balrog Open", 50], ["Balrog Closed", 50],
+            ["Mini PF U.L.", 50], ["Mini PF U.R.", 50], ["Mini PF L.L.", 50], ["Mini PF L.R.", 50], ["Left Orbit Low", 50], ["Left Orbit Hi", 50], ["Left Ramp Enter", 50], ["Left Ramp Made", 50],
+            ["Top VUK", 50], ["Inner Loop", 50], ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50], ["Top Saucer", 50], ["Ring Made", 50], ["Back Trough", 50],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], ["Spinner", 50], ["Spot Ring", 50], ["Start Button", 50], ["Tournament Start", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}
