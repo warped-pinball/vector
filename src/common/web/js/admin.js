@@ -1008,36 +1008,69 @@ if (typeof window !== "undefined") {
     const progressBar = document.getElementById("update-progress-bar");
     const updateProgressLog = document.getElementById("update-progress-log");
 
+    // The board sends back-to-back JSON objects with no separator, and a
+    // network read can end part way through one. Keep the unfinished tail in
+    // `pending` and only parse objects whose closing brace has arrived.
+    let pending = "";
+    const takeCompleteObjects = () => {
+      const objects = [];
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      let start = -1;
+      let consumed = 0;
+      for (let i = 0; i < pending.length; i++) {
+        const c = pending[i];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (c === "\\") escaped = true;
+          else if (c === '"') inString = false;
+          continue;
+        }
+        if (c === '"') inString = true;
+        else if (c === "{") {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (c === "}" && depth > 0) {
+          depth--;
+          if (depth === 0) {
+            objects.push(pending.slice(start, i + 1));
+            consumed = i + 1;
+          }
+        }
+      }
+      pending = pending.slice(consumed);
+      return objects;
+    };
+    const showMessage = (text) => {
+      let msg_obj;
+      try {
+        msg_obj = JSON.parse(text);
+      } catch (parseError) {
+        // a garbled message is not a lost connection; skip it
+        console.warn("Unreadable update message", text, parseError);
+        return;
+      }
+      if (msg_obj.log) {
+        updateProgressLog.textContent += msg_obj.log + "\n";
+      }
+      if (msg_obj.percent) {
+        progressBar.value = msg_obj.percent;
+      }
+    };
+
     try {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        let msg = decoder.decode(value, { stream: true });
-
-        msg = msg.split("}{");
-        for (let i = 0; i < msg.length; i++) {
-          if (i !== 0) {
-            msg[i] = "{" + msg[i];
-          }
-          if (i !== msg.length - 1) {
-            msg[i] = msg[i] + "}";
-          }
-        }
-
-        for (let i = 0; i < msg.length; i++) {
-          const msg_obj = JSON.parse(msg[i]);
-
-          if (msg_obj.log) {
-            updateProgressLog.textContent += msg_obj.log + "\n";
-          }
-          if (msg_obj.percent) {
-            progressBar.value = msg_obj.percent;
-          }
-        }
+        pending += decoder.decode(value, { stream: true });
+        takeCompleteObjects().forEach(showMessage);
 
         // scroll to the bottom of the log
         updateProgressLog.scrollTop = updateProgressLog.scrollHeight;
       }
+      pending += decoder.decode();
+      takeCompleteObjects().forEach(showMessage);
     } catch (e) {
       // if progress bar is at 100% then the update was successful and the server has just rebooted
       if (progressBar.value === 100) {
