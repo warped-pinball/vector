@@ -127,7 +127,7 @@ identify your game and choose the right profile during WiFi setup.
    plastic screw and remove the backing.
 5. **Seat the Vector board.** Align it with the socket, keeping pin #1 oriented the
    same as the original processor, and press until every corner is seated.
-6. **Make the reset connection.**
+6. <a id="reset-clip"></a>**Make the reset connection.**
    - **Original Bally / Stern MPU board:** attach the white micro-clip to the point
      shown below. This synchronizes Vector's reset with the game's reset on
      power-up, so expect a few extra seconds at startup. This same location is

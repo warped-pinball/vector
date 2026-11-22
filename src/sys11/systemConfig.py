@@ -1,8 +1,11 @@
 vectorSystem = "sys11"
 updatesURL = "http://software.warpedpinball.com/vector/sys11/latest.json"
 
+# Where the reset clip goes on this board, linked from the HDWR01 fault
+resetClipDocsURL = "https://docs.warpedpinball.com/guides/system11/manual/#reset-clip"
+
 # Firmware version for the System11 build
-SystemVersion = "2.0.2"
+SystemVersion = "2.0.3"
 
 
 # System specific scheduled tasks
