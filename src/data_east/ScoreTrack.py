@@ -124,7 +124,7 @@ def update_individual_score(new_entry):
     if not playername or playername in [" ", "@@@", "   ", ""]:
         # print("SCORE: No indiv player ", initials)
         return False
-    if not (0 <= playernum < DataStore.memory_map["individual"]["count"]):
+    if not (0 <= playernum < DataStore.memory_map["individual"]["sets"]):  # one set of scores per player
         log.log("SCORE: Player out of range")
         return False
 
