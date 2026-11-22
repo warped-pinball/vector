@@ -156,12 +156,18 @@ async def _settle_abandoned_stream(path, body, writer):
 
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
+    request = None
     try:
         response = None
 
         request_start_time = time.ticks_ms()
 
-        request = await uasyncio.wait_for_ms(_read_request(reader), _REQUEST_READ_TIMEOUT_MS)
+        try:
+            request = await uasyncio.wait_for_ms(_read_request(reader), _REQUEST_READ_TIMEOUT_MS)
+        except uasyncio.TimeoutError:
+            # usually a connection the browser opened ahead of time and never used
+            logging.info("Request not received in time, closing the connection")
+            return
         if request is None:
             return
 
@@ -239,7 +245,9 @@ async def _handle_request(reader, writer):
         logging.info(f"> {request.method} {request.path} ({response.status}) [{processing_time}ms]")
     except Exception as e:
         # last line of defense to keep server from crashing
-        logging.error(f"Error handling request: {e}")
+        # some exceptions (e.g. TimeoutError) have no message, so name the type and path
+        path = request.path if request else "?"
+        logging.error(f"Error handling request {path}: {type(e).__name__} {e}")
     finally:
         # Always close the writer on every path (empty/malformed request, read
         # timeout, handler exception, mid-stream drop) so we don't leak the
