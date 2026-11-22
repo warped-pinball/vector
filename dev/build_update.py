@@ -25,7 +25,7 @@ compatible_configurations = {
     "wpc": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
     "em": all_combos(["2w"], ["1.26.0.preview"]),
     "data_east": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
-    "whitestar": all_combos(["2w"], ["1.25.0."]),
+    "whitestar": all_combos(["2w"], ["1.25.0.", "1.29.0."]),
     "classic": all_combos(["2w"], ["1.25.0.", "1.26.0.preview"]),
 }
 
