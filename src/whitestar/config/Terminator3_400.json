@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "Terminator 3: Rise of the Machines",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 773,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7775,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7819,
+        "Extra2StartAdr": 7820,
+        "Extra2EndAdr": 7858,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5700,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5765,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 774,
+        "PlayerUp": 772,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5822,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5632,
+        "Length": 64,
+        "CounterAdr": 5664,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            [], ["Standup", 50], [], [], [], [], [], ["Shooter Lane", 50],
+            ["LT 3-Bank S-U Bot", 50], ["LT 3-Bank S-U Mid", 50], ["LT 3-Bank S-U Top", 50], ["RT 3-Bank S-U Top", 50], ["RT 3-Bank S-U Mid", 50], ["RT 3-Bank S-U Bot", 50], ["Captive Ball", 50], ["Right Orbit Bottom", 50],
+            [], [], [], ["Left Orbit Bottom", 50], ["Left Orbit Top", 50], ["Left Ramp", 50], ["T-X Made", 50], ["Right Ramp", 50],
+            ["Lockup 1 (Right)", 50], ["Lockup 2", 50], ["Lockup 3 (Left)", 50], ["VUK", 50], ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50], ["Center Ramp", 50],
+            ["Backbox 5-Bank (Top)", 50], ["Backbox 5-Bank 2", 50], ["Backbox 5-Bank 3", 50], ["Backbox 5-Bank 4", 50], ["Backbox 5-Bank (Bot)", 50], ["Right Orbit Top", 50], [], [],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], ["Skill Shot", 50], ["Tournament Start", 50], ["Start Button", 50], ["Gun Trigger", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

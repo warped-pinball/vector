@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Sharkey's Shootout",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 606,
+        "BallsPerGameAdr": 7696
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7797,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7815,
+        "CustomMessageOn": 7778
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5264,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5346,
+        "InitialSpacing": 10,
+        "NumberOfScores": 10,
+        "ScoreAdrNV": 7714
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 607,
+        "PlayerUp": 605,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5452,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            ["LT Button (Post Save)", 50], [], [], [], [], [], [], ["RT Button (Post Save)", 50],
+            ["Playfield Glass Switch", 50], ["Lockdown Switch", 50], [], [], [], [], [], ["Shooter Lane", 50],
+            [], [], [], [], [], [], [], [],
+            ["Stand-Up Target (P)ayoff", 50], ["Stand-Up Target P(A)yoff", 50], ["Stand-Up Target Pa(Y)off", 50], ["Stand-Up Target Pay(O)ff", 50], ["Stand-Up Target Payo(F)f", 50], ["Stand-Up Target Payof(F)", 50], ["Left Orbit", 50], ["Inside Right Orbit", 50],
+            [], [], [], [], [], [], ["Right Orbit Bottom", 50], ["Right Orbit Top", 50],
+            ["Left Ramp Enter", 50], ["Left Ramp Exit", 50], ["Undertrough", 50], ["Super VUK", 50], ["Sneak-In", 50], ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50],
+            ["Left Turbo Bumper", 50], ["Right Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Tour. Start Button", 50], ["Stand-Up Trgt (Center)", 50], ["Start Button", 50], ["Slam Tilt", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

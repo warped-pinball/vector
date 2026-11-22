@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "The Sopranos",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 801,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7778,
+        "ChecksumResultAdr": 8129,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7833,
+        "Extra2StartAdr": 7834,
+        "Extra2EndAdr": 7876,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5596,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5661,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 802,
+        "PlayerUp": 800,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5718,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5528,
+        "Length": 64,
+        "CounterAdr": 5560,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Left Ramp", 50], ["Safe Limit", 50], [], [], [], [], [], ["Shooter Lane", 50],
+            ["Left Eject", 50], ["Left Orbit", 50], ["Bing 1", 50], ["Bing 2", 50], ["Safe Hit Left", 50], ["Center Lock 1", 50], ["Center Lock 2", 50], ["Safe Hit Right", 50],
+            ["Right Ramp", 50], ["Drop Target", 50], ["Spinner", 50], ["Center Eject", 50], ["Right Ramp Exit", 50], [], ["Boat Lock 1", 50], ["Boat Lock 2", 50],
+            ["Right Orbit", 50], ["Left Standup", 50], ["Center Standup", 50], ["R. 2-Bank Top", 50], ["R. 2-Bank Bottom", 50], ["Left Top Lane", 50], ["Middle Top Lane", 50], ["Right Top Lane", 50],
+            [], [], [], [], [], [], [], [],
+            ["Left Bumper", 50], ["Right Bumper", 50], ["Bottom Bumper", 50], [], ["Slam Tilt (Opt)", 50], ["Start Button", 50], ["Tournament Start", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

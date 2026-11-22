@@ -1,0 +1,67 @@
+{
+    "GameInfo": {
+        "GameName": "Ripley's Believe It or Not!",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 807,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 41,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7774,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7836,
+        "Extra2StartAdr": 7837,
+        "Extra2EndAdr": 7875,
+        "CustomMessageOn": 7753
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5596,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5661,
+        "InitialSpacing": 10,
+        "NumberOfScores": 5,
+        "ScoreAdrNV": 7713
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 808,
+        "PlayerUp": 806,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5718,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5528,
+        "Length": 64,
+        "CounterAdr": 5560,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Head Standup", 50], [], [], [], [], [], [], ["Shooter Lane", 50],
+            ["Tombstone 1", 50], ["Super Jackpot Opto", 50], ["Tombstone 5", 50], ["Left Spinner", 50], ["Right Spinner", 50], ["Tombstone 4", 50], ["Shrunken Head Opto", 50], [],
+            ["Lower Left Pop", 50], ["Lower Right Pop", 50], ["Lower Bottom Pop", 50], ["Side Scoop Entry", 50], ["Scoop VUK", 50], ["Behind Head", 50], ["Left Ramp Make", 50], ["Tombstone 2+3", 50],
+            ["Bonus X Inlane - Lft", 50], ["Bonus X Inlane - Mid", 50], ["Bonus X Inlane - RT", 50], ["Right Orbit", 50], [], ["Mini Playfield Left", 50], ["Mini Playfield Center", 50], ["Mini Playfield Right", 50],
+            [], [], [], ["Lock 1 - Top", 50], ["Lock 1 - Middle", 50], ["Lock 1 - Bottom", 50], ["Left Jackpot Loop", 50], ["Left Orbit", 50],
+            ["Upper Left Pop", 50], ["Upper Right Pop", 50], ["Upper Bottom Pop", 50], ["Vari-Target VUK", 50], ["Right Ramp", 50], ["Start Button", 50], ["Tournament Start", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

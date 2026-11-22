@@ -1,0 +1,49 @@
+{
+    "GameInfo": {
+        "GameName": "Generic Whitestar",
+        "System": "Whitestar"
+    },
+
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+
+    "BallInPlay": {
+        "Type": 0,
+        "Address": 0
+    },
+
+    "InPlay": {
+        "Type": 0,
+        "Players": 0,
+        "PlayerUp": 0,
+        "MaxPlayers": 4,
+        "ScoreAdr": 0,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+
+    "DisplayMessage": {
+        "Type": 0,
+        "Address": 0
+    },
+
+    "Adjustments": {
+        "Type": 0,
+        "ChecksumStartAdr": 0,
+        "ChecksumEndAdr": 0,
+        "ChecksumResultAdr": 0,
+        "CustomMessageOn": 0
+    },
+
+    "HighScores": {
+        "Type": 0
+    },
+
+    "Switches": {
+        "Type": 0
+    }
+}

@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Apollo 13",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 468,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7778,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7813,
+        "CustomMessageOn": 7755
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5244,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5306,
+        "InitialSpacing": 3,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 470,
+        "PlayerUp": 467,
+        "MaxPlayers": 6,
+        "ScoreAdr": 5330,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            ["Abort Handle Ball Launch", 50], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], [],
+            ["Doc(K) 4-Bank S-U ", 50], ["Do(C)k 4-Bank S-U", 50], ["D(O)ck 4-Bank S-U", 50], ["(D)ock 4-Bank S-U", 50], ["Moon 4-Bank S-U (Left)", 50], ["Moon 4-Bank S-U (Mid-LT)", 50], ["Moon 4-Bank S-U (Mid-RT)", 50], ["Moon 4-Bank S-U (Right)", 50],
+            ["Left Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Right Turbo Bumper", 50], ["Moon Home Position", 50], ["Moon Forward Position", 50], ["Food Single Standup", 50], [], ["Water Single Standup", 50],
+            ["Spinner", 50], [], ["Rocket Ball Eject", 50], ["Right Ramp Exit Left", 50], ["Left Orbit", 50], ["Right Orbit", 50], ["Right Ball Eject", 50], ["Super VUK (Under Arch)", 50],
+            [" Battery 3-Bank S-U (All 3)", 50], ["Rocket Home Position", 50], ["Rocket Up Position", 50], ["Left Top Lane", 50], ["Right Top Lane", 50], ["Center Ball Eject", 50], ["Right Ramp Enter", 50], ["Right Ramp Exit Right", 50],
+            ["Left Outlane", 50], ["Right Outlane", 50], ["Left Return Lane", 50], ["Right Return Lane", 50], ["Left Slingshot", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

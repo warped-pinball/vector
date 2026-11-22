@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Monopoly",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 693,
+        "BallsPerGameAdr": 7696
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7799,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7827,
+        "CustomMessageOn": 7779
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5264,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5354,
+        "InitialSpacing": 10,
+        "NumberOfScores": 10,
+        "ScoreAdrNV": 7714
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 694,
+        "PlayerUp": 692,
+        "MaxPlayers": 4,
+        "ScoreAdr": 5460,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            ["LT Button (UK Only)", 50], [], [], [], [], [], [], ["RT Button (UK Only)", 50],
+            ["Chance Scoop", 50], ["Railroad Ramp", 50], [], [], [], [], [], ["Shooter Lane", 50],
+            ["Left Top Lane (A)", 50], ["Middle Top Lane (B)", 50], ["Right Top Lane (C)", 50], ["Lockup 1 (Top)", 50], ["Lockup 2", 50], ["Lockup 3 (Bottom)", 50], [], [],
+            ["Right Orbit", 50], ["Electric Company", 50], ["Dice Eject Lane", 50], ["Left Orbit", 50], ["Waterworks Eject", 50], [], ["Center Ramp", 50], [],
+            [], [], [], [], [], [], ["Left Ramp Mid", 50], [],
+            ["Lower Bottom Pop", 50], ["Lower Right Pop", 50], ["Lower Left Pop", 50], ["100K Standup", 50], ["Spinner", 50], ["Cop Standup X2", 50], ["Free Parking", 50], ["Right Ramp", 50],
+            ["Upper Left Pop", 50], ["Upper Right Pop", 50], ["Upper Bottom Pop", 50], ["Dice Eject", 50], [], ["Start Button", 50], ["Slam Tilt", 50], ["Plumb Bob Tilt", 50],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}

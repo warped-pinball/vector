@@ -1,0 +1,65 @@
+{
+    "GameInfo": {
+        "GameName": "Starship Troopers",
+        "System": "Whitestar"
+    },
+    "Memory": {
+        "Start": 1,
+        "Length": 8192,
+        "NvStart": 0,
+        "NvLength": 8192
+    },
+    "BallInPlay": {
+        "Type": 40,
+        "Address": 488,
+        "BallsPerGameAdr": 7693
+    },
+    "DisplayMessage": {
+        "Type": 40,
+        "Address": 8001
+    },
+    "Adjustments": {
+        "Type": 40,
+        "ChecksumStartAdr": 7680,
+        "ChecksumEndAdr": 7781,
+        "ChecksumResultAdr": 8125,
+        "ExtraStartAdr": 7808,
+        "ExtraEndAdr": 7813,
+        "CustomMessageOn": 7755
+    },
+    "HighScores": {
+        "Type": 40,
+        "ScoreAdr": 5264,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5,
+        "InitialAdr": 5326,
+        "InitialSpacing": 4,
+        "NumberOfScores": 6,
+        "ScoreAdrNV": 7711
+    },
+    "InPlay": {
+        "Type": 40,
+        "Players": 490,
+        "PlayerUp": 487,
+        "MaxPlayers": 6,
+        "ScoreAdr": 5356,
+        "BytesInScore": 5,
+        "ScoreSpacing": 5
+    },
+    "Switches": {
+        "Type": 40,
+        "Address": 5120,
+        "Length": 64,
+        "CounterAdr": 5216,
+        "Names": [
+            [], [], [], [], [], [], [], [],
+            [], [], [], [], [], [], [], [],
+            ["Left Bottom S-U (Grn)", 50], ["Left Middle S-U (Yel)", 50], ["Left Middle S-U (Red)", 50], ["Left Top S-U (Yel)", 50], ["Right Bottom S-U (Red)", 50], ["Right Middle S-U (Yel)", 50], [], [],
+            ["Left Ramp Enter", 50], ["Left Ramp Exit", 50], ["Left Ramp S-U (Yel)", 50], ["Pop S-U (Blu)", 50], ["Pop S-U (Grn)", 50], ["VUK S-U (Grn)", 50], ["VUK S-U (Blu)", 50], [],
+            ["Stepper Motor Rear", 50], ["Stepper Motor Front", 50], ["Stepper Motor Bug", 50], [], ["Brain Bug Up", 50], ["Brain Bug Hit", 50], ["Brain Bug Up", 50], ["U'Trough:Pop Exit Hole", 50],
+            ["Left Top Lane", 50], ["Middle Top Lane", 50], [], [], [], ["Super VUK", 50], ["Left Orbit", 50], ["Right Orbit", 50],
+            ["Left Turbo Bumper", 50], ["Bottom Turbo Bumper", 50], ["Right Turbo Bumper", 50], [], [], [], [], [],
+            ["Left Outlane", 50], ["Left Return Lane", 50], ["Left Slingshot", 50], ["Right Outlane", 50], ["Right Return Lane", 50], ["Right Slingshot", 50], [], []
+        ]
+    }
+}
