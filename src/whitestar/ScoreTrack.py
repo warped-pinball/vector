@@ -57,8 +57,11 @@ def _min_score():
 
 def reset_scores():
     """reset leader board scores (and the machine's table when it is known)"""
+    global top_scores
     print("RESET Leader scores")
     DataStore.blankStruct("leaders")
+    # drop the cached copy too, or place_machine_scores() writes the old leaders back
+    top_scores = []
     DataMapper.remove_machine_scores()
 
 
@@ -338,6 +341,8 @@ _game_state = STATE_INIT
 GameEndCount = 0
 initials_capture_this_game = False
 live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
+# most players seen during the current game; the game clears its Players byte at game over
+players_this_game = 0
 # initials entry on the machine is ~90 seconds per player, polls are 5 seconds apart
 INITIALS_TIMEOUT_POLLS = 75
 
@@ -354,7 +359,7 @@ def _snapshot_live_scores():
 def CheckForNewScores():
     """called by scheduler every 5 seconds"""
     global nGameIdleCounter, GameEndCount, _game_state, initials_capture_this_game, live_scores
-    global push_game_count, last_pushed_game
+    global push_game_count, last_pushed_game, players_this_game
 
     if push_game_count > 0:
         from origin import push_end_of_game
@@ -397,6 +402,7 @@ def CheckForNewScores():
             log.log("SCORE: Game Started")
             nGameIdleCounter = 0
             live_scores = [["", 0], ["", 0], ["", 0], ["", 0]]
+            players_this_game = DataMapper.get_players_in_game()
 
             initials_capture_this_game = DataMapper.high_scores_supported() and DataStore.read_record("extras", 0)["enter_initials_on_game"] is True
             if initials_capture_this_game:
@@ -406,6 +412,8 @@ def CheckForNewScores():
     elif _game_state == STATE_PLAYING:
         print("SCORE: game end check")
         _snapshot_live_scores()
+        # players can be added during ball 1; keep the highest count, it reads 0 after game over
+        players_this_game = max(players_this_game, DataMapper.get_players_in_game())
         if not DataMapper.get_game_active():
             GameEndCount = 0
             _game_state = STATE_INITIALS if initials_capture_this_game else STATE_FINISH
@@ -423,8 +431,10 @@ def CheckForNewScores():
         # an entry counts once all 3 initials are in (the game shows a cursor while a name is being typed)
         high_scores = DataMapper.read_high_scores()
         high_score_count = sum(1 for entry in high_scores if entry[1] > _min_score() and sum(1 for c in entry[0] if c.isalpha()) == 3)
-        print("SCORE: waiting for initials, count = ", high_score_count, " players = ", DataMapper.get_players_in_game())
-        if high_score_count >= DataMapper.get_players_in_game():
+        # the Players byte is 0 by now, so compare against the count kept during play (at least 1)
+        expected_players = max(players_this_game, 1)
+        print("SCORE: waiting for initials, count = ", high_score_count, " players = ", expected_players)
+        if high_score_count >= expected_players:
             print("SCORE: done - got all players initials")
             _game_state = STATE_FINISH
 
