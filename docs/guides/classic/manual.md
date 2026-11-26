@@ -19,6 +19,7 @@ the LEDs mean, how to get it on your WiFi, and how to recover from RAM corruptio
 - [Boards and supported games](#boards-and-supported-games)
 - [Hardware installation](#hardware-installation)
 - [Alltek Systems replacement MPU](#alltek-systems-replacement-mpu)
+- [Pinball Electronics (nvram.Weebly) replacement MPU](#pinball-electronics-nvramweebly-replacement-mpu)
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
 - [Web interface](#web-interface)
@@ -156,6 +157,12 @@ Vector to use that signal directly. Everything else about the installation is th
 same as an original board.
 
 ![Vector installed on an Alltek Ultimate MPU with the kit jumper fitted](../../img/classic/classic_allteksystems.png)
+
+## Pinball Electronics (nvram.Weebly) replacement MPU
+
+> **Coming soon:** Vector support for the classic replacement MPU board from
+> **Pinball Electronics (nvram.Weebly)** is on the way. Contact Warped Pinball at
+> [info@warpedpinball.com](mailto:info@warpedpinball.com) for information.
 
 ## Connecting to local WiFi
 
