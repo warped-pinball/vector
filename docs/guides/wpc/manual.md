@@ -19,6 +19,7 @@ How the Vector board installs, what the LEDs mean, and how to bring a classic Wi
 - [Connecting to local WiFi](#connecting-to-local-wifi)
 - [IP addresses](#ip-addresses)
 - [Web interface and spotting trouble](#web-interface-and-spotting-trouble)
+- [Appendix: Weebly WPC board modifications](#appendix-weebly-wpc-board-modifications)
 
 ## How it works
 
@@ -219,3 +220,43 @@ Have a color Pin2DMD?   Use the buttons on the back of the display to set it to 
 **A note about the software update process:** The Yellow button is the preferred method and takes about 2 minutes to complete. The game will automatically reboot at the end of the process. Check the bottom of any page for the currently installed software version (note that each type of game — WPC, System 11, Data East, EM, etc. — has its own version numbers). In case of trouble (unusual), there is an available program to reload the software via USB cable from a computer. See the [instructions here](https://github.com/warped-pinball/trench-coat/blob/main/Trench-Coat-Install-Guide.md).
 
 Watch the [features video](https://youtu.be/eGVe5E9X-2I) and send ideas via [WarpedPinball.com](https://WarpedPinball.com).
+
+<br><br><br>
+
+---
+
+## Appendix: Weebly WPC board modifications
+
+WPC-89 replacement CPU boards from [nvram.weebly.com](https://nvram.weebly.com) need a small modification before Vector will work. The board's reset supervisor (`U10`) has to be replaced, a resistor added, and a wire loop added so Vector's reset clip has something to attach to.
+
+Soldering surface-mount parts carries risk. If you aren't comfortable with SMD rework, have a qualified technician do it. Warped Pinball cannot be liable for damage to your board or game.
+
+**Free parts kit or free rework:** Contact Warped Pinball through [WarpedPinball.com](https://WarpedPinball.com) to receive a free parts kit, or send your board in to be reworked in the Warped Pinball lab at no charge.
+
+### Parts needed
+
+| Qty | Part | Notes |
+| :---: | --- | --- |
+| 1 | `TLV803EA43DBZR` | Reset supervisor (SOT-23). Replaces the original `U10` (`CN809M`). |
+| 1 | 7.5k ohm resistor | Added next to `U10`, as shown below. |
+| 1 | Short piece of bare wire | Forms the loop that Vector's reset clip attaches to. |
+
+### Step 1: Locate U10 on the stock board
+
+`U10` (`CN809M`) is just right of the large Williams ASIC, above the `POR` label and next to `B9`, `B10` and `R101`.
+
+![Weebly WPC board, stock U10 location](../../img/wpc/manual/weebly_wpc.jpg)
+
+### Step 2: Make the modification
+
+1. Remove `U10` (`CN809M`) and solder a `TLV803EA43DBZR` in its place.
+2. Add the 7.5k ohm resistor in the position shown.
+3. Solder a small wire loop for the reset clip, leaving room for the clip to grab it (see the clip location in Step 3).
+
+![Weebly WPC board after modification](../../img/wpc/manual/weebly_wpc_mod.jpg)
+
+### Step 3: Install Vector and attach the clip
+
+Install Vector as described in [Hardware installation](#hardware-installation), then attach the white reset clip to the new wire loop. The loop sits just under the edge of the Vector board. If the clip is loose or missing, Vector reports `HDWR01: Early Bus Activity`.
+
+![Vector installed on a modified Weebly WPC board](../../img/wpc/manual/weebly_wpc_installed.jpg)
