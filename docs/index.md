@@ -16,13 +16,11 @@ Pick your system to find quick starts, installation manuals, and ROM handling no
 
 - [Quick start](guides/wpc/quick-start.md)
 - [Installation & use manual](guides/wpc/manual.md)
-- [Add a ROM profile](guides/wpc/add-rom.md)
 
 ### System 11
 
 - [Quick start](guides/system11/quick-start.md)
 - [Installation & use manual](guides/system11/manual.md)
-- [Add a ROM profile](guides/system11/add-rom.md)
 
 ### System 9
 
