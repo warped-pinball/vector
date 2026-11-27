@@ -80,6 +80,12 @@ Everything else in the install is the same.
 
 ![Vector installed on an Alltek Ultimate MPU with the jumper fitted](../../img/classic/classic_allteksystems.png)
 
+## Pinball Electronics (nvram.Weebly) replacement MPU board
+
+> **Coming soon:** Vector support for the classic replacement MPU board from
+> **Pinball Electronics (nvram.Weebly)** is on the way. Contact Warped Pinball at
+> [info@warpedpinball.com](mailto:info@warpedpinball.com) for information.
+
 ## Supported games
 
 Vector installs the same way on every classic Bally and Stern single-MPU board. These
