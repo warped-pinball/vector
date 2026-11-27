@@ -17,7 +17,7 @@ updates as the newer board.
 | Original board (this manual) | Newer board |
 | --- | --- |
 | ![Original Warped Pinball System 11 / System 9 board](../../img/sys11/board.png) | ![Newer Warped Pinball Vector board](../../img/sys11/sys9_new_board.png) |
-| Pico W at the top, processor socket at the bottom, with **SYS11/9/7** printed on the board. | Pico 2 W at the top, processor socket at the bottom, with **V3 System 11** printed on the tab. |
+|  |
 
 **Have the newer board?** Use the
 [System 9 installation manual for the new board](manual.md) instead.
