@@ -38,7 +38,8 @@ If you have questions about this modification, contact Warped Pinball before mak
 
 ## Installing Vector
 
-![Vector install location on RottenDog board](../../img/sys11/rottendog_install_location.png)
+| ![Vector install location on RottenDog board](../../img/sys11/rottendog_install_location.png) | **Note:** This photo shows the original Warped Pinball System 11 board. The newer System 11 board installs in a similar way, but rotated 180 degrees from the photo shown.<br><br>In all cases, make sure pin 1 on the Warped Pinball board and pin 1 on the processor chip both line up with pin 1 on the host board. |
+| --- | --- |
 
 1. Power off the machine.
 2. Remove the main processor chip from the RottenDog `MPU9211` board and install it into Vector's 40-pin socket, matching pin #1 and checking for bent pins.

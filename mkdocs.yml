@@ -15,9 +15,11 @@ nav:
       - System 11:
           - Quick start: guides/system11/quick-start.md
           - Installation & use manual: guides/system11/manual.md
+          - Original board manual: guides/system11/manual_OG.md
           - RottenDog support: guides/system11/rottendog-support.md
       - System 9:
           - Installation & use manual: guides/system9/manual.md
+          - Original board manual: guides/system9/manual_OG.md
       - Data East:
           - Installation & use manual: guides/data_east/manual.md
       - EM:

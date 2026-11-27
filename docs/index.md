@@ -21,10 +21,12 @@ Pick your system to find quick starts, installation manuals, and ROM handling no
 
 - [Quick start](guides/system11/quick-start.md)
 - [Installation & use manual](guides/system11/manual.md)
+- [Original board manual](guides/system11/manual_OG.md)
 
 ### System 9
 
 - [Installation & use manual](guides/system9/manual.md)
+- [Original board manual](guides/system9/manual_OG.md)
 
 ### Data East
 

@@ -9,8 +9,24 @@
 
 Setup and operation details for SYS9.WiFi.
 
+## Which board do you have?
+
+This manual covers the **original Warped Pinball board**, the one board that served
+both System 11 and System 9 games. If you have this board, don't worry: it is still
+fully supported and fully software compatible, and it gets the same features and
+updates as the newer board.
+
+| Original board (this manual) | Newer board |
+| --- | --- |
+| ![Original Warped Pinball System 11 / System 9 board](../../img/sys11/board.png) | ![Newer Warped Pinball Vector board](../../img/sys11/sys9_new_board.png) |
+| Pico W at the top, processor socket at the bottom, with **SYS11/9/7** printed on the board. | Pico 2 W at the top, processor socket at the bottom, with **V3 System 11** printed on the tab. |
+
+**Have the newer board?** Use the
+[System 9 installation manual for the new board](manual.md) instead.
+
 ## Table of contents
 
+- [Which board do you have?](#which-board-do-you-have)
 - [Supported games](#supported-games)
 - [How it works](#how-it-works)
 - [Indicators and controls](#indicators-and-controls)
