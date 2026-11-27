@@ -5,8 +5,6 @@
   </button>
 </div>
 
-
-
 Notes for installing Vector on games running a RottenDog aftermarket processor board (part number `MPU9211`) instead of the original Williams System 11 CPU board.
 
 ## Table of contents
@@ -43,7 +41,7 @@ If you have questions about this modification, contact Warped Pinball before mak
 
 1. Power off the machine.
 2. Remove the main processor chip from the RottenDog `MPU9211` board and install it into Vector's 40-pin socket, matching pin #1 and checking for bent pins.
-3. Install Vector onto the RottenDog board the same way it installs on an original Williams System 11 CPU board — see the [System 11 manual](manual.md#hardware-installation) for the general procedure and photos.
+3. Install Vector onto the RottenDog board the same way it installs on an original Williams System 11 CPU board — see the System 11 manual for the [newer board](manual.md#hardware-installation) or the [original board](manual_OG.md#hardware-installation) for the general procedure and photos.
 
 Close-up of the clip location on the RottenDog board:
 

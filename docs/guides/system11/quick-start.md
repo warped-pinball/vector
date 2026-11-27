@@ -5,8 +5,6 @@
   </button>
 </div>
 
-
-
 This is the quick start guide. If you have never installed a WiFi board from Warped Pinball, we encourage you to read the [full manual](manual.md) first. You can also check out installation videos at [WarpedPinball.com](https://WarpedPinball.com/#resources).
 
 **Have the original Warped Pinball System 11 board?** See the [original board manual](manual_OG.md).
@@ -46,7 +44,7 @@ Removing classic game chips carries risk. Damage is possible and is not the resp
 
 ## Online setup
 
-When installation is done, power on the game and use a phone to connect to the **WarpedPinball** WiFi network. There you can complete the setup of your game and get it connected to your WiFi. Select your game and ROM version (not listed? pick **GenericSystem11** and message us). Power-cycle the game when setup is complete, then connect with other linked Warped Pinball products or type the IP address shown on the display into any web browser.
+When installation is done, power on the game and use a phone to connect to the **Warped Pinball** WiFi network. There you can complete the setup of your game and get it connected to your WiFi. Select your game and ROM version (not listed? pick **GenericSystem11** and message us). Power-cycle the game when setup is complete, then connect with other linked Warped Pinball products or type the IP address shown on the display into any web browser. The **GenericSystem11** profile does not show the IP address on the display; find it in your router's device list instead.
 
 **Tip:** set game adjustments **18**, **19**, **20** and **21** to zero so the game does not award credits each time a player enters initials.
 
