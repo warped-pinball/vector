@@ -216,7 +216,7 @@ Sound board, with the connection area circled:
 
 Jumper location on your Vector board:
 
-![Jumper location on the Vector board](../../img/sys11/sound_clip_location1.png)
+![Jumper test point loop on the newer Vector board, marked with an arrow](../../img/sys11/sys11_new_board_sound_jumper.png)
 
 Jumper location on the sound board:
 
