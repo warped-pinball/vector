@@ -1,0 +1,67 @@
+
+
+FRAM - 32K Byte
+	(0x000 - 0x7FFF)
+
+	SPI data Store (at top of space):
+		top memory = 32767  (0x7FFF)
+		fill from top down..
+		Version 1 fills down to:  21707  (0x54CB)
+		expand score number in WPC - now down to:  19047   (0x4A67)
+
+Blank spot - hold for more data store - - -
+
+
+0x4600      (was 0x4400)                       <<<moved for WPC
+	Logger:
+		(8192 bytes) from 0x2600-0x4600)
+0x2600      (was 0x2400)
+
+
+0x25FF                                         <<expanded for WPC
+	adjustments for WPC!
+
+	Game adjustments storage (4 sets),
+		305 bytes plus 16 cahracter name
+		0x2344 - one byte last profile loaded 0-3
+
+	(remove serial flash support)	
+0x2000
+
+
+0x1FFF
+	Shadow ram storage:
+		8k required for WPC  ->  0-0x1FFF
+0x0000
+
+
+
+
+
+Serial Flash - 32 M Bytes
+			(0x000 0000 - 0x1FF FFFF)
+
+			First 64k Byte and Last 64KByte are protecable in 4k chunks
+			In the middle - protection in 64K byte chunks
+
+			Erases to all 0xFF - 64K chunks at a time
+
+	Software Update Store, three slots of 6M bytes each
+		slot 1:  0x001 0000 - 0x061 0000  (block 1-96)
+		slot 2:  0x061 0000 - 0x0C1 0000
+		slot 3:  0x0C1 0000 - 0x121 0000
+
+
+
+
+
+
+
+player list (22 bytes each)
+	player initials and name (3+16 = 19 bytes)
+	Add a crc-16 (two bytes as a player ID)
+
+Score list ( 8 bytes per score)
+	score is unsigned int (4 bytes)
+	date? (3 bytes)
+	flags (1 byte) [tournament,  , , ]

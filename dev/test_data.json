@@ -1,0 +1,75 @@
+{
+    "names": [
+        {
+            "initials": "MSM",
+            "full_name": "Maxwell Mullin"
+        },
+        {
+            "initials": "PSM",
+            "full_name": "Paul Mullin"
+        },
+        {
+            "initials": "CCC",
+            "full_name": "Player 3"
+        }
+
+    ],
+    "leaders": [
+        {
+            "initials": "MSM",
+            "full_name": "Maxwell Mullin",
+            "date": "02/04/2025",
+            "score": 19997290000
+        },
+        {
+            "initials": "PSM",
+            "full_name": "Paul Mullin",
+            "date": "12/05/2024",
+            "score": 312441
+        },
+        {
+            "initials": "BBB",
+            "full_name": "Player 2",
+            "date": "11/05/2023",
+            "score": 182398
+        }
+    ],
+    "tournament": [
+        {
+            "initials": "AAA",
+            "score": 938479,
+            "date": "12/06/2024",
+            "index": 124908798
+        },
+        {
+            "initials": "BBB",
+            "score": 280732,
+            "date": "11/05/2023",
+            "index": 2
+        }
+    ],
+    "individual": [
+        {
+            "initials": "MSM",
+            "score": 19997290000,
+            "date": "02/04/2025",
+            "index": 0
+        },
+        {
+            "initials": "PSM",
+            "score": 312441,
+            "date": "12/05/2024",
+            "index": 1
+        },
+        {
+            "initials": "BBB",
+            "score": 182398,
+            "date": "11/05/2023",
+            "index": 2
+        }
+    ],
+    "settings":{
+        "score_capture": 1
+    }
+
+}
